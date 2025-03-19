@@ -1,0 +1,169 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+# Coding pattern preferences
+
+- Always prefer simple solutions
+- Avoid duplication of code whenever possible, which means checking for other areas of the codebase that might already have similar code and functionality
+- Write code that takes into account the different environments: dev, test, and prod
+- You are careful to only make changes that are requested or you are confident are well understood and related to the change being requested
+- When fixing an issue or bug, do not introduce a new pattern or technology without first exhausting all options for the existing implemetation. And first you finally do this, make sure to remove the old ipmlementation afterwards so we don't have duplicate logic.
+- Keep the codebase very clean and organized
+- Avoid writing scripts in files if possible, especially if the script is likely only to be run once
+- Avoid having files over 200-300 lines of code. Refactor at that point.
+- Mocking data is only needed for tests, never mock data for dev or prod
+- Never add stubbing or fake data patterns to code that affects the dev or prod environments
+- Never overwrite my env file without first asking and confirming
+
+# Coding workflow preferences
+
+- Focus on the areas of code relevant to the task
+- Do not touch code that is unrelated to the task
+- Write thorough tests for all major functionality
+- Avoid making major changes to the patterns and architecture of how a feature works, after it has shown to work well, unless explicitly structed
+- Always think about what other methods and areas of code might be affected by code changes
+
+Software Specification: Monetizable Knowledge Base Platform
+
+1. Overview
+
+The Knowledge Monetization Platform enables authors to publish, share, and monetize structured notes (Markdown format with wiki-links, e.g., Obsidian). Authors can offer content free or behind paywalls (subscription-based). The platform supports interconnected knowledge bases from multiple authors, enabling referral-based revenue sharing.
+
+2. User Roles
+
+2.1 Author
+
+Uploads or synchronizes Markdown notes.
+
+Sets visibility (free, paywalled).
+
+Defines subscription plans (monthly, yearly, bundled).
+
+Establishes referral links to other authors' notes.
+
+Monitors analytics (subscriber origin, popularity).
+
+Manages payments and revenue distribution.
+
+2.2 Subscriber
+
+Views free notes.
+
+Purchases subscription to access premium notes.
+
+Navigates between linked knowledge bases.
+
+Has a personal account to manage subscriptions and billing history.
+
+2.3 Platform
+
+Manages centralized network for seamless authentication.
+
+Automates referral transactions and author revenue sharing.
+
+Provides APIs and plugins for integration (Obsidian, etc.).
+
+3. Functional Requirements
+
+3.1 Content Management
+
+Imports and parses Markdown files.
+
+Automatically generates interconnected note structure via wiki-style [[Links]].
+
+Paywall management (public, premium, custom groups).
+
+Generates automatic landing pages and customizable web interfaces.
+
+2.4 Payments & Subscriptions
+
+Supports multiple subscription types (single, bundled).
+
+Manages integrated referral system with configurable affiliate percentages.
+
+Transparent revenue tracking and automated payouts.
+
+Integrates multiple payment gateways (Stripe, PayPal, cryptocurrency wallets).
+
+2.5 Versioning & Updates
+
+Tracks and stores historical versions of notes.
+
+Allows users to view purchased historical content even after updates.
+
+2.5 Analytics & Statistics
+
+Provides insights on popular notes, conversion rates, referral effectiveness.
+
+Detailed analytics dashboard for authors.
+
+2.5 Interaction & Engagement
+
+Comments section for subscriber feedback and discussions.
+
+Ratings (helpful/unhelpful) for individual notes.
+
+Voting or suggestions for note improvement.
+
+3. Technical Overview
+
+Core backend manages Markdown parsing, indexing, and link structure.
+
+Frontend interface for users and administrative control panels.
+
+Docker deployment support for simplified self-hosting.
+
+Optional offline mode without central platform connection.
+
+Plugin/API ecosystem for author tools (Obsidian plugin).
+
+4. Monetization Models
+
+Software licensing (free tier, premium features).
+
+Percentage-based transaction fees when using central authentication.
+
+Optional marketing/promotional services for authors.
+
+Marketplace showcasing various authors' knowledge bases.
+
+5. Business Use Case Example
+
+Author A sells "Obsidian Second Brain" course.
+
+Subscriber accesses free notes, subscribes for full access.
+
+Notices references to Author B's complementary knowledge base.
+
+Purchases discounted subscription through referral link, resulting in shared revenue.
+
+Both authors receive income, subscriber gains comprehensive knowledge.
+
+6. Installation & Deployment
+
+Self-hosted binary or Docker-based deployments.
+
+Support for offline usage without central authentication.
+
+Easy-to-use interface for non-technical users to manage content and payments.
+
+7. Limitations & Risks
+
+Potential piracy risks requiring preventive mechanisms.
+
+Regional variations in payment gateway availability.
+
+Moderation and content compliance to mitigate legal risks.
+
+8. Advanced Optional Features
+
+AI integration: Users query knowledge bases via trained language models.
+
+Version history access to maintain subscriber content integrity.
+
+Customization via CSS/HTML for branded author pages.
+
+This specification outlines a comprehensive, flexible, and scalable platform designed specifically for monetizing structured personal or collaborative knowledge bases.
