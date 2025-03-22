@@ -6,6 +6,10 @@ require (
 	github.com/foolin/goview v0.3.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/rs/zerolog v1.33.0
+	github.com/yuin/goldmark v1.7.8
+	github.com/yuin/goldmark-meta v1.1.0
+	go.abhg.dev/goldmark/wikilink v0.6.0
+	gopkg.in/yaml.v2 v2.3.0
 )
 
 require (
