@@ -11,7 +11,6 @@ import (
 	"github.com/foolin/goview"
 	"github.com/foolin/goview/supports/ginview"
 	"github.com/gin-gonic/gin"
-	"gopkg.in/yaml.v2"
 
 	"github.com/yuin/goldmark"
 	meta "github.com/yuin/goldmark-meta"
@@ -25,22 +24,19 @@ import (
 	"trip2g/internal/zerologger"
 )
 
-// Frontmatter represents the YAML metadata at the top of markdown files
-type Frontmatter struct {
-	Title string `yaml:"title"`
-}
-
 type page struct {
 	Path    string
 	Title   string
-	Content string
 	InLinks []string
+	Content []byte
 	RawMeta map[string]interface{}
 	Ast     ast.Node
 }
 
 type app struct {
 	Pages map[string]*page
+
+	md goldmark.Markdown
 
 	log logger.Logger
 }
@@ -51,6 +47,21 @@ func main() {
 
 		log: zerologger.New("debug", true),
 	}
+
+	resolver := myLinkResolver{}
+
+	a.md = goldmark.New(
+		goldmark.WithExtensions(
+			&wikilink.Extender{
+				Resolver: &resolver,
+			},
+			extension.GFM,
+			meta.Meta,
+		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+	)
 
 	err := a.prepare()
 	if err != nil {
@@ -66,6 +77,50 @@ func (a *app) prepare() error {
 	err := a.readPages()
 	if err != nil {
 		return fmt.Errorf("failed to read pages: %s", err)
+	}
+
+	err = a.generateStaticPages()
+	if err != nil {
+		return fmt.Errorf("failed to generate static pages: %s", err)
+	}
+
+	return nil
+}
+
+func (a *app) generateStaticPages() error {
+	for _, p := range a.Pages {
+		err := a.generatePage(p)
+		if err != nil {
+			return fmt.Errorf("failed to generate page: %s %s", err, p.Path)
+		}
+	}
+
+	return nil
+}
+
+func (a *app) generatePage(p *page) error {
+	const dirPath = "out"
+
+	// replace .md to .html
+	htmlPath := p.Path[:len(p.Path)-len(".md")] + ".html"
+
+	// Create the directory if it doesn't exist
+	err := os.MkdirAll(filepath.Join(dirPath, filepath.Dir(htmlPath)), os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create directory: %s", err)
+	}
+
+	// Create the file
+	f, err := os.Create(filepath.Join(dirPath, htmlPath))
+	if err != nil {
+		return fmt.Errorf("failed to create file: %s", err)
+	}
+
+	defer f.Close()
+
+	err = a.md.Renderer().Render(f, p.Content, p.Ast)
+	if err != nil {
+		return fmt.Errorf("failed to render file: %s", err)
 	}
 
 	return nil
@@ -94,26 +149,12 @@ func (a *app) readPages() error {
 			return fmt.Errorf("failed to read file: %s", err)
 		}
 
-		resolver := myLinkResolver{}
 		context := parser.NewContext()
 
-		md := goldmark.New(
-			goldmark.WithExtensions(
-				&wikilink.Extender{
-					Resolver: &resolver,
-				},
-				extension.GFM,
-				meta.Meta,
-			),
-			goldmark.WithParserOptions(
-				parser.WithAutoHeadingID(),
-			),
-		)
-
-		doc := md.Parser().Parse(text.NewReader(bContent), parser.WithContext(context))
+		doc := a.md.Parser().Parse(text.NewReader(bContent), parser.WithContext(context))
 		pp := page{
 			Path:    path[len(dirPath)+1:],
-			Content: string(bContent),
+			Content: bContent,
 			Ast:     doc,
 		}
 
@@ -172,33 +213,6 @@ func (*app) startServer() {
 	})
 
 	r.Run(":8080")
-}
-
-func extractFrontmatter(content []byte) (Frontmatter, []byte, error) {
-	var meta Frontmatter
-
-	// Check if content starts with frontmatter delimiters
-	if !bytes.HasPrefix(content, []byte("---\n")) {
-		return meta, content, nil
-	}
-
-	// Find the end of the frontmatter
-	endIdx := bytes.Index(content[4:], []byte("\n---"))
-	if endIdx == -1 {
-		return meta, content, nil
-	}
-	endIdx += 4 // Adjust for the offset in the slice
-
-	// Extract the frontmatter section
-	frontmatterBytes := content[4:endIdx]
-
-	// Parse the YAML
-	if err := yaml.Unmarshal(frontmatterBytes, &meta); err != nil {
-		return meta, content, fmt.Errorf("error parsing frontmatter: %w", err)
-	}
-
-	// Return the content without the frontmatter
-	return meta, content[endIdx+4:], nil
 }
 
 type myLinkResolver struct {
