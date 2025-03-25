@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "npx @tailwindcss/cli -i ./assets/styles.css -o ./assets/output.css --watch"
+    "start": "npx @tailwindcss/cli -i ./assets/styles.css -o ./assets/output.css"
   },
   "dependencies": {
     "daisyui": "^4.12.22"

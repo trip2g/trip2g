@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	htmltemplate "html/template"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -25,18 +26,65 @@ import (
 )
 
 type page struct {
-	Path    string
-	Title   string
-	InLinks []string
+	Path      string
+	Permalink string
+	Title     string
+
+	InLinks map[string]struct{}
 	Content []byte
+	HTML    htmltemplate.HTML
 	RawMeta map[string]interface{}
 	Ast     ast.Node
+}
+
+func (p *page) ExtractTitle() string {
+	title, ok := p.RawMeta["title"]
+	if ok {
+		str, ok := title.(string)
+		if ok {
+			return str
+		}
+	}
+
+	// nodeCount := 0
+	// docTitle := ""
+	//
+	// find the first heading in .Ast
+	// Need to remove the heading node before rendering
+	// ast.Walk(p.Ast, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+	// 	nodeCount++
+	//
+	// 	if nodeCount > 5 {
+	// 		return ast.WalkStop, nil
+	// 	}
+	//
+	// 	if n.Kind() == ast.KindHeading {
+	// 		heading := n.(*ast.Heading)
+	//
+	// 		if heading.Level != 1 {
+	// 			return ast.WalkContinue, nil
+	// 		}
+	//
+	// 		docTitle = string(heading.Text(p.Content))
+	// 		return ast.WalkStop, nil
+	// 	}
+	//
+	// 	return ast.WalkContinue, nil
+	// })
+	//
+	// if docTitle != "" {
+	// 	return docTitle
+	// }
+
+	return filepath.Base(p.Path[:len(p.Path)-len(".md")])
 }
 
 type app struct {
 	Pages map[string]*page
 
 	md goldmark.Markdown
+
+	linkResolver *myLinkResolver
 
 	log logger.Logger
 }
@@ -46,14 +94,14 @@ func main() {
 		Pages: make(map[string]*page),
 
 		log: zerologger.New("debug", true),
-	}
 
-	resolver := myLinkResolver{}
+		linkResolver: &myLinkResolver{},
+	}
 
 	a.md = goldmark.New(
 		goldmark.WithExtensions(
 			&wikilink.Extender{
-				Resolver: &resolver,
+				Resolver: a.linkResolver,
 			},
 			extension.GFM,
 			meta.Meta,
@@ -79,6 +127,11 @@ func (a *app) prepare() error {
 		return fmt.Errorf("failed to read pages: %s", err)
 	}
 
+	err = a.extractInLinks()
+	if err != nil {
+		return fmt.Errorf("failed to extract in-links: %s", err)
+	}
+
 	err = a.generateStaticPages()
 	if err != nil {
 		return fmt.Errorf("failed to generate static pages: %s", err)
@@ -92,6 +145,35 @@ func (a *app) generateStaticPages() error {
 		err := a.generatePage(p)
 		if err != nil {
 			return fmt.Errorf("failed to generate page: %s %s", err, p.Path)
+		}
+	}
+
+	return nil
+}
+
+func (a *app) extractInLinks() error {
+	for _, p := range a.Pages {
+		err := ast.Walk(p.Ast, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+			if n.Kind() != wikilink.Kind {
+				return ast.WalkContinue, nil
+			}
+
+			link := n.(*wikilink.Node)
+			target := string(link.Target) + ".md"
+
+			targetPage, ok := a.Pages[target]
+			if !ok {
+				fmt.Println("page not found", target)
+				return ast.WalkContinue, nil
+			}
+
+			targetPage.InLinks[p.Path] = struct{}{}
+
+			return ast.WalkContinue, nil
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to walk AST: %s", err)
 		}
 	}
 
@@ -118,10 +200,19 @@ func (a *app) generatePage(p *page) error {
 
 	defer f.Close()
 
-	err = a.md.Renderer().Render(f, p.Content, p.Ast)
+	var buf bytes.Buffer
+
+	err = a.md.Renderer().Render(&buf, p.Content, p.Ast)
 	if err != nil {
 		return fmt.Errorf("failed to render file: %s", err)
 	}
+
+	_, err = f.Write(buf.Bytes())
+	if err != nil {
+		return fmt.Errorf("failed to write file: %s", err)
+	}
+
+	p.HTML = htmltemplate.HTML(buf.String())
 
 	return nil
 }
@@ -153,27 +244,15 @@ func (a *app) readPages() error {
 
 		doc := a.md.Parser().Parse(text.NewReader(bContent), parser.WithContext(context))
 		pp := page{
-			Path:    path[len(dirPath)+1:],
-			Content: bContent,
-			Ast:     doc,
-		}
-
-		err = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-			if n.Kind() != wikilink.Kind {
-				return ast.WalkContinue, nil
-			}
-
-			link := n.(*wikilink.Node)
-			pp.InLinks = append(pp.InLinks, string(link.Target))
-
-			return ast.WalkContinue, nil
-		})
-
-		if err != nil {
-			return fmt.Errorf("failed to walk AST: %s", err)
+			Path:      path[len(dirPath)+1:],
+			Permalink: "/" + path[len(dirPath)+1:len(path)-len(".md")],
+			Content:   bContent,
+			Ast:       doc,
+			InLinks:   make(map[string]struct{}),
 		}
 
 		pp.RawMeta = meta.Get(context)
+		pp.Title = pp.ExtractTitle()
 
 		a.log.Info("read page", "path", pp.Path, "links", pp.InLinks)
 
@@ -189,26 +268,45 @@ func (a *app) readPages() error {
 	return nil
 }
 
-func (*app) startServer() {
+func (a *app) startServer() {
 	r := gin.Default()
 
 	// Set goview as the HTML renderer
 	r.HTMLRender = ginview.New(goview.Config{
-		Root:         "views",
-		Extension:    ".html",
-		Master:       "layout",
-		Partials:     []string{},
-		Funcs:        template.FuncMap{},
+		Root:      "views",
+		Extension: ".html",
+		Master:    "layout",
+		Partials:  []string{},
+		Funcs: template.FuncMap{
+			"getPage": func(target string) *page {
+				return a.Pages[target]
+			},
+		},
 		DisableCache: true,
 	})
 
 	// Serve static files
 	r.Static("/assets", "./assets")
 
-	// Routes
-	r.GET("/", func(c *gin.Context) {
+	// not found handler
+	r.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path[1:]
+
+		if path == "" {
+			path = "index"
+		}
+
+		page, ok := a.Pages[path+".md"]
+		if !ok {
+			c.String(http.StatusNotFound, "404 Not Found")
+			return
+		}
+
+		inLinks := map[string]string{}
+
 		c.HTML(http.StatusOK, "note", gin.H{
-			"title": "Note Page",
+			"page":    page,
+			"inLinks": inLinks,
 		})
 	})
 
@@ -238,6 +336,5 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 		i += copy(dest[i:], _hash)
 		i += copy(dest[i:], n.Fragment)
 	}
-	r.links = append(r.links, string(dest[:i]))
 	return dest[:i], nil
 }
