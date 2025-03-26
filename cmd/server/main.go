@@ -132,7 +132,7 @@ func (a *app) prepare() error {
 		return fmt.Errorf("failed to extract in-links: %s", err)
 	}
 
-	err = a.generateStaticPages()
+	err = a.generatePageHTMLs()
 	if err != nil {
 		return fmt.Errorf("failed to generate static pages: %s", err)
 	}
@@ -140,9 +140,9 @@ func (a *app) prepare() error {
 	return nil
 }
 
-func (a *app) generateStaticPages() error {
+func (a *app) generatePageHTMLs() error {
 	for _, p := range a.Pages {
-		err := a.generatePage(p)
+		err := a.generatePageHTML(p)
 		if err != nil {
 			return fmt.Errorf("failed to generate page: %s %s", err, p.Path)
 		}
@@ -180,36 +180,12 @@ func (a *app) extractInLinks() error {
 	return nil
 }
 
-func (a *app) generatePage(p *page) error {
-	const dirPath = "out"
-
-	// replace .md to .html
-	htmlPath := p.Path[:len(p.Path)-len(".md")] + ".html"
-
-	// Create the directory if it doesn't exist
-	err := os.MkdirAll(filepath.Join(dirPath, filepath.Dir(htmlPath)), os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("failed to create directory: %s", err)
-	}
-
-	// Create the file
-	f, err := os.Create(filepath.Join(dirPath, htmlPath))
-	if err != nil {
-		return fmt.Errorf("failed to create file: %s", err)
-	}
-
-	defer f.Close()
-
+func (a *app) generatePageHTML(p *page) error {
 	var buf bytes.Buffer
 
-	err = a.md.Renderer().Render(&buf, p.Content, p.Ast)
+	err := a.md.Renderer().Render(&buf, p.Content, p.Ast)
 	if err != nil {
 		return fmt.Errorf("failed to render file: %s", err)
-	}
-
-	_, err = f.Write(buf.Bytes())
-	if err != nil {
-		return fmt.Errorf("failed to write file: %s", err)
 	}
 
 	p.HTML = htmltemplate.HTML(buf.String())
@@ -254,7 +230,7 @@ func (a *app) readPages() error {
 		pp.RawMeta = meta.Get(context)
 		pp.Title = pp.ExtractTitle()
 
-		a.log.Info("read page", "path", pp.Path, "links", pp.InLinks)
+		a.log.Info("read page", "path", pp.Path)
 
 		a.Pages[pp.Path] = &pp
 
