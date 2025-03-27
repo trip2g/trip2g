@@ -126,7 +126,10 @@ func (ldr *loader) extractInLinks() error {
 				return ast.WalkContinue, nil
 			}
 
-			target := string(link.Target) + ".md"
+			target := string(link.Target)
+			if target[0] != '/' {
+				target = "/" + target
+			}
 
 			targetPage, ok := ldr.pages[target]
 			if !ok {
@@ -134,7 +137,7 @@ func (ldr *loader) extractInLinks() error {
 				return ast.WalkContinue, nil
 			}
 
-			targetPage.InLinks[p.Path] = struct{}{}
+			targetPage.InLinks[p.Permalink] = struct{}{}
 
 			return ast.WalkContinue, nil
 		})
