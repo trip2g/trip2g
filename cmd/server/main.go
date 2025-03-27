@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	htmltemplate "html/template"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,103 +11,21 @@ import (
 	"github.com/foolin/goview/supports/ginview"
 	"github.com/gin-gonic/gin"
 
-	"github.com/yuin/goldmark"
-	meta "github.com/yuin/goldmark-meta"
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
-	"go.abhg.dev/goldmark/wikilink"
-
 	"trip2g/internal/logger"
+	"trip2g/internal/mdloader"
 	"trip2g/internal/zerologger"
 )
 
-type page struct {
-	Path      string
-	Permalink string
-	Title     string
-
-	InLinks map[string]struct{}
-	Content []byte
-	HTML    htmltemplate.HTML
-	RawMeta map[string]interface{}
-	Ast     ast.Node
-}
-
-func (p *page) ExtractTitle() string {
-	title, ok := p.RawMeta["title"]
-	if ok {
-		str, ok := title.(string)
-		if ok {
-			return str
-		}
-	}
-
-	// nodeCount := 0
-	// docTitle := ""
-	//
-	// find the first heading in .Ast
-	// Need to remove the heading node before rendering
-	// ast.Walk(p.Ast, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-	// 	nodeCount++
-	//
-	// 	if nodeCount > 5 {
-	// 		return ast.WalkStop, nil
-	// 	}
-	//
-	// 	if n.Kind() == ast.KindHeading {
-	// 		heading := n.(*ast.Heading)
-	//
-	// 		if heading.Level != 1 {
-	// 			return ast.WalkContinue, nil
-	// 		}
-	//
-	// 		docTitle = string(heading.Text(p.Content))
-	// 		return ast.WalkStop, nil
-	// 	}
-	//
-	// 	return ast.WalkContinue, nil
-	// })
-	//
-	// if docTitle != "" {
-	// 	return docTitle
-	// }
-
-	return filepath.Base(p.Path[:len(p.Path)-len(".md")])
-}
-
 type app struct {
-	Pages map[string]*page
-
-	md goldmark.Markdown
-
-	linkResolver *myLinkResolver
+	Pages map[string]*mdloader.Page
 
 	log logger.Logger
 }
 
 func main() {
 	a := &app{
-		Pages: make(map[string]*page),
-
 		log: zerologger.New("debug", true),
-
-		linkResolver: &myLinkResolver{},
 	}
-
-	a.md = goldmark.New(
-		goldmark.WithExtensions(
-			&wikilink.Extender{
-				Resolver: a.linkResolver,
-			},
-			extension.GFM,
-			meta.Meta,
-		),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-		),
-	)
 
 	err := a.prepare()
 	if err != nil {
@@ -122,84 +38,28 @@ func main() {
 }
 
 func (a *app) prepare() error {
-	err := a.readPages()
+	sources, err := a.readPages()
 	if err != nil {
-		return fmt.Errorf("failed to read pages: %s", err)
+		return fmt.Errorf("failed to read pages: %w", err)
 	}
 
-	err = a.extractInLinks()
+	a.Pages, err = mdloader.Load(sources, logger.WithPrefix(a.log, "mdloader:"))
 	if err != nil {
-		return fmt.Errorf("failed to extract in-links: %s", err)
-	}
-
-	err = a.generatePageHTMLs()
-	if err != nil {
-		return fmt.Errorf("failed to generate static pages: %s", err)
+		return fmt.Errorf("failed to load pages: %w", err)
 	}
 
 	return nil
 }
 
-func (a *app) generatePageHTMLs() error {
-	for _, p := range a.Pages {
-		err := a.generatePageHTML(p)
-		if err != nil {
-			return fmt.Errorf("failed to generate page: %s %s", err, p.Path)
-		}
-	}
-
-	return nil
-}
-
-func (a *app) extractInLinks() error {
-	for _, p := range a.Pages {
-		err := ast.Walk(p.Ast, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-			if n.Kind() != wikilink.Kind {
-				return ast.WalkContinue, nil
-			}
-
-			link := n.(*wikilink.Node)
-			target := string(link.Target) + ".md"
-
-			targetPage, ok := a.Pages[target]
-			if !ok {
-				fmt.Println("page not found", target)
-				return ast.WalkContinue, nil
-			}
-
-			targetPage.InLinks[p.Path] = struct{}{}
-
-			return ast.WalkContinue, nil
-		})
-
-		if err != nil {
-			return fmt.Errorf("failed to walk AST: %s", err)
-		}
-	}
-
-	return nil
-}
-
-func (a *app) generatePageHTML(p *page) error {
-	var buf bytes.Buffer
-
-	err := a.md.Renderer().Render(&buf, p.Content, p.Ast)
-	if err != nil {
-		return fmt.Errorf("failed to render file: %s", err)
-	}
-
-	p.HTML = htmltemplate.HTML(buf.String())
-
-	return nil
-}
-
-// read all md files from demo/*.md recurlively
-func (a *app) readPages() error {
+// read all md files from demo/*.md recurlively.
+func (a *app) readPages() ([]mdloader.SourceFile, error) {
 	const dirPath = "demo"
+
+	sources := []mdloader.SourceFile{}
 
 	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return fmt.Errorf("failed to walk path: %s", err)
+			return fmt.Errorf("failed to walk path: %w", err)
 		}
 
 		if info.IsDir() {
@@ -210,38 +70,24 @@ func (a *app) readPages() error {
 			return nil
 		}
 
-		// read file
 		bContent, err := os.ReadFile(path)
 		if err != nil {
-			return fmt.Errorf("failed to read file: %s", err)
+			return fmt.Errorf("failed to read file: %w", err)
 		}
 
-		context := parser.NewContext()
-
-		doc := a.md.Parser().Parse(text.NewReader(bContent), parser.WithContext(context))
-		pp := page{
-			Path:      path[len(dirPath)+1:],
-			Permalink: "/" + path[len(dirPath)+1:len(path)-len(".md")],
-			Content:   bContent,
-			Ast:       doc,
-			InLinks:   make(map[string]struct{}),
-		}
-
-		pp.RawMeta = meta.Get(context)
-		pp.Title = pp.ExtractTitle()
-
-		a.log.Info("read page", "path", pp.Path)
-
-		a.Pages[pp.Path] = &pp
+		sources = append(sources, mdloader.SourceFile{
+			Path:    path[len(dirPath)+1:],
+			Content: bContent,
+		})
 
 		return nil
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to read pages: %s", err)
+		return nil, fmt.Errorf("failed to read pages: %w", err)
 	}
 
-	return nil
+	return sources, nil
 }
 
 func (a *app) startServer() {
@@ -254,7 +100,7 @@ func (a *app) startServer() {
 		Master:    "layout",
 		Partials:  []string{},
 		Funcs: template.FuncMap{
-			"getPage": func(target string) *page {
+			"getPage": func(target string) *mdloader.Page {
 				return a.Pages[target]
 			},
 		},
@@ -264,15 +110,19 @@ func (a *app) startServer() {
 	// Serve static files
 	r.Static("/assets", "./assets")
 
+	r.GET("/api/pages", func(c *gin.Context) {
+		c.JSON(http.StatusOK, a.Pages)
+	})
+
 	// not found handler
 	r.NoRoute(func(c *gin.Context) {
-		path := c.Request.URL.Path[1:]
+		path := c.Request.URL.Path
 
-		if path == "" {
-			path = "index"
+		if path == "/" {
+			path = "/index"
 		}
 
-		page, ok := a.Pages[path+".md"]
+		page, ok := a.Pages[path]
 		if !ok {
 			c.String(http.StatusNotFound, "404 Not Found")
 			return
@@ -286,31 +136,8 @@ func (a *app) startServer() {
 		})
 	})
 
-	r.Run(":8080")
-}
-
-type myLinkResolver struct {
-	links []string
-}
-
-const _html = ".html"
-const _hash = "#"
-
-func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
-	// Remove .html extension if present in the target
-	target := n.Target
-	if bytes.HasSuffix(target, []byte(_html)) {
-		target = target[:len(target)-len(_html)]
+	err := r.Run(":8080")
+	if err != nil {
+		panic(err)
 	}
-
-	dest := make([]byte, len(target)+len(_hash)+len(n.Fragment))
-	var i int
-	if len(target) > 0 {
-		i += copy(dest, target)
-	}
-	if len(n.Fragment) > 0 {
-		i += copy(dest[i:], _hash)
-		i += copy(dest[i:], n.Fragment)
-	}
-	return dest[:i], nil
 }
