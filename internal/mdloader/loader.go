@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"path/filepath"
+	"strings"
 	"trip2g/internal/logger"
 
 	"github.com/yuin/goldmark"
@@ -136,13 +137,20 @@ func (ldr *loader) extractInLinks() error {
 				target = "/" + target
 			}
 
-			targetPage, ok := ldr.pages[target]
-			if !ok {
-				ldr.log.Warn("page not found", "target", target)
-				return ast.WalkContinue, nil
+			// resolve relative links
+			currentParts := strings.Split(p.Permalink, "/")
+
+			for i := len(currentParts) - 1; i >= 0; i-- {
+				targetPermalink := strings.Join(currentParts[:i], "/") + target
+
+				targetPage, ok := ldr.pages[targetPermalink]
+				if ok {
+					targetPage.InLinks[p.Permalink] = struct{}{}
+					return ast.WalkContinue, nil
+				}
 			}
 
-			targetPage.InLinks[p.Permalink] = struct{}{}
+			ldr.log.Warn("failed to find target page", "page", p.Path, "target", target)
 
 			return ast.WalkContinue, nil
 		})

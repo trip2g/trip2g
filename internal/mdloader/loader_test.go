@@ -57,6 +57,6 @@ func TestRelatedLinks(t *testing.T) {
 	require.Len(t, pages, 3)
 
 	require.Equal(t, map[string]struct{}{}, pages["/second"].InLinks)
-	require.Equal(t, map[string]struct{}{}, pages["/nested/first"].InLinks)
-	require.Equal(t, map[string]struct{}{"/second": {}}, pages["/nested/second"].InLinks)
+	require.Equal(t, map[string]struct{}{"/second": {}}, pages["/nested/first"].InLinks)
+	require.Equal(t, map[string]struct{}{"/nested/first": {}}, pages["/nested/second"].InLinks)
 }
