@@ -54,6 +54,9 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (map[string]*Page, error)
 		linkResolver: &myLinkResolver{},
 	}
 
+	ldr.linkResolver.pages = ldr.pages
+	ldr.linkResolver.log = log
+
 	ldr.md = goldmark.New(
 		goldmark.WithExtensions(
 			&wikilink.Extender{
@@ -102,6 +105,8 @@ func (ldr *loader) generatePageHTMLs() error {
 
 func (ldr *loader) generatePageHTML(p *Page) error {
 	var buf bytes.Buffer
+
+	ldr.linkResolver.currentPage = p
 
 	err := ldr.md.Renderer().Render(&buf, p.Content, p.Ast)
 	if err != nil {

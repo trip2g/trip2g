@@ -37,3 +37,26 @@ First. Second [[second]]`),
 	require.Equal(t, map[string]struct{}{"/index": {}}, pages["/first"].InLinks)
 	require.Equal(t, map[string]struct{}{"/index": {}, "/first": {}}, pages["/second"].InLinks)
 }
+
+func TestRelatedLinks(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []SourceFile{{
+		Path:    "second.md",
+		Content: []byte(`Hello [[nested/first]]`),
+	}, {
+		Path:    "nested/first.md",
+		Content: []byte(`nested [[second]]`),
+	}, {
+		Path:    "nested/second.md",
+		Content: []byte(`nested second`),
+	}}
+
+	pages, err := Load(sourceFiles, &log)
+	require.NoError(t, err)
+	require.Len(t, pages, 3)
+
+	require.Equal(t, map[string]struct{}{}, pages["/second"].InLinks)
+	require.Equal(t, map[string]struct{}{}, pages["/nested/first"].InLinks)
+	require.Equal(t, map[string]struct{}{"/second": {}}, pages["/nested/second"].InLinks)
+}
