@@ -4,6 +4,7 @@ import (
 	"testing"
 	"trip2g/internal/logger"
 
+	"github.com/bradleyjkemp/cupaloy"
 	"github.com/stretchr/testify/require"
 )
 
@@ -59,4 +60,12 @@ func TestRelatedLinks(t *testing.T) {
 	require.Equal(t, map[string]struct{}{}, pages["/second"].InLinks)
 	require.Equal(t, map[string]struct{}{"/second": {}}, pages["/nested/first"].InLinks)
 	require.Equal(t, map[string]struct{}{"/nested/first": {}}, pages["/nested/second"].InLinks)
+
+	htmlSources := map[string]string{}
+
+	for path, page := range pages {
+		htmlSources[path] = string(page.HTML)
+	}
+
+	cupaloy.SnapshotT(t, htmlSources)
 }

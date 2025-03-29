@@ -3,6 +3,7 @@ module trip2g
 go 1.23.4
 
 require (
+	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible
 	github.com/foolin/goview v0.3.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/rs/zerolog v1.33.0

@@ -146,6 +146,7 @@ func (ldr *loader) extractInLinks() error {
 				targetPage, ok := ldr.pages[targetPermalink]
 				if ok {
 					targetPage.InLinks[p.Permalink] = struct{}{}
+					link.Target = []byte(targetPage.Permalink)
 					return ast.WalkContinue, nil
 				}
 			}
