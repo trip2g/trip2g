@@ -13,7 +13,9 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 	"go.abhg.dev/goldmark/wikilink"
 )
 
@@ -33,6 +35,7 @@ type Page struct {
 	Ast     ast.Node
 
 	Permalink string
+	Free      bool // without the paywall
 
 	InLinks map[string]struct{}
 	RawMeta map[string]interface{}
@@ -59,6 +62,12 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (map[string]*Page, error)
 	ldr.linkResolver.log = log
 
 	ldr.md = goldmark.New(
+		goldmark.WithRendererOptions(
+			renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{
+				resolver: ldr.linkResolver,
+				pages:    ldr.pages,
+			}, 198)),
+		),
 		goldmark.WithExtensions(
 			&wikilink.Extender{
 				Resolver: ldr.linkResolver,
@@ -178,6 +187,7 @@ func (ldr *loader) parsePage(src SourceFile) (*Page, error) { //nolint:unparam /
 
 	pp.RawMeta = meta.Get(context)
 	pp.Title = pp.ExtractTitle()
+	pp.Free = pp.RawMeta["free"] == true
 
 	ldr.log.Info("read page", "path", pp.Path)
 

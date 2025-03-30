@@ -1,0 +1,4 @@
+(map[string]string) (len=2) {
+  (string) (len=7) "/hidden": (string) (len=21) "<p>Payed content</p>\n",
+  (string) (len=6) "/index": (string) (len=58) "<p>Hello <a class=\"paywall\" href=\"/hidden\">hidden</a></p>\n"
+}

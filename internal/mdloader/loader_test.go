@@ -43,14 +43,23 @@ func TestRelatedLinks(t *testing.T) {
 	log := logger.TestLogger{}
 
 	sourceFiles := []SourceFile{{
-		Path:    "second.md",
-		Content: []byte(`Hello [[nested/first]]`),
+		Path: "second.md",
+		Content: []byte(`---
+free: true
+---
+Hello [[nested/first]]`),
 	}, {
-		Path:    "nested/first.md",
-		Content: []byte(`nested [[second]]`),
+		Path: "nested/first.md",
+		Content: []byte(`---
+free: true
+---
+nested [[second]]`),
 	}, {
-		Path:    "nested/second.md",
-		Content: []byte(`nested second`),
+		Path: "nested/second.md",
+		Content: []byte(`---
+free: true
+---
+nested second`),
 	}}
 
 	pages, err := Load(sourceFiles, &log)
@@ -60,6 +69,32 @@ func TestRelatedLinks(t *testing.T) {
 	require.Equal(t, map[string]struct{}{}, pages["/second"].InLinks)
 	require.Equal(t, map[string]struct{}{"/second": {}}, pages["/nested/first"].InLinks)
 	require.Equal(t, map[string]struct{}{"/nested/first": {}}, pages["/nested/second"].InLinks)
+
+	htmlSources := map[string]string{}
+
+	for path, page := range pages {
+		htmlSources[path] = string(page.HTML)
+	}
+
+	cupaloy.SnapshotT(t, htmlSources)
+}
+
+func TestPaywallLinks(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Hello [[hidden]]`),
+	}, {
+		Path:    "hidden.md",
+		Content: []byte(`Payed content`),
+	}}
+
+	pages, err := Load(sourceFiles, &log)
+	require.NoError(t, err)
 
 	htmlSources := map[string]string{}
 
