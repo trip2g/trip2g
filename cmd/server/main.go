@@ -103,6 +103,15 @@ func (a *app) startServer() {
 			"getPage": func(target string) *mdloader.Page {
 				return a.Pages[target]
 			},
+			"getPageLinkClasses": func(target string) string {
+				page, ok := a.Pages[target]
+
+				if ok && !page.Free {
+					return "paywall"
+				}
+
+				return ""
+			},
 		},
 		DisableCache: true,
 	})

@@ -9,7 +9,7 @@
 
   {{ range $k, $v := .page.InLinks }}
     {{ with (getPage $k) }}
-      <div><a href="{{ .Permalink }}">{{ .Title }}</a></div>
+      <div><a class="{{ getPageLinkClasses $k }}" href="{{ .Permalink }}">{{ .Title }}</a></div>
     {{ end }}
   {{ end }}
 
