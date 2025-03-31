@@ -15,4 +15,10 @@
 
 {{ end }}
 
+{{ if (not .isGuest) }}
+<form action="/_system/signout" method="post">
+  <button type="submit" class="mt-4">Sign out</button>
+</form>
+{{ end }}
+
 {{ end }}

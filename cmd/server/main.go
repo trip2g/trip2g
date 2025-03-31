@@ -9,6 +9,8 @@ import (
 
 	"github.com/foolin/goview"
 	"github.com/foolin/goview/supports/ginview"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 
 	"trip2g/internal/logger"
@@ -93,6 +95,26 @@ func (a *app) readPages() ([]mdloader.SourceFile, error) {
 func (a *app) startServer() {
 	r := gin.Default()
 
+	store := cookie.NewStore([]byte("secret"))
+	r.Use(sessions.Sessions("trip2g_session", store))
+
+	expectedHost := "localhost:8080"
+
+	r.Use(func(c *gin.Context) {
+		if c.Request.Host != expectedHost {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid host header"})
+			return
+		}
+
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("Content-Security-Policy", "default-src 'self'; connect-src *; font-src *; script-src-elem * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';")
+		c.Header("X-XSS-Protection", "1; mode=block")
+		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+		c.Header("Referrer-Policy", "strict-origin")
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Next()
+	})
+
 	// Set goview as the HTML renderer
 	r.HTMLRender = ginview.New(goview.Config{
 		Root:      "views",
@@ -123,6 +145,45 @@ func (a *app) startServer() {
 		c.JSON(http.StatusOK, a.Pages)
 	})
 
+	// POST /_system/signin
+	r.POST("/_system/signin", func(c *gin.Context) {
+		var form struct {
+			Password string `form:"password"`
+			Email    string `form:"email"`
+			ReturnTo string `form:"return_to"`
+		}
+
+		err := c.ShouldBind(&form)
+		if err != nil {
+			c.String(http.StatusBadRequest, "400 Bad Request")
+			return
+		}
+
+		if form.Email == "test@example.com" && form.Password == "X173T6pThLNm" {
+			session := sessions.Default(c)
+			session.Set("authenticated", true)
+			session.Save()
+
+			if form.ReturnTo == "" {
+				form.ReturnTo = "/"
+			}
+
+			c.Redirect(http.StatusSeeOther, form.ReturnTo)
+			return
+		}
+
+		c.String(http.StatusUnauthorized, "401 Unauthorized")
+	})
+
+	// POST /_system/signout
+	r.POST("/_system/signout", func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Clear()
+		session.Save()
+
+		c.Redirect(http.StatusSeeOther, "/")
+	})
+
 	// not found handler
 	r.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
@@ -137,11 +198,19 @@ func (a *app) startServer() {
 			return
 		}
 
-		inLinks := map[string]string{}
+		session := sessions.Default(c)
+
+		if !page.Free && session.Get("authenticated") == nil {
+			c.HTML(http.StatusOK, "paywall", gin.H{
+				"page": page,
+			})
+			return
+		}
 
 		c.HTML(http.StatusOK, "note", gin.H{
-			"page":    page,
-			"inLinks": inLinks,
+			"isGuest": session.Get("authenticated") == nil,
+
+			"page": page,
 		})
 	})
 
