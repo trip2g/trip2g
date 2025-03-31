@@ -20,7 +20,7 @@ func TestFlatIndexFirstSecond(t *testing.T) {
 title: First
 ---
 
-First. Second [[second]]`),
+First. Second [[second]] [[dead]]`),
 	}, {
 		Path:    "second.md",
 		Content: []byte(`Second.`),
@@ -37,6 +37,8 @@ First. Second [[second]]`),
 	require.Equal(t, map[string]struct{}{}, pages["/index"].InLinks)
 	require.Equal(t, map[string]struct{}{"/index": {}}, pages["/first"].InLinks)
 	require.Equal(t, map[string]struct{}{"/index": {}, "/first": {}}, pages["/second"].InLinks)
+
+	require.Equal(t, []string{"/dead"}, pages["/first"].DeadLinks)
 }
 
 func TestRelatedLinks(t *testing.T) {

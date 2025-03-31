@@ -39,6 +39,8 @@ type Page struct {
 
 	InLinks map[string]struct{}
 	RawMeta map[string]interface{}
+
+	DeadLinks []string
 }
 
 type loader struct {
@@ -130,8 +132,8 @@ func (ldr *loader) generatePageHTML(p *Page) error {
 
 func (ldr *loader) extractInLinks() error {
 	for _, p := range ldr.pages {
-		err := ast.Walk(p.Ast, func(n ast.Node, _ bool) (ast.WalkStatus, error) {
-			if n.Kind() != wikilink.Kind {
+		err := ast.Walk(p.Ast, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+			if n.Kind() != wikilink.Kind || !entering {
 				return ast.WalkContinue, nil
 			}
 
@@ -160,7 +162,7 @@ func (ldr *loader) extractInLinks() error {
 				}
 			}
 
-			ldr.log.Warn("failed to find target page", "page", p.Path, "target", target)
+			p.DeadLinks = append(p.DeadLinks, target)
 
 			return ast.WalkContinue, nil
 		})
