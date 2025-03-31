@@ -184,6 +184,14 @@ func (a *app) startServer() {
 		c.Redirect(http.StatusSeeOther, "/")
 	})
 
+	render := func(c *gin.Context, code int, template string, data gin.H) {
+		session := sessions.Default(c)
+
+		data["isGuest"] = session.Get("authenticated") == nil
+
+		c.HTML(http.StatusOK, template, data)
+	}
+
 	// not found handler
 	r.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
@@ -201,17 +209,11 @@ func (a *app) startServer() {
 		session := sessions.Default(c)
 
 		if !page.Free && session.Get("authenticated") == nil {
-			c.HTML(http.StatusOK, "paywall", gin.H{
-				"page": page,
-			})
+			render(c, http.StatusUnauthorized, "paywall", gin.H{"page": page})
 			return
 		}
 
-		c.HTML(http.StatusOK, "note", gin.H{
-			"isGuest": session.Get("authenticated") == nil,
-
-			"page": page,
-		})
+		render(c, http.StatusOK, "note", gin.H{"page": page})
 	})
 
 	err := r.Run(":8080")

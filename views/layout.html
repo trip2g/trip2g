@@ -12,6 +12,6 @@
   <a href="/">Home</a>
 </header>
 
-<main class="container mx-auto px-4 py-2">
+<main class="container mx-auto px-4 py-2{{ if (not .isGuest) }} authorized{{ end }}">
 {{ template "content" . }}
 </main>
