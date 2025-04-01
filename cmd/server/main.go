@@ -55,7 +55,8 @@ func (a *app) prepare() error {
 
 // read all md files from demo/*.md recurlively.
 func (a *app) readPages() ([]mdloader.SourceFile, error) {
-	const dirPath = "demo"
+	// const dirPath = "demo"
+	const dirPath = "../secondbrain"
 
 	sources := []mdloader.SourceFile{}
 
