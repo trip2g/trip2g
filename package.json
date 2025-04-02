@@ -1,13 +1,22 @@
 {
   "scripts": {
-    "start": "npx @tailwindcss/cli -i ./assets/styles.css -o ./assets/output.css"
+    "start": "npx @tailwindcss/cli -i ./assets/styles.css -o ./assets/output.css",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "daisyui": "^4.12.22"
+    "daisyui": "^4.12.22",
+    "graphology": "^0.26.0",
+    "graphology-layout": "^0.6.1",
+    "graphology-layout-forceatlas2": "^0.10.1",
+    "sigma": "^3.0.1"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.0.14",
     "@tailwindcss/typography": "^0.5.16",
-    "tailwindcss": "^4.0.14"
+    "tailwindcss": "^4.0.14",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
   }
 }
