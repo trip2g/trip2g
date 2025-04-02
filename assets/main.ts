@@ -5,38 +5,42 @@ import FA2Layout from "graphology-layout-forceatlas2/worker";
 import Sigma from "sigma";
 import { PlainObject } from "sigma/types";
 import { animateNodes } from "sigma/utils";
+import louvain from "graphology-communities-louvain"; // Импорт алгоритма Louvain
+
+// Простая палитра для раскраски кластеров
+const palette = [
+  "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+  "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
+];
 
 const run = (data: any) => {
-  // Initialize the graph object with data
+  // Инициализация графа и импорт данных
   const graph = new Graph();
   graph.import(data);
 
-  // Retrieve some useful DOM elements:
-  const container = document.getElementById("sigma-container") as HTMLElement;
+  // === Кластеризация с помощью Louvain ===
+  const communities = louvain(graph);
+  graph.forEachNode((node) => {
+    graph.setNodeAttribute(node, "cluster", communities[node]);
+  });
 
+  // === DOM-элементы ===
+  const container = document.getElementById("sigma-container") as HTMLElement;
   const FA2Button = document.getElementById("forceatlas2") as HTMLElement;
   const FA2StopLabel = document.getElementById("forceatlas2-stop-label") as HTMLElement;
   const FA2StartLabel = document.getElementById("forceatlas2-start-label") as HTMLElement;
-
   const randomButton = document.getElementById("random") as HTMLElement;
-
   const circularButton = document.getElementById("circular") as HTMLElement;
 
   /** FA2 LAYOUT **/
-  /* This example shows how to use the force atlas 2 layout in a web worker */
-
-  // Graphology provides a easy to use implementation of Force Atlas 2 in a web worker
+  // Получаем настройки и запускаем ForceAtlas2 в web worker
   const sensibleSettings = forceAtlas2.inferSettings(graph);
   const fa2Layout = new FA2Layout(graph, {
     settings: sensibleSettings,
   });
 
-  // A button to trigger the layout start/stop actions
-
-  // A variable is used to toggle state between start and stop
   let cancelCurrentAnimation: (() => void) | null = null;
 
-  // correlate start/stop actions with state management
   function stopFA2() {
     fa2Layout.stop();
     FA2StartLabel.style.display = "flex";
@@ -48,28 +52,17 @@ const run = (data: any) => {
     FA2StartLabel.style.display = "none";
     FA2StopLabel.style.display = "flex";
   }
-
-  // the main toggle function
   function toggleFA2Layout() {
-    if (fa2Layout.isRunning()) {
-      stopFA2();
-    } else {
-      startFA2();
-    }
+    if (fa2Layout.isRunning()) stopFA2();
+    else startFA2();
   }
-  // bind method to the forceatlas2 button
   FA2Button.addEventListener("click", toggleFA2Layout);
 
   /** RANDOM LAYOUT **/
-  /* Layout can be handled manually by setting nodes x and y attributes */
-  /* This random layout has been coded to show how to manipulate positions directly in the graph instance */
-  /* Alternatively a random layout algo exists in graphology: https://github.com/graphology/graphology-layout#random  */
   function randomLayout() {
-    // stop fa2 if running
     if (fa2Layout.isRunning()) stopFA2();
     if (cancelCurrentAnimation) cancelCurrentAnimation();
 
-    // to keep positions scale uniform between layouts, we first calculate positions extents
     const xExtents = { min: 0, max: 0 };
     const yExtents = { min: 0, max: 0 };
     graph.forEachNode((_node, attributes) => {
@@ -81,37 +74,35 @@ const run = (data: any) => {
     const randomPositions: PlainObject<PlainObject<number>> = {};
     graph.forEachNode((node) => {
       const s = 2;
-      // create random positions respecting position extents
       randomPositions[node] = {
-        x: Math.random() * (xExtents.max*s - xExtents.min*s),
-        y: Math.random() * (yExtents.max*s - yExtents.min*s),
+        x: Math.random() * (xExtents.max * s - xExtents.min * s),
+        y: Math.random() * (yExtents.max * s - yExtents.min * s),
       };
     });
-    // use sigma animation to update new positions
     cancelCurrentAnimation = animateNodes(graph, randomPositions, { duration: 2000 });
   }
-
-  // bind method to the random button
   randomButton.addEventListener("click", randomLayout);
 
   /** CIRCULAR LAYOUT **/
-  /* This example shows how to use an existing deterministic graphology layout */
   function circularLayout() {
-    // stop fa2 if running
     if (fa2Layout.isRunning()) stopFA2();
     if (cancelCurrentAnimation) cancelCurrentAnimation();
 
-    //since we want to use animations we need to process positions before applying them through animateNodes
     const circularPositions = circular(graph, { scale: 100 });
-    //In other context, it's possible to apply the position directly we : circular.assign(graph, {scale:100})
     cancelCurrentAnimation = animateNodes(graph, circularPositions, { duration: 2000, easing: "linear" });
   }
-
-  // bind method to the random button
   circularButton.addEventListener("click", circularLayout);
 
-  /** instantiate sigma into the container **/
-  const renderer = new Sigma(graph, container);
+  /** Инициализация Sigma с nodeReducer для раскраски по кластерам **/
+  const renderer = new Sigma(graph, container, {
+    renderEdgeLabels: false,
+    defaultNodeColor: "#ccc",
+    nodeReducer: (node, data) => ({
+      ...data,
+      label: node,
+      color: palette[data.cluster % palette.length],
+    }),
+  });
 
   return () => {
     renderer.kill();
@@ -119,11 +110,8 @@ const run = (data: any) => {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  // load data from http://localhost:8080/api/graph and cache in localstorage
+  // Загружаем данные с API и кэшируем в localStorage
   let rawData = localStorage.getItem("graph");
-
-  console.log(JSON.parse(rawData));
-
   if (!rawData) {
     fetch("http://localhost:8080/api/graph")
       .then((response) => response.json())

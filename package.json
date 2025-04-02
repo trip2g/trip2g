@@ -8,6 +8,7 @@
   "dependencies": {
     "daisyui": "^4.12.22",
     "graphology": "^0.26.0",
+    "graphology-communities-louvain": "^2.0.2",
     "graphology-layout": "^0.6.1",
     "graphology-layout-forceatlas2": "^0.10.1",
     "sigma": "^3.0.1"
