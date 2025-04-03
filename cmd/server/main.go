@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -15,23 +18,47 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 
+	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/zerologger"
+
+	"github.com/amacneil/dbmate/v2/pkg/dbmate"
+	_ "github.com/amacneil/dbmate/v2/pkg/driver/sqlite"
+
+	_ "modernc.org/sqlite"
 )
 
 type app struct {
 	Pages map[string]*mdloader.Page
 
+	queries *db.Queries
+	conn    *sql.DB
+
 	log logger.Logger
 }
 
 func main() {
-	a := &app{
-		log: zerologger.New("debug", true),
+	u, _ := url.Parse("sqlite:data.sqlite3")
+	dbm := dbmate.New(u)
+
+	err := dbm.CreateAndMigrate()
+	if err != nil {
+		panic(err)
 	}
 
-	err := a.prepare()
+	conn, err := sql.Open("sqlite", "data.sqlite3")
+	if err != nil {
+		panic(err)
+	}
+
+	a := &app{
+		log:     zerologger.New("debug", true),
+		queries: db.New(conn),
+		conn:    conn,
+	}
+
+	err = a.prepare()
 	if err != nil {
 		panic(err)
 	}
@@ -42,15 +69,15 @@ func main() {
 }
 
 func (a *app) prepare() error {
-	sources, err := a.readPages()
-	if err != nil {
-		return fmt.Errorf("failed to read pages: %w", err)
-	}
+	// sources, err := a.readPages()
+	// if err != nil {
+	// 	return fmt.Errorf("failed to read pages: %w", err)
+	// }
 
-	a.Pages, err = mdloader.Load(sources, logger.WithPrefix(a.log, "mdloader:"))
-	if err != nil {
-		return fmt.Errorf("failed to load pages: %w", err)
-	}
+	// a.Pages, err = mdloader.Load(sources, logger.WithPrefix(a.log, "mdloader:"))
+	// if err != nil {
+	// 	return fmt.Errorf("failed to load pages: %w", err)
+	// }
 
 	return nil
 }
@@ -99,6 +126,28 @@ func (a *app) readPages() ([]mdloader.SourceFile, error) {
 	}
 
 	return sources, nil
+}
+
+func (a *app) insertNote(ctx context.Context, note db.Note) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	tx, err := a.conn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	err = a.queries.WithTx(tx).InsertNote(ctx, note)
+	if err != nil {
+		return fmt.Errorf("failed to insert note: %w", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 func (a *app) startServer() {
@@ -159,6 +208,34 @@ func (a *app) startServer() {
 
 	r.GET("/api/pages", func(c *gin.Context) {
 		c.JSON(http.StatusOK, a.Pages)
+	})
+
+	// POST /api/notes that takes a JSON object in the format {"path": "path", "content": "content"}
+	r.POST("/api/notes", func(c *gin.Context) {
+		var form struct {
+			Path    string `json:"path"`
+			Content string `json:"content"`
+		}
+
+		err := c.ShouldBindJSON(&form)
+		if err != nil {
+			c.String(http.StatusBadRequest, "400 Bad Request")
+			return
+		}
+
+		note := db.Note{
+			Path:    form.Path,
+			Content: form.Content,
+		}
+
+		err = a.insertNote(c.Request.Context(), note)
+		if err != nil {
+			a.log.Error("failed to insert note", "err", err)
+			c.String(http.StatusInternalServerError, "500 Internal Server Error")
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
 	// POST /_system/signin
