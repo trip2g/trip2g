@@ -3,6 +3,8 @@ package db
 import (
 	"context"
 	"crypto/sha1"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -13,6 +15,7 @@ type Note struct {
 }
 
 var ErrNotePathHashUnresolvedCollision = fmt.Errorf("note path hash unresolved collision")
+var ErrNoteVersionAlreadyExists = fmt.Errorf("note version already exists")
 
 func (q *Queries) InsertNote(ctx context.Context, arg Note) error {
 	sha := sha1.New()
@@ -24,16 +27,17 @@ func (q *Queries) InsertNote(ctx context.Context, arg Note) error {
 	sha.Write([]byte(arg.Content))
 	contentHash := fmt.Sprintf("%x", sha.Sum(nil))
 
-	for tryCount := 6; ; tryCount++ {
-		notePath := InsertNotePathParams{
+	for i := 6; i < len(pathHash); i++ {
+		notePathParams := InsertNotePathParams{
 			Path:     arg.Path,
-			PathHash: pathHash[:tryCount],
+			PathHash: pathHash[:i],
 		}
 
-		insertErr := q.InsertNotePath(ctx, notePath)
+		insertErr := q.InsertNotePath(ctx, notePathParams)
 		if insertErr != nil {
+			// check if the error is a unique constraint violation
 			if strings.Contains(insertErr.Error(), "note_paths.path_hash") {
-				if tryCount >= len(pathHash)-1 {
+				if i == len(pathHash)-1 {
 					return ErrNotePathHashUnresolvedCollision
 				}
 
@@ -46,17 +50,30 @@ func (q *Queries) InsertNote(ctx context.Context, arg Note) error {
 		break
 	}
 
-	pathRow, err := q.IncrementNoteVersionCount(ctx, arg.Path)
+	latestContentHash := sql.NullString{
+		String: contentHash,
+		Valid:  false,
+	}
+
+	increaseParams := IncrementNoteVersionCountParams{
+		Path:                arg.Path,
+		LatestContentHash:   latestContentHash,
+		LatestContentHash_2: latestContentHash,
+	}
+
+	pathRow, err := q.IncrementNoteVersionCount(ctx, increaseParams)
 	if err != nil {
-		return fmt.Errorf("failed to GetNotePathID: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNoteVersionAlreadyExists
+		}
+
+		return fmt.Errorf("failed to IncrementNoteVersionCount: %w", err)
 	}
 
 	noteVersion := InsertNoteVersionParams{
 		PathID:  pathRow.ID,
 		Version: pathRow.VersionCount,
 		Content: arg.Content,
-
-		ContentHash: contentHash,
 	}
 
 	err = q.InsertNoteVersion(ctx, noteVersion)

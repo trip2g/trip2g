@@ -9,36 +9,21 @@ import (
 )
 
 type NotePath struct {
-	ID           int64
-	Path         string
-	PathHash     string
-	CreatedAt    sql.NullTime
-	VersionCount int64
+	ID                int64
+	Path              string
+	PathHash          string
+	LatestContentHash sql.NullString
+	CreatedAt         sql.NullTime
+	VersionCount      int64
 }
 
 type NoteVersion struct {
-	PathID      int64
-	Version     int64
-	Content     string
-	ContentHash string
-	CreatedAt   sql.NullTime
-}
-
-type NoteView struct {
-	ID        int64
-	UserID    int64
 	PathID    int64
 	Version   int64
+	Content   string
 	CreatedAt sql.NullTime
 }
 
 type SchemaMigrations struct {
 	Version string
-}
-
-type User struct {
-	ID           int64
-	Email        string
-	PasswordHash string
-	CreatedAt    sql.NullTime
 }

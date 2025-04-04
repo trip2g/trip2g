@@ -7,60 +7,64 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const incrementNoteVersionCount = `-- name: IncrementNoteVersionCount :one
 update note_paths
    set version_count = version_count + 1
+     , latest_content_hash = ?
  where path = ?
-returning version_count, id
+    and latest_content_hash <> ?
+returning id, version_count
 `
 
-type IncrementNoteVersionCountRow struct {
-	VersionCount int64
-	ID           int64
+type IncrementNoteVersionCountParams struct {
+	LatestContentHash   sql.NullString
+	Path                string
+	LatestContentHash_2 sql.NullString
 }
 
-func (q *Queries) IncrementNoteVersionCount(ctx context.Context, path string) (IncrementNoteVersionCountRow, error) {
-	row := q.db.QueryRowContext(ctx, incrementNoteVersionCount, path)
+type IncrementNoteVersionCountRow struct {
+	ID           int64
+	VersionCount int64
+}
+
+func (q *Queries) IncrementNoteVersionCount(ctx context.Context, arg IncrementNoteVersionCountParams) (IncrementNoteVersionCountRow, error) {
+	row := q.db.QueryRowContext(ctx, incrementNoteVersionCount, arg.LatestContentHash, arg.Path, arg.LatestContentHash_2)
 	var i IncrementNoteVersionCountRow
-	err := row.Scan(&i.VersionCount, &i.ID)
+	err := row.Scan(&i.ID, &i.VersionCount)
 	return i, err
 }
 
 const insertNotePath = `-- name: InsertNotePath :exec
-insert into note_paths (path, path_hash)
-values (?, ?)
+insert into note_paths (path, path_hash, latest_content_hash)
+values (?, ?, ?)
 `
 
 type InsertNotePathParams struct {
-	Path     string
-	PathHash string
+	Path              string
+	PathHash          string
+	LatestContentHash sql.NullString
 }
 
 func (q *Queries) InsertNotePath(ctx context.Context, arg InsertNotePathParams) error {
-	_, err := q.db.ExecContext(ctx, insertNotePath, arg.Path, arg.PathHash)
+	_, err := q.db.ExecContext(ctx, insertNotePath, arg.Path, arg.PathHash, arg.LatestContentHash)
 	return err
 }
 
 const insertNoteVersion = `-- name: InsertNoteVersion :exec
-insert into note_versions (path_id, version, content, content_hash)
-values (?, ?, ?, ?)
+insert into note_versions (path_id, version, content)
+values (?, ?, ?)
 `
 
 type InsertNoteVersionParams struct {
-	PathID      int64
-	Version     int64
-	Content     string
-	ContentHash string
+	PathID  int64
+	Version int64
+	Content string
 }
 
 func (q *Queries) InsertNoteVersion(ctx context.Context, arg InsertNoteVersionParams) error {
-	_, err := q.db.ExecContext(ctx, insertNoteVersion,
-		arg.PathID,
-		arg.Version,
-		arg.Content,
-		arg.ContentHash,
-	)
+	_, err := q.db.ExecContext(ctx, insertNoteVersion, arg.PathID, arg.Version, arg.Content)
 	return err
 }
