@@ -14,43 +14,44 @@ const incrementNoteVersionCount = `-- name: IncrementNoteVersionCount :one
 update note_paths
    set version_count = version_count + 1
      , latest_content_hash = ?
- where path = ?
-    and latest_content_hash <> ?
-returning id, version_count
+ where id = ?
+returning version_count
 `
 
 type IncrementNoteVersionCountParams struct {
-	LatestContentHash   sql.NullString
-	Path                string
-	LatestContentHash_2 sql.NullString
+	LatestContentHash sql.NullString
+	ID                int64
 }
 
-type IncrementNoteVersionCountRow struct {
-	ID           int64
-	VersionCount int64
+func (q *Queries) IncrementNoteVersionCount(ctx context.Context, arg IncrementNoteVersionCountParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, incrementNoteVersionCount, arg.LatestContentHash, arg.ID)
+	var version_count int64
+	err := row.Scan(&version_count)
+	return version_count, err
 }
 
-func (q *Queries) IncrementNoteVersionCount(ctx context.Context, arg IncrementNoteVersionCountParams) (IncrementNoteVersionCountRow, error) {
-	row := q.db.QueryRowContext(ctx, incrementNoteVersionCount, arg.LatestContentHash, arg.Path, arg.LatestContentHash_2)
-	var i IncrementNoteVersionCountRow
-	err := row.Scan(&i.ID, &i.VersionCount)
-	return i, err
-}
-
-const insertNotePath = `-- name: InsertNotePath :exec
-insert into note_paths (path, path_hash, latest_content_hash)
-values (?, ?, ?)
+const insertNotePath = `-- name: InsertNotePath :one
+insert into note_paths (path, path_hash)
+values (?, ?)
+on conflict(path) do update set path = excluded.path
+returning id, latest_content_hash
 `
 
 type InsertNotePathParams struct {
-	Path              string
-	PathHash          string
+	Path     string
+	PathHash string
+}
+
+type InsertNotePathRow struct {
+	ID                int64
 	LatestContentHash sql.NullString
 }
 
-func (q *Queries) InsertNotePath(ctx context.Context, arg InsertNotePathParams) error {
-	_, err := q.db.ExecContext(ctx, insertNotePath, arg.Path, arg.PathHash, arg.LatestContentHash)
-	return err
+func (q *Queries) InsertNotePath(ctx context.Context, arg InsertNotePathParams) (InsertNotePathRow, error) {
+	row := q.db.QueryRowContext(ctx, insertNotePath, arg.Path, arg.PathHash)
+	var i InsertNotePathRow
+	err := row.Scan(&i.ID, &i.LatestContentHash)
+	return i, err
 }
 
 const insertNoteVersion = `-- name: InsertNoteVersion :exec

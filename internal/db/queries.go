@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha1"
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -27,52 +26,53 @@ func (q *Queries) InsertNote(ctx context.Context, arg Note) error {
 	sha.Write([]byte(arg.Content))
 	contentHash := fmt.Sprintf("%x", sha.Sum(nil))
 
+	var notePath *InsertNotePathRow
+
 	for i := 6; i < len(pathHash); i++ {
 		notePathParams := InsertNotePathParams{
 			Path:     arg.Path,
 			PathHash: pathHash[:i],
 		}
 
-		insertErr := q.InsertNotePath(ctx, notePathParams)
+		insertedRow, insertErr := q.InsertNotePath(ctx, notePathParams)
 		if insertErr != nil {
 			// check if the error is a unique constraint violation
 			if strings.Contains(insertErr.Error(), "note_paths.path_hash") {
-				if i == len(pathHash)-1 {
-					return ErrNotePathHashUnresolvedCollision
-				}
-
 				continue
 			}
 
 			return fmt.Errorf("failed to InsertNotePath: %w", insertErr)
 		}
 
+		notePath = &insertedRow
+
 		break
 	}
 
-	latestContentHash := sql.NullString{
-		String: contentHash,
-		Valid:  false,
+	if notePath == nil {
+		return ErrNotePathHashUnresolvedCollision
+	}
+
+	if notePath.LatestContentHash.Valid && notePath.LatestContentHash.String == contentHash {
+		return ErrNoteVersionAlreadyExists
 	}
 
 	increaseParams := IncrementNoteVersionCountParams{
-		Path:                arg.Path,
-		LatestContentHash:   latestContentHash,
-		LatestContentHash_2: latestContentHash,
+		ID: notePath.ID,
+		LatestContentHash: sql.NullString{
+			String: contentHash,
+			Valid:  true,
+		},
 	}
 
-	pathRow, err := q.IncrementNoteVersionCount(ctx, increaseParams)
+	version, err := q.IncrementNoteVersionCount(ctx, increaseParams)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrNoteVersionAlreadyExists
-		}
-
 		return fmt.Errorf("failed to IncrementNoteVersionCount: %w", err)
 	}
 
 	noteVersion := InsertNoteVersionParams{
-		PathID:  pathRow.ID,
-		Version: pathRow.VersionCount,
+		PathID:  notePath.ID,
+		Version: version,
 		Content: arg.Content,
 	}
 
