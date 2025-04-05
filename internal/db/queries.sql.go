@@ -10,6 +10,72 @@ import (
 	"database/sql"
 )
 
+const allNotePaths = `-- name: AllNotePaths :many
+select id, path, path_hash, latest_content_hash, created_at, version_count from note_paths order by id
+`
+
+func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
+	rows, err := q.db.QueryContext(ctx, allNotePaths)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NotePath
+	for rows.Next() {
+		var i NotePath
+		if err := rows.Scan(
+			&i.ID,
+			&i.Path,
+			&i.PathHash,
+			&i.LatestContentHash,
+			&i.CreatedAt,
+			&i.VersionCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allNoteVersions = `-- name: AllNoteVersions :many
+select path_id, version, content, created_at from note_versions order by path_id, version
+`
+
+func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
+	rows, err := q.db.QueryContext(ctx, allNoteVersions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteVersion
+	for rows.Next() {
+		var i NoteVersion
+		if err := rows.Scan(
+			&i.PathID,
+			&i.Version,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const incrementNoteVersionCount = `-- name: IncrementNoteVersionCount :one
 update note_paths
    set version_count = version_count + 1

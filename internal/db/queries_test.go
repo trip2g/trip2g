@@ -68,4 +68,17 @@ func TestInsertNote(t *testing.T) {
 
 	err = queries.InsertNote(ctx, note)
 	require.Error(t, err)
+
+	note.Content = "test2"
+
+	err = queries.InsertNote(ctx, note)
+	require.NoError(t, err)
+
+	paths, err := queries.AllNotePaths(ctx)
+	require.NoError(t, err)
+	require.Len(t, paths, 1)
+
+	versions, err := queries.AllNoteVersions(ctx)
+	require.NoError(t, err)
+	require.Len(t, versions, 2)
 }

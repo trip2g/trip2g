@@ -14,3 +14,9 @@ returning version_count;
 -- name: InsertNoteVersion :exec
 insert into note_versions (path_id, version, content)
 values (?, ?, ?);
+
+-- name: AllNotePaths :many
+select * from note_paths order by id;
+
+-- name: AllNoteVersions :many
+select * from note_versions order by path_id, version;
