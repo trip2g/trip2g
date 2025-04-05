@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"strings"
 )
@@ -20,11 +21,11 @@ func (q *Queries) InsertNote(ctx context.Context, arg Note) error {
 	sha := sha1.New()
 
 	sha.Write([]byte(arg.Path))
-	pathHash := fmt.Sprintf("%x", sha.Sum(nil))
+	pathHash := base64.URLEncoding.EncodeToString(sha.Sum(nil))
 
 	sha.Reset()
 	sha.Write([]byte(arg.Content))
-	contentHash := fmt.Sprintf("%x", sha.Sum(nil))
+	contentHash := base64.URLEncoding.EncodeToString(sha.Sum(nil))
 
 	var notePath *InsertNotePathRow
 

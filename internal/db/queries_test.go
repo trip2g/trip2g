@@ -47,13 +47,17 @@ func createDB(t *testing.T) *sql.DB {
 	return conn
 }
 
-func TestInsertNote(t *testing.T) {
+func createTxQueries(t *testing.T) *Queries {
 	conn := createDB(t)
 
 	tx, err := conn.Begin()
 	require.NoError(t, err)
 
-	queries := New(tx)
+	return New(tx)
+}
+
+func TestInsertNote(t *testing.T) {
+	queries := createTxQueries(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -63,7 +67,7 @@ func TestInsertNote(t *testing.T) {
 		Content: "test",
 	}
 
-	err = queries.InsertNote(ctx, note)
+	err := queries.InsertNote(ctx, note)
 	require.NoError(t, err)
 
 	err = queries.InsertNote(ctx, note)
@@ -81,4 +85,36 @@ func TestInsertNote(t *testing.T) {
 	versions, err := queries.AllNoteVersions(ctx)
 	require.NoError(t, err)
 	require.Len(t, versions, 2)
+}
+
+func TestCheckPathHashCollisions(t *testing.T) {
+	queries := createTxQueries(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// fek2 and ip7f → base64prefix: 0q5foe
+
+	note0 := Note{
+		Path:    "fek2",
+		Content: "fek2",
+	}
+
+	note1 := Note{
+		Path:    "ip7f",
+		Content: "ip7f",
+	}
+
+	err := queries.InsertNote(ctx, note0)
+	require.NoError(t, err)
+
+	err = queries.InsertNote(ctx, note1)
+	require.NoError(t, err)
+
+	paths, err := queries.AllNotePaths(ctx)
+	require.NoError(t, err)
+
+	require.Len(t, paths, 2)
+	require.Equal(t, "0q5foe", paths[0].PathHash)
+	require.Equal(t, "0q5foeA", paths[1].PathHash)
 }
