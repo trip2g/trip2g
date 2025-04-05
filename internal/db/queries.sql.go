@@ -85,8 +85,8 @@ returning version_count
 `
 
 type IncrementNoteVersionCountParams struct {
-	LatestContentHash sql.NullString
-	ID                int64
+	LatestContentHash sql.NullString `json:"latest_content_hash"`
+	ID                int64          `json:"id"`
 }
 
 func (q *Queries) IncrementNoteVersionCount(ctx context.Context, arg IncrementNoteVersionCountParams) (int64, error) {
@@ -104,13 +104,13 @@ returning id, latest_content_hash
 `
 
 type InsertNotePathParams struct {
-	Path     string
-	PathHash string
+	Path     string `json:"path"`
+	PathHash string `json:"path_hash"`
 }
 
 type InsertNotePathRow struct {
-	ID                int64
-	LatestContentHash sql.NullString
+	ID                int64          `json:"id"`
+	LatestContentHash sql.NullString `json:"latest_content_hash"`
 }
 
 func (q *Queries) InsertNotePath(ctx context.Context, arg InsertNotePathParams) (InsertNotePathRow, error) {
@@ -126,12 +126,46 @@ values (?, ?, ?)
 `
 
 type InsertNoteVersionParams struct {
-	PathID  int64
-	Version int64
-	Content string
+	PathID  int64  `json:"path_id"`
+	Version int64  `json:"version"`
+	Content string `json:"content"`
 }
 
 func (q *Queries) InsertNoteVersion(ctx context.Context, arg InsertNoteVersionParams) error {
 	_, err := q.db.ExecContext(ctx, insertNoteVersion, arg.PathID, arg.Version, arg.Content)
 	return err
+}
+
+const noteVersionsByPathID = `-- name: NoteVersionsByPathID :many
+select path_id, version, content, created_at from note_versions
+ where path_id = ?
+ order by version desc
+`
+
+func (q *Queries) NoteVersionsByPathID(ctx context.Context, pathID int64) ([]NoteVersion, error) {
+	rows, err := q.db.QueryContext(ctx, noteVersionsByPathID, pathID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteVersion
+	for rows.Next() {
+		var i NoteVersion
+		if err := rows.Scan(
+			&i.PathID,
+			&i.Version,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

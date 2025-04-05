@@ -9,21 +9,21 @@ import (
 )
 
 type NotePath struct {
-	ID                int64
-	Path              string
-	PathHash          string
-	LatestContentHash sql.NullString
-	CreatedAt         sql.NullTime
-	VersionCount      int64
+	ID                int64          `json:"id"`
+	Path              string         `json:"path"`
+	PathHash          string         `json:"path_hash"`
+	LatestContentHash sql.NullString `json:"latest_content_hash"`
+	CreatedAt         sql.NullTime   `json:"created_at"`
+	VersionCount      int64          `json:"version_count"`
 }
 
 type NoteVersion struct {
-	PathID    int64
-	Version   int64
-	Content   string
-	CreatedAt sql.NullTime
+	PathID    int64        `json:"path_id"`
+	Version   int64        `json:"version"`
+	Content   string       `json:"content"`
+	CreatedAt sql.NullTime `json:"created_at"`
 }
 
 type SchemaMigrations struct {
-	Version string
+	Version string `json:"version"`
 }

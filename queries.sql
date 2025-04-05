@@ -20,3 +20,8 @@ select * from note_paths order by id;
 
 -- name: AllNoteVersions :many
 select * from note_versions order by path_id, version;
+
+-- name: NoteVersionsByPathID :many
+select * from note_versions
+ where path_id = ?
+ order by version desc;

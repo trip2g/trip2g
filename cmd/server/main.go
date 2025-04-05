@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"text/template"
 	"time"
 
@@ -206,8 +207,40 @@ func (a *app) startServer() {
 	// Serve static files
 	r.Static("/assets", "./assets")
 
-	r.GET("/api/pages", func(c *gin.Context) {
-		c.JSON(http.StatusOK, a.Pages)
+	// GET /api/note_paths
+	r.GET("/api/note_paths", func(c *gin.Context) {
+		paths, err := a.queries.AllNotePaths(c.Request.Context())
+		if err != nil {
+			a.log.Error("failed to get note paths", "err", err)
+			c.String(http.StatusInternalServerError, "500 Internal Server Error")
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"paths": paths})
+	})
+
+	// GET /api/note_paths/:id/note_versions
+	r.GET("/api/note_paths/:id/note_versions", func(c *gin.Context) {
+		rawID := c.Param("id")
+		if rawID == "" {
+			c.String(http.StatusBadRequest, "400 Bad Request")
+			return
+		}
+
+		id, err := strconv.Atoi(rawID)
+		if err != nil {
+			c.String(http.StatusBadRequest, "400 Bad Request")
+			return
+		}
+
+		versions, err := a.queries.NoteVersionsByPathID(c.Request.Context(), int64(id))
+		if err != nil {
+			a.log.Error("failed to get note versions", "err", err)
+			c.String(http.StatusInternalServerError, "500 Internal Server Error")
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"versions": versions})
 	})
 
 	// POST /api/notes that takes a JSON object in the format {"path": "path", "content": "content"}
