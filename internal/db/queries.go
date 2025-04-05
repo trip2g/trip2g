@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"crypto/sha1"
-	"database/sql"
 	"encoding/base64"
 	"fmt"
 	"strings"
@@ -31,14 +30,16 @@ func (q *Queries) InsertNote(ctx context.Context, arg Note) error {
 
 	for i := 6; i < len(pathHash); i++ {
 		notePathParams := InsertNotePathParams{
-			Path:     arg.Path,
-			PathHash: pathHash[:i],
+			Value:     arg.Path,
+			ValueHash: pathHash[:i],
+
+			LatestContentHash: contentHash,
 		}
 
 		insertedRow, insertErr := q.InsertNotePath(ctx, notePathParams)
 		if insertErr != nil {
 			// check if the error is a unique constraint violation
-			if strings.Contains(insertErr.Error(), "note_paths.path_hash") {
+			if strings.Contains(insertErr.Error(), "note_paths.value_hash") {
 				continue
 			}
 
@@ -54,16 +55,14 @@ func (q *Queries) InsertNote(ctx context.Context, arg Note) error {
 		return ErrNotePathHashUnresolvedCollision
 	}
 
-	if notePath.LatestContentHash.Valid && notePath.LatestContentHash.String == contentHash {
+	if notePath.VersionCount > 0 && notePath.LatestContentHash == contentHash {
 		return ErrNoteVersionAlreadyExists
 	}
 
 	increaseParams := IncrementNoteVersionCountParams{
 		ID: notePath.ID,
-		LatestContentHash: sql.NullString{
-			String: contentHash,
-			Valid:  true,
-		},
+
+		LatestContentHash: contentHash,
 	}
 
 	version, err := q.IncrementNoteVersionCount(ctx, increaseParams)

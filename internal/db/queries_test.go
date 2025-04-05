@@ -115,6 +115,6 @@ func TestCheckPathHashCollisions(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, paths, 2)
-	require.Equal(t, "0q5foe", paths[0].PathHash)
-	require.Equal(t, "0q5foeA", paths[1].PathHash)
+	require.Equal(t, "0q5foe", paths[0].ValueHash)
+	require.Equal(t, "0q5foeA", paths[1].ValueHash)
 }

@@ -1,8 +1,8 @@
 -- name: InsertNotePath :one
-insert into note_paths (path, path_hash)
-values (?, ?)
-on conflict(path) do update set path = excluded.path
-returning id, latest_content_hash;
+insert into note_paths (value, value_hash, latest_content_hash)
+values (?, ?, ?)
+on conflict(value) do update set value = excluded.value
+returning id, version_count, latest_content_hash;
 
 -- name: IncrementNoteVersionCount :one
 update note_paths

@@ -9,12 +9,12 @@ import (
 )
 
 type NotePath struct {
-	ID                int64          `json:"id"`
-	Path              string         `json:"path"`
-	PathHash          string         `json:"path_hash"`
-	LatestContentHash sql.NullString `json:"latest_content_hash"`
-	CreatedAt         sql.NullTime   `json:"created_at"`
-	VersionCount      int64          `json:"version_count"`
+	ID                int64        `json:"id"`
+	Value             string       `json:"value"`
+	ValueHash         string       `json:"value_hash"`
+	LatestContentHash string       `json:"latest_content_hash"`
+	CreatedAt         sql.NullTime `json:"created_at"`
+	VersionCount      int64        `json:"version_count"`
 }
 
 type NoteVersion struct {

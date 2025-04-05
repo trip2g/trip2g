@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS "schema_migrations" (version varchar(128) primary key);
 CREATE TABLE note_paths (
   id integer primary key,
-  path text not null unique on conflict ignore,
-  path_hash text not null unique on conflict fail,
-  latest_content_hash text,
+  value text not null unique on conflict ignore,
+  value_hash text not null unique on conflict fail,
+  latest_content_hash text not null,
   created_at datetime default current_timestamp,
   version_count integer not null default 0
 );

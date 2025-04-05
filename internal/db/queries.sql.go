@@ -7,11 +7,10 @@ package db
 
 import (
 	"context"
-	"database/sql"
 )
 
 const allNotePaths = `-- name: AllNotePaths :many
-select id, path, path_hash, latest_content_hash, created_at, version_count from note_paths order by id
+select id, value, value_hash, latest_content_hash, created_at, version_count from note_paths order by id
 `
 
 func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
@@ -25,8 +24,8 @@ func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
 		var i NotePath
 		if err := rows.Scan(
 			&i.ID,
-			&i.Path,
-			&i.PathHash,
+			&i.Value,
+			&i.ValueHash,
 			&i.LatestContentHash,
 			&i.CreatedAt,
 			&i.VersionCount,
@@ -85,8 +84,8 @@ returning version_count
 `
 
 type IncrementNoteVersionCountParams struct {
-	LatestContentHash sql.NullString `json:"latest_content_hash"`
-	ID                int64          `json:"id"`
+	LatestContentHash string `json:"latest_content_hash"`
+	ID                int64  `json:"id"`
 }
 
 func (q *Queries) IncrementNoteVersionCount(ctx context.Context, arg IncrementNoteVersionCountParams) (int64, error) {
@@ -97,26 +96,28 @@ func (q *Queries) IncrementNoteVersionCount(ctx context.Context, arg IncrementNo
 }
 
 const insertNotePath = `-- name: InsertNotePath :one
-insert into note_paths (path, path_hash)
-values (?, ?)
-on conflict(path) do update set path = excluded.path
-returning id, latest_content_hash
+insert into note_paths (value, value_hash, latest_content_hash)
+values (?, ?, ?)
+on conflict(value) do update set value = excluded.value
+returning id, version_count, latest_content_hash
 `
 
 type InsertNotePathParams struct {
-	Path     string `json:"path"`
-	PathHash string `json:"path_hash"`
+	Value             string `json:"value"`
+	ValueHash         string `json:"value_hash"`
+	LatestContentHash string `json:"latest_content_hash"`
 }
 
 type InsertNotePathRow struct {
-	ID                int64          `json:"id"`
-	LatestContentHash sql.NullString `json:"latest_content_hash"`
+	ID                int64  `json:"id"`
+	VersionCount      int64  `json:"version_count"`
+	LatestContentHash string `json:"latest_content_hash"`
 }
 
 func (q *Queries) InsertNotePath(ctx context.Context, arg InsertNotePathParams) (InsertNotePathRow, error) {
-	row := q.db.QueryRowContext(ctx, insertNotePath, arg.Path, arg.PathHash)
+	row := q.db.QueryRowContext(ctx, insertNotePath, arg.Value, arg.ValueHash, arg.LatestContentHash)
 	var i InsertNotePathRow
-	err := row.Scan(&i.ID, &i.LatestContentHash)
+	err := row.Scan(&i.ID, &i.VersionCount, &i.LatestContentHash)
 	return i, err
 }
 
