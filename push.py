@@ -35,10 +35,13 @@ def main():
     # Превратим массив в словарь: { "file.md": "latest_content_hash", ... }
     server_hash_map = {}
     for item in note_paths:
-        server_file = item.get("value")            # например "test.md"
-        server_hash = item.get("latest_content_hash")  # SHA1 в URL base64
+        server_file = item.get("value")                 # например "test.md"
+        server_hash = item.get("latest_content_hash")   # SHA1 в URL base64
         if server_file:
             server_hash_map[server_file] = server_hash
+
+    # Массив для накопления всех изменений, которые будем отправлять одним POST
+    updates = []
 
     # 3) Рекурсивно обходим локальные .md-файлы
     for root, dirs, files in os.walk(base_path):
@@ -57,28 +60,31 @@ def main():
                     continue
 
                 local_hash = sha1_urlsafe_base64(content_bytes)
-
-                # Узнаём, какой хэш на сервере
                 server_file_hash = server_hash_map.get(rel_path)
 
                 # Если файла нет на сервере или хэши не совпадают
                 if server_file_hash != local_hash:
-                    # Формируем JSON для POST
-                    payload = {
+                    print(f"Файл «{rel_path}» требует обновления.")
+                    # Готовим структуру под обновление
+                    updates.append({
                         "path": rel_path,
                         "content": content_bytes.decode('utf-8', errors='replace')
-                    }
+                    })
 
-                    print(f"Обновляем «{rel_path}» на сервере...")
+    # 4) Если есть обновлённые файлы, отправляем одним POST-запросом
+    if updates:
+        post_url = "http://localhost:8080/api/notes"
+        payload = {"updates": updates}
 
-                    # 4) Отправляем POST-запрос
-                    post_url = "http://localhost:8080/api/notes"
-                    try:
-                        r = requests.post(post_url, json=payload)
-                        r.raise_for_status()
-                        print(f"Файл «{rel_path}» успешно обновлён!")
-                    except Exception as e:
-                        print(f"Ошибка при обновлении «{rel_path}»: {e}")
+        try:
+            print("Отправляем изменения на сервер...")
+            r = requests.post(post_url, json=payload)
+            r.raise_for_status()
+            print("Все обновления успешно загружены!")
+        except Exception as e:
+            print(f"Ошибка при загрузке изменений: {e}")
+    else:
+        print("Нет файлов для обновления. Всё в актуальном состоянии.")
 
 if __name__ == "__main__":
     main()
