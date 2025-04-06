@@ -9,6 +9,40 @@ import (
 	"context"
 )
 
+const allLatestNotes = `-- name: AllLatestNotes :many
+select value as path, content
+  from note_paths p
+  join note_versions v on p.id = v.path_id and p.version_count = v.version
+`
+
+type AllLatestNotesRow struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
+func (q *Queries) AllLatestNotes(ctx context.Context) ([]AllLatestNotesRow, error) {
+	rows, err := q.db.QueryContext(ctx, allLatestNotes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllLatestNotesRow
+	for rows.Next() {
+		var i AllLatestNotesRow
+		if err := rows.Scan(&i.Path, &i.Content); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allNotePaths = `-- name: AllNotePaths :many
 select id, value, value_hash, latest_content_hash, created_at, version_count from note_paths order by id
 `
@@ -49,6 +83,40 @@ select path_id, version, content, created_at from note_versions order by path_id
 
 func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
 	rows, err := q.db.QueryContext(ctx, allNoteVersions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteVersion
+	for rows.Next() {
+		var i NoteVersion
+		if err := rows.Scan(
+			&i.PathID,
+			&i.Version,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allNoteVersionsByPathID = `-- name: AllNoteVersionsByPathID :many
+select path_id, version, content, created_at from note_versions
+ where path_id = ?
+ order by version desc
+`
+
+func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]NoteVersion, error) {
+	rows, err := q.db.QueryContext(ctx, allNoteVersionsByPathID, pathID)
 	if err != nil {
 		return nil, err
 	}
@@ -135,38 +203,4 @@ type InsertNoteVersionParams struct {
 func (q *Queries) InsertNoteVersion(ctx context.Context, arg InsertNoteVersionParams) error {
 	_, err := q.db.ExecContext(ctx, insertNoteVersion, arg.PathID, arg.Version, arg.Content)
 	return err
-}
-
-const noteVersionsByPathID = `-- name: NoteVersionsByPathID :many
-select path_id, version, content, created_at from note_versions
- where path_id = ?
- order by version desc
-`
-
-func (q *Queries) NoteVersionsByPathID(ctx context.Context, pathID int64) ([]NoteVersion, error) {
-	rows, err := q.db.QueryContext(ctx, noteVersionsByPathID, pathID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []NoteVersion
-	for rows.Next() {
-		var i NoteVersion
-		if err := rows.Scan(
-			&i.PathID,
-			&i.Version,
-			&i.Content,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }

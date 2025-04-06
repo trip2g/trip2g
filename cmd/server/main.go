@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strconv"
+	"sync"
 	"text/template"
 	"time"
 
@@ -20,6 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"trip2g/internal/db"
+	"trip2g/internal/debouncer"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/zerologger"
@@ -31,12 +32,23 @@ import (
 )
 
 type app struct {
-	Pages map[string]*mdloader.Page
+	mu sync.Mutex
+
+	pages map[string]*mdloader.Page
 
 	queries *db.Queries
 	conn    *sql.DB
 
 	log logger.Logger
+
+	refreshDebouncer *debouncer.Debouncer
+}
+
+type updateRequest struct {
+	Updates []struct {
+		Path    string `json:"path"`
+		Content string `json:"content"`
+	} `json:"updates"`
 }
 
 func main() {
@@ -59,7 +71,9 @@ func main() {
 		conn:    conn,
 	}
 
-	err = a.prepare()
+	ctx := context.Background()
+
+	err = a.prepare(ctx, a.queries)
 	if err != nil {
 		panic(err)
 	}
@@ -69,67 +83,38 @@ func main() {
 	}
 }
 
-func (a *app) prepare() error {
-	// sources, err := a.readPages()
-	// if err != nil {
-	// 	return fmt.Errorf("failed to read pages: %w", err)
-	// }
+func (a *app) prepare(ctx context.Context, queries *db.Queries) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-	// a.Pages, err = mdloader.Load(sources, logger.WithPrefix(a.log, "mdloader:"))
-	// if err != nil {
-	// 	return fmt.Errorf("failed to load pages: %w", err)
-	// }
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	notes, err := queries.AllLatestNotes(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get notes: %w", err)
+	}
+
+	sources := []mdloader.SourceFile{}
+
+	for _, note := range notes {
+		sources = append(sources, mdloader.SourceFile{
+			Path:    note.Path,
+			Content: []byte(note.Content),
+		})
+	}
+
+	pages, err := mdloader.Load(sources, logger.WithPrefix(a.log, "mdloader:"))
+	if err != nil {
+		return fmt.Errorf("failed to load pages: %w", err)
+	}
+
+	a.pages = pages
 
 	return nil
 }
 
-// read all md files from demo/*.md recurlively.
-func (a *app) readPages() ([]mdloader.SourceFile, error) {
-	// const dirPath = "demo"
-	const dirPath = "../secondbrain"
-
-	sources := []mdloader.SourceFile{}
-
-	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return fmt.Errorf("failed to walk path: %w", err)
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		if filepath.Ext(path) != ".md" {
-			return nil
-		}
-
-		localPath := path[len(dirPath)+1:]
-
-		if localPath[0] == '.' {
-			return nil
-		}
-
-		bContent, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("failed to read file: %w", err)
-		}
-
-		sources = append(sources, mdloader.SourceFile{
-			Path:    localPath,
-			Content: bContent,
-		})
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to read pages: %w", err)
-	}
-
-	return sources, nil
-}
-
-func (a *app) insertNote(ctx context.Context, note db.Note) error {
+func (a *app) insertNotes(ctx context.Context, data *updateRequest) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -138,9 +123,23 @@ func (a *app) insertNote(ctx context.Context, note db.Note) error {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	err = a.queries.WithTx(tx).InsertNote(ctx, note)
+	queries := a.queries.WithTx(tx)
+
+	for _, update := range data.Updates {
+		note := db.Note{
+			Path:    update.Path,
+			Content: update.Content,
+		}
+
+		err = queries.InsertNote(ctx, note)
+		if err != nil {
+			return fmt.Errorf("failed to insert note: %w", err)
+		}
+	}
+
+	err = a.prepare(ctx, queries)
 	if err != nil {
-		return fmt.Errorf("failed to insert note: %w", err)
+		return fmt.Errorf("failed to prepare notes: %w", err)
 	}
 
 	err = tx.Commit()
@@ -189,10 +188,10 @@ func (a *app) startServer() {
 		Partials:  []string{},
 		Funcs: template.FuncMap{
 			"getPage": func(target string) *mdloader.Page {
-				return a.Pages[target]
+				return a.pages[target]
 			},
 			"getPageLinkClasses": func(target string) string {
-				page, ok := a.Pages[target]
+				page, ok := a.pages[target]
 
 				if ok && !page.Free {
 					return "paywall"
@@ -233,7 +232,7 @@ func (a *app) startServer() {
 			return
 		}
 
-		versions, err := a.queries.NoteVersionsByPathID(c.Request.Context(), int64(id))
+		versions, err := a.queries.AllNoteVersionsByPathID(c.Request.Context(), int64(id))
 		if err != nil {
 			a.log.Error("failed to get note versions", "err", err)
 			c.String(http.StatusInternalServerError, "500 Internal Server Error")
@@ -245,10 +244,7 @@ func (a *app) startServer() {
 
 	// POST /api/notes that takes a JSON object in the format {"path": "path", "content": "content"}
 	r.POST("/api/notes", func(c *gin.Context) {
-		var form struct {
-			Path    string `json:"path"`
-			Content string `json:"content"`
-		}
+		var form updateRequest
 
 		err := c.ShouldBindJSON(&form)
 		if err != nil {
@@ -256,12 +252,7 @@ func (a *app) startServer() {
 			return
 		}
 
-		note := db.Note{
-			Path:    form.Path,
-			Content: form.Content,
-		}
-
-		err = a.insertNote(c.Request.Context(), note)
+		err = a.insertNotes(c.Request.Context(), &form)
 		if err != nil {
 			a.log.Error("failed to insert note", "err", err)
 			c.String(http.StatusInternalServerError, "500 Internal Server Error")
@@ -317,7 +308,7 @@ func (a *app) startServer() {
 
 		rand.Seed(time.Now().UnixNano())
 
-		for _, page := range a.Pages {
+		for _, page := range a.pages {
 			x := rand.Intn(1000)
 			y := rand.Intn(1000)
 
@@ -345,7 +336,7 @@ func (a *app) startServer() {
 
 			for permalink := range page.InLinks {
 				edges = append(edges, gin.H{
-					"source": a.Pages[permalink].Title,
+					"source": a.pages[permalink].Title,
 					"target": page.Title,
 				})
 			}
@@ -373,7 +364,7 @@ func (a *app) startServer() {
 			path = "/index"
 		}
 
-		page, ok := a.Pages[path]
+		page, ok := a.pages[path]
 		if !ok {
 			c.String(http.StatusNotFound, "404 Not Found")
 			return

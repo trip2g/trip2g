@@ -21,7 +21,12 @@ select * from note_paths order by id;
 -- name: AllNoteVersions :many
 select * from note_versions order by path_id, version;
 
--- name: NoteVersionsByPathID :many
+-- name: AllNoteVersionsByPathID :many
 select * from note_versions
  where path_id = ?
  order by version desc;
+
+-- name: AllLatestNotes :many
+select value as path, content
+  from note_paths p
+  join note_versions v on p.id = v.path_id and p.version_count = v.version;
