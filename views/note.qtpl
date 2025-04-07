@@ -26,3 +26,25 @@ Hello is a simple template function.
   {% endif %}
 
 {% endfunc %}
+
+{% func LayoutHeader() %}
+<!DOCTYPE html>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Title</title>
+<link href="/assets/output.css" rel="stylesheet">
+
+<script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@latest/dist/turbo.es2017-esm.min.js"></script>
+
+<header class="container mx-auto px-4 py-2">
+  <a href="/">Home</a>
+</header>
+
+<main class="container mx-auto px-4 py-2">
+{% endfunc %}
+
+{% func LayoutFooter() %}
+</main>
+{% endfunc %}

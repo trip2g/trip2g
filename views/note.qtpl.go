@@ -118,3 +118,87 @@ func Note(page *mdloader.Page, pages map[string]*mdloader.Page) string {
 	return qs422016
 //line views/note.qtpl:28
 }
+
+//line views/note.qtpl:30
+func StreamLayoutHeader(qw422016 *qt422016.Writer) {
+//line views/note.qtpl:30
+	qw422016.N().S(`
+<!DOCTYPE html>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Title</title>
+<link href="/assets/output.css" rel="stylesheet">
+
+<script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@latest/dist/turbo.es2017-esm.min.js"></script>
+
+<header class="container mx-auto px-4 py-2">
+  <a href="/">Home</a>
+</header>
+
+<main class="container mx-auto px-4 py-2">
+`)
+//line views/note.qtpl:46
+}
+
+//line views/note.qtpl:46
+func WriteLayoutHeader(qq422016 qtio422016.Writer) {
+//line views/note.qtpl:46
+	qw422016 := qt422016.AcquireWriter(qq422016)
+//line views/note.qtpl:46
+	StreamLayoutHeader(qw422016)
+//line views/note.qtpl:46
+	qt422016.ReleaseWriter(qw422016)
+//line views/note.qtpl:46
+}
+
+//line views/note.qtpl:46
+func LayoutHeader() string {
+//line views/note.qtpl:46
+	qb422016 := qt422016.AcquireByteBuffer()
+//line views/note.qtpl:46
+	WriteLayoutHeader(qb422016)
+//line views/note.qtpl:46
+	qs422016 := string(qb422016.B)
+//line views/note.qtpl:46
+	qt422016.ReleaseByteBuffer(qb422016)
+//line views/note.qtpl:46
+	return qs422016
+//line views/note.qtpl:46
+}
+
+//line views/note.qtpl:48
+func StreamLayoutFooter(qw422016 *qt422016.Writer) {
+//line views/note.qtpl:48
+	qw422016.N().S(`
+</main>
+`)
+//line views/note.qtpl:50
+}
+
+//line views/note.qtpl:50
+func WriteLayoutFooter(qq422016 qtio422016.Writer) {
+//line views/note.qtpl:50
+	qw422016 := qt422016.AcquireWriter(qq422016)
+//line views/note.qtpl:50
+	StreamLayoutFooter(qw422016)
+//line views/note.qtpl:50
+	qt422016.ReleaseWriter(qw422016)
+//line views/note.qtpl:50
+}
+
+//line views/note.qtpl:50
+func LayoutFooter() string {
+//line views/note.qtpl:50
+	qb422016 := qt422016.AcquireByteBuffer()
+//line views/note.qtpl:50
+	WriteLayoutFooter(qb422016)
+//line views/note.qtpl:50
+	qs422016 := string(qb422016.B)
+//line views/note.qtpl:50
+	qt422016.ReleaseByteBuffer(qb422016)
+//line views/note.qtpl:50
+	return qs422016
+//line views/note.qtpl:50
+}

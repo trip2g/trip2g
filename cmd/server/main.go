@@ -179,7 +179,9 @@ func (a *app) handlePages(ctx *fasthttp.RequestCtx, path string) {
 	ctx.SetContentType("text/html; charset=utf-8")
 	ctx.SetStatusCode(http.StatusOK)
 
+	views.WriteLayoutHeader(ctx)
 	views.WriteNote(ctx, page, a.pages)
+	views.WriteLayoutFooter(ctx)
 }
 
 // startServer2 with fasthttp
