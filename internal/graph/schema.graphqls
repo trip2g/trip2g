@@ -1,0 +1,34 @@
+type User {
+  id: ID!
+  email: String!
+}
+
+type Viewer {
+  id: ID!
+  role: String!
+  user: User
+}
+
+type Query {
+  viewer: Viewer!
+}
+
+input SignInInput {
+  email: String!
+  password: String!
+}
+
+type SignInPayload {
+  token: String!
+  viewer: Viewer!
+}
+
+type ErrorPayload {
+  message: String!
+}
+
+union SignInOrErrorPayload = SignInPayload | ErrorPayload
+
+type Mutation {
+  signIn(input: SignInInput!): SignInOrErrorPayload!
+}

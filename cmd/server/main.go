@@ -20,7 +20,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"trip2g/internal/db"
-	"trip2g/internal/debouncer"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/zerologger"
@@ -40,8 +39,6 @@ type app struct {
 	conn    *sql.DB
 
 	log logger.Logger
-
-	refreshDebouncer *debouncer.Debouncer
 }
 
 type updateRequest struct {
