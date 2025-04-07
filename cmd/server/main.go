@@ -1,5 +1,8 @@
 package main
 
+//go:generate go get -u github.com/valyala/quicktemplate/qtc
+//go:generate qtc -dir=views
+
 import (
 	"context"
 	"database/sql"
@@ -34,6 +37,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/zerologger"
+	"trip2g/views"
 
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	_ "github.com/amacneil/dbmate/v2/pkg/driver/sqlite"
@@ -174,7 +178,8 @@ func (a *app) handlePages(ctx *fasthttp.RequestCtx, path string) {
 	// write page.HTML
 	ctx.SetContentType("text/html; charset=utf-8")
 	ctx.SetStatusCode(http.StatusOK)
-	ctx.WriteString(string(page.HTML))
+
+	views.WriteNote(ctx, page, a.pages)
 }
 
 // startServer2 with fasthttp
