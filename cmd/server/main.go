@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"text/template"
 	"time"
@@ -202,9 +203,29 @@ func (a *app) startServer2() {
 	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
 	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(srv)
 
+	fs := &fasthttp.FS{
+		Root:               "./assets",
+		IndexNames:         []string{},
+		GenerateIndexPages: false,
+		Compress:           true,
+		AcceptByteRange:    true,
+
+		PathRewrite: func(ctx *fasthttp.RequestCtx) []byte {
+			// remove /assets prefix
+			return ctx.Path()[7:]
+		},
+	}
+
+	fsHandler := fs.NewRequestHandler()
+
 	s := &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
 			path := string(ctx.Path())
+
+			if strings.HasPrefix(path, "/assets/") {
+				fsHandler(ctx)
+				return
+			}
 
 			switch string(ctx.Path()) {
 			case "/graphql":
