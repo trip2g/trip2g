@@ -159,6 +159,24 @@ func (a *app) insertNotes(ctx context.Context, data *updateRequest) error {
 	return nil
 }
 
+func (a *app) handlePages(ctx *fasthttp.RequestCtx, path string) {
+	if path == "/" {
+		path = "/index"
+	}
+
+	page, ok := a.pages[path]
+	if !ok {
+		ctx.SetStatusCode(http.StatusNotFound)
+		ctx.SetBodyString("404 Not Found")
+		return
+	}
+
+	// write page.HTML
+	ctx.SetContentType("text/html; charset=utf-8")
+	ctx.SetStatusCode(http.StatusOK)
+	ctx.WriteString(string(page.HTML))
+}
+
 // startServer2 with fasthttp
 func (a *app) startServer2() {
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
@@ -179,6 +197,8 @@ func (a *app) startServer2() {
 
 	s := &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
+			path := string(ctx.Path())
+
 			switch string(ctx.Path()) {
 			case "/graphql":
 				if string(ctx.Method()) == "GET" {
@@ -188,7 +208,7 @@ func (a *app) startServer2() {
 				}
 				return
 			default:
-				ctx.WriteString("Hello, World!")
+				a.handlePages(ctx, path)
 			}
 		},
 	}
