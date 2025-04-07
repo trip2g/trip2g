@@ -17,7 +17,10 @@ func (r *mutationResolver) SignIn(ctx context.Context, input model1.SignInInput)
 
 // Viewer is the resolver for the viewer field.
 func (r *queryResolver) Viewer(ctx context.Context) (*model1.Viewer, error) {
-	panic(fmt.Errorf("not implemented: Viewer - viewer"))
+	return &model1.Viewer{
+		ID:   "1",
+		Role: "guest",
+	}, nil
 }
 
 // Mutation returns MutationResolver implementation.
