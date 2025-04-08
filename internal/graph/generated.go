@@ -52,7 +52,17 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		SignIn func(childComplexity int, input model.SignInInput) int
+		PushNotes func(childComplexity int, input model.PushNotesInput) int
+		SignIn    func(childComplexity int, input model.SignInInput) int
+	}
+
+	PushNoteAsset struct {
+		Path      func(childComplexity int) int
+		UploadURL func(childComplexity int) int
+	}
+
+	PushNotesPayload struct {
+		Assets func(childComplexity int) int
 	}
 
 	Query struct {
@@ -70,14 +80,16 @@ type ComplexityRoot struct {
 	}
 
 	Viewer struct {
-		ID   func(childComplexity int) int
-		Role func(childComplexity int) int
-		User func(childComplexity int) int
+		ID          func(childComplexity int) int
+		OpenedParts func(childComplexity int) int
+		Role        func(childComplexity int) int
+		User        func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
 	SignIn(ctx context.Context, input model.SignInInput) (model.SignInOrErrorPayload, error)
+	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
 }
 type QueryResolver interface {
 	Viewer(ctx context.Context) (*model.Viewer, error)
@@ -109,6 +121,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ErrorPayload.Message(childComplexity), true
 
+	case "Mutation.pushNotes":
+		if e.complexity.Mutation.PushNotes == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_pushNotes_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.PushNotes(childComplexity, args["input"].(model.PushNotesInput)), true
+
 	case "Mutation.signIn":
 		if e.complexity.Mutation.SignIn == nil {
 			break
@@ -120,6 +144,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.SignIn(childComplexity, args["input"].(model.SignInInput)), true
+
+	case "PushNoteAsset.path":
+		if e.complexity.PushNoteAsset.Path == nil {
+			break
+		}
+
+		return e.complexity.PushNoteAsset.Path(childComplexity), true
+
+	case "PushNoteAsset.uploadUrl":
+		if e.complexity.PushNoteAsset.UploadURL == nil {
+			break
+		}
+
+		return e.complexity.PushNoteAsset.UploadURL(childComplexity), true
+
+	case "PushNotesPayload.assets":
+		if e.complexity.PushNotesPayload.Assets == nil {
+			break
+		}
+
+		return e.complexity.PushNotesPayload.Assets(childComplexity), true
 
 	case "Query.viewer":
 		if e.complexity.Query.Viewer == nil {
@@ -163,6 +208,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Viewer.ID(childComplexity), true
 
+	case "Viewer.openedParts":
+		if e.complexity.Viewer.OpenedParts == nil {
+			break
+		}
+
+		return e.complexity.Viewer.OpenedParts(childComplexity), true
+
 	case "Viewer.role":
 		if e.complexity.Viewer.Role == nil {
 			break
@@ -185,6 +237,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputPushNoteInput,
+		ec.unmarshalInputPushNotesInput,
 		ec.unmarshalInputSignInInput,
 	)
 	first := true
@@ -301,6 +355,29 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_pushNotes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_pushNotes_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_pushNotes_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.PushNotesInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNPushNotesInput2trip2gᚋinternalᚋgraphᚋmodelᚐPushNotesInput(ctx, tmp)
+	}
+
+	var zeroVal model.PushNotesInput
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_signIn_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -547,6 +624,199 @@ func (ec *executionContext) fieldContext_Mutation_signIn(ctx context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_pushNotes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_pushNotes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().PushNotes(rctx, fc.Args["input"].(model.PushNotesInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.PushNotesOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNPushNotesOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐPushNotesOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_pushNotes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type PushNotesOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_pushNotes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushNoteAsset_path(ctx context.Context, field graphql.CollectedField, obj *model.PushNoteAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PushNoteAsset_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PushNoteAsset_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushNoteAsset_uploadUrl(ctx context.Context, field graphql.CollectedField, obj *model.PushNoteAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PushNoteAsset_uploadUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UploadURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PushNoteAsset_uploadUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushNotesPayload_assets(ctx context.Context, field graphql.CollectedField, obj *model.PushNotesPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PushNotesPayload_assets(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Assets, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.PushNoteAsset)
+	fc.Result = res
+	return ec.marshalNPushNoteAsset2ᚕᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPushNoteAssetᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PushNotesPayload_assets(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushNotesPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "path":
+				return ec.fieldContext_PushNoteAsset_path(ctx, field)
+			case "uploadUrl":
+				return ec.fieldContext_PushNoteAsset_uploadUrl(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PushNoteAsset", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_viewer(ctx, field)
 	if err != nil {
@@ -590,6 +860,8 @@ func (ec *executionContext) fieldContext_Query_viewer(_ context.Context, field g
 				return ec.fieldContext_Viewer_id(ctx, field)
 			case "role":
 				return ec.fieldContext_Viewer_role(ctx, field)
+			case "openedParts":
+				return ec.fieldContext_Viewer_openedParts(ctx, field)
 			case "user":
 				return ec.fieldContext_Viewer_user(ctx, field)
 			}
@@ -817,6 +1089,8 @@ func (ec *executionContext) fieldContext_SignInPayload_viewer(_ context.Context,
 				return ec.fieldContext_Viewer_id(ctx, field)
 			case "role":
 				return ec.fieldContext_Viewer_role(ctx, field)
+			case "openedParts":
+				return ec.fieldContext_Viewer_openedParts(ctx, field)
 			case "user":
 				return ec.fieldContext_Viewer_user(ctx, field)
 			}
@@ -990,6 +1264,50 @@ func (ec *executionContext) _Viewer_role(ctx context.Context, field graphql.Coll
 }
 
 func (ec *executionContext) fieldContext_Viewer_role(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Viewer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Viewer_openedParts(ctx context.Context, field graphql.CollectedField, obj *model.Viewer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Viewer_openedParts(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OpenedParts, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Viewer_openedParts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Viewer",
 		Field:      field,
@@ -3000,6 +3318,67 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputPushNoteInput(ctx context.Context, obj any) (model.PushNoteInput, error) {
+	var it model.PushNoteInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "content"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "content":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Content = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPushNotesInput(ctx context.Context, obj any) (model.PushNotesInput, error) {
+	var it model.PushNotesInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"updates"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "updates":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updates"))
+			data, err := ec.unmarshalNPushNoteInput2ᚕᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPushNoteInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Updates = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSignInInput(ctx context.Context, obj any) (model.SignInInput, error) {
 	var it model.SignInInput
 	asMap := map[string]any{}
@@ -3038,6 +3417,29 @@ func (ec *executionContext) unmarshalInputSignInInput(ctx context.Context, obj a
 
 // region    ************************** interface.gotpl ***************************
 
+func (ec *executionContext) _PushNotesOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.PushNotesOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.PushNotesPayload:
+		return ec._PushNotesPayload(ctx, sel, &obj)
+	case *model.PushNotesPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._PushNotesPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _SignInOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SignInOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -3065,7 +3467,7 @@ func (ec *executionContext) _SignInOrErrorPayload(ctx context.Context, sel ast.S
 
 // region    **************************** object.gotpl ****************************
 
-var errorPayloadImplementors = []string{"ErrorPayload", "SignInOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "SignInOrErrorPayload", "PushNotesOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -3127,6 +3529,96 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_signIn(ctx, field)
 			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pushNotes":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_pushNotes(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var pushNoteAssetImplementors = []string{"PushNoteAsset"}
+
+func (ec *executionContext) _PushNoteAsset(ctx context.Context, sel ast.SelectionSet, obj *model.PushNoteAsset) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pushNoteAssetImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PushNoteAsset")
+		case "path":
+			out.Values[i] = ec._PushNoteAsset_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadUrl":
+			out.Values[i] = ec._PushNoteAsset_uploadUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var pushNotesPayloadImplementors = []string{"PushNotesPayload", "PushNotesOrErrorPayload"}
+
+func (ec *executionContext) _PushNotesPayload(ctx context.Context, sel ast.SelectionSet, obj *model.PushNotesPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pushNotesPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PushNotesPayload")
+		case "assets":
+			out.Values[i] = ec._PushNotesPayload_assets(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -3331,6 +3823,11 @@ func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "role":
 			out.Values[i] = ec._Viewer_role(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "openedParts":
+			out.Values[i] = ec._Viewer_openedParts(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -3724,6 +4221,95 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) marshalNPushNoteAsset2ᚕᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPushNoteAssetᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PushNoteAsset) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPushNoteAsset2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPushNoteAsset(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPushNoteAsset2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPushNoteAsset(ctx context.Context, sel ast.SelectionSet, v *model.PushNoteAsset) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PushNoteAsset(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNPushNoteInput2ᚕᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPushNoteInputᚄ(ctx context.Context, v any) ([]*model.PushNoteInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.PushNoteInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNPushNoteInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPushNoteInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNPushNoteInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPushNoteInput(ctx context.Context, v any) (*model.PushNoteInput, error) {
+	res, err := ec.unmarshalInputPushNoteInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNPushNotesInput2trip2gᚋinternalᚋgraphᚋmodelᚐPushNotesInput(ctx context.Context, v any) (model.PushNotesInput, error) {
+	res, err := ec.unmarshalInputPushNotesInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNPushNotesOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐPushNotesOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.PushNotesOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PushNotesOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNSignInInput2trip2gᚋinternalᚋgraphᚋmodelᚐSignInInput(ctx context.Context, v any) (model.SignInInput, error) {
 	res, err := ec.unmarshalInputSignInInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3752,6 +4338,36 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNViewer2trip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx context.Context, sel ast.SelectionSet, v model.Viewer) graphql.Marshaler {

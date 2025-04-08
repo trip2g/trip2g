@@ -6,6 +6,7 @@ type User {
 type Viewer {
   id: ID!
   role: String!
+  openedParts: [String!]!
   user: User
 }
 
@@ -23,12 +24,32 @@ type SignInPayload {
   viewer: Viewer!
 }
 
+input PushNoteInput {
+  path: String!
+  content: String!
+}
+
+input PushNotesInput {
+  updates: [PushNoteInput!]!
+}
+
+type PushNoteAsset {
+  path: String!
+  uploadUrl: String!
+}
+
+type PushNotesPayload {
+  assets: [PushNoteAsset!]!
+}
+
 type ErrorPayload {
   message: String!
 }
 
 union SignInOrErrorPayload = SignInPayload | ErrorPayload
+union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
 
 type Mutation {
   signIn(input: SignInInput!): SignInOrErrorPayload!
+  pushNotes(input: PushNotesInput!): PushNotesOrErrorPayload!
 }

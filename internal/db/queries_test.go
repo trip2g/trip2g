@@ -37,11 +37,11 @@ func createDB(t *testing.T) *sql.DB {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := conn.Close()
-		require.NoError(t, err)
+		cleanupErr := conn.Close()
+		require.NoError(t, cleanupErr)
 
-		err = os.Remove(f.Name())
-		require.NoError(t, err)
+		cleanupErr = os.Remove(f.Name())
+		require.NoError(t, cleanupErr)
 	})
 
 	return conn
@@ -93,16 +93,16 @@ func TestCheckPathHashCollisions(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// fek2 and ip7f → base64prefix: 0q5foe
+	// Collision found: 'a7ex' and 'c5kt' → base64prefix: eqoF1k
 
 	note0 := Note{
-		Path:    "fek2",
-		Content: "fek2",
+		Path:    "a7ex",
+		Content: "a7ex",
 	}
 
 	note1 := Note{
-		Path:    "ip7f",
-		Content: "ip7f",
+		Path:    "c5kt",
+		Content: "c5kt",
 	}
 
 	err := queries.InsertNote(ctx, note0)
@@ -115,6 +115,6 @@ func TestCheckPathHashCollisions(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, paths, 2)
-	require.Equal(t, "0q5foe", paths[0].ValueHash)
-	require.Equal(t, "0q5foeA", paths[1].ValueHash)
+	require.Equal(t, "eqoF1k", paths[0].ValueHash)
+	require.Equal(t, "eqoF1kt", paths[1].ValueHash)
 }

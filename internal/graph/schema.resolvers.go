@@ -7,24 +7,83 @@ package graph
 import (
 	"context"
 	"fmt"
+	"time"
+	"trip2g/internal/db"
 	model1 "trip2g/internal/graph/model"
 	"trip2g/internal/usertoken"
 )
 
 // SignIn is the resolver for the signIn field.
 func (r *mutationResolver) SignIn(ctx context.Context, input model1.SignInInput) (model1.SignInOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: SignIn - signIn"))
+	token, err := usertoken.Store(ctx, usertoken.Data{ID: 1, Opened: []string{"secondbrain"}})
+	if err != nil {
+		return nil, fmt.Errorf("failed to store token: %v", err)
+	}
+
+	payload := model1.SignInPayload{
+		Token: token,
+	}
+
+	return &payload, nil
+}
+
+// PushNotes is the resolver for the pushNotes field.
+func (r *mutationResolver) PushNotes(ctx context.Context, input model1.PushNotesInput) (model1.PushNotesOrErrorPayload, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	tx, err := r.Conn.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	defer tx.Rollback()
+
+	queries := r.Queries.WithTx(tx)
+
+	for _, update := range input.Updates {
+		note := db.Note{
+			Path:    update.Path,
+			Content: update.Content,
+		}
+
+		err = queries.InsertNote(ctx, note)
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert note: %w", err)
+		}
+	}
+
+	err = r.Env.PrepareNotes(ctx, queries)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare notes: %w", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	payload := model1.PushNotesPayload{}
+
+	return &payload, nil
 }
 
 // Viewer is the resolver for the viewer field.
 func (r *queryResolver) Viewer(ctx context.Context) (*model1.Viewer, error) {
 	token := usertoken.Get(ctx)
-	fmt.Println("token", token)
 
-	return &model1.Viewer{
-		ID:   "1",
+	viewer := model1.Viewer{
+		ID:   "0",
 		Role: "guest",
-	}, nil
+	}
+
+	if token != nil {
+		viewer.ID = fmt.Sprintf("%d", token.ID)
+		viewer.OpenedParts = token.Opened
+		viewer.Role = "user"
+	}
+
+	return &viewer, nil
 }
 
 // Mutation returns MutationResolver implementation.

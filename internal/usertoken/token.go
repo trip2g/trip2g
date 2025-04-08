@@ -4,42 +4,39 @@ import (
 	"context"
 	"errors"
 	"time"
-	"trip2g/internal/fasthttpctx"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/valyala/fasthttp"
 )
 
-type ctxKey struct{}
+type ctxKey int
 
-var tokenKey = ctxKey{}
-var extractorKey = ctxKey{}
+const (
+	tokenKey     ctxKey = 1
+	reqCtx       ctxKey = 2
+	extractorKey ctxKey = 3
+)
 
-type Token struct {
+type Data struct {
 	ID     int      `json:"i"`
 	Opened []string `json:"o"`
 }
 
-type Claims struct {
+type fullData struct {
 	ID     int      `json:"i"`
 	Opened []string `json:"o"`
 	jwt.RegisteredClaims
 }
 
-var _ jwt.ClaimsValidator = (*Claims)(nil)
+var _ jwt.ClaimsValidator = (*fullData)(nil)
 
-// Optional: custom validation logic (e.g., prevent old tokens)
-func (c Claims) Validate() error {
+// Optional: custom validation logic (e.g., prevent old tokens).
+func (c fullData) Validate() error {
 	return nil
 }
 
-func Get(ctx context.Context) *Token {
-	fctx, ok := fasthttpctx.Get(ctx)
-	if !ok {
-		return nil
-	}
-
-	token, ok := fctx.UserValue(tokenKey).(*Token)
+func Get(ctx context.Context) *Data {
+	token, ok := ctx.Value(tokenKey).(*Data)
 	if !ok {
 		return nil
 	}
@@ -47,15 +44,10 @@ func Get(ctx context.Context) *Token {
 	return token
 }
 
-func Store(ctx context.Context, token Token) error {
-	fctx, ok := fasthttpctx.Get(ctx)
+func Store(ctx context.Context, token Data) (string, error) {
+	extractor, ok := ctx.Value(extractorKey).(*Extractor)
 	if !ok {
-		return ErrCtxNotFound
-	}
-
-	extractor, ok := fctx.UserValue(extractorKey).(*Extractor)
-	if !ok {
-		return ErrCtxNotFound
+		return "", ErrExtractorNotFound
 	}
 
 	return extractor.Store(ctx, token)
@@ -71,6 +63,8 @@ var (
 	ErrCtxNotFound  = errors.New("fasthttp context not found")
 	ErrTokenMissing = errors.New("JWT cookie not found")
 	ErrInvalidToken = errors.New("invalid or expired JWT")
+
+	ErrExtractorNotFound = errors.New("extractor not found in context")
 )
 
 // NewExtractor creates a new Extractor instance.
@@ -82,46 +76,48 @@ func NewExtractor(cookieName string, secret []byte) *Extractor {
 }
 
 // Extract reads cookie, verifies JWT, parses Token.
-func (e *Extractor) Extract(ctx *fasthttp.RequestCtx) error {
+func (e *Extractor) Extract(ctx *fasthttp.RequestCtx) (*Data, error) {
+	ctx.SetUserValue(reqCtx, ctx)
+	ctx.SetUserValue(extractorKey, e)
+
 	raw := ctx.Request.Header.Cookie(e.cookieName)
 	if len(raw) == 0 {
-		return nil
+		return nil, ErrTokenMissing
 	}
 
-	parsed, err := jwt.ParseWithClaims(string(raw), &Claims{}, func(t *jwt.Token) (interface{}, error) {
+	parsed, err := jwt.ParseWithClaims(string(raw), &fullData{}, func(_ *jwt.Token) (interface{}, error) {
 		return e.secret, nil
 	}, jwt.WithLeeway(10*time.Second))
 	if err != nil {
-		return ErrInvalidToken
+		return nil, ErrInvalidToken
 	}
 
-	claims, ok := parsed.Claims.(*Claims)
+	claims, ok := parsed.Claims.(*fullData)
 	if !ok || !parsed.Valid {
-		return ErrInvalidToken
+		return nil, ErrInvalidToken
 	}
 
-	token := &Token{
+	token := Data{
 		ID:     claims.ID,
 		Opened: claims.Opened,
 	}
 
 	ctx.SetUserValue(tokenKey, &token)
-	ctx.SetUserValue(extractorKey, e)
 
-	return nil
+	return &token, nil
 }
 
 // Store serializes Token as JWT and sets it as a secure httpOnly cookie.
-func (e *Extractor) Store(ctx context.Context, data Token) error {
-	fctx, ok := fasthttpctx.Get(ctx)
+func (e *Extractor) Store(ctx context.Context, data Data) (string, error) {
+	fctx, ok := ctx.Value(reqCtx).(*fasthttp.RequestCtx)
 	if !ok {
-		return ErrCtxNotFound
+		return "", ErrCtxNotFound
 	}
 
 	now := time.Now()
 	exp := now.Add(24 * time.Hour)
 
-	claims := Claims{
+	claims := fullData{
 		ID:     data.ID,
 		Opened: data.Opened,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -132,7 +128,7 @@ func (e *Extractor) Store(ctx context.Context, data Token) error {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString(e.secret)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	c := fasthttp.Cookie{}
@@ -145,5 +141,5 @@ func (e *Extractor) Store(ctx context.Context, data Token) error {
 	c.SetMaxAge(int(exp.Sub(now).Seconds()))
 
 	fctx.Response.Header.SetCookie(&c)
-	return nil
+	return signed, nil
 }

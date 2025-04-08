@@ -136,7 +136,7 @@ func (r *linkRenderer) exit(w util.BufWriter, n *wikilink.Node) {
 	}
 }
 
-// returns true if the wikilink should be resolved to an image node
+// returns true if the wikilink should be resolved to an image node.
 func resolveAsImage(n *wikilink.Node) bool {
 	if !n.Embed {
 		return false

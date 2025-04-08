@@ -154,8 +154,8 @@ func (ldr *loader) extractInLinks() error {
 			for i := len(currentParts) - 1; i >= 0; i-- {
 				targetPermalink := strings.Join(currentParts[:i], "/") + target
 
-				targetPage, ok := ldr.pages[targetPermalink]
-				if ok {
+				targetPage, targetOk := ldr.pages[targetPermalink]
+				if targetOk {
 					targetPage.InLinks[p.Permalink] = struct{}{}
 					link.Target = []byte(targetPage.Permalink)
 					return ast.WalkContinue, nil

@@ -2,8 +2,9 @@ package db
 
 import (
 	"context"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -13,11 +14,11 @@ type Note struct {
 	Content string
 }
 
-var ErrNotePathHashUnresolvedCollision = fmt.Errorf("note path hash unresolved collision")
-var ErrNoteVersionAlreadyExists = fmt.Errorf("note version already exists")
+var ErrNotePathHashUnresolvedCollision = errors.New("note path hash unresolved collision")
+var ErrNoteVersionAlreadyExists = errors.New("note version already exists")
 
 func (q *Queries) InsertNote(ctx context.Context, arg Note) error {
-	sha := sha1.New()
+	sha := sha256.New()
 
 	sha.Write([]byte(arg.Path))
 	pathHash := base64.URLEncoding.EncodeToString(sha.Sum(nil))

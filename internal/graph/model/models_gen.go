@@ -2,6 +2,10 @@
 
 package model
 
+type PushNotesOrErrorPayload interface {
+	IsPushNotesOrErrorPayload()
+}
+
 type SignInOrErrorPayload interface {
 	IsSignInOrErrorPayload()
 }
@@ -12,8 +16,30 @@ type ErrorPayload struct {
 
 func (ErrorPayload) IsSignInOrErrorPayload() {}
 
+func (ErrorPayload) IsPushNotesOrErrorPayload() {}
+
 type Mutation struct {
 }
+
+type PushNoteAsset struct {
+	Path      string `json:"path"`
+	UploadURL string `json:"uploadUrl"`
+}
+
+type PushNoteInput struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
+type PushNotesInput struct {
+	Updates []*PushNoteInput `json:"updates"`
+}
+
+type PushNotesPayload struct {
+	Assets []*PushNoteAsset `json:"assets"`
+}
+
+func (PushNotesPayload) IsPushNotesOrErrorPayload() {}
 
 type Query struct {
 }
@@ -36,7 +62,8 @@ type User struct {
 }
 
 type Viewer struct {
-	ID   string `json:"id"`
-	Role string `json:"role"`
-	User *User  `json:"user,omitempty"`
+	ID          string   `json:"id"`
+	Role        string   `json:"role"`
+	OpenedParts []string `json:"openedParts"`
+	User        *User    `json:"user,omitempty"`
 }
