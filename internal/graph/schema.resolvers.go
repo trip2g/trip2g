@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	model1 "trip2g/internal/graph/model"
+	"trip2g/internal/usertoken"
 )
 
 // SignIn is the resolver for the signIn field.
@@ -17,6 +18,9 @@ func (r *mutationResolver) SignIn(ctx context.Context, input model1.SignInInput)
 
 // Viewer is the resolver for the viewer field.
 func (r *queryResolver) Viewer(ctx context.Context) (*model1.Viewer, error) {
+	token := usertoken.Get(ctx)
+	fmt.Println("token", token)
+
 	return &model1.Viewer{
 		ID:   "1",
 		Role: "guest",

@@ -37,6 +37,7 @@ import (
 	"trip2g/internal/graph"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
+	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
 	"trip2g/views"
 
@@ -218,12 +219,24 @@ func (a *app) startServer2() {
 
 	fsHandler := fs.NewRequestHandler()
 
+	tokenExtractor := usertoken.NewExtractor("trip2g_token", []byte("secret"))
+
 	s := &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
 			path := string(ctx.Path())
 
+			// TODO: only for dev
+			ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+
 			if strings.HasPrefix(path, "/assets/") {
 				fsHandler(ctx)
+				return
+			}
+
+			err := tokenExtractor.Extract(ctx)
+			if err != nil {
+				ctx.SetStatusCode(http.StatusUnauthorized)
+				ctx.SetBodyString("401 Unauthorized")
 				return
 			}
 
