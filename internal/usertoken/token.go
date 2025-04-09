@@ -53,6 +53,15 @@ func Store(ctx context.Context, token Data) (string, error) {
 	return extractor.Store(ctx, token)
 }
 
+func Delete(ctx context.Context) error {
+	extractor, ok := ctx.Value(extractorKey).(*Extractor)
+	if !ok {
+		return ErrExtractorNotFound
+	}
+
+	return extractor.Delete(ctx)
+}
+
 // Extractor handles signing and parsing user tokens.
 type Extractor struct {
 	cookieName string
@@ -131,7 +140,7 @@ func (e *Extractor) Store(ctx context.Context, data Data) (string, error) {
 		return "", err
 	}
 
-	c := fasthttp.Cookie{}
+	c := fasthttp.AcquireCookie()
 	c.SetKey(e.cookieName)
 	c.SetValue(signed)
 	c.SetPath("/")
@@ -140,6 +149,27 @@ func (e *Extractor) Store(ctx context.Context, data Data) (string, error) {
 	c.SetExpire(exp)
 	c.SetMaxAge(int(exp.Sub(now).Seconds()))
 
-	fctx.Response.Header.SetCookie(&c)
+	fctx.Response.Header.SetCookie(c)
+	fasthttp.ReleaseCookie(c)
+
 	return signed, nil
+}
+
+func (e *Extractor) Delete(ctx context.Context) error {
+	fctx, ok := ctx.Value(reqCtx).(*fasthttp.RequestCtx)
+	if !ok {
+		return ErrCtxNotFound
+	}
+
+	c := fasthttp.AcquireCookie()
+	c.SetKey(e.cookieName)
+	c.SetPath("/")
+	c.SetHTTPOnly(true)
+	c.SetSecure(true)
+	c.SetExpire(fasthttp.CookieExpireDelete)
+
+	fctx.Response.Header.SetCookie(c)
+	fasthttp.ReleaseCookie(c)
+
+	return nil
 }

@@ -30,6 +30,10 @@ type SignInPayload {
   viewer: Viewer!
 }
 
+type SignOutPayload {
+  viewer: Viewer!
+}
+
 input PushNoteInput {
   path: String!
   content: String!
@@ -54,8 +58,10 @@ type ErrorPayload {
 
 union SignInOrErrorPayload = SignInPayload | ErrorPayload
 union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
+union SignOutOrErrorPayload = SignOutPayload | ErrorPayload
 
 type Mutation {
   signIn(input: SignInInput!): SignInOrErrorPayload!
+  signOut: SignOutOrErrorPayload!
   pushNotes(input: PushNotesInput!): PushNotesOrErrorPayload!
 }

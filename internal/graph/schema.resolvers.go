@@ -27,6 +27,23 @@ func (r *mutationResolver) SignIn(ctx context.Context, input model1.SignInInput)
 	return &payload, nil
 }
 
+// SignOut is the resolver for the signOut field.
+func (r *mutationResolver) SignOut(ctx context.Context) (model1.SignOutOrErrorPayload, error) {
+	err := usertoken.Delete(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete token: %v", err)
+	}
+
+	payload := model1.SignOutPayload{
+		Viewer: &model1.Viewer{
+			ID:   "0",
+			Role: "guest",
+		},
+	}
+
+	return &payload, nil
+}
+
 // PushNotes is the resolver for the pushNotes field.
 func (r *mutationResolver) PushNotes(ctx context.Context, input model1.PushNotesInput) (model1.PushNotesOrErrorPayload, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)

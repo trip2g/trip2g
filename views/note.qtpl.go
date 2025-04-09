@@ -131,7 +131,7 @@ func StreamLayoutHeader(qw422016 *qt422016.Writer) {
 <title>Title</title>
 <link href="/assets/output.css" rel="stylesheet">
 
-<script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@latest/dist/turbo.es2017-esm.min.js"></script>
+<div id="all-content">
 
 <header class="container mx-auto px-4 py-2">
   <a href="/">Home</a>
@@ -173,32 +173,94 @@ func StreamLayoutFooter(qw422016 *qt422016.Writer) {
 //line views/note.qtpl:48
 	qw422016.N().S(`
 </main>
+
+</div>
+
+<script>
+  (function() {
+    var containerSelector = '#all-content';
+
+    if (!window.fetch || !window.history || !window.history.pushState) {
+      return;
+    }
+
+    function load(url, push) {
+      fetch(url, { headers: { 'X-PJAX': 'true' } })
+        .then(function (res) {
+          return res.text();
+        })
+        .then(function (html) {
+          var parser = new DOMParser();
+          var doc = parser.parseFromString(html, 'text/html');
+          var newContent = doc.querySelector(containerSelector);
+          var current = document.querySelector(containerSelector);
+
+          if (newContent && current) {
+            current.innerHTML = newContent.innerHTML;
+            document.title = doc.title
+
+            if (push) {
+              history.pushState(null, '', url);
+            }
+
+            window.scrollTo(0, 0);
+          } else {
+            location.href = url;
+          }
+        })
+        .catch(function () {
+          location.href = url;
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+      var a = e.target;
+
+      while (a && a.tagName !== 'A') {
+        a = a.parentNode;
+      }
+
+      if (!a || a.target || a.hasAttribute('download') || a.origin !== location.origin) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+      var href = a.getAttribute('href');
+      if (!href || href.indexOf('#') === 0 || href.indexOf('mailto:') === 0) return;
+
+      e.preventDefault();
+      load(a.href, true);
+    });
+
+    window.addEventListener('popstate', function () {
+      load(location.href, false);
+    });
+  })();
+</script>
 `)
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 }
 
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 func WriteLayoutFooter(qq422016 qtio422016.Writer) {
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 	StreamLayoutFooter(qw422016)
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 	qt422016.ReleaseWriter(qw422016)
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 }
 
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 func LayoutFooter() string {
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 	WriteLayoutFooter(qb422016)
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 	qs422016 := string(qb422016.B)
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 	return qs422016
-//line views/note.qtpl:50
+//line views/note.qtpl:112
 }

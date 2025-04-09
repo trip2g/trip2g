@@ -10,6 +10,10 @@ type SignInOrErrorPayload interface {
 	IsSignInOrErrorPayload()
 }
 
+type SignOutOrErrorPayload interface {
+	IsSignOutOrErrorPayload()
+}
+
 type ErrorPayload struct {
 	Message string `json:"message"`
 }
@@ -17,6 +21,8 @@ type ErrorPayload struct {
 func (ErrorPayload) IsSignInOrErrorPayload() {}
 
 func (ErrorPayload) IsPushNotesOrErrorPayload() {}
+
+func (ErrorPayload) IsSignOutOrErrorPayload() {}
 
 type Mutation struct {
 }
@@ -55,6 +61,12 @@ type SignInPayload struct {
 }
 
 func (SignInPayload) IsSignInOrErrorPayload() {}
+
+type SignOutPayload struct {
+	Viewer *Viewer `json:"viewer"`
+}
+
+func (SignOutPayload) IsSignOutOrErrorPayload() {}
 
 type User struct {
 	ID    string `json:"id"`

@@ -55,6 +55,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		PushNotes func(childComplexity int, input model.PushNotesInput) int
 		SignIn    func(childComplexity int, input model.SignInInput) int
+		SignOut   func(childComplexity int) int
 	}
 
 	NotePath struct {
@@ -81,6 +82,10 @@ type ComplexityRoot struct {
 		Viewer func(childComplexity int) int
 	}
 
+	SignOutPayload struct {
+		Viewer func(childComplexity int) int
+	}
+
 	User struct {
 		Email func(childComplexity int) int
 		ID    func(childComplexity int) int
@@ -96,6 +101,7 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	SignIn(ctx context.Context, input model.SignInInput) (model.SignInOrErrorPayload, error)
+	SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error)
 	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
 }
 type QueryResolver interface {
@@ -152,6 +158,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.SignIn(childComplexity, args["input"].(model.SignInInput)), true
+
+	case "Mutation.signOut":
+		if e.complexity.Mutation.SignOut == nil {
+			break
+		}
+
+		return e.complexity.Mutation.SignOut(childComplexity), true
 
 	case "NotePath.latestContentHash":
 		if e.complexity.NotePath.LatestContentHash == nil {
@@ -215,6 +228,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.SignInPayload.Viewer(childComplexity), true
+
+	case "SignOutPayload.viewer":
+		if e.complexity.SignOutPayload.Viewer == nil {
+			break
+		}
+
+		return e.complexity.SignOutPayload.Viewer(childComplexity), true
 
 	case "User.email":
 		if e.complexity.User.Email == nil {
@@ -649,6 +669,50 @@ func (ec *executionContext) fieldContext_Mutation_signIn(ctx context.Context, fi
 	if fc.Args, err = ec.field_Mutation_signIn_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_signOut(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_signOut(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SignOut(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SignOutOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNSignOutOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSignOutOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_signOut(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SignOutOrErrorPayload does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -1247,6 +1311,60 @@ func (ec *executionContext) _SignInPayload_viewer(ctx context.Context, field gra
 func (ec *executionContext) fieldContext_SignInPayload_viewer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SignInPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Viewer_id(ctx, field)
+			case "role":
+				return ec.fieldContext_Viewer_role(ctx, field)
+			case "openedParts":
+				return ec.fieldContext_Viewer_openedParts(ctx, field)
+			case "user":
+				return ec.fieldContext_Viewer_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SignOutPayload_viewer(ctx context.Context, field graphql.CollectedField, obj *model.SignOutPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SignOutPayload_viewer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Viewer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Viewer)
+	fc.Result = res
+	return ec.marshalNViewer2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SignOutPayload_viewer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SignOutPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3630,11 +3748,34 @@ func (ec *executionContext) _SignInOrErrorPayload(ctx context.Context, sel ast.S
 	}
 }
 
+func (ec *executionContext) _SignOutOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SignOutOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SignOutPayload:
+		return ec._SignOutPayload(ctx, sel, &obj)
+	case *model.SignOutPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SignOutPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
 
-var errorPayloadImplementors = []string{"ErrorPayload", "SignInOrErrorPayload", "PushNotesOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "SignInOrErrorPayload", "PushNotesOrErrorPayload", "SignOutOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -3695,6 +3836,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "signIn":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_signIn(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "signOut":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_signOut(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -3968,6 +4116,45 @@ func (ec *executionContext) _SignInPayload(ctx context.Context, sel ast.Selectio
 			}
 		case "viewer":
 			out.Values[i] = ec._SignInPayload_viewer(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var signOutPayloadImplementors = []string{"SignOutPayload", "SignOutOrErrorPayload"}
+
+func (ec *executionContext) _SignOutPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SignOutPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, signOutPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SignOutPayload")
+		case "viewer":
+			out.Values[i] = ec._SignOutPayload_viewer(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4598,6 +4785,16 @@ func (ec *executionContext) marshalNSignInOrErrorPayload2trip2gᚋinternalᚋgra
 		return graphql.Null
 	}
 	return ec._SignInOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSignOutOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSignOutOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SignOutOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SignOutOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
