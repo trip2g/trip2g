@@ -126,9 +126,13 @@ func (a *app) handlePages(ctx *fasthttp.RequestCtx, path string, token *usertoke
 	}
 
 	if !page.Free && token == nil {
-		// TODO: render the paywall
 		ctx.SetStatusCode(http.StatusUnauthorized)
-		ctx.SetBodyString("401 Unauthorized")
+		ctx.SetContentType("text/html; charset=utf-8")
+
+		views.WriteLayoutHeader(ctx, page.Title)
+		views.WritePayWall(ctx, page)
+		views.WriteLayoutFooter(ctx)
+
 		return
 	}
 
