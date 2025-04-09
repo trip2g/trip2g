@@ -27,13 +27,13 @@ Hello is a simple template function.
 
 {% endfunc %}
 
-{% func LayoutHeader() %}
+{% func LayoutHeader(title string) %}
 <!DOCTYPE html>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Title</title>
+<title>{%s title %}</title>
 <link href="/assets/output.css" rel="stylesheet">
 
 <div id="all-content">
@@ -51,7 +51,7 @@ Hello is a simple template function.
 </div>
 
 <script>
-  (function() {
+  (function () {
     var containerSelector = '#all-content';
 
     if (!window.fetch || !window.history || !window.history.pushState) {
@@ -71,7 +71,7 @@ Hello is a simple template function.
 
           if (newContent && current) {
             current.innerHTML = newContent.innerHTML;
-            document.title = doc.title
+            document.title = doc.title;
 
             if (push) {
               history.pushState(null, '', url);
@@ -89,7 +89,6 @@ Hello is a simple template function.
 
     document.addEventListener('click', function (e) {
       var a = e.target;
-
       while (a && a.tagName !== 'A') {
         a = a.parentNode;
       }

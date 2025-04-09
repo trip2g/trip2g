@@ -136,7 +136,7 @@ func (a *app) handlePages(ctx *fasthttp.RequestCtx, path string, token *usertoke
 	ctx.SetContentType("text/html; charset=utf-8")
 	ctx.SetStatusCode(http.StatusOK)
 
-	views.WriteLayoutHeader(ctx)
+	views.WriteLayoutHeader(ctx, page.Title)
 	views.WriteNote(ctx, page, a.pages)
 	views.WriteLayoutFooter(ctx)
 }

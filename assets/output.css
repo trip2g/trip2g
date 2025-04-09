@@ -644,6 +644,9 @@
   .hidden {
     display: none;
   }
+  .table {
+    display: table;
+  }
   .w-full {
     width: 100%;
   }

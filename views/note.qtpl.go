@@ -120,7 +120,7 @@ func Note(page *mdloader.Page, pages map[string]*mdloader.Page) string {
 }
 
 //line views/note.qtpl:30
-func StreamLayoutHeader(qw422016 *qt422016.Writer) {
+func StreamLayoutHeader(qw422016 *qt422016.Writer, title string) {
 //line views/note.qtpl:30
 	qw422016.N().S(`
 <!DOCTYPE html>
@@ -128,7 +128,11 @@ func StreamLayoutHeader(qw422016 *qt422016.Writer) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Title</title>
+<title>`)
+//line views/note.qtpl:36
+	qw422016.E().S(title)
+//line views/note.qtpl:36
+	qw422016.N().S(`</title>
 <link href="/assets/output.css" rel="stylesheet">
 
 <div id="all-content">
@@ -143,22 +147,22 @@ func StreamLayoutHeader(qw422016 *qt422016.Writer) {
 }
 
 //line views/note.qtpl:46
-func WriteLayoutHeader(qq422016 qtio422016.Writer) {
+func WriteLayoutHeader(qq422016 qtio422016.Writer, title string) {
 //line views/note.qtpl:46
 	qw422016 := qt422016.AcquireWriter(qq422016)
 //line views/note.qtpl:46
-	StreamLayoutHeader(qw422016)
+	StreamLayoutHeader(qw422016, title)
 //line views/note.qtpl:46
 	qt422016.ReleaseWriter(qw422016)
 //line views/note.qtpl:46
 }
 
 //line views/note.qtpl:46
-func LayoutHeader() string {
+func LayoutHeader(title string) string {
 //line views/note.qtpl:46
 	qb422016 := qt422016.AcquireByteBuffer()
 //line views/note.qtpl:46
-	WriteLayoutHeader(qb422016)
+	WriteLayoutHeader(qb422016, title)
 //line views/note.qtpl:46
 	qs422016 := string(qb422016.B)
 //line views/note.qtpl:46
@@ -177,7 +181,7 @@ func StreamLayoutFooter(qw422016 *qt422016.Writer) {
 </div>
 
 <script>
-  (function() {
+  (function () {
     var containerSelector = '#all-content';
 
     if (!window.fetch || !window.history || !window.history.pushState) {
@@ -197,7 +201,7 @@ func StreamLayoutFooter(qw422016 *qt422016.Writer) {
 
           if (newContent && current) {
             current.innerHTML = newContent.innerHTML;
-            document.title = doc.title
+            document.title = doc.title;
 
             if (push) {
               history.pushState(null, '', url);
@@ -215,7 +219,6 @@ func StreamLayoutFooter(qw422016 *qt422016.Writer) {
 
     document.addEventListener('click', function (e) {
       var a = e.target;
-
       while (a && a.tagName !== 'A') {
         a = a.parentNode;
       }
@@ -236,31 +239,31 @@ func StreamLayoutFooter(qw422016 *qt422016.Writer) {
   })();
 </script>
 `)
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 }
 
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 func WriteLayoutFooter(qq422016 qtio422016.Writer) {
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 	StreamLayoutFooter(qw422016)
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 	qt422016.ReleaseWriter(qw422016)
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 }
 
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 func LayoutFooter() string {
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 	WriteLayoutFooter(qb422016)
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 	qs422016 := string(qb422016.B)
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 	return qs422016
-//line views/note.qtpl:112
+//line views/note.qtpl:111
 }
