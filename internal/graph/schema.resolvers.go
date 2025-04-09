@@ -86,6 +86,11 @@ func (r *queryResolver) Viewer(ctx context.Context) (*model1.Viewer, error) {
 	return &viewer, nil
 }
 
+// NotePaths is the resolver for the notePaths field.
+func (r *queryResolver) NotePaths(ctx context.Context) ([]db.NotePath, error) {
+	return r.Queries.AllNotePaths(ctx)
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 

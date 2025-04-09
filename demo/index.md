@@ -9,4 +9,4 @@ This is a demo.
 [[second]]
 
 
-Pushed by the new API and refresh!
+Pushed by the new graphql API and refresh!

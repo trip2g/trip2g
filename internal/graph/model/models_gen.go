@@ -32,11 +32,11 @@ type PushNoteInput struct {
 }
 
 type PushNotesInput struct {
-	Updates []*PushNoteInput `json:"updates"`
+	Updates []PushNoteInput `json:"updates"`
 }
 
 type PushNotesPayload struct {
-	Assets []*PushNoteAsset `json:"assets"`
+	Assets []PushNoteAsset `json:"assets"`
 }
 
 func (PushNotesPayload) IsPushNotesOrErrorPayload() {}

@@ -10,8 +10,14 @@ type Viewer {
   user: User
 }
 
+type NotePath {
+  value: String!
+  latestContentHash: String!
+}
+
 type Query {
   viewer: Viewer!
+  notePaths: [NotePath!]!
 }
 
 input SignInInput {

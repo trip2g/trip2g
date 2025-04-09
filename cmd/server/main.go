@@ -194,7 +194,7 @@ func (a *app) startServer() {
 			}
 
 			token, err := tokenExtractor.Extract(ctx)
-			if err != nil && errors.Is(err, usertoken.ErrTokenMissing) {
+			if err != nil && !errors.Is(err, usertoken.ErrTokenMissing) {
 				ctx.SetStatusCode(http.StatusUnauthorized)
 				ctx.SetBodyString("401 Unauthorized")
 				return
