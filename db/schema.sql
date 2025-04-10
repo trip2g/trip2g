@@ -4,14 +4,14 @@ CREATE TABLE note_paths (
   value text not null unique on conflict ignore,
   value_hash text not null unique on conflict fail,
   latest_content_hash text not null,
-  created_at datetime default current_timestamp,
+  created_at datetime no null default current_timestamp,
   version_count integer not null default 0
 );
 CREATE TABLE note_versions (
   path_id integer not null,
   version integer not null,
   content text not null,
-  created_at datetime default current_timestamp,
+  created_at datetime not null default current_timestamp,
   primary key (path_id, version),
   foreign key (path_id) references note_paths(id) on delete restrict
 );

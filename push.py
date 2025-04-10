@@ -35,10 +35,6 @@ def push_updates(updates):
 def main():
     base_path = sys.argv[1] if len(sys.argv) > 1 else "demo"
     server_hashes = fetch_server_hashes()
-    if not server_hashes:
-        print("❌ Не удалось получить хэши с сервера.")
-        return
-
     updates = []
 
     print("📦 Сравнение файлов:")

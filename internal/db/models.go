@@ -6,24 +6,60 @@ package db
 
 import (
 	"database/sql"
+	"time"
 )
 
+type Admin struct {
+	UserID    string         `json:"user_id"`
+	GrantedAt time.Time      `json:"granted_at"`
+	GrantedBy sql.NullString `json:"granted_by"`
+}
+
 type NotePath struct {
-	ID                int64        `json:"id"`
-	Value             string       `json:"value"`
-	ValueHash         string       `json:"value_hash"`
-	LatestContentHash string       `json:"latest_content_hash"`
-	CreatedAt         sql.NullTime `json:"created_at"`
-	VersionCount      int64        `json:"version_count"`
+	ID                int64       `json:"id"`
+	Value             string      `json:"value"`
+	ValueHash         string      `json:"value_hash"`
+	LatestContentHash string      `json:"latest_content_hash"`
+	CreatedAt         interface{} `json:"created_at"`
+	VersionCount      int64       `json:"version_count"`
 }
 
 type NoteVersion struct {
-	PathID    int64        `json:"path_id"`
-	Version   int64        `json:"version"`
-	Content   string       `json:"content"`
-	CreatedAt sql.NullTime `json:"created_at"`
+	PathID    int64     `json:"path_id"`
+	Version   int64     `json:"version"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type Offer struct {
+	ID        string          `json:"id"`
+	CreatedAt time.Time       `json:"created_at"`
+	Names     string          `json:"names"`
+	Lifetime  string          `json:"lifetime"`
+	PriceUsd  sql.NullFloat64 `json:"price_usd"`
+	PriceRub  sql.NullFloat64 `json:"price_rub"`
+	PriceBtc  sql.NullFloat64 `json:"price_btc"`
+	StartsAt  sql.NullTime    `json:"starts_at"`
+	EndsAt    sql.NullTime    `json:"ends_at"`
+}
+
+type Purchase struct {
+	ID              string       `json:"id"`
+	UserID          string       `json:"user_id"`
+	OfferID         string       `json:"offer_id"`
+	ExpireAt        sql.NullTime `json:"expire_at"`
+	CreatedAt       time.Time    `json:"created_at"`
+	PaymentProvider string       `json:"payment_provider"`
+	PaymentData     interface{}  `json:"payment_data"`
 }
 
 type SchemaMigrations struct {
 	Version string `json:"version"`
+}
+
+type User struct {
+	ID                   string       `json:"id"`
+	Email                string       `json:"email"`
+	CreatedAt            time.Time    `json:"created_at"`
+	LastSigninCodeSentAt sql.NullTime `json:"last_signin_code_sent_at"`
 }

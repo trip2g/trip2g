@@ -18,6 +18,7 @@ import (
 	"github.com/mailru/easyjson"
 	"github.com/valyala/fasthttp"
 
+	"trip2g/internal/case/getadminallnotepaths"
 	"trip2g/internal/case/getnotehashes"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/db"
@@ -185,6 +186,30 @@ func (a *app) startServer() {
 			}
 
 			switch string(ctx.Path()) {
+			case "/api/getadminnotepaths":
+				request := getadminallnotepaths.Request{}
+
+				response, err := getadminallnotepaths.Resolve(ctx, a, request)
+				if err != nil {
+					a.log.Error("failed to resolve getadminnotepaths", "err", err)
+					ctx.SetStatusCode(http.StatusInternalServerError)
+					ctx.SetBodyString("500 Internal Server Error")
+					return
+				}
+
+				ctx.SetStatusCode(http.StatusOK)
+				ctx.SetContentType("application/json; charset=utf-8")
+
+				rawBytes, err := easyjson.Marshal(response)
+				if err != nil {
+					a.log.Error("failed to marshal getadminnotepaths response", "err", err)
+					ctx.SetStatusCode(http.StatusInternalServerError)
+					ctx.SetBodyString("500 Internal Server Error")
+					return
+				}
+
+				ctx.SetBody(rawBytes)
+
 			case "/api/getnotehashes":
 				request := getnotehashes.Request{}
 
