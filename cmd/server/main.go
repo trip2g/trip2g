@@ -17,19 +17,10 @@ import (
 
 	"github.com/mailru/easyjson"
 	"github.com/valyala/fasthttp"
-	"github.com/valyala/fasthttp/fasthttpadaptor"
-
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/handler/extension"
-	"github.com/99designs/gqlgen/graphql/handler/lru"
-	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/vektah/gqlparser/v2/ast"
 
 	"trip2g/internal/case/getnotehashes"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/db"
-	"trip2g/internal/graph"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/usertoken"
@@ -157,28 +148,6 @@ func (a *app) AllNotePaths(ctx context.Context) ([]db.NotePath, error) {
 }
 
 func (a *app) startServer() {
-	resolver := graph.Resolver{
-		Conn:    a.conn,
-		Queries: a.queries,
-		Env:     a,
-	}
-
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &resolver}))
-
-	srv.AddTransport(transport.Options{})
-	srv.AddTransport(transport.GET{})
-	srv.AddTransport(transport.POST{})
-
-	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
-
-	srv.Use(extension.Introspection{})
-	srv.Use(extension.AutomaticPersistedQuery{
-		Cache: lru.New[string](100),
-	})
-
-	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
-	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(srv)
-
 	fs := &fasthttp.FS{
 		Root:               "./assets",
 		IndexNames:         []string{},
@@ -281,13 +250,6 @@ func (a *app) startServer() {
 
 				ctx.SetBody(rawBytes)
 
-			case "/graphql":
-				if string(ctx.Method()) == "GET" {
-					playgroundHandler(ctx)
-				} else {
-					graphqlHandler(ctx)
-				}
-				return
 			default:
 				a.handlePages(ctx, path, token)
 			}
