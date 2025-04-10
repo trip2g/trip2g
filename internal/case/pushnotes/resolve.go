@@ -3,13 +3,14 @@ package pushnotes
 import (
 	"context"
 	"fmt"
+	"trip2g/internal/db"
 )
 
-//go:generate easyjson -snake_case -no_std_marshalers ./resolve.go
+//go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
 
 // Env describes all IO deps.
 type Env interface {
-	InsertNote(ctx context.Context, update Update) error
+	InsertNote(ctx context.Context, update db.Note) error
 	PrepareNotes(ctx context.Context) error
 }
 
@@ -25,19 +26,22 @@ type Update struct {
 	Content string
 }
 
-//easyjson:json
 type Request struct {
 	Updates []Update
 }
 
-//easyjson:json
 type Response struct {
 	Assets []Asset
 }
 
 func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	for _, update := range request.Updates {
-		insertErr := env.InsertNote(ctx, update)
+		note := db.Note{
+			Path:    update.Path,
+			Content: update.Content,
+		}
+
+		insertErr := env.InsertNote(ctx, note)
 		if insertErr != nil {
 			return nil, fmt.Errorf("failed to insert note: %w", insertErr)
 		}

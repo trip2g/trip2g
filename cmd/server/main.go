@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -25,6 +26,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/v2/ast"
 
+	"trip2g/internal/case/getnotehashes"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/db"
 	"trip2g/internal/graph"
@@ -146,11 +148,12 @@ func (a *app) handlePages(ctx *fasthttp.RequestCtx, path string, token *usertoke
 	views.WriteLayoutFooter(ctx)
 }
 
-func (a *app) InsertNote(ctx context.Context, data pushnotes.Update) error {
-	return a.queries.InsertNote(ctx, db.Note{
-		Path:    data.Path,
-		Content: data.Content,
-	})
+func (a *app) InsertNote(ctx context.Context, data db.Note) error {
+	return a.queries.InsertNote(ctx, data)
+}
+
+func (a *app) AllNotePaths(ctx context.Context) ([]db.NotePath, error) {
+	return a.queries.AllNotePaths(ctx)
 }
 
 func (a *app) startServer() {
@@ -213,23 +216,12 @@ func (a *app) startServer() {
 			}
 
 			switch string(ctx.Path()) {
-			case "/api/pushnotes":
-				if string(ctx.Method()) != "POST" {
-					ctx.SetStatusCode(http.StatusMethodNotAllowed)
-					ctx.SetBodyString("405 Method Not Allowed")
-				}
+			case "/api/getnotehashes":
+				request := getnotehashes.Request{}
 
-				request := pushnotes.Request{}
-
-				err := easyjson.Unmarshal(ctx.PostBody(), &request)
+				response, err := getnotehashes.Resolve(ctx, a, request)
 				if err != nil {
-					ctx.SetStatusCode(http.StatusBadRequest)
-					ctx.SetBodyString("400 Bad Request")
-					return
-				}
-
-				response, err := pushnotes.Resolve(ctx, a, request)
-				if err != nil {
+					a.log.Error("failed to resolve getnotehashes", "err", err)
 					ctx.SetStatusCode(http.StatusInternalServerError)
 					ctx.SetBodyString("500 Internal Server Error")
 					return
@@ -240,6 +232,49 @@ func (a *app) startServer() {
 
 				rawBytes, err := easyjson.Marshal(response)
 				if err != nil {
+					a.log.Error("failed to marshal getnotehashes response", "err", err)
+					ctx.SetStatusCode(http.StatusInternalServerError)
+					ctx.SetBodyString("500 Internal Server Error")
+					return
+				}
+
+				ctx.SetBody(rawBytes)
+
+			case "/api/pushnotes":
+				if string(ctx.Method()) != "POST" {
+					ctx.SetStatusCode(http.StatusMethodNotAllowed)
+					ctx.SetBodyString("405 Method Not Allowed")
+				}
+
+				request := pushnotes.Request{}
+
+				err := easyjson.Unmarshal(ctx.PostBody(), &request)
+				if err != nil {
+					a.log.Error("failed to unmarshal pushnotes request", "err", err)
+					ctx.SetStatusCode(http.StatusBadRequest)
+					ctx.SetBodyString("400 Bad Request")
+					return
+				}
+
+				response, err := pushnotes.Resolve(ctx, a, request)
+				if err != nil {
+					a.log.Error("failed to resolve pushnotes", "err", err)
+					// send error as json
+					ctx.SetStatusCode(http.StatusInternalServerError)
+					ctx.SetContentType("application/json; charset=utf-8")
+					rawBytes, _ := json.Marshal(map[string]string{
+						"error": err.Error(),
+					})
+					ctx.SetBody(rawBytes)
+					return
+				}
+
+				ctx.SetStatusCode(http.StatusOK)
+				ctx.SetContentType("application/json; charset=utf-8")
+
+				rawBytes, err := easyjson.Marshal(response)
+				if err != nil {
+					a.log.Error("failed to marshal pushnotes response", "err", err)
 					ctx.SetStatusCode(http.StatusInternalServerError)
 					ctx.SetBodyString("500 Internal Server Error")
 				}

@@ -17,7 +17,66 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson5011676aDecodeTrip2gInternalCasePushnotes(in *jlexer.Lexer, out *Response) {
+func easyjson5011676aDecodeTrip2gInternalCasePushnotes(in *jlexer.Lexer, out *Update) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "path":
+			out.Path = string(in.String())
+		case "content":
+			out.Content = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson5011676aEncodeTrip2gInternalCasePushnotes(out *jwriter.Writer, in Update) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"path\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.Path))
+	}
+	{
+		const prefix string = ",\"content\":"
+		out.RawString(prefix)
+		out.String(string(in.Content))
+	}
+	out.RawByte('}')
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v Update) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson5011676aEncodeTrip2gInternalCasePushnotes(w, v)
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *Update) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson5011676aDecodeTrip2gInternalCasePushnotes(l, v)
+}
+func easyjson5011676aDecodeTrip2gInternalCasePushnotes1(in *jlexer.Lexer, out *Response) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -53,7 +112,7 @@ func easyjson5011676aDecodeTrip2gInternalCasePushnotes(in *jlexer.Lexer, out *Re
 				}
 				for !in.IsDelim(']') {
 					var v1 Asset
-					easyjson5011676aDecodeTrip2gInternalCasePushnotes1(in, &v1)
+					(v1).UnmarshalEasyJSON(in)
 					out.Assets = append(out.Assets, v1)
 					in.WantComma()
 				}
@@ -69,7 +128,7 @@ func easyjson5011676aDecodeTrip2gInternalCasePushnotes(in *jlexer.Lexer, out *Re
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeTrip2gInternalCasePushnotes(out *jwriter.Writer, in Response) {
+func easyjson5011676aEncodeTrip2gInternalCasePushnotes1(out *jwriter.Writer, in Response) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -84,7 +143,7 @@ func easyjson5011676aEncodeTrip2gInternalCasePushnotes(out *jwriter.Writer, in R
 				if v2 > 0 {
 					out.RawByte(',')
 				}
-				easyjson5011676aEncodeTrip2gInternalCasePushnotes1(out, v3)
+				(v3).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -94,61 +153,12 @@ func easyjson5011676aEncodeTrip2gInternalCasePushnotes(out *jwriter.Writer, in R
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Response) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson5011676aEncodeTrip2gInternalCasePushnotes(w, v)
+	easyjson5011676aEncodeTrip2gInternalCasePushnotes1(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Response) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson5011676aDecodeTrip2gInternalCasePushnotes(l, v)
-}
-func easyjson5011676aDecodeTrip2gInternalCasePushnotes1(in *jlexer.Lexer, out *Asset) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeFieldName(false)
-		in.WantColon()
-		if in.IsNull() {
-			in.Skip()
-			in.WantComma()
-			continue
-		}
-		switch key {
-		case "path":
-			out.Path = string(in.String())
-		case "put_presigned_url":
-			out.PutPresignedURL = string(in.String())
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson5011676aEncodeTrip2gInternalCasePushnotes1(out *jwriter.Writer, in Asset) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	{
-		const prefix string = ",\"path\":"
-		out.RawString(prefix[1:])
-		out.String(string(in.Path))
-	}
-	{
-		const prefix string = ",\"put_presigned_url\":"
-		out.RawString(prefix)
-		out.String(string(in.PutPresignedURL))
-	}
-	out.RawByte('}')
+	easyjson5011676aDecodeTrip2gInternalCasePushnotes1(l, v)
 }
 func easyjson5011676aDecodeTrip2gInternalCasePushnotes2(in *jlexer.Lexer, out *Request) {
 	isTopLevel := in.IsStart()
@@ -186,7 +196,7 @@ func easyjson5011676aDecodeTrip2gInternalCasePushnotes2(in *jlexer.Lexer, out *R
 				}
 				for !in.IsDelim(']') {
 					var v4 Update
-					easyjson5011676aDecodeTrip2gInternalCasePushnotes3(in, &v4)
+					(v4).UnmarshalEasyJSON(in)
 					out.Updates = append(out.Updates, v4)
 					in.WantComma()
 				}
@@ -217,7 +227,7 @@ func easyjson5011676aEncodeTrip2gInternalCasePushnotes2(out *jwriter.Writer, in 
 				if v5 > 0 {
 					out.RawByte(',')
 				}
-				easyjson5011676aEncodeTrip2gInternalCasePushnotes3(out, v6)
+				(v6).MarshalEasyJSON(out)
 			}
 			out.RawByte(']')
 		}
@@ -234,7 +244,7 @@ func (v Request) MarshalEasyJSON(w *jwriter.Writer) {
 func (v *Request) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson5011676aDecodeTrip2gInternalCasePushnotes2(l, v)
 }
-func easyjson5011676aDecodeTrip2gInternalCasePushnotes3(in *jlexer.Lexer, out *Update) {
+func easyjson5011676aDecodeTrip2gInternalCasePushnotes3(in *jlexer.Lexer, out *Asset) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -255,8 +265,8 @@ func easyjson5011676aDecodeTrip2gInternalCasePushnotes3(in *jlexer.Lexer, out *U
 		switch key {
 		case "path":
 			out.Path = string(in.String())
-		case "content":
-			out.Content = string(in.String())
+		case "put_presigned_url":
+			out.PutPresignedURL = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -267,7 +277,7 @@ func easyjson5011676aDecodeTrip2gInternalCasePushnotes3(in *jlexer.Lexer, out *U
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeTrip2gInternalCasePushnotes3(out *jwriter.Writer, in Update) {
+func easyjson5011676aEncodeTrip2gInternalCasePushnotes3(out *jwriter.Writer, in Asset) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -277,9 +287,19 @@ func easyjson5011676aEncodeTrip2gInternalCasePushnotes3(out *jwriter.Writer, in 
 		out.String(string(in.Path))
 	}
 	{
-		const prefix string = ",\"content\":"
+		const prefix string = ",\"put_presigned_url\":"
 		out.RawString(prefix)
-		out.String(string(in.Content))
+		out.String(string(in.PutPresignedURL))
 	}
 	out.RawByte('}')
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v Asset) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson5011676aEncodeTrip2gInternalCasePushnotes3(w, v)
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *Asset) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson5011676aDecodeTrip2gInternalCasePushnotes3(l, v)
 }
