@@ -70,7 +70,7 @@ func (r *mutationResolver) PushNotes(ctx context.Context, input model1.PushNotes
 		}
 	}
 
-	err = r.Env.PrepareNotes(ctx, queries)
+	err = r.Env.PrepareNotes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}

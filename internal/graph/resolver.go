@@ -17,5 +17,5 @@ type Resolver struct {
 }
 
 type Env interface {
-	PrepareNotes(ctx context.Context, queries *db.Queries) error
+	PrepareNotes(ctx context.Context) error
 }

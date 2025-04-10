@@ -7,121 +7,121 @@
 // Hello is a simple template function.
 //
 
-//line views/note.qtpl:6
+//line ../../views/note.qtpl:6
 package views
 
-//line views/note.qtpl:6
+//line ../../views/note.qtpl:6
 import "trip2g/internal/mdloader"
 
-//line views/note.qtpl:8
+//line ../../views/note.qtpl:8
 import (
 	qtio422016 "io"
 
 	qt422016 "github.com/valyala/quicktemplate"
 )
 
-//line views/note.qtpl:8
+//line ../../views/note.qtpl:8
 var (
 	_ = qtio422016.Copy
 	_ = qt422016.AcquireByteBuffer
 )
 
-//line views/note.qtpl:8
+//line ../../views/note.qtpl:8
 func StreamNote(qw422016 *qt422016.Writer, page *mdloader.Page, pages map[string]*mdloader.Page) {
-//line views/note.qtpl:8
+//line ../../views/note.qtpl:8
 	qw422016.N().S(`
 
   <h1 class="text-2xl font-bold">`)
-//line views/note.qtpl:10
+//line ../../views/note.qtpl:10
 	qw422016.E().S(page.Title)
-//line views/note.qtpl:10
+//line ../../views/note.qtpl:10
 	qw422016.N().S(`</h1>
 
   <div class="prose">
   `)
-//line views/note.qtpl:13
+//line ../../views/note.qtpl:13
 	qw422016.N().S(string(page.HTML))
-//line views/note.qtpl:13
+//line ../../views/note.qtpl:13
 	qw422016.N().S(`
   </div>
 
   `)
-//line views/note.qtpl:16
+//line ../../views/note.qtpl:16
 	if len(page.InLinks) > 0 {
-//line views/note.qtpl:16
+//line ../../views/note.qtpl:16
 		qw422016.N().S(`
 
     <h2 class="font-bold mt-4">Linked from</h2>
 
     `)
-//line views/note.qtpl:20
+//line ../../views/note.qtpl:20
 		for k := range page.InLinks {
-//line views/note.qtpl:20
+//line ../../views/note.qtpl:20
 			qw422016.N().S(`
       `)
-//line views/note.qtpl:21
+//line ../../views/note.qtpl:21
 			if inPage, ok := pages[k]; ok {
-//line views/note.qtpl:21
+//line ../../views/note.qtpl:21
 				qw422016.N().S(`
         <div><a href="`)
-//line views/note.qtpl:22
+//line ../../views/note.qtpl:22
 				qw422016.E().S(inPage.Permalink)
-//line views/note.qtpl:22
+//line ../../views/note.qtpl:22
 				qw422016.N().S(`">`)
-//line views/note.qtpl:22
+//line ../../views/note.qtpl:22
 				qw422016.E().S(inPage.Title)
-//line views/note.qtpl:22
+//line ../../views/note.qtpl:22
 				qw422016.N().S(`</a></div>
       `)
-//line views/note.qtpl:23
+//line ../../views/note.qtpl:23
 			}
-//line views/note.qtpl:23
+//line ../../views/note.qtpl:23
 			qw422016.N().S(`
     `)
-//line views/note.qtpl:24
+//line ../../views/note.qtpl:24
 		}
-//line views/note.qtpl:24
+//line ../../views/note.qtpl:24
 		qw422016.N().S(`
 
   `)
-//line views/note.qtpl:26
+//line ../../views/note.qtpl:26
 	}
-//line views/note.qtpl:26
+//line ../../views/note.qtpl:26
 	qw422016.N().S(`
 
 `)
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 }
 
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 func WriteNote(qq422016 qtio422016.Writer, page *mdloader.Page, pages map[string]*mdloader.Page) {
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 	StreamNote(qw422016, page, pages)
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 	qt422016.ReleaseWriter(qw422016)
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 }
 
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 func Note(page *mdloader.Page, pages map[string]*mdloader.Page) string {
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 	WriteNote(qb422016, page, pages)
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 	qs422016 := string(qb422016.B)
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 	return qs422016
-//line views/note.qtpl:28
+//line ../../views/note.qtpl:28
 }
 
-//line views/note.qtpl:30
+//line ../../views/note.qtpl:30
 func StreamLayoutHeader(qw422016 *qt422016.Writer, title string) {
-//line views/note.qtpl:30
+//line ../../views/note.qtpl:30
 	qw422016.N().S(`
 <!DOCTYPE html>
 
@@ -129,9 +129,9 @@ func StreamLayoutHeader(qw422016 *qt422016.Writer, title string) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>`)
-//line views/note.qtpl:36
+//line ../../views/note.qtpl:36
 	qw422016.E().S(title)
-//line views/note.qtpl:36
+//line ../../views/note.qtpl:36
 	qw422016.N().S(`</title>
 <link href="/assets/output.css" rel="stylesheet">
 
@@ -143,38 +143,38 @@ func StreamLayoutHeader(qw422016 *qt422016.Writer, title string) {
 
 <main class="container mx-auto px-4 py-2">
 `)
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 }
 
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 func WriteLayoutHeader(qq422016 qtio422016.Writer, title string) {
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 	StreamLayoutHeader(qw422016, title)
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 	qt422016.ReleaseWriter(qw422016)
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 }
 
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 func LayoutHeader(title string) string {
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 	WriteLayoutHeader(qb422016, title)
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 	qs422016 := string(qb422016.B)
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 	return qs422016
-//line views/note.qtpl:46
+//line ../../views/note.qtpl:46
 }
 
-//line views/note.qtpl:48
+//line ../../views/note.qtpl:48
 func StreamLayoutFooter(qw422016 *qt422016.Writer) {
-//line views/note.qtpl:48
+//line ../../views/note.qtpl:48
 	qw422016.N().S(`
 </main>
 
@@ -239,31 +239,31 @@ func StreamLayoutFooter(qw422016 *qt422016.Writer) {
   })();
 </script>
 `)
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 }
 
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 func WriteLayoutFooter(qq422016 qtio422016.Writer) {
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 	StreamLayoutFooter(qw422016)
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 	qt422016.ReleaseWriter(qw422016)
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 }
 
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 func LayoutFooter() string {
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 	WriteLayoutFooter(qb422016)
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 	qs422016 := string(qb422016.B)
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 	return qs422016
-//line views/note.qtpl:111
+//line ../../views/note.qtpl:111
 }

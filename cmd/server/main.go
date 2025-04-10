@@ -1,7 +1,6 @@
 package main
 
-//go:generate go get -u github.com/valyala/quicktemplate/qtc
-//go:generate qtc -dir=views
+//go:generate go run github.com/valyala/quicktemplate/qtc -dir=../../views
 
 import (
 	"context"
@@ -15,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mailru/easyjson"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 
@@ -25,6 +25,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/v2/ast"
 
+	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/db"
 	"trip2g/internal/graph"
 	"trip2g/internal/logger"
@@ -72,7 +73,7 @@ func main() {
 
 	ctx := context.Background()
 
-	err = a.PrepareNotes(ctx, a.queries)
+	err = a.PrepareNotes(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -82,14 +83,14 @@ func main() {
 	}
 }
 
-func (a *app) PrepareNotes(ctx context.Context, queries *db.Queries) error {
+func (a *app) PrepareNotes(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	notes, err := queries.AllLatestNotes(ctx)
+	notes, err := a.queries.AllLatestNotes(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get notes: %w", err)
 	}
@@ -143,6 +144,13 @@ func (a *app) handlePages(ctx *fasthttp.RequestCtx, path string, token *usertoke
 	views.WriteLayoutHeader(ctx, page.Title)
 	views.WriteNote(ctx, page, a.pages)
 	views.WriteLayoutFooter(ctx)
+}
+
+func (a *app) InsertNote(ctx context.Context, data pushnotes.Update) error {
+	return a.queries.InsertNote(ctx, db.Note{
+		Path:    data.Path,
+		Content: data.Content,
+	})
 }
 
 func (a *app) startServer() {
@@ -205,6 +213,39 @@ func (a *app) startServer() {
 			}
 
 			switch string(ctx.Path()) {
+			case "/api/pushnotes":
+				if string(ctx.Method()) != "POST" {
+					ctx.SetStatusCode(http.StatusMethodNotAllowed)
+					ctx.SetBodyString("405 Method Not Allowed")
+				}
+
+				request := pushnotes.Request{}
+
+				err := easyjson.Unmarshal(ctx.PostBody(), &request)
+				if err != nil {
+					ctx.SetStatusCode(http.StatusBadRequest)
+					ctx.SetBodyString("400 Bad Request")
+					return
+				}
+
+				response, err := pushnotes.Resolve(ctx, a, request)
+				if err != nil {
+					ctx.SetStatusCode(http.StatusInternalServerError)
+					ctx.SetBodyString("500 Internal Server Error")
+					return
+				}
+
+				ctx.SetStatusCode(http.StatusOK)
+				ctx.SetContentType("application/json; charset=utf-8")
+
+				rawBytes, err := easyjson.Marshal(response)
+				if err != nil {
+					ctx.SetStatusCode(http.StatusInternalServerError)
+					ctx.SetBodyString("500 Internal Server Error")
+				}
+
+				ctx.SetBody(rawBytes)
+
 			case "/graphql":
 				if string(ctx.Method()) == "GET" {
 					playgroundHandler(ctx)
