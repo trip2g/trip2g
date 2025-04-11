@@ -18,12 +18,14 @@ import (
 	"github.com/mailru/easyjson"
 	"github.com/valyala/fasthttp"
 
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/getadminallnotepaths"
 	"trip2g/internal/case/getnotehashes"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
+	"trip2g/internal/router"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
 	"trip2g/views"
@@ -164,7 +166,9 @@ func (a *app) startServer() {
 
 	fsHandler := fs.NewRequestHandler()
 
-	tokenExtractor := usertoken.NewExtractor("trip2g_token", []byte("secret"))
+	tokenManager := usertoken.NewManager("trip2g_token", []byte("secret"))
+
+	rtr := router.New(a, "/api/")
 
 	s := &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
@@ -178,10 +182,21 @@ func (a *app) startServer() {
 				return
 			}
 
-			token, err := tokenExtractor.Extract(ctx)
+			token, err := tokenManager.Extract(ctx)
 			if err != nil && !errors.Is(err, usertoken.ErrTokenMissing) {
 				ctx.SetStatusCode(http.StatusUnauthorized)
 				ctx.SetBodyString("401 Unauthorized")
+				return
+			}
+
+			req := appreq.Acquire()
+			req.Env = a
+			req.Req = ctx
+			req.TokenManager = tokenManager
+			defer appreq.Release(req)
+
+			if rtr.Handle(req) {
+				a.log.Debug("router handled request", "path", path)
 				return
 			}
 
