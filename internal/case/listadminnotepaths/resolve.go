@@ -1,4 +1,4 @@
-package getadminallnotepaths
+package listadminnotepaths
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type Response struct {
 	Rows []NotePath
 }
 
-func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
+func Resolve(ctx context.Context, env Env, _ Request) (*Response, error) {
 	response := Response{
 		Rows: make([]NotePath, 0),
 	}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"trip2g/internal/appreq"
+	"unsafe"
 
 	"github.com/mailru/easyjson"
 )
@@ -53,16 +54,18 @@ func (router *Router) Handle(req *appreq.Request) bool {
 
 	ctx := req.Req
 
-	switch string(ctx.Method()) {
-	case http.MethodGet:
-		routes = router.getRoutes
-	case http.MethodPost:
-		routes = router.postRoutes
-	default:
+	rawPath := ctx.Path()
+	if len(rawPath) <= router.prefixLen {
 		return false
 	}
 
-	path := string(ctx.Path()[router.prefixLen:])
+	if b2s(ctx.Method()) == http.MethodGet {
+		routes = router.getRoutes
+	} else {
+		routes = router.postRoutes
+	}
+
+	path := b2s(rawPath[router.prefixLen:])
 
 	endpoint, ok := routes[path]
 	if !ok {
@@ -78,11 +81,13 @@ func (router *Router) Handle(req *appreq.Request) bool {
 
 	resp, ok := respI.(easyjson.Marshaler)
 	if !ok {
-		panic("response is not easyjson.Marshaler")
+		// the handler must write the response itself
+		return true
 	}
 
 	rawBytes, err := easyjson.Marshal(resp)
 	if err != nil {
+		router.env.Logger().Error("failed to marshal response", "err", err, "path", path)
 		ctx.SetStatusCode(http.StatusInternalServerError)
 		ctx.SetBody([]byte(err.Error()))
 		return true
@@ -93,4 +98,9 @@ func (router *Router) Handle(req *appreq.Request) bool {
 	ctx.SetBody(rawBytes)
 
 	return true
+}
+
+// read https://github.com/valyala/fasthttp?tab=readme-ov-file#tricks-with-byte-buffers.
+func b2s(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
 }

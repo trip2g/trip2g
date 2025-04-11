@@ -11,6 +11,7 @@ import (
 
 type ctxKeyT struct{}
 
+//nolint:gochecknoglobals // it's a common pattern.
 var ctxKey = ctxKeyT{}
 
 var ErrNotFound = errors.New("appenv: not found")
@@ -37,6 +38,7 @@ func (c *Request) Reset() {
 	c.tokenExtracted = false
 }
 
+//nolint:gochecknoglobals // it's a common pattern.
 var ctxPool = &sync.Pool{
 	New: func() any {
 		return &Request{}

@@ -1,4 +1,4 @@
-package getnotehashes
+package listadminnotepaths
 
 import (
 	"net/http"
@@ -12,7 +12,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (*Endpoint) Path() string {
-	return "getnotehashes"
+	return "listadminallnotepaths"
 }
 
 func (*Endpoint) Method() string {

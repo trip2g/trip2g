@@ -1,4 +1,4 @@
-package getnotehashes
+package pushnotes
 
 import (
 	"net/http"
@@ -12,9 +12,9 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (*Endpoint) Path() string {
-	return "getnotehashes"
+	return "pushnotes"
 }
 
 func (*Endpoint) Method() string {
-	return http.MethodGet
+	return http.MethodPost
 }
