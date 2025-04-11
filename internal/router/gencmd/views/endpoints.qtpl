@@ -6,11 +6,11 @@
 package router
 
 import (
-	"trip2g/internal/logger"
+{% for _, name := range caseNames -%}
+	"trip2g/internal/case/{%s name %}"
+{% endfor -%}
 
-	"trip2g/internal/case/getnotehashes"
-	"trip2g/internal/case/listadminnotepaths"
-	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/logger"
 )
 
 var endpoints = []Endpoint{

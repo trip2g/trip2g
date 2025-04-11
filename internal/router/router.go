@@ -37,11 +37,25 @@ func New(env Env, prefix string) *Router {
 	}
 
 	for _, endpoint := range endpoints {
+		path := endpoint.Path()
+
 		switch endpoint.Method() {
 		case http.MethodGet:
-			router.getRoutes[endpoint.Path()] = endpoint
+			_, ok := router.getRoutes[path]
+			if ok {
+				panic("duplicate endpoint: " + path)
+			}
+
+			router.getRoutes[path] = endpoint
+
 		case http.MethodPost:
-			router.postRoutes[endpoint.Path()] = endpoint
+			_, ok := router.postRoutes[path]
+			if ok {
+				panic("duplicate endpoint: " + path)
+			}
+
+			router.postRoutes[path] = endpoint
+
 		default:
 			panic("unsupported method")
 		}

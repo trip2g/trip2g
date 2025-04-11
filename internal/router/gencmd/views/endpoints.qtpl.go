@@ -27,11 +27,21 @@ func StreamCode(qw422016 *qt422016.Writer, caseNames []string) {
 package router
 
 import (
+`)
+//line views/endpoints.qtpl:9
+	for _, name := range caseNames {
+//line views/endpoints.qtpl:9
+		qw422016.N().S(`	"trip2g/internal/case/`)
+//line views/endpoints.qtpl:10
+		qw422016.E().S(name)
+//line views/endpoints.qtpl:10
+		qw422016.N().S(`"
+`)
+//line views/endpoints.qtpl:11
+	}
+//line views/endpoints.qtpl:11
+	qw422016.N().S(`
 	"trip2g/internal/logger"
-
-	"trip2g/internal/case/getnotehashes"
-	"trip2g/internal/case/listadminnotepaths"
-	"trip2g/internal/case/pushnotes"
 )
 
 var endpoints = []Endpoint{

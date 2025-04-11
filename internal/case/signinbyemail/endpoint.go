@@ -1,0 +1,34 @@
+package signinbyemail
+
+import (
+	"net/http"
+	"trip2g/internal/appreq"
+)
+
+type Endpoint struct{}
+
+func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
+	response, err := Resolve(req.Req, req.Env.(Env), Request{})
+	if err != nil {
+		return nil, err
+	}
+
+	if response.tokenData != nil {
+		token, err := req.TokenManager.Store(req.Req, *response.tokenData)
+		if err != nil {
+			return nil, err
+		}
+
+		response.Token = token
+	}
+
+	return response, nil
+}
+
+func (*Endpoint) Path() string {
+	return "signinbyemail"
+}
+
+func (*Endpoint) Method() string {
+	return http.MethodPost
+}

@@ -5,23 +5,26 @@
 package router
 
 import (
-	"trip2g/internal/logger"
-
 	"trip2g/internal/case/getnotehashes"
 	"trip2g/internal/case/listadminnotepaths"
 	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/case/signinbyemail"
+
+	"trip2g/internal/logger"
 )
 
 var endpoints = []Endpoint{
 	&getnotehashes.Endpoint{},
 	&listadminnotepaths.Endpoint{},
 	&pushnotes.Endpoint{},
+	&signinbyemail.Endpoint{},
 }
 
 type Env interface {
 	getnotehashes.Env
 	listadminnotepaths.Env
 	pushnotes.Env
+	signinbyemail.Env
 
 	Logger() logger.Logger
 }
