@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -181,13 +180,6 @@ func (a *app) startServer() {
 				return
 			}
 
-			token, err := tokenManager.Extract(ctx)
-			if err != nil && !errors.Is(err, usertoken.ErrTokenMissing) {
-				ctx.SetStatusCode(http.StatusUnauthorized)
-				ctx.SetBodyString("401 Unauthorized")
-				return
-			}
-
 			req := appreq.Acquire()
 			req.Env = a
 			req.Req = ctx
@@ -196,6 +188,13 @@ func (a *app) startServer() {
 
 			if rtr.Handle(req) {
 				a.log.Debug("router handled request", "path", path)
+				return
+			}
+
+			token, err := req.UserToken()
+			if err != nil {
+				ctx.SetStatusCode(http.StatusServiceUnavailable)
+				ctx.SetBodyString("500 Internal Server Error")
 				return
 			}
 
