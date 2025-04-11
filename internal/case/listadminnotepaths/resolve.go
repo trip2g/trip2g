@@ -20,6 +20,7 @@ type NotePath struct {
 	Value     string
 	ValueHash string
 
+	VersionCount      int64
 	LatestContentHash string
 }
 
@@ -43,6 +44,7 @@ func Resolve(ctx context.Context, env Env, _ Request) (*Response, error) {
 			Value:     path.Value,
 			ValueHash: path.ValueHash,
 
+			VersionCount:      path.VersionCount,
 			LatestContentHash: path.LatestContentHash,
 		})
 	}

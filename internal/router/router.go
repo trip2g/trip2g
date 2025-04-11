@@ -9,6 +9,8 @@ import (
 	"github.com/mailru/easyjson"
 )
 
+//go:generate go run ./gencmd
+
 type Endpoint interface {
 	Handle(req *appreq.Request) (interface{}, error)
 	Path() string

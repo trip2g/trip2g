@@ -171,6 +171,8 @@ func easyjson5011676aDecodeTrip2gInternalCaseListadminnotepaths2(in *jlexer.Lexe
 			out.Value = string(in.String())
 		case "value_hash":
 			out.ValueHash = string(in.String())
+		case "version_count":
+			out.VersionCount = int64(in.Int64())
 		case "latest_content_hash":
 			out.LatestContentHash = string(in.String())
 		default:
@@ -201,6 +203,11 @@ func easyjson5011676aEncodeTrip2gInternalCaseListadminnotepaths2(out *jwriter.Wr
 		const prefix string = ",\"value_hash\":"
 		out.RawString(prefix)
 		out.String(string(in.ValueHash))
+	}
+	{
+		const prefix string = ",\"version_count\":"
+		out.RawString(prefix)
+		out.Int64(int64(in.VersionCount))
 	}
 	{
 		const prefix string = ",\"latest_content_hash\":"

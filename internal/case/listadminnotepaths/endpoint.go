@@ -12,7 +12,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (*Endpoint) Path() string {
-	return "listadminallnotepaths"
+	return "listadminnotepaths"
 }
 
 func (*Endpoint) Method() string {
