@@ -8,6 +8,7 @@ import (
 	"trip2g/internal/case/getnotehashes"
 	"trip2g/internal/case/listadminnotepaths"
 	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
 
@@ -18,6 +19,7 @@ var endpoints = []Endpoint{
 	&getnotehashes.Endpoint{},
 	&listadminnotepaths.Endpoint{},
 	&pushnotes.Endpoint{},
+	&requestemailsignin.Endpoint{},
 	&signinbyemail.Endpoint{},
 	&signout.Endpoint{},
 }
@@ -26,6 +28,7 @@ type Env interface {
 	getnotehashes.Env
 	listadminnotepaths.Env
 	pushnotes.Env
+	requestemailsignin.Env
 	signinbyemail.Env
 	signout.Env
 
