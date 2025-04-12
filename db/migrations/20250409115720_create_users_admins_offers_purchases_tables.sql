@@ -1,7 +1,7 @@
 -- migrate:up
 
 create table users (
-  id text primary key,
+  id integer primary key,
   email text not null unique,
   created_at datetime not null default current_timestamp,
   last_signin_code_sent_at datetime

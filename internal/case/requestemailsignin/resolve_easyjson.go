@@ -38,6 +38,29 @@ func easyjson5011676aDecodeTrip2gInternalCaseRequestemailsignin(in *jlexer.Lexer
 		switch key {
 		case "success":
 			out.Success = bool(in.Bool())
+		case "errors":
+			if in.IsNull() {
+				in.Skip()
+				out.Errors = nil
+			} else {
+				in.Delim('[')
+				if out.Errors == nil {
+					if !in.IsDelim(']') {
+						out.Errors = make([]string, 0, 4)
+					} else {
+						out.Errors = []string{}
+					}
+				} else {
+					out.Errors = (out.Errors)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v1 string
+					v1 = string(in.String())
+					out.Errors = append(out.Errors, v1)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -56,6 +79,22 @@ func easyjson5011676aEncodeTrip2gInternalCaseRequestemailsignin(out *jwriter.Wri
 		const prefix string = ",\"success\":"
 		out.RawString(prefix[1:])
 		out.Bool(bool(in.Success))
+	}
+	{
+		const prefix string = ",\"errors\":"
+		out.RawString(prefix)
+		if in.Errors == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v2, v3 := range in.Errors {
+				if v2 > 0 {
+					out.RawByte(',')
+				}
+				out.String(string(v3))
+			}
+			out.RawByte(']')
+		}
 	}
 	out.RawByte('}')
 }

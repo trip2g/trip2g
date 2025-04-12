@@ -15,12 +15,6 @@ CREATE TABLE note_versions (
   primary key (path_id, version),
   foreign key (path_id) references note_paths(id) on delete restrict
 );
-CREATE TABLE users (
-  id text primary key,
-  email text not null unique,
-  created_at datetime not null default current_timestamp,
-  last_signin_code_sent_at datetime
-);
 CREATE TABLE admins (
   user_id text primary key references users(id) on delete cascade,
   granted_at datetime not null default current_timestamp,
@@ -46,7 +40,19 @@ CREATE TABLE purchases (
   payment_provider text not null,
   payment_data json not null
 );
+CREATE TABLE users (
+  id integer primary key,
+  email text not null unique,
+  created_at datetime not null default current_timestamp,
+  last_signin_code_sent_at datetime
+);
+CREATE TABLE sign_in_codes (
+  user_id integer not null,
+  code integer not null,
+  created_at datetime not null default current_timestamp
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
-  ('20250409115720');
+  ('20250409115720'),
+  ('20250412053210');

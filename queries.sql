@@ -30,3 +30,15 @@ select * from note_versions
 select value as path, content
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version;
+
+-- name: GetUserByEmail :one
+select * from users where email = lower(?);
+
+-- name: CountActiveSignInCodes :one
+select count(*) from sign_in_codes
+ where user_id = ?
+   and created_at > datetime('now', '-5 minutes');
+
+-- name: InsertSignInCode :exec
+insert into sign_in_codes (user_id, code)
+values (?, ?);

@@ -57,8 +57,14 @@ type SchemaMigrations struct {
 	Version string `json:"version"`
 }
 
+type SignInCode struct {
+	UserID    int64     `json:"user_id"`
+	Code      int64     `json:"code"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type User struct {
-	ID                   string       `json:"id"`
+	ID                   int64        `json:"id"`
 	Email                string       `json:"email"`
 	CreatedAt            time.Time    `json:"created_at"`
 	LastSigninCodeSentAt sql.NullTime `json:"last_signin_code_sent_at"`

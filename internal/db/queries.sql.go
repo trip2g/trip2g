@@ -143,6 +143,35 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 	return items, nil
 }
 
+const countActiveSignInCodes = `-- name: CountActiveSignInCodes :one
+select count(*) from sign_in_codes
+ where user_id = ?
+   and created_at > datetime('now', '-5 minutes')
+`
+
+func (q *Queries) CountActiveSignInCodes(ctx context.Context, userID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countActiveSignInCodes, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+select id, email, created_at, last_signin_code_sent_at from users where email = lower(?)
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, lower string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmail, lower)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+	)
+	return i, err
+}
+
 const incrementNoteVersionCount = `-- name: IncrementNoteVersionCount :one
 update note_paths
    set version_count = version_count + 1
@@ -202,5 +231,20 @@ type InsertNoteVersionParams struct {
 
 func (q *Queries) InsertNoteVersion(ctx context.Context, arg InsertNoteVersionParams) error {
 	_, err := q.db.ExecContext(ctx, insertNoteVersion, arg.PathID, arg.Version, arg.Content)
+	return err
+}
+
+const insertSignInCode = `-- name: InsertSignInCode :exec
+insert into sign_in_codes (user_id, code)
+values (?, ?)
+`
+
+type InsertSignInCodeParams struct {
+	UserID int64 `json:"user_id"`
+	Code   int64 `json:"code"`
+}
+
+func (q *Queries) InsertSignInCode(ctx context.Context, arg InsertSignInCodeParams) error {
+	_, err := q.db.ExecContext(ctx, insertSignInCode, arg.UserID, arg.Code)
 	return err
 }

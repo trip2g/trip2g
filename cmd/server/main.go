@@ -31,6 +31,8 @@ import (
 )
 
 type app struct {
+	*db.Queries
+
 	mu sync.Mutex
 
 	pages map[string]*mdloader.Page
@@ -56,6 +58,8 @@ func main() {
 	}
 
 	a := &app{
+		Queries: db.New(conn),
+
 		log:     zerologger.New("debug", true),
 		queries: db.New(conn),
 		conn:    conn,
@@ -146,6 +150,15 @@ func (a *app) AllNotePaths(ctx context.Context) ([]db.NotePath, error) {
 
 func (a *app) Logger() logger.Logger {
 	return a.log
+}
+
+func (a *app) QueueRequestSignInEmail(ctx context.Context, email string, code int64) error {
+	a.log.Debug("queue sign in email", "email", email, "code", code)
+	return nil
+}
+
+func (a *app) CreateSignInCode(ctx context.Context, userID int64) (int64, error) {
+	return 0, nil
 }
 
 func (a *app) startServer() {
