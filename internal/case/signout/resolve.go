@@ -17,7 +17,7 @@ type Response struct {
 	Token string
 }
 
-func Resolve(ctx context.Context, env Env, _ Request) (*Response, error) {
+func Resolve(_ context.Context, env Env, _ Request) (*Response, error) {
 	response := &Response{
 		tokenData: nil,
 	}

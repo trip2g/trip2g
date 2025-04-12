@@ -15,9 +15,9 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	// admins can signout from the user session later.
 	if response.tokenData != nil {
-		token, err := req.TokenManager.Store(req.Req, *response.tokenData)
-		if err != nil {
-			return nil, err
+		token, storeErr := req.TokenManager.Store(req.Req, *response.tokenData)
+		if storeErr != nil {
+			return nil, storeErr
 		}
 
 		response.Token = token

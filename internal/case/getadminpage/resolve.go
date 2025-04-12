@@ -23,7 +23,7 @@ type Response struct {
 	Page *mdloader.Page
 }
 
-func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
+func Resolve(_ context.Context, env Env, req Request) (*Response, error) {
 	page, err := env.PageByPath(req.Path)
 	if err != nil {
 		if errors.Is(err, errors.New("page not found")) {

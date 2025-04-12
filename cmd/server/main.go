@@ -4,10 +4,11 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/binary"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -154,17 +155,27 @@ func (a *app) Logger() logger.Logger {
 	return a.log
 }
 
-func (a *app) QueueRequestSignInEmail(ctx context.Context, email string, code int64) error {
+func (a *app) QueueRequestSignInEmail(_ context.Context, email string, code int64) error {
 	a.log.Debug("queue sign in email", "email", email, "code", code)
 	return nil
 }
 
 func (a *app) CreateSignInCode(ctx context.Context, userID int64) (int64, error) {
-	// Generate a random 6-digit code
-	code := rand.Int63n(900000) + 100000 // Ensures a 6-digit number
+	// Generate a random 6-digit code using crypto/rand
+	var b [8]byte
+	_, err := rand.Read(b[:])
+	if err != nil {
+		return 0, fmt.Errorf("failed to generate random code: %w", err)
+	}
+
+	// Convert to int64 and ensure it's a 6-digit number
+	code := int64(binary.BigEndian.Uint64(b[:])) % 900000
+	if code < 100000 {
+		code += 100000
+	}
 
 	// Store the code in the database
-	err := a.queries.InsertSignInCode(ctx, db.InsertSignInCodeParams{
+	err = a.queries.InsertSignInCode(ctx, db.InsertSignInCodeParams{
 		UserID: userID,
 		Code:   code,
 	})
