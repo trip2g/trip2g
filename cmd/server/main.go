@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -159,7 +160,19 @@ func (a *app) QueueRequestSignInEmail(ctx context.Context, email string, code in
 }
 
 func (a *app) CreateSignInCode(ctx context.Context, userID int64) (int64, error) {
-	return 0, nil
+	// Generate a random 6-digit code
+	code := rand.Int63n(900000) + 100000 // Ensures a 6-digit number
+
+	// Store the code in the database
+	err := a.queries.InsertSignInCode(ctx, db.InsertSignInCodeParams{
+		UserID: userID,
+		Code:   code,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to insert sign-in code: %w", err)
+	}
+
+	return code, nil
 }
 
 func (a *app) PageByPath(path string) (*mdloader.Page, error) {
