@@ -156,6 +156,16 @@ func (q *Queries) CountActiveSignInCodes(ctx context.Context, userID int64) (int
 	return count, err
 }
 
+const deleteSignInCodesByUserID = `-- name: DeleteSignInCodesByUserID :exec
+delete from sign_in_codes
+ where user_id = ?
+`
+
+func (q *Queries) DeleteSignInCodesByUserID(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteSignInCodesByUserID, userID)
+	return err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 select id, email, created_at, last_signin_code_sent_at from users where email = lower(?)
 `

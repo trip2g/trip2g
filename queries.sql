@@ -51,3 +51,8 @@ select user_id
     and c.code = ?
     and c.created_at > datetime('now', '-5 minutes')
   limit 1;
+
+
+-- name: DeleteSignInCodesByUserID :exec
+delete from sign_in_codes
+ where user_id = ?;

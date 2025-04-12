@@ -13,6 +13,7 @@ import (
 type Env interface {
 	VerifySignInCode(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error)
 	BuildUserTokenData(ctx context.Context, userID int64) (*usertoken.Data, error)
+	DeleteSignInCodesByUserID(ctx context.Context, userID int64) error
 }
 
 type Request struct {
@@ -36,8 +37,6 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 		Code:  req.Code,
 	}
 
-	fmt.Printf("%+v\n", codeParams)
-
 	userID, err := env.VerifySignInCode(ctx, codeParams)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -48,10 +47,14 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 		return nil, fmt.Errorf("failed to list active sign-in codes: %w", err)
 	}
 
-	// Build user token data
 	tokenData, err := env.BuildUserTokenData(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build user token data: %w", err)
+	}
+
+	err = env.DeleteSignInCodesByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete sign-in codes: %w", err)
 	}
 
 	response.tokenData = tokenData
