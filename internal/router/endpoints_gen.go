@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/case/listadminnotepaths"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/signinbyemail"
+	"trip2g/internal/case/signout"
 
 	"trip2g/internal/logger"
 )
@@ -18,6 +19,7 @@ var endpoints = []Endpoint{
 	&listadminnotepaths.Endpoint{},
 	&pushnotes.Endpoint{},
 	&signinbyemail.Endpoint{},
+	&signout.Endpoint{},
 }
 
 type Env interface {
@@ -25,6 +27,7 @@ type Env interface {
 	listadminnotepaths.Env
 	pushnotes.Env
 	signinbyemail.Env
+	signout.Env
 
 	Logger() logger.Logger
 }
