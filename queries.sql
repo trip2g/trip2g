@@ -42,3 +42,12 @@ select count(*) from sign_in_codes
 -- name: InsertSignInCode :exec
 insert into sign_in_codes (user_id, code)
 values (?, ?);
+
+-- name: VerifySignInCode :one
+select user_id
+  from sign_in_codes c
+  join users u on c.user_id = u.id
+  where u.email = ?
+    and c.code = ?
+    and c.created_at > datetime('now', '-5 minutes')
+  limit 1;

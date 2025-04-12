@@ -44,6 +44,8 @@ type app struct {
 	conn    *sql.DB
 
 	log logger.Logger
+
+	tokenManager *usertoken.Manager
 }
 
 func main() {
@@ -60,8 +62,12 @@ func main() {
 		panic(err)
 	}
 
+	tokenManager := usertoken.NewManager("trip2g_token", []byte("secret"))
+
 	a := &app{
 		Queries: db.New(conn),
+
+		tokenManager: tokenManager,
 
 		log:     zerologger.New("debug", true),
 		queries: db.New(conn),
@@ -160,6 +166,14 @@ func (a *app) QueueRequestSignInEmail(_ context.Context, email string, code int6
 	return nil
 }
 
+func (a *app) BuildUserTokenData(ctx context.Context, userID int64) (*usertoken.Data, error) {
+	data := usertoken.Data{
+		ID: int(userID),
+	}
+
+	return &data, nil
+}
+
 func (a *app) CreateSignInCode(ctx context.Context, userID int64) (int64, error) {
 	// Generate a random 6-digit code using crypto/rand
 	var b [8]byte
@@ -214,8 +228,6 @@ func (a *app) startServer() {
 
 	fsHandler := fs.NewRequestHandler()
 
-	tokenManager := usertoken.NewManager("trip2g_token", []byte("secret"))
-
 	rtr := router.New(a, "/api/")
 
 	s := &fasthttp.Server{
@@ -233,7 +245,7 @@ func (a *app) startServer() {
 			req := appreq.Acquire()
 			req.Env = a
 			req.Req = ctx
-			req.TokenManager = tokenManager
+			req.TokenManager = a.tokenManager
 			defer appreq.Release(req)
 
 			if rtr.Handle(req) {

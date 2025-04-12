@@ -248,3 +248,25 @@ func (q *Queries) InsertSignInCode(ctx context.Context, arg InsertSignInCodePara
 	_, err := q.db.ExecContext(ctx, insertSignInCode, arg.UserID, arg.Code)
 	return err
 }
+
+const verifySignInCode = `-- name: VerifySignInCode :one
+select user_id
+  from sign_in_codes c
+  join users u on c.user_id = u.id
+  where u.email = ?
+    and c.code = ?
+    and c.created_at > datetime('now', '-5 minutes')
+  limit 1
+`
+
+type VerifySignInCodeParams struct {
+	Email string `json:"email"`
+	Code  int64  `json:"code"`
+}
+
+func (q *Queries) VerifySignInCode(ctx context.Context, arg VerifySignInCodeParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, verifySignInCode, arg.Email, arg.Code)
+	var user_id int64
+	err := row.Scan(&user_id)
+	return user_id, err
+}

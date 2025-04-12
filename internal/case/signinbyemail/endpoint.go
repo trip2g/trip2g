@@ -3,12 +3,21 @@ package signinbyemail
 import (
 	"net/http"
 	"trip2g/internal/appreq"
+
+	easyjson "github.com/mailru/easyjson"
 )
 
 type Endpoint struct{}
 
 func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
-	response, err := Resolve(req.Req, req.Env.(Env), Request{})
+	request := Request{}
+
+	err := easyjson.Unmarshal(req.Req.PostBody(), &request)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := Resolve(req.Req, req.Env.(Env), request)
 	if err != nil {
 		return nil, err
 	}
