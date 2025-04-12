@@ -42,3 +42,8 @@ select count(*) from sign_in_codes
 -- name: InsertSignInCode :exec
 insert into sign_in_codes (user_id, code)
 values (?, ?);
+
+-- name: GetAdminNoteVersion :one
+-- select v.* from note_versions v
+-- join note_paths p on p.id = v.path_id and v.version = p.version_count
+-- where path_id = ?;

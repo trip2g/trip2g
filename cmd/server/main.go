@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -159,6 +160,18 @@ func (a *app) QueueRequestSignInEmail(ctx context.Context, email string, code in
 
 func (a *app) CreateSignInCode(ctx context.Context, userID int64) (int64, error) {
 	return 0, nil
+}
+
+func (a *app) PageByPath(path string) (*mdloader.Page, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	page, ok := a.pages[path]
+	if !ok {
+		return nil, errors.New("page not found")
+	}
+
+	return page, nil
 }
 
 func (a *app) startServer() {

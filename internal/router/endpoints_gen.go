@@ -5,6 +5,7 @@
 package router
 
 import (
+	"trip2g/internal/case/getadminpage"
 	"trip2g/internal/case/getnotehashes"
 	"trip2g/internal/case/listadminnotepaths"
 	"trip2g/internal/case/pushnotes"
@@ -16,6 +17,7 @@ import (
 )
 
 var endpoints = []Endpoint{
+	&getadminpage.Endpoint{},
 	&getnotehashes.Endpoint{},
 	&listadminnotepaths.Endpoint{},
 	&pushnotes.Endpoint{},
@@ -25,6 +27,7 @@ var endpoints = []Endpoint{
 }
 
 type Env interface {
+	getadminpage.Env
 	getnotehashes.Env
 	listadminnotepaths.Env
 	pushnotes.Env

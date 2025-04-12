@@ -32,7 +32,7 @@ type Page struct {
 
 	Content []byte
 	HTML    template.HTML
-	Ast     ast.Node
+	ast     ast.Node // hide from JSON
 
 	Permalink string
 	Free      bool // without the paywall
@@ -120,7 +120,7 @@ func (ldr *loader) generatePageHTML(p *Page) error {
 
 	ldr.linkResolver.currentPage = p
 
-	err := ldr.md.Renderer().Render(&buf, p.Content, p.Ast)
+	err := ldr.md.Renderer().Render(&buf, p.Content, p.ast)
 	if err != nil {
 		return fmt.Errorf("failed to render file: %w", err)
 	}
@@ -132,7 +132,7 @@ func (ldr *loader) generatePageHTML(p *Page) error {
 
 func (ldr *loader) extractInLinks() error {
 	for _, p := range ldr.pages {
-		err := ast.Walk(p.Ast, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		err := ast.Walk(p.ast, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 			if n.Kind() != wikilink.Kind || !entering {
 				return ast.WalkContinue, nil
 			}
@@ -183,7 +183,7 @@ func (ldr *loader) parsePage(src SourceFile) (*Page, error) { //nolint:unparam /
 		Path:      src.Path,
 		Permalink: "/" + src.Path[:len(src.Path)-len(".md")],
 		Content:   src.Content,
-		Ast:       doc,
+		ast:       doc,
 		InLinks:   make(map[string]struct{}),
 	}
 
