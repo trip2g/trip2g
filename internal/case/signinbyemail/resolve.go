@@ -5,15 +5,14 @@ import (
 	"database/sql"
 	"fmt"
 	"trip2g/internal/db"
-	"trip2g/internal/usertoken"
 )
 
 //go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
 
 type Env interface {
 	VerifySignInCode(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error)
-	BuildUserTokenData(ctx context.Context, userID int64) (*usertoken.Data, error)
 	DeleteSignInCodesByUserID(ctx context.Context, userID int64) error
+	SetupUserToken(ctx context.Context, userID int64) (string, error)
 }
 
 type Request struct {
@@ -22,8 +21,6 @@ type Request struct {
 }
 
 type Response struct {
-	tokenData *usertoken.Data
-
 	Token string
 
 	Errors []string
@@ -47,7 +44,7 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 		return nil, fmt.Errorf("failed to list active sign-in codes: %w", err)
 	}
 
-	tokenData, err := env.BuildUserTokenData(ctx, userID)
+	token, err := env.SetupUserToken(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build user token data: %w", err)
 	}
@@ -57,7 +54,7 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 		return nil, fmt.Errorf("failed to delete sign-in codes: %w", err)
 	}
 
-	response.tokenData = tokenData
+	response.Token = token
 
 	return response, nil
 }

@@ -1,6 +1,7 @@
 package appreq
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"trip2g/internal/usertoken"
@@ -8,8 +9,12 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-var ErrNotFound = errors.New("appenv: not found")
-var ErrInvalidType = errors.New("appenv: invalid type")
+var ErrNotFound = errors.New("appreq: not found in context")
+var ErrInvalidType = errors.New("appreq: invalid type")
+
+type ctxKeyW struct{}
+
+var ctxKey = &ctxKeyW{}
 
 type Request struct {
 	sync.Mutex
@@ -30,6 +35,19 @@ func (c *Request) Reset() {
 	c.TokenManager = nil
 	c.token = nil
 	c.tokenExtracted = false
+}
+
+func (c *Request) StoreInContext() {
+	c.Req.SetUserValue(ctxKey, c)
+}
+
+func FromCtx(ctx context.Context) (*Request, error) {
+	c, ok := ctx.Value(ctxKey).(*Request)
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	return c, nil
 }
 
 func (c *Request) UserToken() (*usertoken.Data, error) {

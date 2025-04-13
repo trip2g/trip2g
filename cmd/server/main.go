@@ -166,12 +166,22 @@ func (a *app) QueueRequestSignInEmail(_ context.Context, email string, code int6
 	return nil
 }
 
-func (a *app) BuildUserTokenData(ctx context.Context, userID int64) (*usertoken.Data, error) {
+func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) {
 	data := usertoken.Data{
 		ID: int(userID),
 	}
 
-	return &data, nil
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	token, err := req.TokenManager.Store(req.Req, data)
+	if err != nil {
+		return "", fmt.Errorf("failed to store token: %w", err)
+	}
+
+	return token, nil
 }
 
 func (a *app) CreateSignInCode(ctx context.Context, userID int64) (int64, error) {
@@ -246,6 +256,7 @@ func (a *app) startServer() {
 			req.Env = a
 			req.Req = ctx
 			req.TokenManager = a.tokenManager
+			req.StoreInContext()
 			defer appreq.Release(req)
 
 			if rtr.Handle(req) {
