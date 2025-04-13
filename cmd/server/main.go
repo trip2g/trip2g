@@ -184,21 +184,29 @@ func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) 
 	return token, nil
 }
 
+var ErrFailedGeneration = errors.New("failed to generate code")
+
+func generateSixDigitCode() (int64, error) {
+	for i := 0; i < 100; i++ {
+		var b [4]byte
+		if _, err := rand.Read(b[:]); err != nil {
+			return 0, fmt.Errorf("failed to read random bytes: %w", err)
+		}
+		n := binary.BigEndian.Uint32(b[:]) % 1000000
+		if n >= 100000 {
+			return int64(n), nil
+		}
+	}
+
+	return 0, ErrFailedGeneration
+}
+
 func (a *app) CreateSignInCode(ctx context.Context, userID int64) (int64, error) {
-	// Generate a random 6-digit code using crypto/rand
-	var b [8]byte
-	_, err := rand.Read(b[:])
+	code, err := generateSixDigitCode()
 	if err != nil {
-		return 0, fmt.Errorf("failed to generate random code: %w", err)
+		return 0, err
 	}
 
-	// Convert to int64 and ensure it's a 6-digit number
-	code := int64(binary.BigEndian.Uint64(b[:])) % 900000
-	if code < 100000 {
-		code += 100000
-	}
-
-	// Store the code in the database
 	err = a.queries.InsertSignInCode(ctx, db.InsertSignInCodeParams{
 		UserID: userID,
 		Code:   code,
