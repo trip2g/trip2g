@@ -35,7 +35,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	defer f.Close()
+	defer func() {
+		closeErr := f.Close()
+		if closeErr != nil {
+			log.Fatal(closeErr)
+		}
+	}()
 
 	views.WriteCode(f, cases)
 }

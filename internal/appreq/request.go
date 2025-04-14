@@ -17,7 +17,7 @@ type ctxKeyW struct{}
 var ctxKey = &ctxKeyW{}
 
 type Request struct {
-	sync.Mutex
+	mu sync.Mutex
 
 	Env interface{}
 	Req *fasthttp.RequestCtx
@@ -51,8 +51,8 @@ func FromCtx(ctx context.Context) (*Request, error) {
 }
 
 func (c *Request) UserToken() (*usertoken.Data, error) {
-	c.Lock()
-	defer c.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	if c.tokenExtracted {
 		return c.token, nil
