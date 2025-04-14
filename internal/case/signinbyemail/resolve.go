@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+
 	"trip2g/internal/db"
+	"trip2g/internal/validator"
 )
 
 //go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
@@ -19,6 +22,26 @@ type Env interface {
 type Request struct {
 	Email string
 	Code  int64
+}
+
+var ErrInvalidEmail = errors.New("invalid email")
+var ErrInvalidCode = errors.New("invalid code")
+
+func (r *Request) Normalize() {
+	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
+}
+
+func (r *Request) Validate() error {
+	err := validator.CheckEmail(r.Email)
+	if err != nil {
+		return fmt.Errorf("invalid email: %w", err)
+	}
+
+	if r.Code < 100000 || r.Code > 999999 {
+		return ErrInvalidCode
+	}
+
+	return nil
 }
 
 type Response struct {

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"trip2g/internal/appreq"
 
-	easyjson "github.com/mailru/easyjson"
+	"github.com/mailru/easyjson"
 )
 
 type Endpoint struct{}
@@ -13,6 +13,13 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	request := Request{}
 
 	err := easyjson.Unmarshal(req.Req.PostBody(), &request)
+	if err != nil {
+		return nil, err
+	}
+
+	request.Normalize()
+
+	err = request.Validate()
 	if err != nil {
 		return nil, err
 	}
