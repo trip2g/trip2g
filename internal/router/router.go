@@ -65,14 +65,14 @@ func New(env Env, prefix string) *Router {
 }
 
 // Handle returns true if the request was handled.
-func (router *Router) Handle(req *appreq.Request) bool {
+func (router *Router) Handle(req *appreq.Request) (bool, error) {
 	var routes map[string]Endpoint
 
 	ctx := req.Req
 
 	rawPath := ctx.Path()
 	if len(rawPath) <= router.prefixLen {
-		return false
+		return false, nil
 	}
 
 	if b2s(ctx.Method()) == http.MethodGet {
@@ -85,20 +85,20 @@ func (router *Router) Handle(req *appreq.Request) bool {
 
 	endpoint, ok := routes[path]
 	if !ok {
-		return false
+		return false, nil
 	}
 
 	respI, err := endpoint.Handle(req)
 	if err != nil {
 		ctx.SetStatusCode(http.StatusInternalServerError)
 		ctx.SetBody([]byte(err.Error()))
-		return true
+		return true, err
 	}
 
 	resp, ok := respI.(easyjson.Marshaler)
 	if !ok {
 		// the handler must write the response itself
-		return true
+		return true, nil
 	}
 
 	rawBytes, err := easyjson.Marshal(resp)
@@ -106,14 +106,14 @@ func (router *Router) Handle(req *appreq.Request) bool {
 		router.env.Logger().Error("failed to marshal response", "err", err, "path", path)
 		ctx.SetStatusCode(http.StatusInternalServerError)
 		ctx.SetBody([]byte(err.Error()))
-		return true
+		return true, err
 	}
 
 	ctx.SetStatusCode(http.StatusOK)
 	ctx.SetContentType("application/json")
 	ctx.SetBody(rawBytes)
 
-	return true
+	return true, nil
 }
 
 // read https://github.com/valyala/fasthttp?tab=readme-ov-file#tricks-with-byte-buffers.

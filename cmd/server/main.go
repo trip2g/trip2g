@@ -287,14 +287,49 @@ func (a *app) startServer() {
 				return
 			}
 
+			tx, err := a.conn.BeginTx(ctx, nil)
+			if err != nil {
+				ctx.SetStatusCode(http.StatusServiceUnavailable)
+				ctx.SetBodyString("500 Internal Server Error")
+				return
+			}
+
+			defer tx.Rollback()
+
+			// TODO: use a pool
+			newEnv := *a
+			newEnv.queries = db.New(tx)
+			newEnv.Queries = newEnv.queries
+
 			req := appreq.Acquire()
-			req.Env = a
+			req.Env = &newEnv
 			req.Req = ctx
 			req.TokenManager = a.tokenManager
 			req.StoreInContext()
 			defer appreq.Release(req)
 
-			if rtr.Handle(req) {
+			handled, handleErr := rtr.Handle(req)
+
+			// TODO: refactor this
+			if handleErr == nil {
+				commitErr := tx.Commit()
+				if commitErr != nil {
+					a.log.Error("failed to commit transaction", "error", commitErr)
+					ctx.SetStatusCode(http.StatusServiceUnavailable)
+					ctx.SetBodyString("500 Internal Server Error")
+					return
+				}
+			} else {
+				rollbackErr := tx.Rollback()
+				if rollbackErr != nil {
+					a.log.Error("failed to rollback transaction", "error", rollbackErr)
+					ctx.SetStatusCode(http.StatusServiceUnavailable)
+					ctx.SetBodyString("500 Internal Server Error")
+					return
+				}
+			}
+
+			if handled {
 				a.log.Debug("router handled request", "path", path)
 				return
 			}
