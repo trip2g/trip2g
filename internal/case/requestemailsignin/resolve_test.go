@@ -1,4 +1,4 @@
-package requestemailsignin
+package requestemailsignin_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/db"
 
 	"github.com/kr/pretty"
@@ -13,23 +14,26 @@ import (
 
 //go:generate go run github.com/matryer/moq@latest -out mocks_test.go . Env
 
+type envMock = requestemailsignin.EnvMock
+type request = requestemailsignin.Request
+
 func TestResolve(t *testing.T) {
 	type args struct {
 		ctx context.Context
-		env Env
-		req Request
+		env requestemailsignin.Env
+		req requestemailsignin.Request
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    *Response
+		want    *requestemailsignin.Response
 		wantErr bool
 	}{
 		{
 			name: "successful request",
 			args: args{
 				ctx: context.Background(),
-				env: &EnvMock{
+				env: &envMock{
 					GetUserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 						return db.User{ID: 1, Email: email}, nil
 					},
@@ -43,11 +47,11 @@ func TestResolve(t *testing.T) {
 						return nil
 					},
 				},
-				req: Request{
+				req: request{
 					Email: "user@example.com",
 				},
 			},
-			want: &Response{
+			want: &requestemailsignin.Response{
 				Success: true,
 				Errors:  nil,
 			},
@@ -57,16 +61,16 @@ func TestResolve(t *testing.T) {
 			name: "user not found",
 			args: args{
 				ctx: context.Background(),
-				env: &EnvMock{
+				env: &envMock{
 					GetUserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 						return db.User{}, sql.ErrNoRows
 					},
 				},
-				req: Request{
+				req: request{
 					Email: "nonexistent@example.com",
 				},
 			},
-			want: &Response{
+			want: &requestemailsignin.Response{
 				Success: false,
 				Errors:  []string{"user_not_found"},
 			},
@@ -76,7 +80,7 @@ func TestResolve(t *testing.T) {
 			name: "too many active codes",
 			args: args{
 				ctx: context.Background(),
-				env: &EnvMock{
+				env: &envMock{
 					GetUserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 						return db.User{ID: 1, Email: email}, nil
 					},
@@ -84,11 +88,11 @@ func TestResolve(t *testing.T) {
 						return 4, nil
 					},
 				},
-				req: Request{
+				req: request{
 					Email: "user@example.com",
 				},
 			},
-			want: &Response{
+			want: &requestemailsignin.Response{
 				Success: false,
 				Errors:  []string{"too_many_sign_in_codes"},
 			},
@@ -98,12 +102,12 @@ func TestResolve(t *testing.T) {
 			name: "error getting user",
 			args: args{
 				ctx: context.Background(),
-				env: &EnvMock{
+				env: &envMock{
 					GetUserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 						return db.User{}, errors.New("database error")
 					},
 				},
-				req: Request{
+				req: request{
 					Email: "user@example.com",
 				},
 			},
@@ -114,7 +118,7 @@ func TestResolve(t *testing.T) {
 			name: "error counting active codes",
 			args: args{
 				ctx: context.Background(),
-				env: &EnvMock{
+				env: &envMock{
 					GetUserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 						return db.User{ID: 1, Email: email}, nil
 					},
@@ -122,7 +126,7 @@ func TestResolve(t *testing.T) {
 						return 0, errors.New("database error")
 					},
 				},
-				req: Request{
+				req: request{
 					Email: "user@example.com",
 				},
 			},
@@ -133,7 +137,7 @@ func TestResolve(t *testing.T) {
 			name: "error creating sign-in code",
 			args: args{
 				ctx: context.Background(),
-				env: &EnvMock{
+				env: &envMock{
 					GetUserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 						return db.User{ID: 1, Email: email}, nil
 					},
@@ -144,7 +148,7 @@ func TestResolve(t *testing.T) {
 						return 0, errors.New("database error")
 					},
 				},
-				req: Request{
+				req: request{
 					Email: "user@example.com",
 				},
 			},
@@ -155,7 +159,7 @@ func TestResolve(t *testing.T) {
 			name: "error queueing email",
 			args: args{
 				ctx: context.Background(),
-				env: &EnvMock{
+				env: &envMock{
 					GetUserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 						return db.User{ID: 1, Email: email}, nil
 					},
@@ -169,7 +173,7 @@ func TestResolve(t *testing.T) {
 						return errors.New("email service error")
 					},
 				},
-				req: Request{
+				req: request{
 					Email: "user@example.com",
 				},
 			},
@@ -179,7 +183,7 @@ func TestResolve(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Resolve(tt.args.ctx, tt.args.env, tt.args.req)
+			got, err := requestemailsignin.Resolve(tt.args.ctx, tt.args.env, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Resolve() error = %v, wantErr %v", err, tt.wantErr)
 				return

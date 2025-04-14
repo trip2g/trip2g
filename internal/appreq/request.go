@@ -14,7 +14,7 @@ var ErrInvalidType = errors.New("appreq: invalid type")
 
 type ctxKeyW struct{}
 
-var ctxKey = &ctxKeyW{}
+var ctxKey = &ctxKeyW{} //nolint:gochecknoglobals // it's a common pattern.
 
 type Request struct {
 	mu sync.Mutex
@@ -77,7 +77,7 @@ var ctxPool = &sync.Pool{
 }
 
 func Acquire() *Request {
-	return ctxPool.Get().(*Request)
+	return ctxPool.Get().(*Request) //nolint:errcheck // it's a common pattern for sync.Pool
 }
 
 func Release(c *Request) {

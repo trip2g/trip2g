@@ -1,8 +1,9 @@
-package mdloader
+package mdloader_test
 
 import (
 	"testing"
 	"trip2g/internal/logger"
+	"trip2g/internal/mdloader"
 
 	"github.com/bradleyjkemp/cupaloy"
 	"github.com/stretchr/testify/require"
@@ -11,7 +12,7 @@ import (
 func TestFlatIndexFirstSecond(t *testing.T) {
 	log := logger.TestLogger{}
 
-	sourceFiles := []SourceFile{{
+	sourceFiles := []mdloader.SourceFile{{
 		Path:    "index.md",
 		Content: []byte(`Hello [[first]] [[second]]`),
 	}, {
@@ -26,7 +27,7 @@ First. Second [[second]] [[dead]]`),
 		Content: []byte(`Second.`),
 	}}
 
-	pages, err := Load(sourceFiles, &log)
+	pages, err := mdloader.Load(sourceFiles, &log)
 	require.NoError(t, err)
 	require.Len(t, pages, 3)
 
@@ -44,7 +45,7 @@ First. Second [[second]] [[dead]]`),
 func TestRelatedLinks(t *testing.T) {
 	log := logger.TestLogger{}
 
-	sourceFiles := []SourceFile{{
+	sourceFiles := []mdloader.SourceFile{{
 		Path: "second.md",
 		Content: []byte(`---
 free: true
@@ -64,7 +65,7 @@ free: true
 nested second`),
 	}}
 
-	pages, err := Load(sourceFiles, &log)
+	pages, err := mdloader.Load(sourceFiles, &log)
 	require.NoError(t, err)
 	require.Len(t, pages, 3)
 
@@ -84,7 +85,7 @@ nested second`),
 func TestPaywallLinks(t *testing.T) {
 	log := logger.TestLogger{}
 
-	sourceFiles := []SourceFile{{
+	sourceFiles := []mdloader.SourceFile{{
 		Path: "index.md",
 		Content: []byte(`---
 free: true
@@ -95,7 +96,7 @@ Hello [[hidden]]`),
 		Content: []byte(`Payed content`),
 	}}
 
-	pages, err := Load(sourceFiles, &log)
+	pages, err := mdloader.Load(sourceFiles, &log)
 	require.NoError(t, err)
 
 	htmlSources := map[string]string{}

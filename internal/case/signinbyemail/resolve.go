@@ -3,6 +3,7 @@ package signinbyemail
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"trip2g/internal/db"
 )
@@ -36,7 +37,7 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 
 	userID, err := env.VerifySignInCode(ctx, codeParams)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			response.Errors = append(response.Errors, "invalid_code")
 			return response, nil
 		}

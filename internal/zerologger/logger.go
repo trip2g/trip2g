@@ -1,6 +1,7 @@
 package zerologger
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -38,7 +39,12 @@ func convertToFields(kv []interface{}) map[string]interface{} {
 	m := make(map[string]interface{})
 	for i := 0; i < len(kv); i += 2 {
 		if i+1 < len(kv) {
-			m[kv[i].(string)] = kv[i+1]
+			key, ok := kv[i].(string)
+			if !ok {
+				key = fmt.Sprintf("%v (non-string key)", kv[i])
+			}
+
+			m[key] = kv[i+1]
 		}
 	}
 	return m

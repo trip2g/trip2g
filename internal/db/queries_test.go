@@ -1,4 +1,4 @@
-package db
+package db_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 	"time"
+	"trip2g/internal/db"
 
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	_ "github.com/amacneil/dbmate/v2/pkg/driver/sqlite"
@@ -17,7 +18,7 @@ import (
 )
 
 func createDB(t *testing.T) *sql.DB {
-	f, err := os.CreateTemp("", "trip2g_test_db_")
+	f, err := os.CreateTemp(t.TempDir(), "trip2g_test_db_")
 	require.NoError(t, err)
 
 	err = f.Close()
@@ -47,13 +48,13 @@ func createDB(t *testing.T) *sql.DB {
 	return conn
 }
 
-func createTxQueries(t *testing.T) *Queries {
+func createTxQueries(t *testing.T) *db.Queries {
 	conn := createDB(t)
 
 	tx, err := conn.Begin()
 	require.NoError(t, err)
 
-	return New(tx)
+	return db.New(tx)
 }
 
 func TestInsertNote(t *testing.T) {
@@ -62,7 +63,7 @@ func TestInsertNote(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	note := Note{
+	note := db.Note{
 		Path:    "test.md",
 		Content: "test",
 	}
@@ -95,12 +96,12 @@ func TestCheckPathHashCollisions(t *testing.T) {
 
 	// Collision found: 'a7ex' and 'c5kt' → base64prefix: eqoF1k
 
-	note0 := Note{
+	note0 := db.Note{
 		Path:    "a7ex",
 		Content: "a7ex",
 	}
 
-	note1 := Note{
+	note1 := db.Note{
 		Path:    "c5kt",
 		Content: "c5kt",
 	}

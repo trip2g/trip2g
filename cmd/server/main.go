@@ -214,7 +214,7 @@ func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) 
 var ErrFailedGeneration = errors.New("failed to generate code")
 
 func generateSixDigitCode() (int64, error) {
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		var b [4]byte
 		if _, err := rand.Read(b[:]); err != nil {
 			return 0, fmt.Errorf("failed to read random bytes: %w", err)
@@ -314,7 +314,15 @@ func (a *app) startServer() {
 		mux := http.DefaultServeMux
 		backliteui.NewHandler(a.conn).Register(mux)
 
-		backErr := http.ListenAndServe(":8082", mux)
+		server := &http.Server{
+			Addr:         ":8082",
+			Handler:      mux,
+			ReadTimeout:  15 * time.Second,
+			WriteTimeout: 15 * time.Second,
+			IdleTimeout:  60 * time.Second,
+		}
+
+		backErr := server.ListenAndServe()
 		if backErr != nil {
 			panic(backErr)
 		}

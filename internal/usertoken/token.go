@@ -37,7 +37,7 @@ var (
 	ErrInvalidToken = errors.New("invalid or expired JWT")
 )
 
-// NewExtractor creates a new Extractor instance.
+// NewManager creates a new Manager instance.
 func NewManager(cookieName string, secret []byte) *Manager {
 	return &Manager{
 		cookieName: cookieName,
