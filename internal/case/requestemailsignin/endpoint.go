@@ -17,6 +17,13 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, err
 	}
 
+	request.Normalize()
+
+	err = request.Validate()
+	if err != nil {
+		return nil, err
+	}
+
 	return Resolve(req.Req, req.Env.(Env), request)
 }
 
