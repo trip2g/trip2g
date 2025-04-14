@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,9 +17,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/valyala/fasthttp"
-
 	"trip2g/internal/appreq"
+	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
@@ -26,6 +26,10 @@ import (
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
 	"trip2g/views"
+
+	"github.com/mikestefanello/backlite"
+	backliteui "github.com/mikestefanello/backlite/ui"
+	"github.com/valyala/fasthttp"
 
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	_ "github.com/amacneil/dbmate/v2/pkg/driver/sqlite"
@@ -46,6 +50,7 @@ type app struct {
 	log logger.Logger
 
 	tokenManager *usertoken.Manager
+	queueClient  *backlite.Client
 }
 
 func main() {
@@ -57,17 +62,31 @@ func main() {
 		panic(err)
 	}
 
-	conn, err := sql.Open("sqlite", "data.sqlite3")
+	conn, err := sql.Open("sqlite", "data.sqlite3?_journal=WAL&_timeout=5000")
 	if err != nil {
 		panic(err)
 	}
 
 	tokenManager := usertoken.NewManager("trip2g_token", []byte("secret"))
 
+	queueConfig := backlite.ClientConfig{
+		DB:              conn,
+		Logger:          slog.Default(),
+		ReleaseAfter:    10 * time.Minute,
+		NumWorkers:      10,
+		CleanupInterval: time.Hour,
+	}
+
+	queueClient, err := backlite.NewClient(queueConfig)
+	if err != nil {
+		panic(err)
+	}
+
 	a := &app{
 		Queries: db.New(conn),
 
 		tokenManager: tokenManager,
+		queueClient:  queueClient,
 
 		log:     zerologger.New("debug", true),
 		queries: db.New(conn),
@@ -75,6 +94,14 @@ func main() {
 	}
 
 	ctx := context.Background()
+
+	queueClient.Register(sendsignincode.NewQueue(a))
+	queueClient.Start(ctx)
+
+	err = queueClient.Add(sendsignincode.Task{Email: "test@example.com", Code: 313353}).Save()
+	if err != nil {
+		panic(err)
+	}
 
 	err = a.PrepareNotes(ctx)
 	if err != nil {
@@ -282,6 +309,16 @@ func (a *app) startServer() {
 			a.handlePages(ctx, path, token)
 		},
 	}
+
+	go func() {
+		mux := http.DefaultServeMux
+		backliteui.NewHandler(a.conn).Register(mux)
+
+		backErr := http.ListenAndServe(":8082", mux)
+		if backErr != nil {
+			panic(backErr)
+		}
+	}()
 
 	err := s.ListenAndServe(":8081")
 	if err != nil {
