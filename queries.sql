@@ -75,3 +75,9 @@ update offers
      , ends_at = ?
  where id = ?
 returning *;
+
+-- name: DeleteOffer :one
+update offers
+   set ends_at = datetime('now')
+ where id = ?
+returning *;

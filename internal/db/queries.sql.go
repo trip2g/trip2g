@@ -235,6 +235,30 @@ func (q *Queries) CreateOffer(ctx context.Context, arg CreateOfferParams) (Offer
 	return i, err
 }
 
+const deleteOffer = `-- name: DeleteOffer :one
+update offers
+   set ends_at = datetime('now')
+ where id = ?
+returning id, created_at, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at
+`
+
+func (q *Queries) DeleteOffer(ctx context.Context, id int64) (Offer, error) {
+	row := q.db.QueryRowContext(ctx, deleteOffer, id)
+	var i Offer
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.Names,
+		&i.Lifetime,
+		&i.PriceUsd,
+		&i.PriceRub,
+		&i.PriceBtc,
+		&i.StartsAt,
+		&i.EndsAt,
+	)
+	return i, err
+}
+
 const deleteSignInCodesByUserID = `-- name: DeleteSignInCodesByUserID :exec
 delete from sign_in_codes
  where user_id = ?

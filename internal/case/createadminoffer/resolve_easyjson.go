@@ -39,6 +39,16 @@ func easyjson5011676aDecodeTrip2gInternalCaseCreateadminoffer(in *jlexer.Lexer, 
 			continue
 		}
 		switch key {
+		case "row":
+			if in.IsNull() {
+				in.Skip()
+				out.Row = nil
+			} else {
+				if out.Row == nil {
+					out.Row = new(db.Offer)
+				}
+				easyjson5011676aDecodeTrip2gInternalDb(in, out.Row)
+			}
 		case "success":
 			out.Success = bool(in.Bool())
 		case "errors":
@@ -64,16 +74,6 @@ func easyjson5011676aDecodeTrip2gInternalCaseCreateadminoffer(in *jlexer.Lexer, 
 				}
 				in.Delim(']')
 			}
-		case "row":
-			if in.IsNull() {
-				in.Skip()
-				out.Row = nil
-			} else {
-				if out.Row == nil {
-					out.Row = new(db.Offer)
-				}
-				easyjson5011676aDecodeTrip2gInternalDb(in, out.Row)
-			}
 		default:
 			in.SkipRecursive()
 		}
@@ -89,8 +89,17 @@ func easyjson5011676aEncodeTrip2gInternalCaseCreateadminoffer(out *jwriter.Write
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"success\":"
+		const prefix string = ",\"row\":"
 		out.RawString(prefix[1:])
+		if in.Row == nil {
+			out.RawString("null")
+		} else {
+			easyjson5011676aEncodeTrip2gInternalDb(out, *in.Row)
+		}
+	}
+	{
+		const prefix string = ",\"success\":"
+		out.RawString(prefix)
 		out.Bool(bool(in.Success))
 	}
 	{
@@ -107,15 +116,6 @@ func easyjson5011676aEncodeTrip2gInternalCaseCreateadminoffer(out *jwriter.Write
 				out.String(string(v3))
 			}
 			out.RawByte(']')
-		}
-	}
-	{
-		const prefix string = ",\"row\":"
-		out.RawString(prefix)
-		if in.Row == nil {
-			out.RawString("null")
-		} else {
-			easyjson5011676aEncodeTrip2gInternalDb(out, *in.Row)
 		}
 	}
 	out.RawByte('}')
