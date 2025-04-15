@@ -15,6 +15,30 @@ type Admin struct {
 	GrantedBy sql.NullString `json:"granted_by"`
 }
 
+type BackliteTask struct {
+	ID             string        `json:"id"`
+	CreatedAt      int64         `json:"created_at"`
+	Queue          string        `json:"queue"`
+	Task           []byte        `json:"task"`
+	WaitUntil      sql.NullInt64 `json:"wait_until"`
+	ClaimedAt      sql.NullInt64 `json:"claimed_at"`
+	LastExecutedAt sql.NullInt64 `json:"last_executed_at"`
+	Attempts       int64         `json:"attempts"`
+}
+
+type BackliteTasksCompleted struct {
+	ID                string         `json:"id"`
+	CreatedAt         int64          `json:"created_at"`
+	Queue             string         `json:"queue"`
+	LastExecutedAt    sql.NullInt64  `json:"last_executed_at"`
+	Attempts          int64          `json:"attempts"`
+	LastDurationMicro sql.NullInt64  `json:"last_duration_micro"`
+	Succeeded         sql.NullInt64  `json:"succeeded"`
+	Task              []byte         `json:"task"`
+	ExpiresAt         sql.NullInt64  `json:"expires_at"`
+	Error             sql.NullString `json:"error"`
+}
+
 type NotePath struct {
 	ID                int64       `json:"id"`
 	Value             string      `json:"value"`

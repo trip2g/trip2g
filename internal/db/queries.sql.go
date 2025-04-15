@@ -143,6 +143,43 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 	return items, nil
 }
 
+const allOffers = `-- name: AllOffers :many
+select id, created_at, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at from offers order by id
+`
+
+func (q *Queries) AllOffers(ctx context.Context) ([]Offer, error) {
+	rows, err := q.db.QueryContext(ctx, allOffers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Offer
+	for rows.Next() {
+		var i Offer
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.Names,
+			&i.Lifetime,
+			&i.PriceUsd,
+			&i.PriceRub,
+			&i.PriceBtc,
+			&i.StartsAt,
+			&i.EndsAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const countActiveSignInCodes = `-- name: CountActiveSignInCodes :one
 select count(*) from sign_in_codes
  where user_id = ?

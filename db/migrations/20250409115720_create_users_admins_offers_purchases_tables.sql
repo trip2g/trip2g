@@ -16,7 +16,7 @@ create table admins (
 create table offers (
   id text primary key,
   created_at datetime not null default current_timestamp,
-  names text not null,-- e.g. "course-a|course-b"
+  names text not null,-- e.g. "course-a|course-b" sorted alphabetically
   lifetime text not null, -- e.g. "+600 days"
   price_usd numeric,
   price_rub numeric,

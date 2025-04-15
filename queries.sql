@@ -52,7 +52,9 @@ select user_id
     and c.created_at > datetime('now', '-5 minutes')
   limit 1;
 
-
 -- name: DeleteSignInCodesByUserID :exec
 delete from sign_in_codes
  where user_id = ?;
+
+-- name: AllOffers :many
+select * from offers order by id;
