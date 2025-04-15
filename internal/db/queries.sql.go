@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 const allLatestNotes = `-- name: AllLatestNotes :many
@@ -191,6 +192,36 @@ func (q *Queries) CountActiveSignInCodes(ctx context.Context, userID int64) (int
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const createOffer = `-- name: CreateOffer :exec
+insert into offers (id, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at)
+values (?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateOfferParams struct {
+	ID       string          `json:"id"`
+	Names    string          `json:"names"`
+	Lifetime string          `json:"lifetime"`
+	PriceUsd sql.NullFloat64 `json:"price_usd"`
+	PriceRub sql.NullFloat64 `json:"price_rub"`
+	PriceBtc sql.NullFloat64 `json:"price_btc"`
+	StartsAt sql.NullTime    `json:"starts_at"`
+	EndsAt   sql.NullTime    `json:"ends_at"`
+}
+
+func (q *Queries) CreateOffer(ctx context.Context, arg CreateOfferParams) error {
+	_, err := q.db.ExecContext(ctx, createOffer,
+		arg.ID,
+		arg.Names,
+		arg.Lifetime,
+		arg.PriceUsd,
+		arg.PriceRub,
+		arg.PriceBtc,
+		arg.StartsAt,
+		arg.EndsAt,
+	)
+	return err
 }
 
 const deleteSignInCodesByUserID = `-- name: DeleteSignInCodesByUserID :exec
