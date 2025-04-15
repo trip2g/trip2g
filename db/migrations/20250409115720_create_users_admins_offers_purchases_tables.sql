@@ -17,7 +17,7 @@ create table offers (
   id text primary key,
   created_at datetime not null default current_timestamp,
   names text not null,-- e.g. "course-a|course-b" sorted alphabetically
-  lifetime text not null, -- e.g. "+600 days"
+  lifetime text, -- e.g. "+600 days", null means no expiration
   price_usd numeric,
   price_rub numeric,
   price_btc numeric,

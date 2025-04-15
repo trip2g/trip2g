@@ -2,7 +2,6 @@ package listadminoffers
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 	"trip2g/internal/db"
@@ -21,7 +20,7 @@ type Offer struct {
 	ID        string
 	CreatedAt time.Time
 	Names     string
-	Lifetime  string
+	Lifetime  *string
 	PriceUSD  *float64
 	PriceRUB  *float64
 	PriceBTC  *float64
@@ -31,22 +30,6 @@ type Offer struct {
 
 type Response struct {
 	Rows []Offer `json:"rows"`
-}
-
-func nullFloat64(v sql.NullFloat64) *float64 {
-	if v.Valid {
-		return &v.Float64
-	}
-
-	return nil
-}
-
-func nullTime(v sql.NullTime) *time.Time {
-	if v.Valid {
-		return &v.Time
-	}
-
-	return nil
 }
 
 func Resolve(ctx context.Context, env Env, _ Request) (*Response, error) {
@@ -64,14 +47,14 @@ func Resolve(ctx context.Context, env Env, _ Request) (*Response, error) {
 			ID:        offer.ID,
 			CreatedAt: offer.CreatedAt,
 			Names:     offer.Names,
-			Lifetime:  offer.Lifetime,
+			Lifetime:  db.ToStringPtr(offer.Lifetime),
 
-			PriceUSD: nullFloat64(offer.PriceUsd),
-			PriceRUB: nullFloat64(offer.PriceRub),
-			PriceBTC: nullFloat64(offer.PriceBtc),
+			PriceUSD: db.ToFloat64Ptr(offer.PriceUsd),
+			PriceRUB: db.ToFloat64Ptr(offer.PriceRub),
+			PriceBTC: db.ToFloat64Ptr(offer.PriceBtc),
 
-			StartsAt: nullTime(offer.StartsAt),
-			EndsAt:   nullTime(offer.EndsAt),
+			StartsAt: db.ToTimePtr(offer.StartsAt),
+			EndsAt:   db.ToTimePtr(offer.EndsAt),
 		}
 
 		response.Rows = append(response.Rows, offerData)

@@ -81,10 +81,12 @@ func easyjson5011676aEncodeTrip2gInternalCaseCreateadminoffer(out *jwriter.Write
 		out.RawString(prefix[1:])
 		out.Bool(bool(in.Success))
 	}
-	if len(in.Errors) != 0 {
+	{
 		const prefix string = ",\"errors\":"
 		out.RawString(prefix)
-		{
+		if in.Errors == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
 			out.RawByte('[')
 			for v2, v3 := range in.Errors {
 				if v2 > 0 {
@@ -131,7 +133,15 @@ func easyjson5011676aDecodeTrip2gInternalCaseCreateadminoffer1(in *jlexer.Lexer,
 		case "names":
 			out.Names = string(in.String())
 		case "lifetime":
-			out.Lifetime = string(in.String())
+			if in.IsNull() {
+				in.Skip()
+				out.Lifetime = nil
+			} else {
+				if out.Lifetime == nil {
+					out.Lifetime = new(string)
+				}
+				*out.Lifetime = string(in.String())
+			}
 		case "price_usd":
 			if in.IsNull() {
 				in.Skip()
@@ -213,32 +223,56 @@ func easyjson5011676aEncodeTrip2gInternalCaseCreateadminoffer1(out *jwriter.Writ
 	{
 		const prefix string = ",\"lifetime\":"
 		out.RawString(prefix)
-		out.String(string(in.Lifetime))
+		if in.Lifetime == nil {
+			out.RawString("null")
+		} else {
+			out.String(string(*in.Lifetime))
+		}
 	}
-	if in.PriceUSD != nil {
+	{
 		const prefix string = ",\"price_usd\":"
 		out.RawString(prefix)
-		out.Float64(float64(*in.PriceUSD))
+		if in.PriceUSD == nil {
+			out.RawString("null")
+		} else {
+			out.Float64(float64(*in.PriceUSD))
+		}
 	}
-	if in.PriceRUB != nil {
+	{
 		const prefix string = ",\"price_rub\":"
 		out.RawString(prefix)
-		out.Float64(float64(*in.PriceRUB))
+		if in.PriceRUB == nil {
+			out.RawString("null")
+		} else {
+			out.Float64(float64(*in.PriceRUB))
+		}
 	}
-	if in.PriceBTC != nil {
+	{
 		const prefix string = ",\"price_btc\":"
 		out.RawString(prefix)
-		out.Float64(float64(*in.PriceBTC))
+		if in.PriceBTC == nil {
+			out.RawString("null")
+		} else {
+			out.Float64(float64(*in.PriceBTC))
+		}
 	}
-	if in.StartsAt != nil {
+	{
 		const prefix string = ",\"starts_at\":"
 		out.RawString(prefix)
-		out.Raw((*in.StartsAt).MarshalJSON())
+		if in.StartsAt == nil {
+			out.RawString("null")
+		} else {
+			out.Raw((*in.StartsAt).MarshalJSON())
+		}
 	}
-	if in.EndsAt != nil {
+	{
 		const prefix string = ",\"ends_at\":"
 		out.RawString(prefix)
-		out.Raw((*in.EndsAt).MarshalJSON())
+		if in.EndsAt == nil {
+			out.RawString("null")
+		} else {
+			out.Raw((*in.EndsAt).MarshalJSON())
+		}
 	}
 	out.RawByte('}')
 }

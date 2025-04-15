@@ -15,6 +15,12 @@ CREATE TABLE note_versions (
   primary key (path_id, version),
   foreign key (path_id) references note_paths(id) on delete restrict
 );
+CREATE TABLE users (
+  id integer primary key,
+  email text not null unique,
+  created_at datetime not null default current_timestamp,
+  last_signin_code_sent_at datetime
+);
 CREATE TABLE admins (
   user_id text primary key references users(id) on delete cascade,
   granted_at datetime not null default current_timestamp,
@@ -23,8 +29,8 @@ CREATE TABLE admins (
 CREATE TABLE offers (
   id text primary key,
   created_at datetime not null default current_timestamp,
-  names text not null,-- e.g. "course-a|course-b"
-  lifetime text not null, -- e.g. "+600 days"
+  names text not null,-- e.g. "course-a|course-b" sorted alphabetically
+  lifetime text, -- e.g. "+600 days", null means no expiration
   price_usd numeric,
   price_rub numeric,
   price_btc numeric,
@@ -39,12 +45,6 @@ CREATE TABLE purchases (
   created_at datetime not null default current_timestamp,
   payment_provider text not null,
   payment_data json not null
-);
-CREATE TABLE users (
-  id integer primary key,
-  email text not null unique,
-  created_at datetime not null default current_timestamp,
-  last_signin_code_sent_at datetime
 );
 CREATE TABLE sign_in_codes (
   user_id integer not null,

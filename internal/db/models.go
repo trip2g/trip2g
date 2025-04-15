@@ -59,7 +59,7 @@ type Offer struct {
 	ID        string          `json:"id"`
 	CreatedAt time.Time       `json:"created_at"`
 	Names     string          `json:"names"`
-	Lifetime  string          `json:"lifetime"`
+	Lifetime  sql.NullString  `json:"lifetime"`
 	PriceUsd  sql.NullFloat64 `json:"price_usd"`
 	PriceRub  sql.NullFloat64 `json:"price_rub"`
 	PriceBtc  sql.NullFloat64 `json:"price_btc"`

@@ -175,7 +175,15 @@ func easyjson5011676aDecodeTrip2gInternalCaseListadminoffers2(in *jlexer.Lexer, 
 		case "names":
 			out.Names = string(in.String())
 		case "lifetime":
-			out.Lifetime = string(in.String())
+			if in.IsNull() {
+				in.Skip()
+				out.Lifetime = nil
+			} else {
+				if out.Lifetime == nil {
+					out.Lifetime = new(string)
+				}
+				*out.Lifetime = string(in.String())
+			}
 		case "price_usd":
 			if in.IsNull() {
 				in.Skip()
@@ -262,7 +270,11 @@ func easyjson5011676aEncodeTrip2gInternalCaseListadminoffers2(out *jwriter.Write
 	{
 		const prefix string = ",\"lifetime\":"
 		out.RawString(prefix)
-		out.String(string(in.Lifetime))
+		if in.Lifetime == nil {
+			out.RawString("null")
+		} else {
+			out.String(string(*in.Lifetime))
+		}
 	}
 	{
 		const prefix string = ",\"price_usd\":"
