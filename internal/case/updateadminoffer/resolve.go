@@ -1,4 +1,4 @@
-package createadminoffer
+package updateadminoffer
 
 import (
 	"context"
@@ -12,10 +12,11 @@ import (
 //go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
 
 type Env interface {
-	CreateOffer(ctx context.Context, arg db.CreateOfferParams) (db.Offer, error)
+	UpdateOffer(ctx context.Context, arg db.UpdateOfferParams) (db.Offer, error)
 }
 
 type Request struct {
+	ID       int64
 	Names    string
 	Lifetime *string
 	PriceUSD *float64
@@ -48,7 +49,8 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 		return &response, nil
 	}
 
-	params := db.CreateOfferParams{
+	params := db.UpdateOfferParams{
+		ID:       req.ID,
 		Names:    names,
 		Lifetime: db.ToNullableString(req.Lifetime),
 		PriceUsd: db.ToNullableFloat64(req.PriceUSD),
@@ -58,9 +60,9 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 		EndsAt:   db.ToNullableTime(req.EndsAt),
 	}
 
-	offer, err := env.CreateOffer(ctx, params)
+	offer, err := env.UpdateOffer(ctx, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create offer: %w", err)
+		return nil, fmt.Errorf("failed to update offer: %w", err)
 	}
 
 	response.Row = &offer

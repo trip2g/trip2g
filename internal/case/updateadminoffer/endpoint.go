@@ -1,4 +1,4 @@
-package createadminoffer
+package updateadminoffer
 
 import (
 	"context"
@@ -22,7 +22,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (Endpoint) Path() string {
-	return "createadminoffer"
+	return "updateadminoffer"
 }
 
 func (Endpoint) Method() string {

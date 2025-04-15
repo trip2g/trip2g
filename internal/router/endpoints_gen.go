@@ -14,6 +14,7 @@ import (
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
+	"trip2g/internal/case/updateadminoffer"
 
 	"trip2g/internal/logger"
 )
@@ -28,6 +29,7 @@ var endpoints = []Endpoint{
 	&requestemailsignin.Endpoint{},
 	&signinbyemail.Endpoint{},
 	&signout.Endpoint{},
+	&updateadminoffer.Endpoint{},
 }
 
 type Env interface {
@@ -40,6 +42,7 @@ type Env interface {
 	requestemailsignin.Env
 	signinbyemail.Env
 	signout.Env
+	updateadminoffer.Env
 
 	Logger() logger.Logger
 }

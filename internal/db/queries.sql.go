@@ -194,13 +194,13 @@ func (q *Queries) CountActiveSignInCodes(ctx context.Context, userID int64) (int
 	return count, err
 }
 
-const createOffer = `-- name: CreateOffer :exec
-insert into offers (id, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at)
-values (?, ?, ?, ?, ?, ?, ?, ?)
+const createOffer = `-- name: CreateOffer :one
+insert into offers (names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at)
+values (?, ?, ?, ?, ?, ?, ?)
+returning id, created_at, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at
 `
 
 type CreateOfferParams struct {
-	ID       string          `json:"id"`
 	Names    string          `json:"names"`
 	Lifetime sql.NullString  `json:"lifetime"`
 	PriceUsd sql.NullFloat64 `json:"price_usd"`
@@ -210,9 +210,8 @@ type CreateOfferParams struct {
 	EndsAt   sql.NullTime    `json:"ends_at"`
 }
 
-func (q *Queries) CreateOffer(ctx context.Context, arg CreateOfferParams) error {
-	_, err := q.db.ExecContext(ctx, createOffer,
-		arg.ID,
+func (q *Queries) CreateOffer(ctx context.Context, arg CreateOfferParams) (Offer, error) {
+	row := q.db.QueryRowContext(ctx, createOffer,
 		arg.Names,
 		arg.Lifetime,
 		arg.PriceUsd,
@@ -221,7 +220,19 @@ func (q *Queries) CreateOffer(ctx context.Context, arg CreateOfferParams) error 
 		arg.StartsAt,
 		arg.EndsAt,
 	)
-	return err
+	var i Offer
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.Names,
+		&i.Lifetime,
+		&i.PriceUsd,
+		&i.PriceRub,
+		&i.PriceBtc,
+		&i.StartsAt,
+		&i.EndsAt,
+	)
+	return i, err
 }
 
 const deleteSignInCodesByUserID = `-- name: DeleteSignInCodesByUserID :exec
@@ -325,6 +336,56 @@ type InsertSignInCodeParams struct {
 func (q *Queries) InsertSignInCode(ctx context.Context, arg InsertSignInCodeParams) error {
 	_, err := q.db.ExecContext(ctx, insertSignInCode, arg.UserID, arg.Code)
 	return err
+}
+
+const updateOffer = `-- name: UpdateOffer :one
+update offers
+   set names = ?
+     , lifetime = ?
+     , price_usd = ?
+     , price_rub = ?
+     , price_btc = ?
+     , starts_at = ?
+     , ends_at = ?
+ where id = ?
+returning id, created_at, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at
+`
+
+type UpdateOfferParams struct {
+	Names    string          `json:"names"`
+	Lifetime sql.NullString  `json:"lifetime"`
+	PriceUsd sql.NullFloat64 `json:"price_usd"`
+	PriceRub sql.NullFloat64 `json:"price_rub"`
+	PriceBtc sql.NullFloat64 `json:"price_btc"`
+	StartsAt sql.NullTime    `json:"starts_at"`
+	EndsAt   sql.NullTime    `json:"ends_at"`
+	ID       int64           `json:"id"`
+}
+
+func (q *Queries) UpdateOffer(ctx context.Context, arg UpdateOfferParams) (Offer, error) {
+	row := q.db.QueryRowContext(ctx, updateOffer,
+		arg.Names,
+		arg.Lifetime,
+		arg.PriceUsd,
+		arg.PriceRub,
+		arg.PriceBtc,
+		arg.StartsAt,
+		arg.EndsAt,
+		arg.ID,
+	)
+	var i Offer
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.Names,
+		&i.Lifetime,
+		&i.PriceUsd,
+		&i.PriceRub,
+		&i.PriceBtc,
+		&i.StartsAt,
+		&i.EndsAt,
+	)
+	return i, err
 }
 
 const verifySignInCode = `-- name: VerifySignInCode :one

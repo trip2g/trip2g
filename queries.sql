@@ -59,6 +59,19 @@ delete from sign_in_codes
 -- name: AllOffers :many
 select * from offers order by id;
 
--- name: CreateOffer :exec
-insert into offers (id, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at)
-values (?, ?, ?, ?, ?, ?, ?, ?);
+-- name: CreateOffer :one
+insert into offers (names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at)
+values (?, ?, ?, ?, ?, ?, ?)
+returning *;
+
+-- name: UpdateOffer :one
+update offers
+   set names = ?
+     , lifetime = ?
+     , price_usd = ?
+     , price_rub = ?
+     , price_btc = ?
+     , starts_at = ?
+     , ends_at = ?
+ where id = ?
+returning *;

@@ -17,7 +17,7 @@ type Request struct {
 }
 
 type Offer struct {
-	ID        string
+	ID        int64
 	CreatedAt time.Time
 	Names     string
 	Lifetime  *string

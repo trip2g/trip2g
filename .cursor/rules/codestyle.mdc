@@ -43,6 +43,7 @@ alwaysApply: true
 - Call `go generate ./...` to generate router/endpoints_gen.go.
 - Don't add json tags to Request/Response structs
 - Insert new queries to `queries.sql` in the root of the project and call `sqlc generate`
+- The endpoint must be GET or POST.
 
 Each endpoint must implement:
 ```
