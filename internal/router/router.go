@@ -20,18 +20,16 @@ type Endpoint interface {
 type Router struct {
 	env Env
 
-	prefixLen  int
 	getRoutes  map[string]Endpoint
 	postRoutes map[string]Endpoint
 }
 
 var ErrNotFound = errors.New("not found")
 
-func New(env Env, prefix string) *Router {
+func New(env Env) *Router {
 	router := Router{
 		env: env,
 
-		prefixLen:  len(prefix),
 		getRoutes:  make(map[string]Endpoint),
 		postRoutes: make(map[string]Endpoint),
 	}
@@ -66,24 +64,21 @@ func New(env Env, prefix string) *Router {
 
 // Handle returns true if the request was handled.
 func (router *Router) Handle(req *appreq.Request) (bool, error) {
-	var routes map[string]Endpoint
-
+	rawPath := req.Req.URI().Path()
+	path := b2s(rawPath)
+	method := b2s(req.Req.Method())
 	ctx := req.Req
 
-	rawPath := ctx.Path()
-	if len(rawPath) <= router.prefixLen {
-		return false, nil
+	var endpoint Endpoint
+	var ok bool
+
+	switch method {
+	case http.MethodGet:
+		endpoint, ok = router.getRoutes[path]
+	case http.MethodPost:
+		endpoint, ok = router.postRoutes[path]
 	}
 
-	if b2s(ctx.Method()) == http.MethodGet {
-		routes = router.getRoutes
-	} else {
-		routes = router.postRoutes
-	}
-
-	path := b2s(rawPath[router.prefixLen:])
-
-	endpoint, ok := routes[path]
 	if !ok {
 		return false, nil
 	}

@@ -13,7 +13,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (Endpoint) Path() string {
-	return "listadminusers"
+	return "/api/listadminusers"
 }
 
 func (Endpoint) Method() string {

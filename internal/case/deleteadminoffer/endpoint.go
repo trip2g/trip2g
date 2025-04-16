@@ -22,7 +22,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (Endpoint) Path() string {
-	return "deleteadminoffer"
+	return "/api/deleteadminoffer"
 }
 
 func (Endpoint) Method() string {

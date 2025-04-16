@@ -273,7 +273,7 @@ func (a *app) startServer() {
 
 	fsHandler := fs.NewRequestHandler()
 
-	rtr := router.New(a, "/api/")
+	rtr := router.New(a)
 
 	s := &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
