@@ -81,3 +81,6 @@ update offers
    set ends_at = datetime('now')
  where id = ?
 returning *;
+
+-- name: ListAllUsers :many
+select * from users order by created_at desc;

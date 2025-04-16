@@ -362,6 +362,38 @@ func (q *Queries) InsertSignInCode(ctx context.Context, arg InsertSignInCodePara
 	return err
 }
 
+const listAllUsers = `-- name: ListAllUsers :many
+select id, email, created_at, last_signin_code_sent_at from users order by created_at desc
+`
+
+func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listAllUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.CreatedAt,
+			&i.LastSigninCodeSentAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateOffer = `-- name: UpdateOffer :one
 update offers
    set names = ?
