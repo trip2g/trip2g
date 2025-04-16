@@ -200,3 +200,77 @@ func LayoutFooter() string {
 	return qs422016
 //line view.qtpl:46
 }
+
+//line view.qtpl:48
+func StreamPayWall(qw422016 *qt422016.Writer, resp *Response) {
+//line view.qtpl:48
+	qw422016.N().S(`
+
+<h1 class="text-2xl font-bold">`)
+//line view.qtpl:50
+	qw422016.E().S(resp.Page.Title)
+//line view.qtpl:50
+	qw422016.N().S(`</h1>
+
+<p>
+  Эта страница доступна только для подписчиков. Авторизуйтесь или купите подписку.
+</p>
+
+<form action="/_system/signin" method="post" class="max-w-3xs mt-8">
+  <input type="hidden" name="return_to" value="">
+  <div class="mb-4">
+    <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
+      Email
+    </label>
+    <input
+      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+      value="test@example.com"
+      id="email" type="text" name="email" placeholder="Имя пользователя">
+  </div>
+  <div class="mb-6">
+    <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+      Пароль
+    </label>
+    <input
+      class="shadow appearance-none border border-red rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+      value="X173T6pThLNm"
+      id="password" type="password" name="password" placeholder="******************">
+  </div>
+  <div class="flex items-center justify-between">
+    <button
+      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+      type="submit">
+      Войти
+    </button>
+  </div>
+</form>
+
+`)
+//line view.qtpl:85
+}
+
+//line view.qtpl:85
+func WritePayWall(qq422016 qtio422016.Writer, resp *Response) {
+//line view.qtpl:85
+	qw422016 := qt422016.AcquireWriter(qq422016)
+//line view.qtpl:85
+	StreamPayWall(qw422016, resp)
+//line view.qtpl:85
+	qt422016.ReleaseWriter(qw422016)
+//line view.qtpl:85
+}
+
+//line view.qtpl:85
+func PayWall(resp *Response) string {
+//line view.qtpl:85
+	qb422016 := qt422016.AcquireByteBuffer()
+//line view.qtpl:85
+	WritePayWall(qb422016, resp)
+//line view.qtpl:85
+	qs422016 := string(qb422016.B)
+//line view.qtpl:85
+	qt422016.ReleaseByteBuffer(qb422016)
+//line view.qtpl:85
+	return qs422016
+//line view.qtpl:85
+}

@@ -3,7 +3,6 @@ package rendernotepage
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"trip2g/internal/mdloader"
 	"trip2g/internal/usertoken"
@@ -36,22 +35,19 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		path = "/index"
 	}
 
-	fmt.Println("resolve path", path)
-	fmt.Printf("pages: %+v\n", pages)
-
 	page, ok := pages[path]
 	if !ok {
 		return nil, ErrNotFound
-	}
-
-	if !page.Free && request.UserToken == nil {
-		return nil, ErrPaywall
 	}
 
 	response := Response{
 		Title: page.Title,
 		Page:  page,
 		Pages: pages,
+	}
+
+	if !page.Free && request.UserToken == nil {
+		return &response, ErrPaywall
 	}
 
 	return &response, nil

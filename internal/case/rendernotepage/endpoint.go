@@ -2,6 +2,7 @@ package rendernotepage
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"trip2g/internal/appreq"
 )
@@ -22,14 +23,26 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		UserToken: token,
 	}
 
+	ctx := req.Req
+	ctx.SetContentType("text/html; charset=utf-8")
+	ctx.SetStatusCode(http.StatusOK)
+
 	resp, err := Resolve(context.Background(), req.Env.(Env), request)
 	if err != nil {
+		if errors.Is(err, ErrPaywall) {
+			WriteLayoutHeader(ctx, resp)
+			WritePayWall(ctx, resp)
+			WriteLayoutFooter(ctx)
+
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
-	WriteLayoutHeader(req.Req, resp)
-	WriteNote(req.Req, resp)
-	WriteLayoutFooter(req.Req)
+	WriteLayoutHeader(ctx, resp)
+	WriteNote(ctx, resp)
+	WriteLayoutFooter(ctx)
 
 	return nil, nil
 }

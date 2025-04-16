@@ -25,7 +25,6 @@ import (
 	"trip2g/internal/router"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
-	"trip2g/views"
 
 	"github.com/mikestefanello/backlite"
 	backliteui "github.com/mikestefanello/backlite/ui"
@@ -114,6 +113,8 @@ func main() {
 }
 
 func (a *app) PrepareNotes(ctx context.Context) error {
+	a.log.Info("preparing notes")
+
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -156,38 +157,6 @@ func (a *app) AllPages() map[string]*mdloader.Page {
 	}
 
 	return copy
-}
-
-func (a *app) handlePages(ctx *fasthttp.RequestCtx, path string, token *usertoken.Data) {
-	if path == "/" {
-		path = "/index"
-	}
-
-	page, ok := a.pages[path]
-	if !ok {
-		ctx.SetStatusCode(http.StatusNotFound)
-		ctx.SetBodyString("404 Not Found")
-		return
-	}
-
-	if !page.Free && token == nil {
-		ctx.SetStatusCode(http.StatusUnauthorized)
-		ctx.SetContentType("text/html; charset=utf-8")
-
-		views.WriteLayoutHeader(ctx, page.Title)
-		views.WritePayWall(ctx, page)
-		views.WriteLayoutFooter(ctx)
-
-		return
-	}
-
-	// write page.HTML
-	ctx.SetContentType("text/html; charset=utf-8")
-	ctx.SetStatusCode(http.StatusOK)
-
-	views.WriteLayoutHeader(ctx, page.Title)
-	views.WriteNote(ctx, page, a.pages)
-	views.WriteLayoutFooter(ctx)
 }
 
 func (a *app) InsertNote(ctx context.Context, data db.Note) error {
@@ -311,51 +280,51 @@ func (a *app) startServer() {
 			defer tx.Rollback()
 
 			// TODO: use a pool
-			newEnv := *a
-			newEnv.queries = db.New(tx)
-			newEnv.Queries = newEnv.queries
+			// newEnv := *a
+			// newEnv.queries = db.New(tx)
+			// newEnv.Queries = newEnv.queries
 
 			req := appreq.Acquire()
-			req.Env = &newEnv
+			req.Env = a
 			req.Req = ctx
 			req.TokenManager = a.tokenManager
 			req.StoreInContext()
 			defer appreq.Release(req)
 
 			handled, handleErr := rtr.Handle(req)
+			if handleErr != nil {
+				a.log.Error("failed to handle request", "error", handleErr)
+				ctx.SetStatusCode(http.StatusServiceUnavailable)
+				ctx.SetBodyString("500 Internal Server Error")
+				return
+			}
 
 			// TODO: refactor this
-			if handleErr == nil {
-				commitErr := tx.Commit()
-				if commitErr != nil {
-					a.log.Error("failed to commit transaction", "error", commitErr)
-					ctx.SetStatusCode(http.StatusServiceUnavailable)
-					ctx.SetBodyString("500 Internal Server Error")
-					return
-				}
-			} else {
-				rollbackErr := tx.Rollback()
-				if rollbackErr != nil {
-					a.log.Error("failed to rollback transaction", "error", rollbackErr)
-					ctx.SetStatusCode(http.StatusServiceUnavailable)
-					ctx.SetBodyString("500 Internal Server Error")
-					return
-				}
-			}
+			// if handleErr == nil {
+			// 	commitErr := tx.Commit()
+			// 	if commitErr != nil {
+			// 		a.log.Error("failed to commit transaction", "error", commitErr)
+			// 		ctx.SetStatusCode(http.StatusServiceUnavailable)
+			// 		ctx.SetBodyString("500 Internal Server Error")
+			// 		return
+			// 	}
+			// } else {
+			// 	rollbackErr := tx.Rollback()
+			// 	if rollbackErr != nil {
+			// 		a.log.Error("failed to rollback transaction", "error", rollbackErr)
+			// 		ctx.SetStatusCode(http.StatusServiceUnavailable)
+			// 		ctx.SetBodyString("500 Internal Server Error")
+			// 		return
+			// 	}
+			// }
 
 			if handled {
 				a.log.Debug("router handled request", "path", path)
 				return
 			}
 
-			token, err := req.UserToken()
-			if err != nil {
-				ctx.SetStatusCode(http.StatusServiceUnavailable)
-				ctx.SetBodyString("500 Internal Server Error")
-				return
-			}
-
-			a.handlePages(ctx, path, token)
+			ctx.SetStatusCode(http.StatusNotFound)
+			ctx.SetBodyString("404 Not Found")
 		},
 	}
 
