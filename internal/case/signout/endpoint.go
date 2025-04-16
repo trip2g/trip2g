@@ -32,7 +32,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (*Endpoint) Path() string {
-	return "signout"
+	return "/api/signout"
 }
 
 func (*Endpoint) Method() string {

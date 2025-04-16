@@ -28,7 +28,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (*Endpoint) Path() string {
-	return "signinbyemail"
+	return "/api/signinbyemail"
 }
 
 func (*Endpoint) Method() string {

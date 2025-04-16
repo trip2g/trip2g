@@ -30,6 +30,23 @@ type Request struct {
 	Updates []Update
 }
 
+var ErrNoUpdates = fmt.Errorf("no updates provided")
+var ErrInvalidUpdate = fmt.Errorf("invalid update provided")
+
+func (r *Request) Validate() error {
+	if len(r.Updates) == 0 {
+		return ErrNoUpdates
+	}
+
+	for _, update := range r.Updates {
+		if update.Path == "" || update.Content == "" {
+			return ErrInvalidUpdate
+		}
+	}
+
+	return nil
+}
+
 type Response struct {
 	Assets []Asset
 }

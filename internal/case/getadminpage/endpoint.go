@@ -22,7 +22,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (*Endpoint) Path() string {
-	return "getadminpage"
+	return "/api/getadminpage"
 }
 
 func (*Endpoint) Method() string {

@@ -22,6 +22,8 @@ type Router struct {
 
 	getRoutes  map[string]Endpoint
 	postRoutes map[string]Endpoint
+
+	notFoundEndpoint Endpoint
 }
 
 var ErrNotFound = errors.New("not found")
@@ -36,6 +38,15 @@ func New(env Env) *Router {
 
 	for _, endpoint := range endpoints {
 		path := endpoint.Path()
+		if path == "" {
+			if router.notFoundEndpoint != nil {
+				panic("duplicate not found endpoint")
+			}
+
+			router.notFoundEndpoint = endpoint
+
+			env.Logger().Info("found not found endpoint")
+		}
 
 		switch endpoint.Method() {
 		case http.MethodGet:
@@ -80,11 +91,16 @@ func (router *Router) Handle(req *appreq.Request) (bool, error) {
 	}
 
 	if !ok {
-		return false, nil
+		if router.notFoundEndpoint != nil {
+			endpoint = router.notFoundEndpoint
+		} else {
+			return false, nil
+		}
 	}
 
 	respI, err := endpoint.Handle(req)
 	if err != nil {
+		router.env.Logger().Error("failed to handle request", "err", err, "path", path)
 		ctx.SetStatusCode(http.StatusInternalServerError)
 		ctx.SetBody([]byte(err.Error()))
 		return true, err

@@ -96,7 +96,7 @@ func main() {
 	ctx := context.Background()
 
 	queueClient.Register(sendsignincode.NewQueue(a))
-	queueClient.Start(ctx)
+	// queueClient.Start(ctx)
 
 	err = queueClient.Add(sendsignincode.Task{Email: "test@example.com", Code: 313353}).Save()
 	if err != nil {
@@ -142,6 +142,20 @@ func (a *app) PrepareNotes(ctx context.Context) error {
 	a.pages = pages
 
 	return nil
+}
+
+func (a *app) AllPages() map[string]*mdloader.Page {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	copy := make(map[string]*mdloader.Page, len(a.pages))
+
+	for k, v := range a.pages {
+		fmt.Println(k, v)
+		copy[k] = v
+	}
+
+	return copy
 }
 
 func (a *app) handlePages(ctx *fasthttp.RequestCtx, path string, token *usertoken.Data) {

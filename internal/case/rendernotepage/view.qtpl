@@ -1,0 +1,46 @@
+{% func Note(resp *Response) %}
+
+  <h1 class="text-2xl font-bold">{%s resp.Page.Title %}</h1>
+
+  <div class="prose">
+  {%s= string(resp.Page.HTML) %}
+  </div>
+
+  {% if len(resp.Page.InLinks) > 0 %}
+
+    <h2 class="font-bold mt-4">Linked from</h2>
+
+    {% for k := range resp.Page.InLinks %}
+      {% if inPage, ok := resp.Pages[k]; ok %}
+        <div><a href="{%s inPage.Permalink %}">{%s inPage.Title %}</a></div>
+      {% endif %}
+    {% endfor %}
+
+  {% endif %}
+
+{% endfunc %}
+
+{% func LayoutHeader(resp *Response) %}
+<!DOCTYPE html>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>{%s resp.Title %}</title>
+<link href="/assets/output.css" rel="stylesheet">
+
+<div id="all-content">
+
+<header class="container mx-auto px-4 py-2">
+  <a href="/">Home</a>
+</header>
+
+<main class="container mx-auto px-4 py-2">
+{% endfunc %}
+
+{% func LayoutFooter() %}
+
+</main>
+</div>
+
+{% endfunc %}

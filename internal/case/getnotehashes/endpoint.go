@@ -12,7 +12,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 }
 
 func (*Endpoint) Path() string {
-	return "getnotehashes"
+	return "/api/getnotehashes"
 }
 
 func (*Endpoint) Method() string {

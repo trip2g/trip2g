@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/case/listadminoffers"
 	"trip2g/internal/case/listadminusers"
 	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
@@ -30,6 +31,7 @@ var endpoints = []Endpoint{
 	&listadminoffers.Endpoint{},
 	&listadminusers.Endpoint{},
 	&pushnotes.Endpoint{},
+	&rendernotepage.Endpoint{},
 	&requestemailsignin.Endpoint{},
 	&signinbyemail.Endpoint{},
 	&signout.Endpoint{},
@@ -45,6 +47,7 @@ type Env interface {
 	listadminoffers.Env
 	listadminusers.Env
 	pushnotes.Env
+	rendernotepage.Env
 	requestemailsignin.Env
 	signinbyemail.Env
 	signout.Env
