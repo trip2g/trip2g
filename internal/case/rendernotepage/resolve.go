@@ -24,6 +24,26 @@ type Response struct {
 	Pages map[string]*mdloader.Page
 }
 
+const defaultSidebarPath = "/_sidebar"
+
+func (r *Response) Sidebar() *mdloader.Page {
+	result := r.Pages[defaultSidebarPath]
+
+	sidebarI, sidebarOk := r.Page.RawMeta["sidebar"]
+	if sidebarOk {
+		switch s := sidebarI.(type) {
+		case string:
+			result = r.Pages[s]
+		case bool:
+			if !s {
+				return nil
+			}
+		}
+	}
+
+	return result
+}
+
 var ErrNotFound = errors.New("page not found")
 var ErrPaywall = errors.New("paywall")
 
@@ -35,16 +55,20 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		path = "/index"
 	}
 
+	response := Response{}
+
 	page, ok := pages[path]
 	if !ok {
-		return nil, ErrNotFound
+		return &response, ErrNotFound
 	}
 
-	response := Response{
-		Title: page.Title,
-		Page:  page,
-		Pages: pages,
-	}
+	// TODO: extract subgraphs
+	// TODO: hide all _* pages (system)
+	// TODO: add hideSidebar logic
+
+	response.Title = page.Title
+	response.Page = page
+	response.Pages = pages
 
 	if !page.Free && request.UserToken == nil {
 		return &response, ErrPaywall

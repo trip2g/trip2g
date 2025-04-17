@@ -37,6 +37,14 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			return nil, nil
 		}
 
+		if errors.Is(err, ErrNotFound) {
+			WriteLayoutHeader(ctx, resp)
+			WriteNotFound(ctx)
+			WriteLayoutFooter(ctx)
+
+			return nil, nil
+		}
+
 		return nil, err
 	}
 

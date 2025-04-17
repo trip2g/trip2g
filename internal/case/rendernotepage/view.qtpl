@@ -1,5 +1,14 @@
 {% func Note(resp *Response) %}
 
+<div class="flex">
+  {% if sidebar := resp.Sidebar(); sidebar != nil %}
+  <div class="w-60 pr-8">
+    {%s= string(sidebar.HTML) %}
+  </div>
+  {% endif %}
+
+  <div class="flex-1">
+
   <h1 class="text-2xl font-bold">{%s resp.Page.Title %}</h1>
 
   <div class="prose">
@@ -17,7 +26,14 @@
     {% endfor %}
 
   {% endif %}
+  </div>
 
+{% endfunc %}
+
+{% func NotFound() %}
+<div>
+  Page not found.
+</div>
 {% endfunc %}
 
 {% func LayoutHeader(resp *Response) %}

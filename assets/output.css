@@ -647,11 +647,17 @@
   .table {
     display: table;
   }
+  .w-60 {
+    width: calc(var(--spacing) * 60);
+  }
   .w-full {
     width: 100%;
   }
   .max-w-3xs {
     max-width: var(--container-3xs);
+  }
+  .flex-1 {
+    flex: 1;
   }
   .appearance-none {
     appearance: none;
@@ -680,6 +686,9 @@
   }
   .py-2 {
     padding-block: calc(var(--spacing) * 2);
+  }
+  .pr-8 {
+    padding-right: calc(var(--spacing) * 8);
   }
   .text-2xl {
     font-size: var(--text-2xl);

@@ -1,6 +1,7 @@
 ---
 title: "Demo"
 free: true
+sidebar: false
 ---
 
 This is a demo.
