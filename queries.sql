@@ -86,8 +86,9 @@ returning *;
 select * from users order by created_at desc;
 
 -- name: ListActiveSubgraphsByUserID :many
-select distinct subgraph_id
-  from user_subgraph_accesses
+select distinct s.name
+  from user_subgraph_accesses a
+  join subgraphs s on a.subgraph_id = s.id
  where user_id = ?
    and expires_at > datetime('now') or expires_at is null
  order by 1;

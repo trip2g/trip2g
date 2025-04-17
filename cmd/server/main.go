@@ -153,7 +153,6 @@ func (a *app) AllPages() map[string]*mdloader.Page {
 	copy := make(map[string]*mdloader.Page, len(a.pages))
 
 	for k, v := range a.pages {
-		fmt.Println(k, v)
 		copy[k] = v
 	}
 

@@ -29,9 +29,10 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	resp, err := Resolve(context.Background(), req.Env.(Env), request)
 	if err != nil {
-		if errors.Is(err, ErrPaywall) {
+		paywallErr, paywallOk := err.(*PaywallError)
+		if paywallOk {
 			WriteLayoutHeader(ctx, resp)
-			WritePayWall(ctx, resp)
+			WritePayWall(ctx, resp, paywallErr)
 			WriteLayoutFooter(ctx)
 
 			return nil, nil

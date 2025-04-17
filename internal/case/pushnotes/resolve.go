@@ -73,31 +73,14 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}
 
-	subgraphs := make(map[string]struct{})
-
-	for _, page := range pages {
-		sbI, ok := page.RawMeta["subgraphs"]
-		if !ok {
-			continue
-		}
-
-		switch sbI := sbI.(type) {
-		case string:
-			subgraphs[sbI] = struct{}{}
-		case []interface{}:
-			for _, sb := range sbI {
-				if sbStr, ok := sb.(string); ok {
-					subgraphs[sbStr] = struct{}{}
-				}
-			}
-		default:
-			return nil, fmt.Errorf("invalid subgraph type: %T", sbI)
-		}
+	subgraphs, err := mdloader.Subgraphs(pages)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get subgraphs: %w", err)
 	}
 
 	env.Logger().Info("insert subgraphs", "subgraphs", subgraphs)
 
-	for subgraph := range subgraphs {
+	for _, subgraph := range subgraphs {
 		insertErr := env.InsertSubgraph(ctx, subgraph)
 		if insertErr != nil {
 			return nil, fmt.Errorf("failed to insert subgraph: %w", insertErr)

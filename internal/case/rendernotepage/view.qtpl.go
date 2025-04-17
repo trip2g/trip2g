@@ -261,7 +261,7 @@ func LayoutFooter() string {
 }
 
 //line view.qtpl:64
-func StreamPayWall(qw422016 *qt422016.Writer, resp *Response) {
+func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError) {
 //line view.qtpl:64
 	qw422016.N().S(`
 
@@ -274,6 +274,11 @@ func StreamPayWall(qw422016 *qt422016.Writer, resp *Response) {
 <p>
   Эта страница доступна только для подписчиков. Авторизуйтесь или купите подписку.
 </p>
+<p>`)
+//line view.qtpl:71
+	qw422016.E().S(err.Message)
+//line view.qtpl:71
+	qw422016.N().S(`</p>
 
 <form action="/_system/signin" method="post" class="max-w-3xs mt-8">
   <input type="hidden" name="return_to" value="">
@@ -305,31 +310,31 @@ func StreamPayWall(qw422016 *qt422016.Writer, resp *Response) {
 </form>
 
 `)
-//line view.qtpl:101
+//line view.qtpl:102
 }
 
-//line view.qtpl:101
-func WritePayWall(qq422016 qtio422016.Writer, resp *Response) {
-//line view.qtpl:101
+//line view.qtpl:102
+func WritePayWall(qq422016 qtio422016.Writer, resp *Response, err *PaywallError) {
+//line view.qtpl:102
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.qtpl:101
-	StreamPayWall(qw422016, resp)
-//line view.qtpl:101
+//line view.qtpl:102
+	StreamPayWall(qw422016, resp, err)
+//line view.qtpl:102
 	qt422016.ReleaseWriter(qw422016)
-//line view.qtpl:101
+//line view.qtpl:102
 }
 
-//line view.qtpl:101
-func PayWall(resp *Response) string {
-//line view.qtpl:101
+//line view.qtpl:102
+func PayWall(resp *Response, err *PaywallError) string {
+//line view.qtpl:102
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.qtpl:101
-	WritePayWall(qb422016, resp)
-//line view.qtpl:101
+//line view.qtpl:102
+	WritePayWall(qb422016, resp, err)
+//line view.qtpl:102
 	qs422016 := string(qb422016.B)
-//line view.qtpl:101
+//line view.qtpl:102
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.qtpl:101
+//line view.qtpl:102
 	return qs422016
-//line view.qtpl:101
+//line view.qtpl:102
 }

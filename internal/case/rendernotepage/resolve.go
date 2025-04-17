@@ -3,13 +3,17 @@ package rendernotepage
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/usertoken"
 )
 
 type Env interface {
+	Logger() logger.Logger
 	AllPages() map[string]*mdloader.Page
+	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]string, error)
 }
 
 type Request struct {
@@ -45,7 +49,14 @@ func (r *Response) Sidebar() *mdloader.Page {
 }
 
 var ErrNotFound = errors.New("page not found")
-var ErrPaywall = errors.New("paywall")
+
+type PaywallError struct {
+	Message string
+}
+
+func (e *PaywallError) Error() string {
+	return fmt.Sprintf("paywall: %s", e.Message)
+}
 
 func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	pages := env.AllPages()
@@ -70,6 +81,20 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Page = page
 	response.Pages = pages
 
+	pageSubgraphs, err := mdloader.Subgraphs(map[string]*mdloader.Page{"": page})
+	if err != nil {
+		return &response, err
+	}
+
+	userSubgraphs := []string{}
+
+	if request.UserToken != nil {
+		userSubgraphs, err = env.ListActiveSubgraphsByUserID(ctx, int64(request.UserToken.ID))
+		if err != nil {
+			return &response, err
+		}
+	}
+
 	// not sure if this is the right place to do this
 	for key := range page.InLinks {
 		if len(key) > 1 && key[1] == '_' {
@@ -77,8 +102,27 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		}
 	}
 
+	// hide all non-free pages from guests
 	if !page.Free && request.UserToken == nil {
-		return &response, ErrPaywall
+		return &response, &PaywallError{Message: "Need auth"}
+	}
+
+	hasAccess := len(pageSubgraphs) == 0
+
+	env.Logger().Debug("check access to subgraph", "pageSubgraphs", pageSubgraphs, "userSubgraphs", userSubgraphs)
+
+	// check if the user has access to the subgraph
+	for _, ps := range pageSubgraphs {
+		for _, us := range userSubgraphs {
+			if ps == us {
+				hasAccess = true
+				break
+			}
+		}
+	}
+
+	if !hasAccess {
+		return &response, &PaywallError{Message: "Need subscription"}
 	}
 
 	return &response, nil

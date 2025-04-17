@@ -61,13 +61,14 @@
 
 {% endfunc %}
 
-{% func PayWall(resp *Response) %}
+{% func PayWall(resp *Response, err *PaywallError) %}
 
 <h1 class="text-2xl font-bold">{%s resp.Page.Title %}</h1>
 
 <p>
   Эта страница доступна только для подписчиков. Авторизуйтесь или купите подписку.
 </p>
+<p>{%s err.Message %}</p>
 
 <form action="/_system/signin" method="post" class="max-w-3xs mt-8">
   <input type="hidden" name="return_to" value="">

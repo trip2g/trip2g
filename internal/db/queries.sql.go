@@ -376,26 +376,27 @@ func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
 }
 
 const listActiveSubgraphsByUserID = `-- name: ListActiveSubgraphsByUserID :many
-select distinct subgraph_id
-  from user_subgraph_accesses
+select distinct s.name
+  from user_subgraph_accesses a
+  join subgraphs s on a.subgraph_id = s.id
  where user_id = ?
    and expires_at > datetime('now') or expires_at is null
  order by 1
 `
 
-func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]int64, error) {
+func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]string, error) {
 	rows, err := q.db.QueryContext(ctx, listActiveSubgraphsByUserID, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []int64
+	var items []string
 	for rows.Next() {
-		var subgraph_id int64
-		if err := rows.Scan(&subgraph_id); err != nil {
+		var name string
+		if err := rows.Scan(&name); err != nil {
 			return nil, err
 		}
-		items = append(items, subgraph_id)
+		items = append(items, name)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
