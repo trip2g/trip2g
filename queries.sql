@@ -60,8 +60,8 @@ delete from sign_in_codes
 select * from offers order by id;
 
 -- name: CreateOffer :one
-insert into offers (names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at)
-values (?, ?, ?, ?, ?, ?, ?)
+insert into offers (id, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at)
+values (?, ?, ?, ?, ?, ?, ?, ?)
 returning *;
 
 -- name: UpdateOffer :one

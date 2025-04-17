@@ -13,6 +13,7 @@ import (
 
 type Env interface {
 	CreateOffer(ctx context.Context, arg db.CreateOfferParams) (db.Offer, error)
+	GenerateUniqID() string
 }
 
 type Request struct {
@@ -49,6 +50,7 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 	}
 
 	params := db.CreateOfferParams{
+		ID:       env.GenerateUniqID(),
 		Names:    names,
 		Lifetime: db.ToNullableString(req.Lifetime),
 		PriceUsd: db.ToNullableFloat64(req.PriceUSD),

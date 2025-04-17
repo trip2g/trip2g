@@ -17,7 +17,7 @@ type Request struct {
 }
 
 type Offer struct {
-	ID        int64
+	ID        string
 	CreatedAt time.Time
 	Names     string
 	Lifetime  *string
@@ -29,7 +29,7 @@ type Offer struct {
 }
 
 type Response struct {
-	Rows []Offer `json:"rows"`
+	Rows []Offer
 }
 
 func Resolve(ctx context.Context, env Env, _ Request) (*Response, error) {

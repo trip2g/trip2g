@@ -27,7 +27,7 @@ CREATE TABLE admins (
   granted_by text references admins(user_id)
 );
 CREATE TABLE offers (
-  id integer primary key autoincrement,
+  id text primary key,
   created_at datetime not null default current_timestamp,
   names text not null,-- e.g. "course-a|course-b" sorted alphabetically
   lifetime text, -- e.g. "+600 days", null means no expiration

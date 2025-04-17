@@ -16,7 +16,7 @@ type Env interface {
 }
 
 type Request struct {
-	ID       int64
+	ID       string
 	Names    string
 	Lifetime *string
 	PriceUSD *float64

@@ -150,7 +150,7 @@ func easyjson5011676aDecodeTrip2gInternalDb(in *jlexer.Lexer, out *db.Offer) {
 		}
 		switch key {
 		case "id":
-			out.ID = int64(in.Int64())
+			out.ID = string(in.String())
 		case "created_at":
 			if data := in.Raw(); in.Ok() {
 				in.AddError((out.CreatedAt).UnmarshalJSON(data))
@@ -186,7 +186,7 @@ func easyjson5011676aEncodeTrip2gInternalDb(out *jwriter.Writer, in db.Offer) {
 	{
 		const prefix string = ",\"id\":"
 		out.RawString(prefix[1:])
-		out.Int64(int64(in.ID))
+		out.String(string(in.ID))
 	}
 	{
 		const prefix string = ",\"created_at\":"
@@ -399,7 +399,7 @@ func easyjson5011676aDecodeTrip2gInternalCaseUpdateadminoffer1(in *jlexer.Lexer,
 		}
 		switch key {
 		case "id":
-			out.ID = int64(in.Int64())
+			out.ID = string(in.String())
 		case "names":
 			out.Names = string(in.String())
 		case "lifetime":
@@ -483,7 +483,7 @@ func easyjson5011676aEncodeTrip2gInternalCaseUpdateadminoffer1(out *jwriter.Writ
 	{
 		const prefix string = ",\"id\":"
 		out.RawString(prefix[1:])
-		out.Int64(int64(in.ID))
+		out.String(string(in.ID))
 	}
 	{
 		const prefix string = ",\"names\":"

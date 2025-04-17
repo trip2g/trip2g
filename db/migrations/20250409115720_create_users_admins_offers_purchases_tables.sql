@@ -14,7 +14,7 @@ create table admins (
 );
 
 create table offers (
-  id integer primary key autoincrement,
+  id text primary key,
   created_at datetime not null default current_timestamp,
   names text not null,-- e.g. "course-a|course-b" sorted alphabetically
   lifetime text, -- e.g. "+600 days", null means no expiration

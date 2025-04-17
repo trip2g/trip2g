@@ -195,12 +195,13 @@ func (q *Queries) CountActiveSignInCodes(ctx context.Context, userID int64) (int
 }
 
 const createOffer = `-- name: CreateOffer :one
-insert into offers (names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at)
-values (?, ?, ?, ?, ?, ?, ?)
+insert into offers (id, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at)
+values (?, ?, ?, ?, ?, ?, ?, ?)
 returning id, created_at, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at
 `
 
 type CreateOfferParams struct {
+	ID       string          `json:"id"`
 	Names    string          `json:"names"`
 	Lifetime sql.NullString  `json:"lifetime"`
 	PriceUsd sql.NullFloat64 `json:"price_usd"`
@@ -212,6 +213,7 @@ type CreateOfferParams struct {
 
 func (q *Queries) CreateOffer(ctx context.Context, arg CreateOfferParams) (Offer, error) {
 	row := q.db.QueryRowContext(ctx, createOffer,
+		arg.ID,
 		arg.Names,
 		arg.Lifetime,
 		arg.PriceUsd,
@@ -242,7 +244,7 @@ update offers
 returning id, created_at, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at
 `
 
-func (q *Queries) DeleteOffer(ctx context.Context, id int64) (Offer, error) {
+func (q *Queries) DeleteOffer(ctx context.Context, id string) (Offer, error) {
 	row := q.db.QueryRowContext(ctx, deleteOffer, id)
 	var i Offer
 	err := row.Scan(
@@ -415,7 +417,7 @@ type UpdateOfferParams struct {
 	PriceBtc sql.NullFloat64 `json:"price_btc"`
 	StartsAt sql.NullTime    `json:"starts_at"`
 	EndsAt   sql.NullTime    `json:"ends_at"`
-	ID       int64           `json:"id"`
+	ID       string          `json:"id"`
 }
 
 func (q *Queries) UpdateOffer(ctx context.Context, arg UpdateOfferParams) (Offer, error) {

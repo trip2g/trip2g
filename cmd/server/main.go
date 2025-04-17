@@ -28,6 +28,7 @@ import (
 
 	"github.com/mikestefanello/backlite"
 	backliteui "github.com/mikestefanello/backlite/ui"
+	"github.com/oklog/ulid/v2"
 	"github.com/valyala/fasthttp"
 
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
@@ -192,6 +193,10 @@ func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) 
 	}
 
 	return token, nil
+}
+
+func (a *app) GenerateUniqID() string {
+	return ulid.Make().String()
 }
 
 var ErrFailedGeneration = errors.New("failed to generate code")
