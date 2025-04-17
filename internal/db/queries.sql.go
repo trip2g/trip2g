@@ -406,6 +406,38 @@ func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64)
 	return items, nil
 }
 
+const listAdminSubgraphs = `-- name: ListAdminSubgraphs :many
+select id, name, color, created_at from subgraphs order by id
+`
+
+func (q *Queries) ListAdminSubgraphs(ctx context.Context) ([]Subgraph, error) {
+	rows, err := q.db.QueryContext(ctx, listAdminSubgraphs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Subgraph
+	for rows.Next() {
+		var i Subgraph
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Color,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllUsers = `-- name: ListAllUsers :many
 select id, email, created_at, last_signin_code_sent_at from users order by created_at desc
 `
@@ -436,6 +468,30 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateAdminSubgraph = `-- name: UpdateAdminSubgraph :one
+update subgraphs
+   set color = ?
+ where id = ?
+returning id, name, color, created_at
+`
+
+type UpdateAdminSubgraphParams struct {
+	Color sql.NullString `json:"color"`
+	ID    int64          `json:"id"`
+}
+
+func (q *Queries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminSubgraphParams) (Subgraph, error) {
+	row := q.db.QueryRowContext(ctx, updateAdminSubgraph, arg.Color, arg.ID)
+	var i Subgraph
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Color,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const updateOffer = `-- name: UpdateOffer :one

@@ -96,3 +96,12 @@ select distinct subgraph_id
 insert into subgraphs (name)
 values (?)
 on conflict(name) do nothing;
+
+-- name: ListAdminSubgraphs :many
+select * from subgraphs order by id;
+
+-- name: UpdateAdminSubgraph :one
+update subgraphs
+   set color = ?
+ where id = ?
+returning *;

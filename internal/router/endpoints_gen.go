@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/case/getnotehashes"
 	"trip2g/internal/case/listadminnotepaths"
 	"trip2g/internal/case/listadminoffers"
+	"trip2g/internal/case/listadminsubgraphs"
 	"trip2g/internal/case/listadminusers"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/rendernotepage"
@@ -18,6 +19,7 @@ import (
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
 	"trip2g/internal/case/updateadminoffer"
+	"trip2g/internal/case/updateadminsubgraph"
 
 	"trip2g/internal/logger"
 )
@@ -29,6 +31,7 @@ var endpoints = []Endpoint{
 	&getnotehashes.Endpoint{},
 	&listadminnotepaths.Endpoint{},
 	&listadminoffers.Endpoint{},
+	&listadminsubgraphs.Endpoint{},
 	&listadminusers.Endpoint{},
 	&pushnotes.Endpoint{},
 	&rendernotepage.Endpoint{},
@@ -36,6 +39,7 @@ var endpoints = []Endpoint{
 	&signinbyemail.Endpoint{},
 	&signout.Endpoint{},
 	&updateadminoffer.Endpoint{},
+	&updateadminsubgraph.Endpoint{},
 }
 
 type Env interface {
@@ -45,6 +49,7 @@ type Env interface {
 	getnotehashes.Env
 	listadminnotepaths.Env
 	listadminoffers.Env
+	listadminsubgraphs.Env
 	listadminusers.Env
 	pushnotes.Env
 	rendernotepage.Env
@@ -52,6 +57,7 @@ type Env interface {
 	signinbyemail.Env
 	signout.Env
 	updateadminoffer.Env
+	updateadminsubgraph.Env
 
 	Logger() logger.Logger
 }
