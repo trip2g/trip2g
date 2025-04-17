@@ -70,6 +70,13 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Page = page
 	response.Pages = pages
 
+	// not sure if this is the right place to do this
+	for key := range page.InLinks {
+		if len(key) > 1 && key[1] == '_' {
+			delete(page.InLinks, key)
+		}
+	}
+
 	if !page.Free && request.UserToken == nil {
 		return &response, ErrPaywall
 	}
