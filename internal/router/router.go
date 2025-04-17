@@ -100,6 +100,22 @@ func (router *Router) Handle(req *appreq.Request) (bool, error) {
 
 	respI, err := endpoint.Handle(req)
 	if err != nil {
+		jsonErr, ok := err.(easyjson.Marshaler)
+		if ok {
+			ctx.SetStatusCode(http.StatusBadRequest)
+			ctx.SetContentType("application/json")
+
+			rawBytes, err := easyjson.Marshal(jsonErr)
+			if err != nil {
+				router.env.Logger().Error("failed to marshal error response", "err", err, "path", path)
+				ctx.SetBody([]byte(err.Error()))
+				return true, err
+			}
+
+			ctx.SetBody(rawBytes)
+			return true, nil
+		}
+
 		router.env.Logger().Error("failed to handle request", "err", err, "path", path)
 		ctx.SetStatusCode(http.StatusInternalServerError)
 		ctx.SetBody([]byte(err.Error()))

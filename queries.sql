@@ -84,3 +84,15 @@ returning *;
 
 -- name: ListAllUsers :many
 select * from users order by created_at desc;
+
+-- name: ListActiveSubgraphsByUserID :many
+select distinct subgraph_id
+  from user_subgraph_accesses
+ where user_id = ?
+   and expires_at > datetime('now') or expires_at is null
+ order by 1;
+
+-- name: InsertSubgraph :exec
+insert into subgraphs (name)
+values (?)
+on conflict(name) do nothing;

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"trip2g/internal/apperrors"
 	"trip2g/internal/db"
 	"trip2g/internal/validator"
 )
@@ -30,7 +31,7 @@ func (r *Request) Normalize() {
 func (r *Request) Validate() error {
 	err := validator.CheckEmail(r.Email)
 	if err != nil {
-		return fmt.Errorf("invalid email: %w", err)
+		return &apperrors.JSONError{Message: "invalid email"}
 	}
 
 	return nil

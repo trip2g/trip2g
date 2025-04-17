@@ -8,6 +8,6 @@ This is a demo.
 
 [[first]]
 [[second]]
+[[secondbrain|Second Brain Course]]
 
-
-Pushed by the new rest API and a new router and refresh! v6
+Pushed by the new rest API and a new router and refresh! v7

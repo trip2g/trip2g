@@ -103,7 +103,7 @@ func main() {
 		panic(err)
 	}
 
-	err = a.PrepareNotes(ctx)
+	_, err = a.PrepareNotes(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -113,7 +113,7 @@ func main() {
 	}
 }
 
-func (a *app) PrepareNotes(ctx context.Context) error {
+func (a *app) PrepareNotes(ctx context.Context) (map[string]*mdloader.Page, error) {
 	a.log.Info("preparing notes")
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -124,7 +124,7 @@ func (a *app) PrepareNotes(ctx context.Context) error {
 
 	notes, err := a.queries.AllLatestNotes(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get notes: %w", err)
+		return nil, fmt.Errorf("failed to get notes: %w", err)
 	}
 
 	sources := []mdloader.SourceFile{}
@@ -138,12 +138,12 @@ func (a *app) PrepareNotes(ctx context.Context) error {
 
 	pages, err := mdloader.Load(sources, logger.WithPrefix(a.log, "mdloader:"))
 	if err != nil {
-		return fmt.Errorf("failed to load pages: %w", err)
+		return nil, fmt.Errorf("failed to load pages: %w", err)
 	}
 
 	a.pages = pages
 
-	return nil
+	return pages, nil
 }
 
 func (a *app) AllPages() map[string]*mdloader.Page {
@@ -275,14 +275,18 @@ func (a *app) startServer() {
 				return
 			}
 
-			tx, err := a.conn.BeginTx(ctx, nil)
-			if err != nil {
-				ctx.SetStatusCode(http.StatusServiceUnavailable)
-				ctx.SetBodyString("500 Internal Server Error")
-				return
-			}
+			ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+			ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+			ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-			defer tx.Rollback()
+			// tx, err := a.conn.BeginTx(ctx, nil)
+			// if err != nil {
+			// 	ctx.SetStatusCode(http.StatusServiceUnavailable)
+			// 	ctx.SetBodyString("500 Internal Server Error")
+			// 	return
+			// }
+			//
+			// defer tx.Rollback()
 
 			// TODO: use a pool
 			// newEnv := *a

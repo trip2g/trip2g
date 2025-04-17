@@ -87,9 +87,25 @@ type SignInCode struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type Subgraph struct {
+	ID        int64          `json:"id"`
+	Name      string         `json:"name"`
+	Color     sql.NullString `json:"color"`
+	CreatedAt time.Time      `json:"created_at"`
+}
+
 type User struct {
 	ID                   int64        `json:"id"`
 	Email                string       `json:"email"`
 	CreatedAt            time.Time    `json:"created_at"`
 	LastSigninCodeSentAt sql.NullTime `json:"last_signin_code_sent_at"`
+}
+
+type UserSubgraphAccess struct {
+	ID         int64        `json:"id"`
+	UserID     int64        `json:"user_id"`
+	SubgraphID int64        `json:"subgraph_id"`
+	PurchaseID int64        `json:"purchase_id"`
+	CreatedAt  time.Time    `json:"created_at"`
+	ExpiresAt  sql.NullTime `json:"expires_at"`
 }

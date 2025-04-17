@@ -364,6 +364,48 @@ func (q *Queries) InsertSignInCode(ctx context.Context, arg InsertSignInCodePara
 	return err
 }
 
+const insertSubgraph = `-- name: InsertSubgraph :exec
+insert into subgraphs (name)
+values (?)
+on conflict(name) do nothing
+`
+
+func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
+	_, err := q.db.ExecContext(ctx, insertSubgraph, name)
+	return err
+}
+
+const listActiveSubgraphsByUserID = `-- name: ListActiveSubgraphsByUserID :many
+select distinct subgraph_id
+  from user_subgraph_accesses
+ where user_id = ?
+   and expires_at > datetime('now') or expires_at is null
+ order by 1
+`
+
+func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveSubgraphsByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var subgraph_id int64
+		if err := rows.Scan(&subgraph_id); err != nil {
+			return nil, err
+		}
+		items = append(items, subgraph_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllUsers = `-- name: ListAllUsers :many
 select id, email, created_at, last_signin_code_sent_at from users order by created_at desc
 `
