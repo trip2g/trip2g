@@ -5,68 +5,68 @@
 package router
 
 import (
-	"trip2g/internal/case/createadminoffer"
-	"trip2g/internal/case/createadminusersubgraphaccess"
-	"trip2g/internal/case/deleteadminoffer"
-	"trip2g/internal/case/getadminpage"
-	"trip2g/internal/case/getnotehashes"
-	"trip2g/internal/case/listadminnotepaths"
-	"trip2g/internal/case/listadminoffers"
-	"trip2g/internal/case/listadminsubgraphs"
-	"trip2g/internal/case/listadminusers"
-	"trip2g/internal/case/listadminusersubgraphacesses"
-	"trip2g/internal/case/pushnotes"
-	"trip2g/internal/case/rendernotepage"
-	"trip2g/internal/case/requestemailsignin"
-	"trip2g/internal/case/revokeadminusersubgraphaccess"
-	"trip2g/internal/case/signinbyemail"
-	"trip2g/internal/case/signout"
-	"trip2g/internal/case/updateadminoffer"
-	"trip2g/internal/case/updateadminsubgraph"
+	getnotehashesgetnotehashes "trip2g/internal/case/getnotehashes"
+	pushnotespushnotes "trip2g/internal/case/pushnotes"
+	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
+	requestemailsigninrequestemailsignin "trip2g/internal/case/requestemailsignin"
+	signinbyemailsigninbyemail "trip2g/internal/case/signinbyemail"
+	signoutsignout "trip2g/internal/case/signout"
+	createoffercreateoffer "trip2g/internal/case/admin/createoffer"
+	createusersubgraphaccesscreateusersubgraphaccess "trip2g/internal/case/admin/createusersubgraphaccess"
+	deleteofferdeleteoffer "trip2g/internal/case/admin/deleteoffer"
+	getpagegetpage "trip2g/internal/case/admin/getpage"
+	listnotepathslistnotepaths "trip2g/internal/case/admin/listnotepaths"
+	listofferslistoffers "trip2g/internal/case/admin/listoffers"
+	listsubgraphslistsubgraphs "trip2g/internal/case/admin/listsubgraphs"
+	listuserslistusers "trip2g/internal/case/admin/listusers"
+	listusersubgraphacesseslistusersubgraphacesses "trip2g/internal/case/admin/listusersubgraphacesses"
+	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
+	updateofferupdateoffer "trip2g/internal/case/admin/updateoffer"
+	updatesubgraphupdatesubgraph "trip2g/internal/case/admin/updatesubgraph"
 
 	"trip2g/internal/logger"
 )
 
 var endpoints = []Endpoint{
-	&createadminoffer.Endpoint{},
-	&createadminusersubgraphaccess.Endpoint{},
-	&deleteadminoffer.Endpoint{},
-	&getadminpage.Endpoint{},
-	&getnotehashes.Endpoint{},
-	&listadminnotepaths.Endpoint{},
-	&listadminoffers.Endpoint{},
-	&listadminsubgraphs.Endpoint{},
-	&listadminusers.Endpoint{},
-	&listadminusersubgraphacesses.Endpoint{},
-	&pushnotes.Endpoint{},
-	&rendernotepage.Endpoint{},
-	&requestemailsignin.Endpoint{},
-	&revokeadminusersubgraphaccess.Endpoint{},
-	&signinbyemail.Endpoint{},
-	&signout.Endpoint{},
-	&updateadminoffer.Endpoint{},
-	&updateadminsubgraph.Endpoint{},
+	&getnotehashesgetnotehashes.Endpoint{},
+	&pushnotespushnotes.Endpoint{},
+	&rendernotepagerendernotepage.Endpoint{},
+	&requestemailsigninrequestemailsignin.Endpoint{},
+	&signinbyemailsigninbyemail.Endpoint{},
+	&signoutsignout.Endpoint{},
+	&createoffercreateoffer.Endpoint{},
+	&createusersubgraphaccesscreateusersubgraphaccess.Endpoint{},
+	&deleteofferdeleteoffer.Endpoint{},
+	&getpagegetpage.Endpoint{},
+	&listnotepathslistnotepaths.Endpoint{},
+	&listofferslistoffers.Endpoint{},
+	&listsubgraphslistsubgraphs.Endpoint{},
+	&listuserslistusers.Endpoint{},
+	&listusersubgraphacesseslistusersubgraphacesses.Endpoint{},
+	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
+	&updateofferupdateoffer.Endpoint{},
+	&updatesubgraphupdatesubgraph.Endpoint{},
 }
 
 type Env interface {
-	createadminoffer.Env
-	createadminusersubgraphaccess.Env
-	deleteadminoffer.Env
-	getadminpage.Env
-	getnotehashes.Env
-	listadminnotepaths.Env
-	listadminoffers.Env
-	listadminsubgraphs.Env
-	listadminusers.Env
-	listadminusersubgraphacesses.Env
-	pushnotes.Env
-	rendernotepage.Env
-	requestemailsignin.Env
-	revokeadminusersubgraphaccess.Env
-	signinbyemail.Env
-	signout.Env
-	updateadminoffer.Env
-	updateadminsubgraph.Env
+	getnotehashesgetnotehashes.Env
+	pushnotespushnotes.Env
+	rendernotepagerendernotepage.Env
+	requestemailsigninrequestemailsignin.Env
+	signinbyemailsigninbyemail.Env
+	signoutsignout.Env
+	createoffercreateoffer.Env
+	createusersubgraphaccesscreateusersubgraphaccess.Env
+	deleteofferdeleteoffer.Env
+	getpagegetpage.Env
+	listnotepathslistnotepaths.Env
+	listofferslistoffers.Env
+	listsubgraphslistsubgraphs.Env
+	listuserslistusers.Env
+	listusersubgraphacesseslistusersubgraphacesses.Env
+	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
+	updateofferupdateoffer.Env
+	updatesubgraphupdatesubgraph.Env
 
 	Logger() logger.Logger
 }
