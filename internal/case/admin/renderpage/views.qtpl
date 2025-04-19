@@ -1,0 +1,18 @@
+{%- func Page() -%}
+<!DOCTYPE html>
+
+<html mol_view_root>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <title>Admin</title>
+
+  <body mol_view_root>
+    <div mol_view_root="$trip2g_auth"></div>
+    <script src="/ui/auth/-/web.js"></script>
+  </body
+</html>
+{%- endfunc -%}

@@ -20,6 +20,7 @@ import (
 	listsubgraphslistsubgraphs "trip2g/internal/case/admin/listsubgraphs"
 	listuserslistusers "trip2g/internal/case/admin/listusers"
 	listusersubgraphacesseslistusersubgraphacesses "trip2g/internal/case/admin/listusersubgraphacesses"
+	renderpagerenderpage "trip2g/internal/case/admin/renderpage"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
 	updateofferupdateoffer "trip2g/internal/case/admin/updateoffer"
 	updatesubgraphupdatesubgraph "trip2g/internal/case/admin/updatesubgraph"
@@ -43,6 +44,7 @@ var endpoints = []Endpoint{
 	&listsubgraphslistsubgraphs.Endpoint{},
 	&listuserslistusers.Endpoint{},
 	&listusersubgraphacesseslistusersubgraphacesses.Endpoint{},
+	&renderpagerenderpage.Endpoint{},
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
 	&updateofferupdateoffer.Endpoint{},
 	&updatesubgraphupdatesubgraph.Endpoint{},
@@ -64,6 +66,7 @@ type Env interface {
 	listsubgraphslistsubgraphs.Env
 	listuserslistusers.Env
 	listusersubgraphacesseslistusersubgraphacesses.Env
+	renderpagerenderpage.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
 	updateofferupdateoffer.Env
 	updatesubgraphupdatesubgraph.Env

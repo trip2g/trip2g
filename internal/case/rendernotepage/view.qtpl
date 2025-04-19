@@ -61,8 +61,6 @@
 </main>
 </div>
 
-<script src="/ui/auth/-/web.js"></script>
-
 {% endfunc %}
 
 {% func PayWall(resp *Response, err *PaywallError) %}
@@ -77,6 +75,8 @@
 <div mol_view_root>
   <div mol_view_root="$trip2g_auth"></div>
 </div>
+
+<script src="/ui/auth/-/web.js"></script>
 
 <form action="/_system/signin" method="post" class="max-w-3xs mt-8">
   <input type="hidden" name="return_to" value="">
