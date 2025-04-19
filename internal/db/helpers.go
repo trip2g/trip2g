@@ -41,6 +41,18 @@ func ToNullableString(value *string) sql.NullString {
 	}
 }
 
+// ToNullableInt64 converts a pointer to an int64 to sql.NullInt64.
+func ToNullableInt64(value *int64) sql.NullInt64 {
+	if value == nil {
+		return sql.NullInt64{Valid: false}
+	}
+
+	return sql.NullInt64{
+		Int64: *value,
+		Valid: true,
+	}
+}
+
 // ToFloat64Ptr converts a sql.NullFloat64 to a pointer to a float64.
 func ToFloat64Ptr(v sql.NullFloat64) *float64 {
 	if v.Valid {

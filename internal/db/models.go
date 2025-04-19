@@ -102,10 +102,10 @@ type User struct {
 }
 
 type UserSubgraphAccess struct {
-	ID         int64        `json:"id"`
-	UserID     int64        `json:"user_id"`
-	SubgraphID int64        `json:"subgraph_id"`
-	PurchaseID int64        `json:"purchase_id"`
-	CreatedAt  time.Time    `json:"created_at"`
-	ExpiresAt  sql.NullTime `json:"expires_at"`
+	ID         int64         `json:"id"`
+	UserID     int64         `json:"user_id"`
+	SubgraphID int64         `json:"subgraph_id"`
+	PurchaseID sql.NullInt64 `json:"purchase_id"`
+	CreatedAt  time.Time     `json:"created_at"`
+	ExpiresAt  sql.NullTime  `json:"expires_at"`
 }

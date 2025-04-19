@@ -53,6 +53,17 @@ type app struct {
 	queueClient  *backlite.Client
 }
 
+func enablePragmas(db *sql.DB) error {
+	_, err := db.Exec(`
+		PRAGMA foreign_keys = ON;
+		PRAGMA journal_mode = WAL;
+		PRAGMA synchronous = NORMAL;
+		PRAGMA busy_timeout = 3000;
+		PRAGMA strict = ON;
+	`)
+	return err
+}
+
 func main() {
 	u, _ := url.Parse("sqlite:data.sqlite3")
 	dbm := dbmate.New(u)
@@ -63,6 +74,11 @@ func main() {
 	}
 
 	conn, err := sql.Open("sqlite", "data.sqlite3?_journal=WAL&_timeout=5000")
+	if err != nil {
+		panic(err)
+	}
+
+	err = enablePragmas(conn)
 	if err != nil {
 		panic(err)
 	}

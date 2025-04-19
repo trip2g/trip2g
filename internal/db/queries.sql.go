@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const allLatestNotes = `-- name: AllLatestNotes :many
@@ -237,6 +238,38 @@ func (q *Queries) CreateOffer(ctx context.Context, arg CreateOfferParams) (Offer
 	return i, err
 }
 
+const createUserSubgraphAccess = `-- name: CreateUserSubgraphAccess :one
+insert into user_subgraph_accesses (user_id, subgraph_id, purchase_id, expires_at)
+values (?, ?, ?, ?)
+returning id, user_id, subgraph_id, purchase_id, created_at, expires_at
+`
+
+type CreateUserSubgraphAccessParams struct {
+	UserID     int64         `json:"user_id"`
+	SubgraphID int64         `json:"subgraph_id"`
+	PurchaseID sql.NullInt64 `json:"purchase_id"`
+	ExpiresAt  sql.NullTime  `json:"expires_at"`
+}
+
+func (q *Queries) CreateUserSubgraphAccess(ctx context.Context, arg CreateUserSubgraphAccessParams) (UserSubgraphAccess, error) {
+	row := q.db.QueryRowContext(ctx, createUserSubgraphAccess,
+		arg.UserID,
+		arg.SubgraphID,
+		arg.PurchaseID,
+		arg.ExpiresAt,
+	)
+	var i UserSubgraphAccess
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.SubgraphID,
+		&i.PurchaseID,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+	)
+	return i, err
+}
+
 const deleteOffer = `-- name: DeleteOffer :one
 update offers
    set ends_at = datetime('now')
@@ -457,6 +490,57 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.Email,
 			&i.CreatedAt,
 			&i.LastSigninCodeSentAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUserSubgraphAccesses = `-- name: ListUserSubgraphAccesses :many
+select a.id, a.user_id, a.subgraph_id, a.purchase_id, a.created_at, a.expires_at, u.email as user_email, s.name as subgraph_name
+  from user_subgraph_accesses a
+  join users u on a.user_id = u.id
+  join subgraphs s on a.subgraph_id = s.id
+ order by a.created_at desc
+`
+
+type ListUserSubgraphAccessesRow struct {
+	ID           int64         `json:"id"`
+	UserID       int64         `json:"user_id"`
+	SubgraphID   int64         `json:"subgraph_id"`
+	PurchaseID   sql.NullInt64 `json:"purchase_id"`
+	CreatedAt    time.Time     `json:"created_at"`
+	ExpiresAt    sql.NullTime  `json:"expires_at"`
+	UserEmail    string        `json:"user_email"`
+	SubgraphName string        `json:"subgraph_name"`
+}
+
+func (q *Queries) ListUserSubgraphAccesses(ctx context.Context) ([]ListUserSubgraphAccessesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listUserSubgraphAccesses)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUserSubgraphAccessesRow
+	for rows.Next() {
+		var i ListUserSubgraphAccessesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.SubgraphID,
+			&i.PurchaseID,
+			&i.CreatedAt,
+			&i.ExpiresAt,
+			&i.UserEmail,
+			&i.SubgraphName,
 		); err != nil {
 			return nil, err
 		}

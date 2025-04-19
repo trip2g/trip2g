@@ -106,3 +106,15 @@ update subgraphs
    set color = ?
  where id = ?
 returning *;
+
+-- name: CreateUserSubgraphAccess :one
+insert into user_subgraph_accesses (user_id, subgraph_id, purchase_id, expires_at)
+values (?, ?, ?, ?)
+returning *;
+
+-- name: ListUserSubgraphAccesses :many
+select a.*, u.email as user_email, s.name as subgraph_name
+  from user_subgraph_accesses a
+  join users u on a.user_id = u.id
+  join subgraphs s on a.subgraph_id = s.id
+ order by a.created_at desc;
