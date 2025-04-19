@@ -91,6 +91,7 @@ select distinct s.name
   join subgraphs s on a.subgraph_id = s.id
  where user_id = ?
    and expires_at > datetime('now') or expires_at is null
+   and revoke_id is null
  order by 1;
 
 -- name: InsertSubgraph :exec
@@ -118,3 +119,13 @@ select a.*, u.email as user_email, s.name as subgraph_name
   join users u on a.user_id = u.id
   join subgraphs s on a.subgraph_id = s.id
  order by a.created_at desc;
+
+-- name: CreateRevoke :one
+insert into revokes (target_type, target_id, by, reason)
+values (?, ?, ?, ?)
+returning id;
+
+-- name: RevokeUserSubgraphAccess :exec
+update user_subgraph_accesses
+   set revoke_id = ?
+ where id = ?

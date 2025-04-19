@@ -77,6 +77,15 @@ type Purchase struct {
 	PaymentData     interface{}  `json:"payment_data"`
 }
 
+type Revoke struct {
+	ID         int64          `json:"id"`
+	TargetType string         `json:"target_type"`
+	TargetID   int64          `json:"target_id"`
+	CreatedAt  time.Time      `json:"created_at"`
+	By         interface{}    `json:"by"`
+	Reason     sql.NullString `json:"reason"`
+}
+
 type SchemaMigrations struct {
 	Version string `json:"version"`
 }
@@ -108,4 +117,5 @@ type UserSubgraphAccess struct {
 	PurchaseID sql.NullInt64 `json:"purchase_id"`
 	CreatedAt  time.Time     `json:"created_at"`
 	ExpiresAt  sql.NullTime  `json:"expires_at"`
+	RevokeID   sql.NullInt64 `json:"revoke_id"`
 }

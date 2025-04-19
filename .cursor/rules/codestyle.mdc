@@ -49,3 +49,8 @@ Each endpoint must implement:
 ```
 func (*Endpoint) Handle(req *appreq.Request) (interface{}, error)
 ```
+
+Always add this comment for for POST endpoints:
+```
+//go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
+```

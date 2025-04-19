@@ -87,6 +87,14 @@ CREATE TABLE user_subgraph_accesses (
   purchase_id integer references purchases(id) on delete restrict,
   created_at datetime not null default current_timestamp,
   expires_at datetime
+, revoke_id int references revokes(id) on delete restrict);
+CREATE TABLE revokes (
+  id integer primary key autoincrement,
+  target_type text not null,
+  target_id integer not null,
+  created_at datetime not null default current_timestamp,
+  by admin_id integer not null references admins(id) on delete restrict,
+  reason text
 );
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
@@ -94,4 +102,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250409115720'),
   ('20250412053210'),
   ('20250414025612'),
-  ('20250417050444');
+  ('20250417050444'),
+  ('20250419030458');

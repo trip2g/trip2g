@@ -17,6 +17,7 @@ import (
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/case/requestemailsignin"
+	"trip2g/internal/case/revokeadminusersubgraphaccess"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
 	"trip2g/internal/case/updateadminoffer"
@@ -38,6 +39,7 @@ var endpoints = []Endpoint{
 	&pushnotes.Endpoint{},
 	&rendernotepage.Endpoint{},
 	&requestemailsignin.Endpoint{},
+	&revokeadminusersubgraphaccess.Endpoint{},
 	&signinbyemail.Endpoint{},
 	&signout.Endpoint{},
 	&updateadminoffer.Endpoint{},
@@ -57,6 +59,7 @@ type Env interface {
 	pushnotes.Env
 	rendernotepage.Env
 	requestemailsignin.Env
+	revokeadminusersubgraphaccess.Env
 	signinbyemail.Env
 	signout.Env
 	updateadminoffer.Env

@@ -238,10 +238,35 @@ func (q *Queries) CreateOffer(ctx context.Context, arg CreateOfferParams) (Offer
 	return i, err
 }
 
+const createRevoke = `-- name: CreateRevoke :one
+insert into revokes (target_type, target_id, by, reason)
+values (?, ?, ?, ?)
+returning id
+`
+
+type CreateRevokeParams struct {
+	TargetType string         `json:"target_type"`
+	TargetID   int64          `json:"target_id"`
+	By         interface{}    `json:"by"`
+	Reason     sql.NullString `json:"reason"`
+}
+
+func (q *Queries) CreateRevoke(ctx context.Context, arg CreateRevokeParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createRevoke,
+		arg.TargetType,
+		arg.TargetID,
+		arg.By,
+		arg.Reason,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createUserSubgraphAccess = `-- name: CreateUserSubgraphAccess :one
 insert into user_subgraph_accesses (user_id, subgraph_id, purchase_id, expires_at)
 values (?, ?, ?, ?)
-returning id, user_id, subgraph_id, purchase_id, created_at, expires_at
+returning id, user_id, subgraph_id, purchase_id, created_at, expires_at, revoke_id
 `
 
 type CreateUserSubgraphAccessParams struct {
@@ -266,6 +291,7 @@ func (q *Queries) CreateUserSubgraphAccess(ctx context.Context, arg CreateUserSu
 		&i.PurchaseID,
 		&i.CreatedAt,
 		&i.ExpiresAt,
+		&i.RevokeID,
 	)
 	return i, err
 }
@@ -414,6 +440,7 @@ select distinct s.name
   join subgraphs s on a.subgraph_id = s.id
  where user_id = ?
    and expires_at > datetime('now') or expires_at is null
+   and revoke_id is null
  order by 1
 `
 
@@ -505,7 +532,7 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const listUserSubgraphAccesses = `-- name: ListUserSubgraphAccesses :many
-select a.id, a.user_id, a.subgraph_id, a.purchase_id, a.created_at, a.expires_at, u.email as user_email, s.name as subgraph_name
+select a.id, a.user_id, a.subgraph_id, a.purchase_id, a.created_at, a.expires_at, a.revoke_id, u.email as user_email, s.name as subgraph_name
   from user_subgraph_accesses a
   join users u on a.user_id = u.id
   join subgraphs s on a.subgraph_id = s.id
@@ -519,6 +546,7 @@ type ListUserSubgraphAccessesRow struct {
 	PurchaseID   sql.NullInt64 `json:"purchase_id"`
 	CreatedAt    time.Time     `json:"created_at"`
 	ExpiresAt    sql.NullTime  `json:"expires_at"`
+	RevokeID     sql.NullInt64 `json:"revoke_id"`
 	UserEmail    string        `json:"user_email"`
 	SubgraphName string        `json:"subgraph_name"`
 }
@@ -539,6 +567,7 @@ func (q *Queries) ListUserSubgraphAccesses(ctx context.Context) ([]ListUserSubgr
 			&i.PurchaseID,
 			&i.CreatedAt,
 			&i.ExpiresAt,
+			&i.RevokeID,
 			&i.UserEmail,
 			&i.SubgraphName,
 		); err != nil {
@@ -553,6 +582,22 @@ func (q *Queries) ListUserSubgraphAccesses(ctx context.Context) ([]ListUserSubgr
 		return nil, err
 	}
 	return items, nil
+}
+
+const revokeUserSubgraphAccess = `-- name: RevokeUserSubgraphAccess :exec
+update user_subgraph_accesses
+   set revoke_id = ?
+ where id = ?
+`
+
+type RevokeUserSubgraphAccessParams struct {
+	RevokeID sql.NullInt64 `json:"revoke_id"`
+	ID       int64         `json:"id"`
+}
+
+func (q *Queries) RevokeUserSubgraphAccess(ctx context.Context, arg RevokeUserSubgraphAccessParams) error {
+	_, err := q.db.ExecContext(ctx, revokeUserSubgraphAccess, arg.RevokeID, arg.ID)
+	return err
 }
 
 const updateAdminSubgraph = `-- name: UpdateAdminSubgraph :one
