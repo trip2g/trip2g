@@ -1,0 +1,35 @@
+$trip2g_auth $mol_view
+	EmailForm $trip2g_auth_email_form
+	CodeForm $trip2g_auth_code_form
+	sub / <= EmailForm
+
+$trip2g_auth_email_form $mol_form
+	body /
+		<= Email_field $mol_form_field
+			name \Email
+			bid <= email_bid \
+			Content <= email_control $mol_string
+				hint \name@example.com
+				value? <=> email? \
+	buttons /
+		<= RequestCode $mol_button_major
+			dom_name \button
+			title \Enter
+			click? <=> submit? null
+		<= RequestResult $mol_status
+			message <= result? \
+
+$trip2g_auth_code_form $mol_form
+	body /
+		<= Code_field $mol_form_field
+			name \Code
+			bid <= code_bid \
+			Content <= code_control $mol_string
+				hint \000000
+				value? <=> code? \
+	buttons /
+		<= Signup $mol_button_major
+			title \Enter
+			click? <=> submit? null
+		<= Result $mol_status
+			message <= result? \

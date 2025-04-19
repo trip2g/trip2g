@@ -40,7 +40,9 @@
 <!DOCTYPE html>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 
 <title>{%s resp.Title %}</title>
 <link href="/assets/output.css" rel="stylesheet">
@@ -59,6 +61,8 @@
 </main>
 </div>
 
+<script src="/ui/auth/-/web.js"></script>
+
 {% endfunc %}
 
 {% func PayWall(resp *Response, err *PaywallError) %}
@@ -69,6 +73,10 @@
   Эта страница доступна только для подписчиков. Авторизуйтесь или купите подписку.
 </p>
 <p>{%s err.Message %}</p>
+
+<div mol_view_root>
+  <div mol_view_root="$trip2g_auth"></div>
+</div>
 
 <form action="/_system/signin" method="post" class="max-w-3xs mt-8">
   <input type="hidden" name="return_to" value="">

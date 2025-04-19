@@ -2,6 +2,7 @@ package usertoken
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
@@ -56,6 +57,15 @@ func (e *Manager) Extract(ctx *fasthttp.RequestCtx) (*Data, error) {
 		return e.secret, nil
 	}, jwt.WithLeeway(10*time.Second))
 	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			deleteErr := e.Delete(ctx)
+			if deleteErr != nil {
+				return nil, fmt.Errorf("failed to delete expired token: %w", deleteErr)
+			}
+
+			return nil, nil
+		}
+
 		return nil, ErrInvalidToken
 	}
 

@@ -274,7 +274,21 @@ func (a *app) startServer() {
 		},
 	}
 
+	fs2 := &fasthttp.FS{
+		Root:               "./ui",
+		IndexNames:         []string{},
+		GenerateIndexPages: false,
+		Compress:           true,
+		AcceptByteRange:    true,
+
+		PathRewrite: func(ctx *fasthttp.RequestCtx) []byte {
+			// remove /ui
+			return ctx.Path()[3:]
+		},
+	}
+
 	fsHandler := fs.NewRequestHandler()
+	fs2Handler := fs2.NewRequestHandler()
 
 	rtr := router.New(a)
 
@@ -287,6 +301,11 @@ func (a *app) startServer() {
 
 			if strings.HasPrefix(path, "/assets/") {
 				fsHandler(ctx)
+				return
+			}
+
+			if strings.HasPrefix(path, "/ui/") {
+				fs2Handler(ctx)
 				return
 			}
 
