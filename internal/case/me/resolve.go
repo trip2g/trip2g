@@ -12,7 +12,7 @@ type Env interface {
 }
 
 type Request struct {
-	UserID int64
+	UserToken *usertoken.Data
 }
 
 type Response struct {

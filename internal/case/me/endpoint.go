@@ -12,7 +12,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Resolve(req.Req, req.Env.(Env), Request{UserID: int64(userID.ID)})
+	return Resolve(req.Req, req.Env.(Env), Request{UserToken: userID})
 }
 
 func (*Endpoint) Path() string {
