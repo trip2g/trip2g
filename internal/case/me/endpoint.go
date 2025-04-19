@@ -8,11 +8,16 @@ import (
 type Endpoint struct{}
 
 func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
-	userID, err := req.UserToken()
+	token, err := req.UserToken()
 	if err != nil {
 		return nil, err
 	}
-	return Resolve(req.Req, req.Env.(Env), Request{UserToken: userID})
+
+	request := Request{
+		UserToken: token,
+	}
+
+	return Resolve(req.Req, req.Env.(Env), request)
 }
 
 func (*Endpoint) Path() string {

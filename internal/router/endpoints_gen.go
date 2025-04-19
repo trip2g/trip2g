@@ -6,6 +6,7 @@ package router
 
 import (
 	getnotehashesgetnotehashes "trip2g/internal/case/getnotehashes"
+	meme "trip2g/internal/case/me"
 	pushnotespushnotes "trip2g/internal/case/pushnotes"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
 	requestemailsigninrequestemailsignin "trip2g/internal/case/requestemailsignin"
@@ -30,6 +31,7 @@ import (
 
 var endpoints = []Endpoint{
 	&getnotehashesgetnotehashes.Endpoint{},
+	&meme.Endpoint{},
 	&pushnotespushnotes.Endpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
 	&requestemailsigninrequestemailsignin.Endpoint{},
@@ -52,6 +54,7 @@ var endpoints = []Endpoint{
 
 type Env interface {
 	getnotehashesgetnotehashes.Env
+	meme.Env
 	pushnotespushnotes.Env
 	rendernotepagerendernotepage.Env
 	requestemailsigninrequestemailsignin.Env

@@ -346,6 +346,22 @@ func (q *Queries) GetUserByEmail(ctx context.Context, lower string) (User, error
 	return i, err
 }
 
+const getUserByID = `-- name: GetUserByID :one
+select id, email, created_at, last_signin_code_sent_at from users where id = ?
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+	)
+	return i, err
+}
+
 const incrementNoteVersionCount = `-- name: IncrementNoteVersionCount :one
 update note_paths
    set version_count = version_count + 1

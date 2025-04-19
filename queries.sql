@@ -128,4 +128,7 @@ returning id;
 -- name: RevokeUserSubgraphAccess :exec
 update user_subgraph_accesses
    set revoke_id = ?
- where id = ?
+ where id = ?;
+
+-- name: GetUserByID :one
+select * from users where id = ?;

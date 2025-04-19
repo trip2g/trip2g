@@ -3,6 +3,7 @@ package me
 import (
 	"context"
 	"trip2g/internal/db"
+	"trip2g/internal/usertoken"
 )
 
 //go:generate easyjson -all -snake_case -no_std_marshalers ./resolve.go
@@ -16,14 +17,22 @@ type Request struct {
 }
 
 type Response struct {
-	User db.User
+	User *db.User
 }
 
 func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
-	user, err := env.GetUserByID(ctx, req.UserID)
+	response := Response{}
+
+	if req.UserToken == nil {
+		return &response, nil
+	}
+
+	user, err := env.GetUserByID(ctx, int64(req.UserToken.ID))
 	if err != nil {
 		return nil, err
 	}
 
-	return &Response{User: user}, nil
+	response.User = &user
+
+	return &response, nil
 }
