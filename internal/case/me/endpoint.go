@@ -8,7 +8,10 @@ import (
 type Endpoint struct{}
 
 func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
-	userID := req.UserID // Assuming UserID is part of the request context
+	userID, err := req.UserToken()
+	if err != nil {
+		return nil, err
+	}
 	return Resolve(req.Req, req.Env.(Env), Request{UserID: userID})
 }
 
