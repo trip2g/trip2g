@@ -1,7 +1,11 @@
 $trip2g_auth $mol_view
 	EmailForm $trip2g_auth_email_form
 	CodeForm $trip2g_auth_code_form
+	AppView $trip2g_auth_app
 	sub / <= EmailForm
+
+$trip2g_auth_app $mol_view
+	sub / \App
 
 $trip2g_auth_email_form $mol_form
 	body /
