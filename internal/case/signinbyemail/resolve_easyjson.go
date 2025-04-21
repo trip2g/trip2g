@@ -38,6 +38,8 @@ func easyjson5011676aDecodeTrip2gInternalCaseSigninbyemail(in *jlexer.Lexer, out
 		switch key {
 		case "token":
 			out.Token = string(in.String())
+		case "success":
+			out.Success = bool(in.Bool())
 		case "errors":
 			if in.IsNull() {
 				in.Skip()
@@ -79,6 +81,11 @@ func easyjson5011676aEncodeTrip2gInternalCaseSigninbyemail(out *jwriter.Writer, 
 		const prefix string = ",\"token\":"
 		out.RawString(prefix[1:])
 		out.String(string(in.Token))
+	}
+	{
+		const prefix string = ",\"success\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.Success))
 	}
 	{
 		const prefix string = ",\"errors\":"

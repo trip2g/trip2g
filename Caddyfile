@@ -1,0 +1,9 @@
+:9081
+
+handle /api/* {
+	reverse_proxy http://localhost:8081
+}
+
+handle /* {
+	reverse_proxy http://localhost:9080
+}

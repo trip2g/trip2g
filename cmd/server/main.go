@@ -51,6 +51,8 @@ type app struct {
 
 	tokenManager *usertoken.Manager
 	queueClient  *backlite.Client
+
+	devMode bool
 }
 
 func enablePragmas(db *sql.DB) error {
@@ -107,6 +109,8 @@ func main() {
 		log:     zerologger.New("debug", true),
 		queries: db.New(conn),
 		conn:    conn,
+
+		devMode: os.Getenv("DEV") == "y",
 	}
 
 	ctx := context.Background()
@@ -237,6 +241,10 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (int64, error)
 		return 0, err
 	}
 
+	if a.devMode {
+		code = 111111
+	}
+
 	err = a.queries.InsertSignInCode(ctx, db.InsertSignInCodeParams{
 		UserID: userID,
 		Code:   code,
@@ -296,8 +304,20 @@ func (a *app) startServer() {
 		Handler: func(ctx *fasthttp.RequestCtx) {
 			path := string(ctx.Path())
 
-			// TODO: only for dev
-			ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+			if a.devMode {
+				origin := string(ctx.Request.Header.Peek("Origin"))
+				if origin == "http://localhost:9080" {
+					ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
+					ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+					ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie")
+					ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+				}
+
+				if ctx.IsOptions() {
+					ctx.SetStatusCode(fasthttp.StatusNoContent)
+					return
+				}
+			}
 
 			if strings.HasPrefix(path, "/assets/") {
 				fsHandler(ctx)
@@ -308,10 +328,6 @@ func (a *app) startServer() {
 				fs2Handler(ctx)
 				return
 			}
-
-			ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
-			ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
-			ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 			// tx, err := a.conn.BeginTx(ctx, nil)
 			// if err != nil {

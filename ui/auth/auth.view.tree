@@ -1,11 +1,13 @@
 $trip2g_auth $mol_view
 	EmailForm $trip2g_auth_email_form
 	CodeForm $trip2g_auth_code_form
-	AppView $trip2g_auth_app
+		reload_me <= reload_me null
+	AppView $trip2g_admin
+		profile_info <= ProfileInfo $mol_button_major
+			title <= me_user_email? \???
+		sign_out <= SignOut $mol_button_major
+			click? <=> signout? null
 	sub / <= EmailForm
-
-$trip2g_auth_app $mol_view
-	sub / \App
 
 $trip2g_auth_email_form $mol_form
 	body /
@@ -14,7 +16,7 @@ $trip2g_auth_email_form $mol_form
 			bid <= email_bid \
 			Content <= email_control $mol_string
 				hint \name@example.com
-				value? <=> email? \
+				value? <=> email? \hello@example.com
 	buttons /
 		<= RequestCode $mol_button_major
 			dom_name \button
@@ -24,13 +26,14 @@ $trip2g_auth_email_form $mol_form
 			message <= result? \
 
 $trip2g_auth_code_form $mol_form
+	reload_me null
 	body /
 		<= Code_field $mol_form_field
 			name \Code
 			bid <= code_bid \
 			Content <= code_control $mol_string
 				hint \000000
-				value? <=> code? \
+				value? <=> code? \111111
 	buttons /
 		<= Signup $mol_button_major
 			title \Enter

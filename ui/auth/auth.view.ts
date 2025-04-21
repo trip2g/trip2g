@@ -8,18 +8,49 @@ namespace $.$$ {
 	}
 
 	export class $trip2g_auth extends $.$trip2g_auth {
+		me_request() {
+			return this.$.$mol_fetch.json('/api/me', {
+				credentials: 'include',
+			}) as Me;
+		}
+
+		reload_me() {
+			this.me(this.me_request());
+		}
+
 		@$mol_mem
 		me(next?: any) {
 			if (!next) {
-				return this.$.$mol_fetch.json('http://localhost:8081/api/me') as Me
+				return this.me_request();
 			}
+
+			console.log('set me', next);
 
 			return next ?? null
 		}
 
+		me_user_email(): string {
+			const me = this.me();
+			if (me.user) {
+				return me.user.email;
+			}
+
+			return '???';
+		}
+
+		signout() {
+			const url = '/api/signout'
+			
+			this.$.$mol_fetch.json(url, {
+				method: 'post',
+				credentials: 'include',
+			})
+
+			this.me(null);
+		}
+
 		sub() {
 			const me = this.me()
-			console.log('me', me)
 			if (me.user) {
 				return [this.AppView()]
 			}
@@ -44,7 +75,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const url = 'http://localhost:8081/api/requestemailsignin'
+			const url = '/api/requestemailsignin'
 
 			const res = this.$.$mol_fetch.json(url, {
 				method: 'post',
@@ -81,7 +112,7 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const url = 'http://localhost:8081/api/signinbyemail'
+			const url = '/api/signinbyemail'
 
 			const res = this.$.$mol_fetch.json(url, {
 				method: 'post',
@@ -97,11 +128,15 @@ namespace $.$$ {
 			}
 
 			if (res.success) {
-				alert('Success')
+				console.log('success', res);
+				this.$.$mol_state_arg.value('email', null)
+				this.reload_me();
 			} else if (res.errors) {
 				this.request_error(res.errors?.join(', ') ?? 'Unknown error')
 			} else if (res.message) {
 				this.request_error(res.message)
+			} else {
+				alert('Unknown error');
 			}
 		}
 	}

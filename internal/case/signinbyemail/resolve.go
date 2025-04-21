@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"trip2g/internal/appresp"
 	"trip2g/internal/db"
 	"trip2g/internal/validator"
 )
@@ -45,13 +46,13 @@ func (r *Request) Validate() error {
 }
 
 type Response struct {
-	Token string
+	appresp.Response
 
-	Errors []string
+	Token string
 }
 
 func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
-	response := &Response{}
+	response := Response{}
 
 	codeParams := db.VerifySignInCodeParams{
 		Email: req.Email,
@@ -62,7 +63,7 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			response.Errors = append(response.Errors, "invalid_code")
-			return response, nil
+			return &response, nil
 		}
 
 		return nil, fmt.Errorf("failed to list active sign-in codes: %w", err)
@@ -79,6 +80,7 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 	}
 
 	response.Token = token
+	response.Success = true
 
-	return response, nil
+	return &response, nil
 }

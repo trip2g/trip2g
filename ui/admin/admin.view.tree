@@ -1,0 +1,10 @@
+$trip2g_admin $mol_book2_catalog
+	param \nav
+	menu_title \Admin
+	menu_foot /
+		<= profile_info $mol_button_major
+			title \hello@example.com
+		<= sign_out $mol_button_major
+			title \Sign out
+	spreads *
+		notes <= Notes $mol_view
