@@ -132,3 +132,6 @@ update user_subgraph_accesses
 
 -- name: GetUserByID :one
 select * from users where id = ?;
+
+-- name: ListUsersByIDs :many
+select * from users where id in (sqlc.slice('ids'));

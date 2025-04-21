@@ -10,6 +10,8 @@ import (
 
 type Env interface {
 	ListUserSubgraphAccesses(ctx context.Context) ([]db.ListUserSubgraphAccessesRow, error)
+	ListAdminSubgraphs(ctx context.Context) ([]db.Subgraph, error)
+	ListUsersByIDs(ctx context.Context, ids []int64) ([]db.User, error)
 }
 
 type Request struct{}
@@ -20,7 +22,9 @@ func (r *Request) Validate() error {
 
 type Response struct {
 	appresp.Response
-	Accesses []db.ListUserSubgraphAccessesRow
+	Rows      []db.ListUserSubgraphAccessesRow
+	Subgraphs []db.Subgraph
+	Users     []db.User
 }
 
 func Resolve(ctx context.Context, env Env, request Request) (Response, error) {
@@ -32,6 +36,30 @@ func Resolve(ctx context.Context, env Env, request Request) (Response, error) {
 		return response, err
 	}
 
-	response.Accesses = accesses
+	userIDsMap := make(map[int64]struct{})
+	userIDs := make([]int64, 0, len(accesses))
+
+	for _, access := range accesses {
+		_, ok := userIDsMap[access.UserID]
+		if !ok {
+			userIDsMap[access.UserID] = struct{}{}
+			userIDs = append(userIDs, access.UserID)
+		}
+	}
+
+	users, err := env.ListUsersByIDs(ctx, userIDs)
+	if err != nil {
+		return response, err
+	}
+
+	subgraphs, err := env.ListAdminSubgraphs(ctx)
+	if err != nil {
+		return response, err
+	}
+
+	response.Rows = accesses
+	response.Subgraphs = subgraphs
+	response.Users = users
+
 	return response, nil
 }

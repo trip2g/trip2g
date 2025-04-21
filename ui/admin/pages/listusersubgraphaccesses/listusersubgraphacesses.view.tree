@@ -1,0 +1,22 @@
+$trip2g_admin_pages_listusersubgraphaccesses $mol_book2_catalog
+	menu_title \Subgraph accesses
+	menu_tools / <= Spread_close
+	param \access_id
+	Empty $mol_status
+	Content* $mol_page
+		tools / <= Spread_close
+		sub / \Content
+	menu_link_content* / <= NoteItem* $mol_view
+		sub /
+			<= Row* $mol_row
+				minimal_height 24
+				minimal_width 200
+				sub <= row_content* /
+					<= Row_id_labeler* $mol_labeler
+						title \ID
+						Content <= Row_id* $trip2g_admin_cell
+							content <= row_id* \id
+					<= Row_subgraph_name_labeler* $mol_labeler
+						title \Subgraph name
+						Content <= Row_subgraph_name* $trip2g_admin_cell
+							content <= row_subgraph_name* \Subgraph Name

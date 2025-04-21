@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -586,6 +587,48 @@ func (q *Queries) ListUserSubgraphAccesses(ctx context.Context) ([]ListUserSubgr
 			&i.RevokeID,
 			&i.UserEmail,
 			&i.SubgraphName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUsersByIDs = `-- name: ListUsersByIDs :many
+select id, email, created_at, last_signin_code_sent_at from users where id in (/*SLICE:ids*/?)
+`
+
+func (q *Queries) ListUsersByIDs(ctx context.Context, ids []int64) ([]User, error) {
+	query := listUsersByIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.CreatedAt,
+			&i.LastSigninCodeSentAt,
 		); err != nil {
 			return nil, err
 		}

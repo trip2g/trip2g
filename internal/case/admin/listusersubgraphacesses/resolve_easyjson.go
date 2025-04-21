@@ -19,7 +19,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson5011676aDecodeTrip2gInternalCaseListadminusersubgraphacesses(in *jlexer.Lexer, out *Response) {
+func easyjson5011676aDecodeTrip2gInternalCaseAdminListusersubgraphacesses(in *jlexer.Lexer, out *Response) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -38,25 +38,71 @@ func easyjson5011676aDecodeTrip2gInternalCaseListadminusersubgraphacesses(in *jl
 			continue
 		}
 		switch key {
-		case "accesses":
+		case "rows":
 			if in.IsNull() {
 				in.Skip()
-				out.Accesses = nil
+				out.Rows = nil
 			} else {
 				in.Delim('[')
-				if out.Accesses == nil {
+				if out.Rows == nil {
 					if !in.IsDelim(']') {
-						out.Accesses = make([]db.ListUserSubgraphAccessesRow, 0, 0)
+						out.Rows = make([]db.ListUserSubgraphAccessesRow, 0, 0)
 					} else {
-						out.Accesses = []db.ListUserSubgraphAccessesRow{}
+						out.Rows = []db.ListUserSubgraphAccessesRow{}
 					}
 				} else {
-					out.Accesses = (out.Accesses)[:0]
+					out.Rows = (out.Rows)[:0]
 				}
 				for !in.IsDelim(']') {
 					var v1 db.ListUserSubgraphAccessesRow
 					easyjson5011676aDecodeTrip2gInternalDb(in, &v1)
-					out.Accesses = append(out.Accesses, v1)
+					out.Rows = append(out.Rows, v1)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "subgraphs":
+			if in.IsNull() {
+				in.Skip()
+				out.Subgraphs = nil
+			} else {
+				in.Delim('[')
+				if out.Subgraphs == nil {
+					if !in.IsDelim(']') {
+						out.Subgraphs = make([]db.Subgraph, 0, 0)
+					} else {
+						out.Subgraphs = []db.Subgraph{}
+					}
+				} else {
+					out.Subgraphs = (out.Subgraphs)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v2 db.Subgraph
+					easyjson5011676aDecodeTrip2gInternalDb1(in, &v2)
+					out.Subgraphs = append(out.Subgraphs, v2)
+					in.WantComma()
+				}
+				in.Delim(']')
+			}
+		case "users":
+			if in.IsNull() {
+				in.Skip()
+				out.Users = nil
+			} else {
+				in.Delim('[')
+				if out.Users == nil {
+					if !in.IsDelim(']') {
+						out.Users = make([]db.User, 0, 0)
+					} else {
+						out.Users = []db.User{}
+					}
+				} else {
+					out.Users = (out.Users)[:0]
+				}
+				for !in.IsDelim(']') {
+					var v3 db.User
+					easyjson5011676aDecodeTrip2gInternalDb2(in, &v3)
+					out.Users = append(out.Users, v3)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -79,9 +125,9 @@ func easyjson5011676aDecodeTrip2gInternalCaseListadminusersubgraphacesses(in *jl
 					out.Errors = (out.Errors)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v2 string
-					v2 = string(in.String())
-					out.Errors = append(out.Errors, v2)
+					var v4 string
+					v4 = string(in.String())
+					out.Errors = append(out.Errors, v4)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -96,22 +142,54 @@ func easyjson5011676aDecodeTrip2gInternalCaseListadminusersubgraphacesses(in *jl
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeTrip2gInternalCaseListadminusersubgraphacesses(out *jwriter.Writer, in Response) {
+func easyjson5011676aEncodeTrip2gInternalCaseAdminListusersubgraphacesses(out *jwriter.Writer, in Response) {
 	out.RawByte('{')
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"accesses\":"
+		const prefix string = ",\"rows\":"
 		out.RawString(prefix[1:])
-		if in.Accesses == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+		if in.Rows == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v3, v4 := range in.Accesses {
-				if v3 > 0 {
+			for v5, v6 := range in.Rows {
+				if v5 > 0 {
 					out.RawByte(',')
 				}
-				easyjson5011676aEncodeTrip2gInternalDb(out, v4)
+				easyjson5011676aEncodeTrip2gInternalDb(out, v6)
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"subgraphs\":"
+		out.RawString(prefix)
+		if in.Subgraphs == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v7, v8 := range in.Subgraphs {
+				if v7 > 0 {
+					out.RawByte(',')
+				}
+				easyjson5011676aEncodeTrip2gInternalDb1(out, v8)
+			}
+			out.RawByte(']')
+		}
+	}
+	{
+		const prefix string = ",\"users\":"
+		out.RawString(prefix)
+		if in.Users == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+			out.RawString("null")
+		} else {
+			out.RawByte('[')
+			for v9, v10 := range in.Users {
+				if v9 > 0 {
+					out.RawByte(',')
+				}
+				easyjson5011676aEncodeTrip2gInternalDb2(out, v10)
 			}
 			out.RawByte(']')
 		}
@@ -128,11 +206,11 @@ func easyjson5011676aEncodeTrip2gInternalCaseListadminusersubgraphacesses(out *j
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v5, v6 := range in.Errors {
-				if v5 > 0 {
+			for v11, v12 := range in.Errors {
+				if v11 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v6))
+				out.String(string(v12))
 			}
 			out.RawByte(']')
 		}
@@ -142,12 +220,242 @@ func easyjson5011676aEncodeTrip2gInternalCaseListadminusersubgraphacesses(out *j
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Response) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson5011676aEncodeTrip2gInternalCaseListadminusersubgraphacesses(w, v)
+	easyjson5011676aEncodeTrip2gInternalCaseAdminListusersubgraphacesses(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Response) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson5011676aDecodeTrip2gInternalCaseListadminusersubgraphacesses(l, v)
+	easyjson5011676aDecodeTrip2gInternalCaseAdminListusersubgraphacesses(l, v)
+}
+func easyjson5011676aDecodeTrip2gInternalDb2(in *jlexer.Lexer, out *db.User) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "id":
+			out.ID = int64(in.Int64())
+		case "email":
+			out.Email = string(in.String())
+		case "created_at":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.CreatedAt).UnmarshalJSON(data))
+			}
+		case "last_signin_code_sent_at":
+			easyjson5011676aDecodeDatabaseSql(in, &out.LastSigninCodeSentAt)
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson5011676aEncodeTrip2gInternalDb2(out *jwriter.Writer, in db.User) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"id\":"
+		out.RawString(prefix[1:])
+		out.Int64(int64(in.ID))
+	}
+	{
+		const prefix string = ",\"email\":"
+		out.RawString(prefix)
+		out.String(string(in.Email))
+	}
+	{
+		const prefix string = ",\"created_at\":"
+		out.RawString(prefix)
+		out.Raw((in.CreatedAt).MarshalJSON())
+	}
+	{
+		const prefix string = ",\"last_signin_code_sent_at\":"
+		out.RawString(prefix)
+		easyjson5011676aEncodeDatabaseSql(out, in.LastSigninCodeSentAt)
+	}
+	out.RawByte('}')
+}
+func easyjson5011676aDecodeDatabaseSql(in *jlexer.Lexer, out *sql.NullTime) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "time":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.Time).UnmarshalJSON(data))
+			}
+		case "valid":
+			out.Valid = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson5011676aEncodeDatabaseSql(out *jwriter.Writer, in sql.NullTime) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"time\":"
+		out.RawString(prefix[1:])
+		out.Raw((in.Time).MarshalJSON())
+	}
+	{
+		const prefix string = ",\"valid\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.Valid))
+	}
+	out.RawByte('}')
+}
+func easyjson5011676aDecodeTrip2gInternalDb1(in *jlexer.Lexer, out *db.Subgraph) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "id":
+			out.ID = int64(in.Int64())
+		case "name":
+			out.Name = string(in.String())
+		case "color":
+			easyjson5011676aDecodeDatabaseSql1(in, &out.Color)
+		case "created_at":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.CreatedAt).UnmarshalJSON(data))
+			}
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson5011676aEncodeTrip2gInternalDb1(out *jwriter.Writer, in db.Subgraph) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"id\":"
+		out.RawString(prefix[1:])
+		out.Int64(int64(in.ID))
+	}
+	{
+		const prefix string = ",\"name\":"
+		out.RawString(prefix)
+		out.String(string(in.Name))
+	}
+	{
+		const prefix string = ",\"color\":"
+		out.RawString(prefix)
+		easyjson5011676aEncodeDatabaseSql1(out, in.Color)
+	}
+	{
+		const prefix string = ",\"created_at\":"
+		out.RawString(prefix)
+		out.Raw((in.CreatedAt).MarshalJSON())
+	}
+	out.RawByte('}')
+}
+func easyjson5011676aDecodeDatabaseSql1(in *jlexer.Lexer, out *sql.NullString) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "string":
+			out.String = string(in.String())
+		case "valid":
+			out.Valid = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson5011676aEncodeDatabaseSql1(out *jwriter.Writer, in sql.NullString) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"string\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.String))
+	}
+	{
+		const prefix string = ",\"valid\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.Valid))
+	}
+	out.RawByte('}')
 }
 func easyjson5011676aDecodeTrip2gInternalDb(in *jlexer.Lexer, out *db.ListUserSubgraphAccessesRow) {
 	isTopLevel := in.IsStart()
@@ -175,15 +483,15 @@ func easyjson5011676aDecodeTrip2gInternalDb(in *jlexer.Lexer, out *db.ListUserSu
 		case "subgraph_id":
 			out.SubgraphID = int64(in.Int64())
 		case "purchase_id":
-			easyjson5011676aDecodeDatabaseSql(in, &out.PurchaseID)
+			easyjson5011676aDecodeDatabaseSql2(in, &out.PurchaseID)
 		case "created_at":
 			if data := in.Raw(); in.Ok() {
 				in.AddError((out.CreatedAt).UnmarshalJSON(data))
 			}
 		case "expires_at":
-			easyjson5011676aDecodeDatabaseSql1(in, &out.ExpiresAt)
+			easyjson5011676aDecodeDatabaseSql(in, &out.ExpiresAt)
 		case "revoke_id":
-			easyjson5011676aDecodeDatabaseSql(in, &out.RevokeID)
+			easyjson5011676aDecodeDatabaseSql2(in, &out.RevokeID)
 		case "user_email":
 			out.UserEmail = string(in.String())
 		case "subgraph_name":
@@ -220,7 +528,7 @@ func easyjson5011676aEncodeTrip2gInternalDb(out *jwriter.Writer, in db.ListUserS
 	{
 		const prefix string = ",\"purchase_id\":"
 		out.RawString(prefix)
-		easyjson5011676aEncodeDatabaseSql(out, in.PurchaseID)
+		easyjson5011676aEncodeDatabaseSql2(out, in.PurchaseID)
 	}
 	{
 		const prefix string = ",\"created_at\":"
@@ -230,12 +538,12 @@ func easyjson5011676aEncodeTrip2gInternalDb(out *jwriter.Writer, in db.ListUserS
 	{
 		const prefix string = ",\"expires_at\":"
 		out.RawString(prefix)
-		easyjson5011676aEncodeDatabaseSql1(out, in.ExpiresAt)
+		easyjson5011676aEncodeDatabaseSql(out, in.ExpiresAt)
 	}
 	{
 		const prefix string = ",\"revoke_id\":"
 		out.RawString(prefix)
-		easyjson5011676aEncodeDatabaseSql(out, in.RevokeID)
+		easyjson5011676aEncodeDatabaseSql2(out, in.RevokeID)
 	}
 	{
 		const prefix string = ",\"user_email\":"
@@ -249,58 +557,7 @@ func easyjson5011676aEncodeTrip2gInternalDb(out *jwriter.Writer, in db.ListUserS
 	}
 	out.RawByte('}')
 }
-func easyjson5011676aDecodeDatabaseSql1(in *jlexer.Lexer, out *sql.NullTime) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeFieldName(false)
-		in.WantColon()
-		if in.IsNull() {
-			in.Skip()
-			in.WantComma()
-			continue
-		}
-		switch key {
-		case "time":
-			if data := in.Raw(); in.Ok() {
-				in.AddError((out.Time).UnmarshalJSON(data))
-			}
-		case "valid":
-			out.Valid = bool(in.Bool())
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson5011676aEncodeDatabaseSql1(out *jwriter.Writer, in sql.NullTime) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	{
-		const prefix string = ",\"time\":"
-		out.RawString(prefix[1:])
-		out.Raw((in.Time).MarshalJSON())
-	}
-	{
-		const prefix string = ",\"valid\":"
-		out.RawString(prefix)
-		out.Bool(bool(in.Valid))
-	}
-	out.RawByte('}')
-}
-func easyjson5011676aDecodeDatabaseSql(in *jlexer.Lexer, out *sql.NullInt64) {
+func easyjson5011676aDecodeDatabaseSql2(in *jlexer.Lexer, out *sql.NullInt64) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -333,7 +590,7 @@ func easyjson5011676aDecodeDatabaseSql(in *jlexer.Lexer, out *sql.NullInt64) {
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeDatabaseSql(out *jwriter.Writer, in sql.NullInt64) {
+func easyjson5011676aEncodeDatabaseSql2(out *jwriter.Writer, in sql.NullInt64) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -349,7 +606,7 @@ func easyjson5011676aEncodeDatabaseSql(out *jwriter.Writer, in sql.NullInt64) {
 	}
 	out.RawByte('}')
 }
-func easyjson5011676aDecodeTrip2gInternalCaseListadminusersubgraphacesses1(in *jlexer.Lexer, out *Request) {
+func easyjson5011676aDecodeTrip2gInternalCaseAdminListusersubgraphacesses1(in *jlexer.Lexer, out *Request) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -378,7 +635,7 @@ func easyjson5011676aDecodeTrip2gInternalCaseListadminusersubgraphacesses1(in *j
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeTrip2gInternalCaseListadminusersubgraphacesses1(out *jwriter.Writer, in Request) {
+func easyjson5011676aEncodeTrip2gInternalCaseAdminListusersubgraphacesses1(out *jwriter.Writer, in Request) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -387,10 +644,10 @@ func easyjson5011676aEncodeTrip2gInternalCaseListadminusersubgraphacesses1(out *
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Request) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson5011676aEncodeTrip2gInternalCaseListadminusersubgraphacesses1(w, v)
+	easyjson5011676aEncodeTrip2gInternalCaseAdminListusersubgraphacesses1(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Request) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson5011676aDecodeTrip2gInternalCaseListadminusersubgraphacesses1(l, v)
+	easyjson5011676aDecodeTrip2gInternalCaseAdminListusersubgraphacesses1(l, v)
 }
