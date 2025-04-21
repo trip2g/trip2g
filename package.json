@@ -2,6 +2,7 @@
   "scripts": {
     "start": "npx @tailwindcss/cli -i ./assets/styles.css -o ./assets/output.css",
     "dev": "vite",
+    "graphqlgen": "graphql-codegen --config graphqlgen.ts",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
@@ -11,9 +12,11 @@
     "graphology-communities-louvain": "^2.0.2",
     "graphology-layout": "^0.6.1",
     "graphology-layout-forceatlas2": "^0.10.1",
+    "graphql": "^16.10.0",
     "sigma": "^3.0.1"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.5",
     "@tailwindcss/cli": "^4.0.14",
     "@tailwindcss/typography": "^0.5.16",
     "tailwindcss": "^4.0.14",

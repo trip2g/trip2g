@@ -7,8 +7,20 @@ namespace $.$$ {
 		} | null
 	}
 
+	/* GraphQL */ `
+		query RequestEmailSigninCode {
+			admin {
+				listUsers {
+					nodes { id }
+				}
+			}
+		}
+	`
+
 	export class $trip2g_auth extends $.$trip2g_auth {
 		me_request() {
+			$trip2g_graphql_request_email_signin_code({});
+
 			return this.$.$mol_fetch.json('/api/me', {
 				credentials: 'include',
 			}) as Me;
