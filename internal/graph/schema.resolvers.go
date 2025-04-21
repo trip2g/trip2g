@@ -6,15 +6,36 @@ package graph
 
 import (
 	"context"
-	"fmt"
+	"trip2g/internal/db"
+	"trip2g/internal/graph/model"
 )
 
-// Hello is the resolver for the hello field.
-func (r *queryResolver) Hello(ctx context.Context) (*string, error) {
-	panic(fmt.Errorf("not implemented: Hello - hello"))
+// ListUsers is the resolver for the listUsers field.
+func (r *adminQueryResolver) ListUsers(ctx context.Context, obj *model.AdminQuery) (*model.AdminUsersConnection, error) {
+	return &model.AdminUsersConnection{}, nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminUsersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error) {
+	return r.Env.ListAllUsers(ctx)
+}
+
+// Admin is the resolver for the admin field.
+func (r *queryResolver) Admin(ctx context.Context) (*model.AdminQuery, error) {
+	return &model.AdminQuery{}, nil
+}
+
+// AdminQuery returns AdminQueryResolver implementation.
+func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
+
+// AdminUsersConnection returns AdminUsersConnectionResolver implementation.
+func (r *Resolver) AdminUsersConnection() AdminUsersConnectionResolver {
+	return &adminUsersConnectionResolver{r}
 }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+type adminQueryResolver struct{ *Resolver }
+type adminUsersConnectionResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

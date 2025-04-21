@@ -2,5 +2,17 @@
 
 package model
 
+import (
+	"trip2g/internal/db"
+)
+
+type AdminQuery struct {
+	ListUsers *AdminUsersConnection `json:"listUsers"`
+}
+
+type AdminUsersConnection struct {
+	Nodes []db.User `json:"nodes"`
+}
+
 type Query struct {
 }
