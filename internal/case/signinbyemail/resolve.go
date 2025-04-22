@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"strings"
 
-	"trip2g/internal/appresp"
 	"trip2g/internal/db"
-	"trip2g/internal/validator"
-)
+	"trip2g/internal/graph/model"
 
-//go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
+)
 
 type Env interface {
 	VerifySignInCode(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error)
@@ -25,34 +25,24 @@ type Request struct {
 	Code  int64
 }
 
-var ErrInvalidEmail = errors.New("invalid email")
-var ErrInvalidCode = errors.New("invalid code")
-
 func (r *Request) Normalize() {
 	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
 }
 
-func (r *Request) Validate() error {
-	err := validator.CheckEmail(r.Email)
-	if err != nil {
-		return fmt.Errorf("invalid email: %w", err)
-	}
-
-	if r.Code < 100000 || r.Code > 999999 {
-		return ErrInvalidCode
-	}
-
-	return nil
+func (req *Request) Validate() *model.ErrorPayload {
+	return model.NewOzzoError(ozzo.ValidateStruct(req,
+		ozzo.Field(&req.Email, ozzo.Required, is.Email),
+		ozzo.Field(&req.Code, ozzo.Required, ozzo.Min(100000), ozzo.Max(999999)),
+	))
 }
 
-type Response struct {
-	appresp.Response
+func (req *Request) Resolve(ctx context.Context, env Env) (model.SignInOrErrorPayload, error) {
+	req.Normalize()
 
-	Token string
-}
-
-func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
-	response := Response{}
+	errorPayload := req.Validate()
+	if errorPayload != nil {
+		return errorPayload, nil
+	}
 
 	codeParams := db.VerifySignInCodeParams{
 		Email: req.Email,
@@ -62,8 +52,7 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 	userID, err := env.VerifySignInCode(ctx, codeParams)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			response.Errors = append(response.Errors, "invalid_code")
-			return &response, nil
+			return model.NewFieldError("email", "not_found"), nil
 		}
 
 		return nil, fmt.Errorf("failed to list active sign-in codes: %w", err)
@@ -79,8 +68,10 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 		return nil, fmt.Errorf("failed to delete sign-in codes: %w", err)
 	}
 
-	response.Token = token
-	response.Success = true
+	response := model.SignInPayload{
+		Token:  token,
+		Viewer: &model.Viewer{},
+	}
 
 	return &response, nil
 }

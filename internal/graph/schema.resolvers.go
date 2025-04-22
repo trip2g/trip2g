@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 	"trip2g/internal/case/requestemailsignin"
+	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 )
@@ -48,8 +49,8 @@ func (r *mutationResolver) RequestEmailSignInCode(ctx context.Context, input *re
 }
 
 // SignInByEmail is the resolver for the signInByEmail field.
-func (r *mutationResolver) SignInByEmail(ctx context.Context, input model.SignInByEmailInput) (model.SignInOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: SignInByEmail - signInByEmail"))
+func (r *mutationResolver) SignInByEmail(ctx context.Context, input signinbyemail.Request) (model.SignInOrErrorPayload, error) {
+	return input.Resolve(ctx, r.Env)
 }
 
 // Viewer is the resolver for the viewer field.
@@ -60,6 +61,12 @@ func (r *queryResolver) Viewer(ctx context.Context) (*model.Viewer, error) {
 // Admin is the resolver for the admin field.
 func (r *queryResolver) Admin(ctx context.Context) (*model.AdminQuery, error) {
 	return &model.AdminQuery{}, nil
+}
+
+// Code is the resolver for the code field.
+func (r *signInByEmailInputResolver) Code(ctx context.Context, obj *signinbyemail.Request, data int32) error {
+	obj.Code = int64(data)
+	return nil
 }
 
 // AdminQuery returns AdminQueryResolver implementation.
@@ -79,8 +86,14 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// SignInByEmailInput returns SignInByEmailInputResolver implementation.
+func (r *Resolver) SignInByEmailInput() SignInByEmailInputResolver {
+	return &signInByEmailInputResolver{r}
+}
+
 type adminQueryResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type signInByEmailInputResolver struct{ *Resolver }

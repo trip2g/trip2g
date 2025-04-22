@@ -49,11 +49,6 @@ type RequestEmailSignInCodePayload struct {
 
 func (RequestEmailSignInCodePayload) IsRequestEmailSignInCodeOrErrorPayload() {}
 
-type SignInByEmailInput struct {
-	Email string `json:"email"`
-	Code  string `json:"code"`
-}
-
 type SignInPayload struct {
 	Token  string  `json:"token"`
 	Viewer *Viewer `json:"viewer"`
