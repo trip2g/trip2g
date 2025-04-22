@@ -23,6 +23,20 @@ type AdminUsersConnection struct {
 	Nodes []db.User `json:"nodes"`
 }
 
+type ErrorPayload struct {
+	Message  string         `json:"message"`
+	ByFields []FieldMessage `json:"byFields"`
+}
+
+func (ErrorPayload) IsRequestEmailSignInCodeOrErrorPayload() {}
+
+func (ErrorPayload) IsSignInOrErrorPayload() {}
+
+type FieldMessage struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 type Mutation struct {
 }
 

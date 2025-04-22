@@ -13,7 +13,6 @@ import (
 	"sync/atomic"
 	"time"
 	"trip2g/internal/case/requestemailsignin"
-	"trip2g/internal/caseerr"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 
@@ -45,7 +44,7 @@ type Config struct {
 type ResolverRoot interface {
 	AdminQuery() AdminQueryResolver
 	AdminUsersConnection() AdminUsersConnectionResolver
-	FieldMessage() FieldMessageResolver
+	ErrorPayload() ErrorPayloadResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 }
@@ -68,8 +67,8 @@ type ComplexityRoot struct {
 	}
 
 	FieldMessage struct {
-		Message func(childComplexity int) int
-		Value   func(childComplexity int) int
+		Name  func(childComplexity int) int
+		Value func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -109,8 +108,8 @@ type AdminQueryResolver interface {
 type AdminUsersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error)
 }
-type FieldMessageResolver interface {
-	Value(ctx context.Context, obj *caseerr.FieldError) (string, error)
+type ErrorPayloadResolver interface {
+	Message(ctx context.Context, obj *model.ErrorPayload) (string, error)
 }
 type MutationResolver interface {
 	RequestEmailSignInCode(ctx context.Context, input *requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error)
@@ -168,12 +167,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ErrorPayload.Message(childComplexity), true
 
-	case "FieldMessage.message":
-		if e.complexity.FieldMessage.Message == nil {
+	case "FieldMessage.name":
+		if e.complexity.FieldMessage.Name == nil {
 			break
 		}
 
-		return e.complexity.FieldMessage.Message(childComplexity), true
+		return e.complexity.FieldMessage.Name(childComplexity), true
 
 	case "FieldMessage.value":
 		if e.complexity.FieldMessage.Value == nil {
@@ -671,7 +670,7 @@ func (ec *executionContext) fieldContext_AdminUsersConnection_nodes(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _ErrorPayload_message(ctx context.Context, field graphql.CollectedField, obj *caseerr.CaseError) (ret graphql.Marshaler) {
+func (ec *executionContext) _ErrorPayload_message(ctx context.Context, field graphql.CollectedField, obj *model.ErrorPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ErrorPayload_message(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -685,7 +684,7 @@ func (ec *executionContext) _ErrorPayload_message(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
+		return ec.resolvers.ErrorPayload().Message(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -706,8 +705,8 @@ func (ec *executionContext) fieldContext_ErrorPayload_message(_ context.Context,
 	fc = &graphql.FieldContext{
 		Object:     "ErrorPayload",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -715,7 +714,7 @@ func (ec *executionContext) fieldContext_ErrorPayload_message(_ context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _ErrorPayload_byFields(ctx context.Context, field graphql.CollectedField, obj *caseerr.CaseError) (ret graphql.Marshaler) {
+func (ec *executionContext) _ErrorPayload_byFields(ctx context.Context, field graphql.CollectedField, obj *model.ErrorPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ErrorPayload_byFields(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -741,9 +740,9 @@ func (ec *executionContext) _ErrorPayload_byFields(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]caseerr.FieldError)
+	res := resTmp.([]model.FieldMessage)
 	fc.Result = res
-	return ec.marshalNFieldMessage2ᚕtrip2gᚋinternalᚋcaseerrᚐFieldErrorᚄ(ctx, field.Selections, res)
+	return ec.marshalNFieldMessage2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐFieldMessageᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_ErrorPayload_byFields(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -754,8 +753,8 @@ func (ec *executionContext) fieldContext_ErrorPayload_byFields(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "message":
-				return ec.fieldContext_FieldMessage_message(ctx, field)
+			case "name":
+				return ec.fieldContext_FieldMessage_name(ctx, field)
 			case "value":
 				return ec.fieldContext_FieldMessage_value(ctx, field)
 			}
@@ -765,8 +764,8 @@ func (ec *executionContext) fieldContext_ErrorPayload_byFields(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _FieldMessage_message(ctx context.Context, field graphql.CollectedField, obj *caseerr.FieldError) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_FieldMessage_message(ctx, field)
+func (ec *executionContext) _FieldMessage_name(ctx context.Context, field graphql.CollectedField, obj *model.FieldMessage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FieldMessage_name(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -779,7 +778,7 @@ func (ec *executionContext) _FieldMessage_message(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Message, nil
+		return obj.Name, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -796,7 +795,7 @@ func (ec *executionContext) _FieldMessage_message(ctx context.Context, field gra
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_FieldMessage_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_FieldMessage_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "FieldMessage",
 		Field:      field,
@@ -809,7 +808,7 @@ func (ec *executionContext) fieldContext_FieldMessage_message(_ context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _FieldMessage_value(ctx context.Context, field graphql.CollectedField, obj *caseerr.FieldError) (ret graphql.Marshaler) {
+func (ec *executionContext) _FieldMessage_value(ctx context.Context, field graphql.CollectedField, obj *model.FieldMessage) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_FieldMessage_value(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -823,7 +822,7 @@ func (ec *executionContext) _FieldMessage_value(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.FieldMessage().Value(rctx, obj)
+		return obj.Value, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -844,8 +843,8 @@ func (ec *executionContext) fieldContext_FieldMessage_value(_ context.Context, f
 	fc = &graphql.FieldContext{
 		Object:     "FieldMessage",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -3582,9 +3581,9 @@ func (ec *executionContext) _RequestEmailSignInCodeOrErrorPayload(ctx context.Co
 			return graphql.Null
 		}
 		return ec._RequestEmailSignInCodePayload(ctx, sel, obj)
-	case caseerr.CaseError:
+	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
-	case *caseerr.CaseError:
+	case *model.ErrorPayload:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -3605,9 +3604,9 @@ func (ec *executionContext) _SignInOrErrorPayload(ctx context.Context, sel ast.S
 			return graphql.Null
 		}
 		return ec._SignInPayload(ctx, sel, obj)
-	case caseerr.CaseError:
+	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
-	case *caseerr.CaseError:
+	case *model.ErrorPayload:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -3763,7 +3762,7 @@ func (ec *executionContext) _AdminUsersConnection(ctx context.Context, sel ast.S
 
 var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload"}
 
-func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *caseerr.CaseError) graphql.Marshaler {
+func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -3773,55 +3772,6 @@ func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.Selection
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("ErrorPayload")
 		case "message":
-			out.Values[i] = ec._ErrorPayload_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "byFields":
-			out.Values[i] = ec._ErrorPayload_byFields(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var fieldMessageImplementors = []string{"FieldMessage"}
-
-func (ec *executionContext) _FieldMessage(ctx context.Context, sel ast.SelectionSet, obj *caseerr.FieldError) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, fieldMessageImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("FieldMessage")
-		case "message":
-			out.Values[i] = ec._FieldMessage_message(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "value":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -3830,7 +3780,7 @@ func (ec *executionContext) _FieldMessage(ctx context.Context, sel ast.Selection
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._FieldMessage_value(ctx, field, obj)
+				res = ec._ErrorPayload_message(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -3857,6 +3807,55 @@ func (ec *executionContext) _FieldMessage(ctx context.Context, sel ast.Selection
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "byFields":
+			out.Values[i] = ec._ErrorPayload_byFields(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var fieldMessageImplementors = []string{"FieldMessage"}
+
+func (ec *executionContext) _FieldMessage(ctx context.Context, sel ast.SelectionSet, obj *model.FieldMessage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fieldMessageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FieldMessage")
+		case "name":
+			out.Values[i] = ec._FieldMessage_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "value":
+			out.Values[i] = ec._FieldMessage_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4581,11 +4580,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNFieldMessage2trip2gᚋinternalᚋcaseerrᚐFieldError(ctx context.Context, sel ast.SelectionSet, v caseerr.FieldError) graphql.Marshaler {
+func (ec *executionContext) marshalNFieldMessage2trip2gᚋinternalᚋgraphᚋmodelᚐFieldMessage(ctx context.Context, sel ast.SelectionSet, v model.FieldMessage) graphql.Marshaler {
 	return ec._FieldMessage(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNFieldMessage2ᚕtrip2gᚋinternalᚋcaseerrᚐFieldErrorᚄ(ctx context.Context, sel ast.SelectionSet, v []caseerr.FieldError) graphql.Marshaler {
+func (ec *executionContext) marshalNFieldMessage2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐFieldMessageᚄ(ctx context.Context, sel ast.SelectionSet, v []model.FieldMessage) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -4609,7 +4608,7 @@ func (ec *executionContext) marshalNFieldMessage2ᚕtrip2gᚋinternalᚋcaseerr�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNFieldMessage2trip2gᚋinternalᚋcaseerrᚐFieldError(ctx, sel, v[i])
+			ret[i] = ec.marshalNFieldMessage2trip2gᚋinternalᚋgraphᚋmodelᚐFieldMessage(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)

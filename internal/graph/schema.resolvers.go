@@ -7,8 +7,8 @@ package graph
 import (
 	"context"
 	"fmt"
+	"strings"
 	"trip2g/internal/case/requestemailsignin"
-	"trip2g/internal/caseerr"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 )
@@ -23,19 +23,28 @@ func (r *adminUsersConnectionResolver) Nodes(ctx context.Context, obj *model.Adm
 	return r.Env.ListAllUsers(ctx)
 }
 
-// Value is the resolver for the value field.
-func (r *fieldMessageResolver) Value(ctx context.Context, obj *caseerr.FieldError) (string, error) {
-	panic(fmt.Errorf("not implemented: Value - value"))
+// Message is the resolver for the message field.
+func (r *errorPayloadResolver) Message(ctx context.Context, obj *model.ErrorPayload) (string, error) {
+	if obj.Message != "" {
+		return obj.Message, nil
+	}
+
+	if len(obj.ByFields) == 0 {
+		return "unknown error", nil
+	}
+
+	messages := []string{}
+
+	for _, field := range obj.ByFields {
+		messages = append(messages, fmt.Sprintf("%s: %s", field.Name, field.Value))
+	}
+
+	return strings.Join(messages, ", "), nil
 }
 
 // RequestEmailSignInCode is the resolver for the requestEmailSignInCode field.
 func (r *mutationResolver) RequestEmailSignInCode(ctx context.Context, input *requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error) {
-	resp, err := requestemailsignin.Resolve(ctx, r.Env, *input)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.(model.RequestEmailSignInCodeOrErrorPayload), nil
+	return requestemailsignin.Resolve(ctx, r.Env, *input)
 }
 
 // SignInByEmail is the resolver for the signInByEmail field.
@@ -61,8 +70,8 @@ func (r *Resolver) AdminUsersConnection() AdminUsersConnectionResolver {
 	return &adminUsersConnectionResolver{r}
 }
 
-// FieldMessage returns FieldMessageResolver implementation.
-func (r *Resolver) FieldMessage() FieldMessageResolver { return &fieldMessageResolver{r} }
+// ErrorPayload returns ErrorPayloadResolver implementation.
+func (r *Resolver) ErrorPayload() ErrorPayloadResolver { return &errorPayloadResolver{r} }
 
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
@@ -72,6 +81,6 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type adminQueryResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
-type fieldMessageResolver struct{ *Resolver }
+type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
