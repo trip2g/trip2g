@@ -15,6 +15,7 @@ const PARSER_SCALAR = {
     Int: '$mol_data_integer',
     Int64: '$mol_data_integer',
     Float: '$mol_data_number',
+    Time: '$mol_data_pipe( $mol_data_string , $mol_time_moment )',
     Boolean: '$mol_data_boolean',
 }
 
@@ -45,7 +46,7 @@ function genParser(type, sel, depth = 0) {
     }
 
     if (isScalarType(core)) {
-        const base = PARSER_SCALAR[core.name] || '$mol_data_unknown'
+        const base = PARSER_SCALAR[core.name] || '$mol_data_string'
         return nullable ? `$mol_data_optional(${base})` : base
     }
 

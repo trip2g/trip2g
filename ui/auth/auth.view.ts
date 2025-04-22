@@ -12,25 +12,17 @@ namespace $.$$ {
 		query ListUsers {
 			admin {
 				listUsers {
-					nodes { id }
+					nodes { id, email, createdAt }
 				}
 			}
 		}
 	`
-
-
-	
-
-
-
-
-
-
 	// use the query after code generation
 
 	export class $trip2g_auth extends $.$trip2g_auth {
 		me_request() {
-			$trip2g_graphql_list_users();
+			const test_data = $trip2g_graphql_list_users();
+			console.log(test_data.admin.listUsers.nodes);
 
 			return this.$.$mol_fetch.json('/api/me', {
 				credentials: 'include',

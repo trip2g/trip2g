@@ -5,6 +5,8 @@ namespace $.$$ {
     listUsers {
       nodes {
         id
+        email
+        createdAt
       }
     }
   }
@@ -14,7 +16,9 @@ namespace $.$$ {
 		admin: $mol_data_record({
 			listUsers: $mol_data_record({
 				nodes: $mol_data_array($mol_data_record({
-						id: $mol_data_integer
+						id: $mol_data_integer,
+						email: $mol_data_string,
+						createdAt: $mol_data_pipe( $mol_data_string , $mol_time_moment )
 					}))
 			})
 		})
