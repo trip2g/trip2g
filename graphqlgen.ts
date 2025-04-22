@@ -6,26 +6,9 @@ const config: CodegenConfig = {
    generates: {
       './ui/graphql/queries.ts': {
         plugins: [
-          {
-            add: {
-              content: 'namespace $.$$ {',
-            },
-          },
-          'typescript',
-          'typescript-operations',
           './graphqlmol.js',
         ],
-        config: {
-          noExport: true,
-          documentMode: 'string',
-        },
       },
-      // './ui/graphql/generated/': {
-      //   preset: 'client',
-      //   config: {
-      //     documentMode: 'string',
-      //   },
-      // },
    },
 }
 

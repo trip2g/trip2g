@@ -7,8 +7,9 @@ namespace $.$$ {
 		} | null
 	}
 
+	// define a query
 	/* GraphQL */ `
-		query RequestEmailSigninCode {
+		query ListUsers {
 			admin {
 				listUsers {
 					nodes { id }
@@ -17,9 +18,19 @@ namespace $.$$ {
 		}
 	`
 
+
+	
+
+
+
+
+
+
+	// use the query after code generation
+
 	export class $trip2g_auth extends $.$trip2g_auth {
 		me_request() {
-			$trip2g_graphql_request_email_signin_code({});
+			$trip2g_graphql_list_users();
 
 			return this.$.$mol_fetch.json('/api/me', {
 				credentials: 'include',
