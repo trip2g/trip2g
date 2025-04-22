@@ -8,6 +8,19 @@ directive @goField(
 	type: String
 ) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 
+directive @goModel(
+	model: String
+	models: [String!]
+	forceGenerate: Boolean
+) on OBJECT | INPUT_OBJECT | SCALAR | ENUM | INTERFACE | UNION
+
+directive @goExtraField(
+	name: String
+	type: String!
+	overrideTags: String
+	description: String
+) repeatable on OBJECT | INPUT_OBJECT
+
 type User {
   id: Int64!
   email: String!
@@ -22,6 +35,57 @@ type AdminQuery {
   listUsers: AdminUsersConnection! @goField(forceResolver: true)
 }
 
+type Viewer @goExtraField(name: "UserToken", type: "*trip2g/internal/usertoken.Data") {
+  id: ID!
+  user: User
+}
+
 type Query {
+  viewer: Viewer!
   admin: AdminQuery!
+}
+
+type FieldMessage @goModel(model: "trip2g/internal/caseerr.FieldError") {
+  message: String!
+  value: String!
+}
+
+type ErrorPayload @goModel(model: "trip2g/internal/caseerr.CaseError") {
+  message: String!
+  byFields: [FieldMessage!]!
+}
+
+#
+# requestEmailSignInCode
+#
+
+input RequestEmailSignInCodeInput @goModel(model: "trip2g/internal/case/requestemailsignin.Request") {
+  email: String!
+}
+
+type RequestEmailSignInCodePayload @goModel(model: "trip2g/internal/case/requestemailsignin.Response") {
+  success: Boolean!
+}
+
+union RequestEmailSignInCodeOrErrorPayload = RequestEmailSignInCodePayload | ErrorPayload
+
+#
+# signInByEmail
+#
+
+input SignInByEmailInput {
+  email: String!
+  code: String!
+}
+
+type SignInPayload {
+  token: String!
+  viewer: Viewer!
+}
+
+union SignInOrErrorPayload = SignInPayload | ErrorPayload
+
+type Mutation {
+  requestEmailSignInCode(input: RequestEmailSignInCodeInput): RequestEmailSignInCodeOrErrorPayload!
+  signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
 }

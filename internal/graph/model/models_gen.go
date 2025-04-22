@@ -4,7 +4,16 @@ package model
 
 import (
 	"trip2g/internal/db"
+	"trip2g/internal/usertoken"
 )
+
+type RequestEmailSignInCodeOrErrorPayload interface {
+	IsRequestEmailSignInCodeOrErrorPayload()
+}
+
+type SignInOrErrorPayload interface {
+	IsSignInOrErrorPayload()
+}
 
 type AdminQuery struct {
 	ListUsers *AdminUsersConnection `json:"listUsers"`
@@ -14,5 +23,26 @@ type AdminUsersConnection struct {
 	Nodes []db.User `json:"nodes"`
 }
 
+type Mutation struct {
+}
+
 type Query struct {
+}
+
+type SignInByEmailInput struct {
+	Email string `json:"email"`
+	Code  string `json:"code"`
+}
+
+type SignInPayload struct {
+	Token  string  `json:"token"`
+	Viewer *Viewer `json:"viewer"`
+}
+
+func (SignInPayload) IsSignInOrErrorPayload() {}
+
+type Viewer struct {
+	ID        string          `json:"id"`
+	User      *db.User        `json:"user,omitempty"`
+	UserToken *usertoken.Data `json:"-"`
 }

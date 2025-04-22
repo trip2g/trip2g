@@ -6,6 +6,9 @@ package graph
 
 import (
 	"context"
+	"fmt"
+	"trip2g/internal/case/requestemailsignin"
+	"trip2g/internal/caseerr"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 )
@@ -18,6 +21,31 @@ func (r *adminQueryResolver) ListUsers(ctx context.Context, obj *model.AdminQuer
 // Nodes is the resolver for the nodes field.
 func (r *adminUsersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error) {
 	return r.Env.ListAllUsers(ctx)
+}
+
+// Value is the resolver for the value field.
+func (r *fieldMessageResolver) Value(ctx context.Context, obj *caseerr.FieldError) (string, error) {
+	panic(fmt.Errorf("not implemented: Value - value"))
+}
+
+// RequestEmailSignInCode is the resolver for the requestEmailSignInCode field.
+func (r *mutationResolver) RequestEmailSignInCode(ctx context.Context, input *requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error) {
+	resp, err := requestemailsignin.Resolve(ctx, r.Env, *input)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.(model.RequestEmailSignInCodeOrErrorPayload), nil
+}
+
+// SignInByEmail is the resolver for the signInByEmail field.
+func (r *mutationResolver) SignInByEmail(ctx context.Context, input model.SignInByEmailInput) (model.SignInOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: SignInByEmail - signInByEmail"))
+}
+
+// Viewer is the resolver for the viewer field.
+func (r *queryResolver) Viewer(ctx context.Context) (*model.Viewer, error) {
+	return &model.Viewer{ID: "viewer"}, nil
 }
 
 // Admin is the resolver for the admin field.
@@ -33,9 +61,17 @@ func (r *Resolver) AdminUsersConnection() AdminUsersConnectionResolver {
 	return &adminUsersConnectionResolver{r}
 }
 
+// FieldMessage returns FieldMessageResolver implementation.
+func (r *Resolver) FieldMessage() FieldMessageResolver { return &fieldMessageResolver{r} }
+
+// Mutation returns MutationResolver implementation.
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type adminQueryResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
+type fieldMessageResolver struct{ *Resolver }
+type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

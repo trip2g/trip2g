@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/db"
 )
 
@@ -11,4 +12,6 @@ type Resolver struct {
 
 type Env interface {
 	ListAllUsers(ctx context.Context) ([]db.User, error)
+
+	requestemailsignin.Env
 }

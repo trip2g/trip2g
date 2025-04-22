@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"trip2g/internal/apperrors"
+	"trip2g/internal/caseerr"
 	"trip2g/internal/db"
 	"trip2g/internal/validator"
 )
@@ -39,20 +40,18 @@ func (r *Request) Validate() error {
 
 type Response struct {
 	Success bool
-	Errors  []string
 }
 
-func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
-	response := &Response{}
+func (Response) IsRequestEmailSignInCodeOrErrorPayload() {}
 
+func Resolve(ctx context.Context, env Env, req Request) (interface{}, error) {
 	user, err := env.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			response.Errors = append(response.Errors, "user_not_found")
-			return response, nil
+			return &caseerr.CaseError{Message: "user_not_found"}, nil
 		}
 
-		return nil, err
+		return nil, fmt.Errorf("failed to get user by email: %w", err)
 	}
 
 	count, err := env.CountActiveSignInCodes(ctx, user.ID)
@@ -61,8 +60,7 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 	}
 
 	if count > 3 {
-		response.Errors = append(response.Errors, "too_many_sign_in_codes")
-		return response, nil
+		return &caseerr.CaseError{Message: "too_many_sign_in_codes"}, nil
 	}
 
 	code, err := env.CreateSignInCode(ctx, user.ID)
@@ -75,7 +73,7 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 		return nil, fmt.Errorf("failed to queue signin email: %w", err)
 	}
 
-	response.Success = true
+	response := Response{Success: true}
 
-	return response, nil
+	return &response, nil
 }

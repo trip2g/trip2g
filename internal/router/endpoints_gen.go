@@ -9,7 +9,6 @@ import (
 	meme "trip2g/internal/case/me"
 	pushnotespushnotes "trip2g/internal/case/pushnotes"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
-	requestemailsigninrequestemailsignin "trip2g/internal/case/requestemailsignin"
 	signinbyemailsigninbyemail "trip2g/internal/case/signinbyemail"
 	signoutsignout "trip2g/internal/case/signout"
 	createoffercreateoffer "trip2g/internal/case/admin/createoffer"
@@ -34,7 +33,6 @@ var endpoints = []Endpoint{
 	&meme.Endpoint{},
 	&pushnotespushnotes.Endpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
-	&requestemailsigninrequestemailsignin.Endpoint{},
 	&signinbyemailsigninbyemail.Endpoint{},
 	&signoutsignout.Endpoint{},
 	&createoffercreateoffer.Endpoint{},
@@ -57,7 +55,6 @@ type Env interface {
 	meme.Env
 	pushnotespushnotes.Env
 	rendernotepagerendernotepage.Env
-	requestemailsigninrequestemailsignin.Env
 	signinbyemailsigninbyemail.Env
 	signoutsignout.Env
 	createoffercreateoffer.Env
