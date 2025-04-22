@@ -1191,7 +1191,7 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _RequestEmailSignInCodePayload_success(ctx context.Context, field graphql.CollectedField, obj *requestemailsignin.Response) (ret graphql.Marshaler) {
+func (ec *executionContext) _RequestEmailSignInCodePayload_success(ctx context.Context, field graphql.CollectedField, obj *model.RequestEmailSignInCodePayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_RequestEmailSignInCodePayload_success(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -3574,9 +3574,9 @@ func (ec *executionContext) _RequestEmailSignInCodeOrErrorPayload(ctx context.Co
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case requestemailsignin.Response:
+	case model.RequestEmailSignInCodePayload:
 		return ec._RequestEmailSignInCodePayload(ctx, sel, &obj)
-	case *requestemailsignin.Response:
+	case *model.RequestEmailSignInCodePayload:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -4031,7 +4031,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 
 var requestEmailSignInCodePayloadImplementors = []string{"RequestEmailSignInCodePayload", "RequestEmailSignInCodeOrErrorPayload"}
 
-func (ec *executionContext) _RequestEmailSignInCodePayload(ctx context.Context, sel ast.SelectionSet, obj *requestemailsignin.Response) graphql.Marshaler {
+func (ec *executionContext) _RequestEmailSignInCodePayload(ctx context.Context, sel ast.SelectionSet, obj *model.RequestEmailSignInCodePayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, requestEmailSignInCodePayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)

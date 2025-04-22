@@ -6,13 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"trip2g/internal/apperrors"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
-	"trip2g/internal/validator"
-)
 
-//go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
+)
 
 type Env interface {
 	QueueRequestSignInEmail(ctx context.Context, email string, code int64) error
@@ -25,26 +24,24 @@ type Request struct {
 	Email string
 }
 
-func (r *Request) Normalize() {
-	r.Email = strings.ToLower(strings.TrimSpace(r.Email))
+func (req *Request) Normalize() {
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 }
 
-func (r *Request) Validate() error {
-	err := validator.CheckEmail(r.Email)
-	if err != nil {
-		return &apperrors.JSONError{Message: "invalid email"}
+func (req *Request) Validate() *model.ErrorPayload {
+	return model.NewOzzoError(ozzo.ValidateStruct(req,
+		ozzo.Field(&req.Email, ozzo.Required, is.Email),
+	))
+}
+
+func (req *Request) Resolve(ctx context.Context, env Env) (model.RequestEmailSignInCodeOrErrorPayload, error) {
+	req.Normalize()
+
+	errPayload := req.Validate()
+	if errPayload != nil {
+		return errPayload, nil
 	}
 
-	return nil
-}
-
-type Response struct {
-	Success bool
-}
-
-func (Response) IsRequestEmailSignInCodeOrErrorPayload() {}
-
-func Resolve(ctx context.Context, env Env, req Request) (model.RequestEmailSignInCodeOrErrorPayload, error) {
 	user, err := env.GetUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -73,7 +70,7 @@ func Resolve(ctx context.Context, env Env, req Request) (model.RequestEmailSignI
 		return nil, fmt.Errorf("failed to queue signin email: %w", err)
 	}
 
-	response := Response{Success: true}
+	response := model.RequestEmailSignInCodePayload{Success: true}
 
 	return &response, nil
 }

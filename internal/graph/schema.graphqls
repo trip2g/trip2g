@@ -63,7 +63,7 @@ input RequestEmailSignInCodeInput @goModel(model: "trip2g/internal/case/requeste
   email: String!
 }
 
-type RequestEmailSignInCodePayload @goModel(model: "trip2g/internal/case/requestemailsignin.Response") {
+type RequestEmailSignInCodePayload {
   success: Boolean!
 }
 

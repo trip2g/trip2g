@@ -8,6 +8,7 @@ require (
 	github.com/99designs/gqlgen v0.17.72
 	github.com/amacneil/dbmate/v2 v2.26.0
 	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible
+	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/kr/pretty v0.3.1
 	github.com/mailru/easyjson v0.9.0
@@ -27,6 +28,7 @@ require (
 require (
 	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
+	github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
