@@ -35,9 +35,11 @@ type AdminQuery {
   listUsers: AdminUsersConnection! @goField(forceResolver: true)
 }
 
-type Viewer @goExtraField(name: "UserToken", type: "*trip2g/internal/usertoken.Data") {
-  id: ID!
-  user: User
+type Viewer
+  @goExtraField(name: "UserID", type: "*int64")
+  @goExtraField(name: "UserToken", type: "*trip2g/internal/usertoken.Data") {
+  id: ID! @goField(forceResolver: true)
+  user: User @goField(forceResolver: true)
 }
 
 type Query {

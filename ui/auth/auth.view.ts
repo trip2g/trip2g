@@ -1,12 +1,4 @@
 namespace $.$$ {
-	type Me = {
-		user: {
-			id: number
-			email: string
-			created_at: string
-		} | null
-	}
-
 	// define a query
 	/* GraphQL */ `
 		query ListUsers {
@@ -17,7 +9,6 @@ namespace $.$$ {
 			}
 		}
 	`
-	// use the query after code generation
 
 	export class $trip2g_auth extends $.$trip2g_auth {
 		me_request() {
@@ -77,6 +68,14 @@ namespace $.$$ {
 
 			return [this.EmailForm()]
 		}
+	}
+
+	type Me = {
+		user: {
+			id: number
+			email: string
+			created_at: string
+		} | null
 	}
 
 	export class $trip2g_auth_email_form extends $.$trip2g_auth_email_form {

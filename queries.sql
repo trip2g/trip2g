@@ -34,6 +34,9 @@ select value as path, content
 -- name: GetUserByEmail :one
 select * from users where email = lower(?);
 
+-- name: UserByID :one
+select * from users where id = ?;
+
 -- name: CountActiveSignInCodes :one
 select count(*) from sign_in_codes
  where user_id = ?

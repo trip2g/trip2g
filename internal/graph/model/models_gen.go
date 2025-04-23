@@ -59,5 +59,6 @@ func (SignInPayload) IsSignInOrErrorPayload() {}
 type Viewer struct {
 	ID        string          `json:"id"`
 	User      *db.User        `json:"user,omitempty"`
+	UserID    *int64          `json:"-"`
 	UserToken *usertoken.Data `json:"-"`
 }

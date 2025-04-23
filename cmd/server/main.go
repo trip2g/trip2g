@@ -356,6 +356,13 @@ func (a *app) startServer() {
 				return
 			}
 
+			req := appreq.Acquire()
+			req.Env = a
+			req.Req = ctx
+			req.TokenManager = a.tokenManager
+			req.StoreInContext() // appreq.FromCtx(ctx)
+			defer appreq.Release(req)
+
 			if strings.HasPrefix(path, "/graphql") {
 				if string(ctx.Method()) == "GET" {
 					playgroundHandler(ctx)
@@ -379,13 +386,6 @@ func (a *app) startServer() {
 			// newEnv := *a
 			// newEnv.queries = db.New(tx)
 			// newEnv.Queries = newEnv.queries
-
-			req := appreq.Acquire()
-			req.Env = a
-			req.Req = ctx
-			req.TokenManager = a.tokenManager
-			req.StoreInContext()
-			defer appreq.Release(req)
 
 			handled, handleErr := rtr.Handle(req)
 			if handleErr != nil {

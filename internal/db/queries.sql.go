@@ -733,6 +733,22 @@ func (q *Queries) UpdateOffer(ctx context.Context, arg UpdateOfferParams) (Offer
 	return i, err
 }
 
+const userByID = `-- name: UserByID :one
+select id, email, created_at, last_signin_code_sent_at from users where id = ?
+`
+
+func (q *Queries) UserByID(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRowContext(ctx, userByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+	)
+	return i, err
+}
+
 const verifySignInCode = `-- name: VerifySignInCode :one
 select user_id
   from sign_in_codes c

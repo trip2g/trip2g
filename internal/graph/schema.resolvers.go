@@ -6,8 +6,11 @@ package graph
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/db"
@@ -55,12 +58,54 @@ func (r *mutationResolver) SignInByEmail(ctx context.Context, input signinbyemai
 
 // Viewer is the resolver for the viewer field.
 func (r *queryResolver) Viewer(ctx context.Context) (*model.Viewer, error) {
-	return &model.Viewer{ID: "viewer"}, nil
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := req.UserToken()
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.Viewer{UserToken: token}, nil
 }
 
 // Admin is the resolver for the admin field.
 func (r *queryResolver) Admin(ctx context.Context) (*model.AdminQuery, error) {
 	return &model.AdminQuery{}, nil
+}
+
+// ID is the resolver for the id field.
+func (r *viewerResolver) ID(ctx context.Context, obj *model.Viewer) (string, error) {
+	return "viewer", nil
+}
+
+// User is the resolver for the user field.
+func (r *viewerResolver) User(ctx context.Context, obj *model.Viewer) (*db.User, error) {
+	// cases can just set the userID to the viewer
+	userID := obj.UserID
+
+	// if it not set, we can try to get it from the token
+	if userID == nil && obj.UserToken != nil {
+		v := int64(obj.UserToken.ID)
+		userID = &v
+	}
+
+	if userID != nil {
+		user, err := r.Env.UserByID(ctx, *userID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, nil
+			}
+
+			return nil, err
+		}
+
+		return &user, nil
+	}
+
+	return nil, nil
 }
 
 // Code is the resolver for the code field.
@@ -86,6 +131,9 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Viewer returns ViewerResolver implementation.
+func (r *Resolver) Viewer() ViewerResolver { return &viewerResolver{r} }
+
 // SignInByEmailInput returns SignInByEmailInputResolver implementation.
 func (r *Resolver) SignInByEmailInput() SignInByEmailInputResolver {
 	return &signInByEmailInputResolver{r}
@@ -96,4 +144,5 @@ type adminUsersConnectionResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type viewerResolver struct{ *Resolver }
 type signInByEmailInputResolver struct{ *Resolver }
