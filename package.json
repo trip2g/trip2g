@@ -2,7 +2,7 @@
   "scripts": {
     "start": "npx @tailwindcss/cli -i ./assets/styles.css -o ./assets/output.css",
     "dev": "vite",
-    "graphqlgen": "graphql-codegen --config ui/graphql/graphqlgen.js",
+    "graphqlgen": "graphql-codegen --config ui/graphql/-graphqlgen.js",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },

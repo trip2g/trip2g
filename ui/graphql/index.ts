@@ -1,4 +1,9 @@
 namespace $ {
+	// const gql = require('./-/-gout/index.mjs') as typeof import('./-/-gout/index.d.mts')
+	// console.log(gql)
+
+	export const $trip2g_graphql = (s: string) => s;
+
 	export class $trip2g_graphql_error extends Error {
 		constructor(message: string, public detail?: unknown) {
 			super(message)

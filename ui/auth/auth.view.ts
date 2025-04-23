@@ -1,10 +1,40 @@
 namespace $.$$ {
-	// define a query
+	const query = $trip2g_graphql(/* GraphQL */ `
+		mutation RequestCode($input: RequestEmailSignInCodeInput!) {
+			requestEmailSignInCode(input: $input) {
+				... on ErrorPayload {
+					__typename
+					message
+				}
+				... on RequestEmailSignInCodePayload {
+					__typename
+					success
+				}
+			}
+		}
+	`)
+	console.log(query);
+
 	/* GraphQL */ `
-		query ListUsers {
-			admin {
-				listUsers {
-					nodes { id, email, createdAt }
+		mutation SignIn($input: SignInByEmailInput!) {
+			signInByEmail(input: $input) {
+				... on SignInPayload {
+					__typename
+					token
+				}
+				... on ErrorPayload {
+					__typename
+					message
+				}
+			}
+		}
+
+		query Viewer {
+			viewer {
+				user {
+					id
+					email
+					createdAt
 				}
 			}
 		}
@@ -12,47 +42,47 @@ namespace $.$$ {
 
 	export class $trip2g_auth extends $.$trip2g_auth {
 		me_request() {
-			const test_data = $trip2g_graphql_list_users();
-			console.log(test_data.admin.listUsers.nodes);
+			//const viewer = $trip2g_graphql_viewer()
+			//console.log(viewer)
 
 			return this.$.$mol_fetch.json('/api/me', {
 				credentials: 'include',
-			}) as Me;
+			}) as Me
 		}
 
 		reload_me() {
-			this.me(this.me_request());
+			this.me(this.me_request())
 		}
 
 		@$mol_mem
 		me(next?: any) {
 			if (!next) {
-				return this.me_request();
+				return this.me_request()
 			}
 
-			console.log('set me', next);
+			console.log('set me', next)
 
 			return next ?? null
 		}
 
 		me_user_email(): string {
-			const me = this.me();
+			const me = this.me()
 			if (me.user) {
-				return me.user.email;
+				return me.user.email
 			}
 
-			return '???';
+			return '???'
 		}
 
 		signout() {
 			const url = '/api/signout'
-			
+
 			this.$.$mol_fetch.json(url, {
 				method: 'post',
 				credentials: 'include',
 			})
 
-			this.me(null);
+			this.me(null)
 		}
 
 		sub() {
@@ -89,25 +119,29 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const url = '/api/requestemailsignin'
+			// const res = $trip2g_graphql_request_code({
+			// 	input: {
+			// 		email: this.email(),
+			// 	},
+			// })
 
-			const res = this.$.$mol_fetch.json(url, {
-				method: 'post',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ email: this.email() }),
-			}) as {
-				success: boolean
-				errors?: null | [string]
-				message?: string
-			}
+			// if (!res.requestEmailSignInCode) {
+			// 	this.request_error('Unknown error')
+			// 	return
+			// }
 
-			if (res.success) {
-				this.$.$mol_state_arg.value('email', this.email())
-			} else if (res.errors) {
-				this.request_error(res.errors?.join(', ') ?? 'Unknown error')
-			} else if (res.message) {
-				this.request_error(res.message)
-			}
+			// if (res.message) {
+
+			// }
+
+
+			// if (res.success) {
+			// 	this.$.$mol_state_arg.value('email', this.email())
+			// } else if (res.errors) {
+			// 	this.request_error(res.errors?.join(', ') ?? 'Unknown error')
+			// } else if (res.message) {
+			// 	this.request_error(res.message)
+			// }
 		}
 	}
 
@@ -142,15 +176,15 @@ namespace $.$$ {
 			}
 
 			if (res.success) {
-				console.log('success', res);
+				console.log('success', res)
 				this.$.$mol_state_arg.value('email', null)
-				this.reload_me();
+				this.reload_me()
 			} else if (res.errors) {
 				this.request_error(res.errors?.join(', ') ?? 'Unknown error')
 			} else if (res.message) {
 				this.request_error(res.message)
 			} else {
-				alert('Unknown error');
+				alert('Unknown error')
 			}
 		}
 	}
