@@ -47,7 +47,7 @@ func (r *errorPayloadResolver) Message(ctx context.Context, obj *model.ErrorPayl
 }
 
 // RequestEmailSignInCode is the resolver for the requestEmailSignInCode field.
-func (r *mutationResolver) RequestEmailSignInCode(ctx context.Context, input *requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error) {
+func (r *mutationResolver) RequestEmailSignInCode(ctx context.Context, input requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error) {
 	return input.Resolve(ctx, r.Env)
 }
 

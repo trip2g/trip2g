@@ -78,24 +78,27 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = $trip2g_graphql_request(/* GraphQL */`
-				mutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {
-					data: requestEmailSignInCode(input: $input) {
-						... on ErrorPayload {
-							__typename
-							message
-						}
-						... on RequestEmailSignInCodePayload {
-							__typename
-							success
+			const res = $trip2g_graphql_request(
+				/* GraphQL */ `
+					mutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {
+						data: requestEmailSignInCode(input: $input) {
+							... on ErrorPayload {
+								__typename
+								message
+							}
+							... on RequestEmailSignInCodePayload {
+								__typename
+								success
+							}
 						}
 					}
+				`,
+				{
+					input: {
+						email: this.email(),
+					},
 				}
-			`, {
-				input: {
-					email: this.email(),
-				},
-			})
+			)
 
 			if (res.data.__typename === 'ErrorPayload') {
 				this.request_error(res.data.message)
@@ -126,31 +129,46 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const url = '/api/signinbyemail'
-
-			const res = this.$.$mol_fetch.json(url, {
-				method: 'post',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					email: this.email(),
-					code: parseInt(this.code(), 10),
-				}),
-			}) as {
-				success: boolean
-				errors?: null | [string]
-				message?: string
+			const email = this.email()
+			if (!email) {
+				this.request_error('Email is required')
+				return
 			}
 
-			if (res.success) {
-				console.log('success', res)
+			const res = $trip2g_graphql_request(
+				/* GraphQL */ `
+					mutation SignInByEmail($input: SignInByEmailInput!) {
+						signInByEmail(input: $input) {
+							... on SignInPayload {
+								token
+							}
+							... on ErrorPayload {
+								message
+								byFields {
+									name
+									value
+								}
+							}
+						}
+					}
+				`,
+				{
+					input: {
+						email,
+						code: parseInt(this.code(), 10),
+					},
+				}
+			)
+
+			if (res.signInByEmail.__typename === 'ErrorPayload') {
+				this.request_error(res.signInByEmail.message)
+				return
+			}
+
+			if (res.signInByEmail.__typename === 'SignInPayload') {
 				this.$.$mol_state_arg.value('email', null)
 				this.reload_me()
-			} else if (res.errors) {
-				this.request_error(res.errors?.join(', ') ?? 'Unknown error')
-			} else if (res.message) {
-				this.request_error(res.message)
-			} else {
-				alert('Unknown error')
+				return
 			}
 		}
 	}

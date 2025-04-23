@@ -88,6 +88,6 @@ type SignInPayload {
 union SignInOrErrorPayload = SignInPayload | ErrorPayload
 
 type Mutation {
-  requestEmailSignInCode(input: RequestEmailSignInCodeInput): RequestEmailSignInCodeOrErrorPayload!
+  requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
 }

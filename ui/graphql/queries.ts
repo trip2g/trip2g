@@ -49,7 +49,7 @@ type Mutation = {
 
 
 type MutationRequestEmailSignInCodeArgs = {
-  input?: InputMaybe<RequestEmailSignInCodeInput>;
+  input: RequestEmailSignInCodeInput;
 };
 
 
@@ -107,7 +107,16 @@ type RequestEmailSignInCodeMutationVariables = Exact<{
 
 type RequestEmailSignInCodeMutation = { __typename?: 'Mutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'RequestEmailSignInCodePayload', success: boolean } };
 
-export function $trip2g_graphql_request(query: '\n\t\t\t\tmutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {\n\t\t\t\t\tdata: requestEmailSignInCode(input: $input) {\n\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t}\n\t\t\t\t\t\t... on RequestEmailSignInCodePayload {\n\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\tsuccess\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: MutationRequestEmailSignInCodeArgs): RequestEmailSignInCodeMutation
+type SignInByEmailMutationVariables = Exact<{
+  input: SignInByEmailInput;
+}>;
+
+
+type SignInByEmailMutation = { __typename?: 'Mutation', signInByEmail: { __typename?: 'ErrorPayload', message: string, byFields: Array<{ __typename?: 'FieldMessage', name: string, value: string }> } | { __typename?: 'SignInPayload', token: string } };
+
+export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {\n\t\t\t\t\t\tdata: requestEmailSignInCode(input: $input) {\n\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t... on RequestEmailSignInCodePayload {\n\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\tsuccess\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: MutationRequestEmailSignInCodeArgs): RequestEmailSignInCodeMutation
+
+export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation SignInByEmail($input: SignInByEmailInput!) {\n\t\t\t\t\t\tsignInByEmail(input: $input) {\n\t\t\t\t\t\t\t... on SignInPayload {\n\t\t\t\t\t\t\t\ttoken\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t\tbyFields {\n\t\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\t\tvalue\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: MutationSignInByEmailArgs): SignInByEmailMutation
 
 export function $trip2g_graphql_request(query: any, variables?: any) { return $trip2g_graphql_raw_request(query, variables); }
 

@@ -75,7 +75,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		RequestEmailSignInCode func(childComplexity int, input *requestemailsignin.Request) int
+		RequestEmailSignInCode func(childComplexity int, input requestemailsignin.Request) int
 		SignInByEmail          func(childComplexity int, input signinbyemail.Request) int
 	}
 
@@ -115,7 +115,7 @@ type ErrorPayloadResolver interface {
 	Message(ctx context.Context, obj *model.ErrorPayload) (string, error)
 }
 type MutationResolver interface {
-	RequestEmailSignInCode(ctx context.Context, input *requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error)
+	RequestEmailSignInCode(ctx context.Context, input requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error)
 	SignInByEmail(ctx context.Context, input signinbyemail.Request) (model.SignInOrErrorPayload, error)
 }
 type QueryResolver interface {
@@ -202,7 +202,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RequestEmailSignInCode(childComplexity, args["input"].(*requestemailsignin.Request)), true
+		return e.complexity.Mutation.RequestEmailSignInCode(childComplexity, args["input"].(requestemailsignin.Request)), true
 
 	case "Mutation.signInByEmail":
 		if e.complexity.Mutation.SignInByEmail == nil {
@@ -425,13 +425,13 @@ func (ec *executionContext) field_Mutation_requestEmailSignInCode_args(ctx conte
 func (ec *executionContext) field_Mutation_requestEmailSignInCode_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (*requestemailsignin.Request, error) {
+) (requestemailsignin.Request, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalORequestEmailSignInCodeInput2ᚖtrip2gᚋinternalᚋcaseᚋrequestemailsigninᚐRequest(ctx, tmp)
+		return ec.unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋcaseᚋrequestemailsigninᚐRequest(ctx, tmp)
 	}
 
-	var zeroVal *requestemailsignin.Request
+	var zeroVal requestemailsignin.Request
 	return zeroVal, nil
 }
 
@@ -877,7 +877,7 @@ func (ec *executionContext) _Mutation_requestEmailSignInCode(ctx context.Context
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RequestEmailSignInCode(rctx, fc.Args["input"].(*requestemailsignin.Request))
+		return ec.resolvers.Mutation().RequestEmailSignInCode(rctx, fc.Args["input"].(requestemailsignin.Request))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4748,6 +4748,11 @@ func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.Sel
 	return res
 }
 
+func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋcaseᚋrequestemailsigninᚐRequest(ctx context.Context, v any) (requestemailsignin.Request, error) {
+	res, err := ec.unmarshalInputRequestEmailSignInCodeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNRequestEmailSignInCodeOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RequestEmailSignInCodeOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -5140,14 +5145,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
-}
-
-func (ec *executionContext) unmarshalORequestEmailSignInCodeInput2ᚖtrip2gᚋinternalᚋcaseᚋrequestemailsigninᚐRequest(ctx context.Context, v any) (*requestemailsignin.Request, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputRequestEmailSignInCodeInput(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
