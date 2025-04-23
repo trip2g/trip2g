@@ -100,25 +100,15 @@ type Viewer = {
   user?: Maybe<User>;
 };
 
-type RequestCodeMutationVariables = Exact<{
+type RequestEmailSignInCodeMutationVariables = Exact<{
   input: RequestEmailSignInCodeInput;
 }>;
 
 
-type RequestCodeMutation = { __typename?: 'Mutation', requestEmailSignInCode: { __typename: 'ErrorPayload', message: string } | { __typename: 'RequestEmailSignInCodePayload', success: boolean } };
+type RequestEmailSignInCodeMutation = { __typename?: 'Mutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'RequestEmailSignInCodePayload', success: boolean } };
 
-type SignInMutationVariables = Exact<{
-  input: SignInByEmailInput;
-}>;
+export function $trip2g_graphql_request(query: '\n\t\t\t\tmutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {\n\t\t\t\t\tdata: requestEmailSignInCode(input: $input) {\n\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t}\n\t\t\t\t\t\t... on RequestEmailSignInCodePayload {\n\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\tsuccess\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: MutationRequestEmailSignInCodeArgs): RequestEmailSignInCodeMutation
 
-
-type SignInMutation = { __typename?: 'Mutation', signInByEmail: { __typename: 'ErrorPayload', message: string } | { __typename: 'SignInPayload', token: string } };
-
-type ViewerQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-type ViewerQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', user?: { __typename?: 'User', id: any, email: string, createdAt: any } | null } };
-
-
+export function $trip2g_graphql_request(query: any, variables?: any) { return $trip2g_graphql_raw_request(query, variables); }
 
 }

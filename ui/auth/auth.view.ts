@@ -1,45 +1,4 @@
 namespace $.$$ {
-	const query = $trip2g_graphql(/* GraphQL */ `
-		mutation RequestCode($input: RequestEmailSignInCodeInput!) {
-			requestEmailSignInCode(input: $input) {
-				... on ErrorPayload {
-					__typename
-					message
-				}
-				... on RequestEmailSignInCodePayload {
-					__typename
-					success
-				}
-			}
-		}
-	`)
-	console.log(query);
-
-	/* GraphQL */ `
-		mutation SignIn($input: SignInByEmailInput!) {
-			signInByEmail(input: $input) {
-				... on SignInPayload {
-					__typename
-					token
-				}
-				... on ErrorPayload {
-					__typename
-					message
-				}
-			}
-		}
-
-		query Viewer {
-			viewer {
-				user {
-					id
-					email
-					createdAt
-				}
-			}
-		}
-	`
-
 	export class $trip2g_auth extends $.$trip2g_auth {
 		me_request() {
 			//const viewer = $trip2g_graphql_viewer()
@@ -119,29 +78,36 @@ namespace $.$$ {
 		}
 
 		submit() {
-			// const res = $trip2g_graphql_request_code({
-			// 	input: {
-			// 		email: this.email(),
-			// 	},
-			// })
+			const res = $trip2g_graphql_request(/* GraphQL */`
+				mutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {
+					data: requestEmailSignInCode(input: $input) {
+						... on ErrorPayload {
+							__typename
+							message
+						}
+						... on RequestEmailSignInCodePayload {
+							__typename
+							success
+						}
+					}
+				}
+			`, {
+				input: {
+					email: this.email(),
+				},
+			})
 
-			// if (!res.requestEmailSignInCode) {
-			// 	this.request_error('Unknown error')
-			// 	return
-			// }
+			if (res.data.__typename === 'ErrorPayload') {
+				this.request_error(res.data.message)
+				return
+			}
 
-			// if (res.message) {
-
-			// }
-
-
-			// if (res.success) {
-			// 	this.$.$mol_state_arg.value('email', this.email())
-			// } else if (res.errors) {
-			// 	this.request_error(res.errors?.join(', ') ?? 'Unknown error')
-			// } else if (res.message) {
-			// 	this.request_error(res.message)
-			// }
+			if (res.data.__typename === 'RequestEmailSignInCodePayload') {
+				if (res.data.success) {
+					this.$.$mol_state_arg.value('email', this.email())
+					return
+				}
+			}
 		}
 	}
 

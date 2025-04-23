@@ -2,7 +2,7 @@ module.exports = {
    schema: 'http://localhost:8081/graphql',
    documents: [__dirname + '/../**/*.ts'],
    generates: {
-      [__dirname + '/types.ts']: {
+      [__dirname + '/queries.ts']: {
         plugins: [
           // add
           {

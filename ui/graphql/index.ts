@@ -7,7 +7,7 @@ namespace $ {
 		}
 	}
 
-	export function $trip2g_graphql_request<V = undefined>(query: string, variables?: V) {
+	export function $trip2g_graphql_raw_request(query: string, variables?: any) {
 		const res = $.$mol_fetch.json('/graphql', {
 			method: 'POST',
 			credentials: 'include',
