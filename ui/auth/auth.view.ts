@@ -138,16 +138,14 @@ namespace $.$$ {
 			const res = $trip2g_graphql_request(
 				/* GraphQL */ `
 					mutation SignInByEmail($input: SignInByEmailInput!) {
-						signInByEmail(input: $input) {
+						data: signInByEmail(input: $input) {
 							... on SignInPayload {
+								__typename
 								token
 							}
 							... on ErrorPayload {
+								__typename
 								message
-								byFields {
-									name
-									value
-								}
 							}
 						}
 					}
@@ -160,12 +158,12 @@ namespace $.$$ {
 				}
 			)
 
-			if (res.signInByEmail.__typename === 'ErrorPayload') {
-				this.request_error(res.signInByEmail.message)
+			if (res.data.__typename === 'ErrorPayload') {
+				this.request_error(res.data.message)
 				return
 			}
 
-			if (res.signInByEmail.__typename === 'SignInPayload') {
+			if (res.data.__typename === 'SignInPayload') {
 				this.$.$mol_state_arg.value('email', null)
 				this.reload_me()
 				return
