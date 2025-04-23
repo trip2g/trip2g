@@ -1,0 +1,124 @@
+namespace $.$$ {
+
+
+type Maybe<T> = T | null;
+type InputMaybe<T> = Maybe<T>;
+type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
+type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
+type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
+type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+/** All built-in and custom scalars, mapped to their actual values */
+type Scalars = {
+  ID: { input: string; output: string; }
+  String: { input: string; output: string; }
+  Boolean: { input: boolean; output: boolean; }
+  Int: { input: number; output: number; }
+  Float: { input: number; output: number; }
+  Int64: { input: any; output: any; }
+  Time: { input: any; output: any; }
+};
+
+type AdminQuery = {
+  __typename?: 'AdminQuery';
+  listUsers: AdminUsersConnection;
+};
+
+type AdminUsersConnection = {
+  __typename?: 'AdminUsersConnection';
+  nodes: Array<User>;
+};
+
+type ErrorPayload = {
+  __typename?: 'ErrorPayload';
+  byFields: Array<FieldMessage>;
+  message: Scalars['String']['output'];
+};
+
+type FieldMessage = {
+  __typename?: 'FieldMessage';
+  name: Scalars['String']['output'];
+  value: Scalars['String']['output'];
+};
+
+type Mutation = {
+  __typename?: 'Mutation';
+  requestEmailSignInCode: RequestEmailSignInCodeOrErrorPayload;
+  signInByEmail: SignInOrErrorPayload;
+};
+
+
+type MutationRequestEmailSignInCodeArgs = {
+  input?: InputMaybe<RequestEmailSignInCodeInput>;
+};
+
+
+type MutationSignInByEmailArgs = {
+  input: SignInByEmailInput;
+};
+
+type Query = {
+  __typename?: 'Query';
+  admin: AdminQuery;
+  viewer: Viewer;
+};
+
+type RequestEmailSignInCodeInput = {
+  email: Scalars['String']['input'];
+};
+
+type RequestEmailSignInCodeOrErrorPayload = ErrorPayload | RequestEmailSignInCodePayload;
+
+type RequestEmailSignInCodePayload = {
+  __typename?: 'RequestEmailSignInCodePayload';
+  success: Scalars['Boolean']['output'];
+};
+
+type SignInByEmailInput = {
+  code: Scalars['Int']['input'];
+  email: Scalars['String']['input'];
+};
+
+type SignInOrErrorPayload = ErrorPayload | SignInPayload;
+
+type SignInPayload = {
+  __typename?: 'SignInPayload';
+  token: Scalars['String']['output'];
+  viewer: Viewer;
+};
+
+type User = {
+  __typename?: 'User';
+  createdAt: Scalars['Time']['output'];
+  email: Scalars['String']['output'];
+  id: Scalars['Int64']['output'];
+};
+
+type Viewer = {
+  __typename?: 'Viewer';
+  id: Scalars['ID']['output'];
+  user?: Maybe<User>;
+};
+
+type RequestCodeMutationVariables = Exact<{
+  input: RequestEmailSignInCodeInput;
+}>;
+
+
+type RequestCodeMutation = { __typename?: 'Mutation', requestEmailSignInCode: { __typename: 'ErrorPayload', message: string } | { __typename: 'RequestEmailSignInCodePayload', success: boolean } };
+
+type SignInMutationVariables = Exact<{
+  input: SignInByEmailInput;
+}>;
+
+
+type SignInMutation = { __typename?: 'Mutation', signInByEmail: { __typename: 'ErrorPayload', message: string } | { __typename: 'SignInPayload', token: string } };
+
+type ViewerQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+type ViewerQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', user?: { __typename?: 'User', id: any, email: string, createdAt: any } | null } };
+
+
+
+}
