@@ -14,7 +14,6 @@ import (
 	getpagegetpage "trip2g/internal/case/admin/getpage"
 	listnotepathslistnotepaths "trip2g/internal/case/admin/listnotepaths"
 	listofferslistoffers "trip2g/internal/case/admin/listoffers"
-	listsubgraphslistsubgraphs "trip2g/internal/case/admin/listsubgraphs"
 	listuserslistusers "trip2g/internal/case/admin/listusers"
 	renderpagerenderpage "trip2g/internal/case/admin/renderpage"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
@@ -34,7 +33,6 @@ var endpoints = []Endpoint{
 	&getpagegetpage.Endpoint{},
 	&listnotepathslistnotepaths.Endpoint{},
 	&listofferslistoffers.Endpoint{},
-	&listsubgraphslistsubgraphs.Endpoint{},
 	&listuserslistusers.Endpoint{},
 	&renderpagerenderpage.Endpoint{},
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
@@ -52,7 +50,6 @@ type Env interface {
 	getpagegetpage.Env
 	listnotepathslistnotepaths.Env
 	listofferslistoffers.Env
-	listsubgraphslistsubgraphs.Env
 	listuserslistusers.Env
 	renderpagerenderpage.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env

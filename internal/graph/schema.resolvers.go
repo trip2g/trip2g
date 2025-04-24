@@ -24,9 +24,19 @@ func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *model.AdminQuery
 	return &model.AdminUsersConnection{}, nil
 }
 
+// AllSubgraphs is the resolver for the allSubgraphs field.
+func (r *adminQueryResolver) AllSubgraphs(ctx context.Context, obj *model.AdminQuery) (*model.AdminSubgraphsConnection, error) {
+	return &model.AdminSubgraphsConnection{}, nil
+}
+
 // AllUserSubgraphAccesses is the resolver for the allUserSubgraphAccesses field.
 func (r *adminQueryResolver) AllUserSubgraphAccesses(ctx context.Context, obj *model.AdminQuery) (*model.AdminUserSubgraphAccessesConnection, error) {
 	return &model.AdminUserSubgraphAccessesConnection{}, nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error) {
+	return r.Env.ListAllSubgraphs(ctx)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -149,6 +159,11 @@ func (r *signInByEmailInputResolver) Code(ctx context.Context, obj *signinbyemai
 // AdminQuery returns AdminQueryResolver implementation.
 func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
 
+// AdminSubgraphsConnection returns AdminSubgraphsConnectionResolver implementation.
+func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
+	return &adminSubgraphsConnectionResolver{r}
+}
+
 // AdminUserSubgraphAccessesConnection returns AdminUserSubgraphAccessesConnectionResolver implementation.
 func (r *Resolver) AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver {
 	return &adminUserSubgraphAccessesConnectionResolver{r}
@@ -182,6 +197,7 @@ func (r *Resolver) SignInByEmailInput() SignInByEmailInputResolver {
 }
 
 type adminQueryResolver struct{ *Resolver }
+type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }

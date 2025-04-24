@@ -15,6 +15,7 @@ type Resolver struct {
 type Env interface {
 	ListAllUsers(ctx context.Context) ([]db.User, error)
 	ListAllUserSubgraphAccesses(ctx context.Context) ([]db.UserSubgraphAccess, error)
+	ListAllSubgraphs(ctx context.Context) ([]db.Subgraph, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	SubgraphByID(ctx context.Context, id int64) (db.Subgraph, error)

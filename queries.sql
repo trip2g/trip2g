@@ -102,9 +102,6 @@ insert into subgraphs (name)
 values (?)
 on conflict(name) do nothing;
 
--- name: ListAdminSubgraphs :many
-select * from subgraphs order by id;
-
 -- name: UpdateAdminSubgraph :one
 update subgraphs
    set color = ?
@@ -131,3 +128,6 @@ update user_subgraph_accesses
 
 -- name: SubgraphByID :one
 select * from subgraphs where id = ?;
+
+-- name: ListAllSubgraphs :many
+select * from subgraphs order by id;

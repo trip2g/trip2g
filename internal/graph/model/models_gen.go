@@ -21,7 +21,12 @@ type SignOutOrErrorPayload interface {
 
 type AdminQuery struct {
 	AllUsers                *AdminUsersConnection                `json:"allUsers"`
+	AllSubgraphs            *AdminSubgraphsConnection            `json:"allSubgraphs"`
 	AllUserSubgraphAccesses *AdminUserSubgraphAccessesConnection `json:"allUserSubgraphAccesses"`
+}
+
+type AdminSubgraphsConnection struct {
+	Nodes []db.Subgraph `json:"nodes"`
 }
 
 type AdminUserSubgraphAccessesConnection struct {

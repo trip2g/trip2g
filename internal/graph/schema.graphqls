@@ -52,8 +52,13 @@ type AdminUserSubgraphAccessesConnection {
   nodes: [UserSubgraphAccess!]! @goField(forceResolver: true)
 }
 
+type AdminSubgraphsConnection {
+  nodes: [Subgraph!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection! @goField(forceResolver: true)
+  allSubgraphs: AdminSubgraphsConnection! @goField(forceResolver: true)
   allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection! @goField(forceResolver: true)
 }
 

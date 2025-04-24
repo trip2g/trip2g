@@ -466,12 +466,12 @@ func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64)
 	return items, nil
 }
 
-const listAdminSubgraphs = `-- name: ListAdminSubgraphs :many
+const listAllSubgraphs = `-- name: ListAllSubgraphs :many
 select id, name, color, created_at from subgraphs order by id
 `
 
-func (q *Queries) ListAdminSubgraphs(ctx context.Context) ([]Subgraph, error) {
-	rows, err := q.db.QueryContext(ctx, listAdminSubgraphs)
+func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
+	rows, err := q.db.QueryContext(ctx, listAllSubgraphs)
 	if err != nil {
 		return nil, err
 	}
