@@ -9,10 +9,23 @@ namespace $.$$ {
 	export class $trip2g_admin_pages_listusers extends $.$trip2g_admin_pages_listusers {
 		@$mol_mem
 		data() {
-			const data = this.$.$mol_fetch.json( '/api/admin/listusers' ) as Response;
-			const map: { [ id: string ]: Response['rows'][0] } = {};
+			const res = $trip2g_graphql_request(/* GraphQL */ `
+				query AdminListUsers {
+					admin {
+						allUsers {
+							nodes {
+								id
+								email
+								createdAt
+							}
+						}
+					}
+				}
+			`)
 
-			data.rows.forEach( ( row ) => {
+			const map: { [ id: number ]: any } = {};
+
+			res.admin.allUsers.nodes.forEach( ( row ) => {
 				map[ row.id ] = row
 			})
 

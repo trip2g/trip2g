@@ -57,7 +57,7 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	AdminQuery struct {
-		ListUsers func(childComplexity int) int
+		AllUsers func(childComplexity int) int
 	}
 
 	AdminUsersConnection struct {
@@ -111,7 +111,7 @@ type ComplexityRoot struct {
 }
 
 type AdminQueryResolver interface {
-	ListUsers(ctx context.Context, obj *model.AdminQuery) (*model.AdminUsersConnection, error)
+	AllUsers(ctx context.Context, obj *model.AdminQuery) (*model.AdminUsersConnection, error)
 }
 type AdminUsersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error)
@@ -156,12 +156,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	_ = ec
 	switch typeName + "." + field {
 
-	case "AdminQuery.listUsers":
-		if e.complexity.AdminQuery.ListUsers == nil {
+	case "AdminQuery.allUsers":
+		if e.complexity.AdminQuery.AllUsers == nil {
 			break
 		}
 
-		return e.complexity.AdminQuery.ListUsers(childComplexity), true
+		return e.complexity.AdminQuery.AllUsers(childComplexity), true
 
 	case "AdminUsersConnection.nodes":
 		if e.complexity.AdminUsersConnection.Nodes == nil {
@@ -601,8 +601,8 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _AdminQuery_listUsers(ctx context.Context, field graphql.CollectedField, obj *model.AdminQuery) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminQuery_listUsers(ctx, field)
+func (ec *executionContext) _AdminQuery_allUsers(ctx context.Context, field graphql.CollectedField, obj *model.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allUsers(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -615,7 +615,7 @@ func (ec *executionContext) _AdminQuery_listUsers(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminQuery().ListUsers(rctx, obj)
+		return ec.resolvers.AdminQuery().AllUsers(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -632,7 +632,7 @@ func (ec *executionContext) _AdminQuery_listUsers(ctx context.Context, field gra
 	return ec.marshalNAdminUsersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUsersConnection(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminQuery_listUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminQuery_allUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminQuery",
 		Field:      field,
@@ -1126,8 +1126,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "listUsers":
-				return ec.fieldContext_AdminQuery_listUsers(ctx, field)
+			case "allUsers":
+				return ec.fieldContext_AdminQuery_allUsers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -3781,7 +3781,7 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("AdminQuery")
-		case "listUsers":
+		case "allUsers":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -3790,7 +3790,7 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminQuery_listUsers(ctx, field, obj)
+				res = ec._AdminQuery_allUsers(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

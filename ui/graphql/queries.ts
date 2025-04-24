@@ -21,7 +21,7 @@ type Scalars = {
 
 type AdminQuery = {
   __typename?: 'AdminQuery';
-  listUsers: AdminUsersConnection;
+  allUsers: AdminUsersConnection;
 };
 
 type AdminUsersConnection = {
@@ -108,6 +108,11 @@ type Viewer = {
   user?: Maybe<User>;
 };
 
+type AdminListUsersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+type AdminListUsersQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allUsers: { __typename?: 'AdminUsersConnection', nodes: Array<{ __typename?: 'User', id: any, email: string, createdAt: any }> } } };
+
 type ViewerQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -131,6 +136,8 @@ type SignInByEmailMutationVariables = Exact<{
 
 
 type SignInByEmailMutation = { __typename?: 'Mutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SignInPayload', token: string } };
+
+export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUsers {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallUsers {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUsersQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery Viewer {\n\t\t\t\t\tviewer {\n\t\t\t\t\t\tid\n\t\t\t\t\t\tuser {\n\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): ViewerQuery
 

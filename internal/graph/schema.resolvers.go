@@ -18,8 +18,8 @@ import (
 	"trip2g/internal/graph/model"
 )
 
-// ListUsers is the resolver for the listUsers field.
-func (r *adminQueryResolver) ListUsers(ctx context.Context, obj *model.AdminQuery) (*model.AdminUsersConnection, error) {
+// AllUsers is the resolver for the allUsers field.
+func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *model.AdminQuery) (*model.AdminUsersConnection, error) {
 	return &model.AdminUsersConnection{}, nil
 }
 

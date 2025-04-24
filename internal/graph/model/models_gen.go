@@ -20,7 +20,7 @@ type SignOutOrErrorPayload interface {
 }
 
 type AdminQuery struct {
-	ListUsers *AdminUsersConnection `json:"listUsers"`
+	AllUsers *AdminUsersConnection `json:"allUsers"`
 }
 
 type AdminUsersConnection struct {

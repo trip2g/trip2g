@@ -32,7 +32,7 @@ type AdminUsersConnection {
 }
 
 type AdminQuery {
-  listUsers: AdminUsersConnection! @goField(forceResolver: true)
+  allUsers: AdminUsersConnection! @goField(forceResolver: true)
 }
 
 type Viewer
