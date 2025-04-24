@@ -3,11 +3,9 @@ package updatesubgraph
 import (
 	"context"
 	"fmt"
-	"trip2g/internal/appresp"
 	"trip2g/internal/db"
+	"trip2g/internal/graph/model"
 )
-
-//go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
 
 type Env interface {
 	UpdateAdminSubgraph(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error)
@@ -15,23 +13,16 @@ type Env interface {
 
 type Request struct {
 	ID    int64
-	Color *string
+	Color string
 }
 
-type Response struct {
-	appresp.Response
-
-	Row *db.Subgraph
-}
-
-func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
-	response := Response{}
-	response.Success = true
-	response.Errors = make([]string, 0)
-
+func (req *Request) Resolve(ctx context.Context, env Env) (model.UpdateSubgraphOrErrorPayload, error) {
 	params := db.UpdateAdminSubgraphParams{
-		ID:    req.ID,
-		Color: db.ToNullableString(req.Color),
+		ID: req.ID,
+	}
+
+	if req.Color != "" {
+		params.Color = db.ToNullableString(&req.Color)
 	}
 
 	subgraph, err := env.UpdateAdminSubgraph(ctx, params)
@@ -39,7 +30,9 @@ func Resolve(ctx context.Context, env Env, req Request) (*Response, error) {
 		return nil, fmt.Errorf("failed to update subgraph: %w", err)
 	}
 
-	response.Row = &subgraph
+	response := model.UpdateSubgraphPayload{
+		Subgraph: &subgraph,
+	}
 
 	return &response, nil
 }

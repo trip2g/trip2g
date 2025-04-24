@@ -127,4 +127,25 @@ type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
   signOut: SignOutOrErrorPayload!
+
+  admin: AdminMutation!
+}
+
+#
+# updateSubgraph
+#
+
+input UpdateSubgraphInput @goModel(model: "trip2g/internal/case/admin/updatesubgraph.Request") {
+  id: Int64!
+  color: String!
+}
+
+type UpdateSubgraphPayload {
+  subgraph: Subgraph!
+}
+
+union UpdateSubgraphOrErrorPayload = UpdateSubgraphPayload | ErrorPayload
+
+type AdminMutation {
+  updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload! @goField(forceResolver: true)
 }

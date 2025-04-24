@@ -19,6 +19,14 @@ type SignOutOrErrorPayload interface {
 	IsSignOutOrErrorPayload()
 }
 
+type UpdateSubgraphOrErrorPayload interface {
+	IsUpdateSubgraphOrErrorPayload()
+}
+
+type AdminMutation struct {
+	UpdateSubgraph UpdateSubgraphOrErrorPayload `json:"updateSubgraph"`
+}
+
 type AdminQuery struct {
 	AllUsers                *AdminUsersConnection                `json:"allUsers"`
 	AllSubgraphs            *AdminSubgraphsConnection            `json:"allSubgraphs"`
@@ -47,6 +55,8 @@ func (ErrorPayload) IsRequestEmailSignInCodeOrErrorPayload() {}
 func (ErrorPayload) IsSignInOrErrorPayload() {}
 
 func (ErrorPayload) IsSignOutOrErrorPayload() {}
+
+func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`
@@ -77,6 +87,12 @@ type SignOutPayload struct {
 }
 
 func (SignOutPayload) IsSignOutOrErrorPayload() {}
+
+type UpdateSubgraphPayload struct {
+	Subgraph *db.Subgraph `json:"subgraph"`
+}
+
+func (UpdateSubgraphPayload) IsUpdateSubgraphOrErrorPayload() {}
 
 type Viewer struct {
 	ID        string          `json:"id"`

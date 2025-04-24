@@ -12,6 +12,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/db"
@@ -43,6 +44,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	AdminMutation() AdminMutationResolver
 	AdminQuery() AdminQueryResolver
 	AdminSubgraphsConnection() AdminSubgraphsConnectionResolver
 	AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver
@@ -59,6 +61,10 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AdminMutation struct {
+		UpdateSubgraph func(childComplexity int, input updatesubgraph.Request) int
+	}
+
 	AdminQuery struct {
 		AllSubgraphs            func(childComplexity int) int
 		AllUserSubgraphAccesses func(childComplexity int) int
@@ -88,6 +94,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		Admin                  func(childComplexity int) int
 		RequestEmailSignInCode func(childComplexity int, input requestemailsignin.Request) int
 		SignInByEmail          func(childComplexity int, input signinbyemail.Request) int
 		SignOut                func(childComplexity int) int
@@ -117,6 +124,10 @@ type ComplexityRoot struct {
 		Name      func(childComplexity int) int
 	}
 
+	UpdateSubgraphPayload struct {
+		Subgraph func(childComplexity int) int
+	}
+
 	User struct {
 		CreatedAt func(childComplexity int) int
 		Email     func(childComplexity int) int
@@ -139,6 +150,9 @@ type ComplexityRoot struct {
 	}
 }
 
+type AdminMutationResolver interface {
+	UpdateSubgraph(ctx context.Context, obj *model.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error)
+}
 type AdminQueryResolver interface {
 	AllUsers(ctx context.Context, obj *model.AdminQuery) (*model.AdminUsersConnection, error)
 	AllSubgraphs(ctx context.Context, obj *model.AdminQuery) (*model.AdminSubgraphsConnection, error)
@@ -160,6 +174,7 @@ type MutationResolver interface {
 	RequestEmailSignInCode(ctx context.Context, input requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error)
 	SignInByEmail(ctx context.Context, input signinbyemail.Request) (model.SignInOrErrorPayload, error)
 	SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error)
+	Admin(ctx context.Context) (*model.AdminMutation, error)
 }
 type QueryResolver interface {
 	Viewer(ctx context.Context) (*model.Viewer, error)
@@ -197,6 +212,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AdminMutation.updateSubgraph":
+		if e.complexity.AdminMutation.UpdateSubgraph == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_updateSubgraph_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.UpdateSubgraph(childComplexity, args["input"].(updatesubgraph.Request)), true
 
 	case "AdminQuery.allSubgraphs":
 		if e.complexity.AdminQuery.AllSubgraphs == nil {
@@ -267,6 +294,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FieldMessage.Value(childComplexity), true
+
+	case "Mutation.admin":
+		if e.complexity.Mutation.Admin == nil {
+			break
+		}
+
+		return e.complexity.Mutation.Admin(childComplexity), true
 
 	case "Mutation.requestEmailSignInCode":
 		if e.complexity.Mutation.RequestEmailSignInCode == nil {
@@ -362,6 +396,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Subgraph.Name(childComplexity), true
 
+	case "UpdateSubgraphPayload.subgraph":
+		if e.complexity.UpdateSubgraphPayload.Subgraph == nil {
+			break
+		}
+
+		return e.complexity.UpdateSubgraphPayload.Subgraph(childComplexity), true
+
 	case "User.createdAt":
 		if e.complexity.User.CreatedAt == nil {
 			break
@@ -456,6 +497,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputSignInByEmailInput,
+		ec.unmarshalInputUpdateSubgraphInput,
 	)
 	first := true
 
@@ -571,6 +613,29 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_AdminMutation_updateSubgraph_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_updateSubgraph_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_updateSubgraph_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (updatesubgraph.Request, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateSubgraphInput2trip2gᚋinternalᚋcaseᚋadminᚋupdatesubgraphᚐRequest(ctx, tmp)
+	}
+
+	var zeroVal updatesubgraph.Request
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_requestEmailSignInCode_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -740,6 +805,61 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AdminMutation_updateSubgraph(ctx context.Context, field graphql.CollectedField, obj *model.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_updateSubgraph(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().UpdateSubgraph(rctx, obj, fc.Args["input"].(updatesubgraph.Request))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.UpdateSubgraphOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNUpdateSubgraphOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateSubgraphOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_updateSubgraph(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UpdateSubgraphOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_updateSubgraph_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _AdminQuery_allUsers(ctx context.Context, field graphql.CollectedField, obj *model.AdminQuery) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminQuery_allUsers(ctx, field)
@@ -1385,6 +1505,54 @@ func (ec *executionContext) fieldContext_Mutation_signOut(_ context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_admin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_admin(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Admin(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminMutation)
+	fc.Result = res
+	return ec.marshalNAdminMutation2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminMutation(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "updateSubgraph":
+				return ec.fieldContext_AdminMutation_updateSubgraph(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_viewer(ctx, field)
 	if err != nil {
@@ -1933,6 +2101,58 @@ func (ec *executionContext) fieldContext_Subgraph_createdAt(_ context.Context, f
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateSubgraphPayload_subgraph(ctx context.Context, field graphql.CollectedField, obj *model.UpdateSubgraphPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpdateSubgraphPayload_subgraph(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Subgraph, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Subgraph)
+	fc.Result = res
+	return ec.marshalNSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgraph(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpdateSubgraphPayload_subgraph(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateSubgraphPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Subgraph_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Subgraph_name(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Subgraph_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Subgraph", field.Name)
 		},
 	}
 	return fc, nil
@@ -4498,6 +4718,40 @@ func (ec *executionContext) unmarshalInputSignInByEmailInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Context, obj any) (updatesubgraph.Request, error) {
+	var it updatesubgraph.Request
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "color"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "color":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("color"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Color = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4571,9 +4825,102 @@ func (ec *executionContext) _SignOutOrErrorPayload(ctx context.Context, sel ast.
 	}
 }
 
+func (ec *executionContext) _UpdateSubgraphOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateSubgraphOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UpdateSubgraphPayload:
+		return ec._UpdateSubgraphPayload(ctx, sel, &obj)
+	case *model.UpdateSubgraphPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateSubgraphPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var adminMutationImplementors = []string{"AdminMutation"}
+
+func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.SelectionSet, obj *model.AdminMutation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminMutationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminMutation")
+		case "updateSubgraph":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_updateSubgraph(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
 
 var adminQueryImplementors = []string{"AdminQuery"}
 
@@ -4927,7 +5274,7 @@ func (ec *executionContext) _AdminUsersConnection(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "UpdateSubgraphOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -5082,6 +5429,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "signOut":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_signOut(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "admin":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_admin(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -5348,6 +5702,45 @@ func (ec *executionContext) _Subgraph(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "createdAt":
 			out.Values[i] = ec._Subgraph_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var updateSubgraphPayloadImplementors = []string{"UpdateSubgraphPayload", "UpdateSubgraphOrErrorPayload"}
+
+func (ec *executionContext) _UpdateSubgraphPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateSubgraphPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateSubgraphPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateSubgraphPayload")
+		case "subgraph":
+			out.Values[i] = ec._UpdateSubgraphPayload_subgraph(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -6020,6 +6413,20 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNAdminMutation2trip2gᚋinternalᚋgraphᚋmodelᚐAdminMutation(ctx context.Context, sel ast.SelectionSet, v model.AdminMutation) graphql.Marshaler {
+	return ec._AdminMutation(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminMutation2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminMutation(ctx context.Context, sel ast.SelectionSet, v *model.AdminMutation) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminMutation(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminQuery2trip2gᚋinternalᚋgraphᚋmodelᚐAdminQuery(ctx context.Context, sel ast.SelectionSet, v model.AdminQuery) graphql.Marshaler {
 	return ec._AdminQuery(ctx, sel, &v)
 }
@@ -6310,6 +6717,21 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNUpdateSubgraphInput2trip2gᚋinternalᚋcaseᚋadminᚋupdatesubgraphᚐRequest(ctx context.Context, v any) (updatesubgraph.Request, error) {
+	res, err := ec.unmarshalInputUpdateSubgraphInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateSubgraphOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateSubgraphOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateSubgraphOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateSubgraphOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNUser2trip2gᚋinternalᚋdbᚐUser(ctx context.Context, sel ast.SelectionSet, v db.User) graphql.Marshaler {

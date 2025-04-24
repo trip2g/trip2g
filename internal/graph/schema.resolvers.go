@@ -12,12 +12,18 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
+	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 )
+
+// UpdateSubgraph is the resolver for the updateSubgraph field.
+func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *model.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error) {
+	return input.Resolve(ctx, r.Env)
+}
 
 // AllUsers is the resolver for the allUsers field.
 func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *model.AdminQuery) (*model.AdminUsersConnection, error) {
@@ -81,6 +87,12 @@ func (r *mutationResolver) SignInByEmail(ctx context.Context, input signinbyemai
 // SignOut is the resolver for the signOut field.
 func (r *mutationResolver) SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error) {
 	return signout.Resolve(ctx, r.Env)
+}
+
+// Admin is the resolver for the admin field.
+func (r *mutationResolver) Admin(ctx context.Context) (*model.AdminMutation, error) {
+	// TODO: check if the user is admin
+	return &model.AdminMutation{}, nil
 }
 
 // Viewer is the resolver for the viewer field.
@@ -156,6 +168,9 @@ func (r *signInByEmailInputResolver) Code(ctx context.Context, obj *signinbyemai
 	return nil
 }
 
+// AdminMutation returns AdminMutationResolver implementation.
+func (r *Resolver) AdminMutation() AdminMutationResolver { return &adminMutationResolver{r} }
+
 // AdminQuery returns AdminQueryResolver implementation.
 func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
 
@@ -196,6 +211,7 @@ func (r *Resolver) SignInByEmailInput() SignInByEmailInputResolver {
 	return &signInByEmailInputResolver{r}
 }
 
+type adminMutationResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }

@@ -18,7 +18,6 @@ import (
 	renderpagerenderpage "trip2g/internal/case/admin/renderpage"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
 	updateofferupdateoffer "trip2g/internal/case/admin/updateoffer"
-	updatesubgraphupdatesubgraph "trip2g/internal/case/admin/updatesubgraph"
 
 	"trip2g/internal/logger"
 )
@@ -37,7 +36,6 @@ var endpoints = []Endpoint{
 	&renderpagerenderpage.Endpoint{},
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
 	&updateofferupdateoffer.Endpoint{},
-	&updatesubgraphupdatesubgraph.Endpoint{},
 }
 
 type Env interface {
@@ -54,7 +52,6 @@ type Env interface {
 	renderpagerenderpage.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
 	updateofferupdateoffer.Env
-	updatesubgraphupdatesubgraph.Env
 
 	Logger() logger.Logger
 }
