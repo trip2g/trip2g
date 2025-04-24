@@ -6,7 +6,6 @@ package router
 
 import (
 	getnotehashesgetnotehashes "trip2g/internal/case/getnotehashes"
-	meme "trip2g/internal/case/me"
 	pushnotespushnotes "trip2g/internal/case/pushnotes"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
 	createoffercreateoffer "trip2g/internal/case/admin/createoffer"
@@ -27,7 +26,6 @@ import (
 
 var endpoints = []Endpoint{
 	&getnotehashesgetnotehashes.Endpoint{},
-	&meme.Endpoint{},
 	&pushnotespushnotes.Endpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
 	&createoffercreateoffer.Endpoint{},
@@ -46,7 +44,6 @@ var endpoints = []Endpoint{
 
 type Env interface {
 	getnotehashesgetnotehashes.Env
-	meme.Env
 	pushnotespushnotes.Env
 	rendernotepagerendernotepage.Env
 	createoffercreateoffer.Env

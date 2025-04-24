@@ -31,12 +31,21 @@ type AdminUsersConnection {
   nodes: [User!]! @goField(forceResolver: true)
 }
 
+type Subgraph {
+  id: Int64!
+  name: String!
+  createdAt: Time!
+}
+
 type UserSubgraphAccess {
   id: Int64!
   userID: Int64!
   subgraphID: Int64!
   createdAt: Time!
   expiresAt: Time
+
+  user: User!
+  subgraph: Subgraph!
 }
 
 type AdminUserSubgraphAccessesConnection {

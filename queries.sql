@@ -129,8 +129,5 @@ update user_subgraph_accesses
    set revoke_id = ?
  where id = ?;
 
--- name: GetUserByID :one
-select * from users where id = ?;
-
--- name: ListUsersByIDs :many
-select * from users where id in (sqlc.slice('ids'));
+-- name: SubgraphByID :one
+select * from subgraphs where id = ?;

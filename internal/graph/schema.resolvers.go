@@ -95,11 +95,17 @@ func (r *queryResolver) Admin(ctx context.Context) (*model.AdminQuery, error) {
 
 // ExpiresAt is the resolver for the expiresAt field.
 func (r *userSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
-	if obj.ExpiresAt.Valid {
-		return &obj.ExpiresAt.Time, nil
-	}
+	return db.ToTimePtr(obj.ExpiresAt), nil
+}
 
-	return nil, nil
+// User is the resolver for the user field.
+func (r *userSubgraphAccessResolver) User(ctx context.Context, obj *db.UserSubgraphAccess) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.UserID, r.Env.UserByID)
+}
+
+// Subgraph is the resolver for the subgraph field.
+func (r *userSubgraphAccessResolver) Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error) {
+	return resolveOne[db.Subgraph](ctx, obj.UserID, r.Env.SubgraphByID)
 }
 
 // ID is the resolver for the id field.

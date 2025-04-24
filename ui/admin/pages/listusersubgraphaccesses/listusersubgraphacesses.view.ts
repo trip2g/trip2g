@@ -10,6 +10,9 @@ namespace $.$$ {
 								id
 								createdAt
 								expiresAt
+								subgraph {
+									name
+								}
 							}
 						}
 					}
@@ -44,7 +47,7 @@ namespace $.$$ {
 		}
 
 		row_subgraph_name( id: any ): string {
-			return '???';
+			return this.data().map[ id ].subgraph.name;
 		}
 	}
 }
