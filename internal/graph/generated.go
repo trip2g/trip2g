@@ -44,10 +44,12 @@ type Config struct {
 
 type ResolverRoot interface {
 	AdminQuery() AdminQueryResolver
+	AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver
 	AdminUsersConnection() AdminUsersConnectionResolver
 	ErrorPayload() ErrorPayloadResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	UserSubgraphAccess() UserSubgraphAccessResolver
 	Viewer() ViewerResolver
 	SignInByEmailInput() SignInByEmailInputResolver
 }
@@ -57,7 +59,12 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	AdminQuery struct {
-		AllUsers func(childComplexity int) int
+		AllUserSubgraphAccesses func(childComplexity int) int
+		AllUsers                func(childComplexity int) int
+	}
+
+	AdminUserSubgraphAccessesConnection struct {
+		Nodes func(childComplexity int) int
 	}
 
 	AdminUsersConnection struct {
@@ -104,6 +111,14 @@ type ComplexityRoot struct {
 		ID        func(childComplexity int) int
 	}
 
+	UserSubgraphAccess struct {
+		CreatedAt  func(childComplexity int) int
+		ExpiresAt  func(childComplexity int) int
+		ID         func(childComplexity int) int
+		SubgraphID func(childComplexity int) int
+		UserID     func(childComplexity int) int
+	}
+
 	Viewer struct {
 		ID   func(childComplexity int) int
 		User func(childComplexity int) int
@@ -112,6 +127,10 @@ type ComplexityRoot struct {
 
 type AdminQueryResolver interface {
 	AllUsers(ctx context.Context, obj *model.AdminQuery) (*model.AdminUsersConnection, error)
+	AllUserSubgraphAccesses(ctx context.Context, obj *model.AdminQuery) (*model.AdminUserSubgraphAccessesConnection, error)
+}
+type AdminUserSubgraphAccessesConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminUserSubgraphAccessesConnection) ([]db.UserSubgraphAccess, error)
 }
 type AdminUsersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error)
@@ -127,6 +146,9 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Viewer(ctx context.Context) (*model.Viewer, error)
 	Admin(ctx context.Context) (*model.AdminQuery, error)
+}
+type UserSubgraphAccessResolver interface {
+	ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error)
 }
 type ViewerResolver interface {
 	ID(ctx context.Context, obj *model.Viewer) (string, error)
@@ -156,12 +178,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	_ = ec
 	switch typeName + "." + field {
 
+	case "AdminQuery.allUserSubgraphAccesses":
+		if e.complexity.AdminQuery.AllUserSubgraphAccesses == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllUserSubgraphAccesses(childComplexity), true
+
 	case "AdminQuery.allUsers":
 		if e.complexity.AdminQuery.AllUsers == nil {
 			break
 		}
 
 		return e.complexity.AdminQuery.AllUsers(childComplexity), true
+
+	case "AdminUserSubgraphAccessesConnection.nodes":
+		if e.complexity.AdminUserSubgraphAccessesConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminUserSubgraphAccessesConnection.Nodes(childComplexity), true
 
 	case "AdminUsersConnection.nodes":
 		if e.complexity.AdminUsersConnection.Nodes == nil {
@@ -291,6 +327,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.ID(childComplexity), true
+
+	case "UserSubgraphAccess.createdAt":
+		if e.complexity.UserSubgraphAccess.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.UserSubgraphAccess.CreatedAt(childComplexity), true
+
+	case "UserSubgraphAccess.expiresAt":
+		if e.complexity.UserSubgraphAccess.ExpiresAt == nil {
+			break
+		}
+
+		return e.complexity.UserSubgraphAccess.ExpiresAt(childComplexity), true
+
+	case "UserSubgraphAccess.id":
+		if e.complexity.UserSubgraphAccess.ID == nil {
+			break
+		}
+
+		return e.complexity.UserSubgraphAccess.ID(childComplexity), true
+
+	case "UserSubgraphAccess.subgraphID":
+		if e.complexity.UserSubgraphAccess.SubgraphID == nil {
+			break
+		}
+
+		return e.complexity.UserSubgraphAccess.SubgraphID(childComplexity), true
+
+	case "UserSubgraphAccess.userID":
+		if e.complexity.UserSubgraphAccess.UserID == nil {
+			break
+		}
+
+		return e.complexity.UserSubgraphAccess.UserID(childComplexity), true
 
 	case "Viewer.id":
 		if e.complexity.Viewer.ID == nil {
@@ -644,6 +715,110 @@ func (ec *executionContext) fieldContext_AdminQuery_allUsers(_ context.Context, 
 				return ec.fieldContext_AdminUsersConnection_nodes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminUsersConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allUserSubgraphAccesses(ctx context.Context, field graphql.CollectedField, obj *model.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allUserSubgraphAccesses(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllUserSubgraphAccesses(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminUserSubgraphAccessesConnection)
+	fc.Result = res
+	return ec.marshalNAdminUserSubgraphAccessesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUserSubgraphAccessesConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allUserSubgraphAccesses(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminUserSubgraphAccessesConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUserSubgraphAccessesConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserSubgraphAccessesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminUserSubgraphAccessesConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminUserSubgraphAccessesConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminUserSubgraphAccessesConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.UserSubgraphAccess)
+	fc.Result = res
+	return ec.marshalNUserSubgraphAccess2ᚕtrip2gᚋinternalᚋdbᚐUserSubgraphAccessᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminUserSubgraphAccessesConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserSubgraphAccessesConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserSubgraphAccess_id(ctx, field)
+			case "userID":
+				return ec.fieldContext_UserSubgraphAccess_userID(ctx, field)
+			case "subgraphID":
+				return ec.fieldContext_UserSubgraphAccess_subgraphID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_UserSubgraphAccess_createdAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_UserSubgraphAccess_expiresAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserSubgraphAccess", field.Name)
 		},
 	}
 	return fc, nil
@@ -1128,6 +1303,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 			switch field.Name {
 			case "allUsers":
 				return ec.fieldContext_AdminQuery_allUsers(ctx, field)
+			case "allUserSubgraphAccesses":
+				return ec.fieldContext_AdminQuery_allUserSubgraphAccesses(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -1579,6 +1756,223 @@ func (ec *executionContext) fieldContext_User_createdAt(_ context.Context, field
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserSubgraphAccess_id(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserSubgraphAccess_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserSubgraphAccess_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserSubgraphAccess",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserSubgraphAccess_userID(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserSubgraphAccess_userID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserSubgraphAccess_userID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserSubgraphAccess",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserSubgraphAccess_subgraphID(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserSubgraphAccess_subgraphID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SubgraphID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserSubgraphAccess_subgraphID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserSubgraphAccess",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserSubgraphAccess_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserSubgraphAccess_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserSubgraphAccess_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserSubgraphAccess",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserSubgraphAccess_expiresAt(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserSubgraphAccess_expiresAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.UserSubgraphAccess().ExpiresAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserSubgraphAccess_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserSubgraphAccess",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -3817,6 +4211,112 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allUserSubgraphAccesses":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allUserSubgraphAccesses(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminUserSubgraphAccessesConnectionImplementors = []string{"AdminUserSubgraphAccessesConnection"}
+
+func (ec *executionContext) _AdminUserSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminUserSubgraphAccessesConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminUserSubgraphAccessesConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminUserSubgraphAccessesConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminUserSubgraphAccessesConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4357,6 +4857,93 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var userSubgraphAccessImplementors = []string{"UserSubgraphAccess"}
+
+func (ec *executionContext) _UserSubgraphAccess(ctx context.Context, sel ast.SelectionSet, obj *db.UserSubgraphAccess) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userSubgraphAccessImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserSubgraphAccess")
+		case "id":
+			out.Values[i] = ec._UserSubgraphAccess_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "userID":
+			out.Values[i] = ec._UserSubgraphAccess_userID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "subgraphID":
+			out.Values[i] = ec._UserSubgraphAccess_subgraphID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._UserSubgraphAccess_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "expiresAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UserSubgraphAccess_expiresAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var viewerImplementors = []string{"Viewer"}
 
 func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, obj *model.Viewer) graphql.Marshaler {
@@ -4809,6 +5396,20 @@ func (ec *executionContext) marshalNAdminQuery2ᚖtrip2gᚋinternalᚋgraphᚋmo
 	return ec._AdminQuery(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminUserSubgraphAccessesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUserSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminUserSubgraphAccessesConnection) graphql.Marshaler {
+	return ec._AdminUserSubgraphAccessesConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminUserSubgraphAccessesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUserSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminUserSubgraphAccessesConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminUserSubgraphAccessesConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminUsersConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUsersConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminUsersConnection) graphql.Marshaler {
 	return ec._AdminUsersConnection(ctx, sel, &v)
 }
@@ -5030,6 +5631,54 @@ func (ec *executionContext) marshalNUser2ᚕtrip2gᚋinternalᚋdbᚐUserᚄ(ctx
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNUser2trip2gᚋinternalᚋdbᚐUser(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNUserSubgraphAccess2trip2gᚋinternalᚋdbᚐUserSubgraphAccess(ctx context.Context, sel ast.SelectionSet, v db.UserSubgraphAccess) graphql.Marshaler {
+	return ec._UserSubgraphAccess(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserSubgraphAccess2ᚕtrip2gᚋinternalᚋdbᚐUserSubgraphAccessᚄ(ctx context.Context, sel ast.SelectionSet, v []db.UserSubgraphAccess) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUserSubgraphAccess2trip2gᚋinternalᚋdbᚐUserSubgraphAccess(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -5389,6 +6038,22 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	res := graphql.MarshalString(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v any) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalTime(*v)
 	return res
 }
 

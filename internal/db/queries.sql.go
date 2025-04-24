@@ -9,7 +9,6 @@ import (
 	"context"
 	"database/sql"
 	"strings"
-	"time"
 )
 
 const allLatestNotes = `-- name: AllLatestNotes :many
@@ -516,6 +515,41 @@ func (q *Queries) ListAdminSubgraphs(ctx context.Context) ([]Subgraph, error) {
 	return items, nil
 }
 
+const listAllUserSubgraphAccesses = `-- name: ListAllUserSubgraphAccesses :many
+select id, user_id, subgraph_id, purchase_id, created_at, expires_at, revoke_id from user_subgraph_accesses order by id desc
+`
+
+func (q *Queries) ListAllUserSubgraphAccesses(ctx context.Context) ([]UserSubgraphAccess, error) {
+	rows, err := q.db.QueryContext(ctx, listAllUserSubgraphAccesses)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UserSubgraphAccess
+	for rows.Next() {
+		var i UserSubgraphAccess
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.SubgraphID,
+			&i.PurchaseID,
+			&i.CreatedAt,
+			&i.ExpiresAt,
+			&i.RevokeID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllUsers = `-- name: ListAllUsers :many
 select id, email, created_at, last_signin_code_sent_at from users order by created_at desc
 `
@@ -534,59 +568,6 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.Email,
 			&i.CreatedAt,
 			&i.LastSigninCodeSentAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listUserSubgraphAccesses = `-- name: ListUserSubgraphAccesses :many
-select a.id, a.user_id, a.subgraph_id, a.purchase_id, a.created_at, a.expires_at, a.revoke_id, u.email as user_email, s.name as subgraph_name
-  from user_subgraph_accesses a
-  join users u on a.user_id = u.id
-  join subgraphs s on a.subgraph_id = s.id
- order by a.created_at desc
-`
-
-type ListUserSubgraphAccessesRow struct {
-	ID           int64         `json:"id"`
-	UserID       int64         `json:"user_id"`
-	SubgraphID   int64         `json:"subgraph_id"`
-	PurchaseID   sql.NullInt64 `json:"purchase_id"`
-	CreatedAt    time.Time     `json:"created_at"`
-	ExpiresAt    sql.NullTime  `json:"expires_at"`
-	RevokeID     sql.NullInt64 `json:"revoke_id"`
-	UserEmail    string        `json:"user_email"`
-	SubgraphName string        `json:"subgraph_name"`
-}
-
-func (q *Queries) ListUserSubgraphAccesses(ctx context.Context) ([]ListUserSubgraphAccessesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listUserSubgraphAccesses)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListUserSubgraphAccessesRow
-	for rows.Next() {
-		var i ListUserSubgraphAccessesRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.SubgraphID,
-			&i.PurchaseID,
-			&i.CreatedAt,
-			&i.ExpiresAt,
-			&i.RevokeID,
-			&i.UserEmail,
-			&i.SubgraphName,
 		); err != nil {
 			return nil, err
 		}

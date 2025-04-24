@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
@@ -21,6 +22,16 @@ import (
 // AllUsers is the resolver for the allUsers field.
 func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *model.AdminQuery) (*model.AdminUsersConnection, error) {
 	return &model.AdminUsersConnection{}, nil
+}
+
+// AllUserSubgraphAccesses is the resolver for the allUserSubgraphAccesses field.
+func (r *adminQueryResolver) AllUserSubgraphAccesses(ctx context.Context, obj *model.AdminQuery) (*model.AdminUserSubgraphAccessesConnection, error) {
+	return &model.AdminUserSubgraphAccessesConnection{}, nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminUserSubgraphAccessesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUserSubgraphAccessesConnection) ([]db.UserSubgraphAccess, error) {
+	return r.Env.ListAllUserSubgraphAccesses(ctx)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -82,6 +93,15 @@ func (r *queryResolver) Admin(ctx context.Context) (*model.AdminQuery, error) {
 	return &model.AdminQuery{}, nil
 }
 
+// ExpiresAt is the resolver for the expiresAt field.
+func (r *userSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
+	if obj.ExpiresAt.Valid {
+		return &obj.ExpiresAt.Time, nil
+	}
+
+	return nil, nil
+}
+
 // ID is the resolver for the id field.
 func (r *viewerResolver) ID(ctx context.Context, obj *model.Viewer) (string, error) {
 	return "viewer", nil
@@ -123,6 +143,11 @@ func (r *signInByEmailInputResolver) Code(ctx context.Context, obj *signinbyemai
 // AdminQuery returns AdminQueryResolver implementation.
 func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
 
+// AdminUserSubgraphAccessesConnection returns AdminUserSubgraphAccessesConnectionResolver implementation.
+func (r *Resolver) AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver {
+	return &adminUserSubgraphAccessesConnectionResolver{r}
+}
+
 // AdminUsersConnection returns AdminUsersConnectionResolver implementation.
 func (r *Resolver) AdminUsersConnection() AdminUsersConnectionResolver {
 	return &adminUsersConnectionResolver{r}
@@ -137,6 +162,11 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// UserSubgraphAccess returns UserSubgraphAccessResolver implementation.
+func (r *Resolver) UserSubgraphAccess() UserSubgraphAccessResolver {
+	return &userSubgraphAccessResolver{r}
+}
+
 // Viewer returns ViewerResolver implementation.
 func (r *Resolver) Viewer() ViewerResolver { return &viewerResolver{r} }
 
@@ -146,9 +176,11 @@ func (r *Resolver) SignInByEmailInput() SignInByEmailInputResolver {
 }
 
 type adminQueryResolver struct{ *Resolver }
+type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
 type signInByEmailInputResolver struct{ *Resolver }

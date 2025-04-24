@@ -31,8 +31,21 @@ type AdminUsersConnection {
   nodes: [User!]! @goField(forceResolver: true)
 }
 
+type UserSubgraphAccess {
+  id: Int64!
+  userID: Int64!
+  subgraphID: Int64!
+  createdAt: Time!
+  expiresAt: Time
+}
+
+type AdminUserSubgraphAccessesConnection {
+  nodes: [UserSubgraphAccess!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection! @goField(forceResolver: true)
+  allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection! @goField(forceResolver: true)
 }
 
 type Viewer

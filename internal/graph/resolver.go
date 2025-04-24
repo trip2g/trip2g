@@ -14,6 +14,7 @@ type Resolver struct {
 
 type Env interface {
 	ListAllUsers(ctx context.Context) ([]db.User, error)
+	ListAllUserSubgraphAccesses(ctx context.Context) ([]db.UserSubgraphAccess, error)
 	UserByID(ctx context.Context, id int64) (db.User, error)
 
 	requestemailsignin.Env

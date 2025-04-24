@@ -17,7 +17,6 @@ import (
 	listofferslistoffers "trip2g/internal/case/admin/listoffers"
 	listsubgraphslistsubgraphs "trip2g/internal/case/admin/listsubgraphs"
 	listuserslistusers "trip2g/internal/case/admin/listusers"
-	listusersubgraphacesseslistusersubgraphacesses "trip2g/internal/case/admin/listusersubgraphacesses"
 	renderpagerenderpage "trip2g/internal/case/admin/renderpage"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
 	updateofferupdateoffer "trip2g/internal/case/admin/updateoffer"
@@ -39,7 +38,6 @@ var endpoints = []Endpoint{
 	&listofferslistoffers.Endpoint{},
 	&listsubgraphslistsubgraphs.Endpoint{},
 	&listuserslistusers.Endpoint{},
-	&listusersubgraphacesseslistusersubgraphacesses.Endpoint{},
 	&renderpagerenderpage.Endpoint{},
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
 	&updateofferupdateoffer.Endpoint{},
@@ -59,7 +57,6 @@ type Env interface {
 	listofferslistoffers.Env
 	listsubgraphslistsubgraphs.Env
 	listuserslistusers.Env
-	listusersubgraphacesseslistusersubgraphacesses.Env
 	renderpagerenderpage.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
 	updateofferupdateoffer.Env

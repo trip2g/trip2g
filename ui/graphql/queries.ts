@@ -21,7 +21,13 @@ type Scalars = {
 
 type AdminQuery = {
   __typename?: 'AdminQuery';
+  allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection;
   allUsers: AdminUsersConnection;
+};
+
+type AdminUserSubgraphAccessesConnection = {
+  __typename?: 'AdminUserSubgraphAccessesConnection';
+  nodes: Array<UserSubgraphAccess>;
 };
 
 type AdminUsersConnection = {
@@ -102,6 +108,15 @@ type User = {
   id: Scalars['Int64']['output'];
 };
 
+type UserSubgraphAccess = {
+  __typename?: 'UserSubgraphAccess';
+  createdAt: Scalars['Time']['output'];
+  expiresAt?: Maybe<Scalars['Time']['output']>;
+  id: Scalars['Int64']['output'];
+  subgraphID: Scalars['Int64']['output'];
+  userID: Scalars['Int64']['output'];
+};
+
 type Viewer = {
   __typename?: 'Viewer';
   id: Scalars['ID']['output'];
@@ -112,6 +127,11 @@ type AdminListUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 type AdminListUsersQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allUsers: { __typename?: 'AdminUsersConnection', nodes: Array<{ __typename?: 'User', id: any, email: string, createdAt: any }> } } };
+
+type AdminListUserSubgraphAccessesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+type AdminListUserSubgraphAccessesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename?: 'AdminUserSubgraphAccessesConnection', nodes: Array<{ __typename?: 'UserSubgraphAccess', id: any, createdAt: any, expiresAt?: any | null }> } } };
 
 type ViewerQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -138,6 +158,8 @@ type SignInByEmailMutationVariables = Exact<{
 type SignInByEmailMutation = { __typename?: 'Mutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SignInPayload', token: string } };
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUsers {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallUsers {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUsersQuery
+
+export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUserSubgraphAccesses {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tdata: allUserSubgraphAccesses {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\texpiresAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUserSubgraphAccessesQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery Viewer {\n\t\t\t\t\tviewer {\n\t\t\t\t\t\tid\n\t\t\t\t\t\tuser {\n\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): ViewerQuery
 

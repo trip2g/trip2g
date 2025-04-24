@@ -116,12 +116,8 @@ insert into user_subgraph_accesses (user_id, subgraph_id, purchase_id, expires_a
 values (?, ?, ?, ?)
 returning *;
 
--- name: ListUserSubgraphAccesses :many
-select a.*, u.email as user_email, s.name as subgraph_name
-  from user_subgraph_accesses a
-  join users u on a.user_id = u.id
-  join subgraphs s on a.subgraph_id = s.id
- order by a.created_at desc;
+-- name: ListAllUserSubgraphAccesses :many
+select * from user_subgraph_accesses order by id desc;
 
 -- name: CreateRevoke :one
 insert into revokes (target_type, target_id, by, reason)
