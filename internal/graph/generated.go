@@ -52,6 +52,7 @@ type ResolverRoot interface {
 	ErrorPayload() ErrorPayloadResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Subgraph() SubgraphResolver
 	UserSubgraphAccess() UserSubgraphAccessResolver
 	Viewer() ViewerResolver
 	SignInByEmailInput() SignInByEmailInputResolver
@@ -119,6 +120,7 @@ type ComplexityRoot struct {
 	}
 
 	Subgraph struct {
+		Color     func(childComplexity int) int
 		CreatedAt func(childComplexity int) int
 		ID        func(childComplexity int) int
 		Name      func(childComplexity int) int
@@ -179,6 +181,9 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Viewer(ctx context.Context) (*model.Viewer, error)
 	Admin(ctx context.Context) (*model.AdminQuery, error)
+}
+type SubgraphResolver interface {
+	Color(ctx context.Context, obj *db.Subgraph) (*string, error)
 }
 type UserSubgraphAccessResolver interface {
 	ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error)
@@ -374,6 +379,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SignOutPayload.Viewer(childComplexity), true
+
+	case "Subgraph.color":
+		if e.complexity.Subgraph.Color == nil {
+			break
+		}
+
+		return e.complexity.Subgraph.Color(childComplexity), true
 
 	case "Subgraph.createdAt":
 		if e.complexity.Subgraph.CreatedAt == nil {
@@ -1048,6 +1060,8 @@ func (ec *executionContext) fieldContext_AdminSubgraphsConnection_nodes(_ contex
 				return ec.fieldContext_Subgraph_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Subgraph_name(ctx, field)
+			case "color":
+				return ec.fieldContext_Subgraph_color(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Subgraph_createdAt(ctx, field)
 			}
@@ -2062,6 +2076,47 @@ func (ec *executionContext) fieldContext_Subgraph_name(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _Subgraph_color(ctx context.Context, field graphql.CollectedField, obj *db.Subgraph) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subgraph_color(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subgraph().Color(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Subgraph_color(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subgraph",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Subgraph_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.Subgraph) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Subgraph_createdAt(ctx, field)
 	if err != nil {
@@ -2149,6 +2204,8 @@ func (ec *executionContext) fieldContext_UpdateSubgraphPayload_subgraph(_ contex
 				return ec.fieldContext_Subgraph_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Subgraph_name(ctx, field)
+			case "color":
+				return ec.fieldContext_Subgraph_color(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Subgraph_createdAt(ctx, field)
 			}
@@ -2602,6 +2659,8 @@ func (ec *executionContext) fieldContext_UserSubgraphAccess_subgraph(_ context.C
 				return ec.fieldContext_Subgraph_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Subgraph_name(ctx, field)
+			case "color":
+				return ec.fieldContext_Subgraph_color(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Subgraph_createdAt(ctx, field)
 			}
@@ -5693,17 +5752,50 @@ func (ec *executionContext) _Subgraph(ctx context.Context, sel ast.SelectionSet,
 		case "id":
 			out.Values[i] = ec._Subgraph_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._Subgraph_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "color":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Subgraph_color(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdAt":
 			out.Values[i] = ec._Subgraph_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))

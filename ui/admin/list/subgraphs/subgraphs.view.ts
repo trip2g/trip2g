@@ -9,6 +9,7 @@ namespace $.$$ {
 							nodes {
 								id
 								name
+								color
 								createdAt
 							}
 						}
@@ -16,7 +17,7 @@ namespace $.$$ {
 				}
 			`)
 
-			const map: { [ id: number ]: any } = {};
+			const map: { [ id: number ]: typeof res.admin.allSubgraphs.nodes[0] } = {};
 
 			res.admin.allSubgraphs.nodes.forEach( ( row ) => {
 				map[ row.id ] = row
@@ -45,6 +46,10 @@ namespace $.$$ {
 
 		row_name( id: any ): string {
 			return this.data().map[ id ].name;
+		}
+
+		row_color( id: any ): string {
+			return this.data().map[ id ].color || '-'
 		}
 	}
 }

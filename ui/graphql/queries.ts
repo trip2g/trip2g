@@ -19,10 +19,26 @@ type Scalars = {
   Time: { input: any; output: any; }
 };
 
+type AdminMutation = {
+  __typename?: 'AdminMutation';
+  updateSubgraph: UpdateSubgraphOrErrorPayload;
+};
+
+
+type AdminMutationUpdateSubgraphArgs = {
+  input: UpdateSubgraphInput;
+};
+
 type AdminQuery = {
   __typename?: 'AdminQuery';
+  allSubgraphs: AdminSubgraphsConnection;
   allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection;
   allUsers: AdminUsersConnection;
+};
+
+type AdminSubgraphsConnection = {
+  __typename?: 'AdminSubgraphsConnection';
+  nodes: Array<Subgraph>;
 };
 
 type AdminUserSubgraphAccessesConnection = {
@@ -49,6 +65,7 @@ type FieldMessage = {
 
 type Mutation = {
   __typename?: 'Mutation';
+  admin: AdminMutation;
   requestEmailSignInCode: RequestEmailSignInCodeOrErrorPayload;
   signInByEmail: SignInOrErrorPayload;
   signOut: SignOutOrErrorPayload;
@@ -103,9 +120,22 @@ type SignOutPayload = {
 
 type Subgraph = {
   __typename?: 'Subgraph';
+  color?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['Time']['output'];
   id: Scalars['Int64']['output'];
   name: Scalars['String']['output'];
+};
+
+type UpdateSubgraphInput = {
+  color: Scalars['String']['input'];
+  id: Scalars['Int64']['input'];
+};
+
+type UpdateSubgraphOrErrorPayload = ErrorPayload | UpdateSubgraphPayload;
+
+type UpdateSubgraphPayload = {
+  __typename?: 'UpdateSubgraphPayload';
+  subgraph: Subgraph;
 };
 
 type User = {
@@ -131,6 +161,11 @@ type Viewer = {
   id: Scalars['ID']['output'];
   user?: Maybe<User>;
 };
+
+type AdminListSubgraphsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+type AdminListSubgraphsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'Subgraph', id: any, name: string, color?: string | null, createdAt: any }> } } };
 
 type AdminListUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -165,6 +200,8 @@ type SignInByEmailMutationVariables = Exact<{
 
 
 type SignInByEmailMutation = { __typename?: 'Mutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SignInPayload', token: string } };
+
+export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListSubgraphs {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallSubgraphs {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\tcolor\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListSubgraphsQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUsers {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallUsers {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUsersQuery
 

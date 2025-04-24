@@ -16,7 +16,7 @@ namespace $.$$ {
 				}
 			`)
 
-			const map: { [ id: number ]: any } = {};
+			const map: { [ id: number ]: typeof res.admin.allUsers.nodes[0] } = {};
 
 			res.admin.allUsers.nodes.forEach( ( row ) => {
 				map[ row.id ] = row

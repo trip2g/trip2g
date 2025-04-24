@@ -21,3 +21,7 @@ $trip2g_admin_list_subgraphs $mol_book2_catalog
 						title \Name
 						Content <= Row_name* $trip2g_admin_cell
 							content <= row_name* \name
+					<= Row_color_labeler* $mol_labeler
+						title \Color
+						Content <= Row_color* $trip2g_admin_cell
+							content <= row_color* \color

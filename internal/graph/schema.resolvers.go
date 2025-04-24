@@ -115,6 +115,11 @@ func (r *queryResolver) Admin(ctx context.Context) (*model.AdminQuery, error) {
 	return &model.AdminQuery{}, nil
 }
 
+// Color is the resolver for the color field.
+func (r *subgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*string, error) {
+	return db.ToStringPtr(obj.Color), nil
+}
+
 // ExpiresAt is the resolver for the expiresAt field.
 func (r *userSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
 	return db.ToTimePtr(obj.ExpiresAt), nil
@@ -198,6 +203,9 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Subgraph returns SubgraphResolver implementation.
+func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
+
 // UserSubgraphAccess returns UserSubgraphAccessResolver implementation.
 func (r *Resolver) UserSubgraphAccess() UserSubgraphAccessResolver {
 	return &userSubgraphAccessResolver{r}
@@ -219,6 +227,7 @@ type adminUsersConnectionResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type subgraphResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
 type signInByEmailInputResolver struct{ *Resolver }
