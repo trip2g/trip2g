@@ -15,6 +15,10 @@ type SignInOrErrorPayload interface {
 	IsSignInOrErrorPayload()
 }
 
+type SignOutOrErrorPayload interface {
+	IsSignOutOrErrorPayload()
+}
+
 type AdminQuery struct {
 	ListUsers *AdminUsersConnection `json:"listUsers"`
 }
@@ -31,6 +35,8 @@ type ErrorPayload struct {
 func (ErrorPayload) IsRequestEmailSignInCodeOrErrorPayload() {}
 
 func (ErrorPayload) IsSignInOrErrorPayload() {}
+
+func (ErrorPayload) IsSignOutOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`
@@ -55,6 +61,12 @@ type SignInPayload struct {
 }
 
 func (SignInPayload) IsSignInOrErrorPayload() {}
+
+type SignOutPayload struct {
+	Viewer *Viewer `json:"viewer"`
+}
+
+func (SignOutPayload) IsSignOutOrErrorPayload() {}
 
 type Viewer struct {
 	ID        string          `json:"id"`

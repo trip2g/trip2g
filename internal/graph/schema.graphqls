@@ -85,9 +85,19 @@ type SignInPayload {
   viewer: Viewer!
 }
 
+#
+# signOut
+#
+
+type SignOutPayload {
+  viewer: Viewer!
+}
+
 union SignInOrErrorPayload = SignInPayload | ErrorPayload
+union SignOutOrErrorPayload = SignOutPayload | ErrorPayload
 
 type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
+  signOut: SignOutOrErrorPayload!
 }

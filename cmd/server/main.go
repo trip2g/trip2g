@@ -223,6 +223,20 @@ func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) 
 	return token, nil
 }
 
+func (a *app) ResetUserToken(ctx context.Context) error {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = req.TokenManager.Delete(req.Req)
+	if err != nil {
+		return fmt.Errorf("failed to reset token: %w", err)
+	}
+
+	return nil
+}
+
 func (a *app) GenerateUniqID() string {
 	return ulid.Make().String()
 }

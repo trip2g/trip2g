@@ -11,16 +11,15 @@ module.exports.plugin = (schema, documents, config) => {
     if (!doc.document) continue;
     for (const def of doc.document.definitions) {
       if (def.kind !== 'OperationDefinition' || !def.name) continue;
+
       let prefix = 'Query';
       if (def.operation === 'mutation') {
         prefix = 'Mutation';
       }
 
-      // const source = doc.rawSDL.substring(def.loc.start, def.loc.end);
-
       operations.push({
         source: doc.rawSDL,
-        variablesType: `${prefix}${def.name.value}Args`,
+        variablesType: `${def.name.value}${prefix}Variables`,
         resultType: `${def.name.value}${prefix}`,
         hasVars: (def.variableDefinitions?.length || 0) > 0,
       });

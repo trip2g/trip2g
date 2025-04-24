@@ -2,25 +2,23 @@ package signout
 
 import (
 	"context"
-	"trip2g/internal/usertoken"
+	"fmt"
+	"trip2g/internal/graph/model"
 )
 
-//go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
-
-type Env interface{}
-
-type Request struct{}
-
-type Response struct {
-	tokenData *usertoken.Data
-
-	Token string
+type Env interface {
+	ResetUserToken(ctx context.Context) error
 }
 
-func Resolve(_ context.Context, env Env, _ Request) (*Response, error) {
-	response := &Response{
-		tokenData: nil,
+func Resolve(ctx context.Context, env Env) (model.SignOutOrErrorPayload, error) {
+	err := env.ResetUserToken(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reset user token: %w", err)
 	}
 
-	return response, nil
+	response := model.SignOutPayload{
+		Viewer: &model.Viewer{},
+	}
+
+	return &response, nil
 }

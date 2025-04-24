@@ -34,14 +34,29 @@ namespace $.$$ {
 		}
 
 		signout() {
-			const url = '/api/signout'
+			const res = $trip2g_graphql_request(/* GraphQL */ `
+				mutation SignOut {
+					data: signOut {
+						... on ErrorPayload {
+							__typename
+							message
+						}
+						... on SignOutPayload {
+							__typename
+							viewer { id }
+						}
+					}
+				}
+			`)
 
-			this.$.$mol_fetch.json(url, {
-				method: 'post',
-				credentials: 'include',
-			})
+			if (res.data.__typename === 'ErrorPayload') {
+				throw new Error(res.data.message)
+			}
 
-			this.me(null)
+			if (res.data.__typename === 'SignOutPayload') {
+				this.me(null);
+				return
+			}
 		}
 
 		sub() {

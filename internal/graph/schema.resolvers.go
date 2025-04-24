@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
+	"trip2g/internal/case/signout"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 )
@@ -54,6 +55,11 @@ func (r *mutationResolver) RequestEmailSignInCode(ctx context.Context, input req
 // SignInByEmail is the resolver for the signInByEmail field.
 func (r *mutationResolver) SignInByEmail(ctx context.Context, input signinbyemail.Request) (model.SignInOrErrorPayload, error) {
 	return input.Resolve(ctx, r.Env)
+}
+
+// SignOut is the resolver for the signOut field.
+func (r *mutationResolver) SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error) {
+	return signout.Resolve(ctx, r.Env)
 }
 
 // Viewer is the resolver for the viewer field.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
+	"trip2g/internal/case/signout"
 	"trip2g/internal/db"
 )
 
@@ -17,4 +18,5 @@ type Env interface {
 
 	requestemailsignin.Env
 	signinbyemail.Env
+	signout.Env
 }
