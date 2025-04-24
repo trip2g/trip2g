@@ -1,12 +1,20 @@
 namespace $.$$ {
 	export class $trip2g_auth extends $.$trip2g_auth {
 		me_request() {
-			//const viewer = $trip2g_graphql_viewer()
-			//console.log(viewer)
+			const res = $trip2g_graphql_request(/* GraphQL */ `
+				query Viewer {
+					viewer {
+						id
+						user {
+							id
+							email
+							createdAt
+						}
+					}
+				}
+			`)
 
-			return this.$.$mol_fetch.json('/api/me', {
-				credentials: 'include',
-			}) as Me
+			return res.viewer.user
 		}
 
 		reload_me() {
@@ -19,18 +27,11 @@ namespace $.$$ {
 				return this.me_request()
 			}
 
-			console.log('set me', next)
-
 			return next ?? null
 		}
 
 		me_user_email(): string {
-			const me = this.me()
-			if (me.user) {
-				return me.user.email
-			}
-
-			return '???'
+			return this.me()?.email || '???'
 		}
 
 		signout() {
@@ -43,7 +44,9 @@ namespace $.$$ {
 						}
 						... on SignOutPayload {
 							__typename
-							viewer { id }
+							viewer {
+								id
+							}
 						}
 					}
 				}
@@ -54,14 +57,16 @@ namespace $.$$ {
 			}
 
 			if (res.data.__typename === 'SignOutPayload') {
-				this.me(null);
+				this.me(null)
 				return
 			}
+
+			throw new Error('Unknown error')
 		}
 
 		sub() {
 			const me = this.me()
-			if (me.user) {
+			if (me) {
 				return [this.AppView()]
 			}
 
@@ -72,14 +77,6 @@ namespace $.$$ {
 
 			return [this.EmailForm()]
 		}
-	}
-
-	type Me = {
-		user: {
-			id: number
-			email: string
-			created_at: string
-		} | null
 	}
 
 	export class $trip2g_auth_email_form extends $.$trip2g_auth_email_form {
@@ -126,6 +123,8 @@ namespace $.$$ {
 					return
 				}
 			}
+
+			this.request_error('Unknown error')
 		}
 	}
 
@@ -183,6 +182,8 @@ namespace $.$$ {
 				this.reload_me()
 				return
 			}
+
+			this.request_error('Unknown error')
 		}
 	}
 }
