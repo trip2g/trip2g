@@ -7,8 +7,8 @@ $trip2g_admin $mol_book2_catalog
 		<= sign_out $mol_button_major
 			title \Sign out
 	spreads *
-		listusers <= ListUsers $trip2g_admin_pages_listusers
-		listusersubgraphaccesses <= ListUsersSubgraphAccesses $trip2g_admin_pages_listusersubgraphaccesses
+		users <= ListUsers $trip2g_admin_list_users
+		user_subgraph_accesses <= ListUsersSubgraphAccesses $trip2g_admin_list_usersubgraphaccesses
 
 $trip2g_admin_cell $mol_view
 	content \No Content

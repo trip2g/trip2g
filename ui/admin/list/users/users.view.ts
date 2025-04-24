@@ -1,12 +1,5 @@
 namespace $.$$ {
-	type Response = {
-		rows: {
-			id: number;
-			email: string;
-		}[];
-	}
-
-	export class $trip2g_admin_pages_listusers extends $.$trip2g_admin_pages_listusers {
+	export class $trip2g_admin_list_users extends $.$trip2g_admin_list_users {
 		@$mol_mem
 		data() {
 			const res = $trip2g_graphql_request(/* GraphQL */ `

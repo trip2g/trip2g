@@ -1,5 +1,5 @@
 namespace $.$$ {
-	export class $trip2g_admin_pages_listusersubgraphaccesses extends $.$trip2g_admin_pages_listusersubgraphaccesses {
+	export class $trip2g_admin_list_usersubgraphaccesses extends $.$trip2g_admin_list_usersubgraphaccesses {
 		@$mol_mem
 		data() {
 			const res = $trip2g_graphql_request(/* GraphQL */ `

@@ -1,7 +1,8 @@
-$trip2g_admin_pages_listusersubgraphaccesses $mol_book2_catalog
-	menu_title \Subgraph accesses
+$trip2g_admin_list_users $mol_book2_catalog
+	menu_title \Users
 	menu_tools / <= Spread_close
-	param \access_id
+	menu_filter_enabled true
+	param \user_id
 	Empty $mol_status
 	Content* $mol_page
 		tools / <= Spread_close
@@ -16,7 +17,7 @@ $trip2g_admin_pages_listusersubgraphaccesses $mol_book2_catalog
 						title \ID
 						Content <= Row_id* $trip2g_admin_cell
 							content <= row_id* \id
-					<= Row_subgraph_name_labeler* $mol_labeler
-						title \Subgraph name
-						Content <= Row_subgraph_name* $trip2g_admin_cell
-							content <= row_subgraph_name* \Subgraph Name
+					<= Row_email_labeler* $mol_labeler
+						title \Email
+						Content <= Row_email* $trip2g_admin_cell
+							content <= row_email* \
