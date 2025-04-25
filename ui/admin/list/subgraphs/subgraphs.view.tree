@@ -12,9 +12,9 @@ $trip2g_admin_list_subgraphs $mol_book2_catalog
 		tools / <= Spread_close
 	menu_link_content* / <= NoteItem* $mol_view
 		sub /
-			<= Row* $mol_row
+			<= Rows* $mol_row
 				minimal_height 24
-				minimal_width 200
+				minimal_width 400
 				sub <= row_content* /
 					<= Row_id_labeler* $mol_labeler
 						title \ID

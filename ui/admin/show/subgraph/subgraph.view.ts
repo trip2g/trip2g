@@ -16,6 +16,10 @@ namespace $.$$ {
 				{ id }
 			)
 
+			if (!res.admin.subgraph) {
+				throw new Error('Subgraph not found')
+			}
+
 			return res.admin.subgraph
 		}
 

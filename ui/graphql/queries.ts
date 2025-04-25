@@ -29,12 +29,24 @@ type AdminMutationUpdateSubgraphArgs = {
   input: UpdateSubgraphInput;
 };
 
+type AdminNoteViewsConnection = {
+  __typename?: 'AdminNoteViewsConnection';
+  nodes: Array<NoteView>;
+};
+
 type AdminQuery = {
   __typename?: 'AdminQuery';
+  allNoteViews: AdminNoteViewsConnection;
   allSubgraphs: AdminSubgraphsConnection;
   allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection;
   allUsers: AdminUsersConnection;
-  subgraph: Subgraph;
+  noteView?: Maybe<NoteView>;
+  subgraph?: Maybe<Subgraph>;
+};
+
+
+type AdminQueryNoteViewArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -85,6 +97,17 @@ type MutationRequestEmailSignInCodeArgs = {
 
 type MutationSignInByEmailArgs = {
   input: SignInByEmailInput;
+};
+
+type NoteView = {
+  __typename?: 'NoteView';
+  content: Scalars['String']['output'];
+  free: Scalars['Boolean']['output'];
+  html: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  path: Scalars['String']['output'];
+  permalink: Scalars['String']['output'];
+  title: Scalars['String']['output'];
 };
 
 type Query = {
@@ -168,6 +191,11 @@ type Viewer = {
   user?: Maybe<User>;
 };
 
+type AdminListNoteViewsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+type AdminListNoteViewsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allNoteViews: { __typename?: 'AdminNoteViewsConnection', nodes: Array<{ __typename?: 'NoteView', id: string, path: string, title: string, free: boolean }> } } };
+
 type AdminListSubgraphsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -183,12 +211,19 @@ type AdminListUserSubgraphAccessesQueryVariables = Exact<{ [key: string]: never;
 
 type AdminListUserSubgraphAccessesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename?: 'AdminUserSubgraphAccessesConnection', nodes: Array<{ __typename?: 'UserSubgraphAccess', id: any, createdAt: any, expiresAt?: any | null, subgraph: { __typename?: 'Subgraph', name: string }, user: { __typename?: 'User', id: any, email: string } }> } } };
 
+type AdminNoteViewQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+
+type AdminNoteViewQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', noteView?: { __typename?: 'NoteView', path: string, title: string, permalink: string } | null } };
+
 type AdminShowSubgraphQueryVariables = Exact<{
   id: Scalars['Int64']['input'];
 }>;
 
 
-type AdminShowSubgraphQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', subgraph: { __typename?: 'Subgraph', id: any, name: string, color?: string | null } } };
+type AdminShowSubgraphQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', subgraph?: { __typename?: 'Subgraph', id: any, name: string, color?: string | null } | null } };
 
 type UpdateSubgraphMutationVariables = Exact<{
   input: UpdateSubgraphInput;
@@ -221,11 +256,15 @@ type SignInByEmailMutationVariables = Exact<{
 
 type SignInByEmailMutation = { __typename?: 'Mutation', data: { __typename: 'ErrorPayload', message: string } | { __typename: 'SignInPayload', token: string } };
 
+export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListNoteViews {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallNoteViews {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tpath\n\t\t\t\t\t\t\t\ttitle\n\t\t\t\t\t\t\t\tfree\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListNoteViewsQuery
+
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListSubgraphs {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallSubgraphs {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\tcolor\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListSubgraphsQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUsers {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallUsers {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUsersQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUserSubgraphAccesses {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tdata: allUserSubgraphAccesses {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\texpiresAt\n\t\t\t\t\t\t\t\tsubgraph {\n\t\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\tuser {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUserSubgraphAccessesQuery
+
+export function $trip2g_graphql_request(query: '\n\t\t\t\t\tquery AdminNoteView($id: String!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tnoteView(id: $id) {\n\t\t\t\t\t\t\t\tpath\n\t\t\t\t\t\t\t\ttitle\n\t\t\t\t\t\t\t\tpermalink\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminNoteViewQueryVariables): AdminNoteViewQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\t\tquery AdminShowSubgraph($id: Int64!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tsubgraph(id: $id) {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\tcolor\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminShowSubgraphQueryVariables): AdminShowSubgraphQuery
 

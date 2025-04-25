@@ -1,6 +1,6 @@
 $trip2g_admin_show_noteview $mol_page
-	param \id
-	sub /
+	noteview_id \
+	body /
 		<= Path_labeler $mol_labeler
 			title \Path
 			Content <= Path $trip2g_admin_cell

@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
@@ -30,9 +31,16 @@ func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *model1.
 func (r *adminNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNoteViewsConnection) ([]model1.NoteView, error) {
 	notes := r.Env.AllNotes()
 	res := make([]model1.NoteView, 0, len(notes))
+	keys := make([]string, 0, len(notes))
 
 	for _, note := range notes {
-		res = append(res, *note)
+		keys = append(keys, note.ID())
+	}
+
+	slices.Sort(keys)
+
+	for _, key := range keys {
+		res = append(res, *notes[key])
 	}
 
 	return res, nil

@@ -7,6 +7,7 @@ namespace $.$$ {
 					admin {
 						allNoteViews {
 							nodes {
+								id
 								path
 								title
 								free
@@ -16,9 +17,11 @@ namespace $.$$ {
 				}
 			`)
 			const map: { [ key: string ]: typeof res.admin.allNoteViews.nodes[0] } = {}
+
 			res.admin.allNoteViews.nodes.forEach( row => {
-				map[row.path] = row
+				map[row.id] = row
 			})
+
 			return {
 				map,
 				ids: Object.keys(map),
@@ -34,12 +37,18 @@ namespace $.$$ {
 			return pages
 		}
 
+		row_id( id: string ): string {
+			return id;
+		}
+
 		row_path(id: any): string {
 			return this.data().map[id].path
 		}
+
 		row_title(id: any): string {
 			return this.data().map[id].title
 		}
+
 		row_free(id: any): string {
 			return this.data().map[id].free ? 'Yes' : 'No'
 		}
