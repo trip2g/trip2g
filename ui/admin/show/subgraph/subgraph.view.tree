@@ -1,11 +1,14 @@
 $trip2g_admin_show_subgraph $mol_page
 	subgraph_id 0
+	on_save? 0
 	title <= subgraph_name \
-	sub /
-		\Hello
-		<= subgraph_name \
+	body /
 		<= Form $mol_form
 			body /
+				<= Name_labeler $mol_labeler
+					title \Name
+					Content <= Name $trip2g_admin_cell
+						content <= subgraph_name
 				<= Color_field $mol_form_field
 					name \Color
 					bid <= color_bid \

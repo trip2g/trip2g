@@ -1,5 +1,6 @@
 $trip2g_admin_list_subgraphs $mol_book2_catalog
 	row_id_number* 0
+	update_marker? 0
 	menu_title \Subgraphs
 	menu_tools / <= Spread_close
 	menu_filter_enabled true
@@ -7,6 +8,7 @@ $trip2g_admin_list_subgraphs $mol_book2_catalog
 	Empty $mol_status
 	Content* $trip2g_admin_show_subgraph
 		subgraph_id <= row_id_number*
+		on_save? <=> update_marker?
 		tools / <= Spread_close
 	menu_link_content* / <= NoteItem* $mol_view
 		sub /
