@@ -50,6 +50,7 @@ namespace $.$$ {
 								... on UpdateSubgraphPayload {
 									__typename
 									subgraph {
+										__typename
 										id
 										color
 									}
@@ -76,7 +77,7 @@ namespace $.$$ {
 
 			if (res.admin.data.__typename === 'UpdateSubgraphPayload') {
 				this.subgraph_color(res.admin.data.subgraph.color || '')
-				this.on_save(res.admin.data);
+				// this.on_save(res.admin.data);
 				return
 			}
 

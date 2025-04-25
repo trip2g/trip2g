@@ -1,6 +1,5 @@
 $trip2g_admin_show_subgraph $mol_page
 	subgraph_id 0
-	on_save? null object
 	title <= subgraph_name \
 	body /
 		<= Form $mol_form

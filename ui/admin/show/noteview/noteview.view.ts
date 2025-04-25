@@ -7,6 +7,7 @@ namespace $.$$ {
 					query AdminNoteView($id: String!) {
 						admin {
 							noteView(id: $id) {
+								__typename
 								path
 								title
 								permalink

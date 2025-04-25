@@ -7,6 +7,7 @@ namespace $.$$ {
 					admin {
 						allSubgraphs {
 							nodes {
+								__typename
 								id
 								name
 								color
