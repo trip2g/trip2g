@@ -1,7 +1,7 @@
 namespace $.$$ {
 	export class $trip2g_admin_list_users extends $.$trip2g_admin_list_users {
 		@$mol_mem
-		data() {
+		data( reset?: null ) {
 			const res = $trip2g_graphql_request(/* GraphQL */ `
 				query AdminListUsers {
 					admin {
@@ -15,36 +15,24 @@ namespace $.$$ {
 					}
 				}
 			`)
-
-			const map: { [ id: number ]: typeof res.admin.allUsers.nodes[0] } = {};
-
-			res.admin.allUsers.nodes.forEach( ( row ) => {
-				map[ row.id ] = row
-			})
-
-			return {
-				map,
-				ids: Object.keys( map ),
-			}
+			return $trip2g_graphql_make_map(res.admin.allUsers.nodes)
 		}
 
 		@$mol_mem
 		spreads(): any {
-			const pages: { [ id: string ]: any } = {};
+			return this.data().mapKeys(key => this.Content(key));
+		}
 
-			this.data().ids.forEach( (id) => {
-				pages[id] = this.Content(id);
-			});
-
-			return pages;
+		row( id: any ) {
+			return this.data().get(id);
 		}
 
 		row_id( id: any ): string {
-			return this.data().map[ id ].id.toString();
+			return this.row(id).id.toString();
 		}
 
 		row_email( id: any ): string {
-			return this.data().map[ id ].email;
+			return this.row(id).email;
 		}
 	}
 }

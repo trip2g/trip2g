@@ -1,7 +1,7 @@
 namespace $.$$ {
 	export class $trip2g_admin_list_noteviews extends $.$trip2g_admin_list_noteviews {
 		@$mol_mem
-		data() {
+		data( reset?: null ) {
 			const res = $trip2g_graphql_request(/* GraphQL */ `
 				query AdminListNoteViews {
 					admin {
@@ -16,41 +16,32 @@ namespace $.$$ {
 					}
 				}
 			`)
-			const map: { [ key: string ]: typeof res.admin.allNoteViews.nodes[0] } = {}
-
-			res.admin.allNoteViews.nodes.forEach( row => {
-				map[row.id] = row
-			})
-
-			return {
-				map,
-				ids: Object.keys(map),
-			}
+			return $trip2g_graphql_make_map(res.admin.allNoteViews.nodes)
 		}
 
 		@$mol_mem
 		spreads(): any {
-			const pages: { [ id: string ]: any } = {}
-			this.data().ids.forEach( id => {
-				pages[id] = this.Content(id)
-			})
-			return pages
+			return this.data().mapKeys(key => this.Content(key));
 		}
 
-		row_id( id: string ): string {
-			return id;
+		row( id: any ) {
+			return this.data().get(id);
 		}
 
-		row_path(id: any): string {
-			return this.data().map[id].path
+		row_id( id: any ): string {
+			return this.row(id).id;
 		}
 
-		row_title(id: any): string {
-			return this.data().map[id].title
+		row_path( id: any ): string {
+			return this.row(id).path;
 		}
 
-		row_free(id: any): string {
-			return this.data().map[id].free ? 'Yes' : 'No'
+		row_title( id: any ): string {
+			return this.row(id).title;
+		}
+
+		row_free( id: any ): string {
+			return this.row(id).free ? 'Yes' : 'No';
 		}
 	}
 }
