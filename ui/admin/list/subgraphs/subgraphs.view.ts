@@ -17,43 +17,32 @@ namespace $.$$ {
 				}
 			`)
 
-			const map: { [ id: number ]: typeof res.admin.allSubgraphs.nodes[0] } = {};
-
-			res.admin.allSubgraphs.nodes.forEach( ( row ) => {
-				map[ row.id ] = row
-			})
-
-			return {
-				map,
-				ids: Object.keys( map ),
-			}
+			return $trip2g_graphql_make_map(res.admin.allSubgraphs.nodes)
 		}
 
 		@$mol_mem
 		spreads(): any {
-			const pages: { [ id: string ]: any } = {};
+			return this.data().mapKeys(key => this.Content(key));
+		}
 
-			this.data().ids.forEach( (id) => {
-				pages[id] = this.Content(id);
-			});
-
-			return pages;
+		row(id: any) {
+			return this.data().get(id);
 		}
 
 		row_id( id: any ): string {
-			return this.data().map[ id ].id.toString();
+			return this.row(id).id.toString();
 		}
 
 		row_id_number( id: any ): number {
-			return this.data().map[ id ].id;
+			return this.row(id).id;
 		}
 
 		row_name( id: any ): string {
-			return this.data().map[ id ].name;
+			return this.row(id).name;
 		}
 
 		row_color( id: any ): string {
-			return this.data().map[ id ].color || '-'
+			return this.row(id).color || '-'
 		}
 	}
 }

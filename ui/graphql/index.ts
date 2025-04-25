@@ -1,5 +1,5 @@
 namespace $ {
-	export const $trip2g_graphql = (s: string) => s;
+	export const $trip2g_graphql = (s: string) => s
 
 	export class $trip2g_graphql_error extends Error {
 		constructor(message: string, public detail?: unknown) {
@@ -20,5 +20,28 @@ namespace $ {
 		}
 
 		return res.data
+	}
+
+	export function $trip2g_graphql_make_map<K extends PropertyKey, T extends { id: K }>(rows: T[]) {
+		const map = new Map<string, T>(rows.map(row => [row.id.toString(), row] as [string, T]))
+
+		return {
+			keys: () => map.keys(),
+			get: (key: string) => {
+				const val = map.get(key)
+				if (!val) {
+					throw new Error(`Key ${key} not found`)
+				}
+
+				return val
+			},
+			mapKeys<V>(fn: (key: string) => V): Record<string, V> {
+				const out: Record<string, V> = {}
+				for (const key of map.keys()) {
+					out[key] = fn(key)
+				}
+				return out
+			},
+		}
 	}
 }
