@@ -80,7 +80,7 @@ namespace $.$$ {
 
 			if (res.admin.data.__typename === 'UpdateSubgraphPayload') {
 				this.subgraph_color(res.admin.data.subgraph.color || '')
-				this.on_save(this.on_save() + 1);
+				this.on_save(res.admin.data);
 				return
 			}
 

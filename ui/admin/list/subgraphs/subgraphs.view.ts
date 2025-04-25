@@ -1,9 +1,7 @@
 namespace $.$$ {
 	export class $trip2g_admin_list_subgraphs extends $.$trip2g_admin_list_subgraphs {
 		@$mol_mem
-		data() {
-			this.update_marker()
-
+		data(reset?: null) {
 			const res = $trip2g_graphql_request(/* GraphQL */ `
 				query AdminListSubgraphs {
 					admin {
