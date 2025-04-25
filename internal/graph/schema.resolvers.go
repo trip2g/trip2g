@@ -63,6 +63,13 @@ func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *model1.AdminQuer
 	return resolveOne[db.Subgraph](ctx, int64(id), r.Env.SubgraphByID)
 }
 
+// NoteView is the resolver for the noteView field.
+func (r *adminQueryResolver) NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error) {
+	notes := r.Env.AllNotes()
+
+	return notes[id], nil
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error) {
 	return r.Env.ListAllSubgraphs(ctx)

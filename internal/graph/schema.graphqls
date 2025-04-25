@@ -50,6 +50,7 @@ type UserSubgraphAccess {
 }
 
 type NoteView {
+  id: String!
   path: String!
   title: String!
   content: String!
@@ -76,7 +77,8 @@ type AdminQuery {
   allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection!
   allNoteViews: AdminNoteViewsConnection!
 
-  subgraph(id: Int64!): Subgraph!
+  subgraph(id: Int64!): Subgraph
+  noteView(id: String!): NoteView
 }
 
 type Viewer

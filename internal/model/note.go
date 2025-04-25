@@ -27,6 +27,10 @@ type NoteView struct {
 
 type NoteViews map[string]*NoteView
 
+func (n *NoteView) ID() string {
+	return n.Permalink
+}
+
 func (n *NoteView) Ast() ast.Node {
 	return n.ast
 }
