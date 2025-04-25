@@ -6,13 +6,13 @@ import (
 	"fmt"
 
 	"trip2g/internal/logger"
-	"trip2g/internal/mdloader"
+	"trip2g/internal/model"
 	"trip2g/internal/usertoken"
 )
 
 type Env interface {
 	Logger() logger.Logger
-	AllPages() map[string]*mdloader.Page
+	AllNotes() model.Notes
 	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]string, error)
 }
 
@@ -24,20 +24,20 @@ type Request struct {
 
 type Response struct {
 	Title string
-	Page  *mdloader.Page
-	Pages map[string]*mdloader.Page
+	Note  *model.Note
+	Notes model.Notes
 }
 
 const defaultSidebarPath = "/_sidebar"
 
-func (r *Response) Sidebar() *mdloader.Page {
-	result := r.Pages[defaultSidebarPath]
+func (r *Response) Sidebar() *model.Note {
+	result := r.Notes[defaultSidebarPath]
 
-	sidebarI, sidebarOk := r.Page.RawMeta["sidebar"]
+	sidebarI, sidebarOk := r.Note.RawMeta["sidebar"]
 	if sidebarOk {
 		switch s := sidebarI.(type) {
 		case string:
-			result = r.Pages[s]
+			result = r.Notes[s]
 		case bool:
 			if !s {
 				return nil
@@ -59,7 +59,7 @@ func (e *PaywallError) Error() string {
 }
 
 func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
-	pages := env.AllPages()
+	pages := env.AllNotes()
 
 	path := request.Path
 	if path == "/" {
@@ -78,10 +78,10 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	// TODO: add hideSidebar logic
 
 	response.Title = page.Title
-	response.Page = page
-	response.Pages = pages
+	response.Note = page
+	response.Notes = pages
 
-	pageSubgraphs, err := mdloader.Subgraphs(map[string]*mdloader.Page{"": page})
+	pageSubgraphs, err := model.Notes{"": page}.Subgraphs()
 	if err != nil {
 		return &response, err
 	}

@@ -23,6 +23,7 @@ import (
 	"trip2g/internal/graph"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
+	"trip2g/internal/model"
 	"trip2g/internal/router"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
@@ -51,7 +52,7 @@ type app struct {
 
 	mu sync.Mutex
 
-	pages map[string]*mdloader.Page
+	pages model.Notes
 
 	queries *db.Queries
 	conn    *sql.DB
@@ -142,7 +143,7 @@ func main() {
 	}
 }
 
-func (a *app) PrepareNotes(ctx context.Context) (map[string]*mdloader.Page, error) {
+func (a *app) PrepareNotes(ctx context.Context) (model.Notes, error) {
 	a.log.Info("preparing notes")
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -175,11 +176,11 @@ func (a *app) PrepareNotes(ctx context.Context) (map[string]*mdloader.Page, erro
 	return pages, nil
 }
 
-func (a *app) AllPages() map[string]*mdloader.Page {
+func (a *app) AllNotes() model.Notes {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	copy := make(map[string]*mdloader.Page, len(a.pages))
+	copy := make(model.Notes, len(a.pages))
 
 	for k, v := range a.pages {
 		copy[k] = v
@@ -279,7 +280,7 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (int64, error)
 	return code, nil
 }
 
-func (a *app) PageByPath(path string) (*mdloader.Page, error) {
+func (a *app) NoteByPath(path string) (*model.Note, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 

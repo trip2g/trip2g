@@ -6,6 +6,7 @@ import (
 	"io"
 	"path/filepath"
 	"sync"
+	"trip2g/internal/model"
 
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/renderer"
@@ -44,7 +45,7 @@ type linkRenderer struct {
 	// when exiting a Node render.
 	hasDest sync.Map // *Node => struct{}
 
-	pages map[string]*Page
+	pages model.Notes
 }
 
 func (r *linkRenderer) init() {

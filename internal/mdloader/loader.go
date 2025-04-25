@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"path/filepath"
 	"strings"
 	"trip2g/internal/logger"
+	"trip2g/internal/model"
 
 	"github.com/yuin/goldmark"
 	meta "github.com/yuin/goldmark-meta"
@@ -25,26 +25,8 @@ type SourceFile struct {
 	Content []byte
 }
 
-// Page represents a note page with metadata.
-type Page struct {
-	Path  string
-	Title string
-
-	Content []byte
-	HTML    template.HTML
-	ast     ast.Node // hide from JSON
-
-	Permalink string
-	Free      bool // without the paywall
-
-	InLinks map[string]struct{}
-	RawMeta map[string]interface{}
-
-	DeadLinks []string
-}
-
 type loader struct {
-	pages map[string]*Page
+	pages model.Notes
 	md    goldmark.Markdown
 	log   logger.Logger
 
@@ -52,10 +34,10 @@ type loader struct {
 }
 
 // Load transforms markdown files into pages.
-func Load(sourceFiles []SourceFile, log logger.Logger) (map[string]*Page, error) {
+func Load(sourceFiles []SourceFile, log logger.Logger) (model.Notes, error) {
 	ldr := &loader{
 		log:   log,
-		pages: make(map[string]*Page),
+		pages: make(model.Notes),
 
 		linkResolver: &myLinkResolver{},
 	}
@@ -115,12 +97,12 @@ func (ldr *loader) generatePageHTMLs() error {
 	return nil
 }
 
-func (ldr *loader) generatePageHTML(p *Page) error {
+func (ldr *loader) generatePageHTML(p *model.Note) error {
 	var buf bytes.Buffer
 
 	ldr.linkResolver.currentPage = p
 
-	err := ldr.md.Renderer().Render(&buf, p.Content, p.ast)
+	err := ldr.md.Renderer().Render(&buf, p.Content, p.Ast())
 	if err != nil {
 		return fmt.Errorf("failed to render file: %w", err)
 	}
@@ -132,7 +114,7 @@ func (ldr *loader) generatePageHTML(p *Page) error {
 
 func (ldr *loader) extractInLinks() error {
 	for _, p := range ldr.pages {
-		err := ast.Walk(p.ast, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 			if n.Kind() != wikilink.Kind || !entering {
 				return ast.WalkContinue, nil
 			}
@@ -175,17 +157,18 @@ func (ldr *loader) extractInLinks() error {
 	return nil
 }
 
-func (ldr *loader) parsePage(src SourceFile) (*Page, error) { //nolint:unparam // it's a placeholder
+func (ldr *loader) parsePage(src SourceFile) (*model.Note, error) { //nolint:unparam // it's a placeholder
 	context := parser.NewContext()
 
 	doc := ldr.md.Parser().Parse(text.NewReader(src.Content), parser.WithContext(context))
-	pp := Page{
+	pp := model.Note{
 		Path:      src.Path,
 		Permalink: "/" + src.Path[:len(src.Path)-len(".md")],
 		Content:   src.Content,
-		ast:       doc,
 		InLinks:   make(map[string]struct{}),
 	}
+
+	pp.SetAst(doc)
 
 	pp.RawMeta = meta.Get(context)
 	pp.Title = pp.ExtractTitle()
@@ -194,46 +177,4 @@ func (ldr *loader) parsePage(src SourceFile) (*Page, error) { //nolint:unparam /
 	ldr.log.Info("read page", "path", pp.Path)
 
 	return &pp, nil
-}
-
-func (p *Page) ExtractTitle() string {
-	title, ok := p.RawMeta["title"]
-	if ok {
-		str, sOk := title.(string)
-		if sOk {
-			return str
-		}
-	}
-
-	// nodeCount := 0
-	// docTitle := ""
-	//
-	// find the first heading in .Ast
-	// Need to remove the heading node before rendering
-	// ast.Walk(p.Ast, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-	// 	nodeCount++
-	//
-	// 	if nodeCount > 5 {
-	// 		return ast.WalkStop, nil
-	// 	}
-	//
-	// 	if n.Kind() == ast.KindHeading {
-	// 		heading := n.(*ast.Heading)
-	//
-	// 		if heading.Level != 1 {
-	// 			return ast.WalkContinue, nil
-	// 		}
-	//
-	// 		docTitle = string(heading.Text(p.Content))
-	// 		return ast.WalkStop, nil
-	// 	}
-	//
-	// 	return ast.WalkContinue, nil
-	// })
-	//
-	// if docTitle != "" {
-	// 	return docTitle
-	// }
-
-	return filepath.Base(p.Path[:len(p.Path)-len(".md")])
 }

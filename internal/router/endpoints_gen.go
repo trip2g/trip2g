@@ -11,7 +11,6 @@ import (
 	createoffercreateoffer "trip2g/internal/case/admin/createoffer"
 	createusersubgraphaccesscreateusersubgraphaccess "trip2g/internal/case/admin/createusersubgraphaccess"
 	deleteofferdeleteoffer "trip2g/internal/case/admin/deleteoffer"
-	getpagegetpage "trip2g/internal/case/admin/getpage"
 	listnotepathslistnotepaths "trip2g/internal/case/admin/listnotepaths"
 	listofferslistoffers "trip2g/internal/case/admin/listoffers"
 	listuserslistusers "trip2g/internal/case/admin/listusers"
@@ -29,7 +28,6 @@ var endpoints = []Endpoint{
 	&createoffercreateoffer.Endpoint{},
 	&createusersubgraphaccesscreateusersubgraphaccess.Endpoint{},
 	&deleteofferdeleteoffer.Endpoint{},
-	&getpagegetpage.Endpoint{},
 	&listnotepathslistnotepaths.Endpoint{},
 	&listofferslistoffers.Endpoint{},
 	&listuserslistusers.Endpoint{},
@@ -45,7 +43,6 @@ type Env interface {
 	createoffercreateoffer.Env
 	createusersubgraphaccesscreateusersubgraphaccess.Env
 	deleteofferdeleteoffer.Env
-	getpagegetpage.Env
 	listnotepathslistnotepaths.Env
 	listofferslistoffers.Env
 	listuserslistusers.Env

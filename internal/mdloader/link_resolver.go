@@ -3,6 +3,7 @@ package mdloader
 import (
 	"bytes"
 	"trip2g/internal/logger"
+	"trip2g/internal/model"
 
 	"go.abhg.dev/goldmark/wikilink"
 )
@@ -10,9 +11,9 @@ import (
 type myLinkResolver struct {
 	log logger.Logger
 
-	pages map[string]*Page
+	pages model.Notes
 
-	currentPage *Page
+	currentPage *model.Note
 }
 
 const _html = ".html"

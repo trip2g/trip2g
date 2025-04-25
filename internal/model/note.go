@@ -1,0 +1,123 @@
+package model
+
+import (
+	"fmt"
+	"html/template"
+	"path/filepath"
+
+	"github.com/yuin/goldmark/ast"
+)
+
+type Note struct {
+	Path  string
+	Title string
+
+	Content []byte
+	HTML    template.HTML
+	ast     ast.Node // hide from JSON
+
+	Permalink string
+	Free      bool // without the paywall
+
+	InLinks map[string]struct{}
+	RawMeta map[string]interface{}
+
+	DeadLinks []string
+}
+
+type Notes map[string]*Note
+
+func (n *Note) Ast() ast.Node {
+	return n.ast
+}
+
+func (n *Note) SetAst(node ast.Node) {
+	n.ast = node
+}
+
+func (n *Note) ExtractTitle() string {
+	title, ok := n.RawMeta["title"]
+	if ok {
+		str, sOk := title.(string)
+		if sOk {
+			return str
+		}
+	}
+
+	// nodeCount := 0
+	// docTitle := ""
+	//
+	// find the first heading in .Ast
+	// Need to remove the heading node before rendering
+	// ast.Walk(p.Ast, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+	// 	nodeCount++
+	//
+	// 	if nodeCount > 5 {
+	// 		return ast.WalkStop, nil
+	// 	}
+	//
+	// 	if n.Kind() == ast.KindHeading {
+	// 		heading := n.(*ast.Heading)
+	//
+	// 		if heading.Level != 1 {
+	// 			return ast.WalkContinue, nil
+	// 		}
+	//
+	// 		docTitle = string(heading.Text(p.Content))
+	// 		return ast.WalkStop, nil
+	// 	}
+	//
+	// 	return ast.WalkContinue, nil
+	// })
+	//
+	// if docTitle != "" {
+	// 	return docTitle
+	// }
+
+	return filepath.Base(n.Path[:len(n.Path)-len(".md")])
+}
+
+func (pages Notes) Subgraphs() ([]string, error) {
+	subgraphs := make(map[string]struct{})
+
+	for _, page := range pages {
+		err := extractSubgraphs(subgraphs, page.RawMeta["subgraph"])
+		if err != nil {
+			return nil, fmt.Errorf("error extracting subgraph: %w", err)
+		}
+
+		err = extractSubgraphs(subgraphs, page.RawMeta["subgraphs"])
+		if err != nil {
+			return nil, fmt.Errorf("error extracting subgraphs: %w", err)
+		}
+	}
+
+	res := make([]string, 0, len(subgraphs))
+
+	for k := range subgraphs {
+		res = append(res, k)
+	}
+
+	return res, nil
+}
+
+func extractSubgraphs(target map[string]struct{}, val interface{}) error {
+	switch val := val.(type) {
+	case string:
+		target[val] = struct{}{}
+	case []interface{}:
+		for _, v := range val {
+			if vStr, ok := v.(string); ok {
+				target[vStr] = struct{}{}
+			} else {
+				return fmt.Errorf("invalid subgraph type: %T", v)
+			}
+		}
+	case nil:
+		return nil
+	default:
+		return fmt.Errorf("invalid subgraph type: %T", val)
+	}
+
+	return nil
+}

@@ -45,21 +45,21 @@ func StreamNote(qw422016 *qt422016.Writer, resp *Response) {
 
   <h1 class="text-2xl font-bold">`)
 //line view.qtpl:12
-	qw422016.E().S(resp.Page.Title)
+	qw422016.E().S(resp.Note.Title)
 //line view.qtpl:12
 	qw422016.N().S(`</h1>
 
   <div class="prose">
   `)
 //line view.qtpl:15
-	qw422016.N().S(string(resp.Page.HTML))
+	qw422016.N().S(string(resp.Note.HTML))
 //line view.qtpl:15
 	qw422016.N().S(`
   </div>
 
   `)
 //line view.qtpl:18
-	if len(resp.Page.InLinks) > 0 {
+	if len(resp.Note.InLinks) > 0 {
 //line view.qtpl:18
 		qw422016.N().S(`
 
@@ -67,21 +67,21 @@ func StreamNote(qw422016 *qt422016.Writer, resp *Response) {
 
     `)
 //line view.qtpl:22
-		for k := range resp.Page.InLinks {
+		for k := range resp.Note.InLinks {
 //line view.qtpl:22
 			qw422016.N().S(`
       `)
 //line view.qtpl:23
-			if inPage, ok := resp.Pages[k]; ok {
+			if inNote, ok := resp.Notes[k]; ok {
 //line view.qtpl:23
 				qw422016.N().S(`
         <div><a href="`)
 //line view.qtpl:24
-				qw422016.E().S(inPage.Permalink)
+				qw422016.E().S(inNote.Permalink)
 //line view.qtpl:24
 				qw422016.N().S(`">`)
 //line view.qtpl:24
-				qw422016.E().S(inPage.Title)
+				qw422016.E().S(inNote.Title)
 //line view.qtpl:24
 				qw422016.N().S(`</a></div>
       `)
@@ -137,7 +137,7 @@ func StreamNotFound(qw422016 *qt422016.Writer) {
 //line view.qtpl:33
 	qw422016.N().S(`
 <div>
-  Page not found.
+  Note not found.
 </div>
 `)
 //line view.qtpl:37
@@ -269,7 +269,7 @@ func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError)
 
 <h1 class="text-2xl font-bold">`)
 //line view.qtpl:68
-	qw422016.E().S(resp.Page.Title)
+	qw422016.E().S(resp.Note.Title)
 //line view.qtpl:68
 	qw422016.N().S(`</h1>
 

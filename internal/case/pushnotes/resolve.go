@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
-	"trip2g/internal/mdloader"
+	"trip2g/internal/model"
 )
 
 //go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
@@ -15,7 +15,7 @@ type Env interface {
 	Logger() logger.Logger
 	InsertNote(ctx context.Context, update db.Note) error
 	InsertSubgraph(ctx context.Context, name string) error
-	PrepareNotes(ctx context.Context) (map[string]*mdloader.Page, error)
+	PrepareNotes(ctx context.Context) (model.Notes, error)
 }
 
 type Asset struct {
@@ -73,7 +73,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}
 
-	subgraphs, err := mdloader.Subgraphs(pages)
+	subgraphs, err := pages.Subgraphs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get subgraphs: %w", err)
 	}
