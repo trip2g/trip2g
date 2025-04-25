@@ -1,2 +1,15 @@
 $trip2g_admin_show_noteview $mol_page
-	sub / \TODO ADD
+	param \id
+	sub /
+		<= Path_labeler $mol_labeler
+			title \Path
+			Content <= Path $trip2g_admin_cell
+				content <= path
+		<= Title_labeler $mol_labeler
+			title \Title
+			Content <= Title $trip2g_admin_cell
+				content <= title
+		<= Permalink_labeler $mol_labeler
+			title \Permalink
+			Content <= Permalink $trip2g_admin_cell
+				content <= permalink
