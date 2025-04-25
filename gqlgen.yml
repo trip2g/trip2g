@@ -118,6 +118,7 @@ call_argument_directives_with_null: true
 # if they match it will use them, otherwise it will generate them.
 autobind:
   - "trip2g/internal/db"
+  - "trip2g/internal/model"
 
 # This section declares type mapping between the GraphQL and go type systems
 #

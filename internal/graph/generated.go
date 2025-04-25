@@ -16,7 +16,8 @@ import (
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/db"
-	"trip2g/internal/graph/model"
+	model1 "trip2g/internal/graph/model"
+	"trip2g/internal/model"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -154,34 +155,34 @@ type ComplexityRoot struct {
 }
 
 type AdminMutationResolver interface {
-	UpdateSubgraph(ctx context.Context, obj *model.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error)
+	UpdateSubgraph(ctx context.Context, obj *model.AdminMutation, input updatesubgraph.Request) (model1.UpdateSubgraphOrErrorPayload, error)
 }
 type AdminQueryResolver interface {
-	AllUsers(ctx context.Context, obj *model.AdminQuery) (*model.AdminUsersConnection, error)
-	AllSubgraphs(ctx context.Context, obj *model.AdminQuery) (*model.AdminSubgraphsConnection, error)
-	AllUserSubgraphAccesses(ctx context.Context, obj *model.AdminQuery) (*model.AdminUserSubgraphAccessesConnection, error)
+	AllUsers(ctx context.Context, obj *model.AdminQuery) (*model1.AdminUsersConnection, error)
+	AllSubgraphs(ctx context.Context, obj *model.AdminQuery) (*model1.AdminSubgraphsConnection, error)
+	AllUserSubgraphAccesses(ctx context.Context, obj *model.AdminQuery) (*model1.AdminUserSubgraphAccessesConnection, error)
 	Subgraph(ctx context.Context, obj *model.AdminQuery, id int) (*db.Subgraph, error)
 }
 type AdminSubgraphsConnectionResolver interface {
-	Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error)
+	Nodes(ctx context.Context, obj *model1.AdminSubgraphsConnection) ([]db.Subgraph, error)
 }
 type AdminUserSubgraphAccessesConnectionResolver interface {
-	Nodes(ctx context.Context, obj *model.AdminUserSubgraphAccessesConnection) ([]db.UserSubgraphAccess, error)
+	Nodes(ctx context.Context, obj *model1.AdminUserSubgraphAccessesConnection) ([]db.UserSubgraphAccess, error)
 }
 type AdminUsersConnectionResolver interface {
-	Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error)
+	Nodes(ctx context.Context, obj *model1.AdminUsersConnection) ([]db.User, error)
 }
 type ErrorPayloadResolver interface {
-	Message(ctx context.Context, obj *model.ErrorPayload) (string, error)
+	Message(ctx context.Context, obj *model1.ErrorPayload) (string, error)
 }
 type MutationResolver interface {
-	RequestEmailSignInCode(ctx context.Context, input requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error)
-	SignInByEmail(ctx context.Context, input signinbyemail.Request) (model.SignInOrErrorPayload, error)
-	SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error)
+	RequestEmailSignInCode(ctx context.Context, input requestemailsignin.Request) (model1.RequestEmailSignInCodeOrErrorPayload, error)
+	SignInByEmail(ctx context.Context, input signinbyemail.Request) (model1.SignInOrErrorPayload, error)
+	SignOut(ctx context.Context) (model1.SignOutOrErrorPayload, error)
 	Admin(ctx context.Context) (*model.AdminMutation, error)
 }
 type QueryResolver interface {
-	Viewer(ctx context.Context) (*model.Viewer, error)
+	Viewer(ctx context.Context) (*model1.Viewer, error)
 	Admin(ctx context.Context) (*model.AdminQuery, error)
 }
 type SubgraphResolver interface {
@@ -193,8 +194,8 @@ type UserSubgraphAccessResolver interface {
 	Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error)
 }
 type ViewerResolver interface {
-	ID(ctx context.Context, obj *model.Viewer) (string, error)
-	User(ctx context.Context, obj *model.Viewer) (*db.User, error)
+	ID(ctx context.Context, obj *model1.Viewer) (string, error)
+	User(ctx context.Context, obj *model1.Viewer) (*db.User, error)
 }
 
 type SignInByEmailInputResolver interface {
@@ -881,7 +882,7 @@ func (ec *executionContext) _AdminMutation_updateSubgraph(ctx context.Context, f
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.UpdateSubgraphOrErrorPayload)
+	res := resTmp.(model1.UpdateSubgraphOrErrorPayload)
 	fc.Result = res
 	return ec.marshalNUpdateSubgraphOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateSubgraphOrErrorPayload(ctx, field.Selections, res)
 }
@@ -936,7 +937,7 @@ func (ec *executionContext) _AdminQuery_allUsers(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.AdminUsersConnection)
+	res := resTmp.(*model1.AdminUsersConnection)
 	fc.Result = res
 	return ec.marshalNAdminUsersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUsersConnection(ctx, field.Selections, res)
 }
@@ -984,7 +985,7 @@ func (ec *executionContext) _AdminQuery_allSubgraphs(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.AdminSubgraphsConnection)
+	res := resTmp.(*model1.AdminSubgraphsConnection)
 	fc.Result = res
 	return ec.marshalNAdminSubgraphsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminSubgraphsConnection(ctx, field.Selections, res)
 }
@@ -1032,7 +1033,7 @@ func (ec *executionContext) _AdminQuery_allUserSubgraphAccesses(ctx context.Cont
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.AdminUserSubgraphAccessesConnection)
+	res := resTmp.(*model1.AdminUserSubgraphAccessesConnection)
 	fc.Result = res
 	return ec.marshalNAdminUserSubgraphAccessesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUserSubgraphAccessesConnection(ctx, field.Selections, res)
 }
@@ -1119,7 +1120,7 @@ func (ec *executionContext) fieldContext_AdminQuery_subgraph(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminSubgraphsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminSubgraphsConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _AdminSubgraphsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model1.AdminSubgraphsConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminSubgraphsConnection_nodes(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1173,7 +1174,7 @@ func (ec *executionContext) fieldContext_AdminSubgraphsConnection_nodes(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminUserSubgraphAccessesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminUserSubgraphAccessesConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _AdminUserSubgraphAccessesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model1.AdminUserSubgraphAccessesConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminUserSubgraphAccessesConnection_nodes(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1233,7 +1234,7 @@ func (ec *executionContext) fieldContext_AdminUserSubgraphAccessesConnection_nod
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminUsersConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminUsersConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _AdminUsersConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model1.AdminUsersConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminUsersConnection_nodes(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1285,7 +1286,7 @@ func (ec *executionContext) fieldContext_AdminUsersConnection_nodes(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _ErrorPayload_message(ctx context.Context, field graphql.CollectedField, obj *model.ErrorPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _ErrorPayload_message(ctx context.Context, field graphql.CollectedField, obj *model1.ErrorPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ErrorPayload_message(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1329,7 +1330,7 @@ func (ec *executionContext) fieldContext_ErrorPayload_message(_ context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _ErrorPayload_byFields(ctx context.Context, field graphql.CollectedField, obj *model.ErrorPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _ErrorPayload_byFields(ctx context.Context, field graphql.CollectedField, obj *model1.ErrorPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ErrorPayload_byFields(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1355,7 +1356,7 @@ func (ec *executionContext) _ErrorPayload_byFields(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]model.FieldMessage)
+	res := resTmp.([]model1.FieldMessage)
 	fc.Result = res
 	return ec.marshalNFieldMessage2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐFieldMessageᚄ(ctx, field.Selections, res)
 }
@@ -1379,7 +1380,7 @@ func (ec *executionContext) fieldContext_ErrorPayload_byFields(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _FieldMessage_name(ctx context.Context, field graphql.CollectedField, obj *model.FieldMessage) (ret graphql.Marshaler) {
+func (ec *executionContext) _FieldMessage_name(ctx context.Context, field graphql.CollectedField, obj *model1.FieldMessage) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_FieldMessage_name(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1423,7 +1424,7 @@ func (ec *executionContext) fieldContext_FieldMessage_name(_ context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _FieldMessage_value(ctx context.Context, field graphql.CollectedField, obj *model.FieldMessage) (ret graphql.Marshaler) {
+func (ec *executionContext) _FieldMessage_value(ctx context.Context, field graphql.CollectedField, obj *model1.FieldMessage) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_FieldMessage_value(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1493,7 +1494,7 @@ func (ec *executionContext) _Mutation_requestEmailSignInCode(ctx context.Context
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.RequestEmailSignInCodeOrErrorPayload)
+	res := resTmp.(model1.RequestEmailSignInCodeOrErrorPayload)
 	fc.Result = res
 	return ec.marshalNRequestEmailSignInCodeOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeOrErrorPayload(ctx, field.Selections, res)
 }
@@ -1548,7 +1549,7 @@ func (ec *executionContext) _Mutation_signInByEmail(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.SignInOrErrorPayload)
+	res := resTmp.(model1.SignInOrErrorPayload)
 	fc.Result = res
 	return ec.marshalNSignInOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSignInOrErrorPayload(ctx, field.Selections, res)
 }
@@ -1603,7 +1604,7 @@ func (ec *executionContext) _Mutation_signOut(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.SignOutOrErrorPayload)
+	res := resTmp.(model1.SignOutOrErrorPayload)
 	fc.Result = res
 	return ec.marshalNSignOutOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSignOutOrErrorPayload(ctx, field.Selections, res)
 }
@@ -1649,7 +1650,7 @@ func (ec *executionContext) _Mutation_admin(ctx context.Context, field graphql.C
 	}
 	res := resTmp.(*model.AdminMutation)
 	fc.Result = res
-	return ec.marshalNAdminMutation2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminMutation(ctx, field.Selections, res)
+	return ec.marshalNAdminMutation2ᚖtrip2gᚋinternalᚋmodelᚐAdminMutation(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1695,7 +1696,7 @@ func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Viewer)
+	res := resTmp.(*model1.Viewer)
 	fc.Result = res
 	return ec.marshalNViewer2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx, field.Selections, res)
 }
@@ -1747,7 +1748,7 @@ func (ec *executionContext) _Query_admin(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.(*model.AdminQuery)
 	fc.Result = res
-	return ec.marshalNAdminQuery2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminQuery(ctx, field.Selections, res)
+	return ec.marshalNAdminQuery2ᚖtrip2gᚋinternalᚋmodelᚐAdminQuery(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1904,7 +1905,7 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _RequestEmailSignInCodePayload_success(ctx context.Context, field graphql.CollectedField, obj *model.RequestEmailSignInCodePayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _RequestEmailSignInCodePayload_success(ctx context.Context, field graphql.CollectedField, obj *model1.RequestEmailSignInCodePayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_RequestEmailSignInCodePayload_success(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1948,7 +1949,7 @@ func (ec *executionContext) fieldContext_RequestEmailSignInCodePayload_success(_
 	return fc, nil
 }
 
-func (ec *executionContext) _SignInPayload_token(ctx context.Context, field graphql.CollectedField, obj *model.SignInPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _SignInPayload_token(ctx context.Context, field graphql.CollectedField, obj *model1.SignInPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SignInPayload_token(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1992,7 +1993,7 @@ func (ec *executionContext) fieldContext_SignInPayload_token(_ context.Context, 
 	return fc, nil
 }
 
-func (ec *executionContext) _SignInPayload_viewer(ctx context.Context, field graphql.CollectedField, obj *model.SignInPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _SignInPayload_viewer(ctx context.Context, field graphql.CollectedField, obj *model1.SignInPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SignInPayload_viewer(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2018,7 +2019,7 @@ func (ec *executionContext) _SignInPayload_viewer(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Viewer)
+	res := resTmp.(*model1.Viewer)
 	fc.Result = res
 	return ec.marshalNViewer2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx, field.Selections, res)
 }
@@ -2042,7 +2043,7 @@ func (ec *executionContext) fieldContext_SignInPayload_viewer(_ context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _SignOutPayload_viewer(ctx context.Context, field graphql.CollectedField, obj *model.SignOutPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _SignOutPayload_viewer(ctx context.Context, field graphql.CollectedField, obj *model1.SignOutPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SignOutPayload_viewer(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2068,7 +2069,7 @@ func (ec *executionContext) _SignOutPayload_viewer(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Viewer)
+	res := resTmp.(*model1.Viewer)
 	fc.Result = res
 	return ec.marshalNViewer2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx, field.Selections, res)
 }
@@ -2265,7 +2266,7 @@ func (ec *executionContext) fieldContext_Subgraph_createdAt(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _UpdateSubgraphPayload_subgraph(ctx context.Context, field graphql.CollectedField, obj *model.UpdateSubgraphPayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _UpdateSubgraphPayload_subgraph(ctx context.Context, field graphql.CollectedField, obj *model1.UpdateSubgraphPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UpdateSubgraphPayload_subgraph(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2774,7 +2775,7 @@ func (ec *executionContext) fieldContext_UserSubgraphAccess_subgraph(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _Viewer_id(ctx context.Context, field graphql.CollectedField, obj *model.Viewer) (ret graphql.Marshaler) {
+func (ec *executionContext) _Viewer_id(ctx context.Context, field graphql.CollectedField, obj *model1.Viewer) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Viewer_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -2818,7 +2819,7 @@ func (ec *executionContext) fieldContext_Viewer_id(_ context.Context, field grap
 	return fc, nil
 }
 
-func (ec *executionContext) _Viewer_user(ctx context.Context, field graphql.CollectedField, obj *model.Viewer) (ret graphql.Marshaler) {
+func (ec *executionContext) _Viewer_user(ctx context.Context, field graphql.CollectedField, obj *model1.Viewer) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Viewer_user(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -4919,20 +4920,20 @@ func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Contex
 
 // region    ************************** interface.gotpl ***************************
 
-func (ec *executionContext) _RequestEmailSignInCodeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RequestEmailSignInCodeOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) _RequestEmailSignInCodeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model1.RequestEmailSignInCodeOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.RequestEmailSignInCodePayload:
+	case model1.RequestEmailSignInCodePayload:
 		return ec._RequestEmailSignInCodePayload(ctx, sel, &obj)
-	case *model.RequestEmailSignInCodePayload:
+	case *model1.RequestEmailSignInCodePayload:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._RequestEmailSignInCodePayload(ctx, sel, obj)
-	case model.ErrorPayload:
+	case model1.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
-	case *model.ErrorPayload:
+	case *model1.ErrorPayload:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -4942,20 +4943,20 @@ func (ec *executionContext) _RequestEmailSignInCodeOrErrorPayload(ctx context.Co
 	}
 }
 
-func (ec *executionContext) _SignInOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SignInOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) _SignInOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model1.SignInOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.SignInPayload:
+	case model1.SignInPayload:
 		return ec._SignInPayload(ctx, sel, &obj)
-	case *model.SignInPayload:
+	case *model1.SignInPayload:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._SignInPayload(ctx, sel, obj)
-	case model.ErrorPayload:
+	case model1.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
-	case *model.ErrorPayload:
+	case *model1.ErrorPayload:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -4965,20 +4966,20 @@ func (ec *executionContext) _SignInOrErrorPayload(ctx context.Context, sel ast.S
 	}
 }
 
-func (ec *executionContext) _SignOutOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SignOutOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) _SignOutOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model1.SignOutOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.SignOutPayload:
+	case model1.SignOutPayload:
 		return ec._SignOutPayload(ctx, sel, &obj)
-	case *model.SignOutPayload:
+	case *model1.SignOutPayload:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._SignOutPayload(ctx, sel, obj)
-	case model.ErrorPayload:
+	case model1.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
-	case *model.ErrorPayload:
+	case *model1.ErrorPayload:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -4988,20 +4989,20 @@ func (ec *executionContext) _SignOutOrErrorPayload(ctx context.Context, sel ast.
 	}
 }
 
-func (ec *executionContext) _UpdateSubgraphOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateSubgraphOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) _UpdateSubgraphOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model1.UpdateSubgraphOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.UpdateSubgraphPayload:
+	case model1.UpdateSubgraphPayload:
 		return ec._UpdateSubgraphPayload(ctx, sel, &obj)
-	case *model.UpdateSubgraphPayload:
+	case *model1.UpdateSubgraphPayload:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._UpdateSubgraphPayload(ctx, sel, obj)
-	case model.ErrorPayload:
+	case model1.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
-	case *model.ErrorPayload:
+	case *model1.ErrorPayload:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -5265,7 +5266,7 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 
 var adminSubgraphsConnectionImplementors = []string{"AdminSubgraphsConnection"}
 
-func (ec *executionContext) _AdminSubgraphsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminSubgraphsConnection) graphql.Marshaler {
+func (ec *executionContext) _AdminSubgraphsConnection(ctx context.Context, sel ast.SelectionSet, obj *model1.AdminSubgraphsConnection) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, adminSubgraphsConnectionImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5335,7 +5336,7 @@ func (ec *executionContext) _AdminSubgraphsConnection(ctx context.Context, sel a
 
 var adminUserSubgraphAccessesConnectionImplementors = []string{"AdminUserSubgraphAccessesConnection"}
 
-func (ec *executionContext) _AdminUserSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminUserSubgraphAccessesConnection) graphql.Marshaler {
+func (ec *executionContext) _AdminUserSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, obj *model1.AdminUserSubgraphAccessesConnection) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, adminUserSubgraphAccessesConnectionImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5405,7 +5406,7 @@ func (ec *executionContext) _AdminUserSubgraphAccessesConnection(ctx context.Con
 
 var adminUsersConnectionImplementors = []string{"AdminUsersConnection"}
 
-func (ec *executionContext) _AdminUsersConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminUsersConnection) graphql.Marshaler {
+func (ec *executionContext) _AdminUsersConnection(ctx context.Context, sel ast.SelectionSet, obj *model1.AdminUsersConnection) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, adminUsersConnectionImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5475,7 +5476,7 @@ func (ec *executionContext) _AdminUsersConnection(ctx context.Context, sel ast.S
 
 var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "UpdateSubgraphOrErrorPayload"}
 
-func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
+func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model1.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5550,7 +5551,7 @@ func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.Selection
 
 var fieldMessageImplementors = []string{"FieldMessage"}
 
-func (ec *executionContext) _FieldMessage(ctx context.Context, sel ast.SelectionSet, obj *model.FieldMessage) graphql.Marshaler {
+func (ec *executionContext) _FieldMessage(ctx context.Context, sel ast.SelectionSet, obj *model1.FieldMessage) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, fieldMessageImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5758,7 +5759,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 
 var requestEmailSignInCodePayloadImplementors = []string{"RequestEmailSignInCodePayload", "RequestEmailSignInCodeOrErrorPayload"}
 
-func (ec *executionContext) _RequestEmailSignInCodePayload(ctx context.Context, sel ast.SelectionSet, obj *model.RequestEmailSignInCodePayload) graphql.Marshaler {
+func (ec *executionContext) _RequestEmailSignInCodePayload(ctx context.Context, sel ast.SelectionSet, obj *model1.RequestEmailSignInCodePayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, requestEmailSignInCodePayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5797,7 +5798,7 @@ func (ec *executionContext) _RequestEmailSignInCodePayload(ctx context.Context, 
 
 var signInPayloadImplementors = []string{"SignInPayload", "SignInOrErrorPayload"}
 
-func (ec *executionContext) _SignInPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SignInPayload) graphql.Marshaler {
+func (ec *executionContext) _SignInPayload(ctx context.Context, sel ast.SelectionSet, obj *model1.SignInPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, signInPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5841,7 +5842,7 @@ func (ec *executionContext) _SignInPayload(ctx context.Context, sel ast.Selectio
 
 var signOutPayloadImplementors = []string{"SignOutPayload", "SignOutOrErrorPayload"}
 
-func (ec *executionContext) _SignOutPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SignOutPayload) graphql.Marshaler {
+func (ec *executionContext) _SignOutPayload(ctx context.Context, sel ast.SelectionSet, obj *model1.SignOutPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, signOutPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5962,7 +5963,7 @@ func (ec *executionContext) _Subgraph(ctx context.Context, sel ast.SelectionSet,
 
 var updateSubgraphPayloadImplementors = []string{"UpdateSubgraphPayload", "UpdateSubgraphOrErrorPayload"}
 
-func (ec *executionContext) _UpdateSubgraphPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateSubgraphPayload) graphql.Marshaler {
+func (ec *executionContext) _UpdateSubgraphPayload(ctx context.Context, sel ast.SelectionSet, obj *model1.UpdateSubgraphPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, updateSubgraphPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -6209,7 +6210,7 @@ func (ec *executionContext) _UserSubgraphAccess(ctx context.Context, sel ast.Sel
 
 var viewerImplementors = []string{"Viewer"}
 
-func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, obj *model.Viewer) graphql.Marshaler {
+func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, obj *model1.Viewer) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, viewerImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -6645,11 +6646,11 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) marshalNAdminMutation2trip2gᚋinternalᚋgraphᚋmodelᚐAdminMutation(ctx context.Context, sel ast.SelectionSet, v model.AdminMutation) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminMutation2trip2gᚋinternalᚋmodelᚐAdminMutation(ctx context.Context, sel ast.SelectionSet, v model.AdminMutation) graphql.Marshaler {
 	return ec._AdminMutation(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAdminMutation2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminMutation(ctx context.Context, sel ast.SelectionSet, v *model.AdminMutation) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminMutation2ᚖtrip2gᚋinternalᚋmodelᚐAdminMutation(ctx context.Context, sel ast.SelectionSet, v *model.AdminMutation) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6659,11 +6660,11 @@ func (ec *executionContext) marshalNAdminMutation2ᚖtrip2gᚋinternalᚋgraph�
 	return ec._AdminMutation(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNAdminQuery2trip2gᚋinternalᚋgraphᚋmodelᚐAdminQuery(ctx context.Context, sel ast.SelectionSet, v model.AdminQuery) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminQuery2trip2gᚋinternalᚋmodelᚐAdminQuery(ctx context.Context, sel ast.SelectionSet, v model.AdminQuery) graphql.Marshaler {
 	return ec._AdminQuery(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAdminQuery2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminQuery(ctx context.Context, sel ast.SelectionSet, v *model.AdminQuery) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminQuery2ᚖtrip2gᚋinternalᚋmodelᚐAdminQuery(ctx context.Context, sel ast.SelectionSet, v *model.AdminQuery) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6673,11 +6674,11 @@ func (ec *executionContext) marshalNAdminQuery2ᚖtrip2gᚋinternalᚋgraphᚋmo
 	return ec._AdminQuery(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNAdminSubgraphsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminSubgraphsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminSubgraphsConnection) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminSubgraphsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminSubgraphsConnection(ctx context.Context, sel ast.SelectionSet, v model1.AdminSubgraphsConnection) graphql.Marshaler {
 	return ec._AdminSubgraphsConnection(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAdminSubgraphsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminSubgraphsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminSubgraphsConnection) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminSubgraphsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminSubgraphsConnection(ctx context.Context, sel ast.SelectionSet, v *model1.AdminSubgraphsConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6687,11 +6688,11 @@ func (ec *executionContext) marshalNAdminSubgraphsConnection2ᚖtrip2gᚋinterna
 	return ec._AdminSubgraphsConnection(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNAdminUserSubgraphAccessesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUserSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminUserSubgraphAccessesConnection) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminUserSubgraphAccessesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUserSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, v model1.AdminUserSubgraphAccessesConnection) graphql.Marshaler {
 	return ec._AdminUserSubgraphAccessesConnection(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAdminUserSubgraphAccessesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUserSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminUserSubgraphAccessesConnection) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminUserSubgraphAccessesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUserSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, v *model1.AdminUserSubgraphAccessesConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6701,11 +6702,11 @@ func (ec *executionContext) marshalNAdminUserSubgraphAccessesConnection2ᚖtrip2
 	return ec._AdminUserSubgraphAccessesConnection(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNAdminUsersConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUsersConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminUsersConnection) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminUsersConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUsersConnection(ctx context.Context, sel ast.SelectionSet, v model1.AdminUsersConnection) graphql.Marshaler {
 	return ec._AdminUsersConnection(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAdminUsersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUsersConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminUsersConnection) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminUsersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUsersConnection(ctx context.Context, sel ast.SelectionSet, v *model1.AdminUsersConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6730,11 +6731,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNFieldMessage2trip2gᚋinternalᚋgraphᚋmodelᚐFieldMessage(ctx context.Context, sel ast.SelectionSet, v model.FieldMessage) graphql.Marshaler {
+func (ec *executionContext) marshalNFieldMessage2trip2gᚋinternalᚋgraphᚋmodelᚐFieldMessage(ctx context.Context, sel ast.SelectionSet, v model1.FieldMessage) graphql.Marshaler {
 	return ec._FieldMessage(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNFieldMessage2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐFieldMessageᚄ(ctx context.Context, sel ast.SelectionSet, v []model.FieldMessage) graphql.Marshaler {
+func (ec *executionContext) marshalNFieldMessage2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐFieldMessageᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.FieldMessage) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -6843,7 +6844,7 @@ func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinter
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNRequestEmailSignInCodeOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RequestEmailSignInCodeOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNRequestEmailSignInCodeOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model1.RequestEmailSignInCodeOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6858,7 +6859,7 @@ func (ec *executionContext) unmarshalNSignInByEmailInput2trip2gᚋinternalᚋcas
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNSignInOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSignInOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SignInOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNSignInOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSignInOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model1.SignInOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6868,7 +6869,7 @@ func (ec *executionContext) marshalNSignInOrErrorPayload2trip2gᚋinternalᚋgra
 	return ec._SignInOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNSignOutOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSignOutOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SignOutOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNSignOutOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSignOutOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model1.SignOutOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -6971,7 +6972,7 @@ func (ec *executionContext) unmarshalNUpdateSubgraphInput2trip2gᚋinternalᚋca
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNUpdateSubgraphOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateSubgraphOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateSubgraphOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNUpdateSubgraphOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateSubgraphOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model1.UpdateSubgraphOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -7087,11 +7088,11 @@ func (ec *executionContext) marshalNUserSubgraphAccess2ᚕtrip2gᚋinternalᚋdb
 	return ret
 }
 
-func (ec *executionContext) marshalNViewer2trip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx context.Context, sel ast.SelectionSet, v model.Viewer) graphql.Marshaler {
+func (ec *executionContext) marshalNViewer2trip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx context.Context, sel ast.SelectionSet, v model1.Viewer) graphql.Marshaler {
 	return ec._Viewer(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNViewer2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx context.Context, sel ast.SelectionSet, v *model.Viewer) graphql.Marshaler {
+func (ec *executionContext) marshalNViewer2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx context.Context, sel ast.SelectionSet, v *model1.Viewer) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

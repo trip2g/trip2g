@@ -18,30 +18,31 @@ import (
 	"trip2g/internal/case/signout"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	model1 "trip2g/internal/model"
 )
 
 // UpdateSubgraph is the resolver for the updateSubgraph field.
-func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *model.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error) {
+func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *model1.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error) {
 	return input.Resolve(ctx, r.Env)
 }
 
 // AllUsers is the resolver for the allUsers field.
-func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *model.AdminQuery) (*model.AdminUsersConnection, error) {
+func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUsersConnection, error) {
 	return &model.AdminUsersConnection{}, nil
 }
 
 // AllSubgraphs is the resolver for the allSubgraphs field.
-func (r *adminQueryResolver) AllSubgraphs(ctx context.Context, obj *model.AdminQuery) (*model.AdminSubgraphsConnection, error) {
+func (r *adminQueryResolver) AllSubgraphs(ctx context.Context, obj *model1.AdminQuery) (*model.AdminSubgraphsConnection, error) {
 	return &model.AdminSubgraphsConnection{}, nil
 }
 
 // AllUserSubgraphAccesses is the resolver for the allUserSubgraphAccesses field.
-func (r *adminQueryResolver) AllUserSubgraphAccesses(ctx context.Context, obj *model.AdminQuery) (*model.AdminUserSubgraphAccessesConnection, error) {
+func (r *adminQueryResolver) AllUserSubgraphAccesses(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUserSubgraphAccessesConnection, error) {
 	return &model.AdminUserSubgraphAccessesConnection{}, nil
 }
 
 // Subgraph is the resolver for the subgraph field.
-func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *model.AdminQuery, id int) (*db.Subgraph, error) {
+func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *model1.AdminQuery, id int) (*db.Subgraph, error) {
 	return resolveOne[db.Subgraph](ctx, int64(id), r.Env.SubgraphByID)
 }
 
@@ -95,9 +96,9 @@ func (r *mutationResolver) SignOut(ctx context.Context) (model.SignOutOrErrorPay
 }
 
 // Admin is the resolver for the admin field.
-func (r *mutationResolver) Admin(ctx context.Context) (*model.AdminMutation, error) {
+func (r *mutationResolver) Admin(ctx context.Context) (*model1.AdminMutation, error) {
 	// TODO: check if the user is admin
-	return &model.AdminMutation{}, nil
+	return &model1.AdminMutation{}, nil
 }
 
 // Viewer is the resolver for the viewer field.
@@ -116,8 +117,8 @@ func (r *queryResolver) Viewer(ctx context.Context) (*model.Viewer, error) {
 }
 
 // Admin is the resolver for the admin field.
-func (r *queryResolver) Admin(ctx context.Context) (*model.AdminQuery, error) {
-	return &model.AdminQuery{}, nil
+func (r *queryResolver) Admin(ctx context.Context) (*model1.AdminQuery, error) {
+	return &model1.AdminQuery{}, nil
 }
 
 // Color is the resolver for the color field.

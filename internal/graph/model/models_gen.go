@@ -23,17 +23,6 @@ type UpdateSubgraphOrErrorPayload interface {
 	IsUpdateSubgraphOrErrorPayload()
 }
 
-type AdminMutation struct {
-	UpdateSubgraph UpdateSubgraphOrErrorPayload `json:"updateSubgraph"`
-}
-
-type AdminQuery struct {
-	AllUsers                *AdminUsersConnection                `json:"allUsers"`
-	AllSubgraphs            *AdminSubgraphsConnection            `json:"allSubgraphs"`
-	AllUserSubgraphAccesses *AdminUserSubgraphAccessesConnection `json:"allUserSubgraphAccesses"`
-	Subgraph                *db.Subgraph                         `json:"subgraph"`
-}
-
 type AdminSubgraphsConnection struct {
 	Nodes []db.Subgraph `json:"nodes"`
 }

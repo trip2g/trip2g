@@ -58,9 +58,9 @@ type AdminSubgraphsConnection {
 }
 
 type AdminQuery {
-  allUsers: AdminUsersConnection! @goField(forceResolver: true)
-  allSubgraphs: AdminSubgraphsConnection! @goField(forceResolver: true)
-  allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection! @goField(forceResolver: true)
+  allUsers: AdminUsersConnection!
+  allSubgraphs: AdminSubgraphsConnection!
+  allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection!
 
   subgraph(id: Int64!): Subgraph! @goField(forceResolver: true)
 }
@@ -150,5 +150,5 @@ type UpdateSubgraphPayload {
 union UpdateSubgraphOrErrorPayload = UpdateSubgraphPayload | ErrorPayload
 
 type AdminMutation {
-  updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload! @goField(forceResolver: true)
+  updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
 }
