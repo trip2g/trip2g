@@ -52,7 +52,7 @@ type app struct {
 
 	mu sync.Mutex
 
-	pages model.Notes
+	pages model.NoteViews
 
 	queries *db.Queries
 	conn    *sql.DB
@@ -143,7 +143,7 @@ func main() {
 	}
 }
 
-func (a *app) PrepareNotes(ctx context.Context) (model.Notes, error) {
+func (a *app) PrepareNotes(ctx context.Context) (model.NoteViews, error) {
 	a.log.Info("preparing notes")
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -176,11 +176,11 @@ func (a *app) PrepareNotes(ctx context.Context) (model.Notes, error) {
 	return pages, nil
 }
 
-func (a *app) AllNotes() model.Notes {
+func (a *app) AllNotes() model.NoteViews {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	copy := make(model.Notes, len(a.pages))
+	copy := make(model.NoteViews, len(a.pages))
 
 	for k, v := range a.pages {
 		copy[k] = v
@@ -280,7 +280,7 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (int64, error)
 	return code, nil
 }
 
-func (a *app) NoteByPath(path string) (*model.Note, error) {
+func (a *app) NoteByPath(path string) (*model.NoteView, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 

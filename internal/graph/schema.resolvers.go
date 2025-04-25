@@ -26,6 +26,18 @@ func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *model1.
 	return input.Resolve(ctx, r.Env)
 }
 
+// Nodes is the resolver for the nodes field.
+func (r *adminNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNoteViewsConnection) ([]model1.NoteView, error) {
+	notes := r.Env.AllNotes()
+	res := make([]model1.NoteView, 0, len(notes))
+
+	for _, note := range notes {
+		res = append(res, *note)
+	}
+
+	return res, nil
+}
+
 // AllUsers is the resolver for the allUsers field.
 func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUsersConnection, error) {
 	return &model.AdminUsersConnection{}, nil
@@ -39,6 +51,11 @@ func (r *adminQueryResolver) AllSubgraphs(ctx context.Context, obj *model1.Admin
 // AllUserSubgraphAccesses is the resolver for the allUserSubgraphAccesses field.
 func (r *adminQueryResolver) AllUserSubgraphAccesses(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUserSubgraphAccessesConnection, error) {
 	return &model.AdminUserSubgraphAccessesConnection{}, nil
+}
+
+// AllNoteViews is the resolver for the allNoteViews field.
+func (r *adminQueryResolver) AllNoteViews(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNoteViewsConnection, error) {
+	return &model.AdminNoteViewsConnection{}, nil
 }
 
 // Subgraph is the resolver for the subgraph field.
@@ -99,6 +116,16 @@ func (r *mutationResolver) SignOut(ctx context.Context) (model.SignOutOrErrorPay
 func (r *mutationResolver) Admin(ctx context.Context) (*model1.AdminMutation, error) {
 	// TODO: check if the user is admin
 	return &model1.AdminMutation{}, nil
+}
+
+// Content is the resolver for the content field.
+func (r *noteViewResolver) Content(ctx context.Context, obj *model1.NoteView) (string, error) {
+	return string(obj.Content), nil
+}
+
+// HTML is the resolver for the html field.
+func (r *noteViewResolver) HTML(ctx context.Context, obj *model1.NoteView) (string, error) {
+	return string(obj.HTML), nil
 }
 
 // Viewer is the resolver for the viewer field.
@@ -182,6 +209,11 @@ func (r *signInByEmailInputResolver) Code(ctx context.Context, obj *signinbyemai
 // AdminMutation returns AdminMutationResolver implementation.
 func (r *Resolver) AdminMutation() AdminMutationResolver { return &adminMutationResolver{r} }
 
+// AdminNoteViewsConnection returns AdminNoteViewsConnectionResolver implementation.
+func (r *Resolver) AdminNoteViewsConnection() AdminNoteViewsConnectionResolver {
+	return &adminNoteViewsConnectionResolver{r}
+}
+
 // AdminQuery returns AdminQueryResolver implementation.
 func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
 
@@ -206,6 +238,9 @@ func (r *Resolver) ErrorPayload() ErrorPayloadResolver { return &errorPayloadRes
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
+// NoteView returns NoteViewResolver implementation.
+func (r *Resolver) NoteView() NoteViewResolver { return &noteViewResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -226,12 +261,14 @@ func (r *Resolver) SignInByEmailInput() SignInByEmailInputResolver {
 }
 
 type adminMutationResolver struct{ *Resolver }
+type adminNoteViewsConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
+type noteViewResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }

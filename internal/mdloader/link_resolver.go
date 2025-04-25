@@ -11,9 +11,9 @@ import (
 type myLinkResolver struct {
 	log logger.Logger
 
-	pages model.Notes
+	pages model.NoteViews
 
-	currentPage *model.Note
+	currentPage *model.NoteView
 }
 
 const _html = ".html"

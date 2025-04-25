@@ -12,7 +12,7 @@ import (
 
 type Env interface {
 	Logger() logger.Logger
-	AllNotes() model.Notes
+	AllNotes() model.NoteViews
 	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]string, error)
 }
 
@@ -24,13 +24,13 @@ type Request struct {
 
 type Response struct {
 	Title string
-	Note  *model.Note
-	Notes model.Notes
+	Note  *model.NoteView
+	Notes model.NoteViews
 }
 
 const defaultSidebarPath = "/_sidebar"
 
-func (r *Response) Sidebar() *model.Note {
+func (r *Response) Sidebar() *model.NoteView {
 	result := r.Notes[defaultSidebarPath]
 
 	sidebarI, sidebarOk := r.Note.RawMeta["sidebar"]
@@ -81,7 +81,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Note = page
 	response.Notes = pages
 
-	pageSubgraphs, err := model.Notes{"": page}.Subgraphs()
+	pageSubgraphs, err := model.NoteViews{"": page}.Subgraphs()
 	if err != nil {
 		return &response, err
 	}

@@ -7,6 +7,7 @@ import (
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
 	"trip2g/internal/db"
+	"trip2g/internal/model"
 )
 
 type Resolver struct {
@@ -20,6 +21,8 @@ type Env interface {
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	SubgraphByID(ctx context.Context, id int64) (db.Subgraph, error)
+
+	AllNotes() model.NoteViews
 
 	requestemailsignin.Env
 	signinbyemail.Env

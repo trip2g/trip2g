@@ -8,7 +8,7 @@ import (
 	"github.com/yuin/goldmark/ast"
 )
 
-type Note struct {
+type NoteView struct {
 	Path  string
 	Title string
 
@@ -25,17 +25,17 @@ type Note struct {
 	DeadLinks []string
 }
 
-type Notes map[string]*Note
+type NoteViews map[string]*NoteView
 
-func (n *Note) Ast() ast.Node {
+func (n *NoteView) Ast() ast.Node {
 	return n.ast
 }
 
-func (n *Note) SetAst(node ast.Node) {
+func (n *NoteView) SetAst(node ast.Node) {
 	n.ast = node
 }
 
-func (n *Note) ExtractTitle() string {
+func (n *NoteView) ExtractTitle() string {
 	title, ok := n.RawMeta["title"]
 	if ok {
 		str, sOk := title.(string)
@@ -77,7 +77,7 @@ func (n *Note) ExtractTitle() string {
 	return filepath.Base(n.Path[:len(n.Path)-len(".md")])
 }
 
-func (pages Notes) Subgraphs() ([]string, error) {
+func (pages NoteViews) Subgraphs() ([]string, error) {
 	subgraphs := make(map[string]struct{})
 
 	for _, page := range pages {

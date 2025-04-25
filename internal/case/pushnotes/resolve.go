@@ -15,7 +15,7 @@ type Env interface {
 	Logger() logger.Logger
 	InsertNote(ctx context.Context, update db.Note) error
 	InsertSubgraph(ctx context.Context, name string) error
-	PrepareNotes(ctx context.Context) (model.Notes, error)
+	PrepareNotes(ctx context.Context) (model.NoteViews, error)
 }
 
 type Asset struct {

@@ -26,7 +26,7 @@ type SourceFile struct {
 }
 
 type loader struct {
-	pages model.Notes
+	pages model.NoteViews
 	md    goldmark.Markdown
 	log   logger.Logger
 
@@ -34,10 +34,10 @@ type loader struct {
 }
 
 // Load transforms markdown files into pages.
-func Load(sourceFiles []SourceFile, log logger.Logger) (model.Notes, error) {
+func Load(sourceFiles []SourceFile, log logger.Logger) (model.NoteViews, error) {
 	ldr := &loader{
 		log:   log,
-		pages: make(model.Notes),
+		pages: make(model.NoteViews),
 
 		linkResolver: &myLinkResolver{},
 	}
@@ -97,7 +97,7 @@ func (ldr *loader) generatePageHTMLs() error {
 	return nil
 }
 
-func (ldr *loader) generatePageHTML(p *model.Note) error {
+func (ldr *loader) generatePageHTML(p *model.NoteView) error {
 	var buf bytes.Buffer
 
 	ldr.linkResolver.currentPage = p
@@ -157,11 +157,11 @@ func (ldr *loader) extractInLinks() error {
 	return nil
 }
 
-func (ldr *loader) parsePage(src SourceFile) (*model.Note, error) { //nolint:unparam // it's a placeholder
+func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) { //nolint:unparam // it's a placeholder
 	context := parser.NewContext()
 
 	doc := ldr.md.Parser().Parse(text.NewReader(src.Content), parser.WithContext(context))
-	pp := model.Note{
+	pp := model.NoteView{
 		Path:      src.Path,
 		Permalink: "/" + src.Path[:len(src.Path)-len(".md")],
 		Content:   src.Content,

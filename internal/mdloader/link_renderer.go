@@ -45,7 +45,7 @@ type linkRenderer struct {
 	// when exiting a Node render.
 	hasDest sync.Map // *Node => struct{}
 
-	pages model.Notes
+	pages model.NoteViews
 }
 
 func (r *linkRenderer) init() {

@@ -4,6 +4,7 @@ package model
 
 import (
 	"trip2g/internal/db"
+	"trip2g/internal/model"
 	"trip2g/internal/usertoken"
 )
 
@@ -21,6 +22,10 @@ type SignOutOrErrorPayload interface {
 
 type UpdateSubgraphOrErrorPayload interface {
 	IsUpdateSubgraphOrErrorPayload()
+}
+
+type AdminNoteViewsConnection struct {
+	Nodes []model.NoteView `json:"nodes"`
 }
 
 type AdminSubgraphsConnection struct {
