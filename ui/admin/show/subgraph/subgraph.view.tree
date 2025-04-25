@@ -1,0 +1,19 @@
+$trip2g_admin_show_subgraph $mol_page
+	subgraph_id 0
+	title <= subgraph_name \
+	sub /
+		\Hello
+		<= subgraph_name \
+		<= Form $mol_form
+			body /
+				<= Color_field $mol_form_field
+					name \Color
+					bid <= color_bid \
+					Content <= color_control $mol_string
+						value? <=> subgraph_color? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \

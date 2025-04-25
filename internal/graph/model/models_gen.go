@@ -31,6 +31,7 @@ type AdminQuery struct {
 	AllUsers                *AdminUsersConnection                `json:"allUsers"`
 	AllSubgraphs            *AdminSubgraphsConnection            `json:"allSubgraphs"`
 	AllUserSubgraphAccesses *AdminUserSubgraphAccessesConnection `json:"allUserSubgraphAccesses"`
+	Subgraph                *db.Subgraph                         `json:"subgraph"`
 }
 
 type AdminSubgraphsConnection struct {

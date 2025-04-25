@@ -40,6 +40,11 @@ func (r *adminQueryResolver) AllUserSubgraphAccesses(ctx context.Context, obj *m
 	return &model.AdminUserSubgraphAccessesConnection{}, nil
 }
 
+// Subgraph is the resolver for the subgraph field.
+func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *model.AdminQuery, id int) (*db.Subgraph, error) {
+	return resolveOne[db.Subgraph](ctx, int64(id), r.Env.SubgraphByID)
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error) {
 	return r.Env.ListAllSubgraphs(ctx)

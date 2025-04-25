@@ -44,6 +44,10 @@ namespace $.$$ {
 			return this.data().map[ id ].id.toString();
 		}
 
+		row_id_number( id: any ): number {
+			return this.data().map[ id ].id;
+		}
+
 		row_name( id: any ): string {
 			return this.data().map[ id ].name;
 		}
