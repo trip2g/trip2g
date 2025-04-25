@@ -13,41 +13,61 @@ namespace $.$$ {
 								subgraph {
 									name
 								}
+								user {
+									id
+									email
+								}
 							}
 						}
 					}
 				}
 			`)
 
-			const map: { [ id: string ]: typeof res.admin.data.nodes[0] } = {};
+			const map: { [id: string]: (typeof res.admin.data.nodes)[0] } = {}
 
-			res.admin.data.nodes.forEach( ( row ) => {
-				map[ row.id ] = row
+			res.admin.data.nodes.forEach(row => {
+				map[row.id] = row
 			})
 
 			return {
 				map,
-				ids: Object.keys( map ),
+				ids: Object.keys(map),
 			}
 		}
 
 		@$mol_mem
 		spreads(): any {
-			const pages: { [ id: string ]: any } = {};
+			const pages: { [id: string]: any } = {}
 
-			this.data().ids.forEach( (id) => {
-				pages[id] = this.Content(id);
-			});
+			this.data().ids.forEach(id => {
+				pages[id] = this.Content(id)
+			})
 
-			return pages;
+			return pages
 		}
 
-		row_id( id: any ): string {
-			return id.toString();
+		row_id(id: any): string {
+			return id.toString()
 		}
 
-		row_subgraph_name( id: any ): string {
-			return this.data().map[ id ].subgraph.name;
+		row_subgraph_name(id: any): string {
+			return this.data().map[id].subgraph.name
+		}
+
+		row_created_at(id: any): string {
+			const m = new $mol_time_moment(this.data().map[id].createdAt)
+			return m.toString('YYYY-MM-DD')
+		}
+
+		row_user_email( id: any ): string {
+			return this.data().map[id].user.email
+		}
+
+		row_user_uri( id: any ): string {
+			return this.$.$mol_state_arg.link({
+				nav: 'users',
+				user_id: this.data().map[id].user.id,
+			})
 		}
 	}
 }

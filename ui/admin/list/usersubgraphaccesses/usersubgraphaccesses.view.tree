@@ -20,3 +20,12 @@ $trip2g_admin_list_usersubgraphaccesses $mol_book2_catalog
 						title \Subgraph name
 						Content <= Row_subgraph_name* $trip2g_admin_cell
 							content <= row_subgraph_name* \Subgraph Name
+					<= Row_user_labeler* $mol_labeler
+						title \User
+						Content <= Row_user* $mol_link
+							uri <= row_user_uri* \
+							title <= row_user_email* \
+					<= Row_created_at_labeler* $mol_labeler
+						title \Created At
+						Content <= Row_created_at* $trip2g_admin_cell
+							content <= row_created_at* \
