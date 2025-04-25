@@ -1,7 +1,7 @@
 namespace $.$$ {
 	export class $trip2g_admin_list_usersubgraphaccesses extends $.$trip2g_admin_list_usersubgraphaccesses {
 		@$mol_mem
-		data() {
+		data( reset?: null ) {
 			const res = $trip2g_graphql_request(/* GraphQL */ `
 				query AdminListUserSubgraphAccesses {
 					admin {
@@ -23,51 +23,40 @@ namespace $.$$ {
 				}
 			`)
 
-			const map: { [id: string]: (typeof res.admin.data.nodes)[0] } = {}
-
-			res.admin.data.nodes.forEach(row => {
-				map[row.id] = row
-			})
-
-			return {
-				map,
-				ids: Object.keys(map),
-			}
+			return $trip2g_graphql_make_map(res.admin.data.nodes)
 		}
 
 		@$mol_mem
 		spreads(): any {
-			const pages: { [id: string]: any } = {}
+			return this.data().mapKeys(key => this.Content(key));
+		}
 
-			this.data().ids.forEach(id => {
-				pages[id] = this.Content(id)
-			})
-
-			return pages
+		row( id: any ) {
+			return this.data().get(id);
 		}
 
 		row_id(id: any): string {
-			return id.toString()
+			return this.row(id).id.toString();
 		}
 
 		row_subgraph_name(id: any): string {
-			return this.data().map[id].subgraph.name
+			return this.row(id).subgraph.name;
 		}
 
 		row_created_at(id: any): string {
-			const m = new $mol_time_moment(this.data().map[id].createdAt)
-			return m.toString('YYYY-MM-DD')
+			const m = new $mol_time_moment(this.row(id).createdAt)
+			return m.toString('YYYY-MM-DD');
 		}
 
 		row_user_email( id: any ): string {
-			return this.data().map[id].user.email
+			return this.row(id).user.email;
 		}
 
 		row_user_uri( id: any ): string {
 			return this.$.$mol_state_arg.link({
 				nav: 'users',
-				user_id: this.data().map[id].user.id,
-			})
+				user_id: this.row(id).user.id,
+			});
 		}
 	}
 }

@@ -16,6 +16,7 @@ namespace $.$$ {
 					}
 				}
 			`)
+
 			return $trip2g_graphql_make_map(res.admin.allNoteViews.nodes)
 		}
 
