@@ -10,6 +10,15 @@ $trip2g_admin $mol_book2_catalog
 		users <= ListUsers $trip2g_admin_list_users
 		user_subgraph_accesses <= ListUsersSubgraphAccesses $trip2g_admin_list_usersubgraphaccesses
 		subgraphs <= ListSubgraphs $trip2g_admin_list_subgraphs
+		noteviews <= ListNoteviews $trip2g_admin_list_noteviews
+		noteview <= ShowNoteview $trip2g_admin_show_noteview
+
+	routes *
+		users => users
+		user_subgraph_accesses => user_subgraph_accesses
+		subgraphs => subgraphs
+		noteviews => noteviews
+		noteview => noteview
 
 $trip2g_admin_cell $mol_view
 	content \No Content
