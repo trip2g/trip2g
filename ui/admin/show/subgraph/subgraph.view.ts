@@ -1,6 +1,7 @@
 namespace $.$$ {
 	export class $trip2g_admin_show_subgraph extends $.$trip2g_admin_show_subgraph {
-		request_data(id: number) {
+		@$mol_mem_key
+		data(id: number, reset?: null) {
 			const res = $trip2g_graphql_request(
 				/* GraphQL */ `
 					query AdminShowSubgraph($id: Int64!) {
@@ -23,13 +24,8 @@ namespace $.$$ {
 			return res.admin.subgraph
 		}
 
-		@$mol_mem_key
-		subgraph_cached(id: number) {
-			return this.request_data(id)
-		}
-
 		subgraph() {
-			return this.subgraph_cached(this.subgraph_id())
+			return this.data(this.subgraph_id())
 		}
 
 		subgraph_name(): string {
