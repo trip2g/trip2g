@@ -35,7 +35,7 @@ namespace $.$$ {
 			}
 
 			if (next) {
-				next = next.merge(new $mol_time_moment());
+				next = new $mol_time_moment().merge(next);
 			}
 
 			return next
