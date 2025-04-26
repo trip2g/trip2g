@@ -13,8 +13,6 @@ module.exports.plugin = (schema, documents, config) => {
 		}
 
 		for (const def of doc.document.definitions) {
-			console.log(def.operation, def.name.value);
-
 			if (def.kind !== 'OperationDefinition' || !def.name) continue
 
 			let prefix = 'Query'

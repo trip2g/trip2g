@@ -40,7 +40,7 @@ namespace $.$$ {
 		submit() {
 			const res = $trip2g_graphql_request(
 				`
-					mutation AdminUpdateUserSubgraphAccess($input: $UpdateUserSubgraphAccessInput!) {
+					mutation AdminUpdateUserSubgraphAccess($input: UpdateUserSubgraphAccessInput!) {
 						admin {
 							data: updateUserSubgraphAccess(input: $input) {
 								... on UpdateUserSubgraphAccessPayload {
