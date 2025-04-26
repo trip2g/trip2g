@@ -3,9 +3,9 @@ $trip2g_admin_list_usersubgraphaccesses $mol_book2_catalog
 	menu_tools / <= Spread_close
 	param \access_id
 	Empty $mol_status
-	Content* $mol_page
+	Content* $trip2g_admin_show_usersubgraphaccess
+		access_id <= row_id*
 		tools / <= Spread_close
-		sub / \Content
 	menu_link_content* / <= NoteItem* $mol_view
 		sub /
 			<= Row* $mol_row

@@ -1,0 +1,7 @@
+$trip2g_admin_show_usersubgraphaccess $mol_page
+	param \access_id
+	body /
+		<= ExpiresAt_labeler $mol_labeler
+			title \Expires At
+			Content <= ExpiresAt_control $mol_date
+				value_moment? <=> expires_at_moment? \
