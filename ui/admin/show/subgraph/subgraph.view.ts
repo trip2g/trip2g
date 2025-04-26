@@ -1,9 +1,9 @@
 namespace $.$$ {
 	export class $trip2g_admin_show_subgraph extends $.$trip2g_admin_show_subgraph {
-		@$mol_mem_key
-		data(id: number, reset?: null) {
+		@$mol_mem
+		data(reset?: null) {
 			const res = $trip2g_graphql_request(
-				/* GraphQL */ `
+				`
 					query AdminShowSubgraph($id: Int64!) {
 						admin {
 							subgraph(id: $id) {
@@ -14,7 +14,7 @@ namespace $.$$ {
 						}
 					}
 				`,
-				{ id }
+				{ id: this.subgraph_id() }
 			)
 
 			if (!res.admin.subgraph) {
@@ -24,12 +24,8 @@ namespace $.$$ {
 			return res.admin.subgraph
 		}
 
-		subgraph() {
-			return this.data(this.subgraph_id())
-		}
-
 		subgraph_name(): string {
-			return this.subgraph().name
+			return this.data().name
 		}
 
 		@$mol_mem
@@ -38,12 +34,12 @@ namespace $.$$ {
 				return next
 			}
 
-			return this.subgraph().color || ''
+			return this.data().color || ''
 		}
 
 		submit() {
 			const res = $trip2g_graphql_request(
-				/* GraphQL */ `
+				`
 					mutation UpdateSubgraph($input: UpdateSubgraphInput!) {
 						admin {
 							data: updateSubgraph(input: $input) {

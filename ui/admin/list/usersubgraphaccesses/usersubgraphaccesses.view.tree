@@ -4,7 +4,7 @@ $trip2g_admin_list_usersubgraphaccesses $mol_book2_catalog
 	param \access_id
 	Empty $mol_status
 	Content* $trip2g_admin_show_usersubgraphaccess
-		access_id <= row_id*
+		access_id <= row_id* 0
 		tools / <= Spread_close
 	menu_link_content* / <= NoteItem* $mol_view
 		sub /
@@ -15,7 +15,7 @@ $trip2g_admin_list_usersubgraphaccesses $mol_book2_catalog
 					<= Row_id_labeler* $mol_labeler
 						title \ID
 						Content <= Row_id* $trip2g_admin_cell
-							content <= row_id* \id
+							content <= row_id_string* \
 					<= Row_subgraph_name_labeler* $mol_labeler
 						title \Subgraph name
 						Content <= Row_subgraph_name* $trip2g_admin_cell
@@ -29,3 +29,7 @@ $trip2g_admin_list_usersubgraphaccesses $mol_book2_catalog
 						title \Created At
 						Content <= Row_created_at* $trip2g_admin_cell
 							content <= row_created_at* \
+					<= Row_expires_at_labeler* $mol_labeler
+						title \Expires At
+						Content <= Row_expires_at* $trip2g_admin_cell
+							content <= row_expires_at* \

@@ -22,6 +22,7 @@ type Env interface {
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	SubgraphByID(ctx context.Context, id int64) (db.Subgraph, error)
+	UserSubgraphAccessByID(ctx context.Context, id int64) (db.UserSubgraphAccess, error)
 
 	AllNotes() model.NoteViews
 

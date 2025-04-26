@@ -82,6 +82,7 @@ type ComplexityRoot struct {
 		AllUsers                func(childComplexity int) int
 		NoteView                func(childComplexity int, id string) int
 		Subgraph                func(childComplexity int, id int) int
+		UserSubgraphAccess      func(childComplexity int, id int) int
 	}
 
 	AdminSubgraphsConnection struct {
@@ -192,6 +193,7 @@ type AdminQueryResolver interface {
 	AllNoteViews(ctx context.Context, obj *model.AdminQuery) (*model1.AdminNoteViewsConnection, error)
 	Subgraph(ctx context.Context, obj *model.AdminQuery, id int) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model.AdminQuery, id string) (*model.NoteView, error)
+	UserSubgraphAccess(ctx context.Context, obj *model.AdminQuery, id int) (*db.UserSubgraphAccess, error)
 }
 type AdminSubgraphsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model1.AdminSubgraphsConnection) ([]db.Subgraph, error)
@@ -337,6 +339,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.Subgraph(childComplexity, args["id"].(int)), true
+
+	case "AdminQuery.userSubgraphAccess":
+		if e.complexity.AdminQuery.UserSubgraphAccess == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_userSubgraphAccess_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.UserSubgraphAccess(childComplexity, args["id"].(int)), true
 
 	case "AdminSubgraphsConnection.nodes":
 		if e.complexity.AdminSubgraphsConnection.Nodes == nil {
@@ -850,6 +864,29 @@ func (ec *executionContext) field_AdminQuery_subgraph_args(ctx context.Context, 
 	return args, nil
 }
 func (ec *executionContext) field_AdminQuery_subgraph_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNInt642int(ctx, tmp)
+	}
+
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_userSubgraphAccess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_userSubgraphAccess_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_userSubgraphAccess_argsID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (int, error) {
@@ -1517,6 +1554,74 @@ func (ec *executionContext) fieldContext_AdminQuery_noteView(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_noteView_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_userSubgraphAccess(ctx context.Context, field graphql.CollectedField, obj *model.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_userSubgraphAccess(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().UserSubgraphAccess(rctx, obj, fc.Args["id"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.UserSubgraphAccess)
+	fc.Result = res
+	return ec.marshalOUserSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐUserSubgraphAccess(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_userSubgraphAccess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserSubgraphAccess_id(ctx, field)
+			case "userID":
+				return ec.fieldContext_UserSubgraphAccess_userID(ctx, field)
+			case "subgraphID":
+				return ec.fieldContext_UserSubgraphAccess_subgraphID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_UserSubgraphAccess_createdAt(ctx, field)
+			case "expiresAt":
+				return ec.fieldContext_UserSubgraphAccess_expiresAt(ctx, field)
+			case "user":
+				return ec.fieldContext_UserSubgraphAccess_user(ctx, field)
+			case "subgraph":
+				return ec.fieldContext_UserSubgraphAccess_subgraph(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserSubgraphAccess", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_userSubgraphAccess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -2484,6 +2589,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_subgraph(ctx, field)
 			case "noteView":
 				return ec.fieldContext_AdminQuery_noteView(ctx, field)
+			case "userSubgraphAccess":
+				return ec.fieldContext_AdminQuery_userSubgraphAccess(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -6247,6 +6354,39 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userSubgraphAccess":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_userSubgraphAccess(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8739,6 +8879,13 @@ func (ec *executionContext) marshalOUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx co
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOUserSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐUserSubgraphAccess(ctx context.Context, sel ast.SelectionSet, v *db.UserSubgraphAccess) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._UserSubgraphAccess(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

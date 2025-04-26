@@ -1,7 +1,18 @@
 $trip2g_admin_show_usersubgraphaccess $mol_page
-	param \access_id
+	access_id 0
+	minimal_width 400
 	body /
-		<= ExpiresAt_labeler $mol_labeler
-			title \Expires At
-			Content <= ExpiresAt_control $mol_date
-				value_moment? <=> expires_at_moment? \
+		<= Form $mol_form
+			body /
+				<= ExpiresAt_field $mol_form_field
+					name \Expires At
+					bid <= expires_at_bid \
+					Content <= expires_at_control $mol_date
+						value_moment? <=> expires_at_moment? $mol_time_moment
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \
+

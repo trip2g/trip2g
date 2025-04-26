@@ -84,6 +84,11 @@ func (r *adminQueryResolver) NoteView(ctx context.Context, obj *model1.AdminQuer
 	return notes[id], nil
 }
 
+// UserSubgraphAccess is the resolver for the userSubgraphAccess field.
+func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int) (*db.UserSubgraphAccess, error) {
+	return resolveOne[db.UserSubgraphAccess](ctx, int64(id), r.Env.UserSubgraphAccessByID)
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error) {
 	return r.Env.ListAllSubgraphs(ctx)
