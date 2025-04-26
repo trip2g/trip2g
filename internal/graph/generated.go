@@ -5823,7 +5823,7 @@ func (ec *executionContext) unmarshalInputUpdateUserSubgraphAccessInput(ctx cont
 			it.ID = data
 		case "expiresAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expiresAt"))
-			data, err := ec.unmarshalOTime2timeᚐTime(ctx, v)
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8846,16 +8846,6 @@ func (ec *executionContext) marshalOSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgrap
 		return graphql.Null
 	}
 	return ec._Subgraph(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOTime2timeᚐTime(ctx context.Context, v any) (time.Time, error) {
-	res, err := graphql.UnmarshalTime(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
-	res := graphql.MarshalTime(v)
-	return res
 }
 
 func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v any) (*time.Time, error) {

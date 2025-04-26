@@ -8,7 +8,7 @@ $trip2g_admin_show_usersubgraphaccess $mol_page
 					name \Expires At
 					bid <= expires_at_bid \
 					Content <= expires_at_control $mol_date
-						value_moment? <=> expires_at_moment? $mol_time_moment
+						value_moment? <=> expires_at_moment? null
 			buttons /
 				<= Submit $mol_button_major
 					title \Submit

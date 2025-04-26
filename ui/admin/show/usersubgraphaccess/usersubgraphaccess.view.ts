@@ -34,6 +34,10 @@ namespace $.$$ {
 				return null
 			}
 
+			if (next) {
+				next = next.merge(new $mol_time_moment());
+			}
+
 			return next
 		}
 
@@ -45,6 +49,7 @@ namespace $.$$ {
 							data: updateUserSubgraphAccess(input: $input) {
 								... on UpdateUserSubgraphAccessPayload {
 									userSubgraphAccess {
+										__typename
 										expiresAt
 									}
 								}
@@ -58,7 +63,7 @@ namespace $.$$ {
 				{
 					input: {
 						id: this.access_id(),
-						expiresAt: this.expires_at_moment().toString(),
+						expiresAt: this.expires_at_moment()?.toString('YYYY-MM-DDThh:mm:ss.sssZ') || null,
 					},
 				}
 			)
