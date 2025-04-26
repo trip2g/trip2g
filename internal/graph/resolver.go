@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"trip2g/internal/case/admin/updatesubgraph"
+	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
@@ -29,4 +30,5 @@ type Env interface {
 	signout.Env
 
 	updatesubgraph.Env
+	updateusersubgraphaccess.Env
 }

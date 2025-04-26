@@ -24,6 +24,10 @@ type UpdateSubgraphOrErrorPayload interface {
 	IsUpdateSubgraphOrErrorPayload()
 }
 
+type UpdateUserSubgraphAccessOrErrorPayload interface {
+	IsUpdateUserSubgraphAccessOrErrorPayload()
+}
+
 type AdminNoteViewsConnection struct {
 	Nodes []model.NoteView `json:"nodes"`
 }
@@ -52,6 +56,8 @@ func (ErrorPayload) IsSignInOrErrorPayload() {}
 func (ErrorPayload) IsSignOutOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
+
+func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`
@@ -88,6 +94,12 @@ type UpdateSubgraphPayload struct {
 }
 
 func (UpdateSubgraphPayload) IsUpdateSubgraphOrErrorPayload() {}
+
+type UpdateUserSubgraphAccessPayload struct {
+	UserSubgraphAccess *db.UserSubgraphAccess `json:"userSubgraphAccess"`
+}
+
+func (UpdateUserSubgraphAccessPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
 
 type Viewer struct {
 	ID        string          `json:"id"`

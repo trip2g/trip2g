@@ -19,7 +19,7 @@ func ToNullableFloat64(value *float64) sql.NullFloat64 {
 
 // ToNullableTime converts a pointer to an int64 to sql.NullTime.
 func ToNullableTime(value *time.Time) sql.NullTime {
-	if value == nil {
+	if value == nil || value.IsZero() {
 		return sql.NullTime{Valid: false}
 	}
 

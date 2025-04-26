@@ -14,6 +14,7 @@ import (
 	"time"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/updatesubgraph"
+	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
@@ -24,6 +25,11 @@ import (
 
 // UpdateSubgraph is the resolver for the updateSubgraph field.
 func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *model1.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error) {
+	return input.Resolve(ctx, r.Env)
+}
+
+// UpdateUserSubgraphAccess is the resolver for the updateUserSubgraphAccess field.
+func (r *adminMutationResolver) UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error) {
 	return input.Resolve(ctx, r.Env)
 }
 

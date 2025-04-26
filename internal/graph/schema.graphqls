@@ -165,6 +165,22 @@ type UpdateSubgraphPayload {
 
 union UpdateSubgraphOrErrorPayload = UpdateSubgraphPayload | ErrorPayload
 
+#
+# updateUserSubgraphAccess
+#
+
+input UpdateUserSubgraphAccessInput @goModel(model: "trip2g/internal/case/admin/updateusersubgraphaccess.Request") {
+  id: Int64!
+  expiresAt: Time
+}
+
+type UpdateUserSubgraphAccessPayload {
+  userSubgraphAccess: UserSubgraphAccess!
+}
+
+union UpdateUserSubgraphAccessOrErrorPayload = UpdateUserSubgraphAccessPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
+  updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
 }

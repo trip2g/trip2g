@@ -20,10 +20,8 @@ type Request struct {
 func (req *Request) Resolve(ctx context.Context, env Env) (model.UpdateUserSubgraphAccessOrErrorPayload, error) {
 	params := db.UpdateUserSubgraphAccessParams{
 		ID: req.ID,
-	}
-	// Set ExpiresAt if provided
-	if !req.ExpiresAt.IsZero() {
-		params.ExpiresAt = db.ToNullableTime(&req.ExpiresAt)
+
+		ExpiresAt: db.ToNullableTime(&req.ExpiresAt),
 	}
 
 	access, err := env.UpdateUserSubgraphAccess(ctx, params)
@@ -34,5 +32,6 @@ func (req *Request) Resolve(ctx context.Context, env Env) (model.UpdateUserSubgr
 	response := model.UpdateUserSubgraphAccessPayload{
 		UserSubgraphAccess: &access,
 	}
+
 	return &response, nil
 }

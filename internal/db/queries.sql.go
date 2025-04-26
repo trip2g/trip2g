@@ -671,6 +671,33 @@ func (q *Queries) UpdateOffer(ctx context.Context, arg UpdateOfferParams) (Offer
 	return i, err
 }
 
+const updateUserSubgraphAccess = `-- name: UpdateUserSubgraphAccess :one
+update user_subgraph_accesses
+   set expires_at = ?
+ where id = ?
+returning id, user_id, subgraph_id, purchase_id, created_at, expires_at, revoke_id
+`
+
+type UpdateUserSubgraphAccessParams struct {
+	ExpiresAt sql.NullTime `json:"expires_at"`
+	ID        int64        `json:"id"`
+}
+
+func (q *Queries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSubgraphAccessParams) (UserSubgraphAccess, error) {
+	row := q.db.QueryRowContext(ctx, updateUserSubgraphAccess, arg.ExpiresAt, arg.ID)
+	var i UserSubgraphAccess
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.SubgraphID,
+		&i.PurchaseID,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.RevokeID,
+	)
+	return i, err
+}
+
 const userByID = `-- name: UserByID :one
 select id, email, created_at, last_signin_code_sent_at from users where id = ?
 `
@@ -683,6 +710,27 @@ func (q *Queries) UserByID(ctx context.Context, id int64) (User, error) {
 		&i.Email,
 		&i.CreatedAt,
 		&i.LastSigninCodeSentAt,
+	)
+	return i, err
+}
+
+const userSubgraphAccessByID = `-- name: UserSubgraphAccessByID :one
+select id, user_id, subgraph_id, purchase_id, created_at, expires_at, revoke_id
+  from user_subgraph_accesses
+ where id = ?
+`
+
+func (q *Queries) UserSubgraphAccessByID(ctx context.Context, id int64) (UserSubgraphAccess, error) {
+	row := q.db.QueryRowContext(ctx, userSubgraphAccessByID, id)
+	var i UserSubgraphAccess
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.SubgraphID,
+		&i.PurchaseID,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.RevokeID,
 	)
 	return i, err
 }
