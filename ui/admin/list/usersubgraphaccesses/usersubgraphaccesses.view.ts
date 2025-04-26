@@ -2,7 +2,7 @@ namespace $.$$ {
 	export class $trip2g_admin_list_usersubgraphaccesses extends $.$trip2g_admin_list_usersubgraphaccesses {
 		@$mol_mem
 		data(reset?: null) {
-			const res = $trip2g_graphql_request(/* GraphQL */ `
+			const res = $trip2g_graphql_request(`
 				query AdminListUserSubgraphAccesses {
 					admin {
 						data: allUserSubgraphAccesses {

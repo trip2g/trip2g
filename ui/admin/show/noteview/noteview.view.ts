@@ -3,7 +3,7 @@ namespace $.$$ {
 		@$mol_mem
 		data() {
 			const res = $trip2g_graphql_request(
-				/* GraphQL */ `
+				`
 					query AdminNoteView($id: String!) {
 						admin {
 							noteView(id: $id) {
