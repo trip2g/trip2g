@@ -116,6 +116,17 @@ returning *;
 -- name: ListAllUserSubgraphAccesses :many
 select * from user_subgraph_accesses order by id desc;
 
+-- name: UserSubgraphAccessByID :one
+select id, user_id, subgraph_id, purchase_id, created_at, expires_at, revoke_id
+  from user_subgraph_accesses
+ where id = ?;
+
+-- name: UpdateUserSubgraphAccess :one
+update user_subgraph_accesses
+   set expires_at = ?
+ where id = ?
+returning id, user_id, subgraph_id, purchase_id, created_at, expires_at, revoke_id;
+
 -- name: CreateRevoke :one
 insert into revokes (target_type, target_id, by, reason)
 values (?, ?, ?, ?)
