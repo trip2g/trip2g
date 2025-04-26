@@ -19,6 +19,7 @@
     "@graphql-codegen/cli": "^5.0.5",
     "@tailwindcss/cli": "^4.0.14",
     "@tailwindcss/typography": "^0.5.16",
+    "graphql-codegen-persisted-query-ids": "^0.2.0",
     "tailwindcss": "^4.0.14",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"
