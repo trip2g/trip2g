@@ -621,7 +621,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserSubgraphAccess.Subgraph(childComplexity), true
 
-	case "UserSubgraphAccess.subgraphID":
+	case "UserSubgraphAccess.subgraphId":
 		if e.complexity.UserSubgraphAccess.SubgraphID == nil {
 			break
 		}
@@ -635,7 +635,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserSubgraphAccess.User(childComplexity), true
 
-	case "UserSubgraphAccess.userID":
+	case "UserSubgraphAccess.userId":
 		if e.complexity.UserSubgraphAccess.UserID == nil {
 			break
 		}
@@ -1598,10 +1598,10 @@ func (ec *executionContext) fieldContext_AdminQuery_userSubgraphAccess(ctx conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_UserSubgraphAccess_id(ctx, field)
-			case "userID":
-				return ec.fieldContext_UserSubgraphAccess_userID(ctx, field)
-			case "subgraphID":
-				return ec.fieldContext_UserSubgraphAccess_subgraphID(ctx, field)
+			case "userId":
+				return ec.fieldContext_UserSubgraphAccess_userId(ctx, field)
+			case "subgraphId":
+				return ec.fieldContext_UserSubgraphAccess_subgraphId(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserSubgraphAccess_createdAt(ctx, field)
 			case "expiresAt":
@@ -1723,10 +1723,10 @@ func (ec *executionContext) fieldContext_AdminUserSubgraphAccessesConnection_nod
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_UserSubgraphAccess_id(ctx, field)
-			case "userID":
-				return ec.fieldContext_UserSubgraphAccess_userID(ctx, field)
-			case "subgraphID":
-				return ec.fieldContext_UserSubgraphAccess_subgraphID(ctx, field)
+			case "userId":
+				return ec.fieldContext_UserSubgraphAccess_userId(ctx, field)
+			case "subgraphId":
+				return ec.fieldContext_UserSubgraphAccess_subgraphId(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserSubgraphAccess_createdAt(ctx, field)
 			case "expiresAt":
@@ -3185,10 +3185,10 @@ func (ec *executionContext) fieldContext_UpdateUserSubgraphAccessPayload_userSub
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_UserSubgraphAccess_id(ctx, field)
-			case "userID":
-				return ec.fieldContext_UserSubgraphAccess_userID(ctx, field)
-			case "subgraphID":
-				return ec.fieldContext_UserSubgraphAccess_subgraphID(ctx, field)
+			case "userId":
+				return ec.fieldContext_UserSubgraphAccess_userId(ctx, field)
+			case "subgraphId":
+				return ec.fieldContext_UserSubgraphAccess_subgraphId(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserSubgraphAccess_createdAt(ctx, field)
 			case "expiresAt":
@@ -3380,8 +3380,8 @@ func (ec *executionContext) fieldContext_UserSubgraphAccess_id(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _UserSubgraphAccess_userID(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_UserSubgraphAccess_userID(ctx, field)
+func (ec *executionContext) _UserSubgraphAccess_userId(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserSubgraphAccess_userId(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3411,7 +3411,7 @@ func (ec *executionContext) _UserSubgraphAccess_userID(ctx context.Context, fiel
 	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserSubgraphAccess_userID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserSubgraphAccess_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserSubgraphAccess",
 		Field:      field,
@@ -3424,8 +3424,8 @@ func (ec *executionContext) fieldContext_UserSubgraphAccess_userID(_ context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _UserSubgraphAccess_subgraphID(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_UserSubgraphAccess_subgraphID(ctx, field)
+func (ec *executionContext) _UserSubgraphAccess_subgraphId(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserSubgraphAccess_subgraphId(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3455,7 +3455,7 @@ func (ec *executionContext) _UserSubgraphAccess_subgraphID(ctx context.Context, 
 	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UserSubgraphAccess_subgraphID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UserSubgraphAccess_subgraphId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "UserSubgraphAccess",
 		Field:      field,
@@ -5807,7 +5807,7 @@ func (ec *executionContext) unmarshalInputUpdateUserSubgraphAccessInput(ctx cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "expiresAt"}
+	fieldsInOrder := [...]string{"id", "expiresAt", "subgraphId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5828,6 +5828,13 @@ func (ec *executionContext) unmarshalInputUpdateUserSubgraphAccessInput(ctx cont
 				return it, err
 			}
 			it.ExpiresAt = data
+		case "subgraphId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphId"))
+			data, err := ec.unmarshalOInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubgraphID = data
 		}
 	}
 
@@ -7381,13 +7388,13 @@ func (ec *executionContext) _UserSubgraphAccess(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "userID":
-			out.Values[i] = ec._UserSubgraphAccess_userID(ctx, field, obj)
+		case "userId":
+			out.Values[i] = ec._UserSubgraphAccess_userId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "subgraphID":
-			out.Values[i] = ec._UserSubgraphAccess_subgraphID(ctx, field, obj)
+		case "subgraphId":
+			out.Values[i] = ec._UserSubgraphAccess_subgraphId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -8779,6 +8786,16 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	res := graphql.MarshalBoolean(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOInt642int64(ctx context.Context, v any) (int64, error) {
+	res, err := graphql.UnmarshalInt64(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt642int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
+	res := graphql.MarshalInt64(v)
 	return res
 }
 

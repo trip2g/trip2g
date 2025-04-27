@@ -40,8 +40,8 @@ type Subgraph {
 
 type UserSubgraphAccess {
   id: Int64!
-  userID: Int64!
-  subgraphID: Int64!
+  userId: Int64!
+  subgraphId: Int64!
   createdAt: Time!
   expiresAt: Time
 
@@ -173,6 +173,7 @@ union UpdateSubgraphOrErrorPayload = UpdateSubgraphPayload | ErrorPayload
 input UpdateUserSubgraphAccessInput @goModel(model: "trip2g/internal/case/admin/updateusersubgraphaccess.Request") {
   id: Int64!
   expiresAt: Time
+  subgraphId: Int64
 }
 
 type UpdateUserSubgraphAccessPayload {

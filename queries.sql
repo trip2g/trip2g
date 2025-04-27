@@ -124,6 +124,7 @@ select *
 -- name: UpdateUserSubgraphAccess :one
 update user_subgraph_accesses
    set expires_at = ?
+     , subgraph_id = ?
  where id = ?
 returning *;
 

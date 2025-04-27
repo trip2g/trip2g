@@ -13,15 +13,17 @@ type Env interface {
 }
 
 type Request struct {
-	ID        int64
-	ExpiresAt *time.Time
+	ID         int64
+	ExpiresAt  *time.Time
+	SubgraphID int64
 }
 
 func (req *Request) Resolve(ctx context.Context, env Env) (model.UpdateUserSubgraphAccessOrErrorPayload, error) {
 	params := db.UpdateUserSubgraphAccessParams{
 		ID: req.ID,
 
-		ExpiresAt: db.ToNullableTime(req.ExpiresAt),
+		ExpiresAt:  db.ToNullableTime(req.ExpiresAt),
+		SubgraphID: req.SubgraphID,
 	}
 
 	access, err := env.UpdateUserSubgraphAccess(ctx, params)

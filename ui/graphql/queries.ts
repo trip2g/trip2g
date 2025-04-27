@@ -182,6 +182,7 @@ type UpdateSubgraphPayload = {
 type UpdateUserSubgraphAccessInput = {
   expiresAt?: InputMaybe<Scalars['Time']['input']>;
   id: Scalars['Int64']['input'];
+  subgraphId?: InputMaybe<Scalars['Int64']['input']>;
 };
 
 type UpdateUserSubgraphAccessOrErrorPayload = ErrorPayload | UpdateUserSubgraphAccessPayload;
@@ -204,9 +205,9 @@ type UserSubgraphAccess = {
   expiresAt?: Maybe<Scalars['Time']['output']>;
   id: Scalars['Int64']['output'];
   subgraph: Subgraph;
-  subgraphID: Scalars['Int64']['output'];
+  subgraphId: Scalars['Int64']['output'];
   user: User;
-  userID: Scalars['Int64']['output'];
+  userId: Scalars['Int64']['output'];
 };
 
 type Viewer = {
@@ -235,6 +236,11 @@ type AdminListUserSubgraphAccessesQueryVariables = Exact<{ [key: string]: never;
 
 type AdminListUserSubgraphAccessesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename?: 'AdminUserSubgraphAccessesConnection', nodes: Array<{ __typename: 'UserSubgraphAccess', id: any, createdAt: any, expiresAt?: any | null, subgraph: { __typename?: 'Subgraph', name: string }, user: { __typename?: 'User', id: any, email: string } }> } } };
 
+type AdminSelectSubgraphQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+type AdminSelectSubgraphQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'Subgraph', id: any, name: string }> } } };
+
 type AdminNoteViewQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -261,7 +267,7 @@ type AdminUserSubgraphAccessQueryVariables = Exact<{
 }>;
 
 
-type AdminUserSubgraphAccessQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', userSubgraphAccess?: { __typename?: 'UserSubgraphAccess', expiresAt?: any | null } | null } };
+type AdminUserSubgraphAccessQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'Subgraph', id: any, name: string }> }, userSubgraphAccess?: { __typename?: 'UserSubgraphAccess', userId: any, subgraphId: any, expiresAt?: any | null } | null } };
 
 type AdminUpdateUserSubgraphAccessMutationVariables = Exact<{
   input: UpdateUserSubgraphAccessInput;
@@ -302,13 +308,15 @@ export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUsers {
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUserSubgraphAccesses {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tdata: allUserSubgraphAccesses {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\texpiresAt\n\t\t\t\t\t\t\t\tsubgraph {\n\t\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\tuser {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUserSubgraphAccessesQuery
 
+export function $trip2g_graphql_request(query: '\n\t\t\t\t\tquery AdminSelectSubgraph {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tallSubgraphs {\n\t\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t'): AdminSelectSubgraphQuery
+
 export function $trip2g_graphql_request(query: '\n\t\t\t\t\tquery AdminNoteView($id: String!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tnoteView(id: $id) {\n\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\tpath\n\t\t\t\t\t\t\t\ttitle\n\t\t\t\t\t\t\t\tpermalink\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminNoteViewQueryVariables): AdminNoteViewQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\t\tquery AdminShowSubgraph($id: Int64!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tsubgraph(id: $id) {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\tcolor\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminShowSubgraphQueryVariables): AdminShowSubgraphQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation UpdateSubgraph($input: UpdateSubgraphInput!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tdata: updateSubgraph(input: $input) {\n\t\t\t\t\t\t\t\t... on UpdateSubgraphPayload {\n\t\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\t\tsubgraph {\n\t\t\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\t\tcolor\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: UpdateSubgraphMutationVariables): UpdateSubgraphMutation
 
-export function $trip2g_graphql_request(query: '\n\t\t\t\t\tquery AdminUserSubgraphAccess($id: Int64!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tuserSubgraphAccess(id: $id) {\n\t\t\t\t\t\t\t\texpiresAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminUserSubgraphAccessQueryVariables): AdminUserSubgraphAccessQuery
+export function $trip2g_graphql_request(query: '\n\t\t\t\t\tquery AdminUserSubgraphAccess($id: Int64!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tallSubgraphs {\n\t\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\n\t\t\t\t\t\t\tuserSubgraphAccess(id: $id) {\n\t\t\t\t\t\t\t\tuserId\n\t\t\t\t\t\t\t\tsubgraphId\n\t\t\t\t\t\t\t\texpiresAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminUserSubgraphAccessQueryVariables): AdminUserSubgraphAccessQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation AdminUpdateUserSubgraphAccess($input: UpdateUserSubgraphAccessInput!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tdata: updateUserSubgraphAccess(input: $input) {\n\t\t\t\t\t\t\t\t... on UpdateUserSubgraphAccessPayload {\n\t\t\t\t\t\t\t\t\tuserSubgraphAccess {\n\t\t\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\t\t\texpiresAt\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminUpdateUserSubgraphAccessMutationVariables): AdminUpdateUserSubgraphAccessMutation
 
@@ -322,6 +330,6 @@ export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation SignInByEma
 
 export function $trip2g_graphql_request(query: any, variables?: any) { return $trip2g_graphql_raw_request(query, variables); }
 
-export const $trip2g_graphql_persist_queries = {"AdminListNoteViews":"1fa4c73890f89fe68dfe9785f82d77f91e0a323c21b6ecc44a4b7b1c79eceb72","AdminListSubgraphs":"2cee87730b8d154a6683eee863b7d55859a5cb0d8bcac5d8a6eb3ad699ef7b10","AdminListUsers":"bb65e89c75590f0431371bbf80d782707ac4ace59860bffaff808863ccec219c","AdminListUserSubgraphAccesses":"c401571acb47ee9727398b1e47a53d2e864b12882ba31004a51c783dee6ac689","AdminNoteView":"30bfefe9ac3f3a4c70bd46e1866026909bf4ac013c8c274f52d560336d834068","AdminShowSubgraph":"a85d72ae054c667afe00190423dbc3420cf0fab11cd7842d37f1646ba8fccebe","UpdateSubgraph":"910386c507a3405267c729bc1359fd439a0c89726092eca906fbb72e7da3546b","AdminUserSubgraphAccess":"244c03a04b79aedc677f0188bbc09e48ec7143dce068b7e3b085afd4d82007eb","AdminUpdateUserSubgraphAccess":"66152953987b3f528e2f0899561dfa2db2a5fc13d6ac152808b0c0eaa573e379","Viewer":"3a8c636e5b92b0bd849229fbc238e1bd5d9a6ab0f00b9726cfcd06ad7464a685","SignOut":"cba3ef4c85f3b6d17dcd080aef3350968b170a4d2bfe6bd82dad23587984c3e4","RequestEmailSignInCode":"d36752898539b45c7fcb5a54a4bed0aa246ca0373cbb7604fde55977e7a7d406","SignInByEmail":"dcd280c068ca17383a6a9bd60d6f9f448c57bb96fc52f6b02d6c3fb1c32c518f"}
+export const $trip2g_graphql_persist_queries = {"AdminListNoteViews":"1fa4c73890f89fe68dfe9785f82d77f91e0a323c21b6ecc44a4b7b1c79eceb72","AdminListSubgraphs":"2cee87730b8d154a6683eee863b7d55859a5cb0d8bcac5d8a6eb3ad699ef7b10","AdminListUsers":"bb65e89c75590f0431371bbf80d782707ac4ace59860bffaff808863ccec219c","AdminListUserSubgraphAccesses":"c401571acb47ee9727398b1e47a53d2e864b12882ba31004a51c783dee6ac689","AdminSelectSubgraph":"2f46ae2f709229d7c3dd5a0c564863f57129f0500f1c4ec14f7086ada407d1fe","AdminNoteView":"30bfefe9ac3f3a4c70bd46e1866026909bf4ac013c8c274f52d560336d834068","AdminShowSubgraph":"a85d72ae054c667afe00190423dbc3420cf0fab11cd7842d37f1646ba8fccebe","UpdateSubgraph":"910386c507a3405267c729bc1359fd439a0c89726092eca906fbb72e7da3546b","AdminUserSubgraphAccess":"46d844334f0f79f0f0a79d6cad4a80721d8345976c91744d3c754b23ce3a8f52","AdminUpdateUserSubgraphAccess":"66152953987b3f528e2f0899561dfa2db2a5fc13d6ac152808b0c0eaa573e379","Viewer":"3a8c636e5b92b0bd849229fbc238e1bd5d9a6ab0f00b9726cfcd06ad7464a685","SignOut":"cba3ef4c85f3b6d17dcd080aef3350968b170a4d2bfe6bd82dad23587984c3e4","RequestEmailSignInCode":"d36752898539b45c7fcb5a54a4bed0aa246ca0373cbb7604fde55977e7a7d406","SignInByEmail":"dcd280c068ca17383a6a9bd60d6f9f448c57bb96fc52f6b02d6c3fb1c32c518f"}
 
 }

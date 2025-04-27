@@ -1,12 +1,21 @@
 namespace $.$$ {
 	export class $trip2g_admin_show_usersubgraphaccess extends $.$trip2g_admin_show_usersubgraphaccess {
 		@$mol_mem
-		data(reset?: null) {
+		all_data(reset?: null) {
 			const res = $trip2g_graphql_request(
 				`
 					query AdminUserSubgraphAccess($id: Int64!) {
 						admin {
+							allSubgraphs {
+								nodes {
+									id
+									name
+								}
+							}
+
 							userSubgraphAccess(id: $id) {
+								userId
+								subgraphId
 								expiresAt
 							}
 						}
@@ -15,11 +24,16 @@ namespace $.$$ {
 				{ id: this.access_id() }
 			)
 
-			if (!res.admin.userSubgraphAccess) {
+			return res.admin;
+		}
+
+		data() {
+			const data = this.all_data()
+			if (!data.userSubgraphAccess) {
 				throw new Error('UserSubgraphAccess not found')
 			}
 
-			return res.admin.userSubgraphAccess
+			return data.userSubgraphAccess;
 		}
 
 		@$mol_mem
@@ -41,7 +55,13 @@ namespace $.$$ {
 			return next
 		}
 
+		@$mol_mem
+		subgraph_id( next?: number ): number {
+			return next === undefined ? this.data().subgraphId : next
+		}
+
 		submit() {
+			console.log('subgraph_id', this.subgraph_id())
 			const res = $trip2g_graphql_request(
 				`
 					mutation AdminUpdateUserSubgraphAccess($input: UpdateUserSubgraphAccessInput!) {
@@ -64,6 +84,7 @@ namespace $.$$ {
 					input: {
 						id: this.access_id(),
 						expiresAt: this.expires_at_moment()?.toString('YYYY-MM-DDThh:mm:ss.sssZ') || null,
+						subgraphId: this.subgraph_id(),
 					},
 				}
 			)

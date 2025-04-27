@@ -191,7 +191,7 @@ func (r *userSubgraphAccessResolver) User(ctx context.Context, obj *db.UserSubgr
 
 // Subgraph is the resolver for the subgraph field.
 func (r *userSubgraphAccessResolver) Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error) {
-	return resolveOne[db.Subgraph](ctx, obj.UserID, r.Env.SubgraphByID)
+	return resolveOne[db.Subgraph](ctx, obj.SubgraphID, r.Env.SubgraphByID)
 }
 
 // ID is the resolver for the id field.

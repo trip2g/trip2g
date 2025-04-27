@@ -674,17 +674,19 @@ func (q *Queries) UpdateOffer(ctx context.Context, arg UpdateOfferParams) (Offer
 const updateUserSubgraphAccess = `-- name: UpdateUserSubgraphAccess :one
 update user_subgraph_accesses
    set expires_at = ?
+     , subgraph_id = ?
  where id = ?
 returning id, user_id, subgraph_id, purchase_id, created_at, expires_at, revoke_id
 `
 
 type UpdateUserSubgraphAccessParams struct {
-	ExpiresAt sql.NullTime `json:"expires_at"`
-	ID        int64        `json:"id"`
+	ExpiresAt  sql.NullTime `json:"expires_at"`
+	SubgraphID int64        `json:"subgraph_id"`
+	ID         int64        `json:"id"`
 }
 
 func (q *Queries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSubgraphAccessParams) (UserSubgraphAccess, error) {
-	row := q.db.QueryRowContext(ctx, updateUserSubgraphAccess, arg.ExpiresAt, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateUserSubgraphAccess, arg.ExpiresAt, arg.SubgraphID, arg.ID)
 	var i UserSubgraphAccess
 	err := row.Scan(
 		&i.ID,

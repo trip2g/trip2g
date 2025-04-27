@@ -4,6 +4,11 @@ $trip2g_admin_show_usersubgraphaccess $mol_page
 	body /
 		<= Form $mol_form
 			body /
+				<= Subgraph_field $mol_form_field
+					name \Subgraph
+					bid <= subgraph_id_bid \
+					Content <= subgraph_id_control $trip2g_admin_select_subgraph
+						number_value? <=> subgraph_id? 0
 				<= ExpiresAt_field $mol_form_field
 					name \Expires At
 					bid <= expires_at_bid \
