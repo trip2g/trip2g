@@ -143,3 +143,17 @@ select * from subgraphs where id = ?;
 
 -- name: ListAllSubgraphs :many
 select * from subgraphs order by id;
+
+-- name: ListAllUserBans :many
+select * from user_bans;
+
+-- name: InsertUserBan :exec
+insert into user_bans (user_id, banned_by, reason)
+values (?, ?, ?);
+
+-- name: DeleteUserBan :exec
+delete from user_bans
+ where user_id = ?;
+
+-- name: AdminByUserID :one
+select * from admins where user_id = ?;

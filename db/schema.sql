@@ -21,11 +21,6 @@ CREATE TABLE users (
   created_at datetime not null default current_timestamp,
   last_signin_code_sent_at datetime
 );
-CREATE TABLE admins (
-  user_id text primary key references users(id) on delete cascade,
-  granted_at datetime not null default current_timestamp,
-  granted_by text references admins(user_id)
-);
 CREATE TABLE offers (
   id text primary key,
   created_at datetime not null default current_timestamp,
@@ -96,6 +91,17 @@ CREATE TABLE revokes (
   by admin_id integer not null references admins(id) on delete restrict,
   reason text
 );
+CREATE TABLE user_bans (
+  user_id integer primary key references users(id) on delete cascade,
+  created_at datetime not null default current_timestamp,
+  banned_by integer references admin(id) on delete restrict,
+  reason text not null
+);
+CREATE TABLE admins (
+  user_id int primary key references users(id) on delete cascade,
+  granted_at datetime not null default current_timestamp,
+  granted_by text references admins(user_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -103,4 +109,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250412053210'),
   ('20250414025612'),
   ('20250417050444'),
-  ('20250419030458');
+  ('20250419030458'),
+  ('20250427033102');

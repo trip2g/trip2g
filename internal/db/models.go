@@ -10,7 +10,7 @@ import (
 )
 
 type Admin struct {
-	UserID    string         `json:"user_id"`
+	UserID    int64          `json:"user_id"`
 	GrantedAt time.Time      `json:"granted_at"`
 	GrantedBy sql.NullString `json:"granted_by"`
 }
@@ -108,6 +108,13 @@ type User struct {
 	Email                string       `json:"email"`
 	CreatedAt            time.Time    `json:"created_at"`
 	LastSigninCodeSentAt sql.NullTime `json:"last_signin_code_sent_at"`
+}
+
+type UserBan struct {
+	UserID    int64         `json:"user_id"`
+	CreatedAt time.Time     `json:"created_at"`
+	BannedBy  sql.NullInt64 `json:"banned_by"`
+	Reason    string        `json:"reason"`
 }
 
 type UserSubgraphAccess struct {

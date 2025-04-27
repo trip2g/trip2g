@@ -46,10 +46,12 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Admin() AdminResolver
 	AdminMutation() AdminMutationResolver
 	AdminNoteViewsConnection() AdminNoteViewsConnectionResolver
 	AdminQuery() AdminQueryResolver
 	AdminSubgraphsConnection() AdminSubgraphsConnectionResolver
+	AdminUserBansConnection() AdminUserBansConnectionResolver
 	AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver
 	AdminUsersConnection() AdminUsersConnectionResolver
 	ErrorPayload() ErrorPayloadResolver
@@ -57,6 +59,7 @@ type ResolverRoot interface {
 	NoteView() NoteViewResolver
 	Query() QueryResolver
 	Subgraph() SubgraphResolver
+	UserBan() UserBanResolver
 	UserSubgraphAccess() UserSubgraphAccessResolver
 	Viewer() ViewerResolver
 	SignInByEmailInput() SignInByEmailInputResolver
@@ -66,6 +69,10 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Admin struct {
+		User func(childComplexity int) int
+	}
+
 	AdminMutation struct {
 		UpdateSubgraph           func(childComplexity int, input updatesubgraph.Request) int
 		UpdateUserSubgraphAccess func(childComplexity int, input updateusersubgraphaccess.Request) int
@@ -79,6 +86,7 @@ type ComplexityRoot struct {
 		AllNoteViews            func(childComplexity int) int
 		AllSubgraphs            func(childComplexity int) int
 		AllUserSubgraphAccesses func(childComplexity int) int
+		AllUserUserBans         func(childComplexity int) int
 		AllUsers                func(childComplexity int) int
 		NoteView                func(childComplexity int, id string) int
 		Subgraph                func(childComplexity int, id int) int
@@ -86,6 +94,10 @@ type ComplexityRoot struct {
 	}
 
 	AdminSubgraphsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminUserBansConnection struct {
 		Nodes func(childComplexity int) int
 	}
 
@@ -163,6 +175,14 @@ type ComplexityRoot struct {
 		ID        func(childComplexity int) int
 	}
 
+	UserBan struct {
+		BannedBy  func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		Reason    func(childComplexity int) int
+		User      func(childComplexity int) int
+		UserID    func(childComplexity int) int
+	}
+
 	UserSubgraphAccess struct {
 		CreatedAt  func(childComplexity int) int
 		ExpiresAt  func(childComplexity int) int
@@ -179,6 +199,9 @@ type ComplexityRoot struct {
 	}
 }
 
+type AdminResolver interface {
+	User(ctx context.Context, obj *db.Admin) (*db.User, error)
+}
 type AdminMutationResolver interface {
 	UpdateSubgraph(ctx context.Context, obj *model.AdminMutation, input updatesubgraph.Request) (model1.UpdateSubgraphOrErrorPayload, error)
 	UpdateUserSubgraphAccess(ctx context.Context, obj *model.AdminMutation, input updateusersubgraphaccess.Request) (model1.UpdateUserSubgraphAccessOrErrorPayload, error)
@@ -191,12 +214,16 @@ type AdminQueryResolver interface {
 	AllSubgraphs(ctx context.Context, obj *model.AdminQuery) (*model1.AdminSubgraphsConnection, error)
 	AllUserSubgraphAccesses(ctx context.Context, obj *model.AdminQuery) (*model1.AdminUserSubgraphAccessesConnection, error)
 	AllNoteViews(ctx context.Context, obj *model.AdminQuery) (*model1.AdminNoteViewsConnection, error)
+	AllUserUserBans(ctx context.Context, obj *model.AdminQuery) (*model1.AdminUserBansConnection, error)
 	Subgraph(ctx context.Context, obj *model.AdminQuery, id int) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model.AdminQuery, id string) (*model.NoteView, error)
 	UserSubgraphAccess(ctx context.Context, obj *model.AdminQuery, id int) (*db.UserSubgraphAccess, error)
 }
 type AdminSubgraphsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model1.AdminSubgraphsConnection) ([]db.Subgraph, error)
+}
+type AdminUserBansConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model1.AdminUserBansConnection) ([]db.UserBan, error)
 }
 type AdminUserSubgraphAccessesConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model1.AdminUserSubgraphAccessesConnection) ([]db.UserSubgraphAccess, error)
@@ -223,6 +250,11 @@ type QueryResolver interface {
 }
 type SubgraphResolver interface {
 	Color(ctx context.Context, obj *db.Subgraph) (*string, error)
+}
+type UserBanResolver interface {
+	User(ctx context.Context, obj *db.UserBan) (*db.User, error)
+
+	BannedBy(ctx context.Context, obj *db.UserBan) (*db.Admin, error)
 }
 type UserSubgraphAccessResolver interface {
 	ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error)
@@ -256,6 +288,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Admin.user":
+		if e.complexity.Admin.User == nil {
+			break
+		}
+
+		return e.complexity.Admin.User(childComplexity), true
 
 	case "AdminMutation.updateSubgraph":
 		if e.complexity.AdminMutation.UpdateSubgraph == nil {
@@ -309,6 +348,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminQuery.AllUserSubgraphAccesses(childComplexity), true
 
+	case "AdminQuery.allUserUserBans":
+		if e.complexity.AdminQuery.AllUserUserBans == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllUserUserBans(childComplexity), true
+
 	case "AdminQuery.allUsers":
 		if e.complexity.AdminQuery.AllUsers == nil {
 			break
@@ -358,6 +404,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminSubgraphsConnection.Nodes(childComplexity), true
+
+	case "AdminUserBansConnection.nodes":
+		if e.complexity.AdminUserBansConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminUserBansConnection.Nodes(childComplexity), true
 
 	case "AdminUserSubgraphAccessesConnection.nodes":
 		if e.complexity.AdminUserSubgraphAccessesConnection.Nodes == nil {
@@ -592,6 +645,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.ID(childComplexity), true
+
+	case "UserBan.bannedBy":
+		if e.complexity.UserBan.BannedBy == nil {
+			break
+		}
+
+		return e.complexity.UserBan.BannedBy(childComplexity), true
+
+	case "UserBan.createdAt":
+		if e.complexity.UserBan.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.UserBan.CreatedAt(childComplexity), true
+
+	case "UserBan.reason":
+		if e.complexity.UserBan.Reason == nil {
+			break
+		}
+
+		return e.complexity.UserBan.Reason(childComplexity), true
+
+	case "UserBan.user":
+		if e.complexity.UserBan.User == nil {
+			break
+		}
+
+		return e.complexity.UserBan.User(childComplexity), true
+
+	case "UserBan.userId":
+		if e.complexity.UserBan.UserID == nil {
+			break
+		}
+
+		return e.complexity.UserBan.UserID(childComplexity), true
 
 	case "UserSubgraphAccess.createdAt":
 		if e.complexity.UserSubgraphAccess.CreatedAt == nil {
@@ -1068,6 +1156,58 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _Admin_user(ctx context.Context, field graphql.CollectedField, obj *db.Admin) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Admin_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Admin().User(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Admin_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Admin",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminMutation_updateSubgraph(ctx context.Context, field graphql.CollectedField, obj *model.AdminMutation) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminMutation_updateSubgraph(ctx, field)
 	if err != nil {
@@ -1430,6 +1570,54 @@ func (ec *executionContext) fieldContext_AdminQuery_allNoteViews(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_allUserUserBans(ctx context.Context, field graphql.CollectedField, obj *model.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allUserUserBans(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllUserUserBans(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model1.AdminUserBansConnection)
+	fc.Result = res
+	return ec.marshalNAdminUserBansConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUserBansConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allUserUserBans(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminUserBansConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUserBansConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_subgraph(ctx context.Context, field graphql.CollectedField, obj *model.AdminQuery) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminQuery_subgraph(ctx, field)
 	if err != nil {
@@ -1677,6 +1865,62 @@ func (ec *executionContext) fieldContext_AdminSubgraphsConnection_nodes(_ contex
 				return ec.fieldContext_Subgraph_createdAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Subgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminUserBansConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model1.AdminUserBansConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminUserBansConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminUserBansConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.UserBan)
+	fc.Result = res
+	return ec.marshalNUserBan2ᚕtrip2gᚋinternalᚋdbᚐUserBanᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminUserBansConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminUserBansConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "user":
+				return ec.fieldContext_UserBan_user(ctx, field)
+			case "userId":
+				return ec.fieldContext_UserBan_userId(ctx, field)
+			case "bannedBy":
+				return ec.fieldContext_UserBan_bannedBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_UserBan_createdAt(ctx, field)
+			case "reason":
+				return ec.fieldContext_UserBan_reason(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserBan", field.Name)
 		},
 	}
 	return fc, nil
@@ -2585,6 +2829,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allUserSubgraphAccesses(ctx, field)
 			case "allNoteViews":
 				return ec.fieldContext_AdminQuery_allNoteViews(ctx, field)
+			case "allUserUserBans":
+				return ec.fieldContext_AdminQuery_allUserUserBans(ctx, field)
 			case "subgraph":
 				return ec.fieldContext_AdminQuery_subgraph(ctx, field)
 			case "noteView":
@@ -3331,6 +3577,232 @@ func (ec *executionContext) fieldContext_User_createdAt(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserBan_user(ctx context.Context, field graphql.CollectedField, obj *db.UserBan) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserBan_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.UserBan().User(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserBan_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserBan",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_User_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserBan_userId(ctx context.Context, field graphql.CollectedField, obj *db.UserBan) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserBan_userId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserBan_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserBan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserBan_bannedBy(ctx context.Context, field graphql.CollectedField, obj *db.UserBan) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserBan_bannedBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.UserBan().BannedBy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.Admin)
+	fc.Result = res
+	return ec.marshalOAdmin2ᚖtrip2gᚋinternalᚋdbᚐAdmin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserBan_bannedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserBan",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "user":
+				return ec.fieldContext_Admin_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Admin", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserBan_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.UserBan) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserBan_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserBan_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserBan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserBan_reason(ctx context.Context, field graphql.CollectedField, obj *db.UserBan) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserBan_reason(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Reason, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserBan_reason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserBan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5964,6 +6436,76 @@ func (ec *executionContext) _UpdateUserSubgraphAccessOrErrorPayload(ctx context.
 
 // region    **************************** object.gotpl ****************************
 
+var adminImplementors = []string{"Admin"}
+
+func (ec *executionContext) _Admin(ctx context.Context, sel ast.SelectionSet, obj *db.Admin) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Admin")
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Admin_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminMutationImplementors = []string{"AdminMutation"}
 
 func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.SelectionSet, obj *model.AdminMutation) graphql.Marshaler {
@@ -6295,6 +6837,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allUserUserBans":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allUserUserBans(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "subgraph":
 			field := field
 
@@ -6438,6 +7016,76 @@ func (ec *executionContext) _AdminSubgraphsConnection(ctx context.Context, sel a
 					}
 				}()
 				res = ec._AdminSubgraphsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminUserBansConnectionImplementors = []string{"AdminUserBansConnection"}
+
+func (ec *executionContext) _AdminUserBansConnection(ctx context.Context, sel ast.SelectionSet, obj *model1.AdminUserBansConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminUserBansConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminUserBansConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminUserBansConnection_nodes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -7372,6 +8020,121 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var userBanImplementors = []string{"UserBan"}
+
+func (ec *executionContext) _UserBan(ctx context.Context, sel ast.SelectionSet, obj *db.UserBan) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userBanImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserBan")
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UserBan_user(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "userId":
+			out.Values[i] = ec._UserBan_userId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "bannedBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UserBan_bannedBy(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._UserBan_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "reason":
+			out.Values[i] = ec._UserBan_reason(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var userSubgraphAccessImplementors = []string{"UserSubgraphAccess"}
 
 func (ec *executionContext) _UserSubgraphAccess(ctx context.Context, sel ast.SelectionSet, obj *db.UserSubgraphAccess) graphql.Marshaler {
@@ -8025,6 +8788,20 @@ func (ec *executionContext) marshalNAdminSubgraphsConnection2ᚖtrip2gᚋinterna
 	return ec._AdminSubgraphsConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminUserBansConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUserBansConnection(ctx context.Context, sel ast.SelectionSet, v model1.AdminUserBansConnection) graphql.Marshaler {
+	return ec._AdminUserBansConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminUserBansConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminUserBansConnection(ctx context.Context, sel ast.SelectionSet, v *model1.AdminUserBansConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminUserBansConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminUserSubgraphAccessesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminUserSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, v model1.AdminUserSubgraphAccessesConnection) graphql.Marshaler {
 	return ec._AdminUserSubgraphAccessesConnection(ctx, sel, &v)
 }
@@ -8440,6 +9217,54 @@ func (ec *executionContext) marshalNUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx co
 	return ec._User(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNUserBan2trip2gᚋinternalᚋdbᚐUserBan(ctx context.Context, sel ast.SelectionSet, v db.UserBan) graphql.Marshaler {
+	return ec._UserBan(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserBan2ᚕtrip2gᚋinternalᚋdbᚐUserBanᚄ(ctx context.Context, sel ast.SelectionSet, v []db.UserBan) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUserBan2trip2gᚋinternalᚋdbᚐUserBan(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNUserSubgraphAccess2trip2gᚋinternalᚋdbᚐUserSubgraphAccess(ctx context.Context, sel ast.SelectionSet, v db.UserSubgraphAccess) graphql.Marshaler {
 	return ec._UserSubgraphAccess(ctx, sel, &v)
 }
@@ -8761,6 +9586,13 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalOAdmin2ᚖtrip2gᚋinternalᚋdbᚐAdmin(ctx context.Context, sel ast.SelectionSet, v *db.Admin) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Admin(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {

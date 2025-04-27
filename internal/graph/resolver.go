@@ -19,8 +19,10 @@ type Env interface {
 	ListAllUsers(ctx context.Context) ([]db.User, error)
 	ListAllUserSubgraphAccesses(ctx context.Context) ([]db.UserSubgraphAccess, error)
 	ListAllSubgraphs(ctx context.Context) ([]db.Subgraph, error)
+	ListAllUserBans(ctx context.Context) ([]db.UserBan, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
+	AdminByUserID(ctx context.Context, userID int64) (db.Admin, error)
 	SubgraphByID(ctx context.Context, id int64) (db.Subgraph, error)
 	UserSubgraphAccessByID(ctx context.Context, id int64) (db.UserSubgraphAccess, error)
 

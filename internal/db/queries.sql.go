@@ -10,6 +10,17 @@ import (
 	"database/sql"
 )
 
+const adminByUserID = `-- name: AdminByUserID :one
+select user_id, granted_at, granted_by from admins where user_id = ?
+`
+
+func (q *Queries) AdminByUserID(ctx context.Context, userID int64) (Admin, error) {
+	row := q.db.QueryRowContext(ctx, adminByUserID, userID)
+	var i Admin
+	err := row.Scan(&i.UserID, &i.GrantedAt, &i.GrantedBy)
+	return i, err
+}
+
 const allLatestNotes = `-- name: AllLatestNotes :many
 select value as path, content
   from note_paths p
@@ -329,6 +340,16 @@ func (q *Queries) DeleteSignInCodesByUserID(ctx context.Context, userID int64) e
 	return err
 }
 
+const deleteUserBan = `-- name: DeleteUserBan :exec
+delete from user_bans
+ where user_id = ?
+`
+
+func (q *Queries) DeleteUserBan(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteUserBan, userID)
+	return err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 select id, email, created_at, last_signin_code_sent_at from users where email = lower(?)
 `
@@ -433,6 +454,22 @@ func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
 	return err
 }
 
+const insertUserBan = `-- name: InsertUserBan :exec
+insert into user_bans (user_id, banned_by, reason)
+values (?, ?, ?)
+`
+
+type InsertUserBanParams struct {
+	UserID   int64         `json:"user_id"`
+	BannedBy sql.NullInt64 `json:"banned_by"`
+	Reason   string        `json:"reason"`
+}
+
+func (q *Queries) InsertUserBan(ctx context.Context, arg InsertUserBanParams) error {
+	_, err := q.db.ExecContext(ctx, insertUserBan, arg.UserID, arg.BannedBy, arg.Reason)
+	return err
+}
+
 const listActiveSubgraphsByUserID = `-- name: ListActiveSubgraphsByUserID :many
 select distinct s.name
   from user_subgraph_accesses a
@@ -484,6 +521,38 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 			&i.Name,
 			&i.Color,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllUserBans = `-- name: ListAllUserBans :many
+select user_id, created_at, banned_by, reason from user_bans
+`
+
+func (q *Queries) ListAllUserBans(ctx context.Context) ([]UserBan, error) {
+	rows, err := q.db.QueryContext(ctx, listAllUserBans)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UserBan
+	for rows.Next() {
+		var i UserBan
+		if err := rows.Scan(
+			&i.UserID,
+			&i.CreatedAt,
+			&i.BannedBy,
+			&i.Reason,
 		); err != nil {
 			return nil, err
 		}

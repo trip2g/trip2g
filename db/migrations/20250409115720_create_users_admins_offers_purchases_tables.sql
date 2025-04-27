@@ -8,7 +8,7 @@ create table users (
 );
 
 create table admins (
-  user_id text primary key references users(id) on delete cascade,
+  user_id int primary key references users(id) on delete cascade,
   granted_at datetime not null default current_timestamp,
   granted_by text references admins(user_id)
 );

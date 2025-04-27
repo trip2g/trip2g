@@ -36,6 +36,10 @@ type AdminSubgraphsConnection struct {
 	Nodes []db.Subgraph `json:"nodes"`
 }
 
+type AdminUserBansConnection struct {
+	Nodes []db.UserBan `json:"nodes"`
+}
+
 type AdminUserSubgraphAccessesConnection struct {
 	Nodes []db.UserSubgraphAccess `json:"nodes"`
 }

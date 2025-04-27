@@ -59,6 +59,18 @@ type NoteView {
   free: Boolean!
 }
 
+type Admin {
+  user: User! @goField(forceResolver: true)
+}
+
+type UserBan {
+  user: User @goField(forceResolver: true)
+  userId: Int64!
+  bannedBy: Admin
+  createdAt: Time!
+  reason: String!
+}
+
 type AdminUserSubgraphAccessesConnection {
   nodes: [UserSubgraphAccess!]! @goField(forceResolver: true)
 }
@@ -71,11 +83,16 @@ type AdminNoteViewsConnection {
   nodes: [NoteView!]! @goField(forceResolver: true)
 }
 
+type AdminUserBansConnection {
+  nodes: [UserBan!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
   allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection!
   allNoteViews: AdminNoteViewsConnection!
+  allUserUserBans: AdminUserBansConnection!
 
   subgraph(id: Int64!): Subgraph
   noteView(id: String!): NoteView

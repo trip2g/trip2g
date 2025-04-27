@@ -23,6 +23,11 @@ import (
 	model1 "trip2g/internal/model"
 )
 
+// User is the resolver for the user field.
+func (r *adminResolver) User(ctx context.Context, obj *db.Admin) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.UserID, r.Env.UserByID)
+}
+
 // UpdateSubgraph is the resolver for the updateSubgraph field.
 func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *model1.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error) {
 	return input.Resolve(ctx, r.Env)
@@ -72,6 +77,11 @@ func (r *adminQueryResolver) AllNoteViews(ctx context.Context, obj *model1.Admin
 	return &model.AdminNoteViewsConnection{}, nil
 }
 
+// AllUserUserBans is the resolver for the allUserUserBans field.
+func (r *adminQueryResolver) AllUserUserBans(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUserBansConnection, error) {
+	return &model.AdminUserBansConnection{}, nil
+}
+
 // Subgraph is the resolver for the subgraph field.
 func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *model1.AdminQuery, id int) (*db.Subgraph, error) {
 	return resolveOne[db.Subgraph](ctx, int64(id), r.Env.SubgraphByID)
@@ -92,6 +102,11 @@ func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *model1
 // Nodes is the resolver for the nodes field.
 func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error) {
 	return r.Env.ListAllSubgraphs(ctx)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminUserBansConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUserBansConnection) ([]db.UserBan, error) {
+	return r.Env.ListAllUserBans(ctx)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -179,6 +194,20 @@ func (r *subgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*string
 	return db.ToStringPtr(obj.Color), nil
 }
 
+// User is the resolver for the user field.
+func (r *userBanResolver) User(ctx context.Context, obj *db.UserBan) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.UserID, r.Env.UserByID)
+}
+
+// BannedBy is the resolver for the bannedBy field.
+func (r *userBanResolver) BannedBy(ctx context.Context, obj *db.UserBan) (*db.Admin, error) {
+	if !obj.BannedBy.Valid {
+		return nil, nil
+	}
+
+	return resolveOne[db.Admin](ctx, obj.BannedBy.Int64, r.Env.AdminByUserID)
+}
+
 // ExpiresAt is the resolver for the expiresAt field.
 func (r *userSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
 	return db.ToTimePtr(obj.ExpiresAt), nil
@@ -232,6 +261,9 @@ func (r *signInByEmailInputResolver) Code(ctx context.Context, obj *signinbyemai
 	return nil
 }
 
+// Admin returns AdminResolver implementation.
+func (r *Resolver) Admin() AdminResolver { return &adminResolver{r} }
+
 // AdminMutation returns AdminMutationResolver implementation.
 func (r *Resolver) AdminMutation() AdminMutationResolver { return &adminMutationResolver{r} }
 
@@ -246,6 +278,11 @@ func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{
 // AdminSubgraphsConnection returns AdminSubgraphsConnectionResolver implementation.
 func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
 	return &adminSubgraphsConnectionResolver{r}
+}
+
+// AdminUserBansConnection returns AdminUserBansConnectionResolver implementation.
+func (r *Resolver) AdminUserBansConnection() AdminUserBansConnectionResolver {
+	return &adminUserBansConnectionResolver{r}
 }
 
 // AdminUserSubgraphAccessesConnection returns AdminUserSubgraphAccessesConnectionResolver implementation.
@@ -273,6 +310,9 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // Subgraph returns SubgraphResolver implementation.
 func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
 
+// UserBan returns UserBanResolver implementation.
+func (r *Resolver) UserBan() UserBanResolver { return &userBanResolver{r} }
+
 // UserSubgraphAccess returns UserSubgraphAccessResolver implementation.
 func (r *Resolver) UserSubgraphAccess() UserSubgraphAccessResolver {
 	return &userSubgraphAccessResolver{r}
@@ -286,10 +326,12 @@ func (r *Resolver) SignInByEmailInput() SignInByEmailInputResolver {
 	return &signInByEmailInputResolver{r}
 }
 
+type adminResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
 type adminNoteViewsConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
+type adminUserBansConnectionResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
@@ -297,6 +339,7 @@ type mutationResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
+type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
 type signInByEmailInputResolver struct{ *Resolver }
