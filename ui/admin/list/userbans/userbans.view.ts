@@ -7,6 +7,7 @@ namespace $.$$ {
 					admin {
 						allUserUserBans {
 							nodes {
+								id: userId
 								user {
 									email
 								}
@@ -31,6 +32,10 @@ namespace $.$$ {
 			return this.data().mapKeys(key => this.Content(key));
 		}
 
+		body() {
+			return this.data().map(key => this.Row(key));
+		}
+
 		row(id: any) {
 			return this.data().get(id);
 		}
@@ -40,7 +45,7 @@ namespace $.$$ {
 		}
 
 		row_banned_by_email(id: any): string {
-			return this.row(id).bannedBy.user.email;
+			return this.row(id).bannedBy?.user.email || '-';
 		}
 
 		row_created_at(id: any): string {

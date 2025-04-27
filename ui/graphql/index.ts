@@ -71,6 +71,13 @@ namespace $ {
 				}
 				return out
 			},
+			map<V>(fn: (key: string) => V): V[] {
+				const out: V[] = []
+				for (const key of map.keys()) {
+					out.push(fn(key))
+				}
+				return out
+			},
 		}
 	}
 }

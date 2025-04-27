@@ -64,7 +64,7 @@ type Admin {
 }
 
 type UserBan {
-  user: User @goField(forceResolver: true)
+  user: User! @goField(forceResolver: true)
   userId: Int64!
   bannedBy: Admin
   createdAt: Time!

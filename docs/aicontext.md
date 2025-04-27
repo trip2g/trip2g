@@ -40,7 +40,7 @@ This document summarizes the conventions and workflows for extending both backen
 
 1. **View Definitions**
    - Tree-based UI specs live under `ui/` in `.view.tree` files, with behavior in corresponding `.view.ts`.
-   - List views use `$trip2g_graphql_request` + `$trip2g_graphql_make_map()`, then define `row(id)` and column getters.
+   - List views use `$trip2g_graphql_request` + `$trip2g_graphql_make_map()`, then define `row(id)` and column getters. Always add id for each row for `$trip2g_graphql_make_map`.
 
 2. **Routing & Linking**
    - The main `ui/admin/admin.view.tree` uses `spreads` to switch pages by `nav` arg.

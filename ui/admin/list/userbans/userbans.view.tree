@@ -1,31 +1,22 @@
-$trip2g_admin_list_userbans $mol_book2_catalog
-	menu_title \User Bans
-	menu_tools / <= Spread_close
-	menu_filter_enabled true
-	param \user_ban_id
-	Empty $mol_status
-	Content* $mol_page
-		tools / <= Spread_close
-		sub / \Content
-	menu_link_content* / <= NoteItem* $mol_view
-		sub /
-			<= Row* $mol_row
-				minimal_height 24
-				minimal_width 200
-				sub <= row_content* /
-					<= Row_user_email_labeler* $mol_labeler
-						title \User Email
-						Content <= Row_user_email* $trip2g_admin_cell
-							content <= row_user_email* \
-					<= Row_banned_by_email_labeler* $mol_labeler
-						title \Banned By Email
-						Content <= Row_banned_by_email* $trip2g_admin_cell
-							content <= row_banned_by_email* \
-					<= Row_created_at_labeler* $mol_labeler
-						title \Created At
-						Content <= Row_created_at* $trip2g_admin_cell
-							content <= row_created_at* \
-					<= Row_reason_labeler* $mol_labeler
-						title \Reason
-						Content <= Row_reason* $trip2g_admin_cell
-							content <= row_reason* \
+$trip2g_admin_list_userbans $mol_page
+	title \User Bans
+	Row* $mol_row
+		minimal_height 24
+		minimal_width 500
+		sub <= row_content* /
+			<= Row_user_email_labeler* $mol_labeler
+				title \User Email
+				Content <= Row_user_email* $trip2g_admin_cell
+					content <= row_user_email* \
+			<= Row_banned_by_email_labeler* $mol_labeler
+				title \Banned By Email
+				Content <= Row_banned_by_email* $trip2g_admin_cell
+					content <= row_banned_by_email* \
+			<= Row_created_at_labeler* $mol_labeler
+				title \Created At
+				Content <= Row_created_at* $trip2g_admin_cell
+					content <= row_created_at* \
+			<= Row_reason_labeler* $mol_labeler
+				title \Reason
+				Content <= Row_reason* $trip2g_admin_cell
+					content <= row_reason* \
