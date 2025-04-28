@@ -232,4 +232,5 @@ type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
   unbanUser(input: UnbanUserInput!): UnbanUserOrErrorPayload!
+  banUser(input: BanUserInput!): BanUserOrErrorPayload!
 }
