@@ -61,6 +61,7 @@ type ResolverRoot interface {
 	Query() QueryResolver
 	Subgraph() SubgraphResolver
 	UnbanUserPayload() UnbanUserPayloadResolver
+	User() UserResolver
 	UserBan() UserBanResolver
 	UserSubgraphAccess() UserSubgraphAccessResolver
 	Viewer() ViewerResolver
@@ -184,6 +185,7 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
+		Ban       func(childComplexity int) int
 		CreatedAt func(childComplexity int) int
 		Email     func(childComplexity int) int
 		ID        func(childComplexity int) int
@@ -272,6 +274,9 @@ type SubgraphResolver interface {
 }
 type UnbanUserPayloadResolver interface {
 	User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error)
+}
+type UserResolver interface {
+	Ban(ctx context.Context, obj *db.User) (*db.UserBan, error)
 }
 type UserBanResolver interface {
 	User(ctx context.Context, obj *db.UserBan) (*db.User, error)
@@ -698,6 +703,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UpdateUserSubgraphAccessPayload.UserSubgraphAccess(childComplexity), true
+
+	case "User.ban":
+		if e.complexity.User.Ban == nil {
+			break
+		}
+
+		return e.complexity.User.Ban(childComplexity), true
 
 	case "User.createdAt":
 		if e.complexity.User.CreatedAt == nil {
@@ -1323,6 +1335,8 @@ func (ec *executionContext) fieldContext_Admin_user(_ context.Context, field gra
 				return ec.fieldContext_User_email(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_User_ban(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2263,6 +2277,8 @@ func (ec *executionContext) fieldContext_AdminUsersConnection_nodes(_ context.Co
 				return ec.fieldContext_User_email(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_User_ban(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2359,6 +2375,8 @@ func (ec *executionContext) fieldContext_BanUserPayload_user(_ context.Context, 
 				return ec.fieldContext_User_email(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_User_ban(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3757,6 +3775,8 @@ func (ec *executionContext) fieldContext_UnbanUserPayload_user(_ context.Context
 				return ec.fieldContext_User_email(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_User_ban(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4010,6 +4030,59 @@ func (ec *executionContext) fieldContext_User_createdAt(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _User_ban(ctx context.Context, field graphql.CollectedField, obj *db.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_ban(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Ban(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.UserBan)
+	fc.Result = res
+	return ec.marshalOUserBan2ᚖtrip2gᚋinternalᚋdbᚐUserBan(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_ban(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "user":
+				return ec.fieldContext_UserBan_user(ctx, field)
+			case "userId":
+				return ec.fieldContext_UserBan_userId(ctx, field)
+			case "bannedBy":
+				return ec.fieldContext_UserBan_bannedBy(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_UserBan_createdAt(ctx, field)
+			case "reason":
+				return ec.fieldContext_UserBan_reason(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserBan", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserBan_user(ctx context.Context, field graphql.CollectedField, obj *db.UserBan) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UserBan_user(ctx, field)
 	if err != nil {
@@ -4055,6 +4128,8 @@ func (ec *executionContext) fieldContext_UserBan_user(_ context.Context, field g
 				return ec.fieldContext_User_email(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_User_ban(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4501,6 +4576,8 @@ func (ec *executionContext) fieldContext_UserSubgraphAccess_user(_ context.Conte
 				return ec.fieldContext_User_email(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_User_ban(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4648,6 +4725,8 @@ func (ec *executionContext) fieldContext_Viewer_user(_ context.Context, field gr
 				return ec.fieldContext_User_email(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_User_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_User_ban(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -6613,7 +6692,7 @@ func (ec *executionContext) unmarshalInputBanUserInput(ctx context.Context, obj 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userId", "bannedBy", "reason"}
+	fieldsInOrder := [...]string{"userId", "reason"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6627,13 +6706,6 @@ func (ec *executionContext) unmarshalInputBanUserInput(ctx context.Context, obj 
 				return it, err
 			}
 			it.UserID = data
-		case "bannedBy":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bannedBy"))
-			data, err := ec.unmarshalNInt642int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.BannedBy = data
 		case "reason":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reason"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -7967,7 +8039,7 @@ func (ec *executionContext) _BanUserPayload(ctx context.Context, sel ast.Selecti
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "BanUserOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -8752,18 +8824,51 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "createdAt":
 			out.Values[i] = ec._User_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "ban":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_ban(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10518,6 +10623,13 @@ func (ec *executionContext) marshalOUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx co
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOUserBan2ᚖtrip2gᚋinternalᚋdbᚐUserBan(ctx context.Context, sel ast.SelectionSet, v *db.UserBan) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._UserBan(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOUserSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐUserSubgraphAccess(ctx context.Context, sel ast.SelectionSet, v *db.UserSubgraphAccess) graphql.Marshaler {

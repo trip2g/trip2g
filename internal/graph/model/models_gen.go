@@ -57,9 +57,8 @@ type AdminUsersConnection struct {
 }
 
 type BanUserInput struct {
-	UserID   int    `json:"userId"`
-	BannedBy int    `json:"bannedBy"`
-	Reason   string `json:"reason"`
+	UserID int    `json:"userId"`
+	Reason string `json:"reason"`
 }
 
 type BanUserPayload struct {
@@ -74,8 +73,6 @@ type ErrorPayload struct {
 	ByFields []FieldMessage `json:"byFields"`
 }
 
-func (ErrorPayload) IsBanUserOrErrorPayload() {}
-
 func (ErrorPayload) IsRequestEmailSignInCodeOrErrorPayload() {}
 
 func (ErrorPayload) IsSignInOrErrorPayload() {}
@@ -87,6 +84,8 @@ func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
 
 func (ErrorPayload) IsUnbanUserOrErrorPayload() {}
+
+func (ErrorPayload) IsBanUserOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`

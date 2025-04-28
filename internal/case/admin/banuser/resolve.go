@@ -3,6 +3,7 @@ package banuser
 import (
 	"context"
 	"fmt"
+	"strings"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 )
@@ -19,6 +20,10 @@ func Resolve(ctx context.Context, env Env, req model.BanUserInput) (model.BanUse
 
 	err := env.BanUser(ctx, params)
 	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: user_bans.user_id") {
+			return &model.ErrorPayload{Message: "User already banned"}, nil
+		}
+
 		return nil, fmt.Errorf("failed to ban user: %w", err)
 	}
 

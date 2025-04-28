@@ -5,7 +5,7 @@ create table note_paths (
   value text not null unique on conflict ignore,
   value_hash text not null unique on conflict fail,
   latest_content_hash text not null,
-  created_at datetime no null default current_timestamp,
+  created_at datetime not null default current_timestamp,
   version_count integer not null default 0
 );
 

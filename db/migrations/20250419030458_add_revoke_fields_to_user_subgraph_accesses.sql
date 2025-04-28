@@ -5,7 +5,7 @@ create table revokes (
   target_type text not null,
   target_id integer not null,
   created_at datetime not null default current_timestamp,
-  by admin_id integer not null references admins(id) on delete restrict,
+  by_id integer not null references admins(user_id) on delete restrict,
   reason text
 );
 

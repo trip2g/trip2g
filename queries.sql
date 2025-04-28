@@ -129,7 +129,7 @@ update user_subgraph_accesses
 returning *;
 
 -- name: CreateRevoke :one
-insert into revokes (target_type, target_id, by, reason)
+insert into revokes (target_type, target_id, by_id, reason)
 values (?, ?, ?, ?)
 returning id;
 
@@ -156,3 +156,6 @@ delete from user_bans where user_id = ?;
 
 -- name: AdminByUserID :one
 select * from admins where user_id = ?;
+
+-- name: UserBanByUserID :one
+select * from user_bans where user_id = ?;

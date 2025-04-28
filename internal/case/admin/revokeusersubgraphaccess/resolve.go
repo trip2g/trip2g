@@ -49,7 +49,7 @@ func Resolve(ctx context.Context, env Env, request Request) (Response, error) {
 	createRevokeParams := db.CreateRevokeParams{
 		TargetType: "user_subgraph_access",
 		TargetID:   request.SubgraphAccessID,
-		By:         request.UserToken.ID,
+		ByID:       int64(request.UserToken.ID),
 		Reason:     sql.NullString{String: request.Reason, Valid: true},
 	}
 

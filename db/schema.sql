@@ -4,7 +4,7 @@ CREATE TABLE note_paths (
   value text not null unique on conflict ignore,
   value_hash text not null unique on conflict fail,
   latest_content_hash text not null,
-  created_at datetime no null default current_timestamp,
+  created_at datetime not null default current_timestamp,
   version_count integer not null default 0
 );
 CREATE TABLE note_versions (
@@ -21,6 +21,11 @@ CREATE TABLE users (
   created_at datetime not null default current_timestamp,
   last_signin_code_sent_at datetime
 );
+CREATE TABLE admins (
+  user_id int primary key references users(id) on delete cascade,
+  granted_at datetime not null default current_timestamp,
+  granted_by int references admins(user_id)
+);
 CREATE TABLE offers (
   id text primary key,
   created_at datetime not null default current_timestamp,
@@ -34,7 +39,7 @@ CREATE TABLE offers (
 );
 CREATE TABLE purchases (
   id text primary key,
-  user_id text not null references users(id) on delete cascade,
+  user_id int not null references users(id) on delete cascade,
   offer_id text not null references offers(id) on delete restrict,
   expire_at datetime, -- e.g. now() + offers.lifetime
   created_at datetime not null default current_timestamp,
@@ -88,18 +93,13 @@ CREATE TABLE revokes (
   target_type text not null,
   target_id integer not null,
   created_at datetime not null default current_timestamp,
-  by admin_id integer not null references admins(id) on delete restrict,
+  by_id integer not null references admins(user_id) on delete restrict,
   reason text
-);
-CREATE TABLE admins (
-  user_id int primary key references users(id) on delete cascade,
-  granted_at datetime not null default current_timestamp,
-  granted_by text references admins(user_id)
 );
 CREATE TABLE user_bans (
   user_id integer primary key references users(id) on delete cascade,
   created_at datetime not null default current_timestamp,
-  banned_by integer references admins(id) on delete restrict,
+  banned_by integer references admins(user_id) on delete restrict,
   reason text not null
 );
 -- Dbmate schema migrations

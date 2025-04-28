@@ -265,7 +265,7 @@ func (q *Queries) CreateOffer(ctx context.Context, arg CreateOfferParams) (Offer
 }
 
 const createRevoke = `-- name: CreateRevoke :one
-insert into revokes (target_type, target_id, by, reason)
+insert into revokes (target_type, target_id, by_id, reason)
 values (?, ?, ?, ?)
 returning id
 `
@@ -273,7 +273,7 @@ returning id
 type CreateRevokeParams struct {
 	TargetType string         `json:"target_type"`
 	TargetID   int64          `json:"target_id"`
-	By         interface{}    `json:"by"`
+	ByID       int64          `json:"by_id"`
 	Reason     sql.NullString `json:"reason"`
 }
 
@@ -281,7 +281,7 @@ func (q *Queries) CreateRevoke(ctx context.Context, arg CreateRevokeParams) (int
 	row := q.db.QueryRowContext(ctx, createRevoke,
 		arg.TargetType,
 		arg.TargetID,
-		arg.By,
+		arg.ByID,
 		arg.Reason,
 	)
 	var id int64
@@ -764,6 +764,22 @@ func (q *Queries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSu
 		&i.CreatedAt,
 		&i.ExpiresAt,
 		&i.RevokeID,
+	)
+	return i, err
+}
+
+const userBanByUserID = `-- name: UserBanByUserID :one
+select user_id, created_at, banned_by, reason from user_bans where user_id = ?
+`
+
+func (q *Queries) UserBanByUserID(ctx context.Context, userID int64) (UserBan, error) {
+	row := q.db.QueryRowContext(ctx, userBanByUserID, userID)
+	var i UserBan
+	err := row.Scan(
+		&i.UserID,
+		&i.CreatedAt,
+		&i.BannedBy,
+		&i.Reason,
 	)
 	return i, err
 }

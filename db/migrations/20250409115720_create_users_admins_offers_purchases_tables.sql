@@ -10,7 +10,7 @@ create table users (
 create table admins (
   user_id int primary key references users(id) on delete cascade,
   granted_at datetime not null default current_timestamp,
-  granted_by text references admins(user_id)
+  granted_by int references admins(user_id)
 );
 
 create table offers (
@@ -27,7 +27,7 @@ create table offers (
 
 create table purchases (
   id text primary key,
-  user_id text not null references users(id) on delete cascade,
+  user_id int not null references users(id) on delete cascade,
   offer_id text not null references offers(id) on delete restrict,
   expire_at datetime, -- e.g. now() + offers.lifetime
   created_at datetime not null default current_timestamp,

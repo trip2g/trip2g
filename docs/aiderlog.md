@@ -15,3 +15,6 @@ ui/admin/select/subgraph/subgraph.view.tree
 Нужно будет добавить кнорку открытия этой страницы в
 ui/admin/list/users/users.view.tree и так же новый роут в
 ui/admin/admin.view.tree
+
+
+Пока работает крайне криво.

@@ -10,9 +10,9 @@ import (
 )
 
 type Admin struct {
-	UserID    int64          `json:"user_id"`
-	GrantedAt time.Time      `json:"granted_at"`
-	GrantedBy sql.NullString `json:"granted_by"`
+	UserID    int64         `json:"user_id"`
+	GrantedAt time.Time     `json:"granted_at"`
+	GrantedBy sql.NullInt64 `json:"granted_by"`
 }
 
 type BackliteTask struct {
@@ -40,12 +40,12 @@ type BackliteTasksCompleted struct {
 }
 
 type NotePath struct {
-	ID                int64       `json:"id"`
-	Value             string      `json:"value"`
-	ValueHash         string      `json:"value_hash"`
-	LatestContentHash string      `json:"latest_content_hash"`
-	CreatedAt         interface{} `json:"created_at"`
-	VersionCount      int64       `json:"version_count"`
+	ID                int64     `json:"id"`
+	Value             string    `json:"value"`
+	ValueHash         string    `json:"value_hash"`
+	LatestContentHash string    `json:"latest_content_hash"`
+	CreatedAt         time.Time `json:"created_at"`
+	VersionCount      int64     `json:"version_count"`
 }
 
 type NoteVersion struct {
@@ -69,7 +69,7 @@ type Offer struct {
 
 type Purchase struct {
 	ID              string       `json:"id"`
-	UserID          string       `json:"user_id"`
+	UserID          int64        `json:"user_id"`
 	OfferID         string       `json:"offer_id"`
 	ExpireAt        sql.NullTime `json:"expire_at"`
 	CreatedAt       time.Time    `json:"created_at"`
@@ -82,7 +82,7 @@ type Revoke struct {
 	TargetType string         `json:"target_type"`
 	TargetID   int64          `json:"target_id"`
 	CreatedAt  time.Time      `json:"created_at"`
-	By         interface{}    `json:"by"`
+	ByID       int64          `json:"by_id"`
 	Reason     sql.NullString `json:"reason"`
 }
 

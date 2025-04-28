@@ -26,9 +26,15 @@ type Admin = {
 
 type AdminMutation = {
   __typename?: 'AdminMutation';
+  banUser: BanUserOrErrorPayload;
   unbanUser: UnbanUserOrErrorPayload;
   updateSubgraph: UpdateSubgraphOrErrorPayload;
   updateUserSubgraphAccess: UpdateUserSubgraphAccessOrErrorPayload;
+};
+
+
+type AdminMutationBanUserArgs = {
+  input: BanUserInput;
 };
 
 
@@ -96,6 +102,19 @@ type AdminUserSubgraphAccessesConnection = {
 type AdminUsersConnection = {
   __typename?: 'AdminUsersConnection';
   nodes: Array<User>;
+};
+
+type BanUserInput = {
+  reason: Scalars['String']['input'];
+  userId: Scalars['Int64']['input'];
+};
+
+type BanUserOrErrorPayload = BanUserPayload | ErrorPayload;
+
+type BanUserPayload = {
+  __typename?: 'BanUserPayload';
+  user: User;
+  userId: Scalars['Int64']['output'];
 };
 
 type ErrorPayload = {
@@ -223,6 +242,7 @@ type UpdateUserSubgraphAccessPayload = {
 
 type User = {
   __typename?: 'User';
+  ban?: Maybe<UserBan>;
   createdAt: Scalars['Time']['output'];
   email: Scalars['String']['output'];
   id: Scalars['Int64']['output'];
@@ -279,7 +299,7 @@ type AdminListUserBansQuery = { __typename?: 'Query', admin: { __typename?: 'Adm
 type AdminListUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-type AdminListUsersQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allUsers: { __typename?: 'AdminUsersConnection', nodes: Array<{ __typename?: 'User', id: any, email: string, createdAt: any }> } } };
+type AdminListUsersQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allUsers: { __typename?: 'AdminUsersConnection', nodes: Array<{ __typename?: 'User', id: any, email: string, createdAt: any, ban?: { __typename?: 'UserBan', reason: string } | null }> } } };
 
 type AdminListUserSubgraphAccessesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -290,6 +310,13 @@ type AdminSelectSubgraphQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 type AdminSelectSubgraphQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'Subgraph', id: any, name: string }> } } };
+
+type AdminBanUserMutationVariables = Exact<{
+  input: BanUserInput;
+}>;
+
+
+type AdminBanUserMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', banUser: { __typename: 'BanUserPayload', user: { __typename: 'User', id: any } } | { __typename: 'ErrorPayload', message: string } } };
 
 type AdminNoteViewQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -358,11 +385,13 @@ export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListSubgrap
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUserBans {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallUserUserBans {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid: userId\n\t\t\t\t\t\t\t\tuser {\n\t\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\tbannedBy {\n\t\t\t\t\t\t\t\t\tuser {\n\t\t\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\treason\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUserBansQuery
 
-export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUsers {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallUsers {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUsersQuery
+export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUsers {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallUsers {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\tban { reason }\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUsersQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUserSubgraphAccesses {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tdata: allUserSubgraphAccesses {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\texpiresAt\n\t\t\t\t\t\t\t\tsubgraph {\n\t\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\tuser {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUserSubgraphAccessesQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\t\tquery AdminSelectSubgraph {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tallSubgraphs {\n\t\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t'): AdminSelectSubgraphQuery
+
+export function $trip2g_graphql_request(query: '\n\t\t\t\tmutation AdminBanUser($input: BanUserInput!) {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tbanUser(input: $input) {\n\t\t\t\t\t\t\t... on BanUserPayload {\n\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\tuser { id, __typename }\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: AdminBanUserMutationVariables): AdminBanUserMutation
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\t\tquery AdminNoteView($id: String!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tnoteView(id: $id) {\n\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\tpath\n\t\t\t\t\t\t\t\ttitle\n\t\t\t\t\t\t\t\tpermalink\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminNoteViewQueryVariables): AdminNoteViewQuery
 
@@ -384,6 +413,6 @@ export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation SignInByEma
 
 export function $trip2g_graphql_request(query: any, variables?: any) { return $trip2g_graphql_raw_request(query, variables); }
 
-export const $trip2g_graphql_persist_queries = {"AdminUnbanUser":"ccd10251bd969ad3d646cd791132bd7f6c06deb9a5fa4cb247c48fb817661bbf","AdminListNoteViews":"1fa4c73890f89fe68dfe9785f82d77f91e0a323c21b6ecc44a4b7b1c79eceb72","AdminListSubgraphs":"2cee87730b8d154a6683eee863b7d55859a5cb0d8bcac5d8a6eb3ad699ef7b10","AdminListUserBans":"a56dd9750a6daebca791222f6e1619f2a749a03c1a440f35d6fda827e5e518c4","AdminListUsers":"bb65e89c75590f0431371bbf80d782707ac4ace59860bffaff808863ccec219c","AdminListUserSubgraphAccesses":"c401571acb47ee9727398b1e47a53d2e864b12882ba31004a51c783dee6ac689","AdminSelectSubgraph":"2f46ae2f709229d7c3dd5a0c564863f57129f0500f1c4ec14f7086ada407d1fe","AdminNoteView":"30bfefe9ac3f3a4c70bd46e1866026909bf4ac013c8c274f52d560336d834068","AdminShowSubgraph":"a85d72ae054c667afe00190423dbc3420cf0fab11cd7842d37f1646ba8fccebe","UpdateSubgraph":"910386c507a3405267c729bc1359fd439a0c89726092eca906fbb72e7da3546b","AdminUserSubgraphAccess":"46d844334f0f79f0f0a79d6cad4a80721d8345976c91744d3c754b23ce3a8f52","AdminUpdateUserSubgraphAccess":"66152953987b3f528e2f0899561dfa2db2a5fc13d6ac152808b0c0eaa573e379","Viewer":"3a8c636e5b92b0bd849229fbc238e1bd5d9a6ab0f00b9726cfcd06ad7464a685","SignOut":"cba3ef4c85f3b6d17dcd080aef3350968b170a4d2bfe6bd82dad23587984c3e4","RequestEmailSignInCode":"d36752898539b45c7fcb5a54a4bed0aa246ca0373cbb7604fde55977e7a7d406","SignInByEmail":"dcd280c068ca17383a6a9bd60d6f9f448c57bb96fc52f6b02d6c3fb1c32c518f"}
+export const $trip2g_graphql_persist_queries = {"AdminUnbanUser":"9512bb945535dd9ef2fe1dacc60073ce01fc8d8f3e93fec6583ab2dc455d1309","AdminListNoteViews":"246778d60afacd4ff9dce34784ee070ce17cc89edaa5a49ed26236ae65b5a159","AdminListSubgraphs":"4e45ae80a24576cab70fdbb4790a0a7acbde1171823623ed8d7a00e495b596cd","AdminListUserBans":"69e1b4b4cb152647fa3474d44d1fccc7e5bfdc9bfa95d60b9726d4e52c94b3b4","AdminListUsers":"6f4fcb27423e59a080c8c0ba8cc8b69628bf9f961bdfbce5c62bf60c19db4075","AdminListUserSubgraphAccesses":"79ca5aafd82b91a579c3ea6232fa7a32773f2b74846785a00e0f0deee9854eca","AdminSelectSubgraph":"a801d4b303ea060e27e22011e2d7cc74c9a17a95e0877622e55e4012640c11a7","AdminBanUser":"b7eaca2436a0420749fd9818239ddaaf03cf39d13fb051af54e1ddfc16b0a376","AdminNoteView":"71287b914ef21187cc102872ffec82d7d3dbe8f1c7583391227f3829c627cc0d","AdminShowSubgraph":"e55ded2d39f46e61be846d0eaa24e9434a4cbc400e4d93fbde65dadeb14dd559","UpdateSubgraph":"a1ed76b00109cb6eac864a2c57d63d956d4c34676eb519e8d0a33abcd8c8945b","AdminUserSubgraphAccess":"a624b706534097050759fc343d7335c36f60b7fd8cb7eac35979d2c2e0b166da","AdminUpdateUserSubgraphAccess":"1f5c1a927c82b86a3d0e0313744fe51f023ed479f955e6846225bff4ab75a91d","Viewer":"b9af00d1da4d2ee51a54d482f88be21bd1ae4e6646c1d34720fa2634726ea235","SignOut":"8e1a898d776a103a20b7dbdfbeb8196fce0175ffe38fa7af9da2848cefdadedf","RequestEmailSignInCode":"cc5a33407c1a3cca08dbcba6847a88298eec84b10f18449244cf13e458449ef9","SignInByEmail":"5678d2ca29b77529e0b9942845dcea2c941c6b5a234863dc86ac2ffaad668614"}
 
 }

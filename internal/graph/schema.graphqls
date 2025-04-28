@@ -21,10 +21,19 @@ directive @goExtraField(
 	description: String
 ) repeatable on OBJECT | INPUT_OBJECT
 
+type UserBan {
+  user: User! @goField(forceResolver: true)
+  userId: Int64!
+  bannedBy: Admin
+  createdAt: Time!
+  reason: String!
+}
+
 type User {
   id: Int64!
   email: String!
   createdAt: Time!
+  ban: UserBan @goField(forceResolver: true)
 }
 
 type AdminUsersConnection {
@@ -61,14 +70,6 @@ type NoteView {
 
 type Admin {
   user: User! @goField(forceResolver: true)
-}
-
-type UserBan {
-  user: User! @goField(forceResolver: true)
-  userId: Int64!
-  bannedBy: Admin
-  createdAt: Time!
-  reason: String!
 }
 
 type AdminUserSubgraphAccessesConnection {
@@ -121,22 +122,7 @@ type ErrorPayload {
   byFields: [FieldMessage!]!
 }
 
-# banUser
 #
-
-input BanUserInput {
-  userId: Int64!
-  bannedBy: Int64!
-  reason: String!
-}
-
-type BanUserPayload {
-  userId: Int64!
-  user: User! @goField(forceResolver: true)
-}
-
-union BanUserOrErrorPayload = BanUserPayload | ErrorPayload
-
 # requestEmailSignInCode
 #
 
@@ -228,6 +214,22 @@ type UnbanUserPayload {
 }
 
 union UnbanUserOrErrorPayload = UnbanUserPayload | ErrorPayload
+
+#
+# banUser
+#
+
+input BanUserInput {
+  userId: Int64!
+  reason: String!
+}
+
+type BanUserPayload {
+  userId: Int64!
+  user: User! @goField(forceResolver: true)
+}
+
+union BanUserOrErrorPayload = BanUserPayload | ErrorPayload
 
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!

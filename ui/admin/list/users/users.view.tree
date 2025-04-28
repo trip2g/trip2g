@@ -7,6 +7,17 @@ $trip2g_admin_list_users $mol_book2_catalog
 	Content* $mol_page
 		tools / <= Spread_close
 		sub / \Content
+	UserBan* $trip2g_admin_show_banuser
+		tools /
+			<= Close $mol_link
+				arg * ban_id null
+				sub / <= Spread_close_icon $mol_icon_close
+		user_id <= row_id_number* 0 
+	UserBanButton* $mol_link
+		title \Ban
+		arg * ban_id <= row_id_number* 0
+	UserUnbanButton* $trip2g_admin_button_user_unban
+		user_id <= row_id*
 	menu_link_content* / <= NoteItem* $mol_view
 		sub /
 			<= Row* $mol_row
@@ -16,11 +27,12 @@ $trip2g_admin_list_users $mol_book2_catalog
 					<= Row_id_labeler* $mol_labeler
 						title \ID
 						Content <= Row_id* $trip2g_admin_cell
-							content <= row_id* \id
-					<= Row_ban_button* $trip2g_admin_button_user_ban
-						user_id <= row_id*
-						banned_by \1
-						reason \Violation of terms
-					<= Open_ban_page_button $mol_button_minor
-						title \Ban User
-						clicked? <=> $mol_state_arg.value( 'nav' , 'banuser' )
+							content <= row_id* \
+					<= Row_email_labeler* $mol_labeler
+						title \Email
+						Content <= Row_email* $trip2g_admin_cell
+							content <= row_email* \email
+					<= Row_actions_labeler* $mol_labeler
+						title \Actions
+						Content <= Actions* $mol_view
+							sub / <= ban_button* $mol_view

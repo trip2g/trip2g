@@ -5,13 +5,6 @@ module.exports = {
 		globalGqlIdentifierName: ['gql', '$trip2g_graphql_request'],
 	},
 	generates: {
-    [__dirname + '/graphql/-/server_queries.json']: {
-      plugins: ['graphql-codegen-persisted-query-ids'],
-      config: {
-        output: 'server',
-        algorithm: 'sha256',
-      },
-    },
 		[__dirname + '/graphql/queries.ts']: {
 			plugins: [
 				{
