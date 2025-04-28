@@ -1,6 +1,11 @@
 $trip2g_admin_list_users $mol_book2_catalog
+	close_icon null
 	menu_title \Users
-	menu_tools / <= Spread_close
+	menu_tools /
+		<= BansLink $mol_link
+			sub / <= BansIcon $mol_icon_bomb
+			arg * nav \userbans
+		<= close_icon
 	menu_filter_enabled true
 	param \user_id
 	Empty $mol_status
