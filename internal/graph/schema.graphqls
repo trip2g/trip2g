@@ -121,7 +121,21 @@ type ErrorPayload {
   byFields: [FieldMessage!]!
 }
 
+# banUser
 #
+
+input BanUserInput {
+  userId: Int64!
+  bannedBy: Int64!
+  reason: String!
+}
+
+type BanUserPayload {
+  userId: Int64!
+  user: User! @goField(forceResolver: true)
+}
+
+union BanUserOrErrorPayload = BanUserPayload | ErrorPayload
 # requestEmailSignInCode
 #
 

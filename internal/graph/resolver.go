@@ -33,6 +33,7 @@ type Env interface {
 	signinbyemail.Env
 	signout.Env
 
+	banuser.Env
 	updatesubgraph.Env
 	updateusersubgraphaccess.Env
 	unbanuser.Env

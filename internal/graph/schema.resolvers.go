@@ -39,9 +39,9 @@ func (r *adminMutationResolver) UpdateUserSubgraphAccess(ctx context.Context, ob
 	return input.Resolve(ctx, r.Env)
 }
 
-// UnbanUser is the resolver for the unbanUser field.
-func (r *adminMutationResolver) UnbanUser(ctx context.Context, obj *model1.AdminMutation, input model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error) {
-	return unbanuser.Resolve(ctx, r.Env, input)
+// BanUser is the resolver for the banUser field.
+func (r *adminMutationResolver) BanUser(ctx context.Context, obj *model1.AdminMutation, input model.BanUserInput) (model.BanUserOrErrorPayload, error) {
+	return banuser.Resolve(ctx, r.Env, input)
 }
 
 // Nodes is the resolver for the nodes field.

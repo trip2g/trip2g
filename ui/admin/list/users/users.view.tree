@@ -17,7 +17,7 @@ $trip2g_admin_list_users $mol_book2_catalog
 						title \ID
 						Content <= Row_id* $trip2g_admin_cell
 							content <= row_id* \id
-					<= Row_email_labeler* $mol_labeler
-						title \Email
-						Content <= Row_email* $trip2g_admin_cell
-							content <= row_email* \
+					<= Row_ban_button* $trip2g_admin_button_user_ban
+						user_id <= row_id*
+						banned_by \1
+						reason \Violation of terms

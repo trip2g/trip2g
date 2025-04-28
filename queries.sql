@@ -151,9 +151,9 @@ select * from user_bans;
 insert into user_bans (user_id, banned_by, reason)
 values (?, ?, ?);
 
--- name: UnbanUser :exec
-delete from user_bans
- where user_id = ?;
+-- name: InsertUserBan :exec
+insert into user_bans (user_id, banned_by, reason)
+values (?, ?, ?);
 
 -- name: AdminByUserID :one
 select * from admins where user_id = ?;
