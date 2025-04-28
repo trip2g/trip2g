@@ -21,3 +21,6 @@ $trip2g_admin_list_users $mol_book2_catalog
 						user_id <= row_id*
 						banned_by \1
 						reason \Violation of terms
+					<= Open_ban_page_button $mol_button_minor
+						title \Ban User
+						clicked? <=> $mol_state_arg.value( 'nav' , 'banuser' )

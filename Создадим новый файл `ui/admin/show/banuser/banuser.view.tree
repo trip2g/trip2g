@@ -1,0 +1,8 @@
+$trip2g_admin_show_banuser $mol_view
+	sub /
+		<= reason_input $mol_string
+			value <= reason
+			hint \Enter reason for ban
+		<= ban_button $mol_button_major
+			title \Ban User
+			clicked? <= ban_user
