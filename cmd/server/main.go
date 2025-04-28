@@ -1,7 +1,5 @@
 package main
 
-//go:generate go run github.com/valyala/quicktemplate/qtc -dir=../../views
-
 import (
 	"context"
 	"crypto/rand"
@@ -110,13 +108,15 @@ func main() {
 		panic(err)
 	}
 
+	log := zerologger.New("debug", true)
+
 	a := &app{
-		Queries: db.New(conn),
+		Queries: db.New(db.WithLogger(conn, log)),
 
 		tokenManager: tokenManager,
 		queueClient:  queueClient,
 
-		log:     zerologger.New("debug", true),
+		log:     log,
 		queries: db.New(conn),
 		conn:    conn,
 

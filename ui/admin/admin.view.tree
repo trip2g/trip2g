@@ -17,3 +17,6 @@ $trip2g_admin_cell $mol_view
 	content \No Content
 	sub /
 		<= content
+
+$trip2g_admin_empty_list $mol_view
+	sub / \No Rows

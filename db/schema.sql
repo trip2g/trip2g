@@ -91,16 +91,16 @@ CREATE TABLE revokes (
   by admin_id integer not null references admins(id) on delete restrict,
   reason text
 );
-CREATE TABLE user_bans (
-  user_id integer primary key references users(id) on delete cascade,
-  created_at datetime not null default current_timestamp,
-  banned_by integer references admin(id) on delete restrict,
-  reason text not null
-);
 CREATE TABLE admins (
   user_id int primary key references users(id) on delete cascade,
   granted_at datetime not null default current_timestamp,
   granted_by text references admins(user_id)
+);
+CREATE TABLE user_bans (
+  user_id integer primary key references users(id) on delete cascade,
+  created_at datetime not null default current_timestamp,
+  banned_by integer references admins(id) on delete restrict,
+  reason text not null
 );
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES

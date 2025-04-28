@@ -1,5 +1,7 @@
 $trip2g_admin_list_userbans $mol_page
 	title \User Bans
+	NoRows $mol_view
+		sub / \No Rows
 	Row* $mol_row
 		minimal_height 24
 		minimal_width 500
@@ -20,3 +22,9 @@ $trip2g_admin_list_userbans $mol_page
 				title \Reason
 				Content <= Row_reason* $trip2g_admin_cell
 					content <= row_reason* \
+			<= Row_actions_labeler* $mol_labeler
+				title \Actions
+				Content <= Row_actions* $mol_view
+					sub /
+						<= Unban_button* $trip2g_admin_button_user_unban
+							user_id <= row_user_id* 0

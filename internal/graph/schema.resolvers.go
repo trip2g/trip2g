@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
+	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/requestemailsignin"
@@ -36,6 +37,11 @@ func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *model1.
 // UpdateUserSubgraphAccess is the resolver for the updateUserSubgraphAccess field.
 func (r *adminMutationResolver) UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error) {
 	return input.Resolve(ctx, r.Env)
+}
+
+// UnbanUser is the resolver for the unbanUser field.
+func (r *adminMutationResolver) UnbanUser(ctx context.Context, obj *model1.AdminMutation, input model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error) {
+	return unbanuser.Resolve(ctx, r.Env, input)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -195,6 +201,11 @@ func (r *subgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*string
 }
 
 // User is the resolver for the user field.
+func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error) {
+	return resolveOne[db.User](ctx, int64(obj.UserID), r.Env.UserByID)
+}
+
+// User is the resolver for the user field.
 func (r *userBanResolver) User(ctx context.Context, obj *db.UserBan) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.UserID, r.Env.UserByID)
 }
@@ -310,6 +321,9 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // Subgraph returns SubgraphResolver implementation.
 func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
 
+// UnbanUserPayload returns UnbanUserPayloadResolver implementation.
+func (r *Resolver) UnbanUserPayload() UnbanUserPayloadResolver { return &unbanUserPayloadResolver{r} }
+
 // UserBan returns UserBanResolver implementation.
 func (r *Resolver) UserBan() UserBanResolver { return &userBanResolver{r} }
 
@@ -339,6 +353,7 @@ type mutationResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
+type unbanUserPayloadResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }

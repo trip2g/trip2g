@@ -4,12 +4,12 @@ namespace $.$$ {
 	$mol_style_define($trip2g_admin_list_userbans, {
 		Row_user_email_labeler: {
 			flex: {
-				basis: rem(15),
+				basis: rem(10),
 			},
 		},
 		Row_banned_by_email_labeler: {
 			flex: {
-				basis: rem(15),
+				basis: rem(10),
 			},
 		},
 		Row_created_at_labeler: {
@@ -19,7 +19,7 @@ namespace $.$$ {
 		},
 		Row_reason_labeler: {
 			flex: {
-				basis: rem(20),
+				basis: rem(10),
 			},
 		},
 	})

@@ -9,6 +9,7 @@ namespace $.$$ {
 							nodes {
 								id: userId
 								user {
+									__typename
 									email
 								}
 								bannedBy {
@@ -27,17 +28,16 @@ namespace $.$$ {
 			return $trip2g_graphql_make_map(res.admin.allUserUserBans.nodes)
 		}
 
-		@$mol_mem
-		spreads(): any {
-			return this.data().mapKeys(key => this.Content(key));
-		}
-
 		body() {
-			return this.data().map(key => this.Row(key));
+			return this.data().map(key => this.Row(key), this.NoRows());
 		}
 
 		row(id: any) {
 			return this.data().get(id);
+		}
+
+		row_user_id(id: any): number {
+			return id;
 		}
 
 		row_user_email(id: any): string {

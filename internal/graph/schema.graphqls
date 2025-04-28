@@ -199,7 +199,23 @@ type UpdateUserSubgraphAccessPayload {
 
 union UpdateUserSubgraphAccessOrErrorPayload = UpdateUserSubgraphAccessPayload | ErrorPayload
 
+#
+# unbanUser
+#
+
+input UnbanUserInput {
+  userId: Int64!
+}
+
+type UnbanUserPayload {
+  userId: Int64!
+  user: User! @goField(forceResolver: true)
+}
+
+union UnbanUserOrErrorPayload = UnbanUserPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
+  unbanUser(input: UnbanUserInput!): UnbanUserOrErrorPayload!
 }

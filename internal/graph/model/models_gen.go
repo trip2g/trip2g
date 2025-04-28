@@ -20,6 +20,10 @@ type SignOutOrErrorPayload interface {
 	IsSignOutOrErrorPayload()
 }
 
+type UnbanUserOrErrorPayload interface {
+	IsUnbanUserOrErrorPayload()
+}
+
 type UpdateSubgraphOrErrorPayload interface {
 	IsUpdateSubgraphOrErrorPayload()
 }
@@ -63,6 +67,8 @@ func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
 
+func (ErrorPayload) IsUnbanUserOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -92,6 +98,17 @@ type SignOutPayload struct {
 }
 
 func (SignOutPayload) IsSignOutOrErrorPayload() {}
+
+type UnbanUserInput struct {
+	UserID int `json:"userId"`
+}
+
+type UnbanUserPayload struct {
+	UserID int      `json:"userId"`
+	User   *db.User `json:"user"`
+}
+
+func (UnbanUserPayload) IsUnbanUserOrErrorPayload() {}
 
 type UpdateSubgraphPayload struct {
 	Subgraph *db.Subgraph `json:"subgraph"`

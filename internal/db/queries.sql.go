@@ -340,16 +340,6 @@ func (q *Queries) DeleteSignInCodesByUserID(ctx context.Context, userID int64) e
 	return err
 }
 
-const deleteUserBan = `-- name: DeleteUserBan :exec
-delete from user_bans
- where user_id = ?
-`
-
-func (q *Queries) DeleteUserBan(ctx context.Context, userID int64) error {
-	_, err := q.db.ExecContext(ctx, deleteUserBan, userID)
-	return err
-}
-
 const getUserByEmail = `-- name: GetUserByEmail :one
 select id, email, created_at, last_signin_code_sent_at from users where email = lower(?)
 `
@@ -664,6 +654,16 @@ func (q *Queries) SubgraphByID(ctx context.Context, id int64) (Subgraph, error) 
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const unbanUser = `-- name: UnbanUser :exec
+delete from user_bans
+ where user_id = ?
+`
+
+func (q *Queries) UnbanUser(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, unbanUser, userID)
+	return err
 }
 
 const updateAdminSubgraph = `-- name: UpdateAdminSubgraph :one

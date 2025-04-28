@@ -71,7 +71,11 @@ namespace $ {
 				}
 				return out
 			},
-			map<V>(fn: (key: string) => V): V[] {
+			map<V>(fn: (key: string) => V, empty?: V): V[] {
+				if (map.size === 0 && empty) {
+					return [empty];
+				}
+
 				const out: V[] = []
 				for (const key of map.keys()) {
 					out.push(fn(key))
