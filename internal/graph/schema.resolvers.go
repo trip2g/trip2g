@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
+	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
@@ -37,6 +38,11 @@ func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *model1.
 // UpdateUserSubgraphAccess is the resolver for the updateUserSubgraphAccess field.
 func (r *adminMutationResolver) UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error) {
 	return input.Resolve(ctx, r.Env)
+}
+
+// UnbanUser is the resolver for the unbanUser field.
+func (r *adminMutationResolver) UnbanUser(ctx context.Context, obj *model1.AdminMutation, input model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error) {
+	return unbanuser.Resolve(ctx, r.Env, input)
 }
 
 // BanUser is the resolver for the banUser field.
@@ -123,6 +129,11 @@ func (r *adminUserSubgraphAccessesConnectionResolver) Nodes(ctx context.Context,
 // Nodes is the resolver for the nodes field.
 func (r *adminUsersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error) {
 	return r.Env.ListAllUsers(ctx)
+}
+
+// User is the resolver for the user field.
+func (r *banUserPayloadResolver) User(ctx context.Context, obj *model.BanUserPayload) (*db.User, error) {
+	return resolveOne[db.User](ctx, int64(obj.UserID), r.Env.UserByID)
 }
 
 // Message is the resolver for the message field.
@@ -306,6 +317,9 @@ func (r *Resolver) AdminUsersConnection() AdminUsersConnectionResolver {
 	return &adminUsersConnectionResolver{r}
 }
 
+// BanUserPayload returns BanUserPayloadResolver implementation.
+func (r *Resolver) BanUserPayload() BanUserPayloadResolver { return &banUserPayloadResolver{r} }
+
 // ErrorPayload returns ErrorPayloadResolver implementation.
 func (r *Resolver) ErrorPayload() ErrorPayloadResolver { return &errorPayloadResolver{r} }
 
@@ -348,6 +362,7 @@ type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminUserBansConnectionResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
+type banUserPayloadResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }

@@ -1,5 +1,0 @@
-$trip2g_admin_button_user_ban $mol_button_major
-	user_id 0
-	banned_by 0
-	reason \Reason for ban
-	title \Ban

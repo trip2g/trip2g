@@ -192,6 +192,22 @@ func (q *Queries) AllOffers(ctx context.Context) ([]Offer, error) {
 	return items, nil
 }
 
+const banUser = `-- name: BanUser :exec
+insert into user_bans (user_id, banned_by, reason)
+values (?, ?, ?)
+`
+
+type BanUserParams struct {
+	UserID   int64         `json:"user_id"`
+	BannedBy sql.NullInt64 `json:"banned_by"`
+	Reason   string        `json:"reason"`
+}
+
+func (q *Queries) BanUser(ctx context.Context, arg BanUserParams) error {
+	_, err := q.db.ExecContext(ctx, banUser, arg.UserID, arg.BannedBy, arg.Reason)
+	return err
+}
+
 const countActiveSignInCodes = `-- name: CountActiveSignInCodes :one
 select count(*) from sign_in_codes
  where user_id = ?
@@ -444,22 +460,6 @@ func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
 	return err
 }
 
-const insertUserBan = `-- name: InsertUserBan :exec
-insert into user_bans (user_id, banned_by, reason)
-values (?, ?, ?)
-`
-
-type InsertUserBanParams struct {
-	UserID   int64         `json:"user_id"`
-	BannedBy sql.NullInt64 `json:"banned_by"`
-	Reason   string        `json:"reason"`
-}
-
-func (q *Queries) InsertUserBan(ctx context.Context, arg InsertUserBanParams) error {
-	_, err := q.db.ExecContext(ctx, insertUserBan, arg.UserID, arg.BannedBy, arg.Reason)
-	return err
-}
-
 const listActiveSubgraphsByUserID = `-- name: ListActiveSubgraphsByUserID :many
 select distinct s.name
   from user_subgraph_accesses a
@@ -657,8 +657,7 @@ func (q *Queries) SubgraphByID(ctx context.Context, id int64) (Subgraph, error) 
 }
 
 const unbanUser = `-- name: UnbanUser :exec
-delete from user_bans
- where user_id = ?
+delete from user_bans where user_id = ?
 `
 
 func (q *Queries) UnbanUser(ctx context.Context, userID int64) error {

@@ -8,6 +8,10 @@ import (
 	"trip2g/internal/usertoken"
 )
 
+type BanUserOrErrorPayload interface {
+	IsBanUserOrErrorPayload()
+}
+
 type RequestEmailSignInCodeOrErrorPayload interface {
 	IsRequestEmailSignInCodeOrErrorPayload()
 }
@@ -52,10 +56,25 @@ type AdminUsersConnection struct {
 	Nodes []db.User `json:"nodes"`
 }
 
+type BanUserInput struct {
+	UserID   int    `json:"userId"`
+	BannedBy int    `json:"bannedBy"`
+	Reason   string `json:"reason"`
+}
+
+type BanUserPayload struct {
+	UserID int      `json:"userId"`
+	User   *db.User `json:"user"`
+}
+
+func (BanUserPayload) IsBanUserOrErrorPayload() {}
+
 type ErrorPayload struct {
 	Message  string         `json:"message"`
 	ByFields []FieldMessage `json:"byFields"`
 }
+
+func (ErrorPayload) IsBanUserOrErrorPayload() {}
 
 func (ErrorPayload) IsRequestEmailSignInCodeOrErrorPayload() {}
 

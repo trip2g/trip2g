@@ -136,6 +136,7 @@ type BanUserPayload {
 }
 
 union BanUserOrErrorPayload = BanUserPayload | ErrorPayload
+
 # requestEmailSignInCode
 #
 
