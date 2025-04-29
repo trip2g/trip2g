@@ -1,6 +1,7 @@
 package usertoken
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -20,6 +21,16 @@ type fullData struct {
 	jwt.RegisteredClaims
 }
 
+type ValidateError struct {
+	Value error
+}
+
+func (err *ValidateError) Error() string {
+	return fmt.Sprintf("validation error: %v", err.Value)
+}
+
+type Validator func(ctx context.Context, data *Data) error
+
 var _ jwt.ClaimsValidator = (*fullData)(nil)
 
 // Optional: custom validation logic (e.g., prevent old tokens).
@@ -31,6 +42,10 @@ func (c fullData) Validate() error {
 type Manager struct {
 	cookieName string
 	secret     []byte
+
+	// will call this function after parsing the token
+	// for example for check banned users.
+	validators []Validator
 }
 
 var (
@@ -44,6 +59,10 @@ func NewManager(cookieName string, secret []byte) *Manager {
 		cookieName: cookieName,
 		secret:     secret,
 	}
+}
+
+func (e *Manager) AddValidator(v Validator) {
+	e.validators = append(e.validators, v)
 }
 
 // Extract reads cookie, verifies JWT, parses Token.
@@ -77,6 +96,13 @@ func (e *Manager) Extract(ctx *fasthttp.RequestCtx) (*Data, error) {
 	token := Data{
 		ID:     claims.ID,
 		Opened: claims.Opened,
+	}
+
+	for _, v := range e.validators {
+		validationErr := v(ctx, &token)
+		if validationErr != nil {
+			return nil, &ValidateError{Value: validationErr}
+		}
 	}
 
 	return &token, nil

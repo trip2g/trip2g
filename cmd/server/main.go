@@ -31,6 +31,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/vektah/gqlparser/gqlerror"
 	"github.com/vektah/gqlparser/v2/ast"
 
 	"github.com/mikestefanello/backlite"
@@ -126,6 +127,19 @@ func main() {
 
 		devMode: os.Getenv("DEV") == "y",
 	}
+
+	tokenManager.AddValidator(func(ctx context.Context, data *usertoken.Data) error {
+		ban, err := a.UserBanByUserID(ctx, int64(data.ID))
+		if err != nil {
+			return fmt.Errorf("failed to get user ban: %w", err)
+		}
+
+		if ban != nil {
+			return gqlerror.Errorf("%s", ban.Reason)
+		}
+
+		return nil
+	})
 
 	ctx := context.Background()
 

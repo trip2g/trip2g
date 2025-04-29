@@ -3,6 +3,10 @@ namespace $ {
 
 	export class $trip2g_graphql_error extends Error {
 		constructor(message: string, public detail?: unknown) {
+			for (let err of detail) {
+				message += `. ${err.message}`;
+			}
+
 			super(message)
 		}
 	}
