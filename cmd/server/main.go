@@ -61,6 +61,10 @@ type app struct {
 	queueClient  *backlite.Client
 
 	devMode bool
+
+	userBansMap map[int64]db.UserBan
+	userBans    []db.UserBan
+	userBansMu  sync.Mutex
 }
 
 func enablePragmas(db *sql.DB) error {
@@ -204,6 +208,43 @@ func (a *app) Logger() logger.Logger {
 func (a *app) QueueRequestSignInEmail(_ context.Context, email string, code int64) error {
 	a.log.Debug("queue sign in email", "email", email, "code", code)
 	return nil
+}
+
+func (a *app) UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error) {
+	a.userBansMu.Lock()
+	defer a.userBansMu.Unlock()
+
+	if a.userBansMap == nil {
+		userBans, err := a.queries.ListAllUserBans(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user bans from the db: %w", err)
+		}
+
+		a.userBansMap = make(map[int64]db.UserBan, len(a.userBans))
+		a.userBans = userBans
+
+		for _, v := range userBans {
+			a.userBansMap[v.UserID] = v
+		}
+	}
+
+	ban, ok := a.userBansMap[userID]
+	if !ok {
+		return nil, nil
+	}
+
+	return &ban, nil
+}
+
+func (a *app) ResetBanCache(ctx context.Context) error {
+	a.userBansMu.Lock()
+	a.userBansMap = nil
+	a.userBans = nil
+	a.userBansMu.Unlock()
+
+	_, err := a.UserBanByUserID(ctx, 0)
+
+	return err
 }
 
 func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) {

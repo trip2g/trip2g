@@ -156,6 +156,3 @@ delete from user_bans where user_id = ?;
 
 -- name: AdminByUserID :one
 select * from admins where user_id = ?;
-
--- name: UserBanByUserID :one
-select * from user_bans where user_id = ?;

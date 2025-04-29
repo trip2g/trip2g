@@ -768,22 +768,6 @@ func (q *Queries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSu
 	return i, err
 }
 
-const userBanByUserID = `-- name: UserBanByUserID :one
-select user_id, created_at, banned_by, reason from user_bans where user_id = ?
-`
-
-func (q *Queries) UserBanByUserID(ctx context.Context, userID int64) (UserBan, error) {
-	row := q.db.QueryRowContext(ctx, userBanByUserID, userID)
-	var i UserBan
-	err := row.Scan(
-		&i.UserID,
-		&i.CreatedAt,
-		&i.BannedBy,
-		&i.Reason,
-	)
-	return i, err
-}
-
 const userByID = `-- name: UserByID :one
 select id, email, created_at, last_signin_code_sent_at from users where id = ?
 `

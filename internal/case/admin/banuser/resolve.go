@@ -10,6 +10,7 @@ import (
 
 type Env interface {
 	BanUser(ctx context.Context, params db.BanUserParams) error
+	ResetBanCache(ctx context.Context) error
 }
 
 func Resolve(ctx context.Context, env Env, req model.BanUserInput) (model.BanUserOrErrorPayload, error) {
@@ -25,6 +26,11 @@ func Resolve(ctx context.Context, env Env, req model.BanUserInput) (model.BanUse
 		}
 
 		return nil, fmt.Errorf("failed to ban user: %w", err)
+	}
+
+	err = env.ResetBanCache(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reset ban cache: %w", err)
 	}
 
 	response := model.BanUserPayload{

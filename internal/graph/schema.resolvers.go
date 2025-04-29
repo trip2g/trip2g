@@ -218,7 +218,7 @@ func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUse
 
 // Ban is the resolver for the ban field.
 func (r *userResolver) Ban(ctx context.Context, obj *db.User) (*db.UserBan, error) {
-	return resolveOne[db.UserBan](ctx, obj.ID, r.Env.UserBanByUserID)
+	return r.Env.UserBanByUserID(ctx, obj.ID)
 }
 
 // User is the resolver for the user field.
