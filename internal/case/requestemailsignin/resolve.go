@@ -14,10 +14,10 @@ import (
 )
 
 type Env interface {
-	QueueRequestSignInEmail(ctx context.Context, email string, code int64) error
+	QueueRequestSignInEmail(ctx context.Context, email string, code string) error
 	GetUserByEmail(ctx context.Context, email string) (db.User, error)
 	CountActiveSignInCodes(ctx context.Context, userID int64) (int64, error)
-	CreateSignInCode(ctx context.Context, userID int64) (int64, error)
+	CreateSignInCode(ctx context.Context, userID int64) (string, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
 }
 

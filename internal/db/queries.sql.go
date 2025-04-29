@@ -440,8 +440,8 @@ values (?, ?)
 `
 
 type InsertSignInCodeParams struct {
-	UserID int64 `json:"user_id"`
-	Code   int64 `json:"code"`
+	UserID int64  `json:"user_id"`
+	Code   string `json:"code"`
 }
 
 func (q *Queries) InsertSignInCode(ctx context.Context, arg InsertSignInCodeParams) error {
@@ -817,7 +817,7 @@ select user_id
 
 type VerifySignInCodeParams struct {
 	Email string `json:"email"`
-	Code  int64  `json:"code"`
+	Code  string `json:"code"`
 }
 
 func (q *Queries) VerifySignInCode(ctx context.Context, arg VerifySignInCodeParams) (int64, error) {

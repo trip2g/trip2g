@@ -140,9 +140,9 @@ union RequestEmailSignInCodeOrErrorPayload = RequestEmailSignInCodePayload | Err
 # signInByEmail
 #
 
-input SignInByEmailInput @goModel(model: "trip2g/internal/case/signinbyemail.Request") {
+input SignInByEmailInput {
   email: String!
-  code: Int!
+  code: String!
 }
 
 type SignInPayload {

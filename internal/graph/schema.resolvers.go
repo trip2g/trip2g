@@ -161,8 +161,8 @@ func (r *mutationResolver) RequestEmailSignInCode(ctx context.Context, input req
 }
 
 // SignInByEmail is the resolver for the signInByEmail field.
-func (r *mutationResolver) SignInByEmail(ctx context.Context, input signinbyemail.Request) (model.SignInOrErrorPayload, error) {
-	return input.Resolve(ctx, r.Env)
+func (r *mutationResolver) SignInByEmail(ctx context.Context, input model.SignInByEmailInput) (model.SignInOrErrorPayload, error) {
+	return signinbyemail.Resolve(ctx, r.Env, input)
 }
 
 // SignOut is the resolver for the signOut field.
@@ -282,12 +282,6 @@ func (r *viewerResolver) User(ctx context.Context, obj *model.Viewer) (*db.User,
 	return nil, nil
 }
 
-// Code is the resolver for the code field.
-func (r *signInByEmailInputResolver) Code(ctx context.Context, obj *signinbyemail.Request, data int32) error {
-	obj.Code = int64(data)
-	return nil
-}
-
 // Admin returns AdminResolver implementation.
 func (r *Resolver) Admin() AdminResolver { return &adminResolver{r} }
 
@@ -357,11 +351,6 @@ func (r *Resolver) UserSubgraphAccess() UserSubgraphAccessResolver {
 // Viewer returns ViewerResolver implementation.
 func (r *Resolver) Viewer() ViewerResolver { return &viewerResolver{r} }
 
-// SignInByEmailInput returns SignInByEmailInputResolver implementation.
-func (r *Resolver) SignInByEmailInput() SignInByEmailInputResolver {
-	return &signInByEmailInputResolver{r}
-}
-
 type adminResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
 type adminNoteViewsConnectionResolver struct{ *Resolver }
@@ -381,4 +370,3 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
-type signInByEmailInputResolver struct{ *Resolver }

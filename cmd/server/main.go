@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -219,7 +220,7 @@ func (a *app) Logger() logger.Logger {
 	return a.log
 }
 
-func (a *app) QueueRequestSignInEmail(_ context.Context, email string, code int64) error {
+func (a *app) QueueRequestSignInEmail(_ context.Context, email string, code string) error {
 	a.log.Debug("queue sign in email", "email", email, "code", code)
 	return nil
 }
@@ -314,25 +315,27 @@ func generateSixDigitCode() (int64, error) {
 	return 0, ErrFailedGeneration
 }
 
-func (a *app) CreateSignInCode(ctx context.Context, userID int64) (int64, error) {
+func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error) {
 	code, err := generateSixDigitCode()
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	if a.devMode {
 		code = 111111
 	}
 
+	sCode := strconv.Itoa(int(code))
+
 	err = a.queries.InsertSignInCode(ctx, db.InsertSignInCodeParams{
 		UserID: userID,
-		Code:   code,
+		Code:   sCode,
 	})
 	if err != nil {
-		return 0, fmt.Errorf("failed to insert sign-in code: %w", err)
+		return "", fmt.Errorf("failed to insert sign-in code: %w", err)
 	}
 
-	return code, nil
+	return sCode, nil
 }
 
 func (a *app) NoteByPath(path string) (*model.NoteView, error) {

@@ -48,9 +48,8 @@ CREATE TABLE purchases (
 );
 CREATE TABLE sign_in_codes (
   user_id integer not null,
-  code integer not null,
   created_at datetime not null default current_timestamp
-);
+, code text not null);
 CREATE TABLE backlite_tasks (
     id text PRIMARY KEY,
     created_at integer NOT NULL,

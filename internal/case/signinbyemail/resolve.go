@@ -20,26 +20,21 @@ type Env interface {
 	SetupUserToken(ctx context.Context, userID int64) (string, error)
 }
 
-type Request struct {
-	Email string
-	Code  int64
-}
-
-func (r *Request) Normalize() {
+func normalizeRequest(r *model.SignInByEmailInput) {
 	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
 }
 
-func (req *Request) Validate() *model.ErrorPayload {
-	return model.NewOzzoError(ozzo.ValidateStruct(req,
-		ozzo.Field(&req.Email, ozzo.Required, is.Email),
-		ozzo.Field(&req.Code, ozzo.Required, ozzo.Min(100000), ozzo.Max(999999)),
+func validateRequest(r *model.SignInByEmailInput) *model.ErrorPayload {
+	return model.NewOzzoError(ozzo.ValidateStruct(r,
+		ozzo.Field(&r.Email, ozzo.Required, is.Email),
+		ozzo.Field(&r.Code, ozzo.Required, ozzo.Length(6, 6)),
 	))
 }
 
-func (req *Request) Resolve(ctx context.Context, env Env) (model.SignInOrErrorPayload, error) {
-	req.Normalize()
+func Resolve(ctx context.Context, env Env, req model.SignInByEmailInput) (model.SignInOrErrorPayload, error) {
+	normalizeRequest(&req)
 
-	errorPayload := req.Validate()
+	errorPayload := validateRequest(&req)
 	if errorPayload != nil {
 		return errorPayload, nil
 	}

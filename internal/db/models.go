@@ -92,7 +92,7 @@ type SchemaMigrations struct {
 
 type SignInCode struct {
 	UserID    int64     `json:"user_id"`
-	Code      int64     `json:"code"`
+	Code      string    `json:"code"`
 	CreatedAt time.Time `json:"created_at"`
 }
 

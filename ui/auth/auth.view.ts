@@ -167,7 +167,7 @@ namespace $.$$ {
 				{
 					input: {
 						email,
-						code: parseInt(this.code(), 10),
+						code: this.code(),
 					},
 				}
 			)

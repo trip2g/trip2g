@@ -176,7 +176,7 @@ type RequestEmailSignInCodePayload = {
 };
 
 type SignInByEmailInput = {
-  code: Scalars['Int']['input'];
+  code: Scalars['String']['input'];
   email: Scalars['String']['input'];
 };
 

@@ -15,7 +15,6 @@ import (
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/requestemailsignin"
-	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	model1 "trip2g/internal/model"
@@ -65,7 +64,6 @@ type ResolverRoot interface {
 	UserBan() UserBanResolver
 	UserSubgraphAccess() UserSubgraphAccessResolver
 	Viewer() ViewerResolver
-	SignInByEmailInput() SignInByEmailInputResolver
 }
 
 type DirectiveRoot struct {
@@ -132,7 +130,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		Admin                  func(childComplexity int) int
 		RequestEmailSignInCode func(childComplexity int, input requestemailsignin.Request) int
-		SignInByEmail          func(childComplexity int, input signinbyemail.Request) int
+		SignInByEmail          func(childComplexity int, input model.SignInByEmailInput) int
 		SignOut                func(childComplexity int) int
 	}
 
@@ -257,7 +255,7 @@ type ErrorPayloadResolver interface {
 }
 type MutationResolver interface {
 	RequestEmailSignInCode(ctx context.Context, input requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error)
-	SignInByEmail(ctx context.Context, input signinbyemail.Request) (model.SignInOrErrorPayload, error)
+	SignInByEmail(ctx context.Context, input model.SignInByEmailInput) (model.SignInOrErrorPayload, error)
 	SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error)
 	Admin(ctx context.Context) (*model1.AdminMutation, error)
 }
@@ -291,10 +289,6 @@ type UserSubgraphAccessResolver interface {
 type ViewerResolver interface {
 	ID(ctx context.Context, obj *model.Viewer) (string, error)
 	User(ctx context.Context, obj *model.Viewer) (*db.User, error)
-}
-
-type SignInByEmailInputResolver interface {
-	Code(ctx context.Context, obj *signinbyemail.Request, data int32) error
 }
 
 type executableSchema struct {
@@ -548,7 +542,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SignInByEmail(childComplexity, args["input"].(signinbyemail.Request)), true
+		return e.complexity.Mutation.SignInByEmail(childComplexity, args["input"].(model.SignInByEmailInput)), true
 
 	case "Mutation.signOut":
 		if e.complexity.Mutation.SignOut == nil {
@@ -1157,13 +1151,13 @@ func (ec *executionContext) field_Mutation_signInByEmail_args(ctx context.Contex
 func (ec *executionContext) field_Mutation_signInByEmail_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (signinbyemail.Request, error) {
+) (model.SignInByEmailInput, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNSignInByEmailInput2trip2gᚋinternalᚋcaseᚋsigninbyemailᚐRequest(ctx, tmp)
+		return ec.unmarshalNSignInByEmailInput2trip2gᚋinternalᚋgraphᚋmodelᚐSignInByEmailInput(ctx, tmp)
 	}
 
-	var zeroVal signinbyemail.Request
+	var zeroVal model.SignInByEmailInput
 	return zeroVal, nil
 }
 
@@ -2635,7 +2629,7 @@ func (ec *executionContext) _Mutation_signInByEmail(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().SignInByEmail(rctx, fc.Args["input"].(signinbyemail.Request))
+		return ec.resolvers.Mutation().SignInByEmail(rctx, fc.Args["input"].(model.SignInByEmailInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6746,8 +6740,8 @@ func (ec *executionContext) unmarshalInputRequestEmailSignInCodeInput(ctx contex
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputSignInByEmailInput(ctx context.Context, obj any) (signinbyemail.Request, error) {
-	var it signinbyemail.Request
+func (ec *executionContext) unmarshalInputSignInByEmailInput(ctx context.Context, obj any) (model.SignInByEmailInput, error) {
+	var it model.SignInByEmailInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -6769,13 +6763,11 @@ func (ec *executionContext) unmarshalInputSignInByEmailInput(ctx context.Context
 			it.Email = data
 		case "code":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("code"))
-			data, err := ec.unmarshalNInt2int32(ctx, v)
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			if err = ec.resolvers.SignInByEmailInput().Code(ctx, &it, data); err != nil {
-				return it, err
-			}
+			it.Code = data
 		}
 	}
 
@@ -9798,21 +9790,6 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) unmarshalNInt2int32(ctx context.Context, v any) (int32, error) {
-	res, err := graphql.UnmarshalInt32(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNInt2int32(ctx context.Context, sel ast.SelectionSet, v int32) graphql.Marshaler {
-	res := graphql.MarshalInt32(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
 func (ec *executionContext) unmarshalNInt642int(ctx context.Context, v any) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -9906,7 +9883,7 @@ func (ec *executionContext) marshalNRequestEmailSignInCodeOrErrorPayload2trip2g�
 	return ec._RequestEmailSignInCodeOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNSignInByEmailInput2trip2gᚋinternalᚋcaseᚋsigninbyemailᚐRequest(ctx context.Context, v any) (signinbyemail.Request, error) {
+func (ec *executionContext) unmarshalNSignInByEmailInput2trip2gᚋinternalᚋgraphᚋmodelᚐSignInByEmailInput(ctx context.Context, v any) (model.SignInByEmailInput, error) {
 	res, err := ec.unmarshalInputSignInByEmailInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
