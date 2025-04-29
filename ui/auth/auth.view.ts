@@ -1,6 +1,7 @@
 namespace $.$$ {
 	export class $trip2g_auth extends $.$trip2g_auth {
-		me_request() {
+		@$mol_mem
+		me(reset?: null) {
 			const res = $trip2g_graphql_request(/* GraphQL */ `
 				query Viewer {
 					viewer {
@@ -18,16 +19,7 @@ namespace $.$$ {
 		}
 
 		reload_me() {
-			this.me(this.me_request())
-		}
-
-		@$mol_mem
-		me(next?: any) {
-			if (!next) {
-				return this.me_request()
-			}
-
-			return next ?? null
+			this.me(null);
 		}
 
 		me_user_email(): string {

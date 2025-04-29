@@ -32,8 +32,8 @@ func StreamPage(qw422016 *qt422016.Writer) {
   <title>Admin</title>
 
   <body mol_view_root>
-    <div mol_view_root="$trip2g_auth"></div>
-    <script src="/ui/auth/-/web.js"></script>
+    <div mol_view_root="$trip2g_admin"></div>
+    <script src="/ui/admin/-/web.js"></script>
   </body
 </html>
 `)
