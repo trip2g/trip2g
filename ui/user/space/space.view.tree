@@ -7,8 +7,15 @@ $trip2g_user_space $mol_view
 			dom_name \dialog
 			attr * open <= open_status null null|string
 			sub /
-				\Content...
-				<= Email $mol_view
-					sub / <= user_email \
-				<= Close $mol_button_minor
-					click <= close null
+				<= AuthWrapper $trip2g_auth
+					signout => signout
+					AppView <= Content
+	Content $mol_view
+		sub /
+			\Content...
+			<= Email $mol_view
+				sub / <= user_email \
+			<= Close $mol_button_minor
+				click <= close null
+			<= SignOut $mol_button_major
+				click? <=> signout
