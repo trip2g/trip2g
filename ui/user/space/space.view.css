@@ -1,0 +1,22 @@
+[trip2g_user_space_dialog] {
+	width: 80vw;
+	height: 80vh;
+	margin: auto;
+	padding: 2rem;
+	border: none;
+	border-radius: 1rem;
+	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+	background-color: white;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+
+[trip2g_user_space_dialog]::backdrop {
+	background: rgba(0, 0, 0, 0.5);
+}
+
+[trip2g_user_space_dialog]:not([open]) {
+	display: none; /* override mol styles */
+}

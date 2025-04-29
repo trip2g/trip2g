@@ -26,6 +26,8 @@ type Response struct {
 	Title string
 	Note  *model.NoteView
 	Notes model.NoteViews
+
+	UserToken *usertoken.Data
 }
 
 const defaultSidebarPath = "/_sidebar"
@@ -80,6 +82,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Title = page.Title
 	response.Note = page
 	response.Notes = pages
+	response.UserToken = request.UserToken
 
 	pageSubgraphs, err := model.NoteViews{"": page}.Subgraphs()
 	if err != nil {

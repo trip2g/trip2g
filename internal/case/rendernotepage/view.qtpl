@@ -51,6 +51,10 @@
 
 <header class="container mx-auto px-4 py-2">
   <a href="/">Home</a>
+
+  <div mol_view_root>
+    <div mol_view_root="$trip2g_user_space"></div>
+  </div>
 </header>
 
 <main class="container mx-auto px-4 py-2">
@@ -60,6 +64,8 @@
 
 </main>
 </div>
+
+<script src="/ui/user/space/-/web.js"></script>
 
 {% endfunc %}
 
@@ -73,11 +79,14 @@
 <p>{%s err.Message %}</p>
 
 <div mol_view_root>
-  <div mol_view_root="$trip2g_auth"></div>
+  <div mol_view_root="$trip2g_user_enter"></div>
 </div>
 
-<script src="/ui/auth/-/web.js"></script>
+<script src="/ui/user/enter/-/web.js"></script>
 
+{% if resp.UserToken == nil %}
+
+<!--
 <form action="/_system/signin" method="post" class="max-w-3xs mt-8">
   <input type="hidden" name="return_to" value="">
   <div class="mb-4">
@@ -106,5 +115,8 @@
     </button>
   </div>
 </form>
+-->
+
+{% endif %}
 
 {% endfunc %}

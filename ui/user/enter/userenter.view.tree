@@ -1,0 +1,5 @@
+$trip2g_user_enter $trip2g_auth
+	AppView $trip2g_user_enter_app
+
+$trip2g_user_enter_app $mol_view
+	sub / \Hello, you are logged in!

@@ -1,0 +1,14 @@
+$trip2g_user_space $mol_view
+	sub /
+		\Profile...
+		<= Open $mol_button_major
+			click <= open null
+		<= Dialog $mol_view
+			dom_name \dialog
+			attr * open <= open_status null null|string
+			sub /
+				\Content...
+				<= Email $mol_view
+					sub / <= user_email \
+				<= Close $mol_button_minor
+					click <= close null

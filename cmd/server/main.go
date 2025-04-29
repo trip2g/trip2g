@@ -355,7 +355,8 @@ func (a *app) startServer() {
 		Root:               "./assets",
 		IndexNames:         []string{},
 		GenerateIndexPages: false,
-		Compress:           true,
+		Compress:           a.devMode,
+		SkipCache:          a.devMode,
 		AcceptByteRange:    true,
 
 		PathRewrite: func(ctx *fasthttp.RequestCtx) []byte {
@@ -368,7 +369,8 @@ func (a *app) startServer() {
 		Root:               "./ui",
 		IndexNames:         []string{},
 		GenerateIndexPages: false,
-		Compress:           true,
+		Compress:           a.devMode,
+		SkipCache:          a.devMode,
 		AcceptByteRange:    true,
 
 		PathRewrite: func(ctx *fasthttp.RequestCtx) []byte {
