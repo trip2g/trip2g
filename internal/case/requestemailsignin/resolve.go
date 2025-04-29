@@ -18,6 +18,7 @@ type Env interface {
 	GetUserByEmail(ctx context.Context, email string) (db.User, error)
 	CountActiveSignInCodes(ctx context.Context, userID int64) (int64, error)
 	CreateSignInCode(ctx context.Context, userID int64) (int64, error)
+	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
 }
 
 type Request struct {
@@ -49,6 +50,20 @@ func (req *Request) Resolve(ctx context.Context, env Env) (model.RequestEmailSig
 		}
 
 		return nil, fmt.Errorf("failed to get user by email: %w", err)
+	}
+
+	ban, err := env.UserBanByUserID(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check user ban: %w", err)
+	}
+
+	if ban != nil {
+		msg := "user_banned"
+		if ban.Reason != "" {
+			msg = "user_banned: " + ban.Reason
+		}
+
+		return &model.ErrorPayload{Message: msg}, nil
 	}
 
 	count, err := env.CountActiveSignInCodes(ctx, user.ID)
