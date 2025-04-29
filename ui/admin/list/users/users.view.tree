@@ -20,9 +20,9 @@ $trip2g_admin_list_users $mol_book2_catalog
 		user_id <= row_id_number* 0 
 	UserBanButton* $mol_link
 		title \Ban
-		arg * ban_id <= row_id_number* 0
+		arg * ban_id <= row_id* \
 	UserUnbanButton* $trip2g_admin_button_user_unban
-		user_id <= row_id*
+		user_id <= row_id_number*
 	menu_link_content* / <= NoteItem* $mol_view
 		sub /
 			<= Row* $mol_row
