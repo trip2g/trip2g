@@ -12,6 +12,8 @@ type NoteView struct {
 	Path  string
 	Title string
 
+	PathID int64
+
 	Content []byte
 	HTML    template.HTML
 	ast     ast.Node // hide from JSON

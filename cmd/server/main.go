@@ -114,7 +114,14 @@ func main() {
 		panic(err)
 	}
 
-	log := zerologger.New("debug", true)
+	devMode := os.Getenv("DEV") == "y"
+
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "info"
+	}
+
+	log := zerologger.New(logLevel, devMode)
 
 	a := &app{
 		Queries: db.New(db.WithLogger(conn, log)),
@@ -126,7 +133,7 @@ func main() {
 		queries: db.New(conn),
 		conn:    conn,
 
-		devMode: os.Getenv("DEV") == "y",
+		devMode: devMode,
 	}
 
 	tokenManager.AddValidator(func(ctx context.Context, data *usertoken.Data) error {
@@ -181,6 +188,7 @@ func (a *app) PrepareNotes(ctx context.Context) (model.NoteViews, error) {
 	for _, note := range notes {
 		sources = append(sources, mdloader.SourceFile{
 			Path:    note.Path,
+			PathID:  note.PathID,
 			Content: []byte(note.Content),
 		})
 	}

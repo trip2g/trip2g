@@ -22,6 +22,7 @@ import (
 // SourceFile represents a markdown file.
 type SourceFile struct {
 	Path    string
+	PathID  int64
 	Content []byte
 }
 
@@ -69,6 +70,8 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (model.NoteViews, error) 
 		if err != nil {
 			return nil, fmt.Errorf("failed to load page: %w (%s)", err, src.Path)
 		}
+
+		page.PathID = src.PathID
 
 		ldr.pages[page.Permalink] = page
 	}

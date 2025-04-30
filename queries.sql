@@ -27,7 +27,7 @@ select * from note_versions
  order by version desc;
 
 -- name: AllLatestNotes :many
-select value as path, content
+select value as path, p.id as path_id, content
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version;
 
@@ -156,3 +156,17 @@ delete from user_bans where user_id = ?;
 
 -- name: AdminByUserID :one
 select * from admins where user_id = ?;
+
+-- name: InsertUserNoteView :exec
+insert into user_note_views (user_id, path_id) values (?, ?);
+
+-- name: UpsertUserNoteDailyView :one
+-- Unfortunately, sqlc cannot generate a parameter for greatest(count + 1, sqlc.arg(max_count)).
+insert into user_note_daily_view_counts (user_id, path_id) values (?, ?)
+on conflict(user_id, path_id) do update set count = count + 1
+returning count;
+
+-- name: IncreaseUserNoteViewCount :exec
+update users
+   set note_view_count = note_view_count + 1
+ where id = ?;

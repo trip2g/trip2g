@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/usertoken"
@@ -15,6 +16,9 @@ type Env interface {
 	Logger() logger.Logger
 	AllNotes() model.NoteViews
 	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]string, error)
+	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
+	UpsertUserNoteDailyView(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
+	IncreaseUserNoteViewCount(ctx context.Context, userID int64) error
 }
 
 type Request struct {
@@ -92,15 +96,6 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		return &response, err
 	}
 
-	userSubgraphs := []string{}
-
-	if request.UserToken != nil {
-		userSubgraphs, err = env.ListActiveSubgraphsByUserID(ctx, int64(request.UserToken.ID))
-		if err != nil {
-			return &response, err
-		}
-	}
-
 	// not sure if this is the right place to do this
 	for key := range page.InLinks {
 		if len(key) > 1 && key[1] == '_' {
@@ -113,9 +108,43 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		return &response, &PaywallError{Message: "Need auth"}
 	}
 
-	hasAccess := len(pageSubgraphs) == 0
+	userSubgraphs := []string{}
 
-	env.Logger().Debug("check access to subgraph", "pageSubgraphs", pageSubgraphs, "userSubgraphs", userSubgraphs)
+	if request.UserToken != nil {
+		userID := int64(request.UserToken.ID)
+
+		userSubgraphs, err = env.ListActiveSubgraphsByUserID(ctx, userID)
+		if err != nil {
+			return &response, err
+		}
+
+		const maxCount = int64(10)
+
+		dailyParams := db.UpsertUserNoteDailyViewParams{
+			UserID: userID,
+			PathID: page.PathID,
+		}
+
+		dailyCount, err := env.UpsertUserNoteDailyView(ctx, dailyParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to upsert user note daily view: %w", err)
+		}
+
+		// TODO: read from the app config
+		if dailyCount < maxCount {
+			err = env.InsertUserNoteView(ctx, db.InsertUserNoteViewParams(dailyParams))
+			if err != nil {
+				return nil, fmt.Errorf("failed to insert user note view: %w", err)
+			}
+
+			err = env.IncreaseUserNoteViewCount(ctx, userID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to increase user note view count: %w", err)
+			}
+		}
+	}
+
+	hasAccess := len(pageSubgraphs) == 0
 
 	// check if the user has access to the subgraph
 	for _, ps := range pageSubgraphs {

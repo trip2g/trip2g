@@ -20,7 +20,7 @@ CREATE TABLE users (
   email text not null unique,
   created_at datetime not null default current_timestamp,
   last_signin_code_sent_at datetime
-);
+, note_view_count integer default 0);
 CREATE TABLE admins (
   user_id int primary key references users(id) on delete cascade,
   granted_at datetime not null default current_timestamp,
@@ -101,6 +101,18 @@ CREATE TABLE user_bans (
   banned_by integer references admins(user_id) on delete restrict,
   reason text not null
 );
+CREATE TABLE user_note_views (
+  user_id int not null references users(id) on delete cascade,
+  path_id int not null references note_paths(id) on delete cascade,
+  created_at datetime not null default current_timestamp
+);
+CREATE TABLE user_note_daily_view_counts (
+  user_id int not null references users(id) on delete cascade,
+  path_id int not null references note_paths(id) on delete cascade,
+  day date not null default (date()),
+  count int not null default 0,
+  unique (user_id, path_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -109,4 +121,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250414025612'),
   ('20250417050444'),
   ('20250419030458'),
-  ('20250427033102');
+  ('20250427033102'),
+  ('20250430041756'),
+  ('20250430065941');
