@@ -1,23 +1,7 @@
 namespace $.$$ {
 	export class $trip2g_user_space extends $.$trip2g_user_space {
-		@$mol_mem
 		viewer() {
-			const res = $trip2g_graphql_request(`
-				query UserSpace {
-					viewer {
-						user {
-							id
-							email
-						}
-					}
-				}
-			`)
-
-			if (!res.viewer.user) {
-				throw new Error('User not found')
-			}
-
-			return res.viewer as typeof res.viewer & { user: NonNullable<typeof res.viewer.user> }
+			return this.$.$trip2g_auth_viewer.current()
 		}
 
 		open_status(opened?: boolean): string | null {
@@ -45,7 +29,7 @@ namespace $.$$ {
 		}
 
 		user_email() {
-			return this.viewer().user.email
+			return this.viewer().user?.email || '???'
 		}
 	}
 }

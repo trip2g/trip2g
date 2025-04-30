@@ -1,21 +1,7 @@
 namespace $.$$ {
 	export class $trip2g_auth extends $.$trip2g_auth {
-		@$mol_mem
 		me(reset?: null) {
-			const res = $trip2g_graphql_request(/* GraphQL */ `
-				query Viewer {
-					viewer {
-						id
-						user {
-							id
-							email
-							createdAt
-						}
-					}
-				}
-			`)
-
-			return res.viewer.user
+			return $trip2g_auth_viewer.current(reset)
 		}
 
 		reload_me() {
@@ -23,7 +9,7 @@ namespace $.$$ {
 		}
 
 		me_user_email(): string {
-			return this.me()?.email || '???'
+			return this.me().user?.email || '???'
 		}
 
 		signout() {
@@ -57,8 +43,8 @@ namespace $.$$ {
 		}
 
 		sub() {
-			const me = this.me()
-			if (me) {
+			const viewer = this.me()
+			if (viewer.user) {
 				return [this.AppView()]
 			}
 
@@ -67,9 +53,7 @@ namespace $.$$ {
 				return [this.CodeForm()]
 			}
 
-			const e = this.EmailForm()
-			console.log(e);
-			return [e];
+			return [this.EmailForm()]
 		}
 	}
 
