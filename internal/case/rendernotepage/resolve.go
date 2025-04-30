@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -28,6 +29,7 @@ type Response struct {
 	Notes model.NoteViews
 
 	UserToken *usertoken.Data
+	Time      int
 }
 
 const defaultSidebarPath = "/_sidebar"
@@ -83,6 +85,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Note = page
 	response.Notes = pages
 	response.UserToken = request.UserToken
+	response.Time = int(time.Now().Unix())
 
 	pageSubgraphs, err := model.NoteViews{"": page}.Subgraphs()
 	if err != nil {

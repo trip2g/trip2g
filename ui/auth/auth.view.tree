@@ -6,7 +6,6 @@ $trip2g_auth $mol_view
 		reload_me <= reload_me null
 	AppView $mol_view
 		sub / \TODO: Replace AppView
-	sub / <= EmailForm
 
 $trip2g_auth_email_form $mol_form
 	body /

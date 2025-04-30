@@ -67,7 +67,9 @@ namespace $.$$ {
 				return [this.CodeForm()]
 			}
 
-			return [this.EmailForm()]
+			const e = this.EmailForm()
+			console.log(e);
+			return [e];
 		}
 	}
 

@@ -33,7 +33,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		if paywallOk {
 			WriteLayoutHeader(ctx, resp)
 			WritePayWall(ctx, resp, paywallErr)
-			WriteLayoutFooter(ctx)
+			WriteLayoutFooter(ctx, resp)
 
 			return nil, nil
 		}
@@ -41,7 +41,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		if errors.Is(err, ErrNotFound) {
 			WriteLayoutHeader(ctx, resp)
 			WriteNotFound(ctx)
-			WriteLayoutFooter(ctx)
+			WriteLayoutFooter(ctx, resp)
 
 			return nil, nil
 		}
@@ -51,7 +51,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	WriteLayoutHeader(ctx, resp)
 	WriteNote(ctx, resp)
-	WriteLayoutFooter(ctx)
+	WriteLayoutFooter(ctx, resp)
 
 	return nil, nil
 }

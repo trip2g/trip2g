@@ -60,12 +60,12 @@
 <main class="container mx-auto px-4 py-2">
 {% endfunc %}
 
-{% func LayoutFooter() %}
+{% func LayoutFooter(resp *Response) %}
 
 </main>
 </div>
 
-<script src="/ui/user/space/-/web.js"></script>
+<script src="/ui/user/-/web.js?t={%d resp.Time %}"></script>
 
 {% endfunc %}
 
@@ -81,8 +81,6 @@
 <div mol_view_root>
   <div mol_view_root="$trip2g_user_enter"></div>
 </div>
-
-<script src="/ui/user/enter/-/web.js"></script>
 
 {% if resp.UserToken == nil %}
 
