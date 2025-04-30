@@ -19,6 +19,7 @@ type Env interface {
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
 	UpsertUserNoteDailyView(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
 	IncreaseUserNoteViewCount(ctx context.Context, userID int64) error
+	ListLatestUserNoteViewPathIDS(ctx context.Context, userID int64) ([]int64, error)
 }
 
 type Request struct {
@@ -31,6 +32,8 @@ type Response struct {
 	Title string
 	Note  *model.NoteView
 	Notes model.NoteViews
+
+	LatestNotes []*model.NoteView
 
 	UserToken *usertoken.Data
 	Time      int
@@ -118,7 +121,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 			return &response, err
 		}
 
-		const maxCount = int64(10)
+		const maxCount = int64(100)
 
 		dailyParams := db.UpsertUserNoteDailyViewParams{
 			UserID: userID,
@@ -140,6 +143,20 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 			err = env.IncreaseUserNoteViewCount(ctx, userID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to increase user note view count: %w", err)
+			}
+		}
+
+		latestNoteIDS, err := env.ListLatestUserNoteViewPathIDS(ctx, userID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list latest user note view path ids: %w", err)
+		}
+
+		idMap := pages.IDMap()
+
+		for _, id := range latestNoteIDS {
+			note, ok := idMap[id]
+			if ok {
+				response.LatestNotes = append(response.LatestNotes, note)
 			}
 		}
 	}

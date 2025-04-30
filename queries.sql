@@ -170,3 +170,14 @@ returning count;
 update users
    set note_view_count = note_view_count + 1
  where id = ?;
+
+-- name: ListLatestUserNoteViewPathIDS :many
+select distinct path_id
+  from (
+    select path_id
+      from user_note_views
+     where user_id = ?
+     order by created_at desc
+     limit 50
+  ) as t
+ limit 20;

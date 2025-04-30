@@ -652,6 +652,41 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const listLatestUserNoteViewPathIDS = `-- name: ListLatestUserNoteViewPathIDS :many
+select distinct path_id
+  from (
+    select path_id
+      from user_note_views
+     where user_id = ?
+     order by created_at desc
+     limit 50
+  ) as t
+ limit 20
+`
+
+func (q *Queries) ListLatestUserNoteViewPathIDS(ctx context.Context, userID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listLatestUserNoteViewPathIDS, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var path_id int64
+		if err := rows.Scan(&path_id); err != nil {
+			return nil, err
+		}
+		items = append(items, path_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const revokeUserSubgraphAccess = `-- name: RevokeUserSubgraphAccess :exec
 update user_subgraph_accesses
    set revoke_id = ?

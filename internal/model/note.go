@@ -127,3 +127,13 @@ func extractSubgraphs(target map[string]struct{}, val interface{}) error {
 
 	return nil
 }
+
+func (pages NoteViews) IDMap() map[int64]*NoteView {
+	idMap := make(map[int64]*NoteView, len(pages))
+
+	for _, page := range pages {
+		idMap[page.PathID] = page
+	}
+
+	return idMap
+}
