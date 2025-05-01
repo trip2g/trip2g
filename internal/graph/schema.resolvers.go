@@ -27,32 +27,32 @@ import (
 
 // User is the resolver for the user field.
 func (r *adminResolver) User(ctx context.Context, obj *db.Admin) (*db.User, error) {
-	return resolveOne[db.User](ctx, obj.UserID, r.Env.UserByID)
+	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
 }
 
 // UpdateSubgraph is the resolver for the updateSubgraph field.
 func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *model1.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error) {
-	return input.Resolve(ctx, r.Env)
+	return input.Resolve(ctx, r.env(ctx))
 }
 
 // UpdateUserSubgraphAccess is the resolver for the updateUserSubgraphAccess field.
 func (r *adminMutationResolver) UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error) {
-	return input.Resolve(ctx, r.Env)
+	return input.Resolve(ctx, r.env(ctx))
 }
 
 // UnbanUser is the resolver for the unbanUser field.
 func (r *adminMutationResolver) UnbanUser(ctx context.Context, obj *model1.AdminMutation, input model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error) {
-	return unbanuser.Resolve(ctx, r.Env, input)
+	return unbanuser.Resolve(ctx, r.env(ctx), input)
 }
 
 // BanUser is the resolver for the banUser field.
 func (r *adminMutationResolver) BanUser(ctx context.Context, obj *model1.AdminMutation, input model.BanUserInput) (model.BanUserOrErrorPayload, error) {
-	return banuser.Resolve(ctx, r.Env, input)
+	return banuser.Resolve(ctx, r.env(ctx), input)
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *adminNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNoteViewsConnection) ([]model1.NoteView, error) {
-	notes := r.Env.AllNotes()
+	notes := r.env(ctx).AllNotes()
 	res := make([]model1.NoteView, 0, len(notes))
 	keys := make([]string, 0, len(notes))
 
@@ -96,44 +96,44 @@ func (r *adminQueryResolver) AllUserUserBans(ctx context.Context, obj *model1.Ad
 
 // Subgraph is the resolver for the subgraph field.
 func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *model1.AdminQuery, id int) (*db.Subgraph, error) {
-	return resolveOne[db.Subgraph](ctx, int64(id), r.Env.SubgraphByID)
+	return resolveOne[db.Subgraph](ctx, int64(id), r.env(ctx).SubgraphByID)
 }
 
 // NoteView is the resolver for the noteView field.
 func (r *adminQueryResolver) NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error) {
-	notes := r.Env.AllNotes()
+	notes := r.env(ctx).AllNotes()
 
 	return notes[id], nil
 }
 
 // UserSubgraphAccess is the resolver for the userSubgraphAccess field.
 func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int) (*db.UserSubgraphAccess, error) {
-	return resolveOne[db.UserSubgraphAccess](ctx, int64(id), r.Env.UserSubgraphAccessByID)
+	return resolveOne[db.UserSubgraphAccess](ctx, int64(id), r.env(ctx).UserSubgraphAccessByID)
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error) {
-	return r.Env.ListAllSubgraphs(ctx)
+	return r.env(ctx).ListAllSubgraphs(ctx)
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *adminUserBansConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUserBansConnection) ([]db.UserBan, error) {
-	return r.Env.ListAllUserBans(ctx)
+	return r.env(ctx).ListAllUserBans(ctx)
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *adminUserSubgraphAccessesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUserSubgraphAccessesConnection) ([]db.UserSubgraphAccess, error) {
-	return r.Env.ListAllUserSubgraphAccesses(ctx)
+	return r.env(ctx).ListAllUserSubgraphAccesses(ctx)
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *adminUsersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error) {
-	return r.Env.ListAllUsers(ctx)
+	return r.env(ctx).ListAllUsers(ctx)
 }
 
 // User is the resolver for the user field.
 func (r *banUserPayloadResolver) User(ctx context.Context, obj *model.BanUserPayload) (*db.User, error) {
-	return resolveOne[db.User](ctx, int64(obj.UserID), r.Env.UserByID)
+	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
 }
 
 // Message is the resolver for the message field.
@@ -157,17 +157,17 @@ func (r *errorPayloadResolver) Message(ctx context.Context, obj *model.ErrorPayl
 
 // RequestEmailSignInCode is the resolver for the requestEmailSignInCode field.
 func (r *mutationResolver) RequestEmailSignInCode(ctx context.Context, input requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error) {
-	return input.Resolve(ctx, r.Env)
+	return input.Resolve(ctx, r.env(ctx))
 }
 
 // SignInByEmail is the resolver for the signInByEmail field.
 func (r *mutationResolver) SignInByEmail(ctx context.Context, input model.SignInByEmailInput) (model.SignInOrErrorPayload, error) {
-	return signinbyemail.Resolve(ctx, r.Env, input)
+	return signinbyemail.Resolve(ctx, r.env(ctx), input)
 }
 
 // SignOut is the resolver for the signOut field.
 func (r *mutationResolver) SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error) {
-	return signout.Resolve(ctx, r.Env)
+	return signout.Resolve(ctx, r.env(ctx))
 }
 
 // Admin is the resolver for the admin field.
@@ -213,17 +213,17 @@ func (r *subgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*string
 
 // User is the resolver for the user field.
 func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error) {
-	return resolveOne[db.User](ctx, int64(obj.UserID), r.Env.UserByID)
+	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
 }
 
 // Ban is the resolver for the ban field.
 func (r *userResolver) Ban(ctx context.Context, obj *db.User) (*db.UserBan, error) {
-	return r.Env.UserBanByUserID(ctx, obj.ID)
+	return r.env(ctx).UserBanByUserID(ctx, obj.ID)
 }
 
 // User is the resolver for the user field.
 func (r *userBanResolver) User(ctx context.Context, obj *db.UserBan) (*db.User, error) {
-	return resolveOne[db.User](ctx, obj.UserID, r.Env.UserByID)
+	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
 }
 
 // BannedBy is the resolver for the bannedBy field.
@@ -232,7 +232,7 @@ func (r *userBanResolver) BannedBy(ctx context.Context, obj *db.UserBan) (*db.Ad
 		return nil, nil
 	}
 
-	return resolveOne[db.Admin](ctx, obj.BannedBy.Int64, r.Env.AdminByUserID)
+	return resolveOne[db.Admin](ctx, obj.BannedBy.Int64, r.env(ctx).AdminByUserID)
 }
 
 // ExpiresAt is the resolver for the expiresAt field.
@@ -242,12 +242,12 @@ func (r *userSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.User
 
 // User is the resolver for the user field.
 func (r *userSubgraphAccessResolver) User(ctx context.Context, obj *db.UserSubgraphAccess) (*db.User, error) {
-	return resolveOne[db.User](ctx, obj.UserID, r.Env.UserByID)
+	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
 }
 
 // Subgraph is the resolver for the subgraph field.
 func (r *userSubgraphAccessResolver) Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error) {
-	return resolveOne[db.Subgraph](ctx, obj.SubgraphID, r.Env.SubgraphByID)
+	return resolveOne[db.Subgraph](ctx, obj.SubgraphID, r.env(ctx).SubgraphByID)
 }
 
 // ID is the resolver for the id field.
@@ -267,7 +267,7 @@ func (r *viewerResolver) User(ctx context.Context, obj *model.Viewer) (*db.User,
 	}
 
 	if userID != nil {
-		user, err := r.Env.UserByID(ctx, *userID)
+		user, err := r.env(ctx).UserByID(ctx, *userID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, nil

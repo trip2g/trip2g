@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
@@ -14,7 +15,21 @@ import (
 )
 
 type Resolver struct {
-	Env Env
+	DefaultEnv Env
+}
+
+func (r *Resolver) env(ctx context.Context) Env {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	reqEnv, ok := req.Env.(Env)
+	if !ok {
+		panic("request env is not of type Env")
+	}
+
+	return reqEnv
 }
 
 type Env interface {

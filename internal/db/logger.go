@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"trip2g/internal/logger"
 )
 
@@ -14,12 +15,16 @@ type DBLogger struct {
 func WithLogger(db DBTX, log logger.Logger) *DBLogger {
 	return &DBLogger{
 		db:  db,
-		log: logger.WithPrefix(log, "DB:"),
+		log: log,
 	}
 }
 
+func formatSQL(s string) string {
+	return strings.ReplaceAll(s, "\n", " ")
+}
+
 func (d *DBLogger) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
-	d.log.Debug("ExecContext", "query", query, "args", args)
+	d.log.Debug("ExecContext", "query", formatSQL(query), "args", args)
 
 	res, err := d.db.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -30,7 +35,7 @@ func (d *DBLogger) ExecContext(ctx context.Context, query string, args ...interf
 }
 
 func (d *DBLogger) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
-	d.log.Debug("PrepareContext", "query", query)
+	d.log.Debug("PrepareContext", "query", formatSQL(query))
 
 	stmt, err := d.db.PrepareContext(ctx, query)
 	if err != nil {
@@ -41,7 +46,7 @@ func (d *DBLogger) PrepareContext(ctx context.Context, query string) (*sql.Stmt,
 }
 
 func (d *DBLogger) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
-	d.log.Debug("QueryContext", "query", query, "args", args)
+	d.log.Debug("QueryContext", "query", formatSQL(query), "args", args)
 
 	rows, err := d.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -52,7 +57,7 @@ func (d *DBLogger) QueryContext(ctx context.Context, query string, args ...inter
 }
 
 func (d *DBLogger) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
-	d.log.Debug("QueryRowContext", "query", query, "args", args)
+	d.log.Debug("QueryRowContext", "query", formatSQL(query), "args", args)
 
 	return d.db.QueryRowContext(ctx, query, args...)
 }

@@ -27,6 +27,7 @@ import (
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
@@ -123,14 +124,16 @@ func main() {
 
 	log := zerologger.New(logLevel, devMode)
 
+	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "no tx:")))
+
 	a := &app{
-		Queries: db.New(db.WithLogger(conn, log)),
+		Queries: queries,
 
 		tokenManager: tokenManager,
 		queueClient:  queueClient,
 
 		log:     log,
-		queries: db.New(conn),
+		queries: queries,
 		conn:    conn,
 
 		devMode: devMode,
@@ -335,7 +338,7 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error
 
 	sCode := strconv.Itoa(int(code))
 
-	err = a.queries.InsertSignInCode(ctx, db.InsertSignInCodeParams{
+	err = a.InsertSignInCode(ctx, db.InsertSignInCodeParams{
 		UserID: userID,
 		Code:   sCode,
 	})
@@ -392,7 +395,7 @@ func (a *app) startServer() {
 
 	rtr := router.New(a)
 
-	resolver := graph.Resolver{Env: a}
+	resolver := graph.Resolver{DefaultEnv: a}
 
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &resolver}))
 
@@ -405,6 +408,70 @@ func (a *app) startServer() {
 	srv.Use(extension.Introspection{})
 	srv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
+	})
+
+	graphqlErr := func(err error) graphql.ResponseHandler {
+		a.log.Error("graphql error", "error", err)
+
+		return func(ctx context.Context) *graphql.Response {
+			return graphql.ErrorResponse(ctx, err.Error())
+		}
+	}
+
+	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+		operationContext := graphql.GetOperationContext(ctx)
+
+		if operationContext.Operation.Operation == ast.Mutation {
+			req, err := appreq.FromCtx(ctx)
+			if err != nil {
+				return graphqlErr(err)
+			}
+
+			tx, err := a.conn.BeginTx(ctx, nil)
+			if err != nil {
+				return graphqlErr(err)
+			}
+
+			// TODO: use a pool
+			logLabel := fmt.Sprintf("tx %s", operationContext.Operation.Name+":")
+			queries := db.New(db.WithLogger(tx, logger.WithPrefix(a.log, logLabel)))
+
+			newEnv := *a
+			newEnv.queries = queries
+			newEnv.Queries = queries
+
+			// override the context with the new tx env
+			req.Env = &newEnv
+
+			rh := next(ctx)
+
+			return func(ctx context.Context) *graphql.Response {
+				resp := rh(ctx)
+
+				// А тут интересно, нужно ли отказывать транзакции только в случае ошибок
+				// или в случае ErrorPayload так же нужно? Похоже нужно откатывать в случае
+				// непредвиденных ошибок и дополнительно вводить специальную ошибку для rollback.
+				if len(resp.Errors) > 0 {
+					rollbackErr := tx.Rollback()
+					if rollbackErr != nil {
+						a.log.Error("failed to rollback transaction", "error", rollbackErr)
+					}
+				} else {
+					commitErr := tx.Commit()
+					if commitErr != nil {
+						a.log.Error("failed to commit transaction", "error", commitErr)
+					}
+
+					a.log.Debug("committed transaction", "operation", operationContext.Operation.Name)
+				}
+
+				return resp
+			}
+
+			fmt.Println("Mutation", req)
+		}
+
+		return next(ctx)
 	})
 
 	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
