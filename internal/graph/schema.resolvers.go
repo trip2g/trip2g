@@ -116,6 +116,11 @@ func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model
 	return r.env(ctx).ListAllSubgraphs(ctx)
 }
 
+// Ban is the resolver for the ban field.
+func (r *adminUserResolver) Ban(ctx context.Context, obj *db.User) (*db.UserBan, error) {
+	panic(fmt.Errorf("not implemented: Ban - ban"))
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminUserBansConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUserBansConnection) ([]db.UserBan, error) {
 	return r.env(ctx).ListAllUserBans(ctx)
@@ -216,11 +221,6 @@ func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUse
 	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
 }
 
-// Ban is the resolver for the ban field.
-func (r *userResolver) Ban(ctx context.Context, obj *db.User) (*db.UserBan, error) {
-	return r.env(ctx).UserBanByUserID(ctx, obj.ID)
-}
-
 // User is the resolver for the user field.
 func (r *userBanResolver) User(ctx context.Context, obj *db.UserBan) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
@@ -301,6 +301,9 @@ func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
 	return &adminSubgraphsConnectionResolver{r}
 }
 
+// AdminUser returns AdminUserResolver implementation.
+func (r *Resolver) AdminUser() AdminUserResolver { return &adminUserResolver{r} }
+
 // AdminUserBansConnection returns AdminUserBansConnectionResolver implementation.
 func (r *Resolver) AdminUserBansConnection() AdminUserBansConnectionResolver {
 	return &adminUserBansConnectionResolver{r}
@@ -337,9 +340,6 @@ func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
 // UnbanUserPayload returns UnbanUserPayloadResolver implementation.
 func (r *Resolver) UnbanUserPayload() UnbanUserPayloadResolver { return &unbanUserPayloadResolver{r} }
 
-// User returns UserResolver implementation.
-func (r *Resolver) User() UserResolver { return &userResolver{r} }
-
 // UserBan returns UserBanResolver implementation.
 func (r *Resolver) UserBan() UserBanResolver { return &userBanResolver{r} }
 
@@ -356,6 +356,7 @@ type adminMutationResolver struct{ *Resolver }
 type adminNoteViewsConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
+type adminUserResolver struct{ *Resolver }
 type adminUserBansConnectionResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
@@ -366,7 +367,6 @@ type noteViewResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
-type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }

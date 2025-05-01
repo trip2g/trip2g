@@ -8,9 +8,7 @@ namespace $.$$ {
 					viewer {
 						id
 						user {
-							id
 							email
-							createdAt
 						}
 					}
 				}

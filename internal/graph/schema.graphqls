@@ -22,7 +22,7 @@ directive @goExtraField(
 ) repeatable on OBJECT | INPUT_OBJECT
 
 type UserBan {
-  user: User! @goField(forceResolver: true)
+  user: AdminUser! @goField(forceResolver: true)
   userId: Int64!
   bannedBy: Admin
   createdAt: Time!
@@ -30,6 +30,10 @@ type UserBan {
 }
 
 type User {
+  email: String!
+}
+
+type AdminUser @goModel(model: "trip2g/internal/db.User") {
   id: Int64!
   email: String!
   createdAt: Time!
@@ -37,7 +41,7 @@ type User {
 }
 
 type AdminUsersConnection {
-  nodes: [User!]! @goField(forceResolver: true)
+  nodes: [AdminUser!]! @goField(forceResolver: true)
 }
 
 type Subgraph {
@@ -54,7 +58,7 @@ type UserSubgraphAccess {
   createdAt: Time!
   expiresAt: Time
 
-  user: User!
+  user: AdminUser!
   subgraph: Subgraph!
 }
 
@@ -69,7 +73,7 @@ type NoteView {
 }
 
 type Admin {
-  user: User! @goField(forceResolver: true)
+  user: AdminUser! @goField(forceResolver: true)
 }
 
 type AdminUserSubgraphAccessesConnection {
@@ -210,7 +214,7 @@ input UnbanUserInput {
 
 type UnbanUserPayload {
   userId: Int64!
-  user: User! @goField(forceResolver: true)
+  user: AdminUser! @goField(forceResolver: true)
 }
 
 union UnbanUserOrErrorPayload = UnbanUserPayload | ErrorPayload
@@ -226,7 +230,7 @@ input BanUserInput {
 
 type BanUserPayload {
   userId: Int64!
-  user: User! @goField(forceResolver: true)
+  user: AdminUser! @goField(forceResolver: true)
 }
 
 union BanUserOrErrorPayload = BanUserPayload | ErrorPayload
