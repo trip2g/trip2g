@@ -161,8 +161,9 @@ type ComplexityRoot struct {
 	}
 
 	Offer struct {
-		ID       func(childComplexity int) int
-		PriceUsd func(childComplexity int) int
+		ID        func(childComplexity int) int
+		PriceUsd  func(childComplexity int) int
+		Subgraphs func(childComplexity int) int
 	}
 
 	Query struct {
@@ -225,8 +226,8 @@ type ComplexityRoot struct {
 	}
 
 	Viewer struct {
-		ID   func(childComplexity int) int
-		User func(childComplexity int) int
+		Offers func(childComplexity int, subgraphs []string) int
+		User   func(childComplexity int) int
 	}
 }
 
@@ -289,9 +290,10 @@ type NoteViewResolver interface {
 type OfferResolver interface {
 	ID(ctx context.Context, obj *db.Offer) (string, error)
 	PriceUsd(ctx context.Context, obj *db.Offer) (float64, error)
+	Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subgraph, error)
 }
 type QueryResolver interface {
-	Viewer(ctx context.Context) (*model.Viewer, error)
+	Viewer(ctx context.Context) (*model1.Viewer, error)
 	Subgraph(ctx context.Context, name string) (*db.Subgraph, error)
 	Admin(ctx context.Context) (*model1.AdminQuery, error)
 }
@@ -312,8 +314,8 @@ type UserSubgraphAccessResolver interface {
 	Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error)
 }
 type ViewerResolver interface {
-	ID(ctx context.Context, obj *model.Viewer) (string, error)
-	User(ctx context.Context, obj *model.Viewer) (*db.User, error)
+	User(ctx context.Context, obj *model1.Viewer) (*db.User, error)
+	Offers(ctx context.Context, obj *model1.Viewer, subgraphs []string) ([]db.Offer, error)
 }
 
 type executableSchema struct {
@@ -695,6 +697,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Offer.PriceUsd(childComplexity), true
 
+	case "Offer.subgraphs":
+		if e.complexity.Offer.Subgraphs == nil {
+			break
+		}
+
+		return e.complexity.Offer.Subgraphs(childComplexity), true
+
 	case "Query.admin":
 		if e.complexity.Query.Admin == nil {
 			break
@@ -882,12 +891,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserSubgraphAccess.UserID(childComplexity), true
 
-	case "Viewer.id":
-		if e.complexity.Viewer.ID == nil {
+	case "Viewer.offers":
+		if e.complexity.Viewer.Offers == nil {
 			break
 		}
 
-		return e.complexity.Viewer.ID(childComplexity), true
+		args, err := ec.field_Viewer_offers_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Viewer.Offers(childComplexity, args["subgraphs"].([]string)), true
 
 	case "Viewer.user":
 		if e.complexity.Viewer.User == nil {
@@ -1276,6 +1290,29 @@ func (ec *executionContext) field_Query_subgraph_argsName(
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Viewer_offers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Viewer_offers_argsSubgraphs(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["subgraphs"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Viewer_offers_argsSubgraphs(
+	ctx context.Context,
+	rawArgs map[string]any,
+) ([]string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphs"))
+	if tmp, ok := rawArgs["subgraphs"]; ok {
+		return ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
+	}
+
+	var zeroVal []string
 	return zeroVal, nil
 }
 
@@ -3617,6 +3654,56 @@ func (ec *executionContext) fieldContext_Offer_priceUSD(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Offer_subgraphs(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Offer_subgraphs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Offer().Subgraphs(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.Subgraph)
+	fc.Result = res
+	return ec.marshalNSubgraph2ᚕtrip2gᚋinternalᚋdbᚐSubgraphᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Offer_subgraphs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Offer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_Subgraph_name(ctx, field)
+			case "offers":
+				return ec.fieldContext_Subgraph_offers(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Subgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_viewer(ctx, field)
 	if err != nil {
@@ -3643,9 +3730,9 @@ func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Viewer)
+	res := resTmp.(*model1.Viewer)
 	fc.Result = res
-	return ec.marshalNViewer2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx, field.Selections, res)
+	return ec.marshalNViewer2ᚖtrip2gᚋinternalᚋmodelᚐViewer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_viewer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3656,10 +3743,10 @@ func (ec *executionContext) fieldContext_Query_viewer(_ context.Context, field g
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Viewer_id(ctx, field)
 			case "user":
 				return ec.fieldContext_Viewer_user(ctx, field)
+			case "offers":
+				return ec.fieldContext_Viewer_offers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -4032,9 +4119,9 @@ func (ec *executionContext) _SignInPayload_viewer(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Viewer)
+	res := resTmp.(*model1.Viewer)
 	fc.Result = res
-	return ec.marshalNViewer2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx, field.Selections, res)
+	return ec.marshalNViewer2ᚖtrip2gᚋinternalᚋmodelᚐViewer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SignInPayload_viewer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4045,10 +4132,10 @@ func (ec *executionContext) fieldContext_SignInPayload_viewer(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Viewer_id(ctx, field)
 			case "user":
 				return ec.fieldContext_Viewer_user(ctx, field)
+			case "offers":
+				return ec.fieldContext_Viewer_offers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -4082,9 +4169,9 @@ func (ec *executionContext) _SignOutPayload_viewer(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Viewer)
+	res := resTmp.(*model1.Viewer)
 	fc.Result = res
-	return ec.marshalNViewer2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx, field.Selections, res)
+	return ec.marshalNViewer2ᚖtrip2gᚋinternalᚋmodelᚐViewer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SignOutPayload_viewer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4095,10 +4182,10 @@ func (ec *executionContext) fieldContext_SignOutPayload_viewer(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Viewer_id(ctx, field)
 			case "user":
 				return ec.fieldContext_Viewer_user(ctx, field)
+			case "offers":
+				return ec.fieldContext_Viewer_offers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -4193,6 +4280,8 @@ func (ec *executionContext) fieldContext_Subgraph_offers(_ context.Context, fiel
 				return ec.fieldContext_Offer_id(ctx, field)
 			case "priceUSD":
 				return ec.fieldContext_Offer_priceUSD(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_Offer_subgraphs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Offer", field.Name)
 		},
@@ -5004,51 +5093,7 @@ func (ec *executionContext) fieldContext_UserSubgraphAccess_subgraph(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _Viewer_id(ctx context.Context, field graphql.CollectedField, obj *model.Viewer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Viewer_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Viewer().ID(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Viewer_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Viewer",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Viewer_user(ctx context.Context, field graphql.CollectedField, obj *model.Viewer) (ret graphql.Marshaler) {
+func (ec *executionContext) _Viewer_user(ctx context.Context, field graphql.CollectedField, obj *model1.Viewer) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Viewer_user(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -5089,6 +5134,69 @@ func (ec *executionContext) fieldContext_Viewer_user(_ context.Context, field gr
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Viewer_offers(ctx context.Context, field graphql.CollectedField, obj *model1.Viewer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Viewer_offers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Viewer().Offers(rctx, obj, fc.Args["subgraphs"].([]string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.Offer)
+	fc.Result = res
+	return ec.marshalNOffer2ᚕtrip2gᚋinternalᚋdbᚐOfferᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Viewer_offers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Viewer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Offer_id(ctx, field)
+			case "priceUSD":
+				return ec.fieldContext_Offer_priceUSD(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_Offer_subgraphs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Offer", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Viewer_offers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -8963,6 +9071,42 @@ func (ec *executionContext) _Offer(ctx context.Context, sel ast.SelectionSet, ob
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "subgraphs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Offer_subgraphs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9767,7 +9911,7 @@ func (ec *executionContext) _UserSubgraphAccess(ctx context.Context, sel ast.Sel
 
 var viewerImplementors = []string{"Viewer"}
 
-func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, obj *model.Viewer) graphql.Marshaler {
+func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, obj *model1.Viewer) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, viewerImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -9776,19 +9920,16 @@ func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, o
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Viewer")
-		case "id":
+		case "user":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Viewer_id(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
+				res = ec._Viewer_user(ctx, field, obj)
 				return res
 			}
 
@@ -9812,16 +9953,19 @@ func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, o
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "user":
+		case "offers":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Viewer_user(ctx, field, obj)
+				res = ec._Viewer_offers(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -10500,21 +10644,6 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
-func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {
-	res, err := graphql.UnmarshalID(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalID(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
 func (ec *executionContext) unmarshalNInt642int(ctx context.Context, v any) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -10700,6 +10829,50 @@ func (ec *executionContext) marshalNSubgraph2trip2gᚋinternalᚋdbᚐSubgraph(c
 	return ec._Subgraph(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNSubgraph2ᚕtrip2gᚋinternalᚋdbᚐSubgraphᚄ(ctx context.Context, sel ast.SelectionSet, v []db.Subgraph) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSubgraph2trip2gᚋinternalᚋdbᚐSubgraph(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgraph(ctx context.Context, sel ast.SelectionSet, v *db.Subgraph) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -10876,11 +11049,11 @@ func (ec *executionContext) marshalNUserSubgraphAccess2ᚖtrip2gᚋinternalᚋdb
 	return ec._UserSubgraphAccess(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNViewer2trip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx context.Context, sel ast.SelectionSet, v model.Viewer) graphql.Marshaler {
+func (ec *executionContext) marshalNViewer2trip2gᚋinternalᚋmodelᚐViewer(ctx context.Context, sel ast.SelectionSet, v model1.Viewer) graphql.Marshaler {
 	return ec._Viewer(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNViewer2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐViewer(ctx context.Context, sel ast.SelectionSet, v *model.Viewer) graphql.Marshaler {
+func (ec *executionContext) marshalNViewer2ᚖtrip2gᚋinternalᚋmodelᚐViewer(ctx context.Context, sel ast.SelectionSet, v *model1.Viewer) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

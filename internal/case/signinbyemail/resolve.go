@@ -8,7 +8,8 @@ import (
 	"strings"
 
 	"trip2g/internal/db"
-	"trip2g/internal/graph/model"
+	gmodel "trip2g/internal/graph/model"
+	"trip2g/internal/model"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -20,18 +21,18 @@ type Env interface {
 	SetupUserToken(ctx context.Context, userID int64) (string, error)
 }
 
-func normalizeRequest(r *model.SignInByEmailInput) {
+func normalizeRequest(r *gmodel.SignInByEmailInput) {
 	r.Email = strings.TrimSpace(strings.ToLower(r.Email))
 }
 
-func validateRequest(r *model.SignInByEmailInput) *model.ErrorPayload {
-	return model.NewOzzoError(ozzo.ValidateStruct(r,
+func validateRequest(r *gmodel.SignInByEmailInput) *gmodel.ErrorPayload {
+	return gmodel.NewOzzoError(ozzo.ValidateStruct(r,
 		ozzo.Field(&r.Email, ozzo.Required, is.Email),
 		ozzo.Field(&r.Code, ozzo.Required, ozzo.Length(6, 6)),
 	))
 }
 
-func Resolve(ctx context.Context, env Env, req model.SignInByEmailInput) (model.SignInOrErrorPayload, error) {
+func Resolve(ctx context.Context, env Env, req gmodel.SignInByEmailInput) (gmodel.SignInOrErrorPayload, error) {
 	normalizeRequest(&req)
 
 	errorPayload := validateRequest(&req)
@@ -47,7 +48,7 @@ func Resolve(ctx context.Context, env Env, req model.SignInByEmailInput) (model.
 	userID, err := env.VerifySignInCode(ctx, codeParams)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return model.NewFieldError("email", "not_found"), nil
+			return gmodel.NewFieldError("email", "not_found"), nil
 		}
 
 		return nil, fmt.Errorf("failed to list active sign-in codes: %w", err)
@@ -63,7 +64,7 @@ func Resolve(ctx context.Context, env Env, req model.SignInByEmailInput) (model.
 		return nil, fmt.Errorf("failed to delete sign-in codes: %w", err)
 	}
 
-	response := model.SignInPayload{
+	response := gmodel.SignInPayload{
 		Token:  token,
 		Viewer: &model.Viewer{},
 	}

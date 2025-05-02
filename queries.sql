@@ -177,3 +177,14 @@ select o.*
    and (o.ends_at > datetime('now') or o.ends_at is null)
    and o.price_usd > 0
  order by price_usd desc;
+
+-- name: ListActiveOffersBySubgraphNames :many
+select o.*
+  from offers o
+  join offer_subgraphs os on o.id = os.offer_id
+  join subgraphs s on os.subgraph_id = s.id
+ where s.name in (sqlc.slice(subgraphs))
+   and (o.starts_at < datetime('now') or o.starts_at is null)
+   and (o.ends_at > datetime('now') or o.ends_at is null)
+   and o.price_usd > 0
+ order by price_usd desc;

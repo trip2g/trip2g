@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
 
 const adminByUserID = `-- name: AdminByUserID :one
@@ -453,6 +454,59 @@ select o.id, o.public_id, o.created_at, o.lifetime, o.price_usd, o.starts_at, o.
 
 func (q *Queries) ListActiveOffersBySubgraphID(ctx context.Context, subgraphID int64) ([]Offer, error) {
 	rows, err := q.db.QueryContext(ctx, listActiveOffersBySubgraphID, subgraphID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Offer
+	for rows.Next() {
+		var i Offer
+		if err := rows.Scan(
+			&i.ID,
+			&i.PublicID,
+			&i.CreatedAt,
+			&i.Lifetime,
+			&i.PriceUsd,
+			&i.StartsAt,
+			&i.EndsAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveOffersBySubgraphNames = `-- name: ListActiveOffersBySubgraphNames :many
+select o.id, o.public_id, o.created_at, o.lifetime, o.price_usd, o.starts_at, o.ends_at
+  from offers o
+  join offer_subgraphs os on o.id = os.offer_id
+  join subgraphs s on os.subgraph_id = s.id
+ where s.name in (/*SLICE:subgraphs*/?)
+   and (o.starts_at < datetime('now') or o.starts_at is null)
+   and (o.ends_at > datetime('now') or o.ends_at is null)
+   and o.price_usd > 0
+ order by price_usd desc
+`
+
+func (q *Queries) ListActiveOffersBySubgraphNames(ctx context.Context, subgraphs []string) ([]Offer, error) {
+	query := listActiveOffersBySubgraphNames
+	var queryParams []interface{}
+	if len(subgraphs) > 0 {
+		for _, v := range subgraphs {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:subgraphs*/?", strings.Repeat(",?", len(subgraphs))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:subgraphs*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,6 @@ package model
 import (
 	"trip2g/internal/db"
 	"trip2g/internal/model"
-	"trip2g/internal/usertoken"
 )
 
 type BanUserOrErrorPayload interface {
@@ -110,14 +109,14 @@ type SignInByEmailInput struct {
 }
 
 type SignInPayload struct {
-	Token  string  `json:"token"`
-	Viewer *Viewer `json:"viewer"`
+	Token  string        `json:"token"`
+	Viewer *model.Viewer `json:"viewer"`
 }
 
 func (SignInPayload) IsSignInOrErrorPayload() {}
 
 type SignOutPayload struct {
-	Viewer *Viewer `json:"viewer"`
+	Viewer *model.Viewer `json:"viewer"`
 }
 
 func (SignOutPayload) IsSignOutOrErrorPayload() {}
@@ -144,10 +143,3 @@ type UpdateUserSubgraphAccessPayload struct {
 }
 
 func (UpdateUserSubgraphAccessPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
-
-type Viewer struct {
-	ID        string          `json:"id"`
-	User      *db.User        `json:"user,omitempty"`
-	UserID    *int64          `json:"-"`
-	UserToken *usertoken.Data `json:"-"`
-}

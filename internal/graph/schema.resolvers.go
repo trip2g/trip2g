@@ -22,7 +22,7 @@ import (
 	"trip2g/internal/case/signout"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
-	model1 "trip2g/internal/model"
+	appmodel "trip2g/internal/model"
 )
 
 // User is the resolver for the user field.
@@ -31,29 +31,29 @@ func (r *adminResolver) User(ctx context.Context, obj *db.Admin) (*db.User, erro
 }
 
 // UpdateSubgraph is the resolver for the updateSubgraph field.
-func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *model1.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error) {
+func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *appmodel.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error) {
 	return input.Resolve(ctx, r.env(ctx))
 }
 
 // UpdateUserSubgraphAccess is the resolver for the updateUserSubgraphAccess field.
-func (r *adminMutationResolver) UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error) {
+func (r *adminMutationResolver) UpdateUserSubgraphAccess(ctx context.Context, obj *appmodel.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error) {
 	return input.Resolve(ctx, r.env(ctx))
 }
 
 // UnbanUser is the resolver for the unbanUser field.
-func (r *adminMutationResolver) UnbanUser(ctx context.Context, obj *model1.AdminMutation, input model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error) {
+func (r *adminMutationResolver) UnbanUser(ctx context.Context, obj *appmodel.AdminMutation, input model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error) {
 	return unbanuser.Resolve(ctx, r.env(ctx), input)
 }
 
 // BanUser is the resolver for the banUser field.
-func (r *adminMutationResolver) BanUser(ctx context.Context, obj *model1.AdminMutation, input model.BanUserInput) (model.BanUserOrErrorPayload, error) {
+func (r *adminMutationResolver) BanUser(ctx context.Context, obj *appmodel.AdminMutation, input model.BanUserInput) (model.BanUserOrErrorPayload, error) {
 	return banuser.Resolve(ctx, r.env(ctx), input)
 }
 
 // Nodes is the resolver for the nodes field.
-func (r *adminNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNoteViewsConnection) ([]model1.NoteView, error) {
+func (r *adminNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNoteViewsConnection) ([]appmodel.NoteView, error) {
 	notes := r.env(ctx).AllNotes()
-	res := make([]model1.NoteView, 0, len(notes))
+	res := make([]appmodel.NoteView, 0, len(notes))
 	keys := make([]string, 0, len(notes))
 
 	for _, note := range notes {
@@ -70,44 +70,44 @@ func (r *adminNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model
 }
 
 // AllUsers is the resolver for the allUsers field.
-func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUsersConnection, error) {
+func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminUsersConnection, error) {
 	return &model.AdminUsersConnection{}, nil
 }
 
 // AllSubgraphs is the resolver for the allSubgraphs field.
-func (r *adminQueryResolver) AllSubgraphs(ctx context.Context, obj *model1.AdminQuery) (*model.AdminSubgraphsConnection, error) {
+func (r *adminQueryResolver) AllSubgraphs(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminSubgraphsConnection, error) {
 	return &model.AdminSubgraphsConnection{}, nil
 }
 
 // AllUserSubgraphAccesses is the resolver for the allUserSubgraphAccesses field.
-func (r *adminQueryResolver) AllUserSubgraphAccesses(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUserSubgraphAccessesConnection, error) {
+func (r *adminQueryResolver) AllUserSubgraphAccesses(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminUserSubgraphAccessesConnection, error) {
 	return &model.AdminUserSubgraphAccessesConnection{}, nil
 }
 
 // AllNoteViews is the resolver for the allNoteViews field.
-func (r *adminQueryResolver) AllNoteViews(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNoteViewsConnection, error) {
+func (r *adminQueryResolver) AllNoteViews(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminNoteViewsConnection, error) {
 	return &model.AdminNoteViewsConnection{}, nil
 }
 
 // AllUserUserBans is the resolver for the allUserUserBans field.
-func (r *adminQueryResolver) AllUserUserBans(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUserBansConnection, error) {
+func (r *adminQueryResolver) AllUserUserBans(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminUserBansConnection, error) {
 	return &model.AdminUserBansConnection{}, nil
 }
 
 // Subgraph is the resolver for the subgraph field.
-func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *model1.AdminQuery, id int) (*db.Subgraph, error) {
+func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *appmodel.AdminQuery, id int) (*db.Subgraph, error) {
 	return resolveOne[db.Subgraph](ctx, int64(id), r.env(ctx).SubgraphByID)
 }
 
 // NoteView is the resolver for the noteView field.
-func (r *adminQueryResolver) NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error) {
+func (r *adminQueryResolver) NoteView(ctx context.Context, obj *appmodel.AdminQuery, id string) (*appmodel.NoteView, error) {
 	notes := r.env(ctx).AllNotes()
 
 	return notes[id], nil
 }
 
 // UserSubgraphAccess is the resolver for the userSubgraphAccess field.
-func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int) (*db.UserSubgraphAccess, error) {
+func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *appmodel.AdminQuery, id int) (*db.UserSubgraphAccess, error) {
 	return resolveOne[db.UserSubgraphAccess](ctx, int64(id), r.env(ctx).UserSubgraphAccessByID)
 }
 
@@ -181,18 +181,18 @@ func (r *mutationResolver) SignOut(ctx context.Context) (model.SignOutOrErrorPay
 }
 
 // Admin is the resolver for the admin field.
-func (r *mutationResolver) Admin(ctx context.Context) (*model1.AdminMutation, error) {
+func (r *mutationResolver) Admin(ctx context.Context) (*appmodel.AdminMutation, error) {
 	// TODO: check if the user is admin
-	return &model1.AdminMutation{}, nil
+	return &appmodel.AdminMutation{}, nil
 }
 
 // Content is the resolver for the content field.
-func (r *noteViewResolver) Content(ctx context.Context, obj *model1.NoteView) (string, error) {
+func (r *noteViewResolver) Content(ctx context.Context, obj *appmodel.NoteView) (string, error) {
 	return string(obj.Content), nil
 }
 
 // HTML is the resolver for the html field.
-func (r *noteViewResolver) HTML(ctx context.Context, obj *model1.NoteView) (string, error) {
+func (r *noteViewResolver) HTML(ctx context.Context, obj *appmodel.NoteView) (string, error) {
 	return string(obj.HTML), nil
 }
 
@@ -210,8 +210,13 @@ func (r *offerResolver) PriceUsd(ctx context.Context, obj *db.Offer) (float64, e
 	return -1, nil
 }
 
+// Subgraphs is the resolver for the subgraphs field.
+func (r *offerResolver) Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subgraph, error) {
+	panic(fmt.Errorf("not implemented: Subgraphs - subgraphs"))
+}
+
 // Viewer is the resolver for the viewer field.
-func (r *queryResolver) Viewer(ctx context.Context) (*model.Viewer, error) {
+func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {
 		return nil, err
@@ -222,7 +227,7 @@ func (r *queryResolver) Viewer(ctx context.Context) (*model.Viewer, error) {
 		return nil, err
 	}
 
-	return &model.Viewer{UserToken: token}, nil
+	return &appmodel.Viewer{UserToken: token}, nil
 }
 
 // Subgraph is the resolver for the subgraph field.
@@ -231,8 +236,8 @@ func (r *queryResolver) Subgraph(ctx context.Context, name string) (*db.Subgraph
 }
 
 // Admin is the resolver for the admin field.
-func (r *queryResolver) Admin(ctx context.Context) (*model1.AdminQuery, error) {
-	return &model1.AdminQuery{}, nil
+func (r *queryResolver) Admin(ctx context.Context) (*appmodel.AdminQuery, error) {
+	return &appmodel.AdminQuery{}, nil
 }
 
 // Offers is the resolver for the offers field.
@@ -274,13 +279,8 @@ func (r *userSubgraphAccessResolver) Subgraph(ctx context.Context, obj *db.UserS
 	return resolveOne[db.Subgraph](ctx, obj.SubgraphID, r.env(ctx).SubgraphByID)
 }
 
-// ID is the resolver for the id field.
-func (r *viewerResolver) ID(ctx context.Context, obj *model.Viewer) (string, error) {
-	return "viewer", nil
-}
-
 // User is the resolver for the user field.
-func (r *viewerResolver) User(ctx context.Context, obj *model.Viewer) (*db.User, error) {
+func (r *viewerResolver) User(ctx context.Context, obj *appmodel.Viewer) (*db.User, error) {
 	// cases can just set the userID to the viewer
 	userID := obj.UserID
 
@@ -304,6 +304,15 @@ func (r *viewerResolver) User(ctx context.Context, obj *model.Viewer) (*db.User,
 	}
 
 	return nil, nil
+}
+
+// Offers is the resolver for the offers field.
+func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, subgraphs []string) ([]db.Offer, error) {
+	if len(subgraphs) == 0 {
+		return nil, nil
+	}
+
+	return r.env(ctx).ListActiveOffersBySubgraphNames(ctx, subgraphs)
 }
 
 // Admin returns AdminResolver implementation.

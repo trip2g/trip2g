@@ -38,6 +38,7 @@ type Env interface {
 	ListAllSubgraphs(ctx context.Context) ([]db.Subgraph, error)
 	ListAllUserBans(ctx context.Context) ([]db.UserBan, error)
 	ListActiveOffersBySubgraphID(ctx context.Context, subgraphID int64) ([]db.Offer, error)
+	ListActiveOffersBySubgraphNames(ctx context.Context, subgraphNames []string) ([]db.Offer, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)

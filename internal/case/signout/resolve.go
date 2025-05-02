@@ -3,20 +3,22 @@ package signout
 import (
 	"context"
 	"fmt"
-	"trip2g/internal/graph/model"
+	gmodel "trip2g/internal/graph/model"
+
+	"trip2g/internal/model"
 )
 
 type Env interface {
 	ResetUserToken(ctx context.Context) error
 }
 
-func Resolve(ctx context.Context, env Env) (model.SignOutOrErrorPayload, error) {
+func Resolve(ctx context.Context, env Env) (gmodel.SignOutOrErrorPayload, error) {
 	err := env.ResetUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reset user token: %w", err)
 	}
 
-	response := model.SignOutPayload{
+	response := gmodel.SignOutPayload{
 		Viewer: &model.Viewer{},
 	}
 
