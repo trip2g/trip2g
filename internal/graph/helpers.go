@@ -6,10 +6,10 @@ import (
 	"errors"
 )
 
-func resolveOne[T any](
+func resolveOne[T any, K any](
 	ctx context.Context,
-	id int64,
-	fetch func(context.Context, int64) (T, error),
+	id K,
+	fetch func(context.Context, K) (T, error),
 ) (*T, error) {
 	row, err := fetch(ctx, id)
 	if err != nil {

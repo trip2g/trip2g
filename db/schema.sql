@@ -26,17 +26,6 @@ CREATE TABLE admins (
   granted_at datetime not null default current_timestamp,
   granted_by int references admins(user_id)
 );
-CREATE TABLE offers (
-  id text primary key,
-  created_at datetime not null default current_timestamp,
-  names text not null,-- e.g. "course-a|course-b" sorted alphabetically
-  lifetime text, -- e.g. "+600 days", null means no expiration
-  price_usd numeric,
-  price_rub numeric,
-  price_btc numeric,
-  starts_at datetime,
-  ends_at datetime
-);
 CREATE TABLE purchases (
   id text primary key,
   user_id int not null references users(id) on delete cascade,
@@ -113,6 +102,20 @@ CREATE TABLE user_note_daily_view_counts (
   count int not null default 0,
   unique (user_id, path_id)
 );
+CREATE TABLE offers (
+  id integer primary key autoincrement,
+  public_id text not null unique,
+  created_at datetime not null default current_timestamp,
+  lifetime text, -- e.g. "+600 days", null means no expiration
+  price_usd numeric,
+  starts_at datetime,
+  ends_at datetime
+);
+CREATE TABLE offer_subgraphs (
+  offer_id int not null references offers(id) on delete cascade,
+  subgraph_id int not null references subgraphs(id) on delete restrict,
+  primary key (offer_id, subgraph_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -123,4 +126,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250419030458'),
   ('20250427033102'),
   ('20250430041756'),
-  ('20250430065941');
+  ('20250430065941'),
+  ('20250502030912');

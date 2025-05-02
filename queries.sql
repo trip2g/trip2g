@@ -62,23 +62,6 @@ delete from sign_in_codes
 -- name: AllOffers :many
 select * from offers order by id;
 
--- name: CreateOffer :one
-insert into offers (id, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at)
-values (?, ?, ?, ?, ?, ?, ?, ?)
-returning *;
-
--- name: UpdateOffer :one
-update offers
-   set names = ?
-     , lifetime = ?
-     , price_usd = ?
-     , price_rub = ?
-     , price_btc = ?
-     , starts_at = ?
-     , ends_at = ?
- where id = ?
-returning *;
-
 -- name: DeleteOffer :one
 update offers
    set ends_at = datetime('now')
@@ -141,6 +124,9 @@ update user_subgraph_accesses
 -- name: SubgraphByID :one
 select * from subgraphs where id = ?;
 
+-- name: SubgraphByName :one
+select * from subgraphs where name = ?;
+
 -- name: ListAllSubgraphs :many
 select * from subgraphs order by id;
 
@@ -181,3 +167,13 @@ select distinct path_id
      limit 50
   ) as t
  limit 20;
+
+-- name: ListActiveOffersBySubgraphID :many
+select o.*
+  from offers o
+  join offer_subgraphs os on o.id = os.offer_id
+ where os.subgraph_id = ?
+   and (o.starts_at < datetime('now') or o.starts_at is null)
+   and (o.ends_at > datetime('now') or o.ends_at is null)
+   and o.price_usd > 0
+ order by price_usd desc;

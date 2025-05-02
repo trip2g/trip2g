@@ -111,6 +111,11 @@ func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *model1
 	return resolveOne[db.UserSubgraphAccess](ctx, int64(id), r.env(ctx).UserSubgraphAccessByID)
 }
 
+// Color is the resolver for the color field.
+func (r *adminSubgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*string, error) {
+	return db.ToStringPtr(obj.Color), nil
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error) {
 	return r.env(ctx).ListAllSubgraphs(ctx)
@@ -118,7 +123,7 @@ func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model
 
 // Ban is the resolver for the ban field.
 func (r *adminUserResolver) Ban(ctx context.Context, obj *db.User) (*db.UserBan, error) {
-	panic(fmt.Errorf("not implemented: Ban - ban"))
+	return r.env(ctx).UserBanByUserID(ctx, obj.ID)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -191,6 +196,20 @@ func (r *noteViewResolver) HTML(ctx context.Context, obj *model1.NoteView) (stri
 	return string(obj.HTML), nil
 }
 
+// ID is the resolver for the id field.
+func (r *offerResolver) ID(ctx context.Context, obj *db.Offer) (string, error) {
+	return obj.PublicID, nil
+}
+
+// PriceUsd is the resolver for the priceUSD field.
+func (r *offerResolver) PriceUsd(ctx context.Context, obj *db.Offer) (float64, error) {
+	if obj.PriceUsd.Valid {
+		return obj.PriceUsd.Float64, nil
+	}
+
+	return -1, nil
+}
+
 // Viewer is the resolver for the viewer field.
 func (r *queryResolver) Viewer(ctx context.Context) (*model.Viewer, error) {
 	req, err := appreq.FromCtx(ctx)
@@ -206,14 +225,19 @@ func (r *queryResolver) Viewer(ctx context.Context) (*model.Viewer, error) {
 	return &model.Viewer{UserToken: token}, nil
 }
 
+// Subgraph is the resolver for the subgraph field.
+func (r *queryResolver) Subgraph(ctx context.Context, name string) (*db.Subgraph, error) {
+	return resolveOne[db.Subgraph](ctx, name, r.env(ctx).SubgraphByName)
+}
+
 // Admin is the resolver for the admin field.
 func (r *queryResolver) Admin(ctx context.Context) (*model1.AdminQuery, error) {
 	return &model1.AdminQuery{}, nil
 }
 
-// Color is the resolver for the color field.
-func (r *subgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*string, error) {
-	return db.ToStringPtr(obj.Color), nil
+// Offers is the resolver for the offers field.
+func (r *subgraphResolver) Offers(ctx context.Context, obj *db.Subgraph) ([]db.Offer, error) {
+	return r.env(ctx).ListActiveOffersBySubgraphID(ctx, obj.ID)
 }
 
 // User is the resolver for the user field.
@@ -296,6 +320,9 @@ func (r *Resolver) AdminNoteViewsConnection() AdminNoteViewsConnectionResolver {
 // AdminQuery returns AdminQueryResolver implementation.
 func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
 
+// AdminSubgraph returns AdminSubgraphResolver implementation.
+func (r *Resolver) AdminSubgraph() AdminSubgraphResolver { return &adminSubgraphResolver{r} }
+
 // AdminSubgraphsConnection returns AdminSubgraphsConnectionResolver implementation.
 func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
 	return &adminSubgraphsConnectionResolver{r}
@@ -331,6 +358,9 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // NoteView returns NoteViewResolver implementation.
 func (r *Resolver) NoteView() NoteViewResolver { return &noteViewResolver{r} }
 
+// Offer returns OfferResolver implementation.
+func (r *Resolver) Offer() OfferResolver { return &offerResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -355,6 +385,7 @@ type adminResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
 type adminNoteViewsConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }
+type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminUserResolver struct{ *Resolver }
 type adminUserBansConnectionResolver struct{ *Resolver }
@@ -364,6 +395,7 @@ type banUserPayloadResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }
+type offerResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }

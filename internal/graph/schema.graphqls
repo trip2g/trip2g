@@ -44,7 +44,7 @@ type AdminUsersConnection {
   nodes: [AdminUser!]! @goField(forceResolver: true)
 }
 
-type Subgraph {
+type AdminSubgraph @goModel(model: "trip2g/internal/db.Subgraph") {
   id: Int64!
   name: String!
   color: String
@@ -81,7 +81,7 @@ type AdminUserSubgraphAccessesConnection {
 }
 
 type AdminSubgraphsConnection {
-  nodes: [Subgraph!]! @goField(forceResolver: true)
+  nodes: [AdminSubgraph!]! @goField(forceResolver: true)
 }
 
 type AdminNoteViewsConnection {
@@ -99,7 +99,7 @@ type AdminQuery {
   allNoteViews: AdminNoteViewsConnection!
   allUserUserBans: AdminUserBansConnection!
 
-  subgraph(id: Int64!): Subgraph
+  subgraph(id: Int64!): AdminSubgraph
   noteView(id: String!): NoteView
   userSubgraphAccess(id: Int64!): UserSubgraphAccess
 }
@@ -111,8 +111,19 @@ type Viewer
   user: User @goField(forceResolver: true)
 }
 
+type Offer {
+  id: String!
+  priceUSD: Float!
+}
+
+type Subgraph {
+  name: String!
+  offers: [Offer!]!
+}
+
 type Query {
   viewer: Viewer!
+  subgraph(name: String!): Subgraph
   admin: AdminQuery!
 }
 

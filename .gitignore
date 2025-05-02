@@ -9,3 +9,4 @@ data.sqlite3-wal
 *easyjson-bootstrap*
 .aider*
 .env
+run.sh

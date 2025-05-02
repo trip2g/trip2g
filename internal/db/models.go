@@ -56,15 +56,18 @@ type NoteVersion struct {
 }
 
 type Offer struct {
-	ID        string          `json:"id"`
+	ID        int64           `json:"id"`
+	PublicID  string          `json:"public_id"`
 	CreatedAt time.Time       `json:"created_at"`
-	Names     string          `json:"names"`
 	Lifetime  sql.NullString  `json:"lifetime"`
 	PriceUsd  sql.NullFloat64 `json:"price_usd"`
-	PriceRub  sql.NullFloat64 `json:"price_rub"`
-	PriceBtc  sql.NullFloat64 `json:"price_btc"`
 	StartsAt  sql.NullTime    `json:"starts_at"`
 	EndsAt    sql.NullTime    `json:"ends_at"`
+}
+
+type OfferSubgraph struct {
+	OfferID    int64 `json:"offer_id"`
+	SubgraphID int64 `json:"subgraph_id"`
 }
 
 type Purchase struct {

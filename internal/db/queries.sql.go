@@ -157,7 +157,7 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 }
 
 const allOffers = `-- name: AllOffers :many
-select id, created_at, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at from offers order by id
+select id, public_id, created_at, lifetime, price_usd, starts_at, ends_at from offers order by id
 `
 
 func (q *Queries) AllOffers(ctx context.Context) ([]Offer, error) {
@@ -171,12 +171,10 @@ func (q *Queries) AllOffers(ctx context.Context) ([]Offer, error) {
 		var i Offer
 		if err := rows.Scan(
 			&i.ID,
+			&i.PublicID,
 			&i.CreatedAt,
-			&i.Names,
 			&i.Lifetime,
 			&i.PriceUsd,
-			&i.PriceRub,
-			&i.PriceBtc,
 			&i.StartsAt,
 			&i.EndsAt,
 		); err != nil {
@@ -220,49 +218,6 @@ func (q *Queries) CountActiveSignInCodes(ctx context.Context, userID int64) (int
 	var count int64
 	err := row.Scan(&count)
 	return count, err
-}
-
-const createOffer = `-- name: CreateOffer :one
-insert into offers (id, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at)
-values (?, ?, ?, ?, ?, ?, ?, ?)
-returning id, created_at, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at
-`
-
-type CreateOfferParams struct {
-	ID       string          `json:"id"`
-	Names    string          `json:"names"`
-	Lifetime sql.NullString  `json:"lifetime"`
-	PriceUsd sql.NullFloat64 `json:"price_usd"`
-	PriceRub sql.NullFloat64 `json:"price_rub"`
-	PriceBtc sql.NullFloat64 `json:"price_btc"`
-	StartsAt sql.NullTime    `json:"starts_at"`
-	EndsAt   sql.NullTime    `json:"ends_at"`
-}
-
-func (q *Queries) CreateOffer(ctx context.Context, arg CreateOfferParams) (Offer, error) {
-	row := q.db.QueryRowContext(ctx, createOffer,
-		arg.ID,
-		arg.Names,
-		arg.Lifetime,
-		arg.PriceUsd,
-		arg.PriceRub,
-		arg.PriceBtc,
-		arg.StartsAt,
-		arg.EndsAt,
-	)
-	var i Offer
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.Names,
-		&i.Lifetime,
-		&i.PriceUsd,
-		&i.PriceRub,
-		&i.PriceBtc,
-		&i.StartsAt,
-		&i.EndsAt,
-	)
-	return i, err
 }
 
 const createRevoke = `-- name: CreateRevoke :one
@@ -327,20 +282,18 @@ const deleteOffer = `-- name: DeleteOffer :one
 update offers
    set ends_at = datetime('now')
  where id = ?
-returning id, created_at, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at
+returning id, public_id, created_at, lifetime, price_usd, starts_at, ends_at
 `
 
-func (q *Queries) DeleteOffer(ctx context.Context, id string) (Offer, error) {
+func (q *Queries) DeleteOffer(ctx context.Context, id int64) (Offer, error) {
 	row := q.db.QueryRowContext(ctx, deleteOffer, id)
 	var i Offer
 	err := row.Scan(
 		&i.ID,
+		&i.PublicID,
 		&i.CreatedAt,
-		&i.Names,
 		&i.Lifetime,
 		&i.PriceUsd,
-		&i.PriceRub,
-		&i.PriceBtc,
 		&i.StartsAt,
 		&i.EndsAt,
 	)
@@ -485,6 +438,48 @@ type InsertUserNoteViewParams struct {
 func (q *Queries) InsertUserNoteView(ctx context.Context, arg InsertUserNoteViewParams) error {
 	_, err := q.db.ExecContext(ctx, insertUserNoteView, arg.UserID, arg.PathID)
 	return err
+}
+
+const listActiveOffersBySubgraphID = `-- name: ListActiveOffersBySubgraphID :many
+select o.id, o.public_id, o.created_at, o.lifetime, o.price_usd, o.starts_at, o.ends_at
+  from offers o
+  join offer_subgraphs os on o.id = os.offer_id
+ where os.subgraph_id = ?
+   and (o.starts_at < datetime('now') or o.starts_at is null)
+   and (o.ends_at > datetime('now') or o.ends_at is null)
+   and o.price_usd > 0
+ order by price_usd desc
+`
+
+func (q *Queries) ListActiveOffersBySubgraphID(ctx context.Context, subgraphID int64) ([]Offer, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveOffersBySubgraphID, subgraphID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Offer
+	for rows.Next() {
+		var i Offer
+		if err := rows.Scan(
+			&i.ID,
+			&i.PublicID,
+			&i.CreatedAt,
+			&i.Lifetime,
+			&i.PriceUsd,
+			&i.StartsAt,
+			&i.EndsAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listActiveSubgraphsByUserID = `-- name: ListActiveSubgraphsByUserID :many
@@ -719,6 +714,22 @@ func (q *Queries) SubgraphByID(ctx context.Context, id int64) (Subgraph, error) 
 	return i, err
 }
 
+const subgraphByName = `-- name: SubgraphByName :one
+select id, name, color, created_at from subgraphs where name = ?
+`
+
+func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, error) {
+	row := q.db.QueryRowContext(ctx, subgraphByName, name)
+	var i Subgraph
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Color,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const unbanUser = `-- name: UnbanUser :exec
 delete from user_bans where user_id = ?
 `
@@ -748,56 +759,6 @@ func (q *Queries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminSubgra
 		&i.Name,
 		&i.Color,
 		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const updateOffer = `-- name: UpdateOffer :one
-update offers
-   set names = ?
-     , lifetime = ?
-     , price_usd = ?
-     , price_rub = ?
-     , price_btc = ?
-     , starts_at = ?
-     , ends_at = ?
- where id = ?
-returning id, created_at, names, lifetime, price_usd, price_rub, price_btc, starts_at, ends_at
-`
-
-type UpdateOfferParams struct {
-	Names    string          `json:"names"`
-	Lifetime sql.NullString  `json:"lifetime"`
-	PriceUsd sql.NullFloat64 `json:"price_usd"`
-	PriceRub sql.NullFloat64 `json:"price_rub"`
-	PriceBtc sql.NullFloat64 `json:"price_btc"`
-	StartsAt sql.NullTime    `json:"starts_at"`
-	EndsAt   sql.NullTime    `json:"ends_at"`
-	ID       string          `json:"id"`
-}
-
-func (q *Queries) UpdateOffer(ctx context.Context, arg UpdateOfferParams) (Offer, error) {
-	row := q.db.QueryRowContext(ctx, updateOffer,
-		arg.Names,
-		arg.Lifetime,
-		arg.PriceUsd,
-		arg.PriceRub,
-		arg.PriceBtc,
-		arg.StartsAt,
-		arg.EndsAt,
-		arg.ID,
-	)
-	var i Offer
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.Names,
-		&i.Lifetime,
-		&i.PriceUsd,
-		&i.PriceRub,
-		&i.PriceBtc,
-		&i.StartsAt,
-		&i.EndsAt,
 	)
 	return i, err
 }

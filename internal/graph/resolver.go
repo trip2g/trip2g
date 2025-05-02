@@ -37,11 +37,13 @@ type Env interface {
 	ListAllUserSubgraphAccesses(ctx context.Context) ([]db.UserSubgraphAccess, error)
 	ListAllSubgraphs(ctx context.Context) ([]db.Subgraph, error)
 	ListAllUserBans(ctx context.Context) ([]db.UserBan, error)
+	ListActiveOffersBySubgraphID(ctx context.Context, subgraphID int64) ([]db.Offer, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
 	AdminByUserID(ctx context.Context, userID int64) (db.Admin, error)
 	SubgraphByID(ctx context.Context, id int64) (db.Subgraph, error)
+	SubgraphByName(ctx context.Context, name string) (db.Subgraph, error)
 	UserSubgraphAccessByID(ctx context.Context, id int64) (db.UserSubgraphAccess, error)
 
 	AllNotes() model.NoteViews

@@ -61,5 +61,5 @@ func (Endpoint) Path() string {
 }
 
 func (Endpoint) Method() string {
-	return http.MethodPost
+	return http.MethodGet
 }

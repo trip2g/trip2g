@@ -8,15 +8,11 @@ import (
 	getnotehashesgetnotehashes "trip2g/internal/case/getnotehashes"
 	pushnotespushnotes "trip2g/internal/case/pushnotes"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
-	createoffercreateoffer "trip2g/internal/case/admin/createoffer"
 	createusersubgraphaccesscreateusersubgraphaccess "trip2g/internal/case/admin/createusersubgraphaccess"
-	deleteofferdeleteoffer "trip2g/internal/case/admin/deleteoffer"
 	listnotepathslistnotepaths "trip2g/internal/case/admin/listnotepaths"
-	listofferslistoffers "trip2g/internal/case/admin/listoffers"
 	listuserslistusers "trip2g/internal/case/admin/listusers"
 	renderpagerenderpage "trip2g/internal/case/admin/renderpage"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
-	updateofferupdateoffer "trip2g/internal/case/admin/updateoffer"
 
 	"trip2g/internal/logger"
 )
@@ -25,30 +21,22 @@ var endpoints = []Endpoint{
 	&getnotehashesgetnotehashes.Endpoint{},
 	&pushnotespushnotes.Endpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
-	&createoffercreateoffer.Endpoint{},
 	&createusersubgraphaccesscreateusersubgraphaccess.Endpoint{},
-	&deleteofferdeleteoffer.Endpoint{},
 	&listnotepathslistnotepaths.Endpoint{},
-	&listofferslistoffers.Endpoint{},
 	&listuserslistusers.Endpoint{},
 	&renderpagerenderpage.Endpoint{},
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
-	&updateofferupdateoffer.Endpoint{},
 }
 
 type Env interface {
 	getnotehashesgetnotehashes.Env
 	pushnotespushnotes.Env
 	rendernotepagerendernotepage.Env
-	createoffercreateoffer.Env
 	createusersubgraphaccesscreateusersubgraphaccess.Env
-	deleteofferdeleteoffer.Env
 	listnotepathslistnotepaths.Env
-	listofferslistoffers.Env
 	listuserslistusers.Env
 	renderpagerenderpage.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
-	updateofferupdateoffer.Env
 
 	Logger() logger.Logger
 }
