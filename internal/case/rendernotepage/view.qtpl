@@ -88,7 +88,7 @@
 <p>{%s err.Message %}</p>
 
 <div mol_view_root>
-  <div mol_view_root="$trip2g_user_enter"></div>
+  <div mol_view_root="$trip2g_user_paywall" data-subgraphs="{%s resp.NoteSubgraphsJSON() %}"></div>
 </div>
 
 {% if resp.UserToken == nil %}

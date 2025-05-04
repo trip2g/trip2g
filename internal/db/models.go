@@ -7,6 +7,8 @@ package db
 import (
 	"database/sql"
 	"time"
+
+	"trip2g/internal/model"
 )
 
 type Admin struct {
@@ -59,7 +61,7 @@ type Offer struct {
 	ID        int64           `json:"id"`
 	PublicID  string          `json:"public_id"`
 	CreatedAt time.Time       `json:"created_at"`
-	Lifetime  sql.NullString  `json:"lifetime"`
+	Lifetime  *model.Lifetime `json:"lifetime"`
 	PriceUsd  sql.NullFloat64 `json:"price_usd"`
 	StartsAt  sql.NullTime    `json:"starts_at"`
 	EndsAt    sql.NullTime    `json:"ends_at"`
@@ -71,13 +73,14 @@ type OfferSubgraph struct {
 }
 
 type Purchase struct {
-	ID              string       `json:"id"`
-	UserID          int64        `json:"user_id"`
-	OfferID         string       `json:"offer_id"`
-	ExpireAt        sql.NullTime `json:"expire_at"`
-	CreatedAt       time.Time    `json:"created_at"`
-	PaymentProvider string       `json:"payment_provider"`
-	PaymentData     interface{}  `json:"payment_data"`
+	ID              string      `json:"id"`
+	CreatedAt       time.Time   `json:"created_at"`
+	PaymentProvider string      `json:"payment_provider"`
+	PaymentData     string      `json:"payment_data"`
+	Email           string      `json:"email"`
+	UserID          interface{} `json:"user_id"`
+	Status          string      `json:"status"`
+	OfferID         int64       `json:"offer_id"`
 }
 
 type Revoke struct {
@@ -138,8 +141,8 @@ type UserSubgraphAccess struct {
 	ID         int64         `json:"id"`
 	UserID     int64         `json:"user_id"`
 	SubgraphID int64         `json:"subgraph_id"`
-	PurchaseID sql.NullInt64 `json:"purchase_id"`
 	CreatedAt  time.Time     `json:"created_at"`
 	ExpiresAt  sql.NullTime  `json:"expires_at"`
 	RevokeID   sql.NullInt64 `json:"revoke_id"`
+	PurchaseID string        `json:"purchase_id"`
 }

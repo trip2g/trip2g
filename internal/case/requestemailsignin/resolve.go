@@ -15,7 +15,7 @@ import (
 
 type Env interface {
 	QueueRequestSignInEmail(ctx context.Context, email string, code string) error
-	GetUserByEmail(ctx context.Context, email string) (db.User, error)
+	UserByEmail(ctx context.Context, email string) (db.User, error)
 	CountActiveSignInCodes(ctx context.Context, userID int64) (int64, error)
 	CreateSignInCode(ctx context.Context, userID int64) (string, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
@@ -43,7 +43,7 @@ func (req *Request) Resolve(ctx context.Context, env Env) (model.RequestEmailSig
 		return errPayload, nil
 	}
 
-	user, err := env.GetUserByEmail(ctx, req.Email)
+	user, err := env.UserByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return model.NewFieldError("email", "not_found"), nil

@@ -133,6 +133,10 @@ type ComplexityRoot struct {
 		UserID func(childComplexity int) int
 	}
 
+	CreatePaymentLinkPayload struct {
+		RedirectURL func(childComplexity int) int
+	}
+
 	ErrorPayload struct {
 		ByFields func(childComplexity int) int
 		Message  func(childComplexity int) int
@@ -145,6 +149,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		Admin                  func(childComplexity int) int
+		CreatePaymentLink      func(childComplexity int, input model.CreatePaymentLinkInput) int
 		RequestEmailSignInCode func(childComplexity int, input requestemailsignin.Request) int
 		SignInByEmail          func(childComplexity int, input model.SignInByEmailInput) int
 		SignOut                func(childComplexity int) int
@@ -226,6 +231,7 @@ type ComplexityRoot struct {
 	}
 
 	Viewer struct {
+		ID     func(childComplexity int) int
 		Offers func(childComplexity int, subgraphs []string) int
 		User   func(childComplexity int) int
 	}
@@ -281,6 +287,7 @@ type MutationResolver interface {
 	RequestEmailSignInCode(ctx context.Context, input requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error)
 	SignInByEmail(ctx context.Context, input model.SignInByEmailInput) (model.SignInOrErrorPayload, error)
 	SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error)
+	CreatePaymentLink(ctx context.Context, input model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error)
 	Admin(ctx context.Context) (*model1.AdminMutation, error)
 }
 type NoteViewResolver interface {
@@ -568,6 +575,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.BanUserPayload.UserID(childComplexity), true
 
+	case "CreatePaymentLinkPayload.redirectUrl":
+		if e.complexity.CreatePaymentLinkPayload.RedirectURL == nil {
+			break
+		}
+
+		return e.complexity.CreatePaymentLinkPayload.RedirectURL(childComplexity), true
+
 	case "ErrorPayload.byFields":
 		if e.complexity.ErrorPayload.ByFields == nil {
 			break
@@ -602,6 +616,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.Admin(childComplexity), true
+
+	case "Mutation.createPaymentLink":
+		if e.complexity.Mutation.CreatePaymentLink == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createPaymentLink_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreatePaymentLink(childComplexity, args["input"].(model.CreatePaymentLinkInput)), true
 
 	case "Mutation.requestEmailSignInCode":
 		if e.complexity.Mutation.RequestEmailSignInCode == nil {
@@ -891,6 +917,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserSubgraphAccess.UserID(childComplexity), true
 
+	case "Viewer.id":
+		if e.complexity.Viewer.ID == nil {
+			break
+		}
+
+		return e.complexity.Viewer.ID(childComplexity), true
+
 	case "Viewer.offers":
 		if e.complexity.Viewer.Offers == nil {
 			break
@@ -919,6 +952,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputBanUserInput,
+		ec.unmarshalInputCreatePaymentLinkInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputSignInByEmailInput,
 		ec.unmarshalInputUnbanUserInput,
@@ -1198,6 +1232,29 @@ func (ec *executionContext) field_AdminQuery_userSubgraphAccess_argsID(
 	}
 
 	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_createPaymentLink_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_createPaymentLink_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_createPaymentLink_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreatePaymentLinkInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreatePaymentLinkInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePaymentLinkInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreatePaymentLinkInput
 	return zeroVal, nil
 }
 
@@ -2868,6 +2925,50 @@ func (ec *executionContext) fieldContext_BanUserPayload_user(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _CreatePaymentLinkPayload_redirectUrl(ctx context.Context, field graphql.CollectedField, obj *model.CreatePaymentLinkPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreatePaymentLinkPayload_redirectUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RedirectURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreatePaymentLinkPayload_redirectUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreatePaymentLinkPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ErrorPayload_message(ctx context.Context, field graphql.CollectedField, obj *model.ErrorPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ErrorPayload_message(ctx, field)
 	if err != nil {
@@ -3200,6 +3301,61 @@ func (ec *executionContext) fieldContext_Mutation_signOut(_ context.Context, fie
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type SignOutOrErrorPayload does not have child fields")
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createPaymentLink(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createPaymentLink(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreatePaymentLink(rctx, fc.Args["input"].(model.CreatePaymentLinkInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CreatePaymentLinkOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNCreatePaymentLinkOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePaymentLinkOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createPaymentLink(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreatePaymentLinkOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createPaymentLink_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -3743,6 +3899,8 @@ func (ec *executionContext) fieldContext_Query_viewer(_ context.Context, field g
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_Viewer_id(ctx, field)
 			case "user":
 				return ec.fieldContext_Viewer_user(ctx, field)
 			case "offers":
@@ -4132,6 +4290,8 @@ func (ec *executionContext) fieldContext_SignInPayload_viewer(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_Viewer_id(ctx, field)
 			case "user":
 				return ec.fieldContext_Viewer_user(ctx, field)
 			case "offers":
@@ -4182,6 +4342,8 @@ func (ec *executionContext) fieldContext_SignOutPayload_viewer(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_Viewer_id(ctx, field)
 			case "user":
 				return ec.fieldContext_Viewer_user(ctx, field)
 			case "offers":
@@ -4415,7 +4577,7 @@ func (ec *executionContext) _UpdateSubgraphPayload_subgraph(ctx context.Context,
 	}
 	res := resTmp.(*db.Subgraph)
 	fc.Result = res
-	return ec.marshalNSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgraph(ctx, field.Selections, res)
+	return ec.marshalNAdminSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgraph(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_UpdateSubgraphPayload_subgraph(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4426,12 +4588,16 @@ func (ec *executionContext) fieldContext_UpdateSubgraphPayload_subgraph(_ contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminSubgraph_id(ctx, field)
 			case "name":
-				return ec.fieldContext_Subgraph_name(ctx, field)
-			case "offers":
-				return ec.fieldContext_Subgraph_offers(ctx, field)
+				return ec.fieldContext_AdminSubgraph_name(ctx, field)
+			case "color":
+				return ec.fieldContext_AdminSubgraph_color(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Subgraph", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type AdminSubgraph", field.Name)
 		},
 	}
 	return fc, nil
@@ -5088,6 +5254,50 @@ func (ec *executionContext) fieldContext_UserSubgraphAccess_subgraph(_ context.C
 				return ec.fieldContext_Subgraph_offers(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Subgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Viewer_id(ctx context.Context, field graphql.CollectedField, obj *model1.Viewer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Viewer_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID(), nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Viewer_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Viewer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -7186,6 +7396,54 @@ func (ec *executionContext) unmarshalInputBanUserInput(ctx context.Context, obj 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreatePaymentLinkInput(ctx context.Context, obj any) (model.CreatePaymentLinkInput, error) {
+	var it model.CreatePaymentLinkInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"paymentType", "offerId", "email", "returnPath"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "paymentType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("paymentType"))
+			data, err := ec.unmarshalNPaymentType2trip2gᚋinternalᚋgraphᚋmodelᚐPaymentType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PaymentType = data
+		case "offerId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offerId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OfferID = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "returnPath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("returnPath"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReturnPath = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRequestEmailSignInCodeInput(ctx context.Context, obj any) (requestemailsignin.Request, error) {
 	var it requestemailsignin.Request
 	asMap := map[string]any{}
@@ -7371,6 +7629,29 @@ func (ec *executionContext) _BanUserOrErrorPayload(ctx context.Context, sel ast.
 			return graphql.Null
 		}
 		return ec._BanUserPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _CreatePaymentLinkOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreatePaymentLinkOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreatePaymentLinkPayload:
+		return ec._CreatePaymentLinkPayload(ctx, sel, &obj)
+	case *model.CreatePaymentLinkPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreatePaymentLinkPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -8668,7 +8949,46 @@ func (ec *executionContext) _BanUserPayload(ctx context.Context, sel ast.Selecti
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload"}
+var createPaymentLinkPayloadImplementors = []string{"CreatePaymentLinkPayload", "CreatePaymentLinkOrErrorPayload"}
+
+func (ec *executionContext) _CreatePaymentLinkPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreatePaymentLinkPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createPaymentLinkPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreatePaymentLinkPayload")
+		case "redirectUrl":
+			out.Values[i] = ec._CreatePaymentLinkPayload_redirectUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -8823,6 +9143,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "signOut":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_signOut(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createPaymentLink":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createPaymentLink(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -9920,6 +10247,11 @@ func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, o
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Viewer")
+		case "id":
+			out.Values[i] = ec._Viewer_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "user":
 			field := field
 
@@ -10437,6 +10769,16 @@ func (ec *executionContext) marshalNAdminSubgraph2ᚕtrip2gᚋinternalᚋdbᚐSu
 	return ret
 }
 
+func (ec *executionContext) marshalNAdminSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgraph(ctx context.Context, sel ast.SelectionSet, v *db.Subgraph) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminSubgraph(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminSubgraphsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminSubgraphsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminSubgraphsConnection) graphql.Marshaler {
 	return ec._AdminSubgraphsConnection(ctx, sel, &v)
 }
@@ -10581,6 +10923,21 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNCreatePaymentLinkInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePaymentLinkInput(ctx context.Context, v any) (model.CreatePaymentLinkInput, error) {
+	res, err := ec.unmarshalInputCreatePaymentLinkInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreatePaymentLinkOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePaymentLinkOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreatePaymentLinkOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreatePaymentLinkOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNFieldMessage2trip2gᚋinternalᚋgraphᚋmodelᚐFieldMessage(ctx context.Context, sel ast.SelectionSet, v model.FieldMessage) graphql.Marshaler {
 	return ec._FieldMessage(ctx, sel, &v)
 }
@@ -10642,6 +10999,21 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 		}
 	}
 	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {
+	res, err := graphql.UnmarshalID(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalNInt642int(ctx context.Context, v any) (int, error) {
@@ -10768,6 +11140,16 @@ func (ec *executionContext) marshalNOffer2ᚕtrip2gᚋinternalᚋdbᚐOfferᚄ(c
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNPaymentType2trip2gᚋinternalᚋgraphᚋmodelᚐPaymentType(ctx context.Context, v any) (model.PaymentType, error) {
+	var res model.PaymentType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNPaymentType2trip2gᚋinternalᚋgraphᚋmodelᚐPaymentType(ctx context.Context, sel ast.SelectionSet, v model.PaymentType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋcaseᚋrequestemailsigninᚐRequest(ctx context.Context, v any) (requestemailsignin.Request, error) {

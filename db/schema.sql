@@ -28,13 +28,10 @@ CREATE TABLE admins (
 );
 CREATE TABLE purchases (
   id text primary key,
-  user_id int not null references users(id) on delete cascade,
-  offer_id text not null references offers(id) on delete restrict,
-  expire_at datetime, -- e.g. now() + offers.lifetime
   created_at datetime not null default current_timestamp,
   payment_provider text not null,
   payment_data json not null
-);
+, email text not null, user_id references users(id) on delete restrict, status text not null default 'pending', offer_id integer not null references offers(id) on delete restrict);
 CREATE TABLE sign_in_codes (
   user_id integer not null,
   created_at datetime not null default current_timestamp
@@ -72,10 +69,9 @@ CREATE TABLE user_subgraph_accesses (
   id integer primary key autoincrement,
   user_id integer not null references users(id) on delete cascade,
   subgraph_id integer not null references subgraphs(id) on delete restrict,
-  purchase_id integer references purchases(id) on delete restrict,
   created_at datetime not null default current_timestamp,
   expires_at datetime
-, revoke_id int references revokes(id) on delete restrict);
+, revoke_id int references revokes(id) on delete restrict, purchase_id text not null references purchases(id) on delete restrict);
 CREATE TABLE revokes (
   id integer primary key autoincrement,
   target_type text not null,
@@ -116,6 +112,7 @@ CREATE TABLE offer_subgraphs (
   subgraph_id int not null references subgraphs(id) on delete restrict,
   primary key (offer_id, subgraph_id)
 );
+CREATE INDEX purchases_status_idx on purchases (status);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -127,4 +124,8 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250427033102'),
   ('20250430041756'),
   ('20250430065941'),
-  ('20250502030912');
+  ('20250502030912'),
+  ('20250503030824'),
+  ('20250503031556'),
+  ('20250503032418'),
+  ('20250504074439');

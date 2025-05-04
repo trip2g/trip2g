@@ -6,9 +6,9 @@ package router
 
 import (
 	getnotehashesgetnotehashes "trip2g/internal/case/getnotehashes"
+	processnowpaymentsipnprocessnowpaymentsipn "trip2g/internal/case/processnowpaymentsipn"
 	pushnotespushnotes "trip2g/internal/case/pushnotes"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
-	createusersubgraphaccesscreateusersubgraphaccess "trip2g/internal/case/admin/createusersubgraphaccess"
 	listnotepathslistnotepaths "trip2g/internal/case/admin/listnotepaths"
 	listuserslistusers "trip2g/internal/case/admin/listusers"
 	renderpagerenderpage "trip2g/internal/case/admin/renderpage"
@@ -19,9 +19,9 @@ import (
 
 var endpoints = []Endpoint{
 	&getnotehashesgetnotehashes.Endpoint{},
+	&processnowpaymentsipnprocessnowpaymentsipn.Endpoint{},
 	&pushnotespushnotes.Endpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
-	&createusersubgraphaccesscreateusersubgraphaccess.Endpoint{},
 	&listnotepathslistnotepaths.Endpoint{},
 	&listuserslistusers.Endpoint{},
 	&renderpagerenderpage.Endpoint{},
@@ -30,9 +30,9 @@ var endpoints = []Endpoint{
 
 type Env interface {
 	getnotehashesgetnotehashes.Env
+	processnowpaymentsipnprocessnowpaymentsipn.Env
 	pushnotespushnotes.Env
 	rendernotepagerendernotepage.Env
-	createusersubgraphaccesscreateusersubgraphaccess.Env
 	listnotepathslistnotepaths.Env
 	listuserslistusers.Env
 	renderpagerenderpage.Env

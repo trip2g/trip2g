@@ -17,6 +17,7 @@ import (
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
+	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
@@ -180,6 +181,11 @@ func (r *mutationResolver) SignOut(ctx context.Context) (model.SignOutOrErrorPay
 	return signout.Resolve(ctx, r.env(ctx))
 }
 
+// CreatePaymentLink is the resolver for the createPaymentLink field.
+func (r *mutationResolver) CreatePaymentLink(ctx context.Context, input model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error) {
+	return createpaymentlink.Resolve(ctx, r.env(ctx), input)
+}
+
 // Admin is the resolver for the admin field.
 func (r *mutationResolver) Admin(ctx context.Context) (*appmodel.AdminMutation, error) {
 	// TODO: check if the user is admin
@@ -212,7 +218,7 @@ func (r *offerResolver) PriceUsd(ctx context.Context, obj *db.Offer) (float64, e
 
 // Subgraphs is the resolver for the subgraphs field.
 func (r *offerResolver) Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subgraph, error) {
-	panic(fmt.Errorf("not implemented: Subgraphs - subgraphs"))
+	return r.env(ctx).ListSubgraphsByOfferID(ctx, obj.ID)
 }
 
 // Viewer is the resolver for the viewer field.

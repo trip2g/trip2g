@@ -8,3 +8,8 @@ sql:
         package: "db"
         out: "internal/db"
         emit_json_tags: true
+        overrides:
+          - column: "purchases.payment_data"
+            go_type: "string"
+          - column: "offers.lifetime"
+            go_type: "*trip2g/internal/model.Lifetime"

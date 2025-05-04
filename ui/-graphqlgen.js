@@ -2,7 +2,7 @@ module.exports = {
 	schema: 'http://localhost:8081/graphql',
 	documents: [__dirname + '/**/*.ts'],
 	pluckConfig: {
-		globalGqlIdentifierName: ['gql', '$trip2g_graphql_request'],
+		globalGqlIdentifierName: ['gql', '$trip2g_graphql_request', 'this.$.$trip2g_graphql_request'],
 	},
 	generates: {
 		[__dirname + '/graphql/queries.ts']: {

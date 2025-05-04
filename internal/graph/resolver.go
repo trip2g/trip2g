@@ -7,6 +7,7 @@ import (
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
+	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
@@ -39,6 +40,7 @@ type Env interface {
 	ListAllUserBans(ctx context.Context) ([]db.UserBan, error)
 	ListActiveOffersBySubgraphID(ctx context.Context, subgraphID int64) ([]db.Offer, error)
 	ListActiveOffersBySubgraphNames(ctx context.Context, subgraphNames []string) ([]db.Offer, error)
+	ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]db.Subgraph, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
@@ -52,6 +54,7 @@ type Env interface {
 	requestemailsignin.Env
 	signinbyemail.Env
 	signout.Env
+	createpaymentlink.Env
 
 	banuser.Env
 	updatesubgraph.Env

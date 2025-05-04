@@ -2,6 +2,7 @@ package rendernotepage
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -35,11 +36,22 @@ type Response struct {
 
 	LatestNotes []*model.NoteView
 
+	NoteSubgraphs []string
+
 	UserToken *usertoken.Data
 	Time      int
 }
 
 const defaultSidebarPath = "/_sidebar"
+
+func (r *Response) NoteSubgraphsJSON() string {
+	raw, err := json.Marshal(r.NoteSubgraphs)
+	if err != nil {
+		return "null"
+	}
+
+	return string(raw)
+}
 
 func (r *Response) Sidebar() *model.NoteView {
 	result := r.Notes[defaultSidebarPath]
@@ -88,16 +100,17 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	// TODO: hide all _* pages (system)
 	// TODO: add hideSidebar logic
 
+	noteSubgraphs, err := model.NoteViews{"": page}.Subgraphs()
+	if err != nil {
+		return &response, err
+	}
+
 	response.Title = page.Title
 	response.Note = page
 	response.Notes = pages
 	response.UserToken = request.UserToken
 	response.Time = int(time.Now().Unix())
-
-	pageSubgraphs, err := model.NoteViews{"": page}.Subgraphs()
-	if err != nil {
-		return &response, err
-	}
+	response.NoteSubgraphs = noteSubgraphs
 
 	// not sure if this is the right place to do this
 	for key := range page.InLinks {
@@ -161,10 +174,10 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		}
 	}
 
-	hasAccess := len(pageSubgraphs) == 0
+	hasAccess := len(noteSubgraphs) == 0
 
 	// check if the user has access to the subgraph
-	for _, ps := range pageSubgraphs {
+	for _, ps := range noteSubgraphs {
 		for _, us := range userSubgraphs {
 			if ps == us {
 				hasAccess = true

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,6 +24,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
+	"trip2g/internal/nowpayments"
 	"trip2g/internal/router"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
@@ -68,6 +70,8 @@ type app struct {
 	userBansMap map[int64]db.UserBan
 	userBans    []db.UserBan
 	userBansMu  sync.Mutex
+
+	nowpaymentsClient *nowpayments.Client
 }
 
 func enablePragmas(db *sql.DB) error {
@@ -79,6 +83,39 @@ func enablePragmas(db *sql.DB) error {
 		PRAGMA strict = ON;
 	`)
 	return err
+}
+
+func checkForeignKeys(db *sql.DB) error {
+	rows, err := db.Query("PRAGMA foreign_key_check;")
+	if err != nil {
+		return fmt.Errorf("failed to check foreign keys: %w", err)
+	}
+
+	defer rows.Close()
+
+	violationCount := 0
+
+	for rows.Next() {
+		var table string
+		var rowid int
+		var parent string
+		var fkid int
+
+		scanErr := rows.Scan(&table, &rowid, &parent, &fkid)
+		if scanErr != nil {
+			return fmt.Errorf("failed to scan foreign key check: %w", scanErr)
+		}
+
+		violationCount++
+
+		fmt.Printf("Foreign key violation in table %s (rowid %d): parent %s, fkid %d\n", table, rowid, parent, fkid)
+	}
+
+	if violationCount > 0 {
+		return fmt.Errorf("found %d foreign key violations", violationCount)
+	}
+
+	return nil
 }
 
 func main() {
@@ -96,6 +133,11 @@ func main() {
 	}
 
 	err = enablePragmas(conn)
+	if err != nil {
+		panic(err)
+	}
+
+	err = checkForeignKeys(conn)
 	if err != nil {
 		panic(err)
 	}
@@ -126,6 +168,11 @@ func main() {
 
 	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "no tx:")))
 
+	nowpaymentsClient, err := nowpayments.NewClient(os.Getenv("NOWPAYMENTS_API_KEY"))
+	if err != nil {
+		panic(err)
+	}
+
 	a := &app{
 		Queries: queries,
 
@@ -137,6 +184,8 @@ func main() {
 		conn:    conn,
 
 		devMode: devMode,
+
+		nowpaymentsClient: nowpaymentsClient,
 	}
 
 	tokenManager.AddValidator(func(ctx context.Context, data *usertoken.Data) error {
@@ -170,6 +219,10 @@ func main() {
 	if os.Getenv("SERVER") == "y" {
 		a.startServer()
 	}
+}
+
+func (a *app) CreateNowpaymentsInvoice(params nowpayments.CreateInvoiceParams) (*nowpayments.CreateInvoiceResponse, error) {
+	return a.nowpaymentsClient.CreateInvoice(params)
 }
 
 func (a *app) PrepareNotes(ctx context.Context) (model.NoteViews, error) {
@@ -217,6 +270,10 @@ func (a *app) AllNotes() model.NoteViews {
 	}
 
 	return copy
+}
+
+func (a *app) Now() time.Time {
+	return time.Now()
 }
 
 func (a *app) InsertNote(ctx context.Context, data db.Note) error {
@@ -307,6 +364,33 @@ func (a *app) ResetUserToken(ctx context.Context) error {
 
 func (a *app) GenerateUniqID() string {
 	return ulid.Make().String()
+}
+
+const purchaseAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func (a *app) GeneratePurchaseID() string {
+	const length = 8
+
+	result := make([]byte, length)
+
+	for i := 0; i < length; i++ {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(purchaseAlphabet))))
+		if err != nil {
+			panic(err)
+		}
+
+		result[i] = purchaseAlphabet[n.Int64()]
+	}
+
+	return string(result)
+}
+
+func (a *app) PublicURL() string {
+	return os.Getenv("PUBLIC_URL")
+}
+
+func (a *app) NowpaymentsIPNSecret() string {
+	return os.Getenv("NOWPAYMENTS_IPN_KEY")
 }
 
 var ErrFailedGeneration = errors.New("failed to generate code")
@@ -455,14 +539,16 @@ func (a *app) startServer() {
 					rollbackErr := tx.Rollback()
 					if rollbackErr != nil {
 						a.log.Error("failed to rollback transaction", "error", rollbackErr)
+					} else {
+						a.log.Debug("rolled back transaction")
 					}
 				} else {
 					commitErr := tx.Commit()
 					if commitErr != nil {
 						a.log.Error("failed to commit transaction", "error", commitErr)
+					} else {
+						a.log.Debug("committed transaction")
 					}
-
-					a.log.Debug("committed transaction", "operation", operationContext.Operation.Name)
 				}
 
 				return resp

@@ -326,7 +326,11 @@ func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError)
 	qw422016.N().S(`</p>
 
 <div mol_view_root>
-  <div mol_view_root="$trip2g_user_enter"></div>
+  <div mol_view_root="$trip2g_user_paywall" data-subgraphs="`)
+//line view.qtpl:91
+	qw422016.E().S(resp.NoteSubgraphsJSON())
+//line view.qtpl:91
+	qw422016.N().S(`"></div>
 </div>
 
 `)

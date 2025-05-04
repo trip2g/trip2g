@@ -3,12 +3,20 @@
 package model
 
 import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
 )
 
 type BanUserOrErrorPayload interface {
 	IsBanUserOrErrorPayload()
+}
+
+type CreatePaymentLinkOrErrorPayload interface {
+	IsCreatePaymentLinkOrErrorPayload()
 }
 
 type RequestEmailSignInCodeOrErrorPayload interface {
@@ -67,6 +75,19 @@ type BanUserPayload struct {
 
 func (BanUserPayload) IsBanUserOrErrorPayload() {}
 
+type CreatePaymentLinkInput struct {
+	PaymentType PaymentType `json:"paymentType"`
+	OfferID     string      `json:"offerId"`
+	Email       string      `json:"email"`
+	ReturnPath  string      `json:"returnPath"`
+}
+
+type CreatePaymentLinkPayload struct {
+	RedirectURL string `json:"redirectUrl"`
+}
+
+func (CreatePaymentLinkPayload) IsCreatePaymentLinkOrErrorPayload() {}
+
 type ErrorPayload struct {
 	Message  string         `json:"message"`
 	ByFields []FieldMessage `json:"byFields"`
@@ -77,6 +98,8 @@ func (ErrorPayload) IsRequestEmailSignInCodeOrErrorPayload() {}
 func (ErrorPayload) IsSignInOrErrorPayload() {}
 
 func (ErrorPayload) IsSignOutOrErrorPayload() {}
+
+func (ErrorPayload) IsCreatePaymentLinkOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
@@ -143,3 +166,56 @@ type UpdateUserSubgraphAccessPayload struct {
 }
 
 func (UpdateUserSubgraphAccessPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
+
+type PaymentType string
+
+const (
+	PaymentTypeCrypto PaymentType = "CRYPTO"
+)
+
+var AllPaymentType = []PaymentType{
+	PaymentTypeCrypto,
+}
+
+func (e PaymentType) IsValid() bool {
+	switch e {
+	case PaymentTypeCrypto:
+		return true
+	}
+	return false
+}
+
+func (e PaymentType) String() string {
+	return string(e)
+}
+
+func (e *PaymentType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PaymentType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PaymentType", str)
+	}
+	return nil
+}
+
+func (e PaymentType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *PaymentType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e PaymentType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}

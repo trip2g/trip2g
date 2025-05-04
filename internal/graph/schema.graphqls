@@ -105,6 +105,7 @@ type AdminQuery {
 }
 
 type Viewer {
+  id: ID!
   user: User
   offers(subgraphs: [String!]): [Offer!]!
 }
@@ -165,6 +166,8 @@ type SignInPayload {
   viewer: Viewer!
 }
 
+union SignInOrErrorPayload = SignInPayload | ErrorPayload
+
 #
 # signOut
 #
@@ -173,13 +176,34 @@ type SignOutPayload {
   viewer: Viewer!
 }
 
-union SignInOrErrorPayload = SignInPayload | ErrorPayload
 union SignOutOrErrorPayload = SignOutPayload | ErrorPayload
+
+#
+# createPaymentLink
+#
+
+enum PaymentType {
+  CRYPTO
+}
+
+input CreatePaymentLinkInput {
+  paymentType: PaymentType!
+  offerId: String!
+  email: String!
+  returnPath: String!
+}
+
+type CreatePaymentLinkPayload {
+  redirectUrl: String!
+}
+
+union CreatePaymentLinkOrErrorPayload = CreatePaymentLinkPayload | ErrorPayload
 
 type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
   signOut: SignOutOrErrorPayload!
+  createPaymentLink(input: CreatePaymentLinkInput!): CreatePaymentLinkOrErrorPayload!
 
   admin: AdminMutation!
 }
@@ -194,7 +218,7 @@ input UpdateSubgraphInput @goModel(model: "trip2g/internal/case/admin/updatesubg
 }
 
 type UpdateSubgraphPayload {
-  subgraph: Subgraph!
+  subgraph: AdminSubgraph!
 }
 
 union UpdateSubgraphOrErrorPayload = UpdateSubgraphPayload | ErrorPayload

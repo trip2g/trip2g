@@ -1,0 +1,93 @@
+package createpaymentlink
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"trip2g/internal/case/processnowpaymentsipn"
+	"trip2g/internal/db"
+	"trip2g/internal/graph/model"
+	"trip2g/internal/nowpayments"
+)
+
+type Env interface {
+	PublicURL() string
+	CreateNowpaymentsInvoice(params nowpayments.CreateInvoiceParams) (*nowpayments.CreateInvoiceResponse, error)
+	ActiveOfferByPublicID(ctx context.Context, id string) (db.Offer, error)
+	InsertPurchase(ctx context.Context, arg db.InsertPurchaseParams) error
+	GeneratePurchaseID() string
+}
+
+func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error) {
+	offer, err := env.ActiveOfferByPublicID(ctx, req.OfferID)
+	if err != nil {
+		if db.IsNoFound(err) {
+			return &model.ErrorPayload{Message: "offer_not_found"}, nil
+		}
+
+		return nil, fmt.Errorf("failed to get offer: %w", err)
+	}
+
+	if !offer.PriceUsd.Valid {
+		return &model.ErrorPayload{Message: "offer_not_found"}, nil
+	}
+
+	purchaseParams := db.InsertPurchaseParams{
+		OfferID: offer.ID,
+		Email:   req.Email,
+
+		PaymentProvider: "nowpayments",
+		PaymentData:     "[]", // empty array
+	}
+
+	err = insertPurchase(ctx, env, &purchaseParams)
+	if err != nil {
+		return nil, err
+	}
+
+	publicURL := strings.TrimRight(env.PublicURL(), "/")
+	returnURL := fmt.Sprintf("%s/%s", publicURL, strings.Trim(req.ReturnPath, "/"))
+
+	invoiceParams := nowpayments.CreateInvoiceParams{
+		PriceAmount:      offer.PriceUsd.Float64,
+		PriceCurrency:    "usd",
+		OrderID:          purchaseParams.ID,
+		OrderDescription: "Second brain course",
+		IPNCallbackURL:   publicURL + (&processnowpaymentsipn.Endpoint{}).Path(),
+		SuccessURL:       returnURL + "/#!status=success",
+		CancelURL:        returnURL + "/#!status=cancel",
+	}
+
+	invoice, err := env.CreateNowpaymentsInvoice(invoiceParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create invoice: %w", err)
+	}
+
+	response := model.CreatePaymentLinkPayload{
+		RedirectURL: invoice.InvoiceURL,
+	}
+
+	return &response, nil
+}
+
+var ErrDuplicatePurchaseID = fmt.Errorf("duplicate purchase ID")
+
+func insertPurchase(ctx context.Context, env Env, params *db.InsertPurchaseParams) error {
+	// 16 tryes to insert purchase with unique ID
+	for tryCount := 0; tryCount < 16; tryCount++ {
+		params.ID = env.GeneratePurchaseID()
+
+		err := env.InsertPurchase(ctx, *params)
+		if err != nil {
+			if db.IsUniqueViolation(err) {
+				continue
+			}
+
+			return fmt.Errorf("failed to insert purchase: %w", err)
+		}
+
+		return nil
+	}
+
+	return ErrDuplicatePurchaseID
+}

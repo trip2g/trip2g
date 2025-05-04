@@ -10,3 +10,4 @@ data.sqlite3-wal
 .aider*
 .env
 run.sh
+examples.json

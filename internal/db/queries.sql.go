@@ -11,6 +11,31 @@ import (
 	"strings"
 )
 
+const activeOfferByPublicID = `-- name: ActiveOfferByPublicID :one
+select o.id, o.public_id, o.created_at, o.lifetime, o.price_usd, o.starts_at, o.ends_at
+  from offers o
+ where o.public_id = ?
+   and (o.starts_at < datetime('now') or o.starts_at is null)
+   and (o.ends_at > datetime('now') or o.ends_at is null)
+   and o.price_usd > 0
+ limit 1
+`
+
+func (q *Queries) ActiveOfferByPublicID(ctx context.Context, publicID string) (Offer, error) {
+	row := q.db.QueryRowContext(ctx, activeOfferByPublicID, publicID)
+	var i Offer
+	err := row.Scan(
+		&i.ID,
+		&i.PublicID,
+		&i.CreatedAt,
+		&i.Lifetime,
+		&i.PriceUsd,
+		&i.StartsAt,
+		&i.EndsAt,
+	)
+	return i, err
+}
+
 const adminByUserID = `-- name: AdminByUserID :one
 select user_id, granted_at, granted_by from admins where user_id = ?
 `
@@ -249,14 +274,14 @@ func (q *Queries) CreateRevoke(ctx context.Context, arg CreateRevokeParams) (int
 const createUserSubgraphAccess = `-- name: CreateUserSubgraphAccess :one
 insert into user_subgraph_accesses (user_id, subgraph_id, purchase_id, expires_at)
 values (?, ?, ?, ?)
-returning id, user_id, subgraph_id, purchase_id, created_at, expires_at, revoke_id
+returning id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id
 `
 
 type CreateUserSubgraphAccessParams struct {
-	UserID     int64         `json:"user_id"`
-	SubgraphID int64         `json:"subgraph_id"`
-	PurchaseID sql.NullInt64 `json:"purchase_id"`
-	ExpiresAt  sql.NullTime  `json:"expires_at"`
+	UserID     int64        `json:"user_id"`
+	SubgraphID int64        `json:"subgraph_id"`
+	PurchaseID string       `json:"purchase_id"`
+	ExpiresAt  sql.NullTime `json:"expires_at"`
 }
 
 func (q *Queries) CreateUserSubgraphAccess(ctx context.Context, arg CreateUserSubgraphAccessParams) (UserSubgraphAccess, error) {
@@ -271,10 +296,10 @@ func (q *Queries) CreateUserSubgraphAccess(ctx context.Context, arg CreateUserSu
 		&i.ID,
 		&i.UserID,
 		&i.SubgraphID,
-		&i.PurchaseID,
 		&i.CreatedAt,
 		&i.ExpiresAt,
 		&i.RevokeID,
+		&i.PurchaseID,
 	)
 	return i, err
 }
@@ -309,23 +334,6 @@ delete from sign_in_codes
 func (q *Queries) DeleteSignInCodesByUserID(ctx context.Context, userID int64) error {
 	_, err := q.db.ExecContext(ctx, deleteSignInCodesByUserID, userID)
 	return err
-}
-
-const getUserByEmail = `-- name: GetUserByEmail :one
-select id, email, created_at, last_signin_code_sent_at, note_view_count from users where email = lower(?)
-`
-
-func (q *Queries) GetUserByEmail(ctx context.Context, lower string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmail, lower)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.CreatedAt,
-		&i.LastSigninCodeSentAt,
-		&i.NoteViewCount,
-	)
-	return i, err
 }
 
 const increaseUserNoteViewCount = `-- name: IncreaseUserNoteViewCount :exec
@@ -401,6 +409,30 @@ func (q *Queries) InsertNoteVersion(ctx context.Context, arg InsertNoteVersionPa
 	return err
 }
 
+const insertPurchase = `-- name: InsertPurchase :exec
+insert into purchases (id, email, offer_id, payment_provider, payment_data)
+values (?, ?, ?, ?, ?)
+`
+
+type InsertPurchaseParams struct {
+	ID              string `json:"id"`
+	Email           string `json:"email"`
+	OfferID         int64  `json:"offer_id"`
+	PaymentProvider string `json:"payment_provider"`
+	PaymentData     string `json:"payment_data"`
+}
+
+func (q *Queries) InsertPurchase(ctx context.Context, arg InsertPurchaseParams) error {
+	_, err := q.db.ExecContext(ctx, insertPurchase,
+		arg.ID,
+		arg.Email,
+		arg.OfferID,
+		arg.PaymentProvider,
+		arg.PaymentData,
+	)
+	return err
+}
+
 const insertSignInCode = `-- name: InsertSignInCode :exec
 insert into sign_in_codes (user_id, code)
 values (?, ?)
@@ -425,6 +457,24 @@ on conflict(name) do nothing
 func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
 	_, err := q.db.ExecContext(ctx, insertSubgraph, name)
 	return err
+}
+
+const insertUser = `-- name: InsertUser :one
+insert into users (email) values (lower(?))
+returning id, email, created_at, last_signin_code_sent_at, note_view_count
+`
+
+func (q *Queries) InsertUser(ctx context.Context, lower string) (User, error) {
+	row := q.db.QueryRowContext(ctx, insertUser, lower)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+		&i.NoteViewCount,
+	)
+	return i, err
 }
 
 const insertUserNoteView = `-- name: InsertUserNoteView :exec
@@ -634,7 +684,7 @@ func (q *Queries) ListAllUserBans(ctx context.Context) ([]UserBan, error) {
 }
 
 const listAllUserSubgraphAccesses = `-- name: ListAllUserSubgraphAccesses :many
-select id, user_id, subgraph_id, purchase_id, created_at, expires_at, revoke_id from user_subgraph_accesses order by id desc
+select id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id from user_subgraph_accesses order by id desc
 `
 
 func (q *Queries) ListAllUserSubgraphAccesses(ctx context.Context) ([]UserSubgraphAccess, error) {
@@ -650,10 +700,10 @@ func (q *Queries) ListAllUserSubgraphAccesses(ctx context.Context) ([]UserSubgra
 			&i.ID,
 			&i.UserID,
 			&i.SubgraphID,
-			&i.PurchaseID,
 			&i.CreatedAt,
 			&i.ExpiresAt,
 			&i.RevokeID,
+			&i.PurchaseID,
 		); err != nil {
 			return nil, err
 		}
@@ -734,6 +784,81 @@ func (q *Queries) ListLatestUserNoteViewPathIDS(ctx context.Context, userID int6
 		return nil, err
 	}
 	return items, nil
+}
+
+const listSubgraphsByOfferID = `-- name: ListSubgraphsByOfferID :many
+select s.id, s.name, s.color, s.created_at
+  from subgraphs s
+  join offer_subgraphs os on s.id = os.subgraph_id
+ where os.offer_id = ?
+ order by s.name
+`
+
+func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]Subgraph, error) {
+	rows, err := q.db.QueryContext(ctx, listSubgraphsByOfferID, offerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Subgraph
+	for rows.Next() {
+		var i Subgraph
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Color,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const offerByID = `-- name: OfferByID :one
+select id, public_id, created_at, lifetime, price_usd, starts_at, ends_at from offers where id = ?
+`
+
+func (q *Queries) OfferByID(ctx context.Context, id int64) (Offer, error) {
+	row := q.db.QueryRowContext(ctx, offerByID, id)
+	var i Offer
+	err := row.Scan(
+		&i.ID,
+		&i.PublicID,
+		&i.CreatedAt,
+		&i.Lifetime,
+		&i.PriceUsd,
+		&i.StartsAt,
+		&i.EndsAt,
+	)
+	return i, err
+}
+
+const purchaseByID = `-- name: PurchaseByID :one
+select id, created_at, payment_provider, payment_data, email, user_id, status, offer_id from purchases where id = ?
+`
+
+func (q *Queries) PurchaseByID(ctx context.Context, id string) (Purchase, error) {
+	row := q.db.QueryRowContext(ctx, purchaseByID, id)
+	var i Purchase
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.PaymentProvider,
+		&i.PaymentData,
+		&i.Email,
+		&i.UserID,
+		&i.Status,
+		&i.OfferID,
+	)
+	return i, err
 }
 
 const revokeUserSubgraphAccess = `-- name: RevokeUserSubgraphAccess :exec
@@ -817,12 +942,30 @@ func (q *Queries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminSubgra
 	return i, err
 }
 
+const updatePurchaseStatus = `-- name: UpdatePurchaseStatus :exec
+update purchases
+   set status = ?
+     , payment_data = ?
+ where id = ?
+`
+
+type UpdatePurchaseStatusParams struct {
+	Status      string `json:"status"`
+	PaymentData string `json:"payment_data"`
+	ID          string `json:"id"`
+}
+
+func (q *Queries) UpdatePurchaseStatus(ctx context.Context, arg UpdatePurchaseStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updatePurchaseStatus, arg.Status, arg.PaymentData, arg.ID)
+	return err
+}
+
 const updateUserSubgraphAccess = `-- name: UpdateUserSubgraphAccess :one
 update user_subgraph_accesses
    set expires_at = ?
      , subgraph_id = ?
  where id = ?
-returning id, user_id, subgraph_id, purchase_id, created_at, expires_at, revoke_id
+returning id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id
 `
 
 type UpdateUserSubgraphAccessParams struct {
@@ -838,10 +981,10 @@ func (q *Queries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSu
 		&i.ID,
 		&i.UserID,
 		&i.SubgraphID,
-		&i.PurchaseID,
 		&i.CreatedAt,
 		&i.ExpiresAt,
 		&i.RevokeID,
+		&i.PurchaseID,
 	)
 	return i, err
 }
@@ -865,6 +1008,23 @@ func (q *Queries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUserNot
 	return count, err
 }
 
+const userByEmail = `-- name: UserByEmail :one
+select id, email, created_at, last_signin_code_sent_at, note_view_count from users where email = lower(?)
+`
+
+func (q *Queries) UserByEmail(ctx context.Context, lower string) (User, error) {
+	row := q.db.QueryRowContext(ctx, userByEmail, lower)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+		&i.NoteViewCount,
+	)
+	return i, err
+}
+
 const userByID = `-- name: UserByID :one
 select id, email, created_at, last_signin_code_sent_at, note_view_count from users where id = ?
 `
@@ -883,7 +1043,7 @@ func (q *Queries) UserByID(ctx context.Context, id int64) (User, error) {
 }
 
 const userSubgraphAccessByID = `-- name: UserSubgraphAccessByID :one
-select id, user_id, subgraph_id, purchase_id, created_at, expires_at, revoke_id
+select id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id
   from user_subgraph_accesses
  where id = ?
 `
@@ -895,10 +1055,10 @@ func (q *Queries) UserSubgraphAccessByID(ctx context.Context, id int64) (UserSub
 		&i.ID,
 		&i.UserID,
 		&i.SubgraphID,
-		&i.PurchaseID,
 		&i.CreatedAt,
 		&i.ExpiresAt,
 		&i.RevokeID,
+		&i.PurchaseID,
 	)
 	return i, err
 }

@@ -31,8 +31,12 @@ select value as path, p.id as path_id, content
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version;
 
--- name: GetUserByEmail :one
+-- name: UserByEmail :one
 select * from users where email = lower(?);
+
+-- name: InsertUser :one
+insert into users (email) values (lower(?))
+returning *;
 
 -- name: UserByID :one
 select * from users where id = ?;
@@ -188,3 +192,35 @@ select o.*
    and (o.ends_at > datetime('now') or o.ends_at is null)
    and o.price_usd > 0
  order by price_usd desc;
+
+-- name: ListSubgraphsByOfferID :many
+select s.*
+  from subgraphs s
+  join offer_subgraphs os on s.id = os.subgraph_id
+ where os.offer_id = ?
+ order by s.name;
+
+-- name: ActiveOfferByPublicID :one
+select o.*
+  from offers o
+ where o.public_id = ?
+   and (o.starts_at < datetime('now') or o.starts_at is null)
+   and (o.ends_at > datetime('now') or o.ends_at is null)
+   and o.price_usd > 0
+ limit 1;
+
+-- name: InsertPurchase :exec
+insert into purchases (id, email, offer_id, payment_provider, payment_data)
+values (?, ?, ?, ?, ?);
+
+-- name: PurchaseByID :one
+select * from purchases where id = ?;
+
+-- name: UpdatePurchaseStatus :exec
+update purchases
+   set status = ?
+     , payment_data = ?
+ where id = ?;
+
+-- name: OfferByID :one
+select * from offers where id = ?;

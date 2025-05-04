@@ -2,8 +2,17 @@ package db
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 )
+
+func IsNoFound(err error) bool {
+	return err == sql.ErrNoRows
+}
+
+func IsUniqueViolation(err error) bool {
+	return strings.Contains(err.Error(), "UNIQUE constraint failed")
+}
 
 // ToNullable helpers for converting Go types to SQL nullable types.
 func ToNullableFloat64(value *float64) sql.NullFloat64 {
