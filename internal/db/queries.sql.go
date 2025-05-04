@@ -246,6 +246,17 @@ func (q *Queries) CountActiveSignInCodes(ctx context.Context, userID int64) (int
 	return count, err
 }
 
+const countUserSubgraphAccessByPurchaseID = `-- name: CountUserSubgraphAccessByPurchaseID :one
+select count(*) from user_subgraph_accesses where purchase_id = ?
+`
+
+func (q *Queries) CountUserSubgraphAccessByPurchaseID(ctx context.Context, purchaseID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUserSubgraphAccessByPurchaseID, purchaseID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createRevoke = `-- name: CreateRevoke :one
 insert into revokes (target_type, target_id, by_id, reason)
 values (?, ?, ?, ?)

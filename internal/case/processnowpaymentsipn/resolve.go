@@ -23,6 +23,7 @@ type Env interface {
 	ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]db.Subgraph, error)
 	UserByEmail(ctx context.Context, email string) (db.User, error)
 	InsertUser(ctx context.Context, email string) (db.User, error)
+	CountUserSubgraphAccessByPurchaseID(ctx context.Context, purchaseID string) (int64, error)
 	CreateUserSubgraphAccess(ctx context.Context, params db.CreateUserSubgraphAccessParams) (db.UserSubgraphAccess, error)
 }
 
@@ -49,9 +50,19 @@ func Resolve(ctx context.Context, env Env, req nowpayments.IPNRequest) (*Respons
 	env.Logger().Info("purchase updated", "order_id", req.OrderID, "status", req.PaymentStatus)
 
 	if req.PaymentStatus == nowpayments.PaymentStatusConfirmed {
-		grantErr := grantAccesses(ctx, env, &purchase)
-		if grantErr != nil {
-			return nil, fmt.Errorf("failed to grant accesses: %w", grantErr)
+		accessCount, err := env.CountUserSubgraphAccessByPurchaseID(ctx, purchase.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count user subgraph access by purchase ID: %w", err)
+		}
+
+		// not granted yet
+		if accessCount == 0 {
+			grantErr := grantAccesses(ctx, env, &purchase)
+			if grantErr != nil {
+				return nil, fmt.Errorf("failed to grant accesses: %w", grantErr)
+			}
+		} else {
+			env.Logger().Warn("access already granted", "purchase_id", purchase.ID)
 		}
 	}
 

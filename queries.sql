@@ -224,3 +224,6 @@ update purchases
 
 -- name: OfferByID :one
 select * from offers where id = ?;
+
+-- name: CountUserSubgraphAccessByPurchaseID :one
+select count(*) from user_subgraph_accesses where purchase_id = ?;
