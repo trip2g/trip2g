@@ -622,6 +622,20 @@ func (a *app) startServer() {
 				if hatErr != nil {
 					a.log.Warn("failed to resolve hot auth token", "error", hatErr)
 				}
+
+				parsedURL, err := url.Parse(string(ctx.Request.Header.RequestURI()))
+				if err != nil {
+					a.log.Warn("failed to parse URL", "error", err)
+					ctx.SetStatusCode(http.StatusBadRequest)
+					return
+				}
+
+				query := parsedURL.Query()
+				query.Del("hat")
+				parsedURL.RawQuery = query.Encode()
+
+				ctx.Redirect(parsedURL.String(), http.StatusFound)
+				return
 			}
 
 			if strings.HasPrefix(path, "/graphql") {
@@ -634,20 +648,6 @@ func (a *app) startServer() {
 				return
 			}
 
-			// tx, err := a.conn.BeginTx(ctx, nil)
-			// if err != nil {
-			// 	ctx.SetStatusCode(http.StatusServiceUnavailable)
-			// 	ctx.SetBodyString("500 Internal Server Error")
-			// 	return
-			// }
-			//
-			// defer tx.Rollback()
-
-			// TODO: use a pool
-			// newEnv := *a
-			// newEnv.queries = db.New(tx)
-			// newEnv.Queries = newEnv.queries
-
 			handled, handleErr := rtr.Handle(req)
 			if handleErr != nil {
 				a.log.Error("failed to handle request", "error", handleErr)
@@ -655,25 +655,6 @@ func (a *app) startServer() {
 				ctx.SetBodyString("500 Internal Server Error")
 				return
 			}
-
-			// TODO: refactor this
-			// if handleErr == nil {
-			// 	commitErr := tx.Commit()
-			// 	if commitErr != nil {
-			// 		a.log.Error("failed to commit transaction", "error", commitErr)
-			// 		ctx.SetStatusCode(http.StatusServiceUnavailable)
-			// 		ctx.SetBodyString("500 Internal Server Error")
-			// 		return
-			// 	}
-			// } else {
-			// 	rollbackErr := tx.Rollback()
-			// 	if rollbackErr != nil {
-			// 		a.log.Error("failed to rollback transaction", "error", rollbackErr)
-			// 		ctx.SetStatusCode(http.StatusServiceUnavailable)
-			// 		ctx.SetBodyString("500 Internal Server Error")
-			// 		return
-			// 	}
-			// }
 
 			if handled {
 				a.log.Debug("router handled request", "path", path)
