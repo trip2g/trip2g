@@ -251,6 +251,11 @@ func (r *subgraphResolver) Offers(ctx context.Context, obj *db.Subgraph) ([]db.O
 	return r.env(ctx).ListActiveOffersBySubgraphID(ctx, obj.ID)
 }
 
+// ActivePurchaseUpdated is the resolver for the activePurchaseUpdated field.
+func (r *subscriptionResolver) ActivePurchaseUpdated(ctx context.Context, input model.ActivePurchasesInput) (<-chan []db.Purchase, error) {
+	panic(fmt.Errorf("not implemented: ActivePurchaseUpdated - activePurchaseUpdated"))
+}
+
 // User is the resolver for the user field.
 func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error) {
 	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
@@ -382,6 +387,9 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // Subgraph returns SubgraphResolver implementation.
 func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
 
+// Subscription returns SubscriptionResolver implementation.
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
 // UnbanUserPayload returns UnbanUserPayloadResolver implementation.
 func (r *Resolver) UnbanUserPayload() UnbanUserPayloadResolver { return &unbanUserPayloadResolver{r} }
 
@@ -413,7 +421,20 @@ type noteViewResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *queryResolver) ActivePurchases(ctx context.Context, input model.ActivePurchasesInput) ([]db.Purchase, error) {
+	panic(fmt.Errorf("not implemented: ActivePurchases - activePurchases"))
+}
+*/

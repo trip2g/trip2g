@@ -8,6 +8,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -62,6 +63,7 @@ type ResolverRoot interface {
 	Offer() OfferResolver
 	Query() QueryResolver
 	Subgraph() SubgraphResolver
+	Subscription() SubscriptionResolver
 	UnbanUserPayload() UnbanUserPayloadResolver
 	UserBan() UserBanResolver
 	UserSubgraphAccess() UserSubgraphAccessResolver
@@ -134,7 +136,8 @@ type ComplexityRoot struct {
 	}
 
 	CreatePaymentLinkPayload struct {
-		RedirectURL func(childComplexity int) int
+		ActivePurchases func(childComplexity int) int
+		RedirectURL     func(childComplexity int) int
 	}
 
 	ErrorPayload struct {
@@ -171,6 +174,11 @@ type ComplexityRoot struct {
 		Subgraphs func(childComplexity int) int
 	}
 
+	Purchase struct {
+		ID     func(childComplexity int) int
+		Status func(childComplexity int) int
+	}
+
 	Query struct {
 		Admin    func(childComplexity int) int
 		Subgraph func(childComplexity int, name string) int
@@ -193,6 +201,10 @@ type ComplexityRoot struct {
 	Subgraph struct {
 		Name   func(childComplexity int) int
 		Offers func(childComplexity int) int
+	}
+
+	Subscription struct {
+		ActivePurchaseUpdated func(childComplexity int, input model.ActivePurchasesInput) int
 	}
 
 	UnbanUserPayload struct {
@@ -306,6 +318,9 @@ type QueryResolver interface {
 }
 type SubgraphResolver interface {
 	Offers(ctx context.Context, obj *db.Subgraph) ([]db.Offer, error)
+}
+type SubscriptionResolver interface {
+	ActivePurchaseUpdated(ctx context.Context, input model.ActivePurchasesInput) (<-chan []db.Purchase, error)
 }
 type UnbanUserPayloadResolver interface {
 	User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error)
@@ -575,6 +590,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.BanUserPayload.UserID(childComplexity), true
 
+	case "CreatePaymentLinkPayload.activePurchases":
+		if e.complexity.CreatePaymentLinkPayload.ActivePurchases == nil {
+			break
+		}
+
+		return e.complexity.CreatePaymentLinkPayload.ActivePurchases(childComplexity), true
+
 	case "CreatePaymentLinkPayload.redirectUrl":
 		if e.complexity.CreatePaymentLinkPayload.RedirectURL == nil {
 			break
@@ -730,6 +752,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Offer.Subgraphs(childComplexity), true
 
+	case "Purchase.id":
+		if e.complexity.Purchase.ID == nil {
+			break
+		}
+
+		return e.complexity.Purchase.ID(childComplexity), true
+
+	case "Purchase.status":
+		if e.complexity.Purchase.Status == nil {
+			break
+		}
+
+		return e.complexity.Purchase.Status(childComplexity), true
+
 	case "Query.admin":
 		if e.complexity.Query.Admin == nil {
 			break
@@ -797,6 +833,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Subgraph.Offers(childComplexity), true
+
+	case "Subscription.activePurchaseUpdated":
+		if e.complexity.Subscription.ActivePurchaseUpdated == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_activePurchaseUpdated_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.ActivePurchaseUpdated(childComplexity, args["input"].(model.ActivePurchasesInput)), true
 
 	case "UnbanUserPayload.user":
 		if e.complexity.UnbanUserPayload.User == nil {
@@ -951,6 +999,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputActivePurchasesInput,
 		ec.unmarshalInputBanUserInput,
 		ec.unmarshalInputCreatePaymentLinkInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
@@ -1001,6 +1050,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
 			data := ec._Mutation(ctx, opCtx.Operation.SelectionSet)
 			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, opCtx.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next(ctx)
+
+			if data == nil {
+				return nil
+			}
 			data.MarshalGQL(&buf)
 
 			return &graphql.Response{
@@ -1347,6 +1413,29 @@ func (ec *executionContext) field_Query_subgraph_argsName(
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Subscription_activePurchaseUpdated_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Subscription_activePurchaseUpdated_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Subscription_activePurchaseUpdated_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.ActivePurchasesInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNActivePurchasesInput2trip2gᚋinternalᚋgraphᚋmodelᚐActivePurchasesInput(ctx, tmp)
+	}
+
+	var zeroVal model.ActivePurchasesInput
 	return zeroVal, nil
 }
 
@@ -2969,6 +3058,56 @@ func (ec *executionContext) fieldContext_CreatePaymentLinkPayload_redirectUrl(_ 
 	return fc, nil
 }
 
+func (ec *executionContext) _CreatePaymentLinkPayload_activePurchases(ctx context.Context, field graphql.CollectedField, obj *model.CreatePaymentLinkPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreatePaymentLinkPayload_activePurchases(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActivePurchases, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.Purchase)
+	fc.Result = res
+	return ec.marshalNPurchase2ᚕtrip2gᚋinternalᚋdbᚐPurchaseᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreatePaymentLinkPayload_activePurchases(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreatePaymentLinkPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Purchase_id(ctx, field)
+			case "status":
+				return ec.fieldContext_Purchase_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Purchase", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ErrorPayload_message(ctx context.Context, field graphql.CollectedField, obj *model.ErrorPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ErrorPayload_message(ctx, field)
 	if err != nil {
@@ -3860,6 +3999,94 @@ func (ec *executionContext) fieldContext_Offer_subgraphs(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Purchase_id(ctx context.Context, field graphql.CollectedField, obj *db.Purchase) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Purchase_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Purchase_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Purchase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Purchase_status(ctx context.Context, field graphql.CollectedField, obj *db.Purchase) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Purchase_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Purchase_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Purchase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_viewer(ctx, field)
 	if err != nil {
@@ -4447,6 +4674,81 @@ func (ec *executionContext) fieldContext_Subgraph_offers(_ context.Context, fiel
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Offer", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_activePurchaseUpdated(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subscription_activePurchaseUpdated(ctx, field)
+	if err != nil {
+		return nil
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().ActivePurchaseUpdated(rctx, fc.Args["input"].(model.ActivePurchasesInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func(ctx context.Context) graphql.Marshaler {
+		select {
+		case res, ok := <-resTmp.(<-chan []db.Purchase):
+			if !ok {
+				return nil
+			}
+			return graphql.WriterFunc(func(w io.Writer) {
+				w.Write([]byte{'{'})
+				graphql.MarshalString(field.Alias).MarshalGQL(w)
+				w.Write([]byte{':'})
+				ec.marshalNPurchase2ᚕtrip2gᚋinternalᚋdbᚐPurchaseᚄ(ctx, field.Selections, res).MarshalGQL(w)
+				w.Write([]byte{'}'})
+			})
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+func (ec *executionContext) fieldContext_Subscription_activePurchaseUpdated(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Purchase_id(ctx, field)
+			case "status":
+				return ec.fieldContext_Purchase_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Purchase", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_activePurchaseUpdated_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -7362,6 +7664,40 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputActivePurchasesInput(ctx context.Context, obj any) (model.ActivePurchasesInput, error) {
+	var it model.ActivePurchasesInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"email", "subgraphs"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "subgraphs":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphs"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Subgraphs = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputBanUserInput(ctx context.Context, obj any) (model.BanUserInput, error) {
 	var it model.BanUserInput
 	asMap := map[string]any{}
@@ -7426,7 +7762,7 @@ func (ec *executionContext) unmarshalInputCreatePaymentLinkInput(ctx context.Con
 			it.OfferID = data
 		case "email":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8965,6 +9301,11 @@ func (ec *executionContext) _CreatePaymentLinkPayload(ctx context.Context, sel a
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "activePurchases":
+			out.Values[i] = ec._CreatePaymentLinkPayload_activePurchases(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9457,6 +9798,50 @@ func (ec *executionContext) _Offer(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
+var purchaseImplementors = []string{"Purchase"}
+
+func (ec *executionContext) _Purchase(ctx context.Context, sel ast.SelectionSet, obj *db.Purchase) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, purchaseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Purchase")
+		case "id":
+			out.Values[i] = ec._Purchase_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._Purchase_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -9765,6 +10150,26 @@ func (ec *executionContext) _Subgraph(ctx context.Context, sel ast.SelectionSet,
 	}
 
 	return out
+}
+
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		ec.Errorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "activePurchaseUpdated":
+		return ec._Subscription_activePurchaseUpdated(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
 }
 
 var unbanUserPayloadImplementors = []string{"UnbanUserPayload", "UnbanUserOrErrorPayload"}
@@ -10679,6 +11084,11 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNActivePurchasesInput2trip2gᚋinternalᚋgraphᚋmodelᚐActivePurchasesInput(ctx context.Context, v any) (model.ActivePurchasesInput, error) {
+	res, err := ec.unmarshalInputActivePurchasesInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNAdminMutation2trip2gᚋinternalᚋmodelᚐAdminMutation(ctx context.Context, sel ast.SelectionSet, v model1.AdminMutation) graphql.Marshaler {
 	return ec._AdminMutation(ctx, sel, &v)
 }
@@ -11152,6 +11562,54 @@ func (ec *executionContext) marshalNPaymentType2trip2gᚋinternalᚋgraphᚋmode
 	return v
 }
 
+func (ec *executionContext) marshalNPurchase2trip2gᚋinternalᚋdbᚐPurchase(ctx context.Context, sel ast.SelectionSet, v db.Purchase) graphql.Marshaler {
+	return ec._Purchase(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPurchase2ᚕtrip2gᚋinternalᚋdbᚐPurchaseᚄ(ctx context.Context, sel ast.SelectionSet, v []db.Purchase) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPurchase2trip2gᚋinternalᚋdbᚐPurchase(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋcaseᚋrequestemailsigninᚐRequest(ctx context.Context, v any) (requestemailsignin.Request, error) {
 	res, err := ec.unmarshalInputRequestEmailSignInCodeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -11205,6 +11663,36 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNSubgraph2trip2gᚋinternalᚋdbᚐSubgraph(ctx context.Context, sel ast.SelectionSet, v db.Subgraph) graphql.Marshaler {

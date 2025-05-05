@@ -43,6 +43,11 @@ type UpdateUserSubgraphAccessOrErrorPayload interface {
 	IsUpdateUserSubgraphAccessOrErrorPayload()
 }
 
+type ActivePurchasesInput struct {
+	Email     *string  `json:"email,omitempty"`
+	Subgraphs []string `json:"subgraphs"`
+}
+
 type AdminNoteViewsConnection struct {
 	Nodes []model.NoteView `json:"nodes"`
 }
@@ -78,12 +83,13 @@ func (BanUserPayload) IsBanUserOrErrorPayload() {}
 type CreatePaymentLinkInput struct {
 	PaymentType PaymentType `json:"paymentType"`
 	OfferID     string      `json:"offerId"`
-	Email       string      `json:"email"`
+	Email       *string     `json:"email,omitempty"`
 	ReturnPath  string      `json:"returnPath"`
 }
 
 type CreatePaymentLinkPayload struct {
-	RedirectURL string `json:"redirectUrl"`
+	RedirectURL     string        `json:"redirectUrl"`
+	ActivePurchases []db.Purchase `json:"activePurchases"`
 }
 
 func (CreatePaymentLinkPayload) IsCreatePaymentLinkOrErrorPayload() {}
@@ -143,6 +149,9 @@ type SignOutPayload struct {
 }
 
 func (SignOutPayload) IsSignOutOrErrorPayload() {}
+
+type Subscription struct {
+}
 
 type UnbanUserInput struct {
 	UserID int `json:"userId"`

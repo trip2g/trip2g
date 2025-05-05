@@ -227,6 +227,15 @@ func main() {
 	}
 }
 
+func (a *app) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return req.UserToken()
+}
+
 func (a *app) GenerateHotAuthToken(_ context.Context, data model.HotAuthToken) (string, error) {
 	return a.hotAuthTokenManager.NewToken(data)
 }

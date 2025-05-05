@@ -122,6 +122,11 @@ type Subgraph {
   offers: [Offer!]!
 }
 
+type Purchase {
+  id: String!
+  status: String!
+}
+
 type Query {
   viewer: Viewer!
   subgraph(name: String!): Subgraph
@@ -189,12 +194,13 @@ enum PaymentType {
 input CreatePaymentLinkInput {
   paymentType: PaymentType!
   offerId: String!
-  email: String!
+  email: String
   returnPath: String!
 }
 
 type CreatePaymentLinkPayload {
   redirectUrl: String!
+  activePurchases: [Purchase!]!
 }
 
 union CreatePaymentLinkOrErrorPayload = CreatePaymentLinkPayload | ErrorPayload
@@ -275,4 +281,13 @@ type AdminMutation {
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
   unbanUser(input: UnbanUserInput!): UnbanUserOrErrorPayload!
   banUser(input: BanUserInput!): BanUserOrErrorPayload!
+}
+
+input ActivePurchasesInput {
+  email: String
+  subgraphs: [String!]!
+}
+
+type Subscription {
+  activePurchaseUpdated(input: ActivePurchasesInput!): [Purchase!]!
 }
