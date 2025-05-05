@@ -108,8 +108,13 @@ func (e *Manager) Extract(ctx *fasthttp.RequestCtx) (*Data, error) {
 	return &token, nil
 }
 
+type StoreData struct {
+	JWT  string
+	Data Data
+}
+
 // Store serializes Token as JWT and sets it as a secure httpOnly cookie.
-func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (string, error) {
+func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error) {
 	now := time.Now()
 	exp := now.Add(24 * time.Hour)
 
@@ -124,7 +129,7 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString(e.secret)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	c := fasthttp.AcquireCookie()
@@ -139,7 +144,12 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (string, error) {
 	ctx.Response.Header.SetCookie(c)
 	fasthttp.ReleaseCookie(c)
 
-	return signed, nil
+	storeData := StoreData{
+		JWT:  signed,
+		Data: data,
+	}
+
+	return &storeData, nil
 }
 
 func (e *Manager) Delete(ctx *fasthttp.RequestCtx) error {

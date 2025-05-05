@@ -19,6 +19,7 @@ import (
 
 	"trip2g/internal/appreq"
 	"trip2g/internal/bqtask/sendsignincode"
+	"trip2g/internal/case/signinbyhat"
 	"trip2g/internal/db"
 	"trip2g/internal/graph"
 	"trip2g/internal/hotauthtoken"
@@ -353,12 +354,14 @@ func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) 
 		return "", err
 	}
 
-	token, err := req.TokenManager.Store(req.Req, data)
+	storeData, err := req.TokenManager.Store(req.Req, data)
 	if err != nil {
 		return "", fmt.Errorf("failed to store token: %w", err)
 	}
 
-	return token, nil
+	req.SetUserToken(&storeData.Data)
+
+	return storeData.JWT, nil
 }
 
 func (a *app) ResetUserToken(ctx context.Context) error {
@@ -611,6 +614,15 @@ func (a *app) startServer() {
 			req.TokenManager = a.tokenManager
 			req.StoreInContext() // appreq.FromCtx(ctx)
 			defer appreq.Release(req)
+
+			// handle hot auth token from ?hot=...
+			hatAuthToken := string(ctx.QueryArgs().Peek("hat")) // TODO: use b2s
+			if hatAuthToken != "" {
+				hatErr := signinbyhat.Resolve(ctx, a, hatAuthToken)
+				if hatErr != nil {
+					a.log.Warn("failed to resolve hot auth token", "error", hatErr)
+				}
+			}
 
 			if strings.HasPrefix(path, "/graphql") {
 				if string(ctx.Method()) == "GET" {

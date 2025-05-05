@@ -6,7 +6,7 @@ namespace $.$$ {
 			position: 'relative',
 		},
 
-		CloseIcon: {
+		CloseButton: {
 			position: 'absolute',
 			top: '25px',
 			right: '25px',

@@ -10,7 +10,10 @@ $trip2g_user_space $mol_view
 				<= AuthWrapper $trip2g_auth
 					signout => signout
 					AppView <= Content
-				<= CloseIcon $mol_icon_close
+				<= CloseButton $mol_button_major
+					click <= close null
+					sub /
+						<= CloseIcon $mol_icon_close
 	Content $mol_view
 		sub /
 			\Content...

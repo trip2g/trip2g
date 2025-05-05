@@ -50,6 +50,14 @@ func FromCtx(ctx context.Context) (*Request, error) {
 	return c, nil
 }
 
+func (c *Request) SetUserToken(token *usertoken.Data) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.token = token
+	c.tokenExtracted = true
+}
+
 func (c *Request) UserToken() (*usertoken.Data, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
