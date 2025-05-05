@@ -21,6 +21,7 @@ import (
 	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/db"
 	"trip2g/internal/graph"
+	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
@@ -64,6 +65,8 @@ type app struct {
 
 	tokenManager *usertoken.Manager
 	queueClient  *backlite.Client
+
+	hotAuthTokenManager *hotauthtoken.Manager
 
 	devMode bool
 
@@ -179,6 +182,8 @@ func main() {
 		tokenManager: tokenManager,
 		queueClient:  queueClient,
 
+		hotAuthTokenManager: hotauthtoken.NewManager([]byte("secret")),
+
 		log:     log,
 		queries: queries,
 		conn:    conn,
@@ -219,6 +224,14 @@ func main() {
 	if os.Getenv("SERVER") == "y" {
 		a.startServer()
 	}
+}
+
+func (a *app) GenerateHotAuthToken(_ context.Context, data model.HotAuthToken) (string, error) {
+	return a.hotAuthTokenManager.NewToken(data)
+}
+
+func (a *app) ParseHotAuthToken(_ context.Context, token string) (*model.HotAuthToken, error) {
+	return a.hotAuthTokenManager.ParseToken(token)
 }
 
 func (a *app) CreateNowpaymentsInvoice(params nowpayments.CreateInvoiceParams) (*nowpayments.CreateInvoiceResponse, error) {
