@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/rand"
 	"database/sql"
@@ -21,6 +22,7 @@ import (
 	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/case/signinbyhat"
 	"trip2g/internal/db"
+	"trip2g/internal/fasthttp/graphqlsse"
 	"trip2g/internal/graph"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
@@ -36,7 +38,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
-	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/gqlerror"
 	"github.com/vektah/gqlparser/v2/ast"
 
@@ -508,6 +509,11 @@ func (a *app) startServer() {
 
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &resolver}))
 
+	// srv.AddTransport(graphqlws.Websocket{
+	// 	KeepAlivePingInterval: 10 * time.Second,
+	// })
+
+	srv.AddTransport(graphqlsse.Transport{})
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
@@ -585,7 +591,7 @@ func (a *app) startServer() {
 		return next(ctx)
 	})
 
-	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
+	// playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
 	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(srv)
 
 	s := &fasthttp.Server{
@@ -647,13 +653,34 @@ func (a *app) startServer() {
 				return
 			}
 
-			if strings.HasPrefix(path, "/graphql") {
-				if string(ctx.Method()) == "GET" {
-					playgroundHandler(ctx)
-				} else {
-					graphqlHandler(ctx)
-				}
+			if strings.HasPrefix(path, "/events") {
+				ctx.SetContentType("text/event-stream")
+				ctx.SetBodyStreamWriter(func(w *bufio.Writer) {
+					for {
+						w.Write([]byte(fmt.Sprintf("data: %s\n\n", time.Now())))
 
+						if err := w.Flush(); err != nil {
+							println("client disconnected")
+							return
+						}
+
+						time.Sleep(time.Second)
+					}
+				})
+				ctx.SetStatusCode(200)
+				ctx.Response.Header.Add("test", "data")
+
+				return
+			}
+
+			if strings.HasPrefix(path, "/graphql") {
+				// if string(ctx.Method()) == "GET" {
+				// 	playgroundHandler(ctx)
+				// } else {
+				graphqlHandler(ctx)
+				// }
+
+				fmt.Println("handle end")
 				return
 			}
 

@@ -253,7 +253,38 @@ func (r *subgraphResolver) Offers(ctx context.Context, obj *db.Subgraph) ([]db.O
 
 // ActivePurchaseUpdated is the resolver for the activePurchaseUpdated field.
 func (r *subscriptionResolver) ActivePurchaseUpdated(ctx context.Context, input model.ActivePurchasesInput) (<-chan []db.Purchase, error) {
-	panic(fmt.Errorf("not implemented: ActivePurchaseUpdated - activePurchaseUpdated"))
+	ch := make(chan []db.Purchase, 10)
+
+	purchases := []db.Purchase{
+		{
+			ID:     "test",
+			Status: "Test",
+		},
+	}
+	ch <- purchases
+
+	go func() {
+		defer close(ch)
+
+		for {
+			time.Sleep(1 * time.Second)
+
+			t := []db.Purchase{
+				{ID: "test", Status: "test"},
+			}
+
+			select {
+			case <-ctx.Done():
+				fmt.Println("Subscription Closed")
+				return
+
+			case ch <- t:
+				// Our message went through, do nothing
+			}
+		}
+	}()
+
+	return ch, nil
 }
 
 // User is the resolver for the user field.
@@ -426,15 +457,3 @@ type unbanUserPayloadResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *queryResolver) ActivePurchases(ctx context.Context, input model.ActivePurchasesInput) ([]db.Purchase, error) {
-	panic(fmt.Errorf("not implemented: ActivePurchases - activePurchases"))
-}
-*/

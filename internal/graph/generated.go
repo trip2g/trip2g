@@ -136,8 +136,7 @@ type ComplexityRoot struct {
 	}
 
 	CreatePaymentLinkPayload struct {
-		ActivePurchases func(childComplexity int) int
-		RedirectURL     func(childComplexity int) int
+		RedirectURL func(childComplexity int) int
 	}
 
 	ErrorPayload struct {
@@ -589,13 +588,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.BanUserPayload.UserID(childComplexity), true
-
-	case "CreatePaymentLinkPayload.activePurchases":
-		if e.complexity.CreatePaymentLinkPayload.ActivePurchases == nil {
-			break
-		}
-
-		return e.complexity.CreatePaymentLinkPayload.ActivePurchases(childComplexity), true
 
 	case "CreatePaymentLinkPayload.redirectUrl":
 		if e.complexity.CreatePaymentLinkPayload.RedirectURL == nil {
@@ -3053,56 +3045,6 @@ func (ec *executionContext) fieldContext_CreatePaymentLinkPayload_redirectUrl(_ 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _CreatePaymentLinkPayload_activePurchases(ctx context.Context, field graphql.CollectedField, obj *model.CreatePaymentLinkPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_CreatePaymentLinkPayload_activePurchases(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ActivePurchases, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]db.Purchase)
-	fc.Result = res
-	return ec.marshalNPurchase2ᚕtrip2gᚋinternalᚋdbᚐPurchaseᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_CreatePaymentLinkPayload_activePurchases(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "CreatePaymentLinkPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Purchase_id(ctx, field)
-			case "status":
-				return ec.fieldContext_Purchase_status(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Purchase", field.Name)
 		},
 	}
 	return fc, nil
@@ -9298,11 +9240,6 @@ func (ec *executionContext) _CreatePaymentLinkPayload(ctx context.Context, sel a
 			out.Values[i] = graphql.MarshalString("CreatePaymentLinkPayload")
 		case "redirectUrl":
 			out.Values[i] = ec._CreatePaymentLinkPayload_redirectUrl(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "activePurchases":
-			out.Values[i] = ec._CreatePaymentLinkPayload_activePurchases(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

@@ -88,8 +88,7 @@ type CreatePaymentLinkInput struct {
 }
 
 type CreatePaymentLinkPayload struct {
-	RedirectURL     string        `json:"redirectUrl"`
-	ActivePurchases []db.Purchase `json:"activePurchases"`
+	RedirectURL string `json:"redirectUrl"`
 }
 
 func (CreatePaymentLinkPayload) IsCreatePaymentLinkOrErrorPayload() {}

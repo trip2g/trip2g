@@ -200,7 +200,6 @@ input CreatePaymentLinkInput {
 
 type CreatePaymentLinkPayload {
   redirectUrl: String!
-  activePurchases: [Purchase!]!
 }
 
 union CreatePaymentLinkOrErrorPayload = CreatePaymentLinkPayload | ErrorPayload
