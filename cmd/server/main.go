@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"crypto/rand"
 	"database/sql"
@@ -38,6 +37,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/lru"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/gqlerror"
 	"github.com/vektah/gqlparser/v2/ast"
 
@@ -591,7 +591,7 @@ func (a *app) startServer() {
 		return next(ctx)
 	})
 
-	// playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
+	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
 	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(srv)
 
 	s := &fasthttp.Server{
@@ -653,34 +653,13 @@ func (a *app) startServer() {
 				return
 			}
 
-			if strings.HasPrefix(path, "/events") {
-				ctx.SetContentType("text/event-stream")
-				ctx.SetBodyStreamWriter(func(w *bufio.Writer) {
-					for {
-						w.Write([]byte(fmt.Sprintf("data: %s\n\n", time.Now())))
-
-						if err := w.Flush(); err != nil {
-							println("client disconnected")
-							return
-						}
-
-						time.Sleep(time.Second)
-					}
-				})
-				ctx.SetStatusCode(200)
-				ctx.Response.Header.Add("test", "data")
-
-				return
-			}
-
 			if strings.HasPrefix(path, "/graphql") {
-				// if string(ctx.Method()) == "GET" {
-				// 	playgroundHandler(ctx)
-				// } else {
-				graphqlHandler(ctx)
-				// }
+				if string(ctx.Method()) == "GET" {
+					playgroundHandler(ctx)
+				} else {
+					graphqlHandler(ctx)
+				}
 
-				fmt.Println("handle end")
 				return
 			}
 
