@@ -597,6 +597,44 @@ func (q *Queries) ListActiveOffersBySubgraphNames(ctx context.Context, subgraphs
 	return items, nil
 }
 
+const listActivePurchasesByEmail = `-- name: ListActivePurchasesByEmail :many
+select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email from purchases
+ where email = ? and status in ('pending', 'waiting', 'confirming', 'confirmed')
+ order by created_at desc
+`
+
+func (q *Queries) ListActivePurchasesByEmail(ctx context.Context, email string) ([]Purchase, error) {
+	rows, err := q.db.QueryContext(ctx, listActivePurchasesByEmail, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Purchase
+	for rows.Next() {
+		var i Purchase
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.PaymentProvider,
+			&i.PaymentData,
+			&i.Status,
+			&i.OfferID,
+			&i.UserID,
+			&i.Email,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listActiveSubgraphsByUserID = `-- name: ListActiveSubgraphsByUserID :many
 select distinct s.name
   from user_subgraph_accesses a
@@ -853,7 +891,7 @@ func (q *Queries) OfferByID(ctx context.Context, id int64) (Offer, error) {
 }
 
 const purchaseByID = `-- name: PurchaseByID :one
-select id, created_at, payment_provider, payment_data, email, user_id, status, offer_id from purchases where id = ?
+select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email from purchases where id = ?
 `
 
 func (q *Queries) PurchaseByID(ctx context.Context, id string) (Purchase, error) {
@@ -864,10 +902,10 @@ func (q *Queries) PurchaseByID(ctx context.Context, id string) (Purchase, error)
 		&i.CreatedAt,
 		&i.PaymentProvider,
 		&i.PaymentData,
-		&i.Email,
-		&i.UserID,
 		&i.Status,
 		&i.OfferID,
+		&i.UserID,
+		&i.Email,
 	)
 	return i, err
 }

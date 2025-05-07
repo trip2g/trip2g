@@ -125,6 +125,7 @@ type Subgraph {
 type Purchase {
   id: String!
   status: String!
+  successful: Boolean!
 }
 
 type Query {

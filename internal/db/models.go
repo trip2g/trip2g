@@ -73,14 +73,14 @@ type OfferSubgraph struct {
 }
 
 type Purchase struct {
-	ID              string      `json:"id"`
-	CreatedAt       time.Time   `json:"created_at"`
-	PaymentProvider string      `json:"payment_provider"`
-	PaymentData     string      `json:"payment_data"`
-	Email           string      `json:"email"`
-	UserID          interface{} `json:"user_id"`
-	Status          string      `json:"status"`
-	OfferID         int64       `json:"offer_id"`
+	ID              string        `json:"id"`
+	CreatedAt       time.Time     `json:"created_at"`
+	PaymentProvider string        `json:"payment_provider"`
+	PaymentData     string        `json:"payment_data"`
+	Status          string        `json:"status"`
+	OfferID         int64         `json:"offer_id"`
+	UserID          sql.NullInt64 `json:"user_id"`
+	Email           string        `json:"email"`
 }
 
 type Revoke struct {
@@ -98,8 +98,8 @@ type SchemaMigration struct {
 
 type SignInCode struct {
 	UserID    int64     `json:"user_id"`
-	CreatedAt time.Time `json:"created_at"`
 	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type Subgraph struct {

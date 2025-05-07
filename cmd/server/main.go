@@ -77,6 +77,10 @@ type app struct {
 	userBansMu  sync.Mutex
 
 	nowpaymentsClient *nowpayments.Client
+
+	purchaseUpdatedMu       sync.Mutex
+	purchaseUpdatedHandlers map[string]map[int]func()
+	nextPurchaseHandlerID   int
 }
 
 func enablePragmas(db *sql.DB) error {
@@ -226,6 +230,57 @@ func main() {
 	if os.Getenv("SERVER") == "y" {
 		a.startServer()
 	}
+}
+
+func (a *app) NotifyPuchaseUpdated(email string) {
+	a.purchaseUpdatedMu.Lock()
+	defer a.purchaseUpdatedMu.Unlock()
+
+	handlers, ok := a.purchaseUpdatedHandlers[email]
+	if !ok {
+		return
+	}
+
+	for _, handler := range handlers {
+		handler()
+	}
+
+	a.log.Info("notified purchase updated", "email", email)
+}
+
+func (a *app) OnPurchaseUpdatedSubscribe(email string, handler func()) func() {
+	a.purchaseUpdatedMu.Lock()
+	defer a.purchaseUpdatedMu.Unlock()
+
+	if a.purchaseUpdatedHandlers == nil {
+		a.purchaseUpdatedHandlers = make(map[string]map[int]func())
+	}
+
+	if a.purchaseUpdatedHandlers[email] == nil {
+		a.purchaseUpdatedHandlers[email] = make(map[int]func())
+	}
+
+	id := a.nextPurchaseHandlerID
+	a.nextPurchaseHandlerID++
+	a.purchaseUpdatedHandlers[email][id] = handler
+
+	a.log.Info("subscribed to purchase updated", "email", email, "id", id)
+
+	return func() {
+		a.purchaseUpdatedMu.Lock()
+		defer a.purchaseUpdatedMu.Unlock()
+
+		a.log.Info("unsubscribed from purchase updated", "email", email, "id", id)
+
+		delete(a.purchaseUpdatedHandlers[email], id)
+
+		if len(a.purchaseUpdatedHandlers[email]) == 0 {
+			delete(a.purchaseUpdatedHandlers, email)
+		}
+	}
+}
+
+func (a *app) OnPurchaseUpdatedUnsubscribe(channel <-chan struct{}) {
 }
 
 func (a *app) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {

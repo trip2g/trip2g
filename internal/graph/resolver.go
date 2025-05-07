@@ -12,6 +12,7 @@ import (
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 )
 
@@ -50,6 +51,11 @@ type Env interface {
 	UserSubgraphAccessByID(ctx context.Context, id int64) (db.UserSubgraphAccess, error)
 
 	AllNotes() model.NoteViews
+
+	OnPurchaseUpdatedSubscribe(email string, handler func()) func()
+	ListActivePurchasesByEmail(ctx context.Context, email string) ([]db.Purchase, error)
+
+	Logger() logger.Logger
 
 	requestemailsignin.Env
 	signinbyemail.Env

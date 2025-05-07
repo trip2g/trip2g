@@ -26,16 +26,12 @@ CREATE TABLE admins (
   granted_at datetime not null default current_timestamp,
   granted_by int references admins(user_id)
 );
-CREATE TABLE purchases (
-  id text primary key,
-  created_at datetime not null default current_timestamp,
-  payment_provider text not null,
-  payment_data json not null
-, email text not null, user_id references users(id) on delete restrict, status text not null default 'pending', offer_id integer not null references offers(id) on delete restrict);
 CREATE TABLE sign_in_codes (
   user_id integer not null,
+  code text not null,
   created_at datetime not null default current_timestamp
-, code text not null);
+);
+CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
 CREATE TABLE backlite_tasks (
     id text PRIMARY KEY,
     created_at integer NOT NULL,
@@ -108,11 +104,20 @@ CREATE TABLE offers (
   ends_at datetime
 );
 CREATE TABLE offer_subgraphs (
-  offer_id int not null references offers(id) on delete cascade,
-  subgraph_id int not null references subgraphs(id) on delete restrict,
+  offer_id integer not null references offers(id) on delete cascade,
+  subgraph_id integer not null references subgraphs(id) on delete restrict,
   primary key (offer_id, subgraph_id)
 );
-CREATE INDEX purchases_status_idx on purchases (status);
+CREATE TABLE IF NOT EXISTS "purchases" (
+  id text primary key,
+  created_at datetime not null default current_timestamp,
+  payment_provider text not null,
+  payment_data json not null,
+  status text not null default 'pending',
+  offer_id integer not null references offers(id) on delete restrict,
+  user_id integer references users(id) on delete restrict,
+  email text not null
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -128,4 +133,7 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250503030824'),
   ('20250503031556'),
   ('20250503032418'),
-  ('20250504074439');
+  ('20250504074439'),
+  ('20250506122229'),
+  ('20250506122811'),
+  ('20250507032627');

@@ -25,6 +25,7 @@ type Env interface {
 	InsertUser(ctx context.Context, email string) (db.User, error)
 	CountUserSubgraphAccessByPurchaseID(ctx context.Context, purchaseID string) (int64, error)
 	CreateUserSubgraphAccess(ctx context.Context, params db.CreateUserSubgraphAccessParams) (db.UserSubgraphAccess, error)
+	NotifyPuchaseUpdated(email string)
 }
 
 type Response struct {
@@ -65,6 +66,8 @@ func Resolve(ctx context.Context, env Env, req nowpayments.IPNRequest) (*Respons
 			env.Logger().Warn("access already granted", "purchase_id", purchase.ID)
 		}
 	}
+
+	env.NotifyPuchaseUpdated(purchase.Email)
 
 	response := Response{
 		Success: true,

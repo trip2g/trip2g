@@ -61,6 +61,7 @@ type ResolverRoot interface {
 	Mutation() MutationResolver
 	NoteView() NoteViewResolver
 	Offer() OfferResolver
+	Purchase() PurchaseResolver
 	Query() QueryResolver
 	Subgraph() SubgraphResolver
 	Subscription() SubscriptionResolver
@@ -174,8 +175,9 @@ type ComplexityRoot struct {
 	}
 
 	Purchase struct {
-		ID     func(childComplexity int) int
-		Status func(childComplexity int) int
+		ID         func(childComplexity int) int
+		Status     func(childComplexity int) int
+		Successful func(childComplexity int) int
 	}
 
 	Query struct {
@@ -309,6 +311,9 @@ type OfferResolver interface {
 	ID(ctx context.Context, obj *db.Offer) (string, error)
 	PriceUsd(ctx context.Context, obj *db.Offer) (float64, error)
 	Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subgraph, error)
+}
+type PurchaseResolver interface {
+	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
 }
 type QueryResolver interface {
 	Viewer(ctx context.Context) (*model1.Viewer, error)
@@ -757,6 +762,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Purchase.Status(childComplexity), true
+
+	case "Purchase.successful":
+		if e.complexity.Purchase.Successful == nil {
+			break
+		}
+
+		return e.complexity.Purchase.Successful(childComplexity), true
 
 	case "Query.admin":
 		if e.complexity.Query.Admin == nil {
@@ -4029,6 +4041,50 @@ func (ec *executionContext) fieldContext_Purchase_status(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Purchase_successful(ctx context.Context, field graphql.CollectedField, obj *db.Purchase) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Purchase_successful(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Purchase().Successful(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Purchase_successful(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Purchase",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_viewer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_viewer(ctx, field)
 	if err != nil {
@@ -4677,6 +4733,8 @@ func (ec *executionContext) fieldContext_Subscription_activePurchaseUpdated(ctx 
 				return ec.fieldContext_Purchase_id(ctx, field)
 			case "status":
 				return ec.fieldContext_Purchase_status(ctx, field)
+			case "successful":
+				return ec.fieldContext_Purchase_successful(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Purchase", field.Name)
 		},
@@ -9749,13 +9807,49 @@ func (ec *executionContext) _Purchase(ctx context.Context, sel ast.SelectionSet,
 		case "id":
 			out.Values[i] = ec._Purchase_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "status":
 			out.Values[i] = ec._Purchase_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "successful":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Purchase_successful(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

@@ -41,3 +41,14 @@ func (s PaymentStatus) Valid() bool {
 		return false
 	}
 }
+
+func (s PaymentStatus) IsSuccessful() bool {
+	switch s {
+	case PaymentStatusConfirmed,
+		PaymentStatusSending,
+		PaymentStatusFinished:
+		return true
+	default:
+		return false
+	}
+}

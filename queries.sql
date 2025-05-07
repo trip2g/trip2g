@@ -227,3 +227,8 @@ select * from offers where id = ?;
 
 -- name: CountUserSubgraphAccessByPurchaseID :one
 select count(*) from user_subgraph_accesses where purchase_id = ?;
+
+-- name: ListActivePurchasesByEmail :many
+select * from purchases
+ where email = ? and status in ('pending', 'waiting', 'confirming', 'confirmed')
+ order by created_at desc;

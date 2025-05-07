@@ -24,6 +24,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/nowpayments"
 )
 
 // User is the resolver for the user field.
@@ -221,6 +222,11 @@ func (r *offerResolver) Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subg
 	return r.env(ctx).ListSubgraphsByOfferID(ctx, obj.ID)
 }
 
+// Successful is the resolver for the successful field.
+func (r *purchaseResolver) Successful(ctx context.Context, obj *db.Purchase) (bool, error) {
+	return nowpayments.PaymentStatus(obj.Status).IsSuccessful(), nil
+}
+
 // Viewer is the resolver for the viewer field.
 func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 	req, err := appreq.FromCtx(ctx)
@@ -253,38 +259,51 @@ func (r *subgraphResolver) Offers(ctx context.Context, obj *db.Subgraph) ([]db.O
 
 // ActivePurchaseUpdated is the resolver for the activePurchaseUpdated field.
 func (r *subscriptionResolver) ActivePurchaseUpdated(ctx context.Context, input model.ActivePurchasesInput) (<-chan []db.Purchase, error) {
-	ch := make(chan []db.Purchase, 10)
+	if input.Email == nil {
+		req, err := appreq.FromCtx(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-	purchases := []db.Purchase{
-		{
-			ID:     "test",
-			Status: "Test",
-		},
+		token, err := req.UserToken()
+		if err != nil {
+			return nil, err
+		}
+
+		user, err := r.env(ctx).UserByID(ctx, int64(token.ID))
+		if err != nil {
+			return nil, err
+		}
+
+		input.Email = &user.Email
 	}
-	ch <- purchases
+
+	resCh := make(chan []db.Purchase, 1)
+
+	sendUpdates := func() {
+		purchases, err := r.DefaultEnv.ListActivePurchasesByEmail(ctx, *input.Email)
+		if err != nil {
+			r.env(ctx).Logger().Error("Failed to get purchases", "error", err)
+			return
+		}
+
+		if len(purchases) > 0 {
+			resCh <- purchases
+		}
+	}
+
+	sendUpdates() // send initial data
+
+	unsubscribe := r.DefaultEnv.OnPurchaseUpdatedSubscribe(*input.Email, sendUpdates)
 
 	go func() {
-		defer close(ch)
+		<-ctx.Done()
 
-		for {
-			time.Sleep(1 * time.Second)
-
-			t := []db.Purchase{
-				{ID: "test", Status: "test"},
-			}
-
-			select {
-			case <-ctx.Done():
-				fmt.Println("Subscription Closed")
-				return
-
-			case ch <- t:
-				// Our message went through, do nothing
-			}
-		}
+		unsubscribe()
+		close(resCh)
 	}()
 
-	return ch, nil
+	return resCh, nil
 }
 
 // User is the resolver for the user field.
@@ -412,6 +431,9 @@ func (r *Resolver) NoteView() NoteViewResolver { return &noteViewResolver{r} }
 // Offer returns OfferResolver implementation.
 func (r *Resolver) Offer() OfferResolver { return &offerResolver{r} }
 
+// Purchase returns PurchaseResolver implementation.
+func (r *Resolver) Purchase() PurchaseResolver { return &purchaseResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -450,6 +472,7 @@ type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
+type purchaseResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
