@@ -376,6 +376,24 @@ func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, subgr
 	return r.env(ctx).ListActiveOffersBySubgraphNames(ctx, subgraphs)
 }
 
+// ActivePurchases is the resolver for the activePurchases field.
+func (r *viewerResolver) ActivePurchases(ctx context.Context, obj *appmodel.Viewer, input model.ActivePurchasesInput) ([]db.Purchase, error) {
+	if input.Email == nil {
+		if obj.UserID == nil {
+			return nil, nil
+		}
+
+		user, err := r.env(ctx).UserByID(ctx, *obj.UserID)
+		if err != nil {
+			return nil, err
+		}
+
+		input.Email = &user.Email
+	}
+
+	return r.env(ctx).ListActivePurchasesByEmail(ctx, *input.Email)
+}
+
 // Admin returns AdminResolver implementation.
 func (r *Resolver) Admin() AdminResolver { return &adminResolver{r} }
 

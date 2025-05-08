@@ -66,6 +66,10 @@ func (c *Request) UserToken() (*usertoken.Data, error) {
 		return c.token, nil
 	}
 
+	if c.Req == nil {
+		panic("appreq: request is nil")
+	}
+
 	token, err := c.TokenManager.Extract(c.Req)
 	if err != nil && !errors.Is(err, usertoken.ErrTokenMissing) {
 		return nil, err

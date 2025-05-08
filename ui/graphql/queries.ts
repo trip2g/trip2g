@@ -19,6 +19,11 @@ type Scalars = {
   Time: { input: any; output: any; }
 };
 
+type ActivePurchasesInput = {
+  email?: InputMaybe<Scalars['String']['input']>;
+  subgraphs: Array<Scalars['String']['input']>;
+};
+
 type Admin = {
   __typename?: 'Admin';
   user: AdminUser;
@@ -133,6 +138,20 @@ type BanUserPayload = {
   userId: Scalars['Int64']['output'];
 };
 
+type CreatePaymentLinkInput = {
+  email?: InputMaybe<Scalars['String']['input']>;
+  offerId: Scalars['String']['input'];
+  paymentType: PaymentType;
+  returnPath: Scalars['String']['input'];
+};
+
+type CreatePaymentLinkOrErrorPayload = CreatePaymentLinkPayload | ErrorPayload;
+
+type CreatePaymentLinkPayload = {
+  __typename?: 'CreatePaymentLinkPayload';
+  redirectUrl: Scalars['String']['output'];
+};
+
 type ErrorPayload = {
   __typename?: 'ErrorPayload';
   byFields: Array<FieldMessage>;
@@ -148,9 +167,15 @@ type FieldMessage = {
 type Mutation = {
   __typename?: 'Mutation';
   admin: AdminMutation;
+  createPaymentLink: CreatePaymentLinkOrErrorPayload;
   requestEmailSignInCode: RequestEmailSignInCodeOrErrorPayload;
   signInByEmail: SignInOrErrorPayload;
   signOut: SignOutOrErrorPayload;
+};
+
+
+type MutationCreatePaymentLinkArgs = {
+  input: CreatePaymentLinkInput;
 };
 
 
@@ -179,6 +204,17 @@ type Offer = {
   id: Scalars['String']['output'];
   priceUSD: Scalars['Float']['output'];
   subgraphs: Array<Subgraph>;
+};
+
+enum PaymentType {
+  Crypto = 'CRYPTO'
+}
+
+type Purchase = {
+  __typename?: 'Purchase';
+  id: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+  successful: Scalars['Boolean']['output'];
 };
 
 type Query = {
@@ -228,6 +264,16 @@ type Subgraph = {
   __typename?: 'Subgraph';
   name: Scalars['String']['output'];
   offers: Array<Offer>;
+};
+
+type Subscription = {
+  __typename?: 'Subscription';
+  activePurchaseUpdated: Array<Purchase>;
+};
+
+
+type SubscriptionActivePurchaseUpdatedArgs = {
+  input: ActivePurchasesInput;
 };
 
 type UnbanUserInput = {
@@ -414,6 +460,13 @@ type PaywallQueryQueryVariables = Exact<{
 
 type PaywallQueryQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', offers: Array<{ __typename?: 'Offer', id: string, priceUSD: number, subgraphs: Array<{ __typename?: 'Subgraph', name: string }> }> } };
 
+type PaywallActivePurchaseSubcriptionSubscriptionVariables = Exact<{
+  input: ActivePurchasesInput;
+}>;
+
+
+type PaywallActivePurchaseSubcriptionSubscription = { __typename?: 'Subscription', activePurchaseUpdated: Array<{ __typename?: 'Purchase', id: string, status: string, successful: boolean }> };
+
 export function $trip2g_graphql_request(query: '\n\t\t\t\tmutation AdminUnbanUser($input: UnbanUserInput!) {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tdata: unbanUser(input: $input) {\n\t\t\t\t\t\t\t... on UnbanUserPayload {\n\t\t\t\t\t\t\t\tuser {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\n\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: AdminUnbanUserMutationVariables): AdminUnbanUserMutation
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListNoteViews {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallNoteViews {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tpath\n\t\t\t\t\t\t\t\ttitle\n\t\t\t\t\t\t\t\tfree\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListNoteViewsQuery
@@ -452,6 +505,12 @@ export function $trip2g_graphql_request(query: '\n\t\t\t\tquery PaywallQuery($su
 
 export function $trip2g_graphql_request(query: any, variables?: any) { return $trip2g_graphql_raw_request(query, variables); }
 
-export const $trip2g_graphql_persist_queries = {"AdminUnbanUser":"9512bb945535dd9ef2fe1dacc60073ce01fc8d8f3e93fec6583ab2dc455d1309","AdminListNoteViews":"246778d60afacd4ff9dce34784ee070ce17cc89edaa5a49ed26236ae65b5a159","AdminListSubgraphs":"4e45ae80a24576cab70fdbb4790a0a7acbde1171823623ed8d7a00e495b596cd","AdminListUserBans":"69e1b4b4cb152647fa3474d44d1fccc7e5bfdc9bfa95d60b9726d4e52c94b3b4","AdminListUsers":"6f4fcb27423e59a080c8c0ba8cc8b69628bf9f961bdfbce5c62bf60c19db4075","AdminListUserSubgraphAccesses":"79ca5aafd82b91a579c3ea6232fa7a32773f2b74846785a00e0f0deee9854eca","AdminSelectSubgraph":"a801d4b303ea060e27e22011e2d7cc74c9a17a95e0877622e55e4012640c11a7","AdminBanUser":"b7eaca2436a0420749fd9818239ddaaf03cf39d13fb051af54e1ddfc16b0a376","AdminNoteView":"71287b914ef21187cc102872ffec82d7d3dbe8f1c7583391227f3829c627cc0d","AdminShowSubgraph":"e55ded2d39f46e61be846d0eaa24e9434a4cbc400e4d93fbde65dadeb14dd559","UpdateSubgraph":"a1ed76b00109cb6eac864a2c57d63d956d4c34676eb519e8d0a33abcd8c8945b","AdminUserSubgraphAccess":"a624b706534097050759fc343d7335c36f60b7fd8cb7eac35979d2c2e0b166da","AdminUpdateUserSubgraphAccess":"1f5c1a927c82b86a3d0e0313744fe51f023ed479f955e6846225bff4ab75a91d","SignOut":"8e1a898d776a103a20b7dbdfbeb8196fce0175ffe38fa7af9da2848cefdadedf","RequestEmailSignInCode":"cc5a33407c1a3cca08dbcba6847a88298eec84b10f18449244cf13e458449ef9","SignInByEmail":"5678d2ca29b77529e0b9942845dcea2c941c6b5a234863dc86ac2ffaad668614","Viewer":"b43077267ca739524818d4fb3a825a8eae7bf443c628c5f4270b114ab32977ed","PaywallQuery":"600ed11b093fa49a35a066487efd179edb8593e273565d02b13c87bb04cb49d7"}
+export function $trip2g_graphql_subscription(query: '\n\t\t\t\tsubscription PaywallActivePurchaseSubcription($input: ActivePurchasesInput!) {\n\t\t\t\t\tactivePurchaseUpdated(input: $input) {\n\t\t\t\t\t\tid\n\t\t\t\t\t\tstatus\n\t\t\t\t\t\tsuccessful\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: PaywallActivePurchaseSubcriptionSubscriptionVariables): PaywallActivePurchaseSubcriptionSubscription
+
+export function $trip2g_graphql_subscription(query: any, variables?: any) { return $trip2g_graphql_raw_subscription(query, variables); }
+
+
+
+export const $trip2g_graphql_persist_queries = {"AdminUnbanUser":"9512bb945535dd9ef2fe1dacc60073ce01fc8d8f3e93fec6583ab2dc455d1309","AdminListNoteViews":"246778d60afacd4ff9dce34784ee070ce17cc89edaa5a49ed26236ae65b5a159","AdminListSubgraphs":"4e45ae80a24576cab70fdbb4790a0a7acbde1171823623ed8d7a00e495b596cd","AdminListUserBans":"69e1b4b4cb152647fa3474d44d1fccc7e5bfdc9bfa95d60b9726d4e52c94b3b4","AdminListUsers":"6f4fcb27423e59a080c8c0ba8cc8b69628bf9f961bdfbce5c62bf60c19db4075","AdminListUserSubgraphAccesses":"79ca5aafd82b91a579c3ea6232fa7a32773f2b74846785a00e0f0deee9854eca","AdminSelectSubgraph":"a801d4b303ea060e27e22011e2d7cc74c9a17a95e0877622e55e4012640c11a7","AdminBanUser":"b7eaca2436a0420749fd9818239ddaaf03cf39d13fb051af54e1ddfc16b0a376","AdminNoteView":"71287b914ef21187cc102872ffec82d7d3dbe8f1c7583391227f3829c627cc0d","AdminShowSubgraph":"e55ded2d39f46e61be846d0eaa24e9434a4cbc400e4d93fbde65dadeb14dd559","UpdateSubgraph":"a1ed76b00109cb6eac864a2c57d63d956d4c34676eb519e8d0a33abcd8c8945b","AdminUserSubgraphAccess":"a624b706534097050759fc343d7335c36f60b7fd8cb7eac35979d2c2e0b166da","AdminUpdateUserSubgraphAccess":"1f5c1a927c82b86a3d0e0313744fe51f023ed479f955e6846225bff4ab75a91d","SignOut":"8e1a898d776a103a20b7dbdfbeb8196fce0175ffe38fa7af9da2848cefdadedf","RequestEmailSignInCode":"cc5a33407c1a3cca08dbcba6847a88298eec84b10f18449244cf13e458449ef9","SignInByEmail":"5678d2ca29b77529e0b9942845dcea2c941c6b5a234863dc86ac2ffaad668614","Viewer":"b43077267ca739524818d4fb3a825a8eae7bf443c628c5f4270b114ab32977ed","PaywallQuery":"600ed11b093fa49a35a066487efd179edb8593e273565d02b13c87bb04cb49d7","PaywallActivePurchaseSubcription":"f7bf969deeb81c29373aabd538e600b32a51beb964453d4c31bae2a55fdc412e"}
 
 }

@@ -111,6 +111,8 @@ func (t Transport) doFast(parent context.Context, fc *fasthttp.RequestCtx, ww ht
 		if errs != nil {
 			send(exec.DispatchError(ctx, errs))
 		} else {
+			userToken, err := appreq.FromCtx(ctx)
+			fmt.Println("userToken2", userToken, "err", err)
 			responses, streamCtx := exec.DispatchOperation(ctx, rc)
 			for {
 				select {
@@ -133,6 +135,8 @@ func (t Transport) doFast(parent context.Context, fc *fasthttp.RequestCtx, ww ht
 		fmt.Fprint(w, "event: complete\n\n")
 		_ = w.Flush()
 	})
+
+	fmt.Println("returning")
 }
 
 // -------------------- helpers ------------------------------------------------

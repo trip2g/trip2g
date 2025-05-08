@@ -108,6 +108,7 @@ type Viewer {
   id: ID!
   user: User
   offers(subgraphs: [String!]): [Offer!]!
+  activePurchases(input: ActivePurchasesInput!): [Purchase!]!
 }
 
 type Offer {

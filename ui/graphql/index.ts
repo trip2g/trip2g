@@ -2,15 +2,15 @@ namespace $ {
 	export const $trip2g_graphql = (s: string) => s
 
 	type GraphQLError = {
-		message: string;
-		path:  string[];
+		message: string
+		path: string[]
 	}
 
 	export class $trip2g_graphql_error extends Error {
 		constructor(message: string, public detail?: GraphQLError[]) {
 			if (detail) {
 				for (let err of detail) {
-					message += `. ${err.message}`;
+					message += `. ${err.message}`
 				}
 			}
 
@@ -177,5 +177,108 @@ namespace $ {
 				return out
 			},
 		}
+	}
+
+	class subscription<T> extends $mol_object2 {
+		@$mol_mem
+		query(next?: string) {
+			return next || ''
+		}
+
+		@$mol_mem
+		variables(next?: any) {
+			return next || {}
+		}
+
+		@$mol_mem
+		listened(next?: boolean) {
+			return next || false
+		}
+
+		listen() {
+			const params = {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: 'text/event-stream',
+				},
+				body: JSON.stringify({ query: this.query(), variables: this.variables() }),
+			}
+
+			console.log('call listen');
+
+			fetch('/graphql', params).then(res => {
+				if (!res.body) throw new Error('No response body')
+			})
+
+			// 		const reader = res.body.getReader()
+			// 		const decoder = new TextDecoder()
+			// 		let buffer = ''
+
+			// 		const read = () => {
+			// 			reader.read().then(({ done, value }) => {
+			// 				if (done) return
+
+			// 				buffer += decoder.decode(value, { stream: true })
+
+			// 				const events = buffer.split('\n\n')
+			// 				buffer = events.pop() || ''
+
+			// 				for (const e of events) {
+			// 					let type = 'message'
+			// 					let data = ''
+
+			// 					for (const line of e.split('\n')) {
+			// 						if (line.startsWith('event: ')) {
+			// 							type = line.slice(7).trim()
+			// 						} else if (line.startsWith('data: ')) {
+			// 							data += line.slice(6)
+			// 						}
+			// 					}
+
+			// 					if (type === 'next' || type === 'data') {
+			// 						console.log('📥 next:', JSON.parse(data))
+			// 						// this.data(JSON.parse(data))
+			// 					} else if (type === 'complete') {
+			// 						console.log('✅ complete')
+			// 					} else {
+			// 						console.log('❓ unknown event:', type, data)
+			// 					}
+			// 				}
+
+			// 				read()
+			// 			})
+			// 		}
+
+			// 		read()
+			// 	})
+			// 	.catch(err => {
+			// 		console.error('❌ Fetch/SSE error:', err)
+			// 	})
+		}
+
+		@$mol_mem
+		data(next?: T): T | null {
+			return next || null
+		}
+
+		onComplete() {
+			console.log('✅ complete')
+		}
+	}
+
+	export function $trip2g_graphql_raw_subscription(query: string, variables?: any): any {
+		const sub = new subscription()
+		sub.query(query)
+		sub.variables(variables)
+		sub.listen()
+
+		Object.assign(sub, {
+			destructor: () => {
+				sub.listened(false)
+			},
+		})
+
+		return sub
 	}
 }

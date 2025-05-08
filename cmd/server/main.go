@@ -21,7 +21,6 @@ import (
 	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/case/signinbyhat"
 	"trip2g/internal/db"
-	"trip2g/internal/fasthttp/graphqlsse"
 	"trip2g/internal/graph"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
@@ -568,7 +567,7 @@ func (a *app) startServer() {
 	// 	KeepAlivePingInterval: 10 * time.Second,
 	// })
 
-	srv.AddTransport(graphqlsse.Transport{})
+	// srv.AddTransport(graphqlsse.Transport{})
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})

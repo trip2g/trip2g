@@ -8,4 +8,10 @@ $trip2g_user_paywall $mol_view
 	sub /
 		<= Items $mol_list
 			rows <= list_items /$mol_view
+		<= Debug $mol_view
+			dom_name \div
+			sub /
+				<= active_purchases \
+
+
 

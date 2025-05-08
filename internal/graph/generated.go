@@ -244,9 +244,10 @@ type ComplexityRoot struct {
 	}
 
 	Viewer struct {
-		ID     func(childComplexity int) int
-		Offers func(childComplexity int, subgraphs []string) int
-		User   func(childComplexity int) int
+		ActivePurchases func(childComplexity int, input model.ActivePurchasesInput) int
+		ID              func(childComplexity int) int
+		Offers          func(childComplexity int, subgraphs []string) int
+		User            func(childComplexity int) int
 	}
 }
 
@@ -342,6 +343,7 @@ type UserSubgraphAccessResolver interface {
 type ViewerResolver interface {
 	User(ctx context.Context, obj *model1.Viewer) (*db.User, error)
 	Offers(ctx context.Context, obj *model1.Viewer, subgraphs []string) ([]db.Offer, error)
+	ActivePurchases(ctx context.Context, obj *model1.Viewer, input model.ActivePurchasesInput) ([]db.Purchase, error)
 }
 
 type executableSchema struct {
@@ -969,6 +971,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserSubgraphAccess.UserID(childComplexity), true
 
+	case "Viewer.activePurchases":
+		if e.complexity.Viewer.ActivePurchases == nil {
+			break
+		}
+
+		args, err := ec.field_Viewer_activePurchases_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Viewer.ActivePurchases(childComplexity, args["input"].(model.ActivePurchasesInput)), true
+
 	case "Viewer.id":
 		if e.complexity.Viewer.ID == nil {
 			break
@@ -1431,6 +1445,29 @@ func (ec *executionContext) field_Subscription_activePurchaseUpdated_args(ctx co
 	return args, nil
 }
 func (ec *executionContext) field_Subscription_activePurchaseUpdated_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.ActivePurchasesInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNActivePurchasesInput2trip2gᚋinternalᚋgraphᚋmodelᚐActivePurchasesInput(ctx, tmp)
+	}
+
+	var zeroVal model.ActivePurchasesInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Viewer_activePurchases_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Viewer_activePurchases_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Viewer_activePurchases_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (model.ActivePurchasesInput, error) {
@@ -4130,6 +4167,8 @@ func (ec *executionContext) fieldContext_Query_viewer(_ context.Context, field g
 				return ec.fieldContext_Viewer_user(ctx, field)
 			case "offers":
 				return ec.fieldContext_Viewer_offers(ctx, field)
+			case "activePurchases":
+				return ec.fieldContext_Viewer_activePurchases(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -4521,6 +4560,8 @@ func (ec *executionContext) fieldContext_SignInPayload_viewer(_ context.Context,
 				return ec.fieldContext_Viewer_user(ctx, field)
 			case "offers":
 				return ec.fieldContext_Viewer_offers(ctx, field)
+			case "activePurchases":
+				return ec.fieldContext_Viewer_activePurchases(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -4573,6 +4614,8 @@ func (ec *executionContext) fieldContext_SignOutPayload_viewer(_ context.Context
 				return ec.fieldContext_Viewer_user(ctx, field)
 			case "offers":
 				return ec.fieldContext_Viewer_offers(ctx, field)
+			case "activePurchases":
+				return ec.fieldContext_Viewer_activePurchases(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -5707,6 +5750,69 @@ func (ec *executionContext) fieldContext_Viewer_offers(ctx context.Context, fiel
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Viewer_offers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Viewer_activePurchases(ctx context.Context, field graphql.CollectedField, obj *model1.Viewer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Viewer_activePurchases(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Viewer().ActivePurchases(rctx, obj, fc.Args["input"].(model.ActivePurchasesInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.Purchase)
+	fc.Result = res
+	return ec.marshalNPurchase2ᚕtrip2gᚋinternalᚋdbᚐPurchaseᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Viewer_activePurchases(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Viewer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Purchase_id(ctx, field)
+			case "status":
+				return ec.fieldContext_Purchase_status(ctx, field)
+			case "successful":
+				return ec.fieldContext_Purchase_successful(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Purchase", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Viewer_activePurchases_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10731,6 +10837,42 @@ func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, o
 					}
 				}()
 				res = ec._Viewer_offers(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "activePurchases":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Viewer_activePurchases(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

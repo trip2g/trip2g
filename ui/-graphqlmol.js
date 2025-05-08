@@ -95,7 +95,6 @@ function injectTypename(source) {
 module.exports.plugin = (schema, documents, config) => {
 	const operations = []
 
-	const lines = []
 	const hashes = {}
 	const molPrefix = config.molPrefix || 'change_in_the_config'
 
@@ -111,17 +110,26 @@ module.exports.plugin = (schema, documents, config) => {
 			if (def.operation === 'mutation') {
 				prefix = 'Mutation'
 			}
+			if (def.operation === 'subscription') {
+				prefix = 'Subscription'
+			}
 
 			hashes[def.name.value] = queryHash(doc.rawSDL)
 
-			operations.push({
+			const op = {
 				source: doc.rawSDL,
+				type: def.operation,
 				variablesType: `${def.name.value}${prefix}Variables`,
 				resultType: `${def.name.value}${prefix}`,
 				hasVars: (def.variableDefinitions?.length || 0) > 0,
-			})
+			}
+
+			operations.push(op)
 		}
 	}
+
+	const requestLines = []
+	const subscriptionLines = []
 
 	for (const op of operations) {
 		const lit = op.source.replace(/\n/g, '\\n').replace(/\t/g, '\\t')
@@ -134,14 +142,26 @@ module.exports.plugin = (schema, documents, config) => {
 			passVars = `, variables`
 		}
 
-		lines.push(`export function ${molPrefix}_request(query: '${lit}'${vars}): ${op.resultType}`)
+		if (op.type === 'subscription') {
+			subscriptionLines.push(
+				`export function ${molPrefix}_subscription(query: '${lit}'${vars}): ${op.resultType}`
+			)
+		} else {
+			requestLines.push(`export function ${molPrefix}_request(query: '${lit}'${vars}): ${op.resultType}`)
+		}
 	}
 
-	lines.push(
+	requestLines.push(
 		`export function ${molPrefix}_request(query: any, variables?: any) { return ${molPrefix}_raw_request(query, variables); }`
 	)
 
-	lines.push(`export const ${molPrefix}_persist_queries = ${JSON.stringify(hashes)}`)
+	subscriptionLines.push(
+		`export function ${molPrefix}_subscription(query: any, variables?: any) { return ${molPrefix}_raw_subscription(query, variables); }`
+	)
 
-	return lines.join('\n\n') + '\n\n}'
+	requestLines.push(subscriptionLines.join('\n\n') + '\n\n')
+
+	requestLines.push(`export const ${molPrefix}_persist_queries = ${JSON.stringify(hashes)}`)
+
+	return requestLines.join('\n\n') + '\n\n}'
 }

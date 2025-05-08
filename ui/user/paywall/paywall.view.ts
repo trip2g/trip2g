@@ -40,15 +40,36 @@ namespace $.$$ {
 			return $trip2g_graphql_make_map(res.viewer.offers)
 		}
 
-		offer( id: any ) {
+		active_purchases_subscription() {
+			return $trip2g_graphql_subscription(`
+				subscription PaywallActivePurchaseSubcription($input: ActivePurchasesInput!) {
+					activePurchaseUpdated(input: $input) {
+						id
+						status
+						successful
+					}
+				}
+			`, {
+				input: {
+					subgraphs: this.subgraphs(),
+				},
+			})
+		}
+
+		active_purchases() {
+			const sub = this.active_purchases_subscription() as any;
+			return JSON.stringify(sub.data());
+		}
+
+		offer(id: any) {
 			return this.offers().get(id)
 		}
 
-		override list_items(): readonly ( $mol_view )[] {
+		override list_items(): readonly $mol_view[] {
 			return this.offers().map(key => this.Item(key))
 		}
 
-		override row_formatted_price( id: any ): string {
+		override row_formatted_price(id: any): string {
 			return this.offer(id).priceUSD.toFixed(2)
 		}
 	}
