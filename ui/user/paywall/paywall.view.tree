@@ -5,13 +5,14 @@ $trip2g_user_paywall $mol_view
 			<= lowLine $mol_view
 				dom_name \br
 			<= row_formatted_price* \
+	ActivePurchase* $mol_view
+		sub /
+			<= active_purchase_status* \
 	sub /
 		<= Items $mol_list
 			rows <= list_items /$mol_view
-		<= Debug $mol_view
-			dom_name \div
-			sub /
-				<= active_purchases \
+		<= PurchaseItems $mol_list
+			rows <= active_purchase_items /$mol_view
 
 
 

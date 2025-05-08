@@ -385,6 +385,10 @@ func (r *viewerResolver) ActivePurchases(ctx context.Context, obj *appmodel.View
 
 		user, err := r.env(ctx).UserByID(ctx, *obj.UserID)
 		if err != nil {
+			if db.IsNoFound(err) {
+				return nil, nil
+			}
+
 			return nil, err
 		}
 

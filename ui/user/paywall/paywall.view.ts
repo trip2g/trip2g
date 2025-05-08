@@ -40,29 +40,60 @@ namespace $.$$ {
 			return $trip2g_graphql_make_map(res.viewer.offers)
 		}
 
-		active_purchases_subscription() {
-			return $trip2g_graphql_subscription(`
-				subscription PaywallActivePurchaseSubcription($input: ActivePurchasesInput!) {
-					activePurchaseUpdated(input: $input) {
-						id
-						status
-						successful
+		@$mol_mem
+		active_purchases(next?: null) {
+			const res = $trip2g_graphql_request(`
+				query PaywallActivePurchaseQuery($input: ActivePurchasesInput!) {
+					viewer {
+						activePurchases(input: $input) {
+							id
+							status
+							successful
+						}
 					}
 				}
 			`, {
 				input: {
+					email: 'hello@example.com',
 					subgraphs: this.subgraphs(),
 				},
 			})
-		}
 
-		active_purchases() {
-			const sub = this.active_purchases_subscription() as any;
-			return JSON.stringify(sub.data());
+			setTimeout(() => {
+				this.active_purchases(null)
+			}, 3000);
+
+			const rows = res.viewer.activePurchases;
+
+			if (rows.every(row => row.successful)) {
+				const done = this.$.$mol_state_arg.value('done');
+
+				// avoid infinite reload if something went wrong
+				if (done !== 'true') {
+					this.$.$mol_state_arg.value('done', 'true')
+					setTimeout(() => {
+						window.location.reload();
+					}, 10);
+				}
+			}
+
+			return $trip2g_graphql_make_map(rows);
 		}
 
 		offer(id: any) {
 			return this.offers().get(id)
+		}
+
+		activePurchase(id: any) {
+			return this.active_purchases().get(id)
+		}
+
+		override active_purchase_items(): readonly ( $mol_view )[] {
+			return this.active_purchases().map(key => this.ActivePurchase(key))
+		}
+
+		override active_purchase_status( id: any ): string {
+			return this.activePurchase(id).status
 		}
 
 		override list_items(): readonly $mol_view[] {
