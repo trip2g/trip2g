@@ -1,0 +1,12 @@
+$trip2g_user_paywall_offers $mol_view
+	subgraphs /string
+	Item* $mol_view
+		sub /
+			\ Купи курс
+			<= lowLine $mol_view
+				dom_name \br
+			<= row_formatted_price* \
+	sub /
+		<= Items $mol_list
+			rows <= list_items /$mol_view
+
