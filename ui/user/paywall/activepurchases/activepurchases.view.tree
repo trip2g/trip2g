@@ -1,0 +1,8 @@
+$trip2g_user_paywall_activepurchases $mol_view
+	subgraphs /string
+	Item* $mol_view
+		sub /
+			<= row_status* \
+	sub /
+		<= Items $mol_list
+			rows <= list_items /$mol_view

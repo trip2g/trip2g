@@ -1,18 +1,14 @@
 $trip2g_user_paywall $mol_view
+	subgraphs /string
 	Item* $mol_view
 		sub /
 			\ Купи курс
 			<= lowLine $mol_view
 				dom_name \br
 			<= row_formatted_price* \
-	ActivePurchase* $mol_view
-		sub /
-			<= active_purchase_status* \
 	sub /
 		<= Items $mol_list
 			rows <= list_items /$mol_view
-		<= PurchaseItems $mol_list
-			rows <= active_purchase_items /$mol_view
-
-
+		<= PurchaseItems $trip2g_user_paywall_activepurchases
+			subgraphs <= subgraphs
 
