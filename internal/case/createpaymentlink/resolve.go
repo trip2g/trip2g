@@ -100,7 +100,7 @@ func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (mo
 
 	if !isAuthenticated {
 		purchaseToken := appmodel.PurchaseToken{
-			Email: *req.Email,
+			PurchaseID: purchaseParams.ID,
 		}
 
 		rawToken, err := env.StorePurchaseToken(ctx, purchaseToken)

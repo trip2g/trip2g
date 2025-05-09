@@ -3,6 +3,7 @@ package purchasetoken
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 	"trip2g/internal/model"
 
@@ -24,12 +25,14 @@ var _ jwt.ClaimsValidator = (*fullData)(nil)
 
 var ErrInvalidToken = errors.New("invalid token")
 
+const tokenDelimiter = "|||"
+
 // Optional: custom validation logic (e.g., prevent old tokens).
 func (c fullData) Validate() error {
 	return nil
 }
 
-func NewManager(secret []byte, cookieName string) *Manager {
+func NewManager(cookieName string, secret []byte) *Manager {
 	return &Manager{
 		secret:     secret,
 		cookieName: cookieName,
@@ -69,13 +72,35 @@ func (m *Manager) ParseToken(tokenString string) (*model.PurchaseToken, error) {
 	return &claims.PurchaseToken, nil
 }
 
-func (e *Manager) Extract(ctx *fasthttp.RequestCtx) (*model.PurchaseToken, error) {
-	rawToken := string(ctx.Request.Header.Cookie(e.cookieName))
-	if len(rawToken) == 0 {
+func (e *Manager) rawTokens(ctx *fasthttp.RequestCtx) []string {
+	raw := string(ctx.Request.Header.Cookie(e.cookieName))
+	if len(raw) == 0 {
+		return nil
+	}
+
+	return strings.Split(raw, tokenDelimiter)
+}
+
+func (e *Manager) Extract(ctx *fasthttp.RequestCtx) ([]*model.PurchaseToken, error) {
+	rawTokens := e.rawTokens(ctx)
+	if len(rawTokens) == 0 {
 		return nil, nil
 	}
 
-	return e.ParseToken(rawToken)
+	tokens := make([]*model.PurchaseToken, 0, len(rawTokens))
+	validTokens := make([]string, 0, len(rawTokens))
+
+	for _, rawToken := range rawTokens {
+		token, err := e.ParseToken(rawToken)
+		if err == nil && token != nil {
+			tokens = append(tokens, token)
+			validTokens = append(validTokens, rawToken)
+		}
+	}
+
+	e.setCookie(ctx, validTokens)
+
+	return tokens, nil
 }
 
 func (e *Manager) Store(ctx *fasthttp.RequestCtx, data model.PurchaseToken) (string, error) {
@@ -84,24 +109,35 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data model.PurchaseToken) (str
 		return "", fmt.Errorf("failed to create token: %w", err)
 	}
 
-	e.setCookie(ctx, []byte(rawToken))
+	fmt.Printf("before: %+v %d\n", e.rawTokens(ctx), len(e.rawTokens(ctx)))
+
+	e.setCookie(ctx, append(e.rawTokens(ctx), rawToken))
 
 	return rawToken, nil
 }
 
 func (e *Manager) Delete(ctx *fasthttp.RequestCtx) error {
 	e.setCookie(ctx, nil)
-
 	return nil
 }
 
-func (e *Manager) setCookie(ctx *fasthttp.RequestCtx, val []byte) {
+func (e *Manager) setCookie(ctx *fasthttp.RequestCtx, tokens []string) {
+	current := ctx.Request.Header.Cookie(e.cookieName)
+	if len(current) == 0 && len(tokens) == 0 {
+		return
+	}
+
 	now := time.Now()
 	exp := now.Add(24 * time.Hour) // TODO: change to 30 minutes
 
 	c := fasthttp.AcquireCookie()
 	c.SetKey(e.cookieName)
-	c.SetValueBytes(val)
+
+	if len(tokens) > 0 {
+		fmt.Printf("after: %+v %d\n", tokens, len(tokens))
+		c.SetValue(strings.Join(tokens, tokenDelimiter))
+	}
+
 	c.SetPath("/")
 	c.SetHTTPOnly(true)
 	c.SetSecure(true)

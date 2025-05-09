@@ -19,7 +19,7 @@ import (
 
 	"trip2g/internal/appreq"
 	"trip2g/internal/bqtask/sendsignincode"
-	"trip2g/internal/case/signinbyhat"
+	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/db"
 	"trip2g/internal/graph"
 	"trip2g/internal/hotauthtoken"
@@ -27,6 +27,7 @@ import (
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
 	"trip2g/internal/nowpayments"
+	"trip2g/internal/purchasetoken"
 	"trip2g/internal/router"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
@@ -76,6 +77,8 @@ type app struct {
 	userBansMu  sync.Mutex
 
 	nowpaymentsClient *nowpayments.Client
+
+	purchaseTokenManager *purchasetoken.Manager
 
 	purchaseUpdatedMu       sync.Mutex
 	purchaseUpdatedHandlers map[string]map[int]func()
@@ -188,6 +191,8 @@ func main() {
 		queueClient:  queueClient,
 
 		hotAuthTokenManager: hotauthtoken.NewManager([]byte("secret")),
+
+		purchaseTokenManager: purchasetoken.NewManager("trip2g_purchase_token", []byte("secret")),
 
 		log:     log,
 		queries: queries,
@@ -525,6 +530,15 @@ func (a *app) NoteByPath(path string) (*model.NoteView, error) {
 	return page, nil
 }
 
+func (a *app) StorePurchaseToken(ctx context.Context, data model.PurchaseToken) (string, error) {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return a.purchaseTokenManager.Store(req.Req, data)
+}
+
 func (a *app) startServer() {
 	fs := &fasthttp.FS{
 		Root:               "./assets",
@@ -559,15 +573,138 @@ func (a *app) startServer() {
 
 	rtr := router.New(a)
 
+	// graphql
 	resolver := graph.Resolver{DefaultEnv: a}
-
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &resolver}))
 
-	// srv.AddTransport(graphqlws.Websocket{
-	// 	KeepAlivePingInterval: 10 * time.Second,
-	// })
+	a.SetupGraphQL(srv)
 
-	// srv.AddTransport(graphqlsse.Transport{})
+	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
+	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(srv)
+
+	s := &fasthttp.Server{
+		Handler: func(ctx *fasthttp.RequestCtx) {
+			path := string(ctx.Path())
+
+			if a.devMode {
+				origin := string(ctx.Request.Header.Peek("Origin"))
+				if origin == "http://localhost:9080" {
+					ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
+					ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+					ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie")
+					ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+				}
+
+				if ctx.IsOptions() {
+					ctx.SetStatusCode(fasthttp.StatusNoContent)
+					return
+				}
+			}
+
+			if strings.HasPrefix(path, "/assets/") {
+				fsHandler(ctx)
+				return
+			}
+
+			if strings.HasPrefix(path, "/ui/") {
+				fs2Handler(ctx)
+				return
+			}
+
+			req := appreq.Acquire()
+			req.Env = a
+			req.Req = ctx
+			req.TokenManager = a.tokenManager
+			req.StoreInContext() // appreq.FromCtx(ctx)
+			defer appreq.Release(req)
+
+			// handle purchase tokens from cookies
+			purchaseTokens, _ := a.purchaseTokenManager.Extract(ctx)
+			if len(purchaseTokens) > 0 {
+				processed, err := signinbypurchasetoken.Resolve(ctx, a, purchaseTokens)
+				if err != nil {
+					a.log.Warn("failed to resolve purchase token", "error", err)
+				} else if processed {
+					a.purchaseTokenManager.Delete(ctx)
+				}
+			}
+
+			// handle hot auth token from ?hot=...
+			// hatAuthToken := string(ctx.QueryArgs().Peek("hat")) // TODO: use b2s
+			// if hatAuthToken != "" {
+			// 	hatErr := signinbyhat.Resolve(ctx, a, hatAuthToken)
+			// 	if hatErr != nil {
+			// 		a.log.Warn("failed to resolve hot auth token", "error", hatErr)
+			// 	}
+			//
+			// 	parsedURL, err := url.Parse(string(ctx.Request.Header.RequestURI()))
+			// 	if err != nil {
+			// 		a.log.Warn("failed to parse URL", "error", err)
+			// 		ctx.SetStatusCode(http.StatusBadRequest)
+			// 		return
+			// 	}
+			//
+			// 	query := parsedURL.Query()
+			// 	query.Del("hat")
+			// 	parsedURL.RawQuery = query.Encode()
+			//
+			// 	ctx.Redirect(parsedURL.String(), http.StatusFound)
+			// 	return
+			// }
+
+			if strings.HasPrefix(path, "/graphql") {
+				if string(ctx.Method()) == "GET" {
+					playgroundHandler(ctx)
+				} else {
+					graphqlHandler(ctx)
+				}
+
+				return
+			}
+
+			handled, handleErr := rtr.Handle(req)
+			if handleErr != nil {
+				a.log.Error("failed to handle request", "error", handleErr)
+				ctx.SetStatusCode(http.StatusServiceUnavailable)
+				ctx.SetBodyString("500 Internal Server Error")
+				return
+			}
+
+			if handled {
+				a.log.Debug("router handled request", "path", path)
+				return
+			}
+
+			ctx.SetStatusCode(http.StatusNotFound)
+			ctx.SetBodyString("404 Not Found")
+		},
+	}
+
+	go func() {
+		mux := http.DefaultServeMux
+		backliteui.NewHandler(a.conn).Register(mux)
+
+		server := &http.Server{
+			Addr:         ":8082",
+			Handler:      mux,
+			ReadTimeout:  15 * time.Second,
+			WriteTimeout: 15 * time.Second,
+			IdleTimeout:  60 * time.Second,
+		}
+
+		backErr := server.ListenAndServe()
+		if backErr != nil {
+			panic(backErr)
+		}
+	}()
+
+	err := s.ListenAndServe(":8081")
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (a *app) SetupGraphQL(srv *handler.Server) {
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
@@ -638,123 +775,8 @@ func (a *app) startServer() {
 
 				return resp
 			}
-
-			fmt.Println("Mutation", req)
 		}
 
 		return next(ctx)
 	})
-
-	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
-	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(srv)
-
-	s := &fasthttp.Server{
-		Handler: func(ctx *fasthttp.RequestCtx) {
-			path := string(ctx.Path())
-
-			if a.devMode {
-				origin := string(ctx.Request.Header.Peek("Origin"))
-				if origin == "http://localhost:9080" {
-					ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
-					ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
-					ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie")
-					ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-				}
-
-				if ctx.IsOptions() {
-					ctx.SetStatusCode(fasthttp.StatusNoContent)
-					return
-				}
-			}
-
-			if strings.HasPrefix(path, "/assets/") {
-				fsHandler(ctx)
-				return
-			}
-
-			if strings.HasPrefix(path, "/ui/") {
-				fs2Handler(ctx)
-				return
-			}
-
-			req := appreq.Acquire()
-			req.Env = a
-			req.Req = ctx
-			req.TokenManager = a.tokenManager
-			req.StoreInContext() // appreq.FromCtx(ctx)
-			defer appreq.Release(req)
-
-			// handle hot auth token from ?hot=...
-			hatAuthToken := string(ctx.QueryArgs().Peek("hat")) // TODO: use b2s
-			if hatAuthToken != "" {
-				hatErr := signinbyhat.Resolve(ctx, a, hatAuthToken)
-				if hatErr != nil {
-					a.log.Warn("failed to resolve hot auth token", "error", hatErr)
-				}
-
-				parsedURL, err := url.Parse(string(ctx.Request.Header.RequestURI()))
-				if err != nil {
-					a.log.Warn("failed to parse URL", "error", err)
-					ctx.SetStatusCode(http.StatusBadRequest)
-					return
-				}
-
-				query := parsedURL.Query()
-				query.Del("hat")
-				parsedURL.RawQuery = query.Encode()
-
-				ctx.Redirect(parsedURL.String(), http.StatusFound)
-				return
-			}
-
-			if strings.HasPrefix(path, "/graphql") {
-				if string(ctx.Method()) == "GET" {
-					playgroundHandler(ctx)
-				} else {
-					graphqlHandler(ctx)
-				}
-
-				return
-			}
-
-			handled, handleErr := rtr.Handle(req)
-			if handleErr != nil {
-				a.log.Error("failed to handle request", "error", handleErr)
-				ctx.SetStatusCode(http.StatusServiceUnavailable)
-				ctx.SetBodyString("500 Internal Server Error")
-				return
-			}
-
-			if handled {
-				a.log.Debug("router handled request", "path", path)
-				return
-			}
-
-			ctx.SetStatusCode(http.StatusNotFound)
-			ctx.SetBodyString("404 Not Found")
-		},
-	}
-
-	go func() {
-		mux := http.DefaultServeMux
-		backliteui.NewHandler(a.conn).Register(mux)
-
-		server := &http.Server{
-			Addr:         ":8082",
-			Handler:      mux,
-			ReadTimeout:  15 * time.Second,
-			WriteTimeout: 15 * time.Second,
-			IdleTimeout:  60 * time.Second,
-		}
-
-		backErr := server.ListenAndServe()
-		if backErr != nil {
-			panic(backErr)
-		}
-	}()
-
-	err := s.ListenAndServe(":8081")
-	if err != nil {
-		panic(err)
-	}
 }

@@ -1,5 +1,5 @@
 package model
 
 type PurchaseToken struct {
-	Email string `json:"e"`
+	PurchaseID string `json:"p"`
 }
