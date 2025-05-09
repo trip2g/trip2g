@@ -203,6 +203,7 @@ input CreatePaymentLinkInput {
 
 type CreatePaymentLinkPayload {
   redirectUrl: String!
+  token: String
 }
 
 union CreatePaymentLinkOrErrorPayload = CreatePaymentLinkPayload | ErrorPayload

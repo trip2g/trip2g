@@ -88,7 +88,8 @@ type CreatePaymentLinkInput struct {
 }
 
 type CreatePaymentLinkPayload struct {
-	RedirectURL string `json:"redirectUrl"`
+	RedirectURL string  `json:"redirectUrl"`
+	Token       *string `json:"token,omitempty"`
 }
 
 func (CreatePaymentLinkPayload) IsCreatePaymentLinkOrErrorPayload() {}

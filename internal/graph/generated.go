@@ -139,6 +139,7 @@ type ComplexityRoot struct {
 
 	CreatePaymentLinkPayload struct {
 		RedirectURL func(childComplexity int) int
+		Token       func(childComplexity int) int
 	}
 
 	ErrorPayload struct {
@@ -607,6 +608,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CreatePaymentLinkPayload.RedirectURL(childComplexity), true
+
+	case "CreatePaymentLinkPayload.token":
+		if e.complexity.CreatePaymentLinkPayload.Token == nil {
+			break
+		}
+
+		return e.complexity.CreatePaymentLinkPayload.Token(childComplexity), true
 
 	case "ErrorPayload.byFields":
 		if e.complexity.ErrorPayload.ByFields == nil {
@@ -3099,6 +3107,47 @@ func (ec *executionContext) _CreatePaymentLinkPayload_redirectUrl(ctx context.Co
 }
 
 func (ec *executionContext) fieldContext_CreatePaymentLinkPayload_redirectUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreatePaymentLinkPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CreatePaymentLinkPayload_token(ctx context.Context, field graphql.CollectedField, obj *model.CreatePaymentLinkPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreatePaymentLinkPayload_token(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreatePaymentLinkPayload_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "CreatePaymentLinkPayload",
 		Field:      field,
@@ -9471,6 +9520,8 @@ func (ec *executionContext) _CreatePaymentLinkPayload(ctx context.Context, sel a
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "token":
+			out.Values[i] = ec._CreatePaymentLinkPayload_token(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

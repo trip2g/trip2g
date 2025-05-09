@@ -22,6 +22,7 @@ type Env interface {
 	GenerateHotAuthToken(ctx context.Context, data appmodel.HotAuthToken) (string, error)
 	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
 	UserByID(ctx context.Context, id int64) (db.User, error)
+	StorePurchaseToken(ctx context.Context, data appmodel.PurchaseToken) (string, error)
 }
 
 func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error) {
@@ -95,6 +96,19 @@ func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (mo
 
 	response := model.CreatePaymentLinkPayload{
 		RedirectURL: invoice.InvoiceURL,
+	}
+
+	if !isAuthenticated {
+		purchaseToken := appmodel.PurchaseToken{
+			Email: *req.Email,
+		}
+
+		rawToken, err := env.StorePurchaseToken(ctx, purchaseToken)
+		if err != nil {
+			return nil, fmt.Errorf("failed to store purchase token: %w", err)
+		}
+
+		response.Token = &rawToken
 	}
 
 	return &response, nil
