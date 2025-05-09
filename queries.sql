@@ -75,7 +75,7 @@ returning *;
 -- name: ListAllUsers :many
 select * from users order by created_at desc;
 
--- name: ListActiveSubgraphsByUserID :many
+-- name: ListActiveSubgraphNamesByUserID :many
 select distinct s.name
   from user_subgraph_accesses a
   join subgraphs s on a.subgraph_id = s.id
@@ -232,3 +232,12 @@ select count(*) from user_subgraph_accesses where purchase_id = ?;
 select * from purchases
  where email = ? and status in ('pending', 'waiting', 'confirming', 'confirmed')
  order by created_at desc;
+
+-- name: ListActiveSubgraphsByUserID :many
+select s.*
+  from user_subgraph_accesses a
+  join subgraphs s on a.subgraph_id = s.id
+ where user_id = ?
+   and (expires_at > datetime('now') or expires_at is null)
+   and revoke_id is null
+ order by s.name;

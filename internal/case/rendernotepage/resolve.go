@@ -16,7 +16,7 @@ import (
 type Env interface {
 	Logger() logger.Logger
 	AllNotes() model.NoteViews
-	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]string, error)
+	ListActiveSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
 	UpsertUserNoteDailyView(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
 	IncreaseUserNoteViewCount(ctx context.Context, userID int64) error
@@ -129,7 +129,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	if request.UserToken != nil {
 		userID := int64(request.UserToken.ID)
 
-		userSubgraphs, err = env.ListActiveSubgraphsByUserID(ctx, userID)
+		userSubgraphs, err = env.ListActiveSubgraphNamesByUserID(ctx, userID)
 		if err != nil {
 			return &response, err
 		}

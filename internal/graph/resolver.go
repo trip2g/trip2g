@@ -49,6 +49,7 @@ type Env interface {
 	SubgraphByID(ctx context.Context, id int64) (db.Subgraph, error)
 	SubgraphByName(ctx context.Context, name string) (db.Subgraph, error)
 	UserSubgraphAccessByID(ctx context.Context, id int64) (db.UserSubgraphAccess, error)
+	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]db.Subgraph, error)
 
 	AllNotes() model.NoteViews
 

@@ -311,6 +311,11 @@ func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUse
 	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
 }
 
+// Subgraphs is the resolver for the subgraphs field.
+func (r *userResolver) Subgraphs(ctx context.Context, obj *db.User) ([]db.Subgraph, error) {
+	return r.env(ctx).ListActiveSubgraphsByUserID(ctx, obj.ID)
+}
+
 // User is the resolver for the user field.
 func (r *userBanResolver) User(ctx context.Context, obj *db.UserBan) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
@@ -468,6 +473,9 @@ func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionRes
 // UnbanUserPayload returns UnbanUserPayloadResolver implementation.
 func (r *Resolver) UnbanUserPayload() UnbanUserPayloadResolver { return &unbanUserPayloadResolver{r} }
 
+// User returns UserResolver implementation.
+func (r *Resolver) User() UserResolver { return &userResolver{r} }
+
 // UserBan returns UserBanResolver implementation.
 func (r *Resolver) UserBan() UserBanResolver { return &userBanResolver{r} }
 
@@ -499,6 +507,7 @@ type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
+type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }

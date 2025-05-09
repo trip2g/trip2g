@@ -635,7 +635,7 @@ func (q *Queries) ListActivePurchasesByEmail(ctx context.Context, email string) 
 	return items, nil
 }
 
-const listActiveSubgraphsByUserID = `-- name: ListActiveSubgraphsByUserID :many
+const listActiveSubgraphNamesByUserID = `-- name: ListActiveSubgraphNamesByUserID :many
 select distinct s.name
   from user_subgraph_accesses a
   join subgraphs s on a.subgraph_id = s.id
@@ -645,8 +645,8 @@ select distinct s.name
  order by 1
 `
 
-func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, listActiveSubgraphsByUserID, userID)
+func (q *Queries) ListActiveSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveSubgraphNamesByUserID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -658,6 +658,44 @@ func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64)
 			return nil, err
 		}
 		items = append(items, name)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveSubgraphsByUserID = `-- name: ListActiveSubgraphsByUserID :many
+select s.id, s.name, s.color, s.created_at
+  from user_subgraph_accesses a
+  join subgraphs s on a.subgraph_id = s.id
+ where user_id = ?
+   and (expires_at > datetime('now') or expires_at is null)
+   and revoke_id is null
+ order by s.name
+`
+
+func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]Subgraph, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveSubgraphsByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Subgraph
+	for rows.Next() {
+		var i Subgraph
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Color,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

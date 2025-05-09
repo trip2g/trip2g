@@ -25,7 +25,7 @@ namespace $.$$ {
 			`,
 				{
 					input: {
-						email: 'hello@example.com',
+						email: this.current_email() || null,
 						subgraphs,
 					},
 				}

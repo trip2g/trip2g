@@ -1,12 +1,56 @@
 $trip2g_user_paywall_offers $mol_view
 	subgraphs /string
+	offers *
+	current_email? \
+	Empty $mol_view
+	List $trip2g_user_paywall_offers_list
+		offers <= offers
+		buy* <=> buy* null
+	EnterEmail $trip2g_user_paywall_offers_enter_email
+		to_sign_in <= to_sign_in null
+		handle_email? <=> buy_by_email? \
+	BuyButton $mol_view
+		sub /
+			<= Button $mol_button_major
+				title \Buy
+				click? <=> instant_buy null
+	SignIn $trip2g_auth
+		AppView <= BuyButton
+	sub /
+		<= List
+
+$trip2g_user_paywall_offers_enter_email $mol_form
+	to_sign_in null
+	handle_email? \
+	body /
+		<= Email_field $mol_form_field
+			name \Email
+			bid <= email_bid \
+			Content <= email_control $mol_string
+				hint \name@example.com
+				value? <=> email? \hello2@example.com
+	buttons /
+		<= BuyButton $mol_button_major
+			title \Enter
+			click? <=> submit? null
+		<= RequestResult $mol_status
+			message <= result? \
+		\Or
+		<= AuthButton $mol_button_major
+			title \Sign in
+			click? <=> to_sign_in
+
+$trip2g_user_paywall_offers_list $mol_view
+	offers *
+	buy* null
 	Item* $mol_view
 		sub /
-			\ Купи курс
-			<= lowLine $mol_view
-				dom_name \br
+			<= Description* $mol_view
+				sub / <= row_description* \
 			<= row_formatted_price* \
+			<= BuyButton* $mol_button_major
+				title \Купить
+				click?event <=> buy*
 	sub /
 		<= Items $mol_list
 			rows <= list_items /$mol_view
-

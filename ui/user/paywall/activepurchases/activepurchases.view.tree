@@ -1,5 +1,6 @@
 $trip2g_user_paywall_activepurchases $mol_view
 	subgraphs /string
+	current_email? \
 	Item* $mol_view
 		sub /
 			<= row_status* \

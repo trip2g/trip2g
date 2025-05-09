@@ -31,6 +31,7 @@ type UserBan {
 
 type User {
   email: String!
+  subgraphs: [Subgraph!]!
 }
 
 type AdminUser @goModel(model: "trip2g/internal/db.User") {

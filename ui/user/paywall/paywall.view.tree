@@ -3,6 +3,8 @@ $trip2g_user_paywall $mol_view
 	sub /
 		<= Offers $trip2g_user_paywall_offers
 			subgraphs <= subgraphs
+			current_email? <=> current_email? \
 		<= PurchaseItems $trip2g_user_paywall_activepurchases
 			subgraphs <= subgraphs
+			current_email? <=> current_email? \
 
