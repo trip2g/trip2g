@@ -539,6 +539,26 @@ func (a *app) StorePurchaseToken(ctx context.Context, data model.PurchaseToken) 
 	return a.purchaseTokenManager.Store(req.Req, data)
 }
 
+func (a *app) ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error) {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tokens, err := a.purchaseTokenManager.Extract(req.Req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract purchase tokens: %w", err)
+	}
+
+	ids := make([]string, len(tokens))
+
+	for i, token := range tokens {
+		ids[i] = token.PurchaseID
+	}
+
+	return ids, nil
+}
+
 func (a *app) startServer() {
 	fs := &fasthttp.FS{
 		Root:               "./assets",

@@ -597,14 +597,63 @@ func (q *Queries) ListActiveOffersBySubgraphNames(ctx context.Context, subgraphs
 	return items, nil
 }
 
-const listActivePurchasesByEmail = `-- name: ListActivePurchasesByEmail :many
+const listActivePurchasesByIDs = `-- name: ListActivePurchasesByIDs :many
 select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email from purchases
- where email = ? and status in ('pending', 'waiting', 'confirming', 'confirmed')
+ where id in (/*SLICE:ids*/?)
+   and status in ('pending', 'waiting', 'confirming', 'confirmed')
  order by created_at desc
 `
 
-func (q *Queries) ListActivePurchasesByEmail(ctx context.Context, email string) ([]Purchase, error) {
-	rows, err := q.db.QueryContext(ctx, listActivePurchasesByEmail, email)
+func (q *Queries) ListActivePurchasesByIDs(ctx context.Context, ids []string) ([]Purchase, error) {
+	query := listActivePurchasesByIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Purchase
+	for rows.Next() {
+		var i Purchase
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.PaymentProvider,
+			&i.PaymentData,
+			&i.Status,
+			&i.OfferID,
+			&i.UserID,
+			&i.Email,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActivePurchasesByUserID = `-- name: ListActivePurchasesByUserID :many
+select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email from purchases
+ where user_id = ? and status in ('pending', 'waiting', 'confirming', 'confirmed')
+ order by created_at desc
+`
+
+func (q *Queries) ListActivePurchasesByUserID(ctx context.Context, userID sql.NullInt64) ([]Purchase, error) {
+	rows, err := q.db.QueryContext(ctx, listActivePurchasesByUserID, userID)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"database/sql"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/unbanuser"
@@ -51,10 +52,14 @@ type Env interface {
 	UserSubgraphAccessByID(ctx context.Context, id int64) (db.UserSubgraphAccess, error)
 	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]db.Subgraph, error)
 
+	// activePurchases
+	ListActivePurchasesByUserID(ctx context.Context, userID sql.NullInt64) ([]db.Purchase, error)
+	ListActivePurchasesByIDs(ctx context.Context, ids []string) ([]db.Purchase, error)
+	ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error)
+
 	AllNotes() model.NoteViews
 
 	OnPurchaseUpdatedSubscribe(email string, handler func()) func()
-	ListActivePurchasesByEmail(ctx context.Context, email string) ([]db.Purchase, error)
 
 	Logger() logger.Logger
 

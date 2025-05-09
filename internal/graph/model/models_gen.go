@@ -43,11 +43,6 @@ type UpdateUserSubgraphAccessOrErrorPayload interface {
 	IsUpdateUserSubgraphAccessOrErrorPayload()
 }
 
-type ActivePurchasesInput struct {
-	Email     *string  `json:"email,omitempty"`
-	Subgraphs []string `json:"subgraphs"`
-}
-
 type AdminNoteViewsConnection struct {
 	Nodes []model.NoteView `json:"nodes"`
 }
@@ -149,9 +144,6 @@ type SignOutPayload struct {
 }
 
 func (SignOutPayload) IsSignOutOrErrorPayload() {}
-
-type Subscription struct {
-}
 
 type UnbanUserInput struct {
 	UserID int `json:"userId"`

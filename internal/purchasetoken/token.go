@@ -109,8 +109,6 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data model.PurchaseToken) (str
 		return "", fmt.Errorf("failed to create token: %w", err)
 	}
 
-	fmt.Printf("before: %+v %d\n", e.rawTokens(ctx), len(e.rawTokens(ctx)))
-
 	e.setCookie(ctx, append(e.rawTokens(ctx), rawToken))
 
 	return rawToken, nil
@@ -134,7 +132,6 @@ func (e *Manager) setCookie(ctx *fasthttp.RequestCtx, tokens []string) {
 	c.SetKey(e.cookieName)
 
 	if len(tokens) > 0 {
-		fmt.Printf("after: %+v %d\n", tokens, len(tokens))
 		c.SetValue(strings.Join(tokens, tokenDelimiter))
 	}
 

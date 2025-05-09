@@ -109,7 +109,7 @@ type Viewer {
   id: ID!
   user: User
   offers(subgraphs: [String!]): [Offer!]!
-  activePurchases(input: ActivePurchasesInput!): [Purchase!]!
+  activePurchases: [Purchase!]!
 }
 
 type Offer {
@@ -286,11 +286,11 @@ type AdminMutation {
   banUser(input: BanUserInput!): BanUserOrErrorPayload!
 }
 
-input ActivePurchasesInput {
-  email: String
-  subgraphs: [String!]!
-}
-
-type Subscription {
-  activePurchaseUpdated(input: ActivePurchasesInput!): [Purchase!]!
-}
+# input ActivePurchasesInput {
+#   email: String
+#   subgraphs: [String!]!
+# }
+#
+# type Subscription {
+#   activePurchaseUpdated(input: ActivePurchasesInput!): [Purchase!]!
+# }

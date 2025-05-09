@@ -257,55 +257,6 @@ func (r *subgraphResolver) Offers(ctx context.Context, obj *db.Subgraph) ([]db.O
 	return r.env(ctx).ListActiveOffersBySubgraphID(ctx, obj.ID)
 }
 
-// ActivePurchaseUpdated is the resolver for the activePurchaseUpdated field.
-func (r *subscriptionResolver) ActivePurchaseUpdated(ctx context.Context, input model.ActivePurchasesInput) (<-chan []db.Purchase, error) {
-	if input.Email == nil {
-		req, err := appreq.FromCtx(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		token, err := req.UserToken()
-		if err != nil {
-			return nil, err
-		}
-
-		user, err := r.env(ctx).UserByID(ctx, int64(token.ID))
-		if err != nil {
-			return nil, err
-		}
-
-		input.Email = &user.Email
-	}
-
-	resCh := make(chan []db.Purchase, 1)
-
-	sendUpdates := func() {
-		purchases, err := r.DefaultEnv.ListActivePurchasesByEmail(ctx, *input.Email)
-		if err != nil {
-			r.env(ctx).Logger().Error("Failed to get purchases", "error", err)
-			return
-		}
-
-		if len(purchases) > 0 {
-			resCh <- purchases
-		}
-	}
-
-	sendUpdates() // send initial data
-
-	unsubscribe := r.DefaultEnv.OnPurchaseUpdatedSubscribe(*input.Email, sendUpdates)
-
-	go func() {
-		<-ctx.Done()
-
-		unsubscribe()
-		close(resCh)
-	}()
-
-	return resCh, nil
-}
-
 // User is the resolver for the user field.
 func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error) {
 	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
@@ -382,25 +333,21 @@ func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, subgr
 }
 
 // ActivePurchases is the resolver for the activePurchases field.
-func (r *viewerResolver) ActivePurchases(ctx context.Context, obj *appmodel.Viewer, input model.ActivePurchasesInput) ([]db.Purchase, error) {
-	if input.Email == nil {
-		if obj.UserID == nil {
-			return nil, nil
-		}
-
-		user, err := r.env(ctx).UserByID(ctx, *obj.UserID)
-		if err != nil {
-			if db.IsNoFound(err) {
-				return nil, nil
-			}
-
-			return nil, err
-		}
-
-		input.Email = &user.Email
+func (r *viewerResolver) ActivePurchases(ctx context.Context, obj *appmodel.Viewer) ([]db.Purchase, error) {
+	if obj.UserID != nil {
+		return r.env(ctx).ListActivePurchasesByUserID(ctx, sql.NullInt64{Valid: true, Int64: *obj.UserID})
 	}
 
-	return r.env(ctx).ListActivePurchasesByEmail(ctx, *input.Email)
+	ids, err := r.env(ctx).ExtractPurchaseTokenIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	return r.env(ctx).ListActivePurchasesByIDs(ctx, ids)
 }
 
 // Admin returns AdminResolver implementation.
@@ -467,9 +414,6 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // Subgraph returns SubgraphResolver implementation.
 func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
 
-// Subscription returns SubscriptionResolver implementation.
-func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
-
 // UnbanUserPayload returns UnbanUserPayloadResolver implementation.
 func (r *Resolver) UnbanUserPayload() UnbanUserPayloadResolver { return &unbanUserPayloadResolver{r} }
 
@@ -505,7 +449,6 @@ type offerResolver struct{ *Resolver }
 type purchaseResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
-type subscriptionResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
