@@ -42,14 +42,19 @@ namespace $.$$ {
 			throw new Error('Unknown error')
 		}
 
+		override entered_email(next?: string): string {
+			this.$.$mol_state_arg.value('email', next || null)
+
+			return next || this.$.$mol_state_arg.value('email') || ''
+		}
+
 		sub() {
 			const viewer = this.me()
 			if (viewer.user) {
 				return [this.AppView()]
 			}
 
-			const email = this.$.$mol_state_arg.value('email')
-			if (email) {
+			if (this.entered_email()) {
 				return [this.CodeForm()]
 			}
 
@@ -67,8 +72,8 @@ namespace $.$$ {
 			return this.request_error() || ''
 		}
 
-		submit() {
-			const res = $trip2g_graphql_request(
+		static mutate(email: string) {
+			return $trip2g_graphql_request(
 				/* GraphQL */ `
 					mutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {
 						data: requestEmailSignInCode(input: $input) {
@@ -84,11 +89,13 @@ namespace $.$$ {
 					}
 				`,
 				{
-					input: {
-						email: this.email(),
-					},
+					input: { email },
 				}
 			)
+		}
+
+		submit() {
+			const res = this.$.$trip2g_auth_email_form.mutate(this.email())
 
 			if (res.data.__typename === 'ErrorPayload') {
 				this.request_error(res.data.message)
@@ -97,6 +104,7 @@ namespace $.$$ {
 
 			if (res.data.__typename === 'RequestEmailSignInCodePayload') {
 				if (res.data.success) {
+					this.code_sent(true)
 					this.$.$mol_state_arg.value('email', this.email())
 					return
 				}
@@ -116,15 +124,19 @@ namespace $.$$ {
 			return this.request_error() || ''
 		}
 
-		email() {
-			return this.$.$mol_state_arg.value('email')
-		}
-
 		submit() {
 			const email = this.email()
 			if (!email) {
 				this.request_error('Email is required')
 				return
+			}
+
+			if (!this.code_sent()) {
+				const requestRes = $trip2g_auth_email_form.mutate(email);
+				if (requestRes.data.__typename === 'ErrorPayload') {
+					this.request_error(requestRes.data.message)
+					return
+				}
 			}
 
 			const res = $trip2g_graphql_request(

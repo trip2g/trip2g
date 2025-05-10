@@ -1,13 +1,20 @@
 $trip2g_auth $mol_view
 	signout? null
+	entered_email? \
 	me_user_email? \???
+	reload_me null
+	code_sent? false
 	EmailForm $trip2g_auth_email_form
+		code_sent? <=> code_sent?
 	CodeForm $trip2g_auth_code_form
-		reload_me <= reload_me null
+		reload_me <= reload_me
+		email? <=> entered_email?
+		code_sent? <=> code_sent?
 	AppView $mol_view
 		sub / \TODO: Replace AppView
 
 $trip2g_auth_email_form $mol_form
+	code_sent? false
 	body /
 		<= Email_field $mol_form_field
 			name \Email
@@ -25,6 +32,8 @@ $trip2g_auth_email_form $mol_form
 
 $trip2g_auth_code_form $mol_form
 	reload_me null
+	email? \
+	code_sent? false
 	body /
 		<= Code_field $mol_form_field
 			name \Code

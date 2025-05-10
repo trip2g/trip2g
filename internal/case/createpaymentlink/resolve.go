@@ -53,10 +53,10 @@ func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (mo
 	} else {
 		_, userErr := env.UserByEmail(ctx, *req.Email)
 		if userErr != nil {
-			return nil, fmt.Errorf("failed to get user by email: %w", userErr)
-		}
-
-		if !db.IsNoFound(userErr) {
+			if !db.IsNoFound(userErr) {
+				return nil, fmt.Errorf("failed to get user by email: %w", userErr)
+			}
+		} else {
 			return &model.ErrorPayload{Message: "sign_in_required"}, nil
 		}
 	}

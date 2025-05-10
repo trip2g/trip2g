@@ -5,17 +5,22 @@ $trip2g_user_paywall_offers $mol_view
 	Empty $mol_view
 	List $trip2g_user_paywall_offers_list
 		offers <= offers
-		buy* <=> buy* null
+		buy* <=> buy_item* null
 	EnterEmail $trip2g_user_paywall_offers_enter_email
-		to_sign_in <= to_sign_in null
-		handle_email? <=> buy_by_email? \
-	BuyButton $mol_view
+		handle_email? <=> buy_by_email? null
+	EmailExists $mol_view
 		sub /
-			<= Button $mol_button_major
-				title \Buy
-				click? <=> instant_buy null
+			\У вас уже есть аккаунт и возможно купленный контент. Пожалуйста, авторизуйтесь, чтобы мы все проверили.
+			<= ShowSignIn $mol_button_major
+				title \SignIn
+				click? <=> to_sign_in null
+	Waiting $mol_view
+		sub /
+			\Ждем оплаты заказа... Если окно не открылось, нажмите на кнопку ниже.
 	SignIn $trip2g_auth
-		AppView <= BuyButton
+		entered_email? <=> current_email? \
+		reload_me <= reload_me null
+		AppView <= Empty
 	sub /
 		<= List
 
@@ -35,10 +40,6 @@ $trip2g_user_paywall_offers_enter_email $mol_form
 			click? <=> submit? null
 		<= RequestResult $mol_status
 			message <= result? \
-		\Or
-		<= AuthButton $mol_button_major
-			title \Sign in
-			click? <=> to_sign_in
 
 $trip2g_user_paywall_offers_list $mol_view
 	offers *

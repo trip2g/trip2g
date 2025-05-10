@@ -35,12 +35,12 @@ namespace $.$$ {
 		}
 
 		user() {
-			return $trip2g_auth_viewer.current().user;
+			return $trip2g_auth_viewer.current().user
 		}
 
-		override buy(id: any) {
+		override buy_item(id: any) {
 			if (this.user()) {
-				this.instant_buy(id)
+				this.buy(id)
 				return
 			}
 			// if user -> do action
@@ -48,7 +48,7 @@ namespace $.$$ {
 			this.$.$mol_state_arg.value('offer', id)
 		}
 
-		override instant_buy(id?: any) {
+		buy(id?: any) {
 			id = id || this.$.$mol_state_arg.value('offer')
 
 			const res = $trip2g_graphql_request(
@@ -66,7 +66,7 @@ namespace $.$$ {
 				`,
 				{
 					input: {
-						email: this.current_email(),
+						email: this.current_email() || null,
 						offerId: id,
 						returnPath: '/secondbrain',
 						paymentType: 'CRYPTO' as any,
@@ -75,65 +75,85 @@ namespace $.$$ {
 			)
 
 			if (res.data.__typename === 'ErrorPayload') {
+				if (res.data.message === 'sign_in_required') {
+					this.$.$mol_state_arg.value('purchase_state', 'sign_in_required')
+					return
+				}
+
 				throw new Error(res.data.message)
 			}
 
 			if (res.data.__typename === 'CreatePaymentLinkPayload') {
-				window.open(res.data.redirectUrl, '_blank')
-				this.$.$mol_state_arg.value('waiting', 'true')
-			}
-		}
+				this.$.$mol_state_arg.value('purchase_state', 'waiting')
 
-		override to_sign_in() {
-			this.$.$mol_state_arg.value('sign_in', 'true')
+				const s = window.open(res.data.redirectUrl, '_blank')
+				if (s === null) {
+					this.$.$mol_state_arg.value('payment_url', res.data.redirectUrl)
+				}
+			}
 		}
 
 		@$mol_mem
-		current_email(next?: string) {
+		state(next?: 'sign_in_required' | 'sign_in' | 'waiting' | 'init') {
 			if (next !== undefined) {
-				this.$.$mol_state_arg.value('email', next)
+				this.$.$mol_state_arg.value('purchase_state', next)
 			}
 
-			return next || this.$.$mol_state_arg.value('email') || '';
+			return next || this.$.$mol_state_arg.value('purchase_state') || 'init'
+		}
+
+		override to_sign_in() {
+			this.state('sign_in')
+		}
+
+		override reload_me() {
+			this.state('init')
+			this.$.$mol_state_arg.value('purchase_email', null)
+			this.$.$mol_state_arg.value('purchase_state', null)
+			this.$.$mol_state_arg.value('offer', null)
+
+			setTimeout(() => window.location.reload(), 50)
+		}
+
+		@$mol_mem
+		override current_email(next?: string) {
+			console.log('call current_email', next)
+			if (next) {
+				this.$.$mol_state_arg.value('purchase_email', next || null)
+			}
+
+			return next || this.$.$mol_state_arg.value('purchase_email') || ''
 		}
 
 		@$mol_mem
 		override buy_by_email(email?: string) {
-			console.log('buy by email', email)
+			console.log('buy_by_email', email)
 			if (email) {
 				this.current_email(email)
-				this.instant_buy()
+				this.buy()
 			}
 
-			return email || '';
+			return email || ''
 		}
 
 		sub() {
-			const waiting = this.$.$mol_state_arg.value('waiting')
-			if (waiting) {
-				return []
+			const state = this.state()
+			if (state === 'sign_in_required') {
+				return [this.EmailExists()]
+			}
+
+			if (state === 'sign_in') {
+				return [this.SignIn()]
+			}
+
+			if (state === 'waiting') {
+				return [this.Waiting()]
 			}
 
 			const offer_id = this.$.$mol_state_arg.value('offer')
-			if (!offer_id) {
-				return [this.List()]
-			}
-
 			const user = this.user()
-			if (user) {
-				const current_subgraphs = this.subgraphs()
-				const user_subgraphs = user.subgraphs.map((sub) => sub.name);
-
-				if (user_subgraphs.find((sub) => current_subgraphs.includes(sub))) {
-					window.location.reload()
-					return [this.Empty()]
-				}
-
-				return [this.BuyButton()]
-			}
-
-			if (this.$.$mol_state_arg.value('sign_in')) {
-				return [this.SignIn()]
+			if (!offer_id || user) {
+				return [this.List()]
 			}
 
 			return [this.EnterEmail()]
