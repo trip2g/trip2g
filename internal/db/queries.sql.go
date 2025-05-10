@@ -601,6 +601,7 @@ const listActivePurchasesByIDs = `-- name: ListActivePurchasesByIDs :many
 select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email from purchases
  where id in (/*SLICE:ids*/?)
    and status in ('pending', 'waiting', 'confirming', 'confirmed')
+   and created_at > datetime('now', '-30 minutes')
  order by created_at desc
 `
 
@@ -648,7 +649,9 @@ func (q *Queries) ListActivePurchasesByIDs(ctx context.Context, ids []string) ([
 
 const listActivePurchasesByUserID = `-- name: ListActivePurchasesByUserID :many
 select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email from purchases
- where user_id = ? and status in ('pending', 'waiting', 'confirming', 'confirmed')
+ where user_id = ?
+    and status in ('pending', 'waiting', 'confirming', 'confirmed')
+    and created_at > datetime('now', '-30 minutes')
  order by created_at desc
 `
 
