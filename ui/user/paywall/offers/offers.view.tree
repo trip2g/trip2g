@@ -17,6 +17,9 @@ $trip2g_user_paywall_offers $mol_view
 	Waiting $mol_view
 		sub /
 			\Ждем оплаты заказа... Если окно не открылось, нажмите на кнопку ниже.
+			<= open_payment_page_button $mol_button_major
+				title \Open payment page
+				click? <=> to_payment_page null
 	SignIn $trip2g_auth
 		entered_email? <=> current_email? \
 		reload_me <= reload_me null

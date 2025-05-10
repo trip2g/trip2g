@@ -2,6 +2,9 @@ namespace $.$$ {
 	$mol_style_define( $trip2g_user_paywall_offers, {
 		EmailExists: {
 			flexDirection: 'column',
+		},
+		Waiting: {
+			flexDirection: 'column',
 		}
 	})
 

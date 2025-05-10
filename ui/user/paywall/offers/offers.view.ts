@@ -85,11 +85,9 @@ namespace $.$$ {
 
 			if (res.data.__typename === 'CreatePaymentLinkPayload') {
 				this.$.$mol_state_arg.value('purchase_state', 'waiting')
+				this.$.$mol_state_arg.value('payment_url', res.data.redirectUrl)
 
-				const s = window.open(res.data.redirectUrl, '_blank')
-				if (s === null) {
-					this.$.$mol_state_arg.value('payment_url', res.data.redirectUrl)
-				}
+				window.open(res.data.redirectUrl, '_blank')
 			}
 		}
 
@@ -117,7 +115,6 @@ namespace $.$$ {
 
 		@$mol_mem
 		override current_email(next?: string) {
-			console.log('call current_email', next)
 			if (next) {
 				this.$.$mol_state_arg.value('purchase_email', next || null)
 			}
@@ -127,13 +124,19 @@ namespace $.$$ {
 
 		@$mol_mem
 		override buy_by_email(email?: string) {
-			console.log('buy_by_email', email)
 			if (email) {
 				this.current_email(email)
 				this.buy()
 			}
 
 			return email || ''
+		}
+
+		override to_payment_page() {
+			const url = this.$.$mol_state_arg.value('payment_url')
+			if (url) {
+				window.open(url, '_blank')
+			}
 		}
 
 		sub() {
