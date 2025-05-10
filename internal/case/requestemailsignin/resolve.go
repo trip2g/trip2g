@@ -21,29 +21,25 @@ type Env interface {
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
 }
 
-type Request struct {
-	Email string
+func NormalizeInput(input *model.RequestEmailSignInCodeInput) {
+	input.Email = strings.ToLower(strings.TrimSpace(input.Email))
 }
 
-func (req *Request) Normalize() {
-	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
-}
-
-func (req *Request) Validate() *model.ErrorPayload {
+func ValidateInput(req *model.RequestEmailSignInCodeInput) *model.ErrorPayload {
 	return model.NewOzzoError(ozzo.ValidateStruct(req,
 		ozzo.Field(&req.Email, ozzo.Required, is.Email),
 	))
 }
 
-func (req *Request) Resolve(ctx context.Context, env Env) (model.RequestEmailSignInCodeOrErrorPayload, error) {
-	req.Normalize()
+func Resolve(ctx context.Context, env Env, input model.RequestEmailSignInCodeInput) (model.RequestEmailSignInCodeOrErrorPayload, error) {
+	NormalizeInput(&input)
 
-	errPayload := req.Validate()
+	errPayload := ValidateInput(&input)
 	if errPayload != nil {
 		return errPayload, nil
 	}
 
-	user, err := env.UserByEmail(ctx, req.Email)
+	user, err := env.UserByEmail(ctx, input.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return model.NewFieldError("email", "not_found"), nil
@@ -80,7 +76,7 @@ func (req *Request) Resolve(ctx context.Context, env Env) (model.RequestEmailSig
 		return nil, fmt.Errorf("failed to create signin code: %w", err)
 	}
 
-	err = env.QueueRequestSignInEmail(ctx, req.Email, code)
+	err = env.QueueRequestSignInEmail(ctx, input.Email, code)
 	if err != nil {
 		return nil, fmt.Errorf("failed to queue signin email: %w", err)
 	}

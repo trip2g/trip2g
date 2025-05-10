@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"trip2g/internal/case/processnowpaymentsipn"
+	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
@@ -22,7 +23,10 @@ type Env interface {
 	GenerateHotAuthToken(ctx context.Context, data appmodel.HotAuthToken) (string, error)
 	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
 	UserByID(ctx context.Context, id int64) (db.User, error)
+	UserByEmail(ctx context.Context, email string) (db.User, error)
 	StorePurchaseToken(ctx context.Context, data appmodel.PurchaseToken) (string, error)
+
+	requestemailsignin.Env
 }
 
 func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error) {
@@ -46,6 +50,15 @@ func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (mo
 		req.Email = &user.Email
 
 		isAuthenticated = true
+	} else {
+		_, userErr := env.UserByEmail(ctx, *req.Email)
+		if userErr != nil {
+			return nil, fmt.Errorf("failed to get user by email: %w", userErr)
+		}
+
+		if !db.IsNoFound(userErr) {
+			return &model.ErrorPayload{Message: "sign_in_required"}, nil
+		}
 	}
 
 	offer, err := env.ActiveOfferByPublicID(ctx, req.OfferID)

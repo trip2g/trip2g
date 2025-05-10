@@ -14,7 +14,6 @@ import (
 	"time"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
-	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	model1 "trip2g/internal/model"
@@ -153,7 +152,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		Admin                  func(childComplexity int) int
 		CreatePaymentLink      func(childComplexity int, input model.CreatePaymentLinkInput) int
-		RequestEmailSignInCode func(childComplexity int, input requestemailsignin.Request) int
+		RequestEmailSignInCode func(childComplexity int, input model.RequestEmailSignInCodeInput) int
 		SignInByEmail          func(childComplexity int, input model.SignInByEmailInput) int
 		SignOut                func(childComplexity int) int
 	}
@@ -295,7 +294,7 @@ type ErrorPayloadResolver interface {
 	Message(ctx context.Context, obj *model.ErrorPayload) (string, error)
 }
 type MutationResolver interface {
-	RequestEmailSignInCode(ctx context.Context, input requestemailsignin.Request) (model.RequestEmailSignInCodeOrErrorPayload, error)
+	RequestEmailSignInCode(ctx context.Context, input model.RequestEmailSignInCodeInput) (model.RequestEmailSignInCodeOrErrorPayload, error)
 	SignInByEmail(ctx context.Context, input model.SignInByEmailInput) (model.SignInOrErrorPayload, error)
 	SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error)
 	CreatePaymentLink(ctx context.Context, input model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error)
@@ -664,7 +663,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RequestEmailSignInCode(childComplexity, args["input"].(requestemailsignin.Request)), true
+		return e.complexity.Mutation.RequestEmailSignInCode(childComplexity, args["input"].(model.RequestEmailSignInCodeInput)), true
 
 	case "Mutation.signInByEmail":
 		if e.complexity.Mutation.SignInByEmail == nil {
@@ -1331,13 +1330,13 @@ func (ec *executionContext) field_Mutation_requestEmailSignInCode_args(ctx conte
 func (ec *executionContext) field_Mutation_requestEmailSignInCode_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (requestemailsignin.Request, error) {
+) (model.RequestEmailSignInCodeInput, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋcaseᚋrequestemailsigninᚐRequest(ctx, tmp)
+		return ec.unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeInput(ctx, tmp)
 	}
 
-	var zeroVal requestemailsignin.Request
+	var zeroVal model.RequestEmailSignInCodeInput
 	return zeroVal, nil
 }
 
@@ -3266,7 +3265,7 @@ func (ec *executionContext) _Mutation_requestEmailSignInCode(ctx context.Context
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RequestEmailSignInCode(rctx, fc.Args["input"].(requestemailsignin.Request))
+		return ec.resolvers.Mutation().RequestEmailSignInCode(rctx, fc.Args["input"].(model.RequestEmailSignInCodeInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7787,8 +7786,8 @@ func (ec *executionContext) unmarshalInputCreatePaymentLinkInput(ctx context.Con
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputRequestEmailSignInCodeInput(ctx context.Context, obj any) (requestemailsignin.Request, error) {
-	var it requestemailsignin.Request
+func (ec *executionContext) unmarshalInputRequestEmailSignInCodeInput(ctx context.Context, obj any) (model.RequestEmailSignInCodeInput, error) {
+	var it model.RequestEmailSignInCodeInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -11697,7 +11696,7 @@ func (ec *executionContext) marshalNPurchase2ᚕtrip2gᚋinternalᚋdbᚐPurchas
 	return ret
 }
 
-func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋcaseᚋrequestemailsigninᚐRequest(ctx context.Context, v any) (requestemailsignin.Request, error) {
+func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeInput(ctx context.Context, v any) (model.RequestEmailSignInCodeInput, error) {
 	res, err := ec.unmarshalInputRequestEmailSignInCodeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }

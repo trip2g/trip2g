@@ -121,6 +121,10 @@ type Mutation struct {
 type Query struct {
 }
 
+type RequestEmailSignInCodeInput struct {
+	Email string `json:"email"`
+}
+
 type RequestEmailSignInCodePayload struct {
 	Success bool `json:"success"`
 }

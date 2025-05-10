@@ -150,7 +150,7 @@ type ErrorPayload {
 # requestEmailSignInCode
 #
 
-input RequestEmailSignInCodeInput @goModel(model: "trip2g/internal/case/requestemailsignin.Request") {
+input RequestEmailSignInCodeInput {
   email: String!
 }
 
