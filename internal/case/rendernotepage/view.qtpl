@@ -61,9 +61,7 @@
 <header class="container mx-auto px-4 py-2">
   <a href="/">Home</a>
 
-  <div mol_view_root>
-    <div mol_view_root="$trip2g_user_space"></div>
-  </div>
+  <div mol_view_root="$trip2g_user_space"></div>
 </header>
 
 <main class="container mx-auto px-4 py-2">
@@ -87,9 +85,7 @@
 </p>
 <p>{%s err.Message %}</p>
 
-<div mol_view_root>
-  <div mol_view_root="$trip2g_user_paywall" data-subgraphs="{%s resp.NoteSubgraphsJSON() %}"></div>
-</div>
+<div mol_view_root="$trip2g_user_paywall" data-subgraphs="{%s resp.NoteSubgraphsJSON() %}"></div>
 
 {% if resp.UserToken == nil %}
 

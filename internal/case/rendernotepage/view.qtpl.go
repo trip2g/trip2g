@@ -225,118 +225,114 @@ func StreamLayoutHeader(qw422016 *qt422016.Writer, resp *Response) {
 <header class="container mx-auto px-4 py-2">
   <a href="/">Home</a>
 
-  <div mol_view_root>
-    <div mol_view_root="$trip2g_user_space"></div>
-  </div>
+  <div mol_view_root="$trip2g_user_space"></div>
 </header>
 
 <main class="container mx-auto px-4 py-2">
 `)
-//line view.qtpl:70
+//line view.qtpl:68
 }
 
-//line view.qtpl:70
+//line view.qtpl:68
 func WriteLayoutHeader(qq422016 qtio422016.Writer, resp *Response) {
-//line view.qtpl:70
+//line view.qtpl:68
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.qtpl:70
+//line view.qtpl:68
 	StreamLayoutHeader(qw422016, resp)
-//line view.qtpl:70
+//line view.qtpl:68
 	qt422016.ReleaseWriter(qw422016)
-//line view.qtpl:70
+//line view.qtpl:68
 }
 
-//line view.qtpl:70
+//line view.qtpl:68
 func LayoutHeader(resp *Response) string {
-//line view.qtpl:70
+//line view.qtpl:68
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.qtpl:70
+//line view.qtpl:68
 	WriteLayoutHeader(qb422016, resp)
-//line view.qtpl:70
+//line view.qtpl:68
 	qs422016 := string(qb422016.B)
-//line view.qtpl:70
+//line view.qtpl:68
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.qtpl:70
+//line view.qtpl:68
 	return qs422016
-//line view.qtpl:70
+//line view.qtpl:68
 }
 
-//line view.qtpl:72
+//line view.qtpl:70
 func StreamLayoutFooter(qw422016 *qt422016.Writer, resp *Response) {
-//line view.qtpl:72
+//line view.qtpl:70
 	qw422016.N().S(`
 
 </main>
 </div>
 
 <script src="/ui/user/-/web.js?t=`)
-//line view.qtpl:77
+//line view.qtpl:75
 	qw422016.N().D(resp.Time)
-//line view.qtpl:77
+//line view.qtpl:75
 	qw422016.N().S(`"></script>
 
 `)
-//line view.qtpl:79
+//line view.qtpl:77
 }
 
-//line view.qtpl:79
+//line view.qtpl:77
 func WriteLayoutFooter(qq422016 qtio422016.Writer, resp *Response) {
-//line view.qtpl:79
+//line view.qtpl:77
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.qtpl:79
+//line view.qtpl:77
 	StreamLayoutFooter(qw422016, resp)
-//line view.qtpl:79
+//line view.qtpl:77
 	qt422016.ReleaseWriter(qw422016)
-//line view.qtpl:79
+//line view.qtpl:77
 }
 
-//line view.qtpl:79
+//line view.qtpl:77
 func LayoutFooter(resp *Response) string {
-//line view.qtpl:79
+//line view.qtpl:77
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.qtpl:79
+//line view.qtpl:77
 	WriteLayoutFooter(qb422016, resp)
-//line view.qtpl:79
+//line view.qtpl:77
 	qs422016 := string(qb422016.B)
-//line view.qtpl:79
+//line view.qtpl:77
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.qtpl:79
+//line view.qtpl:77
 	return qs422016
-//line view.qtpl:79
+//line view.qtpl:77
 }
 
-//line view.qtpl:81
+//line view.qtpl:79
 func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError) {
-//line view.qtpl:81
+//line view.qtpl:79
 	qw422016.N().S(`
 
 <h1 class="text-2xl font-bold">`)
-//line view.qtpl:83
+//line view.qtpl:81
 	qw422016.E().S(resp.Note.Title)
-//line view.qtpl:83
+//line view.qtpl:81
 	qw422016.N().S(`</h1>
 
 <p>
   Эта страница доступна только для подписчиков. Авторизуйтесь или купите подписку.
 </p>
 <p>`)
-//line view.qtpl:88
+//line view.qtpl:86
 	qw422016.E().S(err.Message)
-//line view.qtpl:88
+//line view.qtpl:86
 	qw422016.N().S(`</p>
 
-<div mol_view_root>
-  <div mol_view_root="$trip2g_user_paywall" data-subgraphs="`)
-//line view.qtpl:91
+<div mol_view_root="$trip2g_user_paywall" data-subgraphs="`)
+//line view.qtpl:88
 	qw422016.E().S(resp.NoteSubgraphsJSON())
-//line view.qtpl:91
+//line view.qtpl:88
 	qw422016.N().S(`"></div>
-</div>
 
 `)
-//line view.qtpl:94
+//line view.qtpl:90
 	if resp.UserToken == nil {
-//line view.qtpl:94
+//line view.qtpl:90
 		qw422016.N().S(`
 
 <!--
@@ -371,37 +367,37 @@ func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError)
 -->
 
 `)
-//line view.qtpl:127
+//line view.qtpl:123
 	}
-//line view.qtpl:127
+//line view.qtpl:123
 	qw422016.N().S(`
 
 `)
-//line view.qtpl:129
+//line view.qtpl:125
 }
 
-//line view.qtpl:129
+//line view.qtpl:125
 func WritePayWall(qq422016 qtio422016.Writer, resp *Response, err *PaywallError) {
-//line view.qtpl:129
+//line view.qtpl:125
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.qtpl:129
+//line view.qtpl:125
 	StreamPayWall(qw422016, resp, err)
-//line view.qtpl:129
+//line view.qtpl:125
 	qt422016.ReleaseWriter(qw422016)
-//line view.qtpl:129
+//line view.qtpl:125
 }
 
-//line view.qtpl:129
+//line view.qtpl:125
 func PayWall(resp *Response, err *PaywallError) string {
-//line view.qtpl:129
+//line view.qtpl:125
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.qtpl:129
+//line view.qtpl:125
 	WritePayWall(qb422016, resp, err)
-//line view.qtpl:129
+//line view.qtpl:125
 	qs422016 := string(qb422016.B)
-//line view.qtpl:129
+//line view.qtpl:125
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.qtpl:129
+//line view.qtpl:125
 	return qs422016
-//line view.qtpl:129
+//line view.qtpl:125
 }

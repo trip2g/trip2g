@@ -29,7 +29,7 @@ namespace $.$$ {
 		}
 
 		user_email() {
-			return this.viewer().user?.email || '???'
+			return this.viewer().user?.email || 'Guest'
 		}
 	}
 }

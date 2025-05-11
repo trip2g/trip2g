@@ -1,1 +1,8 @@
-$trip2g_user $trip2g_user_paywall
+$trip2g_user $mol_view
+	ComponentButton* $mol_button_major
+		title <= component_name* \
+		click? <=> component_click* null
+	ComponentList $mol_list
+		rows <= component_items /$mol_view
+	Paywall $trip2g_user_paywall
+	Space $trip2g_user_space
