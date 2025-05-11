@@ -5,7 +5,14 @@ namespace $.$$ {
 		}
 
 		@$mol_mem
+		update_marker(next?: null) {
+			return next;
+		}
+
+		@$mol_mem
 		data(next?: null) {
+			this.update_marker()
+
 			const subgraphs = this.subgraphs()
 			if (subgraphs.length === 0) {
 				return $trip2g_graphql_make_map([])
@@ -13,34 +20,31 @@ namespace $.$$ {
 
 			const res = $trip2g_graphql_request(
 				`
-				query PaywallActivePurchaseQuery($input: ActivePurchasesInput!) {
+				query PaywallActivePurchaseQuery {
 					viewer {
-						activePurchases(input: $input) {
+						activePurchases {
 							id
 							status
 							successful
 						}
 					}
 				}
-			`,
-				{
-					input: {
-						email: this.current_email() || null,
-						subgraphs,
-					},
-				}
+			`
 			)
 
 			const done = this.$.$mol_state_arg.value('done') === 'true'
 
+			let updateInterval: NodeJS.Timeout | null = null
+
 			if (!done) {
-				setTimeout(() => this.data(null), 3000)
+				updateInterval = setTimeout(() => this.update_marker(null), 3000)
 			}
 
 			const rows = res.viewer.activePurchases
 
 			// avoid infinite reload if something went wrong
-			if (rows.every(row => row.successful) && !done) {
+			if (rows.every(row => row.successful) && !done && rows.length > 0) {
+				// set the state to done
 				this.$.$mol_state_arg.value('done', 'true')
 
 				// wait for the state to be set
@@ -49,7 +53,15 @@ namespace $.$$ {
 				}, 10)
 			}
 
-			return $trip2g_graphql_make_map(rows)
+			const map = $trip2g_graphql_make_map(rows)
+
+			return Object.assign(map, {
+				destructor: () => {
+					if (updateInterval) {
+						clearTimeout(updateInterval)
+					}
+				},
+			})
 		}
 
 		override list_items(): readonly $mol_view[] {

@@ -1,9 +1,7 @@
 $trip2g_user_paywall $mol_view
 	subgraphs /string
 	sub /
+		<= PurchaseItems $trip2g_user_paywall_activepurchases
+			subgraphs <= subgraphs
 		<= Offers $trip2g_user_paywall_offers
 			subgraphs <= subgraphs
-		- <= PurchaseItems $trip2g_user_paywall_activepurchases
-			subgraphs <= subgraphs
-			current_email? <=> current_email? \
-
