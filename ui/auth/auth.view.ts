@@ -50,8 +50,6 @@ namespace $.$$ {
 		}
 
 		sub() {
-			console.log('entered_email', this.entered_email())
-
 			const viewer = this.me()
 			if (viewer.user) {
 				return [this.AppView()]

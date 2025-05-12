@@ -14,3 +14,7 @@ a {
 .authorized .paywall::after {
   content: none;
 }
+
+body:has(dialog[open]) {
+  overflow: hidden;
+}

@@ -4,6 +4,18 @@ namespace $.$$ {
 			return this.$.$trip2g_auth_viewer.current()
 		}
 
+		mounted = false
+
+		sub() {
+			if (!this.mounted) {
+				this.mounted = true
+				console.log('set theme')
+				this.$.$mol_lights(true)
+			}
+
+			return super.sub()
+		}
+
 		override open_title(): string {
 			const viewer = this.viewer()
 
@@ -46,6 +58,14 @@ namespace $.$$ {
 
 		user_email() {
 			return this.viewer().user?.email || ''
+		}
+
+		override close_click(e: MouseEvent) {
+			const r = this.modal_node().getBoundingClientRect()
+
+			if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+				this.modal_node().close()
+			}
 		}
 	}
 }

@@ -18,11 +18,18 @@
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
-	z-index: 10;
 }
 
 [trip2g_user_space_dialog]::backdrop {
 	background: rgba(0, 0, 0, 0.5);
+	background: linear-gradient(
+		45deg,
+		rgba(146, 228, 111, 0.6) 0%,
+		rgba(72, 108, 191, 0.6) 50%,
+		rgba(177, 48, 169, 0.6) 100%
+	);
+
+	backdrop-filter: blur(2px);
 }
 
 [trip2g_user_space_dialog]:not([open]) {
