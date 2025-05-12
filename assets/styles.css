@@ -25,3 +25,15 @@ a {
 body:has(dialog[open]) {
   overflow: hidden;
 }
+
+html, body {
+  @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
+}
+
+:root {
+  --color-base-content: #000;
+}
+
+.dark .prose {
+  @apply prose-invert;
+}

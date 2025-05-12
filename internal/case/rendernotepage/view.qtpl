@@ -10,7 +10,7 @@
   <div class="flex-1">
     <h1 class="text-2xl font-bold">{%s resp.Note.Title %}</h1>
 
-    <div class="prose dark:prose-invert">
+    <div class="prose prose-stone">
     {%s= string(resp.Note.HTML) %}
     </div>
 
@@ -54,9 +54,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 
 <title>{%s resp.Title %}</title>
-<link href="/assets/output.css" rel="stylesheet">
-
-<body class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+<link href="/assets/output.css?v={%s resp.AssetVersion %}" rel="stylesheet">
 
 <div id="all-content">
 
@@ -77,8 +75,6 @@
 </div>
 
 <script src="/ui/user/-/web.js?t={%d resp.Time %}"></script>
-
-</body>
 
 {% endfunc %}
 

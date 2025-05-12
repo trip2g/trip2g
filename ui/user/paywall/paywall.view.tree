@@ -2,6 +2,8 @@ $trip2g_user_paywall $mol_view
 	subgraphs /string
 	minimal_height 0
 	minimal_width 0
+	plugins /
+		<= Theme $mol_theme_auto
 	sub /
 		<= PurchaseItems $trip2g_user_paywall_activepurchases
 			subgraphs <= subgraphs

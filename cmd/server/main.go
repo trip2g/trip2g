@@ -559,6 +559,10 @@ func (a *app) ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error) {
 	return ids, nil
 }
 
+func (a *app) AssetVersion() string {
+	return strconv.FormatInt(time.Now().UnixMilli(), 10)
+}
+
 func (a *app) startServer() {
 	fs := &fasthttp.FS{
 		Root:               "./assets",
