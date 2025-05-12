@@ -7,7 +7,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "daisyui": "^4.12.22",
     "graphology": "^0.26.0",
     "graphology-communities-louvain": "^2.0.2",
     "graphology-layout": "^0.6.1",
@@ -17,10 +16,11 @@
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.5",
-    "@tailwindcss/cli": "^4.1",
+    "@tailwindcss/cli": "^4.1.6",
     "@tailwindcss/typography": "^0.5.16",
+    "daisyui": "^5.0.35",
     "graphql-codegen-persisted-query-ids": "^0.2.0",
-    "tailwindcss": "^4.1",
+    "tailwindcss": "^4.1.6",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"
   }

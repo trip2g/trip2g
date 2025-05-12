@@ -3,6 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @plugin "@tailwindcss/typography";
+@plugin "daisyui";
 
 a {
   @apply text-blue-500 underline;
