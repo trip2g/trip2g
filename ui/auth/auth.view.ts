@@ -42,6 +42,7 @@ namespace $.$$ {
 			throw new Error('Unknown error')
 		}
 
+		@$mol_mem
 		override entered_email(next?: string): string {
 			this.$.$mol_state_arg.value('email', next || null)
 
@@ -49,6 +50,8 @@ namespace $.$$ {
 		}
 
 		sub() {
+			console.log('entered_email', this.entered_email())
+
 			const viewer = this.me()
 			if (viewer.user) {
 				return [this.AppView()]
@@ -104,8 +107,9 @@ namespace $.$$ {
 
 			if (res.data.__typename === 'RequestEmailSignInCodePayload') {
 				if (res.data.success) {
+					console.log('set email', this.email(), 'code sent')
+					this.entered_email(this.email())
 					this.code_sent(true)
-					this.$.$mol_state_arg.value('email', this.email())
 					return
 				}
 			}

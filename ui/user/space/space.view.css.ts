@@ -1,6 +1,6 @@
 namespace $.$$ {
 	$mol_style_define( $trip2g_user_space, {
-		display: 'block',
+		alignItems: 'center',
 
 		Dialog: {
 			position: 'relative',
@@ -12,5 +12,9 @@ namespace $.$$ {
 			right: '25px',
 			cursor: 'pointer',
 		}
+	})
+
+	$mol_style_define( $trip2g_user_space_name, {
+		margin: '1rem',
 	})
 }

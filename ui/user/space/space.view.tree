@@ -2,8 +2,10 @@ $trip2g_user_space $mol_view
 	minimal_height 0
 	minimal_width 0
 	sub /
-		<= user_email \
+		<= Name $trip2g_user_space_name
+			value <= user_email \
 		<= Open $mol_button_major
+			title <= open_title \
 			click <= open null
 		<= Dialog $mol_view
 			dom_name \dialog
@@ -25,3 +27,7 @@ $trip2g_user_space $mol_view
 				click <= close null
 			<= SignOut $mol_button_major
 				click? <=> signout
+
+$trip2g_user_space_name $mol_view
+	value \
+	sub / <= value

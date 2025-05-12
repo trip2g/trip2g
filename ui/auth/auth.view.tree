@@ -6,15 +6,17 @@ $trip2g_auth $mol_view
 	code_sent? false
 	EmailForm $trip2g_auth_email_form
 		code_sent? <=> code_sent?
+		entered_email? <=> entered_email?
 	CodeForm $trip2g_auth_code_form
 		reload_me <= reload_me
-		email? <=> entered_email?
+		email? <= entered_email?
 		code_sent? <=> code_sent?
 	AppView $mol_view
 		sub / \TODO: Replace AppView
 
 $trip2g_auth_email_form $mol_form
 	code_sent? false
+	entered_email? \
 	body /
 		<= Email_field $mol_form_field
 			name \Email
