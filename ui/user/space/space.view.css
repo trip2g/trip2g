@@ -10,10 +10,11 @@
 	width: 80vw;
 	height: 80vh;
 	padding: 2rem;
+	margin: auto;
 	border: none;
 	border-radius: 1rem;
 	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-	background-color: white;
+	background-color: var(--mol_theme_back);
 	display: flex;
 	flex-direction: column;
 	justify-content: center;

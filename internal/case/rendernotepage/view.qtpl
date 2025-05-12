@@ -56,6 +56,8 @@
 <title>{%s resp.Title %}</title>
 <link href="/assets/output.css" rel="stylesheet">
 
+<body class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+
 <div id="all-content">
 
 <header class="container mx-auto px-4 py-2">
@@ -73,6 +75,8 @@
 </div>
 
 <script src="/ui/user/-/web.js?t={%d resp.Time %}"></script>
+
+</body>
 
 {% endfunc %}
 

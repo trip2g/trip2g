@@ -4,18 +4,6 @@ namespace $.$$ {
 			return this.$.$trip2g_auth_viewer.current()
 		}
 
-		mounted = false
-
-		sub() {
-			if (!this.mounted) {
-				this.mounted = true
-				console.log('set theme')
-				this.$.$mol_lights(true)
-			}
-
-			return super.sub()
-		}
-
 		override open_title(): string {
 			const viewer = this.viewer()
 

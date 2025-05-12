@@ -1,12 +1,16 @@
 $trip2g_user_space $mol_view
 	minimal_height 0
 	minimal_width 0
+	plugins /
+		<= Theme $mol_theme_auto
+		<= SiteTheme $trip2g_theme
 	sub /
 		<= Name $trip2g_user_space_name
 			value <= user_email \
 		<= Open $mol_button_major
 			title <= open_title \
 			click <= open null
+		<= Lighter $mol_lights_toggle
 		<= Dialog $mol_view
 			dom_name \dialog
 			attr * open <= open_status null null|string
