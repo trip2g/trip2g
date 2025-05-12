@@ -5,8 +5,11 @@
 @plugin "@tailwindcss/typography";
 
 a {
-  /* underline */
-  /* @apply text-blue-500 underline; */
+  @apply text-blue-500 underline;
+}
+
+.dark a {
+  @apply text-blue-400;
 }
 
 .paywall::after {

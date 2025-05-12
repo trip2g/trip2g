@@ -2,7 +2,7 @@
 
 <div class="flex">
   {% if sidebar := resp.Sidebar(); sidebar != nil %}
-  <div class="w-60 pr-8">
+  <div class="pr-8 menu bg-base-200 rounded-box w-56">
     {%s= string(sidebar.HTML) %}
   </div>
   {% endif %}
@@ -10,7 +10,7 @@
   <div class="flex-1">
     <h1 class="text-2xl font-bold">{%s resp.Note.Title %}</h1>
 
-    <div class="prose">
+    <div class="prose dark:prose-invert">
     {%s= string(resp.Note.HTML) %}
     </div>
 
@@ -60,8 +60,10 @@
 
 <div id="all-content">
 
-<header class="container mx-auto px-4 py-2">
-  <a href="/">Home</a>
+<header class="container mx-auto px-4 py-2 flex">
+  <div class="flex-1">
+    <a href="/">Home</a>
+  </div>
 
   <div mol_view_root="$trip2g_user_space"></div>
 </header>
