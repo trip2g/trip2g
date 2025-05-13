@@ -100,7 +100,7 @@ func StreamNote(qw422016 *qt422016.Writer, resp *Response) {
 			qw422016.N().S(`
         `)
 //line view.qtpl:31
-			if inNote, ok := resp.Notes[k]; ok {
+			if inNote := resp.Notes.GetByPath(k); inNote != nil {
 //line view.qtpl:31
 				qw422016.N().S(`
           <div><a href="`)

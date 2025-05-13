@@ -55,17 +55,17 @@ func (r *adminMutationResolver) BanUser(ctx context.Context, obj *appmodel.Admin
 // Nodes is the resolver for the nodes field.
 func (r *adminNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNoteViewsConnection) ([]appmodel.NoteView, error) {
 	notes := r.env(ctx).AllNotes()
-	res := make([]appmodel.NoteView, 0, len(notes))
-	keys := make([]string, 0, len(notes))
+	res := make([]appmodel.NoteView, 0, len(notes.Map))
+	keys := make([]string, 0, len(notes.Map))
 
-	for _, note := range notes {
+	for _, note := range notes.Map {
 		keys = append(keys, note.ID())
 	}
 
 	slices.Sort(keys)
 
 	for _, key := range keys {
-		res = append(res, *notes[key])
+		res = append(res, *notes.Map[key])
 	}
 
 	return res, nil
@@ -105,7 +105,7 @@ func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *appmodel.AdminQu
 func (r *adminQueryResolver) NoteView(ctx context.Context, obj *appmodel.AdminQuery, id string) (*appmodel.NoteView, error) {
 	notes := r.env(ctx).AllNotes()
 
-	return notes[id], nil
+	return notes.GetByPath(id), nil
 }
 
 // UserSubgraphAccess is the resolver for the userSubgraphAccess field.

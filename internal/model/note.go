@@ -28,7 +28,9 @@ type NoteView struct {
 	Subgraphs []string
 }
 
-type NoteViews map[string]*NoteView
+type NoteViews struct {
+	Map map[string]*NoteView
+}
 
 func (n *NoteView) ID() string {
 	return n.Permalink
@@ -106,10 +108,16 @@ func (n *NoteView) ExtractTitle() string {
 	return filepath.Base(n.Path[:len(n.Path)-len(".md")])
 }
 
-func (pages NoteViews) Subgraphs() ([]string, error) {
+func NewNoteViews() *NoteViews {
+	return &NoteViews{
+		Map: make(map[string]*NoteView),
+	}
+}
+
+func (nv NoteViews) Subgraphs() ([]string, error) {
 	subgraphs := make(map[string]struct{})
 
-	for _, page := range pages {
+	for _, page := range nv.Map {
 		for _, ps := range page.Subgraphs {
 			subgraphs[ps] = struct{}{}
 		}
@@ -145,12 +153,21 @@ func extractSubgraphs(target map[string]struct{}, val interface{}) error {
 	return nil
 }
 
-func (pages NoteViews) IDMap() map[int64]*NoteView {
-	idMap := make(map[int64]*NoteView, len(pages))
+func (nv NoteViews) IDMap() map[int64]*NoteView {
+	idMap := make(map[int64]*NoteView, len(nv.Map))
 
-	for _, page := range pages {
+	for _, page := range nv.Map {
 		idMap[page.PathID] = page
 	}
 
 	return idMap
+}
+
+func (nv NoteViews) GetByPath(v string) *NoteView {
+	note, ok := nv.Map[v]
+	if !ok {
+		return nil
+	}
+
+	return note
 }

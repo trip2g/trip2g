@@ -16,7 +16,7 @@ import (
 type Env interface {
 	Logger() logger.Logger
 	AssetVersion() string
-	AllNotes() model.NoteViews
+	AllNotes() *model.NoteViews
 	ListActiveSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
 	UpsertUserNoteDailyView(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
@@ -33,7 +33,7 @@ type Request struct {
 type Response struct {
 	Title string
 	Note  *model.NoteView
-	Notes model.NoteViews
+	Notes *model.NoteViews
 
 	LatestNotes []*model.NoteView
 
@@ -49,7 +49,7 @@ type Response struct {
 const defaultSidebarPath = "/_sidebar"
 
 func (r *Response) NoteSubgraphsJSON() string {
-	raw, err := json.Marshal(r.NoteSubgraphs)
+	raw, err := json.Marshal(r.Note.Subgraphs)
 	if err != nil {
 		return "null"
 	}
@@ -58,13 +58,13 @@ func (r *Response) NoteSubgraphsJSON() string {
 }
 
 func (r *Response) Sidebar() *model.NoteView {
-	result := r.Notes[defaultSidebarPath]
+	result := r.Notes.GetByPath(defaultSidebarPath)
 
 	sidebarI, sidebarOk := r.Note.RawMeta["sidebar"]
 	if sidebarOk {
 		switch s := sidebarI.(type) {
 		case string:
-			result = r.Notes[s]
+			result = r.Notes.Map[s]
 		case bool:
 			if !s {
 				return nil
@@ -95,8 +95,8 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	response := Response{}
 
-	page, ok := pages[path]
-	if !ok {
+	note := pages.GetByPath(path)
+	if note == nil {
 		return &response, ErrNotFound
 	}
 
@@ -104,33 +104,29 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	// TODO: hide all _* pages (system)
 	// TODO: add hideSidebar logic
 
-	noteSubgraphs, err := model.NoteViews{"": page}.Subgraphs()
-	if err != nil {
-		return &response, err
-	}
-
-	response.Title = page.Title
-	response.Note = page
+	response.Title = note.Title
+	response.Note = note
 	response.Notes = pages
 	response.UserToken = request.UserToken
 	response.Time = int(time.Now().Unix())
-	response.NoteSubgraphs = noteSubgraphs
 	response.AssetVersion = env.AssetVersion()
 
 	// not sure if this is the right place to do this
-	for key := range page.InLinks {
+	for key := range note.InLinks {
 		if len(key) > 1 && key[1] == '_' {
-			delete(page.InLinks, key)
+			delete(note.InLinks, key)
 		}
 	}
 
 	// hide all non-free pages from guests
-	if !page.Free && request.UserToken == nil {
+	if !note.Free && request.UserToken == nil {
 		return &response, &PaywallError{Message: "Need auth"}
 	}
 
 	if request.UserToken != nil {
 		userID := int64(request.UserToken.ID)
+
+		var err error
 
 		response.UserSubgraphs, err = env.ListActiveSubgraphNamesByUserID(ctx, userID)
 		if err != nil {
@@ -141,7 +137,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 		dailyParams := db.UpsertUserNoteDailyViewParams{
 			UserID: userID,
-			PathID: page.PathID,
+			PathID: note.PathID,
 		}
 
 		dailyCount, err := env.UpsertUserNoteDailyView(ctx, dailyParams)
@@ -177,10 +173,10 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		}
 	}
 
-	hasAccess := len(noteSubgraphs) == 0
+	hasAccess := len(response.Note.Subgraphs) == 0
 
 	// check if the user has access to the subgraph
-	for _, ps := range noteSubgraphs {
+	for _, ps := range response.Note.Subgraphs {
 		for _, us := range response.UserSubgraphs {
 			if ps == us {
 				hasAccess = true

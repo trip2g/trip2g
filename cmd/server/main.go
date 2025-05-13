@@ -58,7 +58,7 @@ type app struct {
 
 	mu sync.Mutex
 
-	pages model.NoteViews
+	nvs *model.NoteViews
 
 	queries *db.Queries
 	conn    *sql.DB
@@ -308,7 +308,7 @@ func (a *app) CreateNowpaymentsInvoice(params nowpayments.CreateInvoiceParams) (
 	return a.nowpaymentsClient.CreateInvoice(params)
 }
 
-func (a *app) PrepareNotes(ctx context.Context) (model.NoteViews, error) {
+func (a *app) PrepareNotes(ctx context.Context) (*model.NoteViews, error) {
 	a.log.Info("preparing notes")
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -337,19 +337,19 @@ func (a *app) PrepareNotes(ctx context.Context) (model.NoteViews, error) {
 		return nil, fmt.Errorf("failed to load pages: %w", err)
 	}
 
-	a.pages = pages
+	a.nvs = pages
 
 	return pages, nil
 }
 
-func (a *app) AllNotes() model.NoteViews {
+func (a *app) AllNotes() *model.NoteViews {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	copy := make(model.NoteViews, len(a.pages))
+	copy := model.NewNoteViews()
 
-	for k, v := range a.pages {
-		copy[k] = v
+	for k, v := range a.nvs.Map {
+		copy.Map[k] = v
 	}
 
 	return copy
@@ -522,7 +522,7 @@ func (a *app) NoteByPath(path string) (*model.NoteView, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	page, ok := a.pages[path]
+	page, ok := a.nvs.Map[path]
 	if !ok {
 		return nil, errors.New("page not found")
 	}

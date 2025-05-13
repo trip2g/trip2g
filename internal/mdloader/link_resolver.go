@@ -11,7 +11,7 @@ import (
 type myLinkResolver struct {
 	log logger.Logger
 
-	pages model.NoteViews
+	nvs *model.NoteViews
 
 	currentPage *model.NoteView
 }

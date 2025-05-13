@@ -27,30 +27,30 @@ type SourceFile struct {
 }
 
 type loader struct {
-	pages model.NoteViews
-	md    goldmark.Markdown
-	log   logger.Logger
+	nvs *model.NoteViews
+	md  goldmark.Markdown
+	log logger.Logger
 
 	linkResolver *myLinkResolver
 }
 
 // Load transforms markdown files into pages.
-func Load(sourceFiles []SourceFile, log logger.Logger) (model.NoteViews, error) {
+func Load(sourceFiles []SourceFile, log logger.Logger) (*model.NoteViews, error) {
 	ldr := &loader{
-		log:   log,
-		pages: make(model.NoteViews),
+		log: log,
+		nvs: model.NewNoteViews(),
 
 		linkResolver: &myLinkResolver{},
 	}
 
-	ldr.linkResolver.pages = ldr.pages
+	ldr.linkResolver.nvs = ldr.nvs
 	ldr.linkResolver.log = log
 
 	ldr.md = goldmark.New(
 		goldmark.WithRendererOptions(
 			renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{
 				resolver: ldr.linkResolver,
-				notes:    ldr.pages,
+				nvs:      ldr.nvs,
 			}, 198)),
 		),
 		goldmark.WithExtensions(
@@ -73,7 +73,7 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (model.NoteViews, error) 
 
 		page.PathID = src.PathID
 
-		ldr.pages[page.Permalink] = page
+		ldr.nvs.Map[page.Permalink] = page
 	}
 
 	err := ldr.extractInLinks()
@@ -86,11 +86,11 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (model.NoteViews, error) 
 		return nil, fmt.Errorf("failed to generate static pages: %w", err)
 	}
 
-	return ldr.pages, nil
+	return ldr.nvs, nil
 }
 
 func (ldr *loader) generatePageHTMLs() error {
-	for _, p := range ldr.pages {
+	for _, p := range ldr.nvs.Map {
 		err := ldr.generatePageHTML(p)
 		if err != nil {
 			return fmt.Errorf("failed to generate page: %w (%s)", err, p.Path)
@@ -116,7 +116,7 @@ func (ldr *loader) generatePageHTML(p *model.NoteView) error {
 }
 
 func (ldr *loader) extractInLinks() error {
-	for _, p := range ldr.pages {
+	for _, p := range ldr.nvs.Map {
 		err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 			if n.Kind() != wikilink.Kind || !entering {
 				return ast.WalkContinue, nil
@@ -139,10 +139,10 @@ func (ldr *loader) extractInLinks() error {
 			for i := len(currentParts) - 1; i >= 0; i-- {
 				targetPermalink := strings.Join(currentParts[:i], "/") + target
 
-				targetPage, targetOk := ldr.pages[targetPermalink]
-				if targetOk {
-					targetPage.InLinks[p.Permalink] = struct{}{}
-					link.Target = []byte(targetPage.Permalink)
+				targetNote := ldr.nvs.GetByPath(targetPermalink)
+				if targetNote != nil {
+					targetNote.InLinks[p.Permalink] = struct{}{}
+					link.Target = []byte(targetNote.Permalink)
 					return ast.WalkContinue, nil
 				}
 			}

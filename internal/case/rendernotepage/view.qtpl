@@ -28,7 +28,7 @@
       <h2 class="font-bold mt-4">Linked from</h2>
 
       {% for k := range resp.Note.InLinks %}
-        {% if inNote, ok := resp.Notes[k]; ok %}
+        {% if inNote := resp.Notes.GetByPath(k); inNote != nil %}
           <div><a href="{%s inNote.Permalink %}">{%s inNote.Title %}</a></div>
         {% endif %}
       {% endfor %}

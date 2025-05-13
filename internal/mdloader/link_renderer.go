@@ -45,7 +45,7 @@ type linkRenderer struct {
 	// when exiting a Node render.
 	hasDest sync.Map // *Node => struct{}
 
-	notes model.NoteViews
+	nvs *model.NoteViews
 }
 
 func (r *linkRenderer) init() {
@@ -101,8 +101,8 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 		r.hasDest.Store(n, struct{}{})
 		_, _ = w.WriteString(`<a`)
 
-		note, ok := r.notes[string(dest)]
-		if ok && !note.Free {
+		note := r.nvs.GetByPath(string(dest))
+		if note != nil && !note.Free {
 			subgraphClasses := ""
 
 			if len(note.Subgraphs) == 0 {

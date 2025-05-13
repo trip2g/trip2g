@@ -57,7 +57,7 @@ type Env interface {
 	ListActivePurchasesByIDs(ctx context.Context, ids []string) ([]db.Purchase, error)
 	ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error)
 
-	AllNotes() model.NoteViews
+	AllNotes() *model.NoteViews
 
 	OnPurchaseUpdatedSubscribe(email string, handler func()) func()
 
