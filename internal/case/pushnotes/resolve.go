@@ -68,20 +68,15 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		}
 	}
 
-	pages, err := env.PrepareNotes(ctx)
+	nvs, err := env.PrepareNotes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}
 
-	subgraphs, err := pages.Subgraphs()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get subgraphs: %w", err)
-	}
+	env.Logger().Info("insert subgraphs", "subgraphs", nvs.Subgraphs)
 
-	env.Logger().Info("insert subgraphs", "subgraphs", subgraphs)
-
-	for _, subgraph := range subgraphs {
-		insertErr := env.InsertSubgraph(ctx, subgraph)
+	for _, subgraph := range nvs.Subgraphs {
+		insertErr := env.InsertSubgraph(ctx, subgraph.Name)
 		if insertErr != nil {
 			return nil, fmt.Errorf("failed to insert subgraph: %w", insertErr)
 		}

@@ -108,7 +108,7 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 			if len(note.Subgraphs) == 0 {
 				subgraphClasses = "paywall:core"
 			} else {
-				for _, subgraph := range note.Subgraphs {
+				for _, subgraph := range note.SubgraphNames {
 					subgraphClasses += " paywall-" + subgraph
 				}
 			}

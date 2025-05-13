@@ -24,12 +24,21 @@ type NoteView struct {
 	InLinks map[string]struct{}
 	RawMeta map[string]interface{}
 
-	DeadLinks []string
-	Subgraphs []string
+	DeadLinks     []string
+	SubgraphNames []string
+	Subgraphs     map[string]*Subgraph
+}
+
+type Subgraph struct {
+	Name    string
+	Home    *NoteView
+	Sidebar *NoteView
 }
 
 type NoteViews struct {
 	Map map[string]*NoteView
+
+	Subgraphs map[string]*Subgraph
 }
 
 func (n *NoteView) ID() string {
@@ -44,17 +53,17 @@ func (n *NoteView) SetAst(node ast.Node) {
 	n.ast = node
 }
 
-func (n *NoteView) ExtractSubgraphs() ([]string, error) {
+func (n *NoteView) ExtractSubgraphs() error {
 	subgraphs := make(map[string]struct{})
 
 	err := extractSubgraphs(subgraphs, n.RawMeta["subgraph"])
 	if err != nil {
-		return nil, fmt.Errorf("error extracting subgraph: %w", err)
+		return fmt.Errorf("error extracting subgraph: %w", err)
 	}
 
 	err = extractSubgraphs(subgraphs, n.RawMeta["subgraphs"])
 	if err != nil {
-		return nil, fmt.Errorf("error extracting subgraphs: %w", err)
+		return fmt.Errorf("error extracting subgraphs: %w", err)
 	}
 
 	res := make([]string, 0, len(subgraphs))
@@ -63,7 +72,9 @@ func (n *NoteView) ExtractSubgraphs() ([]string, error) {
 		res = append(res, k)
 	}
 
-	return res, nil
+	n.SubgraphNames = res
+
+	return nil
 }
 
 func (n *NoteView) ExtractTitle() string {
@@ -111,26 +122,51 @@ func (n *NoteView) ExtractTitle() string {
 func NewNoteViews() *NoteViews {
 	return &NoteViews{
 		Map: make(map[string]*NoteView),
+
+		Subgraphs: make(map[string]*Subgraph),
 	}
 }
 
-func (nv NoteViews) Subgraphs() ([]string, error) {
-	subgraphs := make(map[string]struct{})
-
+func (nv *NoteViews) ExtractSubgraphs() {
 	for _, page := range nv.Map {
-		for _, ps := range page.Subgraphs {
-			subgraphs[ps] = struct{}{}
+		for _, ps := range page.SubgraphNames {
+			_, ok := nv.Subgraphs[ps]
+			if !ok {
+				nv.Subgraphs[ps] = &Subgraph{
+					Name: ps,
+				}
+			}
+
+			page.Subgraphs[ps] = nv.Subgraphs[ps]
 		}
 	}
 
-	res := make([]string, 0, len(subgraphs))
-
-	for k := range subgraphs {
-		res = append(res, k)
+	for name, subgraph := range nv.Subgraphs {
+		sidebarPath := fmt.Sprintf("/_sidebar_%s", name)
+		sidebar, ok := nv.Map[sidebarPath]
+		if ok {
+			subgraph.Sidebar = sidebar
+		}
 	}
-
-	return res, nil
 }
+
+// func (nv NoteViews) Subgraphs() ([]string, error) {
+// 	subgraphs := make(map[string]struct{})
+//
+// 	for _, page := range nv.Map {
+// 		for _, ps := range page.Subgraphs {
+// 			subgraphs[ps] = struct{}{}
+// 		}
+// 	}
+//
+// 	res := make([]string, 0, len(subgraphs))
+//
+// 	for k := range subgraphs {
+// 		res = append(res, k)
+// 	}
+//
+// 	return res, nil
+// }
 
 func extractSubgraphs(target map[string]struct{}, val interface{}) error {
 	switch val := val.(type) {

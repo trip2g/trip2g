@@ -86,6 +86,8 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (*model.NoteViews, error)
 		return nil, fmt.Errorf("failed to generate static pages: %w", err)
 	}
 
+	ldr.nvs.ExtractSubgraphs()
+
 	return ldr.nvs, nil
 }
 
@@ -169,6 +171,7 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) { //nolint
 		Permalink: "/" + src.Path[:len(src.Path)-len(".md")],
 		Content:   src.Content,
 		InLinks:   make(map[string]struct{}),
+		Subgraphs: make(map[string]*model.Subgraph),
 	}
 
 	pp.SetAst(doc)
@@ -177,9 +180,7 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) { //nolint
 	pp.Title = pp.ExtractTitle()
 	pp.Free = pp.RawMeta["free"] == true
 
-	var err error
-
-	pp.Subgraphs, err = pp.ExtractSubgraphs()
+	err := pp.ExtractSubgraphs()
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract subgraphs: %w", err)
 	}
