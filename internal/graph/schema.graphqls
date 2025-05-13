@@ -29,9 +29,15 @@ type UserBan {
   reason: String!
 }
 
+type UserSubgraphAccess {
+  createdAt: Time!
+  expiresAt: Time
+  subgraph: Subgraph!
+}
+
 type User {
   email: String!
-  subgraphs: [Subgraph!]!
+  subgraphAccesses: [UserSubgraphAccess!]!
 }
 
 type AdminUser @goModel(model: "trip2g/internal/db.User") {
@@ -52,7 +58,7 @@ type AdminSubgraph @goModel(model: "trip2g/internal/db.Subgraph") {
   createdAt: Time!
 }
 
-type UserSubgraphAccess {
+type AdminUserSubgraphAccess @goModel(model: "trip2g/internal/db.UserSubgraphAccess") {
   id: Int64!
   userId: Int64!
   subgraphId: Int64!
@@ -60,7 +66,7 @@ type UserSubgraphAccess {
   expiresAt: Time
 
   user: AdminUser!
-  subgraph: Subgraph!
+  subgraph: AdminSubgraph!
 }
 
 type NoteView {
@@ -78,7 +84,7 @@ type Admin {
 }
 
 type AdminUserSubgraphAccessesConnection {
-  nodes: [UserSubgraphAccess!]! @goField(forceResolver: true)
+  nodes: [AdminUserSubgraphAccess!]! @goField(forceResolver: true)
 }
 
 type AdminSubgraphsConnection {
@@ -132,7 +138,7 @@ type Purchase {
 
 type Query {
   viewer: Viewer!
-  subgraph(name: String!): Subgraph
+  #subgraph(name: String!): Subgraph
   admin: AdminQuery!
 }
 

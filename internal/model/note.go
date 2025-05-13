@@ -26,10 +26,10 @@ type NoteView struct {
 
 	DeadLinks     []string
 	SubgraphNames []string
-	Subgraphs     map[string]*Subgraph
+	Subgraphs     map[string]*NoteSubgraph
 }
 
-type Subgraph struct {
+type NoteSubgraph struct {
 	Name    string
 	Home    *NoteView
 	Sidebar *NoteView
@@ -38,7 +38,7 @@ type Subgraph struct {
 type NoteViews struct {
 	Map map[string]*NoteView
 
-	Subgraphs map[string]*Subgraph
+	Subgraphs map[string]*NoteSubgraph
 }
 
 func (n *NoteView) ID() string {
@@ -123,8 +123,22 @@ func NewNoteViews() *NoteViews {
 	return &NoteViews{
 		Map: make(map[string]*NoteView),
 
-		Subgraphs: make(map[string]*Subgraph),
+		Subgraphs: make(map[string]*NoteSubgraph),
 	}
+}
+
+func (nv *NoteViews) Copy() *NoteViews {
+	res := NewNoteViews()
+
+	for k, v := range nv.Map {
+		res.Map[k] = v
+	}
+
+	for k, v := range nv.Subgraphs {
+		res.Subgraphs[k] = v
+	}
+
+	return res
 }
 
 func (nv *NoteViews) ExtractSubgraphs() {
@@ -132,7 +146,7 @@ func (nv *NoteViews) ExtractSubgraphs() {
 		for _, ps := range page.SubgraphNames {
 			_, ok := nv.Subgraphs[ps]
 			if !ok {
-				nv.Subgraphs[ps] = &Subgraph{
+				nv.Subgraphs[ps] = &NoteSubgraph{
 					Name: ps,
 				}
 			}
@@ -146,6 +160,20 @@ func (nv *NoteViews) ExtractSubgraphs() {
 		sidebar, ok := nv.Map[sidebarPath]
 		if ok {
 			subgraph.Sidebar = sidebar
+		}
+
+		homePathVariants := []string{
+			fmt.Sprintf("/_index_%s", name),
+			fmt.Sprintf("/_home_%s", name),
+			fmt.Sprintf("/%s.md", name),
+		}
+
+		for _, homePath := range homePathVariants {
+			home, ok := nv.Map[homePath]
+			if ok {
+				subgraph.Home = home
+				break
+			}
 		}
 	}
 }

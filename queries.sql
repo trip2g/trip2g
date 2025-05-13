@@ -250,3 +250,12 @@ select s.*
    and (expires_at > datetime('now') or expires_at is null)
    and revoke_id is null
  order by s.name;
+
+-- name: ListActiveUserSubgraphAccessesByUserID :many
+select a.*
+  from user_subgraph_accesses a
+  join subgraphs s on a.subgraph_id = s.id
+ where user_id = ?
+   and (expires_at > datetime('now') or expires_at is null)
+   and revoke_id is null
+ order by a.user_id, s.name;

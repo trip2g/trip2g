@@ -346,13 +346,7 @@ func (a *app) AllNotes() *model.NoteViews {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	copy := model.NewNoteViews()
-
-	for k, v := range a.nvs.Map {
-		copy.Map[k] = v
-	}
-
-	return copy
+	return a.nvs.Copy()
 }
 
 func (a *app) Now() time.Time {

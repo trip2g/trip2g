@@ -758,6 +758,47 @@ func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64)
 	return items, nil
 }
 
+const listActiveUserSubgraphAccessesByUserID = `-- name: ListActiveUserSubgraphAccessesByUserID :many
+select a.id, a.user_id, a.subgraph_id, a.created_at, a.expires_at, a.revoke_id, a.purchase_id
+  from user_subgraph_accesses a
+  join subgraphs s on a.subgraph_id = s.id
+ where user_id = ?
+   and (expires_at > datetime('now') or expires_at is null)
+   and revoke_id is null
+ order by a.user_id, s.name
+`
+
+func (q *Queries) ListActiveUserSubgraphAccessesByUserID(ctx context.Context, userID int64) ([]UserSubgraphAccess, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveUserSubgraphAccessesByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UserSubgraphAccess
+	for rows.Next() {
+		var i UserSubgraphAccess
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.SubgraphID,
+			&i.CreatedAt,
+			&i.ExpiresAt,
+			&i.RevokeID,
+			&i.PurchaseID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllSubgraphs = `-- name: ListAllSubgraphs :many
 select id, name, color, created_at from subgraphs order by id
 `

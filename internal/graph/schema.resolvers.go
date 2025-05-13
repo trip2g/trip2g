@@ -133,6 +133,21 @@ func (r *adminUserBansConnectionResolver) Nodes(ctx context.Context, obj *model.
 	return r.env(ctx).ListAllUserBans(ctx)
 }
 
+// ExpiresAt is the resolver for the expiresAt field.
+func (r *adminUserSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
+	panic(fmt.Errorf("not implemented: ExpiresAt - expiresAt"))
+}
+
+// User is the resolver for the user field.
+func (r *adminUserSubgraphAccessResolver) User(ctx context.Context, obj *db.UserSubgraphAccess) (*db.User, error) {
+	panic(fmt.Errorf("not implemented: User - user"))
+}
+
+// Subgraph is the resolver for the subgraph field.
+func (r *adminUserSubgraphAccessResolver) Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error) {
+	panic(fmt.Errorf("not implemented: Subgraph - subgraph"))
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminUserSubgraphAccessesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUserSubgraphAccessesConnection) ([]db.UserSubgraphAccess, error) {
 	return r.env(ctx).ListAllUserSubgraphAccesses(ctx)
@@ -242,11 +257,6 @@ func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 	return &appmodel.Viewer{UserToken: token}, nil
 }
 
-// Subgraph is the resolver for the subgraph field.
-func (r *queryResolver) Subgraph(ctx context.Context, name string) (*db.Subgraph, error) {
-	return resolveOne[db.Subgraph](ctx, name, r.env(ctx).SubgraphByName)
-}
-
 // Admin is the resolver for the admin field.
 func (r *queryResolver) Admin(ctx context.Context) (*appmodel.AdminQuery, error) {
 	return &appmodel.AdminQuery{}, nil
@@ -262,9 +272,9 @@ func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUse
 	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
 }
 
-// Subgraphs is the resolver for the subgraphs field.
-func (r *userResolver) Subgraphs(ctx context.Context, obj *db.User) ([]db.Subgraph, error) {
-	return r.env(ctx).ListActiveSubgraphsByUserID(ctx, obj.ID)
+// SubgraphAccesses is the resolver for the subgraphAccesses field.
+func (r *userResolver) SubgraphAccesses(ctx context.Context, obj *db.User) ([]db.UserSubgraphAccess, error) {
+	return r.env(ctx).ListActiveUserSubgraphAccessesByUserID(ctx, obj.ID)
 }
 
 // User is the resolver for the user field.
@@ -284,11 +294,6 @@ func (r *userBanResolver) BannedBy(ctx context.Context, obj *db.UserBan) (*db.Ad
 // ExpiresAt is the resolver for the expiresAt field.
 func (r *userSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
 	return db.ToTimePtr(obj.ExpiresAt), nil
-}
-
-// User is the resolver for the user field.
-func (r *userSubgraphAccessResolver) User(ctx context.Context, obj *db.UserSubgraphAccess) (*db.User, error) {
-	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
 }
 
 // Subgraph is the resolver for the subgraph field.
@@ -380,6 +385,11 @@ func (r *Resolver) AdminUserBansConnection() AdminUserBansConnectionResolver {
 	return &adminUserBansConnectionResolver{r}
 }
 
+// AdminUserSubgraphAccess returns AdminUserSubgraphAccessResolver implementation.
+func (r *Resolver) AdminUserSubgraphAccess() AdminUserSubgraphAccessResolver {
+	return &adminUserSubgraphAccessResolver{r}
+}
+
 // AdminUserSubgraphAccessesConnection returns AdminUserSubgraphAccessesConnectionResolver implementation.
 func (r *Resolver) AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver {
 	return &adminUserSubgraphAccessesConnectionResolver{r}
@@ -439,6 +449,7 @@ type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminUserResolver struct{ *Resolver }
 type adminUserBansConnectionResolver struct{ *Resolver }
+type adminUserSubgraphAccessResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
 type banUserPayloadResolver struct{ *Resolver }
@@ -454,3 +465,15 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *userSubgraphAccessResolver) User(ctx context.Context, obj *db.UserSubgraphAccess) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
+}
+*/

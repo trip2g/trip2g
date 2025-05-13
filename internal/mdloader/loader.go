@@ -88,6 +88,8 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (*model.NoteViews, error)
 
 	ldr.nvs.ExtractSubgraphs()
 
+	log.Info("subgraphs extracted", "v", ldr.nvs.Subgraphs)
+
 	return ldr.nvs, nil
 }
 
@@ -171,7 +173,7 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) { //nolint
 		Permalink: "/" + src.Path[:len(src.Path)-len(".md")],
 		Content:   src.Content,
 		InLinks:   make(map[string]struct{}),
-		Subgraphs: make(map[string]*model.Subgraph),
+		Subgraphs: make(map[string]*model.NoteSubgraph),
 	}
 
 	pp.SetAst(doc)

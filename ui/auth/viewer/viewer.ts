@@ -9,9 +9,6 @@ namespace $.$$ {
 						id
 						user {
 							email
-							subgraphs {
-								name
-							}
 						}
 					}
 				}
