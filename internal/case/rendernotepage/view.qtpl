@@ -7,6 +7,15 @@
   </div>
   {% endif %}
 
+  <style type="text/css">
+    {% if resp.UserToken != nil %}
+    .paywall\:core::before { display: none }
+    {% endif %}
+    {% for _, k := range resp.UserSubgraphs %}
+    .paywall-{%s k %}::before { display: none }
+    {% endfor %}
+  </style>
+
   <div class="flex-1">
     <h1 class="text-2xl font-bold">{%s resp.Note.Title %}</h1>
 

@@ -25,6 +25,7 @@ type NoteView struct {
 	RawMeta map[string]interface{}
 
 	DeadLinks []string
+	Subgraphs []string
 }
 
 type NoteViews map[string]*NoteView
@@ -39,6 +40,28 @@ func (n *NoteView) Ast() ast.Node {
 
 func (n *NoteView) SetAst(node ast.Node) {
 	n.ast = node
+}
+
+func (n *NoteView) ExtractSubgraphs() ([]string, error) {
+	subgraphs := make(map[string]struct{})
+
+	err := extractSubgraphs(subgraphs, n.RawMeta["subgraph"])
+	if err != nil {
+		return nil, fmt.Errorf("error extracting subgraph: %w", err)
+	}
+
+	err = extractSubgraphs(subgraphs, n.RawMeta["subgraphs"])
+	if err != nil {
+		return nil, fmt.Errorf("error extracting subgraphs: %w", err)
+	}
+
+	res := make([]string, 0, len(subgraphs))
+
+	for k := range subgraphs {
+		res = append(res, k)
+	}
+
+	return res, nil
 }
 
 func (n *NoteView) ExtractTitle() string {
@@ -87,14 +110,8 @@ func (pages NoteViews) Subgraphs() ([]string, error) {
 	subgraphs := make(map[string]struct{})
 
 	for _, page := range pages {
-		err := extractSubgraphs(subgraphs, page.RawMeta["subgraph"])
-		if err != nil {
-			return nil, fmt.Errorf("error extracting subgraph: %w", err)
-		}
-
-		err = extractSubgraphs(subgraphs, page.RawMeta["subgraphs"])
-		if err != nil {
-			return nil, fmt.Errorf("error extracting subgraphs: %w", err)
+		for _, ps := range page.Subgraphs {
+			subgraphs[ps] = struct{}{}
 		}
 	}
 

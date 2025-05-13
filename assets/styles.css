@@ -13,13 +13,9 @@ a {
   @apply text-blue-400;
 }
 
-.paywall::after {
+.paywall::before {
   content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='gray' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a5 5 0 00-5 5v3H6a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1V11a1 1 0 00-1-1h-1V7a5 5 0 00-5-5zm-3 5a3 3 0 016 0v3H9V7zm9 5v8H6v-8h12z'/%3E%3C/svg%3E");
   @apply text-gray-500 align-middle text-sm no-underline;
-}
-
-.authorized .paywall::after {
-  content: none;
 }
 
 body:has(dialog[open]) {

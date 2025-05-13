@@ -48,6 +48,15 @@ namespace $.$$ {
 			return this.viewer().user?.email || ''
 		}
 
+		override signout() {
+			super.signout()
+			window.location.reload()
+		}
+
+		override reload_page()  {
+			window.location.reload()
+		}
+
 		override close_click(e: MouseEvent) {
 			const r = this.modal_node().getBoundingClientRect()
 

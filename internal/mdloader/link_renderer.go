@@ -45,7 +45,7 @@ type linkRenderer struct {
 	// when exiting a Node render.
 	hasDest sync.Map // *Node => struct{}
 
-	pages model.NoteViews
+	notes model.NoteViews
 }
 
 func (r *linkRenderer) init() {
@@ -101,9 +101,19 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 		r.hasDest.Store(n, struct{}{})
 		_, _ = w.WriteString(`<a`)
 
-		page, ok := r.pages[string(dest)]
-		if ok && !page.Free {
-			_, _ = w.WriteString(` class="paywall"`)
+		note, ok := r.notes[string(dest)]
+		if ok && !note.Free {
+			subgraphClasses := ""
+
+			if len(note.Subgraphs) == 0 {
+				subgraphClasses = "paywall:core"
+			} else {
+				for _, subgraph := range note.Subgraphs {
+					subgraphClasses += " paywall-" + subgraph
+				}
+			}
+
+			_, _ = w.WriteString(` class="paywall ` + subgraphClasses + `"`)
 		}
 
 		_, _ = w.WriteString(` href="`)

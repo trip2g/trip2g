@@ -38,6 +38,7 @@ type Response struct {
 	LatestNotes []*model.NoteView
 
 	NoteSubgraphs []string
+	UserSubgraphs []string
 
 	UserToken *usertoken.Data
 	Time      int
@@ -128,12 +129,10 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		return &response, &PaywallError{Message: "Need auth"}
 	}
 
-	userSubgraphs := []string{}
-
 	if request.UserToken != nil {
 		userID := int64(request.UserToken.ID)
 
-		userSubgraphs, err = env.ListActiveSubgraphNamesByUserID(ctx, userID)
+		response.UserSubgraphs, err = env.ListActiveSubgraphNamesByUserID(ctx, userID)
 		if err != nil {
 			return &response, err
 		}
@@ -182,7 +181,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	// check if the user has access to the subgraph
 	for _, ps := range noteSubgraphs {
-		for _, us := range userSubgraphs {
+		for _, us := range response.UserSubgraphs {
 			if ps == us {
 				hasAccess = true
 				break

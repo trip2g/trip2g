@@ -50,7 +50,7 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (model.NoteViews, error) 
 		goldmark.WithRendererOptions(
 			renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{
 				resolver: ldr.linkResolver,
-				pages:    ldr.pages,
+				notes:    ldr.pages,
 			}, 198)),
 		),
 		goldmark.WithExtensions(
@@ -176,6 +176,13 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) { //nolint
 	pp.RawMeta = meta.Get(context)
 	pp.Title = pp.ExtractTitle()
 	pp.Free = pp.RawMeta["free"] == true
+
+	var err error
+
+	pp.Subgraphs, err = pp.ExtractSubgraphs()
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract subgraphs: %w", err)
+	}
 
 	ldr.log.Info("read page", "path", pp.Path)
 

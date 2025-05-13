@@ -19,6 +19,7 @@ $trip2g_user_space $mol_view
 			sub /
 				<= AuthWrapper $trip2g_auth
 					signout => signout
+					reload_me <= reload_page null
 					AppView <= Content
 				<= CloseButton $mol_button_major
 					click <= close null
