@@ -28,7 +28,6 @@ $trip2g_user_space $mol_view
 	Content $mol_book2_catalog
 		param \un
 		menu_title \Личный кабинет
-		spread? \home
 		menu_foot /
 			<= Email $mol_view
 				sub / <= user_email
@@ -36,6 +35,7 @@ $trip2g_user_space $mol_view
 				click? <=> signout
 		spreads *
 			home <= Home $trip2g_user_space_home
+			subscriptions <= Subscriptions $trip2g_user_space_subscriptions
 
 $trip2g_user_space_home $mol_view
 	sub /

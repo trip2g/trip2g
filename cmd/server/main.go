@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/binary"
 	"errors"
@@ -234,6 +235,12 @@ func main() {
 	if os.Getenv("SERVER") == "y" {
 		a.startServer()
 	}
+}
+
+func (a *app) IDHash(entity string, id int64) string {
+	sha256 := sha256.New()
+	sha256.Write([]byte(fmt.Sprintf("%s:%d", entity, id)))
+	return fmt.Sprintf("%x", sha256.Sum(nil))
 }
 
 func (a *app) NotifyPuchaseUpdated(email string) {

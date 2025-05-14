@@ -135,17 +135,17 @@ func (r *adminUserBansConnectionResolver) Nodes(ctx context.Context, obj *model.
 
 // ExpiresAt is the resolver for the expiresAt field.
 func (r *adminUserSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
-	panic(fmt.Errorf("not implemented: ExpiresAt - expiresAt"))
+	return db.ToTimePtr(obj.ExpiresAt), nil
 }
 
 // User is the resolver for the user field.
 func (r *adminUserSubgraphAccessResolver) User(ctx context.Context, obj *db.UserSubgraphAccess) (*db.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
 }
 
 // Subgraph is the resolver for the subgraph field.
 func (r *adminUserSubgraphAccessResolver) Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error) {
-	panic(fmt.Errorf("not implemented: Subgraph - subgraph"))
+	return resolveOne[db.Subgraph](ctx, obj.SubgraphID, r.env(ctx).SubgraphByID)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -267,6 +267,17 @@ func (r *subgraphResolver) Offers(ctx context.Context, obj *db.Subgraph) ([]db.O
 	return r.env(ctx).ListActiveOffersBySubgraphID(ctx, obj.ID)
 }
 
+// HomePath is the resolver for the homePath field.
+func (r *subgraphResolver) HomePath(ctx context.Context, obj *db.Subgraph) (string, error) {
+	notes := r.env(ctx).AllNotes()
+	subgraph, ok := notes.Subgraphs[obj.Name]
+	if !ok || subgraph.Home == nil {
+		return "/", nil
+	}
+
+	return subgraph.Home.Permalink, nil
+}
+
 // User is the resolver for the user field.
 func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error) {
 	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
@@ -289,6 +300,11 @@ func (r *userBanResolver) BannedBy(ctx context.Context, obj *db.UserBan) (*db.Ad
 	}
 
 	return resolveOne[db.Admin](ctx, obj.BannedBy.Int64, r.env(ctx).AdminByUserID)
+}
+
+// ID is the resolver for the id field.
+func (r *userSubgraphAccessResolver) ID(ctx context.Context, obj *db.UserSubgraphAccess) (string, error) {
+	return r.env(ctx).IDHash("usa", obj.ID), nil
 }
 
 // ExpiresAt is the resolver for the expiresAt field.

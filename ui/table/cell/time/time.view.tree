@@ -1,0 +1,3 @@
+$trip2g_table_cell_time $mol_view
+	value null $mol_time_moment
+	sub / <= formatted_value \

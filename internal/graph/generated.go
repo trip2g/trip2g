@@ -209,8 +209,9 @@ type ComplexityRoot struct {
 	}
 
 	Subgraph struct {
-		Name   func(childComplexity int) int
-		Offers func(childComplexity int) int
+		HomePath func(childComplexity int) int
+		Name     func(childComplexity int) int
+		Offers   func(childComplexity int) int
 	}
 
 	UnbanUserPayload struct {
@@ -242,6 +243,7 @@ type ComplexityRoot struct {
 	UserSubgraphAccess struct {
 		CreatedAt func(childComplexity int) int
 		ExpiresAt func(childComplexity int) int
+		ID        func(childComplexity int) int
 		Subgraph  func(childComplexity int) int
 	}
 
@@ -329,6 +331,7 @@ type QueryResolver interface {
 }
 type SubgraphResolver interface {
 	Offers(ctx context.Context, obj *db.Subgraph) ([]db.Offer, error)
+	HomePath(ctx context.Context, obj *db.Subgraph) (string, error)
 }
 type UnbanUserPayloadResolver interface {
 	User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error)
@@ -342,6 +345,8 @@ type UserBanResolver interface {
 	BannedBy(ctx context.Context, obj *db.UserBan) (*db.Admin, error)
 }
 type UserSubgraphAccessResolver interface {
+	ID(ctx context.Context, obj *db.UserSubgraphAccess) (string, error)
+
 	ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error)
 	Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error)
 }
@@ -875,6 +880,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SignOutPayload.Viewer(childComplexity), true
 
+	case "Subgraph.homePath":
+		if e.complexity.Subgraph.HomePath == nil {
+			break
+		}
+
+		return e.complexity.Subgraph.HomePath(childComplexity), true
+
 	case "Subgraph.name":
 		if e.complexity.Subgraph.Name == nil {
 			break
@@ -979,6 +991,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UserSubgraphAccess.ExpiresAt(childComplexity), true
+
+	case "UserSubgraphAccess.id":
+		if e.complexity.UserSubgraphAccess.ID == nil {
+			break
+		}
+
+		return e.complexity.UserSubgraphAccess.ID(childComplexity), true
 
 	case "UserSubgraphAccess.subgraph":
 		if e.complexity.UserSubgraphAccess.Subgraph == nil {
@@ -4273,6 +4292,8 @@ func (ec *executionContext) fieldContext_Offer_subgraphs(_ context.Context, fiel
 				return ec.fieldContext_Subgraph_name(ctx, field)
 			case "offers":
 				return ec.fieldContext_Subgraph_offers(ctx, field)
+			case "homePath":
+				return ec.fieldContext_Subgraph_homePath(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Subgraph", field.Name)
 		},
@@ -4951,6 +4972,50 @@ func (ec *executionContext) fieldContext_Subgraph_offers(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Subgraph_homePath(ctx context.Context, field graphql.CollectedField, obj *db.Subgraph) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Subgraph_homePath(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subgraph().HomePath(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Subgraph_homePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subgraph",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UnbanUserPayload_userId(ctx context.Context, field graphql.CollectedField, obj *model.UnbanUserPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UnbanUserPayload_userId(ctx, field)
 	if err != nil {
@@ -5142,6 +5207,8 @@ func (ec *executionContext) fieldContext_UpdateUserSubgraphAccessPayload_userSub
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserSubgraphAccess_id(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserSubgraphAccess_createdAt(ctx, field)
 			case "expiresAt":
@@ -5238,6 +5305,8 @@ func (ec *executionContext) fieldContext_User_subgraphAccesses(_ context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserSubgraphAccess_id(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_UserSubgraphAccess_createdAt(ctx, field)
 			case "expiresAt":
@@ -5482,6 +5551,50 @@ func (ec *executionContext) fieldContext_UserBan_reason(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _UserSubgraphAccess_id(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserSubgraphAccess_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.UserSubgraphAccess().ID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserSubgraphAccess_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserSubgraphAccess",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserSubgraphAccess_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.UserSubgraphAccess) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UserSubgraphAccess_createdAt(ctx, field)
 	if err != nil {
@@ -5610,6 +5723,8 @@ func (ec *executionContext) fieldContext_UserSubgraphAccess_subgraph(_ context.C
 				return ec.fieldContext_Subgraph_name(ctx, field)
 			case "offers":
 				return ec.fieldContext_Subgraph_offers(ctx, field)
+			case "homePath":
+				return ec.fieldContext_Subgraph_homePath(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Subgraph", field.Name)
 		},
@@ -10378,6 +10493,42 @@ func (ec *executionContext) _Subgraph(ctx context.Context, sel ast.SelectionSet,
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "homePath":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Subgraph_homePath(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10758,6 +10909,42 @@ func (ec *executionContext) _UserSubgraphAccess(ctx context.Context, sel ast.Sel
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("UserSubgraphAccess")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UserSubgraphAccess_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdAt":
 			out.Values[i] = ec._UserSubgraphAccess_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

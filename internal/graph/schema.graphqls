@@ -30,6 +30,7 @@ type UserBan {
 }
 
 type UserSubgraphAccess {
+  id: ID! @goField(forceResolver: true)
   createdAt: Time!
   expiresAt: Time
   subgraph: Subgraph!
@@ -128,6 +129,7 @@ type Offer {
 type Subgraph {
   name: String!
   offers: [Offer!]!
+  homePath: String!
 }
 
 type Purchase {

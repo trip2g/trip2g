@@ -60,6 +60,8 @@ type Env interface {
 
 	AllNotes() *model.NoteViews
 
+	IDHash(entity string, id int64) string
+
 	OnPurchaseUpdatedSubscribe(email string, handler func()) func()
 
 	Logger() logger.Logger
