@@ -241,6 +241,12 @@ type RequestEmailSignInCodePayload = {
   success: Scalars['Boolean']['output'];
 };
 
+enum Role {
+  Admin = 'ADMIN',
+  Guest = 'GUEST',
+  User = 'USER'
+}
+
 type SignInByEmailInput = {
   code: Scalars['String']['input'];
   email: Scalars['String']['input'];
@@ -333,6 +339,7 @@ type Viewer = {
   activePurchases: Array<Purchase>;
   id: Scalars['ID']['output'];
   offers: Array<Offer>;
+  role: Role;
   user?: Maybe<User>;
 };
 

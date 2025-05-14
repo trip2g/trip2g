@@ -65,8 +65,10 @@ func Resolve(ctx context.Context, env Env, req gmodel.SignInByEmailInput) (gmode
 	}
 
 	response := gmodel.SignInPayload{
-		Token:  token,
-		Viewer: &model.Viewer{},
+		Token: token,
+		Viewer: &model.Viewer{
+			UserID: &userID,
+		},
 	}
 
 	return &response, nil

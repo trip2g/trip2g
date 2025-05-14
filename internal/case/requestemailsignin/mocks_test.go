@@ -22,14 +22,17 @@ var _ Env = &EnvMock{}
 //			CountActiveSignInCodesFunc: func(ctx context.Context, userID int64) (int64, error) {
 //				panic("mock out the CountActiveSignInCodes method")
 //			},
-//			CreateSignInCodeFunc: func(ctx context.Context, userID int64) (int64, error) {
+//			CreateSignInCodeFunc: func(ctx context.Context, userID int64) (string, error) {
 //				panic("mock out the CreateSignInCode method")
 //			},
-//			GetUserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
-//				panic("mock out the GetUserByEmail method")
-//			},
-//			QueueRequestSignInEmailFunc: func(ctx context.Context, email string, code int64) error {
+//			QueueRequestSignInEmailFunc: func(ctx context.Context, email string, code string) error {
 //				panic("mock out the QueueRequestSignInEmail method")
+//			},
+//			UserBanByUserIDFunc: func(ctx context.Context, userID int64) (*db.UserBan, error) {
+//				panic("mock out the UserBanByUserID method")
+//			},
+//			UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
+//				panic("mock out the UserByEmail method")
 //			},
 //		}
 //
@@ -42,13 +45,16 @@ type EnvMock struct {
 	CountActiveSignInCodesFunc func(ctx context.Context, userID int64) (int64, error)
 
 	// CreateSignInCodeFunc mocks the CreateSignInCode method.
-	CreateSignInCodeFunc func(ctx context.Context, userID int64) (int64, error)
-
-	// GetUserByEmailFunc mocks the GetUserByEmail method.
-	GetUserByEmailFunc func(ctx context.Context, email string) (db.User, error)
+	CreateSignInCodeFunc func(ctx context.Context, userID int64) (string, error)
 
 	// QueueRequestSignInEmailFunc mocks the QueueRequestSignInEmail method.
-	QueueRequestSignInEmailFunc func(ctx context.Context, email string, code int64) error
+	QueueRequestSignInEmailFunc func(ctx context.Context, email string, code string) error
+
+	// UserBanByUserIDFunc mocks the UserBanByUserID method.
+	UserBanByUserIDFunc func(ctx context.Context, userID int64) (*db.UserBan, error)
+
+	// UserByEmailFunc mocks the UserByEmail method.
+	UserByEmailFunc func(ctx context.Context, email string) (db.User, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -66,13 +72,6 @@ type EnvMock struct {
 			// UserID is the userID argument value.
 			UserID int64
 		}
-		// GetUserByEmail holds details about calls to the GetUserByEmail method.
-		GetUserByEmail []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Email is the email argument value.
-			Email string
-		}
 		// QueueRequestSignInEmail holds details about calls to the QueueRequestSignInEmail method.
 		QueueRequestSignInEmail []struct {
 			// Ctx is the ctx argument value.
@@ -80,13 +79,28 @@ type EnvMock struct {
 			// Email is the email argument value.
 			Email string
 			// Code is the code argument value.
-			Code int64
+			Code string
+		}
+		// UserBanByUserID holds details about calls to the UserBanByUserID method.
+		UserBanByUserID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID int64
+		}
+		// UserByEmail holds details about calls to the UserByEmail method.
+		UserByEmail []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Email is the email argument value.
+			Email string
 		}
 	}
 	lockCountActiveSignInCodes  sync.RWMutex
 	lockCreateSignInCode        sync.RWMutex
-	lockGetUserByEmail          sync.RWMutex
 	lockQueueRequestSignInEmail sync.RWMutex
+	lockUserBanByUserID         sync.RWMutex
+	lockUserByEmail             sync.RWMutex
 }
 
 // CountActiveSignInCodes calls CountActiveSignInCodesFunc.
@@ -126,7 +140,7 @@ func (mock *EnvMock) CountActiveSignInCodesCalls() []struct {
 }
 
 // CreateSignInCode calls CreateSignInCodeFunc.
-func (mock *EnvMock) CreateSignInCode(ctx context.Context, userID int64) (int64, error) {
+func (mock *EnvMock) CreateSignInCode(ctx context.Context, userID int64) (string, error) {
 	if mock.CreateSignInCodeFunc == nil {
 		panic("EnvMock.CreateSignInCodeFunc: method is nil but Env.CreateSignInCode was just called")
 	}
@@ -161,51 +175,15 @@ func (mock *EnvMock) CreateSignInCodeCalls() []struct {
 	return calls
 }
 
-// GetUserByEmail calls GetUserByEmailFunc.
-func (mock *EnvMock) GetUserByEmail(ctx context.Context, email string) (db.User, error) {
-	if mock.GetUserByEmailFunc == nil {
-		panic("EnvMock.GetUserByEmailFunc: method is nil but Env.GetUserByEmail was just called")
-	}
-	callInfo := struct {
-		Ctx   context.Context
-		Email string
-	}{
-		Ctx:   ctx,
-		Email: email,
-	}
-	mock.lockGetUserByEmail.Lock()
-	mock.calls.GetUserByEmail = append(mock.calls.GetUserByEmail, callInfo)
-	mock.lockGetUserByEmail.Unlock()
-	return mock.GetUserByEmailFunc(ctx, email)
-}
-
-// GetUserByEmailCalls gets all the calls that were made to GetUserByEmail.
-// Check the length with:
-//
-//	len(mockedEnv.GetUserByEmailCalls())
-func (mock *EnvMock) GetUserByEmailCalls() []struct {
-	Ctx   context.Context
-	Email string
-} {
-	var calls []struct {
-		Ctx   context.Context
-		Email string
-	}
-	mock.lockGetUserByEmail.RLock()
-	calls = mock.calls.GetUserByEmail
-	mock.lockGetUserByEmail.RUnlock()
-	return calls
-}
-
 // QueueRequestSignInEmail calls QueueRequestSignInEmailFunc.
-func (mock *EnvMock) QueueRequestSignInEmail(ctx context.Context, email string, code int64) error {
+func (mock *EnvMock) QueueRequestSignInEmail(ctx context.Context, email string, code string) error {
 	if mock.QueueRequestSignInEmailFunc == nil {
 		panic("EnvMock.QueueRequestSignInEmailFunc: method is nil but Env.QueueRequestSignInEmail was just called")
 	}
 	callInfo := struct {
 		Ctx   context.Context
 		Email string
-		Code  int64
+		Code  string
 	}{
 		Ctx:   ctx,
 		Email: email,
@@ -224,15 +202,87 @@ func (mock *EnvMock) QueueRequestSignInEmail(ctx context.Context, email string, 
 func (mock *EnvMock) QueueRequestSignInEmailCalls() []struct {
 	Ctx   context.Context
 	Email string
-	Code  int64
+	Code  string
 } {
 	var calls []struct {
 		Ctx   context.Context
 		Email string
-		Code  int64
+		Code  string
 	}
 	mock.lockQueueRequestSignInEmail.RLock()
 	calls = mock.calls.QueueRequestSignInEmail
 	mock.lockQueueRequestSignInEmail.RUnlock()
+	return calls
+}
+
+// UserBanByUserID calls UserBanByUserIDFunc.
+func (mock *EnvMock) UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error) {
+	if mock.UserBanByUserIDFunc == nil {
+		panic("EnvMock.UserBanByUserIDFunc: method is nil but Env.UserBanByUserID was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID int64
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockUserBanByUserID.Lock()
+	mock.calls.UserBanByUserID = append(mock.calls.UserBanByUserID, callInfo)
+	mock.lockUserBanByUserID.Unlock()
+	return mock.UserBanByUserIDFunc(ctx, userID)
+}
+
+// UserBanByUserIDCalls gets all the calls that were made to UserBanByUserID.
+// Check the length with:
+//
+//	len(mockedEnv.UserBanByUserIDCalls())
+func (mock *EnvMock) UserBanByUserIDCalls() []struct {
+	Ctx    context.Context
+	UserID int64
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID int64
+	}
+	mock.lockUserBanByUserID.RLock()
+	calls = mock.calls.UserBanByUserID
+	mock.lockUserBanByUserID.RUnlock()
+	return calls
+}
+
+// UserByEmail calls UserByEmailFunc.
+func (mock *EnvMock) UserByEmail(ctx context.Context, email string) (db.User, error) {
+	if mock.UserByEmailFunc == nil {
+		panic("EnvMock.UserByEmailFunc: method is nil but Env.UserByEmail was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		Email string
+	}{
+		Ctx:   ctx,
+		Email: email,
+	}
+	mock.lockUserByEmail.Lock()
+	mock.calls.UserByEmail = append(mock.calls.UserByEmail, callInfo)
+	mock.lockUserByEmail.Unlock()
+	return mock.UserByEmailFunc(ctx, email)
+}
+
+// UserByEmailCalls gets all the calls that were made to UserByEmail.
+// Check the length with:
+//
+//	len(mockedEnv.UserByEmailCalls())
+func (mock *EnvMock) UserByEmailCalls() []struct {
+	Ctx   context.Context
+	Email string
+} {
+	var calls []struct {
+		Ctx   context.Context
+		Email string
+	}
+	mock.lockUserByEmail.RLock()
+	calls = mock.calls.UserByEmail
+	mock.lockUserByEmail.RUnlock()
 	return calls
 }

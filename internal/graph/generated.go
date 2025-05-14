@@ -251,6 +251,7 @@ type ComplexityRoot struct {
 		ActivePurchases func(childComplexity int) int
 		ID              func(childComplexity int) int
 		Offers          func(childComplexity int, subgraphs []string) int
+		Role            func(childComplexity int) int
 		User            func(childComplexity int) int
 	}
 }
@@ -351,6 +352,7 @@ type UserSubgraphAccessResolver interface {
 	Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error)
 }
 type ViewerResolver interface {
+	Role(ctx context.Context, obj *model1.Viewer) (model.Role, error)
 	User(ctx context.Context, obj *model1.Viewer) (*db.User, error)
 	Offers(ctx context.Context, obj *model1.Viewer, subgraphs []string) ([]db.Offer, error)
 	ActivePurchases(ctx context.Context, obj *model1.Viewer) ([]db.Purchase, error)
@@ -1031,6 +1033,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Viewer.Offers(childComplexity, args["subgraphs"].([]string)), true
+
+	case "Viewer.role":
+		if e.complexity.Viewer.Role == nil {
+			break
+		}
+
+		return e.complexity.Viewer.Role(childComplexity), true
 
 	case "Viewer.user":
 		if e.complexity.Viewer.User == nil {
@@ -4474,6 +4483,8 @@ func (ec *executionContext) fieldContext_Query_viewer(_ context.Context, field g
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Viewer_id(ctx, field)
+			case "role":
+				return ec.fieldContext_Viewer_role(ctx, field)
 			case "user":
 				return ec.fieldContext_Viewer_user(ctx, field)
 			case "offers":
@@ -4809,6 +4820,8 @@ func (ec *executionContext) fieldContext_SignInPayload_viewer(_ context.Context,
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Viewer_id(ctx, field)
+			case "role":
+				return ec.fieldContext_Viewer_role(ctx, field)
 			case "user":
 				return ec.fieldContext_Viewer_user(ctx, field)
 			case "offers":
@@ -4863,6 +4876,8 @@ func (ec *executionContext) fieldContext_SignOutPayload_viewer(_ context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Viewer_id(ctx, field)
+			case "role":
+				return ec.fieldContext_Viewer_role(ctx, field)
 			case "user":
 				return ec.fieldContext_Viewer_user(ctx, field)
 			case "offers":
@@ -5771,6 +5786,50 @@ func (ec *executionContext) fieldContext_Viewer_id(_ context.Context, field grap
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Viewer_role(ctx context.Context, field graphql.CollectedField, obj *model1.Viewer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Viewer_role(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Viewer().Role(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.Role)
+	fc.Result = res
+	return ec.marshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐRole(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Viewer_role(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Viewer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Role does not have child fields")
 		},
 	}
 	return fc, nil
@@ -11058,6 +11117,42 @@ func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, o
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "role":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Viewer_role(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "user":
 			field := field
 
@@ -12103,6 +12198,16 @@ func (ec *executionContext) marshalNRequestEmailSignInCodeOrErrorPayload2trip2g�
 		return graphql.Null
 	}
 	return ec._RequestEmailSignInCodeOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐRole(ctx context.Context, v any) (model.Role, error) {
+	var res model.Role
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐRole(ctx context.Context, sel ast.SelectionSet, v model.Role) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNSignInByEmailInput2trip2gᚋinternalᚋgraphᚋmodelᚐSignInByEmailInput(ctx context.Context, v any) (model.SignInByEmailInput, error) {

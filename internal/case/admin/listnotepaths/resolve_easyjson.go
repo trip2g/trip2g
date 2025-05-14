@@ -17,7 +17,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson5011676aDecodeTrip2gInternalCaseListadminnotepaths(in *jlexer.Lexer, out *Response) {
+func easyjson5011676aDecodeTrip2gInternalCaseAdminListnotepaths(in *jlexer.Lexer, out *Response) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -69,7 +69,7 @@ func easyjson5011676aDecodeTrip2gInternalCaseListadminnotepaths(in *jlexer.Lexer
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeTrip2gInternalCaseListadminnotepaths(out *jwriter.Writer, in Response) {
+func easyjson5011676aEncodeTrip2gInternalCaseAdminListnotepaths(out *jwriter.Writer, in Response) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -94,14 +94,14 @@ func easyjson5011676aEncodeTrip2gInternalCaseListadminnotepaths(out *jwriter.Wri
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Response) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson5011676aEncodeTrip2gInternalCaseListadminnotepaths(w, v)
+	easyjson5011676aEncodeTrip2gInternalCaseAdminListnotepaths(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Response) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson5011676aDecodeTrip2gInternalCaseListadminnotepaths(l, v)
+	easyjson5011676aDecodeTrip2gInternalCaseAdminListnotepaths(l, v)
 }
-func easyjson5011676aDecodeTrip2gInternalCaseListadminnotepaths1(in *jlexer.Lexer, out *Request) {
+func easyjson5011676aDecodeTrip2gInternalCaseAdminListnotepaths1(in *jlexer.Lexer, out *Request) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -130,7 +130,7 @@ func easyjson5011676aDecodeTrip2gInternalCaseListadminnotepaths1(in *jlexer.Lexe
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeTrip2gInternalCaseListadminnotepaths1(out *jwriter.Writer, in Request) {
+func easyjson5011676aEncodeTrip2gInternalCaseAdminListnotepaths1(out *jwriter.Writer, in Request) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -139,14 +139,14 @@ func easyjson5011676aEncodeTrip2gInternalCaseListadminnotepaths1(out *jwriter.Wr
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Request) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson5011676aEncodeTrip2gInternalCaseListadminnotepaths1(w, v)
+	easyjson5011676aEncodeTrip2gInternalCaseAdminListnotepaths1(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Request) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson5011676aDecodeTrip2gInternalCaseListadminnotepaths1(l, v)
+	easyjson5011676aDecodeTrip2gInternalCaseAdminListnotepaths1(l, v)
 }
-func easyjson5011676aDecodeTrip2gInternalCaseListadminnotepaths2(in *jlexer.Lexer, out *NotePath) {
+func easyjson5011676aDecodeTrip2gInternalCaseAdminListnotepaths2(in *jlexer.Lexer, out *NotePath) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -185,7 +185,7 @@ func easyjson5011676aDecodeTrip2gInternalCaseListadminnotepaths2(in *jlexer.Lexe
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeTrip2gInternalCaseListadminnotepaths2(out *jwriter.Writer, in NotePath) {
+func easyjson5011676aEncodeTrip2gInternalCaseAdminListnotepaths2(out *jwriter.Writer, in NotePath) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -219,10 +219,10 @@ func easyjson5011676aEncodeTrip2gInternalCaseListadminnotepaths2(out *jwriter.Wr
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v NotePath) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson5011676aEncodeTrip2gInternalCaseListadminnotepaths2(w, v)
+	easyjson5011676aEncodeTrip2gInternalCaseAdminListnotepaths2(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *NotePath) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson5011676aDecodeTrip2gInternalCaseListadminnotepaths2(l, v)
+	easyjson5011676aDecodeTrip2gInternalCaseAdminListnotepaths2(l, v)
 }

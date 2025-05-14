@@ -18,7 +18,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson5011676aDecodeTrip2gInternalCaseRevokeadminusersubgraphaccess(in *jlexer.Lexer, out *Response) {
+func easyjson5011676aDecodeTrip2gInternalCaseAdminRevokeusersubgraphaccess(in *jlexer.Lexer, out *Response) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -72,7 +72,7 @@ func easyjson5011676aDecodeTrip2gInternalCaseRevokeadminusersubgraphaccess(in *j
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeTrip2gInternalCaseRevokeadminusersubgraphaccess(out *jwriter.Writer, in Response) {
+func easyjson5011676aEncodeTrip2gInternalCaseAdminRevokeusersubgraphaccess(out *jwriter.Writer, in Response) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -102,14 +102,14 @@ func easyjson5011676aEncodeTrip2gInternalCaseRevokeadminusersubgraphaccess(out *
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Response) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson5011676aEncodeTrip2gInternalCaseRevokeadminusersubgraphaccess(w, v)
+	easyjson5011676aEncodeTrip2gInternalCaseAdminRevokeusersubgraphaccess(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Response) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson5011676aDecodeTrip2gInternalCaseRevokeadminusersubgraphaccess(l, v)
+	easyjson5011676aDecodeTrip2gInternalCaseAdminRevokeusersubgraphaccess(l, v)
 }
-func easyjson5011676aDecodeTrip2gInternalCaseRevokeadminusersubgraphaccess1(in *jlexer.Lexer, out *Request) {
+func easyjson5011676aDecodeTrip2gInternalCaseAdminRevokeusersubgraphaccess1(in *jlexer.Lexer, out *Request) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -152,7 +152,7 @@ func easyjson5011676aDecodeTrip2gInternalCaseRevokeadminusersubgraphaccess1(in *
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeTrip2gInternalCaseRevokeadminusersubgraphaccess1(out *jwriter.Writer, in Request) {
+func easyjson5011676aEncodeTrip2gInternalCaseAdminRevokeusersubgraphaccess1(out *jwriter.Writer, in Request) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -180,12 +180,12 @@ func easyjson5011676aEncodeTrip2gInternalCaseRevokeadminusersubgraphaccess1(out 
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Request) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson5011676aEncodeTrip2gInternalCaseRevokeadminusersubgraphaccess1(w, v)
+	easyjson5011676aEncodeTrip2gInternalCaseAdminRevokeusersubgraphaccess1(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Request) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson5011676aDecodeTrip2gInternalCaseRevokeadminusersubgraphaccess1(l, v)
+	easyjson5011676aDecodeTrip2gInternalCaseAdminRevokeusersubgraphaccess1(l, v)
 }
 func easyjson5011676aDecodeTrip2gInternalUsertoken(in *jlexer.Lexer, out *usertoken.Data) {
 	isTopLevel := in.IsStart()
@@ -208,29 +208,8 @@ func easyjson5011676aDecodeTrip2gInternalUsertoken(in *jlexer.Lexer, out *userto
 		switch key {
 		case "i":
 			out.ID = int(in.Int())
-		case "o":
-			if in.IsNull() {
-				in.Skip()
-				out.Opened = nil
-			} else {
-				in.Delim('[')
-				if out.Opened == nil {
-					if !in.IsDelim(']') {
-						out.Opened = make([]string, 0, 4)
-					} else {
-						out.Opened = []string{}
-					}
-				} else {
-					out.Opened = (out.Opened)[:0]
-				}
-				for !in.IsDelim(']') {
-					var v4 string
-					v4 = string(in.String())
-					out.Opened = append(out.Opened, v4)
-					in.WantComma()
-				}
-				in.Delim(']')
-			}
+		case "r":
+			out.Role = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -251,20 +230,9 @@ func easyjson5011676aEncodeTrip2gInternalUsertoken(out *jwriter.Writer, in usert
 		out.Int(int(in.ID))
 	}
 	{
-		const prefix string = ",\"o\":"
+		const prefix string = ",\"r\":"
 		out.RawString(prefix)
-		if in.Opened == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
-			out.RawString("null")
-		} else {
-			out.RawByte('[')
-			for v5, v6 := range in.Opened {
-				if v5 > 0 {
-					out.RawByte(',')
-				}
-				out.String(string(v6))
-			}
-			out.RawByte(']')
-		}
+		out.String(string(in.Role))
 	}
 	out.RawByte('}')
 }

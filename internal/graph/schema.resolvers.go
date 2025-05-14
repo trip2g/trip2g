@@ -317,6 +317,33 @@ func (r *userSubgraphAccessResolver) Subgraph(ctx context.Context, obj *db.UserS
 	return resolveOne[db.Subgraph](ctx, obj.SubgraphID, r.env(ctx).SubgraphByID)
 }
 
+// Role is the resolver for the role field.
+func (r *viewerResolver) Role(ctx context.Context, obj *appmodel.Viewer) (model.Role, error) {
+	if obj.UserToken != nil {
+		role := model.Role(strings.ToUpper(obj.UserToken.Role))
+		if role.IsValid() {
+			return role, nil
+		} else {
+			r.env(ctx).Logger().Warn("invalid role in token", "role", role, "token", obj.UserToken)
+		}
+	}
+
+	if obj.UserID == nil {
+		return model.RoleGuest, nil
+	}
+
+	_, err := r.env(ctx).AdminByUserID(ctx, *obj.UserID)
+	if err != nil {
+		if db.IsNoFound(err) {
+			return model.RoleUser, nil
+		}
+
+		return model.RoleGuest, err
+	}
+
+	return model.RoleAdmin, nil
+}
+
 // User is the resolver for the user field.
 func (r *viewerResolver) User(ctx context.Context, obj *appmodel.Viewer) (*db.User, error) {
 	// cases can just set the userID to the viewer

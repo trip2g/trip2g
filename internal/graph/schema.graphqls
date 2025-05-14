@@ -112,8 +112,15 @@ type AdminQuery {
   userSubgraphAccess(id: Int64!): AdminUserSubgraphAccess
 }
 
+enum Role {
+  GUEST
+  USER
+  ADMIN
+}
+
 type Viewer {
   id: ID!
+  role: Role!
   user: User
   offers(subgraphs: [String!]): [Offer!]!
   activePurchases: [Purchase!]!

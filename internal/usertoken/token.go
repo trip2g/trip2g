@@ -11,13 +11,13 @@ import (
 )
 
 type Data struct {
-	ID     int      `json:"i"`
-	Opened []string `json:"o"`
+	ID   int    `json:"i"`
+	Role string `json:"r"`
 }
 
 type fullData struct {
-	ID     int      `json:"i"`
-	Opened []string `json:"o"`
+	ID   int    `json:"i"`
+	Role string `json:"r"`
 	jwt.RegisteredClaims
 }
 
@@ -94,8 +94,8 @@ func (e *Manager) Extract(ctx *fasthttp.RequestCtx) (*Data, error) {
 	}
 
 	token := Data{
-		ID:     claims.ID,
-		Opened: claims.Opened,
+		ID:   claims.ID,
+		Role: claims.Role,
 	}
 
 	for _, v := range e.validators {
@@ -119,8 +119,8 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error)
 	exp := now.Add(24 * time.Hour)
 
 	claims := fullData{
-		ID:     data.ID,
-		Opened: data.Opened,
+		ID:   data.ID,
+		Role: data.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(exp),
 		},

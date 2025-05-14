@@ -415,8 +415,20 @@ func (a *app) ResetBanCache(ctx context.Context) error {
 }
 
 func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) {
+	role := "user"
+
+	_, err := a.queries.AdminByUserID(ctx, userID)
+	if err != nil {
+		if !db.IsNoFound(err) {
+			return "", fmt.Errorf("failed to get admin by user ID: %w", err)
+		}
+	} else {
+		role = "admin"
+	}
+
 	data := usertoken.Data{
-		ID: int(userID),
+		ID:   int(userID),
+		Role: role,
 	}
 
 	req, err := appreq.FromCtx(ctx)

@@ -19,7 +19,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson5011676aDecodeTrip2gInternalCaseListadminusers(in *jlexer.Lexer, out *Response) {
+func easyjson5011676aDecodeTrip2gInternalCaseAdminListusers(in *jlexer.Lexer, out *Response) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -96,7 +96,7 @@ func easyjson5011676aDecodeTrip2gInternalCaseListadminusers(in *jlexer.Lexer, ou
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeTrip2gInternalCaseListadminusers(out *jwriter.Writer, in Response) {
+func easyjson5011676aEncodeTrip2gInternalCaseAdminListusers(out *jwriter.Writer, in Response) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -142,12 +142,12 @@ func easyjson5011676aEncodeTrip2gInternalCaseListadminusers(out *jwriter.Writer,
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Response) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson5011676aEncodeTrip2gInternalCaseListadminusers(w, v)
+	easyjson5011676aEncodeTrip2gInternalCaseAdminListusers(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Response) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson5011676aDecodeTrip2gInternalCaseListadminusers(l, v)
+	easyjson5011676aDecodeTrip2gInternalCaseAdminListusers(l, v)
 }
 func easyjson5011676aDecodeTrip2gInternalDb(in *jlexer.Lexer, out *db.User) {
 	isTopLevel := in.IsStart()
@@ -178,6 +178,8 @@ func easyjson5011676aDecodeTrip2gInternalDb(in *jlexer.Lexer, out *db.User) {
 			}
 		case "last_signin_code_sent_at":
 			easyjson5011676aDecodeDatabaseSql(in, &out.LastSigninCodeSentAt)
+		case "note_view_count":
+			easyjson5011676aDecodeDatabaseSql1(in, &out.NoteViewCount)
 		default:
 			in.SkipRecursive()
 		}
@@ -211,6 +213,60 @@ func easyjson5011676aEncodeTrip2gInternalDb(out *jwriter.Writer, in db.User) {
 		const prefix string = ",\"last_signin_code_sent_at\":"
 		out.RawString(prefix)
 		easyjson5011676aEncodeDatabaseSql(out, in.LastSigninCodeSentAt)
+	}
+	{
+		const prefix string = ",\"note_view_count\":"
+		out.RawString(prefix)
+		easyjson5011676aEncodeDatabaseSql1(out, in.NoteViewCount)
+	}
+	out.RawByte('}')
+}
+func easyjson5011676aDecodeDatabaseSql1(in *jlexer.Lexer, out *sql.NullInt64) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "int64":
+			out.Int64 = int64(in.Int64())
+		case "valid":
+			out.Valid = bool(in.Bool())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson5011676aEncodeDatabaseSql1(out *jwriter.Writer, in sql.NullInt64) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"int64\":"
+		out.RawString(prefix[1:])
+		out.Int64(int64(in.Int64))
+	}
+	{
+		const prefix string = ",\"valid\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.Valid))
 	}
 	out.RawByte('}')
 }
@@ -265,7 +321,7 @@ func easyjson5011676aEncodeDatabaseSql(out *jwriter.Writer, in sql.NullTime) {
 	}
 	out.RawByte('}')
 }
-func easyjson5011676aDecodeTrip2gInternalCaseListadminusers1(in *jlexer.Lexer, out *Request) {
+func easyjson5011676aDecodeTrip2gInternalCaseAdminListusers1(in *jlexer.Lexer, out *Request) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -294,7 +350,7 @@ func easyjson5011676aDecodeTrip2gInternalCaseListadminusers1(in *jlexer.Lexer, o
 		in.Consumed()
 	}
 }
-func easyjson5011676aEncodeTrip2gInternalCaseListadminusers1(out *jwriter.Writer, in Request) {
+func easyjson5011676aEncodeTrip2gInternalCaseAdminListusers1(out *jwriter.Writer, in Request) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -303,10 +359,10 @@ func easyjson5011676aEncodeTrip2gInternalCaseListadminusers1(out *jwriter.Writer
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Request) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson5011676aEncodeTrip2gInternalCaseListadminusers1(w, v)
+	easyjson5011676aEncodeTrip2gInternalCaseAdminListusers1(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Request) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson5011676aDecodeTrip2gInternalCaseListadminusers1(l, v)
+	easyjson5011676aDecodeTrip2gInternalCaseAdminListusers1(l, v)
 }
