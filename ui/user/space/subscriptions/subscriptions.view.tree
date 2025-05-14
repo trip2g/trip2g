@@ -1,19 +1,22 @@
 $trip2g_user_space_subscriptions $mol_view
 	sub /
-		<= List $mol_list
-			rows <= rows /
-				<= Row*0 $mol_row
-					sub <= row_content* /
-						<= Name_labeler* $mol_labeler
-							title \Name
-							Content <= Name* $mol_link
-								title <= row_name* \
-								uri <= row_uri* \
-						<= CreatedAt_labeler* $mol_labeler
-							title \CreatedAt
-							Content <= CreatedAt* $trip2g_table_cell_time
-								value <= row_created_at* null
-						<= ExpiresAt_labeler* $mol_labeler
-							title \ExpiresAt
-							Content <= ExpiresAt* $trip2g_table_cell_time
-								value <= row_expires_at* null
+		<= Page $mol_page
+			title @ \Subscriptions
+			body /
+				<= List $mol_list
+					rows <= rows /
+						<= Row*0 $mol_row
+							sub <= row_content* /
+								<= Name_labeler* $mol_labeler
+									title \Name
+									Content <= Name* $mol_link
+										title <= row_name* \
+										uri <= row_uri* \
+								<= CreatedAt_labeler* $mol_labeler
+									title \CreatedAt
+									Content <= CreatedAt* $trip2g_table_cell_time
+										value <= row_created_at* null
+								<= ExpiresAt_labeler* $mol_labeler
+									title \ExpiresAt
+									Content <= ExpiresAt* $trip2g_table_cell_time
+										value <= row_expires_at* null

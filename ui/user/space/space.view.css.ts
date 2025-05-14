@@ -8,8 +8,8 @@ namespace $.$$ {
 
 		CloseButton: {
 			position: 'absolute',
-			top: '25px',
-			right: '25px',
+			top: $mol_gap.block,
+			right: $mol_gap.block,
 			cursor: 'pointer',
 		},
 

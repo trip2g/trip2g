@@ -29,6 +29,11 @@ $trip2g_user_space $mol_view
 		param \un
 		menu_title \Личный кабинет
 		menu_foot /
+			<= List_of_languages $mol_locale_select
+				Filter null
+				dictionary *
+					ru \Русский
+					en \English
 			<= Email $mol_view
 				sub / <= user_email
 			<= SignOut $mol_button_major
