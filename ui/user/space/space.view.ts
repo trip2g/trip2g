@@ -17,11 +17,13 @@ namespace $.$$ {
 		open_status(opened?: boolean): string | null {
 			const KEY = 'userspace'
 
-			if (opened) {
-				this.dialog_dom().showModal()
-			} else {
-				this.dialog_dom().close()
-			}
+			setTimeout(() => {
+				if (this.$.$mol_state_arg.value(KEY) === 'open') {
+					this.dialog_dom().showModal()
+				} else {
+					this.dialog_dom().close()
+				}
+			}, 10)
 
 			if (opened !== undefined) {
 				const newVal = opened ? 'open' : null
