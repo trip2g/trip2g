@@ -2256,7 +2256,7 @@ func (ec *executionContext) _AdminQuery_userSubgraphAccess(ctx context.Context, 
 	}
 	res := resTmp.(*db.UserSubgraphAccess)
 	fc.Result = res
-	return ec.marshalOUserSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐUserSubgraphAccess(ctx, field.Selections, res)
+	return ec.marshalOAdminUserSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐUserSubgraphAccess(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminQuery_userSubgraphAccess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2267,14 +2267,22 @@ func (ec *executionContext) fieldContext_AdminQuery_userSubgraphAccess(ctx conte
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUserSubgraphAccess_id(ctx, field)
+			case "userId":
+				return ec.fieldContext_AdminUserSubgraphAccess_userId(ctx, field)
+			case "subgraphId":
+				return ec.fieldContext_AdminUserSubgraphAccess_subgraphId(ctx, field)
 			case "createdAt":
-				return ec.fieldContext_UserSubgraphAccess_createdAt(ctx, field)
+				return ec.fieldContext_AdminUserSubgraphAccess_createdAt(ctx, field)
 			case "expiresAt":
-				return ec.fieldContext_UserSubgraphAccess_expiresAt(ctx, field)
+				return ec.fieldContext_AdminUserSubgraphAccess_expiresAt(ctx, field)
+			case "user":
+				return ec.fieldContext_AdminUserSubgraphAccess_user(ctx, field)
 			case "subgraph":
-				return ec.fieldContext_UserSubgraphAccess_subgraph(ctx, field)
+				return ec.fieldContext_AdminUserSubgraphAccess_subgraph(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type UserSubgraphAccess", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type AdminUserSubgraphAccess", field.Name)
 		},
 	}
 	defer func() {
@@ -12453,6 +12461,13 @@ func (ec *executionContext) marshalOAdminSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSu
 	return ec._AdminSubgraph(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOAdminUserSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐUserSubgraphAccess(ctx context.Context, sel ast.SelectionSet, v *db.UserSubgraphAccess) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminUserSubgraphAccess(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12576,13 +12591,6 @@ func (ec *executionContext) marshalOUserBan2ᚖtrip2gᚋinternalᚋdbᚐUserBan(
 		return graphql.Null
 	}
 	return ec._UserBan(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOUserSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐUserSubgraphAccess(ctx context.Context, sel ast.SelectionSet, v *db.UserSubgraphAccess) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._UserSubgraphAccess(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

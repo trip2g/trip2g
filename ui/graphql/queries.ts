@@ -66,7 +66,7 @@ type AdminQuery = {
   allUsers: AdminUsersConnection;
   noteView?: Maybe<NoteView>;
   subgraph?: Maybe<AdminSubgraph>;
-  userSubgraphAccess?: Maybe<UserSubgraphAccess>;
+  userSubgraphAccess?: Maybe<AdminUserSubgraphAccess>;
 };
 
 
@@ -110,9 +110,20 @@ type AdminUserBansConnection = {
   nodes: Array<UserBan>;
 };
 
+type AdminUserSubgraphAccess = {
+  __typename?: 'AdminUserSubgraphAccess';
+  createdAt: Scalars['Time']['output'];
+  expiresAt?: Maybe<Scalars['Time']['output']>;
+  id: Scalars['Int64']['output'];
+  subgraph: AdminSubgraph;
+  subgraphId: Scalars['Int64']['output'];
+  user: AdminUser;
+  userId: Scalars['Int64']['output'];
+};
+
 type AdminUserSubgraphAccessesConnection = {
   __typename?: 'AdminUserSubgraphAccessesConnection';
-  nodes: Array<UserSubgraphAccess>;
+  nodes: Array<AdminUserSubgraphAccess>;
 };
 
 type AdminUsersConnection = {
@@ -216,13 +227,7 @@ type Purchase = {
 type Query = {
   __typename?: 'Query';
   admin: AdminQuery;
-  subgraph?: Maybe<Subgraph>;
   viewer: Viewer;
-};
-
-
-type QuerySubgraphArgs = {
-  name: Scalars['String']['input'];
 };
 
 type RequestEmailSignInCodeInput = {
@@ -302,7 +307,7 @@ type UpdateUserSubgraphAccessPayload = {
 type User = {
   __typename?: 'User';
   email: Scalars['String']['output'];
-  subgraphs: Array<Subgraph>;
+  subgraphAccesses: Array<UserSubgraphAccess>;
 };
 
 type UserBan = {
@@ -318,11 +323,7 @@ type UserSubgraphAccess = {
   __typename?: 'UserSubgraphAccess';
   createdAt: Scalars['Time']['output'];
   expiresAt?: Maybe<Scalars['Time']['output']>;
-  id: Scalars['Int64']['output'];
   subgraph: Subgraph;
-  subgraphId: Scalars['Int64']['output'];
-  user: AdminUser;
-  userId: Scalars['Int64']['output'];
 };
 
 type Viewer = {
@@ -368,7 +369,7 @@ type AdminListUsersQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQ
 type AdminListUserSubgraphAccessesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-type AdminListUserSubgraphAccessesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename?: 'AdminUserSubgraphAccessesConnection', nodes: Array<{ __typename: 'UserSubgraphAccess', id: any, createdAt: any, expiresAt?: any | null, subgraph: { __typename?: 'Subgraph', name: string }, user: { __typename?: 'AdminUser', id: any, email: string } }> } } };
+type AdminListUserSubgraphAccessesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename?: 'AdminUserSubgraphAccessesConnection', nodes: Array<{ __typename: 'AdminUserSubgraphAccess', id: any, createdAt: any, expiresAt?: any | null, subgraph: { __typename?: 'AdminSubgraph', name: string }, user: { __typename?: 'AdminUser', id: any, email: string } }> } } };
 
 type AdminSelectSubgraphQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -408,7 +409,7 @@ type AdminUserSubgraphAccessQueryVariables = Exact<{
 }>;
 
 
-type AdminUserSubgraphAccessQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> }, userSubgraphAccess?: { __typename?: 'UserSubgraphAccess', userId: any, subgraphId: any, expiresAt?: any | null } | null } };
+type AdminUserSubgraphAccessQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allSubgraphs: { __typename?: 'AdminSubgraphsConnection', nodes: Array<{ __typename?: 'AdminSubgraph', id: any, name: string }> }, userSubgraphAccess?: { __typename?: 'AdminUserSubgraphAccess', userId: any, subgraphId: any, expiresAt?: any | null } | null } };
 
 type AdminUpdateUserSubgraphAccessMutationVariables = Exact<{
   input: UpdateUserSubgraphAccessInput;

@@ -108,7 +108,7 @@ type AdminQuery {
 
   subgraph(id: Int64!): AdminSubgraph
   noteView(id: String!): NoteView
-  userSubgraphAccess(id: Int64!): UserSubgraphAccess
+  userSubgraphAccess(id: Int64!): AdminUserSubgraphAccess
 }
 
 type Viewer {

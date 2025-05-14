@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+go run github.com/99designs/gqlgen generate
+
+npm run graphqlgen
