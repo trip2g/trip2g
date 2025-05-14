@@ -25,15 +25,20 @@ $trip2g_user_space $mol_view
 					click <= close null
 					sub /
 						<= CloseIcon $mol_icon_close
-	Content $mol_view
-		sub /
-			\Content...
+	Content $mol_book2_catalog
+		param \un
+		menu_title \Личный кабинет
+		menu_foot /
 			<= Email $mol_view
-				sub / <= user_email \
-			<= Close $mol_button_minor
-				click <= close null
+				sub / <= user_email
 			<= SignOut $mol_button_major
 				click? <=> signout
+		spreads *
+			home <= Home $trip2g_user_space_home
+
+$trip2g_user_space_home $mol_view
+	sub /
+		\Content...
 
 $trip2g_user_space_name $mol_view
 	value \

@@ -10,16 +10,16 @@
 [trip2g_user_space_dialog] {
 	width: 80vw;
 	height: 80vh;
-	padding: 2rem;
+	/* padding: 2rem; */
 	margin: auto;
 	border: none;
 	border-radius: 1rem;
 	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 	background-color: var(--mol_theme_back);
-	display: flex;
+	/* display: flex;
 	flex-direction: column;
 	justify-content: center;
-	align-items: center;
+	align-items: center; */
 }
 
 [trip2g_user_space_dialog]::backdrop {
