@@ -27,6 +27,8 @@ type NoteView struct {
 	DeadLinks     []string
 	SubgraphNames []string
 	Subgraphs     map[string]*NoteSubgraph
+
+	Assets []string
 }
 
 type NoteSubgraph struct {

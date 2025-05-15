@@ -20,6 +20,7 @@ type Env interface {
 
 type Asset struct {
 	Path string
+	Hash string
 
 	// S3 presigned URL for PUT
 	PutPresignedURL string

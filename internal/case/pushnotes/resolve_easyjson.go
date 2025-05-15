@@ -103,7 +103,7 @@ func easyjson5011676aDecodeTrip2gInternalCasePushnotes1(in *jlexer.Lexer, out *R
 				in.Delim('[')
 				if out.Assets == nil {
 					if !in.IsDelim(']') {
-						out.Assets = make([]Asset, 0, 2)
+						out.Assets = make([]Asset, 0, 1)
 					} else {
 						out.Assets = []Asset{}
 					}
@@ -265,6 +265,8 @@ func easyjson5011676aDecodeTrip2gInternalCasePushnotes3(in *jlexer.Lexer, out *A
 		switch key {
 		case "path":
 			out.Path = string(in.String())
+		case "hash":
+			out.Hash = string(in.String())
 		case "put_presigned_url":
 			out.PutPresignedURL = string(in.String())
 		default:
@@ -285,6 +287,11 @@ func easyjson5011676aEncodeTrip2gInternalCasePushnotes3(out *jwriter.Writer, in 
 		const prefix string = ",\"path\":"
 		out.RawString(prefix[1:])
 		out.String(string(in.Path))
+	}
+	{
+		const prefix string = ",\"hash\":"
+		out.RawString(prefix)
+		out.String(string(in.Hash))
 	}
 	{
 		const prefix string = ",\"put_presigned_url\":"

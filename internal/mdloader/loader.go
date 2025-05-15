@@ -90,7 +90,29 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (*model.NoteViews, error)
 
 	log.Info("subgraphs extracted", "v", ldr.nvs.Subgraphs)
 
+	err = ldr.findAssets()
+	if err != nil {
+		return nil, fmt.Errorf("failed to find assets: %w", err)
+	}
+
 	return ldr.nvs, nil
+}
+
+func (ldr *loader) findAssets() error {
+	// find all images and links to files in all note asts
+	for id, p := range ldr.nvs.Map {
+		err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+			fmt.Println("node", n.Kind(), entering)
+
+			return ast.WalkContinue, nil
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to walk AST: %w %s", err, id)
+		}
+	}
+
+	return nil
 }
 
 func (ldr *loader) generatePageHTMLs() error {

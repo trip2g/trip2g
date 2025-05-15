@@ -29,17 +29,17 @@ First. Second [[second]] [[dead]]`),
 
 	pages, err := mdloader.Load(sourceFiles, &log)
 	require.NoError(t, err)
-	require.Len(t, pages, 3)
+	require.Len(t, pages.Map, 3)
 
-	require.Equal(t, "index", pages["/index"].Title)
-	require.Equal(t, "First", pages["/first"].Title)
-	require.Equal(t, "second", pages["/second"].Title)
+	require.Equal(t, "index", pages.Map["/index"].Title)
+	require.Equal(t, "First", pages.Map["/first"].Title)
+	require.Equal(t, "second", pages.Map["/second"].Title)
 
-	require.Equal(t, map[string]struct{}{}, pages["/index"].InLinks)
-	require.Equal(t, map[string]struct{}{"/index": {}}, pages["/first"].InLinks)
-	require.Equal(t, map[string]struct{}{"/index": {}, "/first": {}}, pages["/second"].InLinks)
+	require.Equal(t, map[string]struct{}{}, pages.Map["/index"].InLinks)
+	require.Equal(t, map[string]struct{}{"/index": {}}, pages.Map["/first"].InLinks)
+	require.Equal(t, map[string]struct{}{"/index": {}, "/first": {}}, pages.Map["/second"].InLinks)
 
-	require.Equal(t, []string{"/dead"}, pages["/first"].DeadLinks)
+	require.Equal(t, []string{"/dead"}, pages.Map["/first"].DeadLinks)
 }
 
 func TestRelatedLinks(t *testing.T) {
@@ -67,15 +67,15 @@ nested second`),
 
 	pages, err := mdloader.Load(sourceFiles, &log)
 	require.NoError(t, err)
-	require.Len(t, pages, 3)
+	require.Len(t, pages.Map, 3)
 
-	require.Equal(t, map[string]struct{}{}, pages["/second"].InLinks)
-	require.Equal(t, map[string]struct{}{"/second": {}}, pages["/nested/first"].InLinks)
-	require.Equal(t, map[string]struct{}{"/nested/first": {}}, pages["/nested/second"].InLinks)
+	require.Equal(t, map[string]struct{}{}, pages.Map["/second"].InLinks)
+	require.Equal(t, map[string]struct{}{"/second": {}}, pages.Map["/nested/first"].InLinks)
+	require.Equal(t, map[string]struct{}{"/nested/first": {}}, pages.Map["/nested/second"].InLinks)
 
 	htmlSources := map[string]string{}
 
-	for path, page := range pages {
+	for path, page := range pages.Map {
 		htmlSources[path] = string(page.HTML)
 	}
 
@@ -101,7 +101,7 @@ Hello [[hidden]]`),
 
 	htmlSources := map[string]string{}
 
-	for path, page := range pages {
+	for path, page := range pages.Map {
 		htmlSources[path] = string(page.HTML)
 	}
 
