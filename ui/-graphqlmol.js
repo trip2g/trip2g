@@ -1,4 +1,4 @@
-const { print, stripIgnoredCharacters } = require('graphql')
+const { print, stripIgnoredCharacters, isEnumType } = require('graphql')
 const { pascalCase } = require('change-case')
 const crypto = require('crypto')
 
@@ -98,6 +98,18 @@ module.exports.plugin = (schema, documents, config) => {
 	const hashes = {}
 	const molPrefix = config.molPrefix || 'change_in_the_config'
 
+	// extract enums from schema
+
+	const enums = []
+	const typeMap = schema.getTypeMap();
+
+	for (const typeName in typeMap) {
+		const type = typeMap[typeName]
+		if (isEnumType(type) && !typeName.startsWith('__')) {
+			enums.push(type)
+		}
+	}
+
 	for (const doc of documents) {
 		if (!doc.document) {
 			continue
@@ -162,6 +174,15 @@ module.exports.plugin = (schema, documents, config) => {
 	requestLines.push(subscriptionLines.join('\n\n') + '\n\n')
 
 	requestLines.push(`export const ${molPrefix}_persist_queries = ${JSON.stringify(hashes)}`)
+
+	function camelToUnderscore(str) {
+		return str.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase()
+	}
+
+	enums.forEach((e) => {
+		// export each enum
+		requestLines.push(`export const ${molPrefix}_${camelToUnderscore(e.name)} = ${e.name};`)
+	})
 
 	return requestLines.join('\n\n') + '\n\n}'
 }

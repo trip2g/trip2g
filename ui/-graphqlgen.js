@@ -17,7 +17,7 @@ module.exports = {
 				__dirname + '/-graphqlmol.js',
 			],
 			config: {
-				noExport: true,
+				// noExport: true,
 				molPrefix: '$trip2g_graphql',
 			},
 		},

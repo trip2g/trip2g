@@ -7,6 +7,7 @@ namespace $.$$ {
 				query Viewer {
 					viewer {
 						id
+						role
 						user {
 							email
 						}
