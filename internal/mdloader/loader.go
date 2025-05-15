@@ -99,10 +99,40 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (*model.NoteViews, error)
 }
 
 func (ldr *loader) findAssets() error {
-	// find all images and links to files in all note asts
 	for id, p := range ldr.nvs.Map {
 		err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-			fmt.Println("node", n.Kind(), entering)
+			if !entering {
+				return ast.WalkContinue, nil
+			}
+
+			switch n.Kind() {
+			case wikilink.Kind:
+
+				wl := n.(*wikilink.Node)
+
+				if wl.Embed {
+					p.Assets[string(wl.Target)] = struct{}{}
+				}
+
+			case ast.KindLink:
+				l := n.(*ast.Link)
+
+				if l.Destination != nil {
+					url := string(l.Destination)
+
+					// not sure if this is the right way to check for a file link
+					if !strings.HasSuffix(url, ".md") {
+						p.Assets[string(l.Destination)] = struct{}{}
+					}
+				}
+
+			case ast.KindImage:
+				i := n.(*ast.Image)
+
+				if i.Destination != nil {
+					p.Assets[string(i.Destination)] = struct{}{}
+				}
+			}
 
 			return ast.WalkContinue, nil
 		})
@@ -196,6 +226,7 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) { //nolint
 		Content:   src.Content,
 		InLinks:   make(map[string]struct{}),
 		Subgraphs: make(map[string]*model.NoteSubgraph),
+		Assets:    make(map[string]struct{}),
 	}
 
 	pp.SetAst(doc)

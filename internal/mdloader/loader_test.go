@@ -107,3 +107,21 @@ Hello [[hidden]]`),
 
 	cupaloy.SnapshotT(t, htmlSources)
 }
+
+func TestAssets(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path:    "index.md",
+		Content: []byte(`Hello ![[image.png]] and document [PDF](/file.pdf) and image ![hello](image2.png)`),
+	}}
+
+	pages, err := mdloader.Load(sourceFiles, &log)
+	require.NoError(t, err)
+
+	require.Equal(t, pages.Map["/index"].Assets, map[string]struct{}{
+		"image.png":  struct{}{},
+		"/file.pdf":  struct{}{},
+		"image2.png": struct{}{},
+	})
+}
