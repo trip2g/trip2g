@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"path/filepath"
+	"sort"
 
 	"github.com/yuin/goldmark/ast"
 )
@@ -12,7 +13,8 @@ type NoteView struct {
 	Path  string
 	Title string
 
-	PathID int64
+	PathID    int64
+	VersionID int64
 
 	Content []byte
 	HTML    template.HTML
@@ -39,6 +41,8 @@ type NoteSubgraph struct {
 
 type NoteViews struct {
 	Map map[string]*NoteView
+
+	List []*NoteView
 
 	Subgraphs map[string]*NoteSubgraph
 }
@@ -141,6 +145,22 @@ func (nv *NoteViews) Copy() *NoteViews {
 	}
 
 	return res
+}
+
+func (nv *NoteViews) ExtractNoteList() {
+	nv.List = make([]*NoteView, 0, len(nv.Map))
+
+	keys := make([]string, 0, len(nv.Map))
+
+	for k := range nv.Map {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		nv.List = append(nv.List, nv.Map[k])
+	}
 }
 
 func (nv *NoteViews) ExtractSubgraphs() {

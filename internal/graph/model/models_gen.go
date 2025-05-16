@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
+
+	"github.com/99designs/gqlgen/graphql"
 )
 
 type BanUserOrErrorPayload interface {
@@ -17,6 +19,10 @@ type BanUserOrErrorPayload interface {
 
 type CreatePaymentLinkOrErrorPayload interface {
 	IsCreatePaymentLinkOrErrorPayload()
+}
+
+type PushNotesOrErrorPayload interface {
+	IsPushNotesOrErrorPayload()
 }
 
 type RequestEmailSignInCodeOrErrorPayload interface {
@@ -41,6 +47,10 @@ type UpdateSubgraphOrErrorPayload interface {
 
 type UpdateUserSubgraphAccessOrErrorPayload interface {
 	IsUpdateUserSubgraphAccessOrErrorPayload()
+}
+
+type UploadNoteAssetOrErrorPayload interface {
+	IsUploadNoteAssetOrErrorPayload()
 }
 
 type AdminNoteViewsConnection struct {
@@ -102,6 +112,10 @@ func (ErrorPayload) IsSignOutOrErrorPayload() {}
 
 func (ErrorPayload) IsCreatePaymentLinkOrErrorPayload() {}
 
+func (ErrorPayload) IsPushNotesOrErrorPayload() {}
+
+func (ErrorPayload) IsUploadNoteAssetOrErrorPayload() {}
+
 func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
@@ -116,6 +130,26 @@ type FieldMessage struct {
 }
 
 type Mutation struct {
+}
+
+type PushNoteInput struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
+type PushNotesInput struct {
+	Updates []PushNoteInput `json:"updates"`
+}
+
+type PushNotesPayload struct {
+	Notes []*model.NoteView `json:"notes"`
+}
+
+func (PushNotesPayload) IsPushNotesOrErrorPayload() {}
+
+type PushedNoteAsset struct {
+	Path       string  `json:"path"`
+	Sha256Hash *string `json:"sha256Hash,omitempty"`
 }
 
 type Query struct {
@@ -171,6 +205,20 @@ type UpdateUserSubgraphAccessPayload struct {
 }
 
 func (UpdateUserSubgraphAccessPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
+
+type UploadNoteAssetInput struct {
+	File         graphql.Upload `json:"file"`
+	NoteID       int            `json:"noteId"`
+	Sha256Hash   string         `json:"sha256Hash"`
+	Path         string         `json:"path"`
+	AbsolutePath string         `json:"absolutePath"`
+}
+
+type UploadNoteAssetPayload struct {
+	UploadSkipped bool `json:"uploadSkipped"`
+}
+
+func (UploadNoteAssetPayload) IsUploadNoteAssetOrErrorPayload() {}
 
 type PaymentType string
 

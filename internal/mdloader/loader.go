@@ -21,9 +21,10 @@ import (
 
 // SourceFile represents a markdown file.
 type SourceFile struct {
-	Path    string
-	PathID  int64
-	Content []byte
+	Path      string
+	PathID    int64
+	VersionID int64
+	Content   []byte
 }
 
 type loader struct {
@@ -72,6 +73,7 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (*model.NoteViews, error)
 		}
 
 		page.PathID = src.PathID
+		page.VersionID = src.VersionID
 
 		ldr.nvs.Map[page.Permalink] = page
 	}
@@ -86,6 +88,7 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (*model.NoteViews, error)
 		return nil, fmt.Errorf("failed to generate static pages: %w", err)
 	}
 
+	ldr.nvs.ExtractNoteList()
 	ldr.nvs.ExtractSubgraphs()
 
 	log.Info("subgraphs extracted", "v", ldr.nvs.Subgraphs)

@@ -9,9 +9,11 @@ import (
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/createpaymentlink"
+	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
+	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -70,6 +72,8 @@ type Env interface {
 	signinbyemail.Env
 	signout.Env
 	createpaymentlink.Env
+	pushnotes.Env
+	uploadnoteasset.Env
 
 	banuser.Env
 	updatesubgraph.Env

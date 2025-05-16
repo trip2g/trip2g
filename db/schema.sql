@@ -7,14 +7,6 @@ CREATE TABLE note_paths (
   created_at datetime not null default current_timestamp,
   version_count integer not null default 0
 );
-CREATE TABLE note_versions (
-  path_id integer not null,
-  version integer not null,
-  content text not null,
-  created_at datetime not null default current_timestamp,
-  primary key (path_id, version),
-  foreign key (path_id) references note_paths(id) on delete restrict
-);
 CREATE TABLE users (
   id integer primary key,
   email text not null unique,
@@ -118,6 +110,30 @@ CREATE TABLE IF NOT EXISTS "purchases" (
   user_id integer references users(id) on delete restrict,
   email text not null
 );
+CREATE TABLE IF NOT EXISTS "note_versions" (
+  id integer primary key autoincrement,
+  path_id integer not null,
+  version integer not null,
+  content text not null,
+  created_at datetime not null default current_timestamp,
+  unique(path_id, version),
+  foreign key (path_id) references note_paths(id) on delete restrict
+);
+CREATE TABLE note_assets (
+  id integer primary key autoincrement,
+  absolute_path text not null,
+  sha256_hash text not null,
+  content_type text not null,
+  created_at datetime not null default current_timestamp,
+  size integer not null,
+  unique (absolute_path, sha256_hash)
+);
+CREATE TABLE note_version_assets (
+  asset_id integer not null references note_assets(id) on delete cascade,
+  version_id integer not null references note_versions(id) on delete cascade,
+  path text not null, -- path in the note for replacement
+  primary key (asset_id, version_id, path)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -136,4 +152,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250504074439'),
   ('20250506122229'),
   ('20250506122811'),
-  ('20250507032627');
+  ('20250507032627'),
+  ('20250515071315'),
+  ('20250515071316');

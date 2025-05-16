@@ -61,6 +61,7 @@ type ResolverRoot interface {
 	NoteView() NoteViewResolver
 	Offer() OfferResolver
 	Purchase() PurchaseResolver
+	PushedNote() PushedNoteResolver
 	Query() QueryResolver
 	Subgraph() SubgraphResolver
 	UnbanUserPayload() UnbanUserPayloadResolver
@@ -163,9 +164,11 @@ type ComplexityRoot struct {
 	Mutation struct {
 		Admin                  func(childComplexity int) int
 		CreatePaymentLink      func(childComplexity int, input model.CreatePaymentLinkInput) int
+		PushNotes              func(childComplexity int, input model.PushNotesInput) int
 		RequestEmailSignInCode func(childComplexity int, input model.RequestEmailSignInCodeInput) int
 		SignInByEmail          func(childComplexity int, input model.SignInByEmailInput) int
 		SignOut                func(childComplexity int) int
+		UploadNoteAsset        func(childComplexity int, input model.UploadNoteAssetInput) int
 	}
 
 	NoteView struct {
@@ -188,6 +191,21 @@ type ComplexityRoot struct {
 		ID         func(childComplexity int) int
 		Status     func(childComplexity int) int
 		Successful func(childComplexity int) int
+	}
+
+	PushNotesPayload struct {
+		Notes func(childComplexity int) int
+	}
+
+	PushedNote struct {
+		Assets func(childComplexity int) int
+		ID     func(childComplexity int) int
+		Path   func(childComplexity int) int
+	}
+
+	PushedNoteAsset struct {
+		Path       func(childComplexity int) int
+		Sha256Hash func(childComplexity int) int
 	}
 
 	Query struct {
@@ -225,6 +243,10 @@ type ComplexityRoot struct {
 
 	UpdateUserSubgraphAccessPayload struct {
 		UserSubgraphAccess func(childComplexity int) int
+	}
+
+	UploadNoteAssetPayload struct {
+		UploadSkipped func(childComplexity int) int
 	}
 
 	User struct {
@@ -312,6 +334,8 @@ type MutationResolver interface {
 	SignInByEmail(ctx context.Context, input model.SignInByEmailInput) (model.SignInOrErrorPayload, error)
 	SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error)
 	CreatePaymentLink(ctx context.Context, input model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error)
+	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
+	UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error)
 	Admin(ctx context.Context) (*model1.AdminMutation, error)
 }
 type NoteViewResolver interface {
@@ -325,6 +349,11 @@ type OfferResolver interface {
 }
 type PurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
+}
+type PushedNoteResolver interface {
+	ID(ctx context.Context, obj *model1.NoteView) (int, error)
+
+	Assets(ctx context.Context, obj *model1.NoteView) ([]model.PushedNoteAsset, error)
 }
 type QueryResolver interface {
 	Viewer(ctx context.Context) (*model1.Viewer, error)
@@ -718,6 +747,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.CreatePaymentLink(childComplexity, args["input"].(model.CreatePaymentLinkInput)), true
 
+	case "Mutation.pushNotes":
+		if e.complexity.Mutation.PushNotes == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_pushNotes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.PushNotes(childComplexity, args["input"].(model.PushNotesInput)), true
+
 	case "Mutation.requestEmailSignInCode":
 		if e.complexity.Mutation.RequestEmailSignInCode == nil {
 			break
@@ -748,6 +789,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SignOut(childComplexity), true
+
+	case "Mutation.uploadNoteAsset":
+		if e.complexity.Mutation.UploadNoteAsset == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_uploadNoteAsset_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UploadNoteAsset(childComplexity, args["input"].(model.UploadNoteAssetInput)), true
 
 	case "NoteView.content":
 		if e.complexity.NoteView.Content == nil {
@@ -840,6 +893,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Purchase.Successful(childComplexity), true
 
+	case "PushNotesPayload.notes":
+		if e.complexity.PushNotesPayload.Notes == nil {
+			break
+		}
+
+		return e.complexity.PushNotesPayload.Notes(childComplexity), true
+
+	case "PushedNote.assets":
+		if e.complexity.PushedNote.Assets == nil {
+			break
+		}
+
+		return e.complexity.PushedNote.Assets(childComplexity), true
+
+	case "PushedNote.id":
+		if e.complexity.PushedNote.ID == nil {
+			break
+		}
+
+		return e.complexity.PushedNote.ID(childComplexity), true
+
+	case "PushedNote.path":
+		if e.complexity.PushedNote.Path == nil {
+			break
+		}
+
+		return e.complexity.PushedNote.Path(childComplexity), true
+
+	case "PushedNoteAsset.path":
+		if e.complexity.PushedNoteAsset.Path == nil {
+			break
+		}
+
+		return e.complexity.PushedNoteAsset.Path(childComplexity), true
+
+	case "PushedNoteAsset.sha256Hash":
+		if e.complexity.PushedNoteAsset.Sha256Hash == nil {
+			break
+		}
+
+		return e.complexity.PushedNoteAsset.Sha256Hash(childComplexity), true
+
 	case "Query.admin":
 		if e.complexity.Query.Admin == nil {
 			break
@@ -930,6 +1025,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UpdateUserSubgraphAccessPayload.UserSubgraphAccess(childComplexity), true
+
+	case "UploadNoteAssetPayload.uploadSkipped":
+		if e.complexity.UploadNoteAssetPayload.UploadSkipped == nil {
+			break
+		}
+
+		return e.complexity.UploadNoteAssetPayload.UploadSkipped(childComplexity), true
 
 	case "User.email":
 		if e.complexity.User.Email == nil {
@@ -1058,11 +1160,14 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputBanUserInput,
 		ec.unmarshalInputCreatePaymentLinkInput,
+		ec.unmarshalInputPushNoteInput,
+		ec.unmarshalInputPushNotesInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputSignInByEmailInput,
 		ec.unmarshalInputUnbanUserInput,
 		ec.unmarshalInputUpdateSubgraphInput,
 		ec.unmarshalInputUpdateUserSubgraphAccessInput,
+		ec.unmarshalInputUploadNoteAssetInput,
 	)
 	first := true
 
@@ -1363,6 +1468,29 @@ func (ec *executionContext) field_Mutation_createPaymentLink_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_pushNotes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_pushNotes_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_pushNotes_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.PushNotesInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNPushNotesInput2trip2gᚋinternalᚋgraphᚋmodelᚐPushNotesInput(ctx, tmp)
+	}
+
+	var zeroVal model.PushNotesInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_requestEmailSignInCode_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1406,6 +1534,29 @@ func (ec *executionContext) field_Mutation_signInByEmail_argsInput(
 	}
 
 	var zeroVal model.SignInByEmailInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_uploadNoteAsset_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_uploadNoteAsset_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_uploadNoteAsset_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UploadNoteAssetInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUploadNoteAssetInput2trip2gᚋinternalᚋgraphᚋmodelᚐUploadNoteAssetInput(ctx, tmp)
+	}
+
+	var zeroVal model.UploadNoteAssetInput
 	return zeroVal, nil
 }
 
@@ -3808,6 +3959,116 @@ func (ec *executionContext) fieldContext_Mutation_createPaymentLink(ctx context.
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_pushNotes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_pushNotes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().PushNotes(rctx, fc.Args["input"].(model.PushNotesInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.PushNotesOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNPushNotesOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐPushNotesOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_pushNotes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type PushNotesOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_pushNotes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_uploadNoteAsset(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_uploadNoteAsset(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UploadNoteAsset(rctx, fc.Args["input"].(model.UploadNoteAssetInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.UploadNoteAssetOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNUploadNoteAssetOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUploadNoteAssetOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_uploadNoteAsset(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UploadNoteAssetOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_uploadNoteAsset_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_admin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_admin(ctx, field)
 	if err != nil {
@@ -4437,6 +4698,281 @@ func (ec *executionContext) fieldContext_Purchase_successful(_ context.Context, 
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushNotesPayload_notes(ctx context.Context, field graphql.CollectedField, obj *model.PushNotesPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PushNotesPayload_notes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Notes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model1.NoteView)
+	fc.Result = res
+	return ec.marshalNPushedNote2ᚕᚖtrip2gᚋinternalᚋmodelᚐNoteViewᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PushNotesPayload_notes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushNotesPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_PushedNote_id(ctx, field)
+			case "path":
+				return ec.fieldContext_PushedNote_path(ctx, field)
+			case "assets":
+				return ec.fieldContext_PushedNote_assets(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PushedNote", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushedNote_id(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PushedNote_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.PushedNote().ID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt642int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PushedNote_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushedNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushedNote_path(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PushedNote_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PushedNote_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushedNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushedNote_assets(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PushedNote_assets(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.PushedNote().Assets(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.PushedNoteAsset)
+	fc.Result = res
+	return ec.marshalNPushedNoteAsset2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPushedNoteAssetᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PushedNote_assets(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushedNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "path":
+				return ec.fieldContext_PushedNoteAsset_path(ctx, field)
+			case "sha256Hash":
+				return ec.fieldContext_PushedNoteAsset_sha256Hash(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PushedNoteAsset", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushedNoteAsset_path(ctx context.Context, field graphql.CollectedField, obj *model.PushedNoteAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PushedNoteAsset_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PushedNoteAsset_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushedNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushedNoteAsset_sha256Hash(ctx context.Context, field graphql.CollectedField, obj *model.PushedNoteAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PushedNoteAsset_sha256Hash(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sha256Hash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PushedNoteAsset_sha256Hash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushedNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5232,6 +5768,50 @@ func (ec *executionContext) fieldContext_UpdateUserSubgraphAccessPayload_userSub
 				return ec.fieldContext_UserSubgraphAccess_subgraph(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserSubgraphAccess", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UploadNoteAssetPayload_uploadSkipped(ctx context.Context, field graphql.CollectedField, obj *model.UploadNoteAssetPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UploadNoteAssetPayload_uploadSkipped(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UploadSkipped, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UploadNoteAssetPayload_uploadSkipped(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UploadNoteAssetPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8030,6 +8610,67 @@ func (ec *executionContext) unmarshalInputCreatePaymentLinkInput(ctx context.Con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputPushNoteInput(ctx context.Context, obj any) (model.PushNoteInput, error) {
+	var it model.PushNoteInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"path", "content"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "content":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Content = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPushNotesInput(ctx context.Context, obj any) (model.PushNotesInput, error) {
+	var it model.PushNotesInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"updates"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "updates":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updates"))
+			data, err := ec.unmarshalNPushNoteInput2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPushNoteInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Updates = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRequestEmailSignInCodeInput(ctx context.Context, obj any) (model.RequestEmailSignInCodeInput, error) {
 	var it model.RequestEmailSignInCodeInput
 	asMap := map[string]any{}
@@ -8193,6 +8834,61 @@ func (ec *executionContext) unmarshalInputUpdateUserSubgraphAccessInput(ctx cont
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUploadNoteAssetInput(ctx context.Context, obj any) (model.UploadNoteAssetInput, error) {
+	var it model.UploadNoteAssetInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"file", "noteId", "sha256Hash", "path", "absolutePath"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "file":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("file"))
+			data, err := ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.File = data
+		case "noteId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("noteId"))
+			data, err := ec.unmarshalNInt642int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NoteID = data
+		case "sha256Hash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sha256Hash"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Sha256Hash = data
+		case "path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		case "absolutePath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("absolutePath"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AbsolutePath = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -8238,6 +8934,29 @@ func (ec *executionContext) _CreatePaymentLinkOrErrorPayload(ctx context.Context
 			return graphql.Null
 		}
 		return ec._CreatePaymentLinkPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _PushNotesOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.PushNotesOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.PushNotesPayload:
+		return ec._PushNotesPayload(ctx, sel, &obj)
+	case *model.PushNotesPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._PushNotesPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -8369,6 +9088,29 @@ func (ec *executionContext) _UpdateUserSubgraphAccessOrErrorPayload(ctx context.
 			return graphql.Null
 		}
 		return ec._UpdateUserSubgraphAccessPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _UploadNoteAssetOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UploadNoteAssetOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UploadNoteAssetPayload:
+		return ec._UploadNoteAssetPayload(ctx, sel, &obj)
+	case *model.UploadNoteAssetPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UploadNoteAssetPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -9735,7 +10477,7 @@ func (ec *executionContext) _CreatePaymentLinkPayload(ctx context.Context, sel a
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -9897,6 +10639,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createPaymentLink":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createPaymentLink(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pushNotes":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_pushNotes(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "uploadNoteAsset":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_uploadNoteAsset(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -10261,6 +11017,197 @@ func (ec *executionContext) _Purchase(ctx context.Context, sel ast.SelectionSet,
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var pushNotesPayloadImplementors = []string{"PushNotesPayload", "PushNotesOrErrorPayload"}
+
+func (ec *executionContext) _PushNotesPayload(ctx context.Context, sel ast.SelectionSet, obj *model.PushNotesPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pushNotesPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PushNotesPayload")
+		case "notes":
+			out.Values[i] = ec._PushNotesPayload_notes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var pushedNoteImplementors = []string{"PushedNote"}
+
+func (ec *executionContext) _PushedNote(ctx context.Context, sel ast.SelectionSet, obj *model1.NoteView) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pushedNoteImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PushedNote")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PushedNote_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "path":
+			out.Values[i] = ec._PushedNote_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "assets":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PushedNote_assets(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var pushedNoteAssetImplementors = []string{"PushedNoteAsset"}
+
+func (ec *executionContext) _PushedNoteAsset(ctx context.Context, sel ast.SelectionSet, obj *model.PushedNoteAsset) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pushedNoteAssetImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PushedNoteAsset")
+		case "path":
+			out.Values[i] = ec._PushedNoteAsset_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sha256Hash":
+			out.Values[i] = ec._PushedNoteAsset_sha256Hash(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10738,6 +11685,45 @@ func (ec *executionContext) _UpdateUserSubgraphAccessPayload(ctx context.Context
 			out.Values[i] = graphql.MarshalString("UpdateUserSubgraphAccessPayload")
 		case "userSubgraphAccess":
 			out.Values[i] = ec._UpdateUserSubgraphAccessPayload_userSubgraphAccess(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var uploadNoteAssetPayloadImplementors = []string{"UploadNoteAssetPayload", "UploadNoteAssetOrErrorPayload"}
+
+func (ec *executionContext) _UploadNoteAssetPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UploadNoteAssetPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, uploadNoteAssetPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UploadNoteAssetPayload")
+		case "uploadSkipped":
+			out.Values[i] = ec._UploadNoteAssetPayload_uploadSkipped(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -12185,6 +13171,143 @@ func (ec *executionContext) marshalNPurchase2ᚕtrip2gᚋinternalᚋdbᚐPurchas
 	return ret
 }
 
+func (ec *executionContext) unmarshalNPushNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐPushNoteInput(ctx context.Context, v any) (model.PushNoteInput, error) {
+	res, err := ec.unmarshalInputPushNoteInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNPushNoteInput2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPushNoteInputᚄ(ctx context.Context, v any) ([]model.PushNoteInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.PushNoteInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNPushNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐPushNoteInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNPushNotesInput2trip2gᚋinternalᚋgraphᚋmodelᚐPushNotesInput(ctx context.Context, v any) (model.PushNotesInput, error) {
+	res, err := ec.unmarshalInputPushNotesInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNPushNotesOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐPushNotesOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.PushNotesOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PushNotesOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPushedNote2ᚕᚖtrip2gᚋinternalᚋmodelᚐNoteViewᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.NoteView) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPushedNote2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPushedNote2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx context.Context, sel ast.SelectionSet, v *model1.NoteView) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PushedNote(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPushedNoteAsset2trip2gᚋinternalᚋgraphᚋmodelᚐPushedNoteAsset(ctx context.Context, sel ast.SelectionSet, v model.PushedNoteAsset) graphql.Marshaler {
+	return ec._PushedNoteAsset(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPushedNoteAsset2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPushedNoteAssetᚄ(ctx context.Context, sel ast.SelectionSet, v []model.PushedNoteAsset) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPushedNoteAsset2trip2gᚋinternalᚋgraphᚋmodelᚐPushedNoteAsset(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeInput(ctx context.Context, v any) (model.RequestEmailSignInCodeInput, error) {
 	res, err := ec.unmarshalInputRequestEmailSignInCodeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12366,6 +13489,36 @@ func (ec *executionContext) marshalNUpdateUserSubgraphAccessOrErrorPayload2trip2
 		return graphql.Null
 	}
 	return ec._UpdateUserSubgraphAccessOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v any) (graphql.Upload, error) {
+	res, err := graphql.UnmarshalUpload(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, sel ast.SelectionSet, v graphql.Upload) graphql.Marshaler {
+	res := graphql.MarshalUpload(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNUploadNoteAssetInput2trip2gᚋinternalᚋgraphᚋmodelᚐUploadNoteAssetInput(ctx context.Context, v any) (model.UploadNoteAssetInput, error) {
+	res, err := ec.unmarshalInputUploadNoteAssetInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUploadNoteAssetOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUploadNoteAssetOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UploadNoteAssetOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UploadNoteAssetOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNUserBan2trip2gᚋinternalᚋdbᚐUserBan(ctx context.Context, sel ast.SelectionSet, v db.UserBan) graphql.Marshaler {

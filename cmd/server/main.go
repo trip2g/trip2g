@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -26,6 +27,7 @@ import (
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
+	"trip2g/internal/miniostorage"
 	"trip2g/internal/model"
 	"trip2g/internal/nowpayments"
 	"trip2g/internal/purchasetoken"
@@ -56,6 +58,7 @@ import (
 
 type app struct {
 	*db.Queries
+	*miniostorage.FileStorage
 
 	mu sync.Mutex
 
@@ -130,6 +133,28 @@ func checkForeignKeys(db *sql.DB) error {
 	return nil
 }
 
+func showSqliteVersion(db *sql.DB) error {
+	rows, err := db.Query("SELECT sqlite_version();")
+	if err != nil {
+		return fmt.Errorf("failed to get SQLite version: %w", err)
+	}
+
+	defer rows.Close()
+
+	var version string
+
+	if rows.Next() {
+		err = rows.Scan(&version)
+		if err != nil {
+			return fmt.Errorf("failed to scan SQLite version: %w", err)
+		}
+	}
+
+	fmt.Printf("SQLite version: %s\n", version)
+
+	return nil
+}
+
 func main() {
 	u, _ := url.Parse("sqlite:data.sqlite3")
 	dbm := dbmate.New(u)
@@ -150,6 +175,11 @@ func main() {
 	}
 
 	err = checkForeignKeys(conn)
+	if err != nil {
+		panic(err)
+	}
+
+	err = showSqliteVersion(conn)
 	if err != nil {
 		panic(err)
 	}
@@ -185,8 +215,31 @@ func main() {
 		panic(err)
 	}
 
+	storageConfig := miniostorage.Config{}
+
+	flag.StringVar(&storageConfig.Endpoint, "minio-endpoint", "localhost:9000", "MinIO endpoint")
+	flag.StringVar(&storageConfig.AccessKey, "minio-access-key-id", "root", "MinIO access key ID")
+	flag.StringVar(&storageConfig.SecretKey, "minio-secret-key", "password", "MinIO secret key")
+	flag.StringVar(&storageConfig.Bucket, "minio-bucket", "development", "MinIO bucket name")
+	flag.StringVar(&storageConfig.Region, "minio-region", "us-east-1", "MinIO region")
+	flag.BoolVar(&storageConfig.UseSSL, "minio-use-ssl", false, "Use SSL for MinIO")
+	flag.DurationVar(&storageConfig.InitTimeout, "minio-init-timeout", 5*time.Second, "MinIO init timeout (check and make bucket)")
+
+	ctx := context.Background()
+
+	fileStorage, err := miniostorage.New(ctx, storageConfig)
+	if err != nil {
+		if devMode {
+			log.Warn("failed to create minio storage", "error", err)
+		} else {
+			panic(err)
+		}
+	}
+
 	a := &app{
 		Queries: queries,
+
+		FileStorage: fileStorage,
 
 		tokenManager: tokenManager,
 		queueClient:  queueClient,
@@ -217,8 +270,6 @@ func main() {
 		return nil
 	})
 
-	ctx := context.Background()
-
 	queueClient.Register(sendsignincode.NewQueue(a))
 	// queueClient.Start(ctx)
 
@@ -235,6 +286,30 @@ func main() {
 	if os.Getenv("SERVER") == "y" {
 		a.startServer()
 	}
+}
+
+func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	noteVersion, err := a.queries.NoteVersionByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get note version by ID: %w", err)
+	}
+
+	sources := []mdloader.SourceFile{{
+		Path:      noteVersion.Path,
+		PathID:    noteVersion.PathID,
+		VersionID: noteVersion.VersionID,
+		Content:   []byte(noteVersion.Content),
+	}}
+
+	pages, err := mdloader.Load(sources, logger.WithPrefix(a.log, "uploadnoteasset: mdloader:"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load pages: %w", err)
+	}
+
+	return pages.List[0].Assets, nil
 }
 
 func (a *app) IDHash(entity string, id int64) string {
@@ -333,9 +408,10 @@ func (a *app) PrepareNotes(ctx context.Context) (*model.NoteViews, error) {
 
 	for _, note := range notes {
 		sources = append(sources, mdloader.SourceFile{
-			Path:    note.Path,
-			PathID:  note.PathID,
-			Content: []byte(note.Content),
+			Path:      note.Path,
+			PathID:    note.PathID,
+			VersionID: note.VersionID,
+			Content:   []byte(note.Content),
 		})
 	}
 
@@ -745,6 +821,10 @@ func (a *app) SetupGraphQL(srv *handler.Server) {
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
+	srv.AddTransport(transport.MultipartForm{
+		MaxUploadSize: 30 * 1024 * 1024,
+		MaxMemory:     10 * 1024 * 1024,
+	})
 
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 

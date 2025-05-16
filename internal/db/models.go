@@ -41,6 +41,15 @@ type BackliteTasksCompleted struct {
 	Error             sql.NullString `json:"error"`
 }
 
+type NoteAsset struct {
+	ID           int64     `json:"id"`
+	AbsolutePath string    `json:"absolute_path"`
+	Sha256Hash   string    `json:"sha256_hash"`
+	ContentType  string    `json:"content_type"`
+	CreatedAt    time.Time `json:"created_at"`
+	Size         int64     `json:"size"`
+}
+
 type NotePath struct {
 	ID                int64     `json:"id"`
 	Value             string    `json:"value"`
@@ -51,10 +60,17 @@ type NotePath struct {
 }
 
 type NoteVersion struct {
+	ID        int64     `json:"id"`
 	PathID    int64     `json:"path_id"`
 	Version   int64     `json:"version"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type NoteVersionAsset struct {
+	AssetID   int64  `json:"asset_id"`
+	VersionID int64  `json:"version_id"`
+	Path      string `json:"path"`
 }
 
 type Offer struct {

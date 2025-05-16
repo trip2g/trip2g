@@ -1,5 +1,6 @@
 scalar Int64
 scalar Time
+scalar Upload
 
 directive @goField(
 	forceResolver: Boolean
@@ -223,11 +224,63 @@ type CreatePaymentLinkPayload {
 
 union CreatePaymentLinkOrErrorPayload = CreatePaymentLinkPayload | ErrorPayload
 
+#
+# pushNotes
+#
+
+input PushNoteInput {
+  path: String!
+  content: String!
+}
+
+input PushNotesInput {
+  updates: [PushNoteInput!]!
+}
+
+type PushedNoteAsset {
+  path: String! # the client must resolve this to the absolute path
+  sha256Hash: String # if the hash does not match
+  # and upload the file to payload.uploadUrl
+}
+
+type PushedNote @goModel(model: "trip2g/internal/model.NoteView") {
+  id: Int64!
+  path: String!
+  assets: [PushedNoteAsset!]!
+}
+
+type PushNotesPayload {
+  notes: [PushedNote!]! @goField(type: "[]*trip2g/internal/model.NoteView")
+}
+
+union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
+
+#
+# uploadNoteAsset
+#
+
+input UploadNoteAssetInput {
+  file: Upload!
+  noteId: Int64!
+  sha256Hash: String! # must be calculated by the client, the request will be reqected if the hash does not match after upload
+  path: String! # the path from the note markdown
+  absolutePath: String!
+}
+
+type UploadNoteAssetPayload {
+  uploadSkipped: Boolean!
+}
+
+union UploadNoteAssetOrErrorPayload = UploadNoteAssetPayload | ErrorPayload
+
 type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
   signOut: SignOutOrErrorPayload!
   createPaymentLink(input: CreatePaymentLinkInput!): CreatePaymentLinkOrErrorPayload!
+
+  pushNotes(input: PushNotesInput!): PushNotesOrErrorPayload!
+  uploadNoteAsset(input: UploadNoteAssetInput!): UploadNoteAssetOrErrorPayload!
 
   admin: AdminMutation!
 }

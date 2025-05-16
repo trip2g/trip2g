@@ -3,64 +3,31 @@ package pushnotes
 import (
 	"context"
 	"fmt"
+	"time"
 	"trip2g/internal/db"
+	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
-	"trip2g/internal/model"
+
+	appmodel "trip2g/internal/model"
 )
 
-//go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
-
-// Env describes all IO deps.
 type Env interface {
 	Logger() logger.Logger
 	InsertNote(ctx context.Context, update db.Note) error
 	InsertSubgraph(ctx context.Context, name string) error
-	PrepareNotes(ctx context.Context) (*model.NoteViews, error)
+	PrepareNotes(ctx context.Context) (*appmodel.NoteViews, error)
 }
 
-type Asset struct {
-	Path string
-	Hash string
-
-	// S3 presigned URL for PUT
-	PutPresignedURL string
-}
-
-type Update struct {
-	Path    string
-	Content string
-}
-
-type Request struct {
-	Updates []Update
-}
-
-var ErrNoUpdates = fmt.Errorf("no updates provided")
-var ErrInvalidUpdate = fmt.Errorf("invalid update provided")
-
-func (r *Request) Validate() error {
-	if len(r.Updates) == 0 {
-		return ErrNoUpdates
+func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
+	if len(input.Updates) == 0 {
+		return &model.ErrorPayload{Message: "No updates provided"}, nil
 	}
 
-	for _, update := range r.Updates {
-		if update.Path == "" || update.Content == "" {
-			return ErrInvalidUpdate
-		}
-	}
-
-	return nil
-}
-
-type Response struct {
-	Assets []Asset
-}
-
-func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
-	for _, update := range request.Updates {
+	for _, update := range input.Updates {
 		note := db.Note{
-			Path:    update.Path,
-			Content: update.Content,
+			Path: update.Path,
+			// TODO: remove it
+			Content: update.Content + fmt.Sprintf("%d", time.Now().Unix()),
 		}
 
 		insertErr := env.InsertNote(ctx, note)
@@ -83,8 +50,9 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		}
 	}
 
-	// TODO: PrepareNotes should return the list of assets
-	response := Response{}
+	response := model.PushNotesPayload{
+		Notes: nvs.List,
+	}
 
 	return &response, nil
 }

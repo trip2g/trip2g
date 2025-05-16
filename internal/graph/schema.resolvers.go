@@ -18,9 +18,11 @@ import (
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/createpaymentlink"
+	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
+	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
@@ -202,6 +204,16 @@ func (r *mutationResolver) CreatePaymentLink(ctx context.Context, input model.Cr
 	return createpaymentlink.Resolve(ctx, r.env(ctx), input)
 }
 
+// PushNotes is the resolver for the pushNotes field.
+func (r *mutationResolver) PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
+	return pushnotes.Resolve(ctx, r.env(ctx), input)
+}
+
+// UploadNoteAsset is the resolver for the uploadNoteAsset field.
+func (r *mutationResolver) UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error) {
+	return uploadnoteasset.Resolve(ctx, r.env(ctx), input)
+}
+
 // Admin is the resolver for the admin field.
 func (r *mutationResolver) Admin(ctx context.Context) (*appmodel.AdminMutation, error) {
 	// TODO: check if the user is admin
@@ -240,6 +252,24 @@ func (r *offerResolver) Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subg
 // Successful is the resolver for the successful field.
 func (r *purchaseResolver) Successful(ctx context.Context, obj *db.Purchase) (bool, error) {
 	return nowpayments.PaymentStatus(obj.Status).IsSuccessful(), nil
+}
+
+// ID is the resolver for the id field.
+func (r *pushedNoteResolver) ID(ctx context.Context, obj *appmodel.NoteView) (int, error) {
+	return int(obj.VersionID), nil
+}
+
+// Assets is the resolver for the assets field.
+func (r *pushedNoteResolver) Assets(ctx context.Context, obj *appmodel.NoteView) ([]model.PushedNoteAsset, error) {
+	assets := []model.PushedNoteAsset{}
+
+	for relativePath := range obj.Assets {
+		assets = append(assets, model.PushedNoteAsset{
+			Path: relativePath,
+		})
+	}
+
+	return assets, nil
 }
 
 // Viewer is the resolver for the viewer field.
@@ -461,6 +491,9 @@ func (r *Resolver) Offer() OfferResolver { return &offerResolver{r} }
 // Purchase returns PurchaseResolver implementation.
 func (r *Resolver) Purchase() PurchaseResolver { return &purchaseResolver{r} }
 
+// PushedNote returns PushedNoteResolver implementation.
+func (r *Resolver) PushedNote() PushedNoteResolver { return &pushedNoteResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -501,6 +534,7 @@ type mutationResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
 type purchaseResolver struct{ *Resolver }
+type pushedNoteResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }

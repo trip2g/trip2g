@@ -48,15 +48,16 @@ func (q *Queries) AdminByUserID(ctx context.Context, userID int64) (Admin, error
 }
 
 const allLatestNotes = `-- name: AllLatestNotes :many
-select value as path, p.id as path_id, content
+select value as path, p.id as path_id, v.id as version_id, content
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version
 `
 
 type AllLatestNotesRow struct {
-	Path    string `json:"path"`
-	PathID  int64  `json:"path_id"`
-	Content string `json:"content"`
+	Path      string `json:"path"`
+	PathID    int64  `json:"path_id"`
+	VersionID int64  `json:"version_id"`
+	Content   string `json:"content"`
 }
 
 func (q *Queries) AllLatestNotes(ctx context.Context) ([]AllLatestNotesRow, error) {
@@ -68,7 +69,12 @@ func (q *Queries) AllLatestNotes(ctx context.Context) ([]AllLatestNotesRow, erro
 	var items []AllLatestNotesRow
 	for rows.Next() {
 		var i AllLatestNotesRow
-		if err := rows.Scan(&i.Path, &i.PathID, &i.Content); err != nil {
+		if err := rows.Scan(
+			&i.Path,
+			&i.PathID,
+			&i.VersionID,
+			&i.Content,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -117,7 +123,7 @@ func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
 }
 
 const allNoteVersions = `-- name: AllNoteVersions :many
-select path_id, version, content, created_at from note_versions order by path_id, version
+select id, path_id, version, content, created_at from note_versions order by path_id, version
 `
 
 func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
@@ -130,6 +136,7 @@ func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
 	for rows.Next() {
 		var i NoteVersion
 		if err := rows.Scan(
+			&i.ID,
 			&i.PathID,
 			&i.Version,
 			&i.Content,
@@ -149,7 +156,7 @@ func (q *Queries) AllNoteVersions(ctx context.Context) ([]NoteVersion, error) {
 }
 
 const allNoteVersionsByPathID = `-- name: AllNoteVersionsByPathID :many
-select path_id, version, content, created_at from note_versions
+select id, path_id, version, content, created_at from note_versions
  where path_id = ?
  order by version desc
 `
@@ -164,6 +171,7 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 	for rows.Next() {
 		var i NoteVersion
 		if err := rows.Scan(
+			&i.ID,
 			&i.PathID,
 			&i.Version,
 			&i.Content,
@@ -376,6 +384,31 @@ func (q *Queries) IncrementNoteVersionCount(ctx context.Context, arg IncrementNo
 	var version_count int64
 	err := row.Scan(&version_count)
 	return version_count, err
+}
+
+const insertNoteAsset = `-- name: InsertNoteAsset :one
+insert into note_assets (absolute_path, sha256_hash, content_type, size)
+values (?, ?, ?, ?)
+returning id
+`
+
+type InsertNoteAssetParams struct {
+	AbsolutePath string `json:"absolute_path"`
+	Sha256Hash   string `json:"sha256_hash"`
+	ContentType  string `json:"content_type"`
+	Size         int64  `json:"size"`
+}
+
+func (q *Queries) InsertNoteAsset(ctx context.Context, arg InsertNoteAssetParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, insertNoteAsset,
+		arg.AbsolutePath,
+		arg.Sha256Hash,
+		arg.ContentType,
+		arg.Size,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const insertNotePath = `-- name: InsertNotePath :one
@@ -1002,6 +1035,85 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 	return items, nil
 }
 
+const noteAssetByAbsolutePathAndSha256Hash = `-- name: NoteAssetByAbsolutePathAndSha256Hash :one
+select id, absolute_path, sha256_hash, content_type, created_at, size from note_assets
+ where absolute_path = ?
+   and sha256_hash = ?
+ limit 1
+`
+
+type NoteAssetByAbsolutePathAndSha256HashParams struct {
+	AbsolutePath string `json:"absolute_path"`
+	Sha256Hash   string `json:"sha256_hash"`
+}
+
+func (q *Queries) NoteAssetByAbsolutePathAndSha256Hash(ctx context.Context, arg NoteAssetByAbsolutePathAndSha256HashParams) (NoteAsset, error) {
+	row := q.db.QueryRowContext(ctx, noteAssetByAbsolutePathAndSha256Hash, arg.AbsolutePath, arg.Sha256Hash)
+	var i NoteAsset
+	err := row.Scan(
+		&i.ID,
+		&i.AbsolutePath,
+		&i.Sha256Hash,
+		&i.ContentType,
+		&i.CreatedAt,
+		&i.Size,
+	)
+	return i, err
+}
+
+const noteAssetByPathAndHash = `-- name: NoteAssetByPathAndHash :one
+select id, absolute_path, sha256_hash, content_type, created_at, size from note_assets
+ where absolute_path = ?
+   and sha256_hash = ?
+ limit 1
+`
+
+type NoteAssetByPathAndHashParams struct {
+	AbsolutePath string `json:"absolute_path"`
+	Sha256Hash   string `json:"sha256_hash"`
+}
+
+func (q *Queries) NoteAssetByPathAndHash(ctx context.Context, arg NoteAssetByPathAndHashParams) (NoteAsset, error) {
+	row := q.db.QueryRowContext(ctx, noteAssetByPathAndHash, arg.AbsolutePath, arg.Sha256Hash)
+	var i NoteAsset
+	err := row.Scan(
+		&i.ID,
+		&i.AbsolutePath,
+		&i.Sha256Hash,
+		&i.ContentType,
+		&i.CreatedAt,
+		&i.Size,
+	)
+	return i, err
+}
+
+const noteVersionByID = `-- name: NoteVersionByID :one
+select p.value as path, path_id, v.id as version_id, content
+  from note_versions v
+  join note_paths p on v.path_id = p.id
+ where v.id = ?
+ limit 1
+`
+
+type NoteVersionByIDRow struct {
+	Path      string `json:"path"`
+	PathID    int64  `json:"path_id"`
+	VersionID int64  `json:"version_id"`
+	Content   string `json:"content"`
+}
+
+func (q *Queries) NoteVersionByID(ctx context.Context, id int64) (NoteVersionByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, noteVersionByID, id)
+	var i NoteVersionByIDRow
+	err := row.Scan(
+		&i.Path,
+		&i.PathID,
+		&i.VersionID,
+		&i.Content,
+	)
+	return i, err
+}
+
 const offerByID = `-- name: OfferByID :one
 select id, public_id, created_at, lifetime, price_usd, starts_at, ends_at from offers where id = ?
 `
@@ -1167,6 +1279,23 @@ func (q *Queries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSu
 		&i.PurchaseID,
 	)
 	return i, err
+}
+
+const upsertNoteVersionAsset = `-- name: UpsertNoteVersionAsset :exec
+insert into note_version_assets (asset_id, version_id, path)
+values (?, ?, ?)
+on conflict (asset_id, version_id, path) do nothing
+`
+
+type UpsertNoteVersionAssetParams struct {
+	AssetID   int64  `json:"asset_id"`
+	VersionID int64  `json:"version_id"`
+	Path      string `json:"path"`
+}
+
+func (q *Queries) UpsertNoteVersionAsset(ctx context.Context, arg UpsertNoteVersionAssetParams) error {
+	_, err := q.db.ExecContext(ctx, upsertNoteVersionAsset, arg.AssetID, arg.VersionID, arg.Path)
+	return err
 }
 
 const upsertUserNoteDailyView = `-- name: UpsertUserNoteDailyView :one

@@ -27,7 +27,7 @@ select * from note_versions
  order by version desc;
 
 -- name: AllLatestNotes :many
-select value as path, p.id as path_id, content
+select value as path, p.id as path_id, v.id as version_id, content
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version;
 
@@ -259,3 +259,32 @@ select a.*
    and (expires_at > datetime('now') or expires_at is null)
    and revoke_id is null
  order by a.user_id, s.name;
+
+-- name: InsertNoteAsset :one
+insert into note_assets (absolute_path, sha256_hash, content_type, size)
+values (?, ?, ?, ?)
+returning id;
+
+-- name: NoteAssetByPathAndHash :one
+select * from note_assets
+ where absolute_path = ?
+   and sha256_hash = ?
+ limit 1;
+
+-- name: UpsertNoteVersionAsset :exec
+insert into note_version_assets (asset_id, version_id, path)
+values (?, ?, ?)
+on conflict (asset_id, version_id, path) do nothing;
+
+-- name: NoteAssetByAbsolutePathAndSha256Hash :one
+select * from note_assets
+ where absolute_path = ?
+   and sha256_hash = ?
+ limit 1;
+
+-- name: NoteVersionByID :one
+select p.value as path, path_id, v.id as version_id, content
+  from note_versions v
+  join note_paths p on v.path_id = p.id
+ where v.id = ?
+ limit 1;
