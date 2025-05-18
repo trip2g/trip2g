@@ -92,7 +92,8 @@ func Resolve(ctx context.Context, env Env, input model.UploadNoteAssetInput) (mo
 
 		actualHash := fmt.Sprintf("%x", hasher.Sum(nil))
 		if actualHash != input.Sha256Hash {
-			return &model.ErrorPayload{Message: "hash mismatch"}, nil
+			// will rollback the transaction
+			return nil, fmt.Errorf("hash mismatch: expected %s, got %s", input.Sha256Hash, actualHash)
 		}
 	}
 

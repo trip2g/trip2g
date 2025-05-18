@@ -47,6 +47,55 @@ func (q *Queries) AdminByUserID(ctx context.Context, userID int64) (Admin, error
 	return i, err
 }
 
+const allLatestNoteAssets = `-- name: AllLatestNoteAssets :many
+with ranked_assets as (
+  select
+    v.id as version_id,
+    na.id as asset_id,
+    a.path,
+    row_number() over (
+      partition by v.id, a.path
+      order by na.id desc
+    ) as rn
+  from note_paths p
+  join note_versions v on p.id = v.path_id and p.version_count = v.version
+  join note_version_assets a on v.id = a.version_id
+  join note_assets na on a.asset_id = na.id
+)
+select version_id, asset_id, path
+from ranked_assets
+where rn = 1
+`
+
+type AllLatestNoteAssetsRow struct {
+	VersionID int64  `json:"version_id"`
+	AssetID   int64  `json:"asset_id"`
+	Path      string `json:"path"`
+}
+
+func (q *Queries) AllLatestNoteAssets(ctx context.Context) ([]AllLatestNoteAssetsRow, error) {
+	rows, err := q.db.QueryContext(ctx, allLatestNoteAssets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllLatestNoteAssetsRow
+	for rows.Next() {
+		var i AllLatestNoteAssetsRow
+		if err := rows.Scan(&i.VersionID, &i.AssetID, &i.Path); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allLatestNotes = `-- name: AllLatestNotes :many
 select value as path, p.id as path_id, v.id as version_id, content
   from note_paths p

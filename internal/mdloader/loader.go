@@ -25,6 +25,7 @@ type SourceFile struct {
 	PathID    int64
 	VersionID int64
 	Content   []byte
+	Assets    map[string]string // local file path -> remote file path
 }
 
 type loader struct {
@@ -230,6 +231,8 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) { //nolint
 		InLinks:   make(map[string]struct{}),
 		Subgraphs: make(map[string]*model.NoteSubgraph),
 		Assets:    make(map[string]struct{}),
+
+		AssetReplaces: src.Assets,
 	}
 
 	pp.SetAst(doc)

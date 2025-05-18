@@ -31,6 +31,8 @@ type NoteView struct {
 	Subgraphs     map[string]*NoteSubgraph
 
 	Assets map[string]struct{}
+
+	AssetReplaces map[string]string
 }
 
 type NoteSubgraph struct {

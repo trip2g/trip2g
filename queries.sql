@@ -31,6 +31,25 @@ select value as path, p.id as path_id, v.id as version_id, content
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version;
 
+-- name: AllLatestNoteAssets :many
+with ranked_assets as (
+  select
+    v.id as version_id,
+    na.id as asset_id,
+    a.path,
+    row_number() over (
+      partition by v.id, a.path
+      order by na.id desc
+    ) as rn
+  from note_paths p
+  join note_versions v on p.id = v.path_id and p.version_count = v.version
+  join note_version_assets a on v.id = a.version_id
+  join note_assets na on a.asset_id = na.id
+)
+select version_id, asset_id, path
+from ranked_assets
+where rn = 1;
+
 -- name: UserByEmail :one
 select * from users where email = lower(?);
 

@@ -404,6 +404,23 @@ func (a *app) PrepareNotes(ctx context.Context) (*model.NoteViews, error) {
 		return nil, fmt.Errorf("failed to get notes: %w", err)
 	}
 
+	assets, err := a.queries.AllLatestNoteAssets(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get note assets: %w", err)
+	}
+
+	assetMap := make(map[int64]map[string]string)
+
+	for _, asset := range assets {
+		noteMap, ok := assetMap[asset.VersionID]
+		if !ok {
+			noteMap = make(map[string]string)
+			assetMap[asset.VersionID] = noteMap
+		}
+
+		noteMap[asset.Path] = "http://assetpath/todo"
+	}
+
 	sources := []mdloader.SourceFile{}
 
 	for _, note := range notes {
@@ -412,6 +429,7 @@ func (a *app) PrepareNotes(ctx context.Context) (*model.NoteViews, error) {
 			PathID:    note.PathID,
 			VersionID: note.VersionID,
 			Content:   []byte(note.Content),
+			Assets:    assetMap[note.VersionID],
 		})
 	}
 
