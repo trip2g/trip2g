@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"time"
-	"trip2g/internal/model"
+	"trip2g/internal/db"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -87,12 +87,29 @@ func New(ctx context.Context, config Config) (*FileStorage, error) {
 	return &s, nil
 }
 
-func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, info model.FileInfo) error {
-	options := minio.PutObjectOptions{
-		ContentType: info.ContentType,
+func (a *FileStorage) AssetPath(asset db.NoteAsset) string {
+	return fmt.Sprintf("na/%d/%s", asset.ID, asset.FileName)
+}
+
+func (a *FileStorage) DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error {
+	path := a.AssetPath(asset)
+
+	err := a.minioClient.RemoveObject(ctx, a.config.Bucket, path, minio.RemoveObjectOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to remove object: %w", err)
 	}
 
-	_, err := a.minioClient.PutObject(context.Background(), a.config.Bucket, info.Path, reader, info.Size, options)
+	return nil
+}
+
+func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, asset db.NoteAsset) error {
+	options := minio.PutObjectOptions{
+		ContentType: asset.ContentType,
+	}
+
+	path := a.AssetPath(asset)
+
+	_, err := a.minioClient.PutObject(context.Background(), a.config.Bucket, path, reader, asset.Size, options)
 	if err != nil {
 		return fmt.Errorf("failed to put object: %w", err)
 	}

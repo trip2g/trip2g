@@ -436,28 +436,38 @@ func (q *Queries) IncrementNoteVersionCount(ctx context.Context, arg IncrementNo
 }
 
 const insertNoteAsset = `-- name: InsertNoteAsset :one
-insert into note_assets (absolute_path, sha256_hash, content_type, size)
-values (?, ?, ?, ?)
-returning id
+insert into note_assets (absolute_path, file_name, sha256_hash, content_type, size)
+values (?, ?, ?, ?, ?)
+returning id, absolute_path, file_name, sha256_hash, content_type, created_at, size
 `
 
 type InsertNoteAssetParams struct {
 	AbsolutePath string `json:"absolute_path"`
+	FileName     string `json:"file_name"`
 	Sha256Hash   string `json:"sha256_hash"`
 	ContentType  string `json:"content_type"`
 	Size         int64  `json:"size"`
 }
 
-func (q *Queries) InsertNoteAsset(ctx context.Context, arg InsertNoteAssetParams) (int64, error) {
+func (q *Queries) InsertNoteAsset(ctx context.Context, arg InsertNoteAssetParams) (NoteAsset, error) {
 	row := q.db.QueryRowContext(ctx, insertNoteAsset,
 		arg.AbsolutePath,
+		arg.FileName,
 		arg.Sha256Hash,
 		arg.ContentType,
 		arg.Size,
 	)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+	var i NoteAsset
+	err := row.Scan(
+		&i.ID,
+		&i.AbsolutePath,
+		&i.FileName,
+		&i.Sha256Hash,
+		&i.ContentType,
+		&i.CreatedAt,
+		&i.Size,
+	)
+	return i, err
 }
 
 const insertNotePath = `-- name: InsertNotePath :one
@@ -1085,7 +1095,7 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 }
 
 const noteAssetByAbsolutePathAndSha256Hash = `-- name: NoteAssetByAbsolutePathAndSha256Hash :one
-select id, absolute_path, sha256_hash, content_type, created_at, size from note_assets
+select id, absolute_path, file_name, sha256_hash, content_type, created_at, size from note_assets
  where absolute_path = ?
    and sha256_hash = ?
  limit 1
@@ -1102,6 +1112,7 @@ func (q *Queries) NoteAssetByAbsolutePathAndSha256Hash(ctx context.Context, arg 
 	err := row.Scan(
 		&i.ID,
 		&i.AbsolutePath,
+		&i.FileName,
 		&i.Sha256Hash,
 		&i.ContentType,
 		&i.CreatedAt,
@@ -1111,7 +1122,7 @@ func (q *Queries) NoteAssetByAbsolutePathAndSha256Hash(ctx context.Context, arg 
 }
 
 const noteAssetByPathAndHash = `-- name: NoteAssetByPathAndHash :one
-select id, absolute_path, sha256_hash, content_type, created_at, size from note_assets
+select id, absolute_path, file_name, sha256_hash, content_type, created_at, size from note_assets
  where absolute_path = ?
    and sha256_hash = ?
  limit 1
@@ -1128,6 +1139,7 @@ func (q *Queries) NoteAssetByPathAndHash(ctx context.Context, arg NoteAssetByPat
 	err := row.Scan(
 		&i.ID,
 		&i.AbsolutePath,
+		&i.FileName,
 		&i.Sha256Hash,
 		&i.ContentType,
 		&i.CreatedAt,

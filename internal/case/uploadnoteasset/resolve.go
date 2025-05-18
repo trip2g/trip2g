@@ -5,19 +5,25 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"path"
+	"regexp"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
-	appmodel "trip2g/internal/model"
+	"trip2g/internal/logger"
+	"trip2g/internal/translit"
 )
 
 type Env interface {
-	PutAssetObject(ctx context.Context, reader io.Reader, info appmodel.FileInfo) error
-	InsertNoteAsset(ctx context.Context, arg db.InsertNoteAssetParams) (int64, error)
+	Logger() logger.Logger
+	PutAssetObject(ctx context.Context, reader io.Reader, info db.NoteAsset) error
+	DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error
+	InsertNoteAsset(ctx context.Context, arg db.InsertNoteAssetParams) (db.NoteAsset, error)
 	UpsertNoteVersionAsset(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
 }
+
+// for sanitize file names
+var reUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9_.-]`)
 
 func Resolve(ctx context.Context, env Env, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error) {
 	assetPaths, err := env.NoteVersionAssetPaths(ctx, int64(input.NoteID))
@@ -36,32 +42,34 @@ func Resolve(ctx context.Context, env Env, input model.UploadNoteAssetInput) (mo
 	}
 
 	alreadyUploaded := false
-	assetID := int64(0)
+
+	fileName := translit.ToASCII(input.Path)
+	fileName = reUnsafeChars.ReplaceAllString(fileName, "_")
 
 	asset, err := env.NoteAssetByPathAndHash(ctx, findAssetParams)
 	if err != nil {
 		if db.IsNoFound(err) {
 			noteAssetParams := db.InsertNoteAssetParams{
 				AbsolutePath: input.AbsolutePath,
+				FileName:     fileName,
 				Sha256Hash:   input.Sha256Hash,
 				ContentType:  input.File.ContentType,
 				Size:         input.File.Size,
 			}
 
-			assetID, err = env.InsertNoteAsset(ctx, noteAssetParams)
+			asset, err = env.InsertNoteAsset(ctx, noteAssetParams)
 			if err != nil {
-				return nil, fmt.Errorf("failed to upsert note asset: %w", err)
+				return nil, fmt.Errorf("failed to insert note asset: %w", err)
 			}
 		} else {
 			return nil, fmt.Errorf("failed to find note asset: %w", err)
 		}
 	} else {
 		alreadyUploaded = true
-		assetID = asset.ID
 	}
 
 	noteVersionAssetParams := db.UpsertNoteVersionAssetParams{
-		AssetID:   assetID,
+		AssetID:   asset.ID,
 		VersionID: int64(input.NoteID),
 		Path:      input.Path,
 	}
@@ -72,26 +80,22 @@ func Resolve(ctx context.Context, env Env, input model.UploadNoteAssetInput) (mo
 	}
 
 	if !alreadyUploaded {
-		ext := path.Ext(input.Path)
-		name := fmt.Sprintf("na/%d%s", assetID, ext)
-
 		hasher := sha256.New()
 		teeReader := io.TeeReader(input.File.File, hasher)
 
-		info := appmodel.FileInfo{
-			Path: name,
-			Size: input.File.Size,
-
-			ContentType: input.File.ContentType,
-		}
-
-		err = env.PutAssetObject(ctx, teeReader, info)
+		err = env.PutAssetObject(ctx, teeReader, asset)
 		if err != nil {
 			return nil, fmt.Errorf("failed to upload asset: %w", err)
 		}
 
 		actualHash := fmt.Sprintf("%x", hasher.Sum(nil))
 		if actualHash != input.Sha256Hash {
+			// delete the asset from storage
+			deleteErr := env.DeleteAssetObject(ctx, asset)
+			if deleteErr != nil {
+				env.Logger().Error("failed to delete asset object", "asset", asset, "error", deleteErr)
+			}
+
 			// will rollback the transaction
 			return nil, fmt.Errorf("hash mismatch: expected %s, got %s", input.Sha256Hash, actualHash)
 		}

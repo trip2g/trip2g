@@ -5,6 +5,7 @@ pragma foreign_keys = on;
 create table note_assets (
   id integer primary key autoincrement,
   absolute_path text not null,
+  file_name text not null,
   sha256_hash text not null,
   content_type text not null,
   created_at datetime not null default current_timestamp,

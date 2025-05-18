@@ -44,6 +44,7 @@ type BackliteTasksCompleted struct {
 type NoteAsset struct {
 	ID           int64     `json:"id"`
 	AbsolutePath string    `json:"absolute_path"`
+	FileName     string    `json:"file_name"`
 	Sha256Hash   string    `json:"sha256_hash"`
 	ContentType  string    `json:"content_type"`
 	CreatedAt    time.Time `json:"created_at"`
