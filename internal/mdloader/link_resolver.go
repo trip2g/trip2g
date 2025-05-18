@@ -2,7 +2,6 @@ package mdloader
 
 import (
 	"bytes"
-	"fmt"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
@@ -22,7 +21,6 @@ const _hash = "#"
 
 func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 	assetPath, ok := r.currentPage.AssetReplaces[string(n.Target)]
-	fmt.Println("assetPath", string(n.Target), ok, assetPath, r.currentPage.AssetReplaces)
 	if ok {
 		return []byte(assetPath), nil
 	}

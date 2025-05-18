@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"time"
 	"trip2g/internal/db"
 
@@ -87,12 +88,28 @@ func New(ctx context.Context, config Config) (*FileStorage, error) {
 	return &s, nil
 }
 
-func (a *FileStorage) AssetPath(asset db.NoteAsset) string {
+func (a *FileStorage) NoteAssetPath(asset db.NoteAsset) string {
 	return fmt.Sprintf("na/%d/%s", asset.ID, asset.FileName)
 }
 
+func (a *FileStorage) NoteAssetURL(ctx context.Context, asset db.NoteAsset) (string, error) {
+	presignedURL, err := a.minioClient.PresignedGetObject(
+		ctx,
+		a.config.Bucket,
+		a.NoteAssetPath(asset),
+		time.Hour, // TODO: the note views must prepared each hour?
+		url.Values{},
+	)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to generate presigned URL: %w", err)
+	}
+
+	return presignedURL.String(), nil
+}
+
 func (a *FileStorage) DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error {
-	path := a.AssetPath(asset)
+	path := a.NoteAssetPath(asset)
 
 	err := a.minioClient.RemoveObject(ctx, a.config.Bucket, path, minio.RemoveObjectOptions{})
 	if err != nil {
@@ -107,7 +124,7 @@ func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, asse
 		ContentType: asset.ContentType,
 	}
 
-	path := a.AssetPath(asset)
+	path := a.NoteAssetPath(asset)
 
 	_, err := a.minioClient.PutObject(context.Background(), a.config.Bucket, path, reader, asset.Size, options)
 	if err != nil {

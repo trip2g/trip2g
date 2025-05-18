@@ -69,9 +69,10 @@ type NoteVersion struct {
 }
 
 type NoteVersionAsset struct {
-	AssetID   int64  `json:"asset_id"`
-	VersionID int64  `json:"version_id"`
-	Path      string `json:"path"`
+	AssetID   int64     `json:"asset_id"`
+	VersionID int64     `json:"version_id"`
+	Path      string    `json:"path"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type Offer struct {

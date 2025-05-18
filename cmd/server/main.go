@@ -418,7 +418,12 @@ func (a *app) PrepareNotes(ctx context.Context) (*model.NoteViews, error) {
 			assetMap[asset.VersionID] = noteMap
 		}
 
-		noteMap[asset.Path] = "http://assetpath/todo"
+		assetURL, err := a.NoteAssetURL(ctx, asset.NoteAsset)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get note asset URL: %w", err)
+		}
+
+		noteMap[asset.Path] = assetURL
 	}
 
 	sources := []mdloader.SourceFile{}

@@ -39,6 +39,8 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		}
 
 		if errors.Is(err, ErrNotFound) {
+			ctx.SetStatusCode(http.StatusNotFound)
+
 			WriteLayoutHeader(ctx, resp)
 			WriteNotFound(ctx)
 			WriteLayoutFooter(ctx, resp)

@@ -8,7 +8,7 @@ import base64
 import requests
 
 GET_HASHES_URL = "http://localhost:8081/api/getnotehashes"
-POST_NOTES_URL = "http://localhost:8081/api/pushnotes"
+GRAPHQL_URL = "http://localhost:8081/graphql"
 
 def sha256_urlsafe_base64(content: bytes) -> str:
     h = hashlib.sha256(content).digest()
@@ -23,14 +23,45 @@ def fetch_server_hashes():
         print(f"Ошибка при получении хэшей: {e}")
         return {}
 
-def push_updates(updates):
-    payload = {"updates": updates}
+def push_updates_graphql(updates):
+    query = """
+    mutation PushNotes($input: PushNotesInput!) {
+      pushNotes(input: $input) {
+        ... on ErrorPayload {
+          message
+        }
+        ... on PushNotesPayload {
+          notes {
+            id
+            path
+            assets {
+              path
+              sha256Hash
+            }
+          }
+        }
+      }
+    }
+    """
+    variables = {
+        "input": {
+            "updates": updates
+        }
+    }
+
     try:
-        response = requests.post(POST_NOTES_URL, json=payload)
+        response = requests.post(GRAPHQL_URL, json={
+            "query": query,
+            "variables": variables
+        })
         response.raise_for_status()
-        print("✅ Все обновления успешно отправлены.")
+        result = response.json()
+        if 'errors' in result:
+            print(f"❌ GraphQL ошибка: {result['errors']}")
+        else:
+            print("✅ Обновления успешно отправлены через GraphQL.")
     except Exception as e:
-        print(f"❌ Ошибка при отправке обновлений: {e}")
+        print(f"❌ Ошибка при отправке GraphQL: {e}")
 
 def main():
     base_path = sys.argv[1] if len(sys.argv) > 1 else "demo"
@@ -73,8 +104,8 @@ def main():
 
     print("-" * 80)
     if updates:
-        print(f"📤 Отправка {len(updates)} файлов...")
-        push_updates(updates)
+        print(f"📤 Отправка {len(updates)} файлов через GraphQL...")
+        push_updates_graphql(updates)
     else:
         print("✅ Все файлы актуальны. Обновлений нет.")
 

@@ -17,6 +17,7 @@ create table note_version_assets (
   asset_id integer not null references note_assets(id) on delete cascade,
   version_id integer not null references note_versions(id) on delete cascade,
   path text not null, -- path in the note for replacement
+  created_at datetime not null default current_timestamp,
   primary key (asset_id, version_id, path)
 );
 

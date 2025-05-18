@@ -1,0 +1,3 @@
+#!/bin/sh
+
+go tool github.com/amacneil/dbmate/v2 $@

@@ -55,22 +55,23 @@ with ranked_assets as (
     a.path,
     row_number() over (
       partition by v.id, a.path
-      order by na.id desc
+      order by a.created_at desc
     ) as rn
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version
   join note_version_assets a on v.id = a.version_id
   join note_assets na on a.asset_id = na.id
 )
-select version_id, asset_id, path
+select version_id, path, note_assets.id, note_assets.absolute_path, note_assets.file_name, note_assets.sha256_hash, note_assets.content_type, note_assets.created_at, note_assets.size
 from ranked_assets
+join note_assets on ranked_assets.asset_id = note_assets.id
 where rn = 1
 `
 
 type AllLatestNoteAssetsRow struct {
-	VersionID int64  `json:"version_id"`
-	AssetID   int64  `json:"asset_id"`
-	Path      string `json:"path"`
+	VersionID int64     `json:"version_id"`
+	Path      string    `json:"path"`
+	NoteAsset NoteAsset `json:"note_asset"`
 }
 
 func (q *Queries) AllLatestNoteAssets(ctx context.Context) ([]AllLatestNoteAssetsRow, error) {
@@ -82,7 +83,17 @@ func (q *Queries) AllLatestNoteAssets(ctx context.Context) ([]AllLatestNoteAsset
 	var items []AllLatestNoteAssetsRow
 	for rows.Next() {
 		var i AllLatestNoteAssetsRow
-		if err := rows.Scan(&i.VersionID, &i.AssetID, &i.Path); err != nil {
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.Path,
+			&i.NoteAsset.ID,
+			&i.NoteAsset.AbsolutePath,
+			&i.NoteAsset.FileName,
+			&i.NoteAsset.Sha256Hash,
+			&i.NoteAsset.ContentType,
+			&i.NoteAsset.CreatedAt,
+			&i.NoteAsset.Size,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1345,7 +1356,7 @@ func (q *Queries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSu
 const upsertNoteVersionAsset = `-- name: UpsertNoteVersionAsset :exec
 insert into note_version_assets (asset_id, version_id, path)
 values (?, ?, ?)
-on conflict (asset_id, version_id, path) do nothing
+on conflict (asset_id, version_id, path) do update set created_at = datetime('now')
 `
 
 type UpsertNoteVersionAssetParams struct {

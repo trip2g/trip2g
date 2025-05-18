@@ -39,15 +39,16 @@ with ranked_assets as (
     a.path,
     row_number() over (
       partition by v.id, a.path
-      order by na.id desc
+      order by a.created_at desc
     ) as rn
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version
   join note_version_assets a on v.id = a.version_id
   join note_assets na on a.asset_id = na.id
 )
-select version_id, asset_id, path
+select version_id, path, sqlc.embed(note_assets)
 from ranked_assets
+join note_assets on ranked_assets.asset_id = note_assets.id
 where rn = 1;
 
 -- name: UserByEmail :one
@@ -293,7 +294,7 @@ select * from note_assets
 -- name: UpsertNoteVersionAsset :exec
 insert into note_version_assets (asset_id, version_id, path)
 values (?, ?, ?)
-on conflict (asset_id, version_id, path) do nothing;
+on conflict (asset_id, version_id, path) do update set created_at = datetime('now');
 
 -- name: NoteAssetByAbsolutePathAndSha256Hash :one
 select * from note_assets

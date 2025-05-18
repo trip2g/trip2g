@@ -5,10 +5,12 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"path/filepath"
 	"regexp"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/translit"
 )
 
@@ -20,6 +22,7 @@ type Env interface {
 	UpsertNoteVersionAsset(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
+	PrepareNotes(ctx context.Context) (*appmodel.NoteViews, error)
 }
 
 // for sanitize file names
@@ -43,7 +46,7 @@ func Resolve(ctx context.Context, env Env, input model.UploadNoteAssetInput) (mo
 
 	alreadyUploaded := false
 
-	fileName := translit.ToASCII(input.Path)
+	fileName := translit.ToASCII(filepath.Base(input.Path))
 	fileName = reUnsafeChars.ReplaceAllString(fileName, "_")
 
 	asset, err := env.NoteAssetByPathAndHash(ctx, findAssetParams)
@@ -83,6 +86,8 @@ func Resolve(ctx context.Context, env Env, input model.UploadNoteAssetInput) (mo
 		hasher := sha256.New()
 		teeReader := io.TeeReader(input.File.File, hasher)
 
+		// TODO: this code must works without transaction!
+		// because the uploading process can be long
 		err = env.PutAssetObject(ctx, teeReader, asset)
 		if err != nil {
 			return nil, fmt.Errorf("failed to upload asset: %w", err)
@@ -99,6 +104,12 @@ func Resolve(ctx context.Context, env Env, input model.UploadNoteAssetInput) (mo
 			// will rollback the transaction
 			return nil, fmt.Errorf("hash mismatch: expected %s, got %s", input.Sha256Hash, actualHash)
 		}
+	}
+
+	// isn't optimal. TODO: fix it
+	_, err = env.PrepareNotes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}
 
 	response := model.UploadNoteAssetPayload{
