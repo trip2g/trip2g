@@ -227,6 +227,7 @@ func main() {
 	flag.StringVar(&storageConfig.Region, "minio-region", "us-east-1", "MinIO region")
 	flag.BoolVar(&storageConfig.UseSSL, "minio-use-ssl", false, "Use SSL for MinIO")
 	flag.DurationVar(&storageConfig.InitTimeout, "minio-init-timeout", 5*time.Second, "MinIO init timeout (check and make bucket)")
+	flag.DurationVar(&storageConfig.URLExpiresIn, "minio-url-expires-in", 10*time.Minute, "MinIO presigned URL expiration time")
 
 	ctx := context.Background()
 
@@ -286,6 +287,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	fileStorage.OnURLExpiring(func() {
+		_, err = a.PrepareNotes(ctx)
+		if err != nil {
+			log.Error("failed to prepare notes", "error", err)
+		}
+	})
 
 	if os.Getenv("SERVER") == "y" {
 		a.startServer()

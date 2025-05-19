@@ -23,6 +23,8 @@ type Config struct {
 	Region    string
 	UseSSL    bool
 
+	URLExpiresIn time.Duration
+
 	InitTimeout time.Duration
 }
 
@@ -34,6 +36,7 @@ func (c *Config) ValidateConfig() error {
 		ozzo.Field(&c.Bucket, ozzo.Required),
 		ozzo.Field(&c.Region, ozzo.Required),
 		ozzo.Field(&c.InitTimeout, ozzo.Required),
+		ozzo.Field(&c.URLExpiresIn, ozzo.Required),
 	)
 }
 
@@ -92,12 +95,29 @@ func (a *FileStorage) NoteAssetPath(asset db.NoteAsset) string {
 	return fmt.Sprintf("na/%d/%s", asset.ID, asset.FileName)
 }
 
+// OnURLExpiring sets up a callback to be called when the URL is about to expire.
+// The app must rebuild dependent pages before the URL expires.
+func (a *FileStorage) OnURLExpiring(callback func()) {
+	interval := a.config.URLExpiresIn - time.Minute
+	if interval < 0 {
+		interval = time.Minute
+	}
+
+	ticker := time.NewTicker(interval)
+
+	go func() {
+		for range ticker.C {
+			callback()
+		}
+	}()
+}
+
 func (a *FileStorage) NoteAssetURL(ctx context.Context, asset db.NoteAsset) (string, error) {
 	presignedURL, err := a.minioClient.PresignedGetObject(
 		ctx,
 		a.config.Bucket,
 		a.NoteAssetPath(asset),
-		time.Hour, // TODO: the note views must prepared each hour?
+		a.config.URLExpiresIn,
 		url.Values{},
 	)
 
