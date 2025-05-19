@@ -56,13 +56,16 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+type currentNVS struct {
+	mu  sync.Mutex
+	nvs *model.NoteViews
+}
+
 type app struct {
 	*db.Queries
 	*miniostorage.FileStorage
 
-	mu sync.Mutex
-
-	nvs *model.NoteViews
+	currentNVS *currentNVS
 
 	queries *db.Queries
 	conn    *sql.DB
@@ -243,6 +246,7 @@ func main() {
 
 		tokenManager: tokenManager,
 		queueClient:  queueClient,
+		currentNVS:   &currentNVS{},
 
 		hotAuthTokenManager: hotauthtoken.NewManager([]byte("secret")),
 
@@ -289,8 +293,8 @@ func main() {
 }
 
 func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	a.currentNVS.mu.Lock()
+	defer a.currentNVS.mu.Unlock()
 
 	noteVersion, err := a.queries.NoteVersionByID(ctx, id)
 	if err != nil {
@@ -391,20 +395,31 @@ func (a *app) CreateNowpaymentsInvoice(params nowpayments.CreateInvoiceParams) (
 }
 
 func (a *app) PrepareNotes(ctx context.Context) (*model.NoteViews, error) {
-	a.log.Info("preparing notes")
+	var env *app
+
+	req, err := appreq.FromCtx(ctx)
+	if err == nil {
+		reqEnv, ok := req.Env.(*app)
+		if ok {
+			env = reqEnv
+		}
+	}
+
+	a.log.Info("preparing notes", "tx", env != nil)
+
+	if env == nil {
+		env = a
+	}
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	notes, err := a.queries.AllLatestNotes(ctx)
+	notes, err := env.AllLatestNotes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get notes: %w", err)
 	}
 
-	assets, err := a.queries.AllLatestNoteAssets(ctx)
+	assets, err := env.AllLatestNoteAssets(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get note assets: %w", err)
 	}
@@ -423,6 +438,8 @@ func (a *app) PrepareNotes(ctx context.Context) (*model.NoteViews, error) {
 			return nil, fmt.Errorf("failed to get note asset URL: %w", err)
 		}
 
+		a.log.Debug("note asset URL", "path", asset.Path, "url", assetURL)
+
 		noteMap[asset.Path] = assetURL
 	}
 
@@ -438,21 +455,24 @@ func (a *app) PrepareNotes(ctx context.Context) (*model.NoteViews, error) {
 		})
 	}
 
-	pages, err := mdloader.Load(sources, logger.WithPrefix(a.log, "mdloader:"))
+	nvs, err := mdloader.Load(sources, logger.WithPrefix(a.log, "mdloader:"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load pages: %w", err)
 	}
 
-	a.nvs = pages
+	a.currentNVS.mu.Lock()
+	a.currentNVS.nvs = nvs
+	a.currentNVS.mu.Unlock()
 
-	return pages, nil
+	return nvs, nil
 }
 
 func (a *app) AllNotes() *model.NoteViews {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	a.currentNVS.mu.Lock()
+	defer a.currentNVS.mu.Unlock()
+	c := a.currentNVS.nvs.Copy()
 
-	return a.nvs.Copy()
+	return c
 }
 
 func (a *app) Now() time.Time {
@@ -631,10 +651,10 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error
 }
 
 func (a *app) NoteByPath(path string) (*model.NoteView, error) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	a.currentNVS.mu.Lock()
+	defer a.currentNVS.mu.Unlock()
 
-	page, ok := a.nvs.Map[path]
+	page, ok := a.currentNVS.nvs.Map[path]
 	if !ok {
 		return nil, errors.New("page not found")
 	}
@@ -882,7 +902,7 @@ func (a *app) SetupGraphQL(srv *handler.Server) {
 			logLabel := fmt.Sprintf("tx %s", operationContext.Operation.Name+":")
 			queries := db.New(db.WithLogger(tx, logger.WithPrefix(a.log, logLabel)))
 
-			newEnv := *a
+			newEnv := *a // copy!
 			newEnv.queries = queries
 			newEnv.Queries = queries
 

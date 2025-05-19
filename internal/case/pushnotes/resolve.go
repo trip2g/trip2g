@@ -3,7 +3,6 @@ package pushnotes
 import (
 	"context"
 	"fmt"
-	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
@@ -27,7 +26,7 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		note := db.Note{
 			Path: update.Path,
 			// TODO: remove it
-			Content: update.Content + fmt.Sprintf("%d", time.Now().Unix()),
+			Content: update.Content, // + fmt.Sprintf("%d", time.Now().Unix()),
 		}
 
 		insertErr := env.InsertNote(ctx, note)

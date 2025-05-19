@@ -136,17 +136,8 @@ func NewNoteViews() *NoteViews {
 }
 
 func (nv *NoteViews) Copy() *NoteViews {
-	res := NewNoteViews()
-
-	for k, v := range nv.Map {
-		res.Map[k] = v
-	}
-
-	for k, v := range nv.Subgraphs {
-		res.Subgraphs[k] = v
-	}
-
-	return res
+	res := *nv
+	return &res
 }
 
 func (nv *NoteViews) ExtractNoteList() {
