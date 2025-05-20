@@ -1,6 +1,7 @@
 namespace $.$$ {
 	$mol_style_define( $trip2g_user_space, {
 		alignItems: 'center',
+		flexWrap: 'wrap',
 
 		Dialog: {
 			position: 'relative',

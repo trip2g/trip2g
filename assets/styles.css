@@ -33,3 +33,19 @@ html, body {
 .dark .prose {
   @apply prose-invert;
 }
+
+.noteview {
+  @apply flex my-16;
+}
+
+.noteview__content {
+  @apply flex-1;
+}
+
+.noteview__main-title {
+  @apply text-3xl font-bold mb-16;
+}
+
+.noteview__sidebar {
+  @apply pr-8 rounded-box w-56;
+}

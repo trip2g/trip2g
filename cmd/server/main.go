@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -761,6 +762,15 @@ func (a *app) startServer() {
 
 				if ctx.IsOptions() {
 					ctx.SetStatusCode(fasthttp.StatusNoContent)
+					return
+				}
+
+				if strings.HasPrefix(path, "/debug/nvs") {
+					ctx.SetContentType("application/json")
+					ctx.SetStatusCode(fasthttp.StatusOK)
+
+					data, _ := json.Marshal(a.AllNotes())
+					ctx.SetBody(data)
 					return
 				}
 			}
