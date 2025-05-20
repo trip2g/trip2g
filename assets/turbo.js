@@ -1,5 +1,38 @@
 document.addEventListener("DOMContentLoaded", function () {
   var contentSelector = "#all-content";
+  var prefetchCache = {};
+  var PREFETCH_TTL = 60 * 1000;
+
+  function now() { return Date.now(); }
+
+  function cleanPrefetchCache() {
+    var urls = Object.keys(prefetchCache);
+    for (var i = 0; i < urls.length; i++) {
+      var key = urls[i];
+      if (now() - prefetchCache[key].time > PREFETCH_TTL) {
+        delete prefetchCache[key];
+      }
+    }
+  }
+
+  function getPage(url) {
+    cleanPrefetchCache();
+    if (prefetchCache[url]) {
+      return prefetchCache[url].promise;
+    }
+    var p = fetch(url, { headers: { "X-Turbo": "yes" } }).then(htmlResponse);
+    prefetchCache[url] = { promise: p, time: now() };
+    return p;
+  }
+
+  function htmlResponse(response) {
+    return response.text().then(function (html) {
+      return {
+        html: html,
+        turbo: response.headers.get("X-Turbo-Response") == "true"
+      };
+    });
+  }
 
   function replaceContentFromHtml(data, scrollY) {
     try {
@@ -51,15 +84,6 @@ document.addEventListener("DOMContentLoaded", function () {
     return true;
   }
 
-  function htmlResponse(response) {
-    return response.text().then(function (html) {
-      return {
-        html: html,
-        turbo: response.headers.get("X-Turbo-Response") == "true"
-      };
-    });
-  }
-
   document.body.addEventListener("click", function (e) {
     var link = e.target.closest ? e.target.closest("a") : null;
     if (!link || link.target === "_blank" || link.hasAttribute("download") || link.href.indexOf("mailto:") === 0) return;
@@ -75,8 +99,7 @@ document.addEventListener("DOMContentLoaded", function () {
     currentState.scrollY = window.scrollY;
     history.replaceState(currentState, "", window.location.href);
 
-    fetch(url, { headers: { "X-Turbo": "yes" } })
-      .then(htmlResponse)
+    getPage(url)
       .then(function (data) {
         if (!replaceContentFromHtml(data, 0)) {
           window.location.href = url;
@@ -95,8 +118,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var url = event.state.url || window.location.href;
 
-    fetch(url, { headers: { "X-Turbo": "yes" } })
-      .then(htmlResponse)
+    getPage(url)
       .then(function (data) {
         if (!replaceContentFromHtml(data, event.state.scrollY)) {
           window.location.href = url;
@@ -106,4 +128,15 @@ document.addEventListener("DOMContentLoaded", function () {
         window.location.href = url;
       });
   });
+
+  function prefetchOnEvent(evt) {
+    var link = evt.target.closest ? evt.target.closest("a") : null;
+    if (!link || link.target === "_blank" || link.hasAttribute("download") || link.href.indexOf("mailto:") === 0) return;
+    if (link.href.indexOf(window.location.origin) !== 0) return;
+    if (prefetchCache[link.href]) return;
+    getPage(link.href).catch(function () { /* ignore */ });
+  }
+
+  document.body.addEventListener("mouseenter", prefetchOnEvent, true);
+  document.body.addEventListener("touchstart", prefetchOnEvent, { passive: true, capture: true });
 });
