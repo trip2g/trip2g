@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
           if (target && target.parentNode) {
             target.parentNode.replaceChild(node, target);
           } else {
-            console.warn("Target not found for turbo id:", node.id);
+            throw new Error("Target not found for turbo id: " + node.id);
           }
         }
       } else {
