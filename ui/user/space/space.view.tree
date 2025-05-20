@@ -17,6 +17,7 @@ $trip2g_user_space $mol_view
 			attr * open <= open_status null null|string
 			event *
 				click?event <=> close_click?event null
+				close?event <=> close_event?event null
 			sub /
 				<= AuthWrapper $trip2g_auth
 					signout => signout

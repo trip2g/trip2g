@@ -11,9 +11,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  func replaceMolHref(href) {
+  function replaceMolHref(href) {
     if (typeof $mol_state_arg !== "undefined") {
-      $mol_state_arg.href( url + (link.hash || "") ); // mol hack
+      $mol_state_arg.href( href ); // mol hack
     }
   }
 

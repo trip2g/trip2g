@@ -14,6 +14,8 @@ namespace $.$$ {
 			return this.Dialog().dom_node() as HTMLDialogElement
 		}
 
+		_mounted = false
+
 		open_status(opened?: boolean): string | null {
 			const KEY = 'userspace'
 
@@ -23,12 +25,25 @@ namespace $.$$ {
 				} else {
 					this.dialog_dom().close()
 				}
+
+				this._mounted = true
 			}, 10)
 
 			if (opened !== undefined) {
 				const newVal = opened ? 'open' : null
 				this.$.$mol_state_arg.value(KEY, newVal)
 				return newVal
+			} else {
+				// need to mark that dependency
+				const stateOpened = this.$.$mol_state_arg.value(KEY) === 'open'
+
+				if (this._mounted) {
+					if (stateOpened) {
+						this.dialog_dom().showModal()
+					} else {
+						this.dialog_dom().close()
+					}
+				}
 			}
 
 			return opened ? 'open' : null
@@ -44,6 +59,10 @@ namespace $.$$ {
 
 		close() {
 			this.open_status(false)
+		}
+
+		override close_event() {
+			this.open_status(false);
 		}
 
 		user_email() {
