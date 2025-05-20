@@ -7,4 +7,8 @@ namespace $$ {
 			$mol_fail_log( error )
 		}
 	}
+
+	window.addEventListener( 'popstate' , () => {
+		$mol_state_arg.href( window.location.href )
+	} )
 }

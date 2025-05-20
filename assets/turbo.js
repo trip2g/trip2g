@@ -5,6 +5,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function now() { return Date.now(); }
 
+  function remountMol() {
+    if (typeof $mol_view !== "undefined") {
+      $mol_view.autobind(null);
+    }
+  }
+
+  func replaceMolHref(href) {
+    if (typeof $mol_state_arg !== "undefined") {
+      $mol_state_arg.href( url + (link.hash || "") ); // mol hack
+    }
+  }
+
   function cleanPrefetchCache() {
     var urls = Object.keys(prefetchCache);
     for (var i = 0; i < urls.length; i++) {
@@ -72,9 +84,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document.title = newDoc.title;
       }
 
-      if (typeof $mol_view !== "undefined") {
-        $mol_view.autobind(null);
-      }
+      remountMol();
 
       window.scrollTo(0, scrollY || 0);
     } catch (err) {
@@ -106,6 +116,7 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
         history.pushState({ turbolinks: true, url: url, scrollY: 0 }, "", url);
+        replaceMolHref(url + (link.hash || ""));
       })
       .catch(function (err) {
         console.error("Navigation error", err);
