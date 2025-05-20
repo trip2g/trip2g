@@ -51,6 +51,13 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, err
 	}
 
+	turbo := len(ctx.Request.Header.Peek("X-Turbo")) > 0
+	if turbo {
+		ctx.Response.Header.Set("X-Turbo-Response", "true")
+		WriteTurboNote(ctx, resp)
+		return nil, nil
+	}
+
 	WriteLayoutHeader(ctx, resp)
 	WriteNote(ctx, resp)
 	WriteLayoutFooter(ctx, resp)

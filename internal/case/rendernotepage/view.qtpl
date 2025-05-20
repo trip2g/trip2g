@@ -1,7 +1,30 @@
 {% func Note(resp *Response) %}
 
 <div class="noteview">
-  <div class="noteview__content">
+  {%= NoteContent(resp) %}
+
+  <div class="noteview__sidebar">
+    <a href="/">Home</a>
+    <div>
+      <div mol_view_root="$trip2g_user_space"></div>
+    </div>
+
+    {%= Sidebar(resp) %}
+  </div>
+
+</div>
+
+{% endfunc %}
+
+{% func TurboNote(resp *Response) %}
+<div id="title">{%s resp.Title %}</div>
+{%= NoteContent(resp) %}
+{%= Sidebar(resp) %}
+{% endfunc %}
+
+{% func NoteContent(resp *Response) %}
+
+  <div class="noteview__content" id="noteview-content">
 
     <style type="text/css">
       {% if resp.UserToken != nil %}
@@ -30,28 +53,25 @@
 
     {% endif %}
 
-  </div
-
-  <div class="noteview__sidebar">
-    <a href="/">Home</a>
-    <div>
-      <div mol_view_root="$trip2g_user_space"></div>
-    </div>
-
-    {% if sidebar := resp.Sidebar(); sidebar != nil %}
-      {%s= string(sidebar.HTML) %}
-    {% endif %}
-
-    <div>История:</div>
-
-    {% if len(resp.LatestNotes) > 0 %}
-      {% for _, n := range resp.LatestNotes %}
-        <div><a href="{%s n.Permalink %}">{%s n.Title %}</a></div>
-      {% endfor %}
-    {% endif %}
   </div>
 
-</div>
+{% endfunc %}
+
+{% func Sidebar(resp *Response) %}
+
+    <div id="noteview-sidebar">
+      {% if sidebar := resp.Sidebar(); sidebar != nil %}
+        {%s= string(sidebar.HTML) %}
+      {% endif %}
+
+      <div>История:</div>
+
+      {% if len(resp.LatestNotes) > 0 %}
+        {% for _, n := range resp.LatestNotes %}
+          <div><a href="{%s n.Permalink %}">{%s n.Title %}</a></div>
+        {% endfor %}
+      {% endif %}
+    </div>
 
 {% endfunc %}
 
