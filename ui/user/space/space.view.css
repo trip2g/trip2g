@@ -12,8 +12,10 @@
 }
 
 [trip2g_user_space_dialog] {
-	width: 50vw;
-	height: 50vh;
+	width: 95vw;
+	height: 95vh;
+	max-width: 800px;
+	max-height: 600px;
 	padding: 0;
 	margin: auto;
 	border: none;
