@@ -53,11 +53,15 @@ html, body {
 }
 
 .noteview__header {
-  @apply mb-8;
+  @apply mb-8 flex;
 }
 
-.noteview__header-container {
-  @apply w-full;
+.noteview__footer {
+  @apply mt-8;
+}
+
+.noteview__header-space {
+  @apply flex-1;
 }
 
 .noteview__header-container--sticky {
@@ -69,7 +73,12 @@ html, body {
 }
 
 /* Sidebar components */
+.sidebar {
+  @apply flex;
+}
+
 .sidebar__block {
+  @apply min-w-32 pr-8;
 }
 
 .sidebar__block-title {
@@ -81,6 +90,16 @@ html, body {
 }
 
 .sidebar__block-link {
+}
+
+.sidebar__menu ul {
+  @apply relative;
+}
+
+.sidebar__menu li {
+  @apply inline-block;
+  margin: 1rem;
+  margin-left: 0;
 }
 
 /* Paywall */

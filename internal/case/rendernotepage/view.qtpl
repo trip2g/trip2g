@@ -2,13 +2,12 @@
 
 <div class="noteview" id="noteview-layout">
   <div class="noteview__header">
-    <div class="noteview__header-container">
-      <a href="/">Home</a>
-      <div>
-        <div mol_view_root="$trip2g_user_space"></div>
-      </div>
+    {%= Sidebar(resp) %}
 
-      {%= Sidebar(resp) %}
+    <div class="noteview__header-space"></div>
+
+    <div>
+      <div mol_view_root="$trip2g_user_space"></div>
     </div>
   </div>
 
@@ -42,43 +41,33 @@
     {%s= string(resp.Note.HTML) %}
     </div>
 
+    {% if len(resp.Note.InLinks) > 0 %}
+    <div class="noteview__footer">
+      <h2 class="sidebar__block-title">Связанные страницы:</h2>
+
+      <div class="sidebar__block-content">
+      {% if len(resp.LatestNotes) > 0 %}
+        {% for _, n := range resp.LatestNotes %}
+          <div class="sidebar__block-link">
+            <a href="{%s n.Permalink %}">{%s n.Title %}</a>
+          </div>
+        {% endfor %}
+      {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
   </div>
 
 {% endfunc %}
 
 {% func Sidebar(resp *Response) %}
 
-    <div id="noteview-sidebar">
+    <div id="noteview-sidebar" class="sidebar">
       {% if sidebar := resp.Sidebar(); sidebar != nil %}
-        {%s= string(sidebar.HTML) %}
-      {% endif %}
-
-      {% if len(resp.Note.InLinks) > 0 %}
-      <div class="sidebar__block">
-        <h2 class="sidebar__block-title">Связи</h2>
-
-        {% for k := range resp.Note.InLinks %}
-          {% if inNote := resp.Notes.GetByPath(k); inNote != nil %}
-            <div><a href="{%s inNote.Permalink %}">{%s inNote.Title %}</a></div>
-          {% endif %}
-        {% endfor %}
-      </div>
-      {% endif %}
-
-      {% if len(resp.Note.InLinks) > 0 %}
-      <div class="sidebar__block">
-        <h2 class="sidebar__block-title">История</h2>
-
-        <div class="sidebar__block-content">
-        {% if len(resp.LatestNotes) > 0 %}
-          {% for _, n := range resp.LatestNotes %}
-            <div class="sidebar__block-link">
-              <a href="{%s n.Permalink %}">{%s n.Title %}</a>
-            </div>
-          {% endfor %}
-        {% endif %}
+        <div class="sidebar__menu">
+          {%s= string(sidebar.HTML) %}
         </div>
-      </div>
       {% endif %}
     </div>
 
