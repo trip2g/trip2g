@@ -193,6 +193,48 @@ func (nv *NoteViews) ExtractSubgraphs() {
 	}
 }
 
+// Sidebars returns the sidebar for a given path.
+// Looking path: note meta "sidebar" path to md, "_sidebar_<subgraph>.md", "_sidebar.md"
+func (nvs *NoteViews) Sidebars(note *NoteView) []*NoteView {
+	sidebarI, sidebarOk := note.RawMeta["sidebar"]
+	if sidebarOk {
+		switch s := sidebarI.(type) {
+		case string:
+			noteSidebar, ok := nvs.Map[s]
+			if ok {
+				return []*NoteView{noteSidebar}
+			}
+		case bool:
+			if !s {
+				return nil
+			}
+		}
+	}
+
+	var res []*NoteView
+
+	for _, ps := range note.SubgraphNames {
+		subgraph, ok := nvs.Subgraphs[ps]
+		if !ok {
+			continue
+		}
+
+		if subgraph.Sidebar != nil {
+			res = append(res, subgraph.Sidebar)
+		}
+	}
+
+	// without subgraph sidebars then try to use the default sidebar
+	if len(res) == 0 {
+		sidebar, ok := nvs.Map["/_sidebar"]
+		if ok {
+			return append(res, sidebar)
+		}
+	}
+
+	return res
+}
+
 // func (nv NoteViews) Subgraphs() ([]string, error) {
 // 	subgraphs := make(map[string]struct{})
 //

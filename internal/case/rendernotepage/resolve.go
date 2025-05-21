@@ -46,8 +46,6 @@ type Response struct {
 	AssetVersion string
 }
 
-const defaultSidebarPath = "/_sidebar"
-
 func (r *Response) NoteSubgraphsJSON() string {
 	raw, err := json.Marshal(r.Note.SubgraphNames)
 	if err != nil {
@@ -55,24 +53,6 @@ func (r *Response) NoteSubgraphsJSON() string {
 	}
 
 	return string(raw)
-}
-
-func (r *Response) Sidebar() *model.NoteView {
-	result := r.Notes.GetByPath(defaultSidebarPath)
-
-	sidebarI, sidebarOk := r.Note.RawMeta["sidebar"]
-	if sidebarOk {
-		switch s := sidebarI.(type) {
-		case string:
-			result = r.Notes.Map[s]
-		case bool:
-			if !s {
-				return nil
-			}
-		}
-	}
-
-	return result
 }
 
 var ErrNotFound = errors.New("page not found")

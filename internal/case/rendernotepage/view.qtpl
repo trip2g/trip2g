@@ -64,10 +64,12 @@
 {% func Sidebar(resp *Response) %}
 
     <div id="noteview-sidebar" class="sidebar">
-      {% if sidebar := resp.Sidebar(); sidebar != nil %}
+      {% if sidebars := resp.Notes.Sidebars(resp.Note); len(sidebars) > 0 %}
+        {% for _, sidebar := range sidebars %}
         <div class="sidebar__menu">
           {%s= string(sidebar.HTML) %}
         </div>
+        {% endfor %}
       {% else %}
         <div class="sidebar__menu">
           <ul>
