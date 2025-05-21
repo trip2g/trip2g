@@ -92,8 +92,6 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (*model.NoteViews, error)
 	ldr.nvs.ExtractNoteList()
 	ldr.nvs.ExtractSubgraphs()
 
-	log.Info("subgraphs extracted", "v", ldr.nvs.Subgraphs)
-
 	err = ldr.findAssets()
 	if err != nil {
 		return nil, fmt.Errorf("failed to find assets: %w", err)

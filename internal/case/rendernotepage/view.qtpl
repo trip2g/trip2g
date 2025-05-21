@@ -35,7 +35,9 @@
       {% endfor %}
     </style>
 
+    {% if !resp.Note.IsHomePage() %}
     <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
+    {% endif %}
 
     <div class="noteview__markup prose prose-stone">
     {%s= string(resp.Note.HTML) %}
@@ -64,12 +66,24 @@
 {% func Sidebar(resp *Response) %}
 
     <div id="noteview-sidebar" class="sidebar">
-      {% if sidebars := resp.Notes.Sidebars(resp.Note); len(sidebars) > 0 %}
-        {% for _, sidebar := range sidebars %}
-        <div class="sidebar__menu">
-          {%s= string(sidebar.HTML) %}
+      {% if homePages := resp.Notes.HomePages(resp.Note); len(homePages) > 0 %}
+        <div class="sidebar__homepages">
+          {% for _, homePage := range homePages %}
+          <div class="sidebar__homepage">
+            <a href="{%s= homePage.Permalink %}">{%s= homePage.Title %}</a>
+          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
+      {% endif %}
+
+      {% if sidebars := resp.Notes.Sidebars(resp.Note); len(sidebars) > 0 %}
+        <div class="sidebar__menus">
+          {% for _, sidebar := range sidebars %}
+          <div class="sidebar__menu">
+            {%s= string(sidebar.HTML) %}
+          </div>
+          {% endfor %}
+        </div>
       {% else %}
         <div class="sidebar__menu">
           <ul>
@@ -140,7 +154,9 @@
   </div>
 
   <div class="noteview__content" id="noteview-content">
+    {% if !resp.Note.IsHomePage() %}
     <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
+    {% endif %}
 
     <div mol_view_root="$trip2g_user_paywall" data-subgraphs="{%s resp.NoteSubgraphsJSON() %}"></div>
   </div>

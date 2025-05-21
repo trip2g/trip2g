@@ -74,7 +74,18 @@ html, body {
 
 /* Sidebar components */
 .sidebar {
+}
+
+.sidebar__menus {
   @apply flex;
+}
+
+.sidebar__homepages {
+  @apply flex;
+}
+
+.sidebar__homepage a {
+  @apply no-underline text-xl font-bold;
 }
 
 .sidebar__block {

@@ -57,6 +57,16 @@ func (n *NoteView) Ast() ast.Node {
 	return n.ast
 }
 
+func (n *NoteView) IsHomePage() bool {
+	for _, subgraph := range n.SubgraphNames {
+		if n.Permalink == "/"+subgraph {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (n *NoteView) SetAst(node ast.Node) {
 	n.ast = node
 }
@@ -180,7 +190,7 @@ func (nv *NoteViews) ExtractSubgraphs() {
 		homePathVariants := []string{
 			fmt.Sprintf("/_index_%s", name),
 			fmt.Sprintf("/_home_%s", name),
-			fmt.Sprintf("/%s.md", name),
+			fmt.Sprintf("/%s", name),
 		}
 
 		for _, homePath := range homePathVariants {
@@ -191,6 +201,23 @@ func (nv *NoteViews) ExtractSubgraphs() {
 			}
 		}
 	}
+}
+
+func (nvs *NoteViews) HomePages(note *NoteView) []*NoteView {
+	var res []*NoteView
+
+	for _, ps := range note.SubgraphNames {
+		subgraph, ok := nvs.Subgraphs[ps]
+		if !ok {
+			continue
+		}
+
+		if subgraph.Home != nil {
+			res = append(res, subgraph.Home)
+		}
+	}
+
+	return res
 }
 
 // Sidebars returns the sidebar for a given path.
