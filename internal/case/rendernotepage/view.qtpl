@@ -1,10 +1,8 @@
 {% func Note(resp *Response) %}
 
 <div class="noteview" id="noteview-layout">
-  {%= NoteContent(resp) %}
-
-  <div class="noteview__sidebar">
-    <div class="noteview__sidebar-container" id="sidebar-container">
+  <div class="noteview__header">
+    <div class="noteview__header-container">
       <a href="/">Home</a>
       <div>
         <div mol_view_root="$trip2g_user_space"></div>
@@ -14,6 +12,7 @@
     </div>
   </div>
 
+  {%= NoteContent(resp) %}
 </div>
 
 {% endfunc %}

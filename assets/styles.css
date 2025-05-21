@@ -41,31 +41,27 @@ html, body {
 
 /* Note view */
 .noteview {
-  @apply flex my-16 relative;
+  @apply my-16 relative;
 }
 
 .noteview__content {
-  @apply flex-1 min-w-screen md:min-w-auto ml-1;
+  @apply flex-1;
 }
 
 .noteview__main-title {
   @apply text-2xl font-bold mb-16 md:text-3xl;
 }
 
-.noteview__sidebar {
-  @apply pl-8 rounded-box w-56 min-w-56;
+.noteview__header {
+  @apply mb-8;
 }
 
-.noteview__sidebar-container {
-  @apply absolute top-0 w-56 pl-8;
+.noteview__header-container {
+  @apply w-full;
 }
 
-.noteview__sidebar-container--sticky {
-  @apply fixed top-0 right-0;
-}
-
-.noteview__sidebar-container--bottom {
-  @apply absolute bottom-0 top-auto;
+.noteview__header-container--sticky {
+  @apply fixed top-0 left-0 right-0;
 }
 
 .noteview__markup {
