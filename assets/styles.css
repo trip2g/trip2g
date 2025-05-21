@@ -34,6 +34,12 @@ html, body {
   @apply prose-invert;
 }
 
+/* Main layout */
+.main {
+  @apply container mx-auto px-4 py-2;
+}
+
+/* Note view */
 .noteview {
   @apply flex my-16;
 }
@@ -54,14 +60,22 @@ html, body {
   @apply mt-8;
 }
 
+/* Sidebar components */
+.sidebar__block {
+}
+
 .sidebar__block-title {
-  @apply font-bold mt-4;
+  @apply text-lg font-bold my-4;
 }
 
 .sidebar__block-content {
   @apply text-sm text-gray-500;
 }
 
-.sidebar__block-title {
-  @apply text-lg font-bold my-4;
+.sidebar__block-link {
+}
+
+/* Paywall */
+.paywall__title {
+  @apply text-2xl font-bold;
 }

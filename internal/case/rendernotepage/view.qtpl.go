@@ -424,7 +424,7 @@ func StreamLayoutHeader(qw422016 *qt422016.Writer, resp *Response) {
 </header>
 -->
 
-<main class="container mx-auto px-4 py-2">
+<main class="main">
 `)
 //line view.qtpl:119
 }
@@ -509,7 +509,7 @@ func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError)
 //line view.qtpl:131
 	qw422016.N().S(`
 
-<h1 class="text-2xl font-bold">`)
+<h1 class="paywall__title">`)
 //line view.qtpl:133
 	qw422016.E().S(resp.Note.Title)
 //line view.qtpl:133
