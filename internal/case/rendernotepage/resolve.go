@@ -155,12 +155,18 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	hasAccess := len(response.Note.Subgraphs) == 0
 
+	if request.UserToken != nil && request.UserToken.Role == "admin" {
+		hasAccess = true
+	}
+
 	// check if the user has access to the subgraph
-	for _, ps := range response.Note.SubgraphNames {
-		for _, us := range response.UserSubgraphs {
-			if ps == us {
-				hasAccess = true
-				break
+	if !hasAccess {
+		for _, ps := range response.Note.SubgraphNames {
+			for _, us := range response.UserSubgraphs {
+				if ps == us {
+					hasAccess = true
+					break
+				}
 			}
 		}
 	}
