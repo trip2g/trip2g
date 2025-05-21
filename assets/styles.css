@@ -41,7 +41,7 @@ html, body {
 
 /* Note view */
 .noteview {
-  @apply flex my-16;
+  @apply flex my-16 relative;
 }
 
 .noteview__content {
@@ -53,7 +53,19 @@ html, body {
 }
 
 .noteview__sidebar {
-  @apply pl-8 rounded-box w-56;
+  @apply pl-8 rounded-box w-56 min-w-56;
+}
+
+.noteview__sidebar-container {
+  @apply absolute top-0 w-56 pl-8;
+}
+
+.noteview__sidebar-container--sticky {
+  @apply fixed top-0 right-0;
+}
+
+.noteview__sidebar-container--bottom {
+  @apply absolute bottom-0 top-auto;
 }
 
 .noteview__markup {

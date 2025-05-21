@@ -1548,6 +1548,7 @@ html, body {
   padding-block: calc(var(--spacing) * 2);
 }
 .noteview {
+  position: relative;
   margin-block: calc(var(--spacing) * 16);
   display: flex;
 }
@@ -1572,9 +1573,26 @@ html, body {
 }
 .noteview__sidebar {
   width: calc(var(--spacing) * 56);
+  min-width: calc(var(--spacing) * 56);
   border-radius: var(--radius-box);
   border-radius: var(--radius-box);
   padding-left: calc(var(--spacing) * 8);
+}
+.noteview__sidebar-container {
+  position: absolute;
+  top: calc(var(--spacing) * 0);
+  width: calc(var(--spacing) * 56);
+  padding-left: calc(var(--spacing) * 8);
+}
+.noteview__sidebar-container--sticky {
+  position: fixed;
+  top: calc(var(--spacing) * 0);
+  right: calc(var(--spacing) * 0);
+}
+.noteview__sidebar-container--bottom {
+  position: absolute;
+  top: auto;
+  bottom: calc(var(--spacing) * 0);
 }
 .noteview__markup {
   margin-top: calc(var(--spacing) * 8);
