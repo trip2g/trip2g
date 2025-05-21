@@ -54,7 +54,7 @@
 
       {% if len(resp.Note.InLinks) > 0 %}
       <div class="sidebar__block">
-        <h2 class="sidebar__block-title">Linked from</h2>
+        <h2 class="sidebar__block-title">Связи</h2>
 
         {% for k := range resp.Note.InLinks %}
           {% if inNote := resp.Notes.GetByPath(k); inNote != nil %}
@@ -66,7 +66,7 @@
 
       {% if len(resp.Note.InLinks) > 0 %}
       <div class="sidebar__block">
-        <h2 class="sidebar__block-title">Linked from</h2>
+        <h2 class="sidebar__block-title">История</h2>
 
         <div class="sidebar__block-content">
         {% if len(resp.LatestNotes) > 0 %}

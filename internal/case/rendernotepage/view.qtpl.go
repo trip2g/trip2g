@@ -233,7 +233,7 @@ func StreamSidebar(qw422016 *qt422016.Writer, resp *Response) {
 //line view.qtpl:55
 		qw422016.N().S(`
       <div class="sidebar__block">
-        <h2 class="sidebar__block-title">Linked from</h2>
+        <h2 class="sidebar__block-title">Связи</h2>
 
         `)
 //line view.qtpl:59
@@ -277,7 +277,7 @@ func StreamSidebar(qw422016 *qt422016.Writer, resp *Response) {
 //line view.qtpl:67
 		qw422016.N().S(`
       <div class="sidebar__block">
-        <h2 class="sidebar__block-title">Linked from</h2>
+        <h2 class="sidebar__block-title">История</h2>
 
         <div class="sidebar__block-content">
         `)

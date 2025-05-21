@@ -45,15 +45,15 @@ html, body {
 }
 
 .noteview__content {
-  @apply flex-1;
+  @apply flex-1 min-w-screen md:min-w-auto ml-1;
 }
 
 .noteview__main-title {
-  @apply text-3xl font-bold mb-16;
+  @apply text-2xl font-bold mb-16 md:text-3xl;
 }
 
 .noteview__sidebar {
-  @apply pr-8 rounded-box w-56;
+  @apply pl-8 rounded-box w-56;
 }
 
 .noteview__markup {
