@@ -49,3 +49,19 @@ html, body {
 .noteview__sidebar {
   @apply pr-8 rounded-box w-56;
 }
+
+.noteview__markup {
+  @apply mt-8;
+}
+
+.sidebar__block-title {
+  @apply font-bold mt-4;
+}
+
+.sidebar__block-content {
+  @apply text-sm text-gray-500;
+}
+
+.sidebar__block-title {
+  @apply text-lg font-bold my-4;
+}

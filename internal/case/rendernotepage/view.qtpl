@@ -37,21 +37,9 @@
 
     <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
 
-    <div class="prose prose-stone mt-8">
+    <div class="noteview__markup prose prose-stone">
     {%s= string(resp.Note.HTML) %}
     </div>
-
-    {% if len(resp.Note.InLinks) > 0 %}
-
-      <h2 class="font-bold mt-4">Linked from</h2>
-
-      {% for k := range resp.Note.InLinks %}
-        {% if inNote := resp.Notes.GetByPath(k); inNote != nil %}
-          <div><a href="{%s inNote.Permalink %}">{%s inNote.Title %}</a></div>
-        {% endif %}
-      {% endfor %}
-
-    {% endif %}
 
   </div>
 
@@ -64,12 +52,32 @@
         {%s= string(sidebar.HTML) %}
       {% endif %}
 
-      <div>История:</div>
+      {% if len(resp.Note.InLinks) > 0 %}
+      <div class="sidebar__block">
+        <h2 class="sidebar__block-title">Linked from</h2>
 
-      {% if len(resp.LatestNotes) > 0 %}
-        {% for _, n := range resp.LatestNotes %}
-          <div><a href="{%s n.Permalink %}">{%s n.Title %}</a></div>
+        {% for k := range resp.Note.InLinks %}
+          {% if inNote := resp.Notes.GetByPath(k); inNote != nil %}
+            <div><a href="{%s inNote.Permalink %}">{%s inNote.Title %}</a></div>
+          {% endif %}
         {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if len(resp.Note.InLinks) > 0 %}
+      <div class="sidebar__block">
+        <h2 class="sidebar__block-title">Linked from</h2>
+
+        <div class="sidebar__block-content">
+        {% if len(resp.LatestNotes) > 0 %}
+          {% for _, n := range resp.LatestNotes %}
+            <div class="sidebar__block-link">
+              <a href="{%s n.Permalink %}">{%s n.Title %}</a>
+            </div>
+          {% endfor %}
+        {% endif %}
+        </div>
+      </div>
       {% endif %}
     </div>
 
