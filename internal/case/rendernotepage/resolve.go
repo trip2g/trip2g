@@ -49,7 +49,7 @@ type Response struct {
 const defaultSidebarPath = "/_sidebar"
 
 func (r *Response) NoteSubgraphsJSON() string {
-	raw, err := json.Marshal(r.Note.Subgraphs)
+	raw, err := json.Marshal(r.Note.SubgraphNames)
 	if err != nil {
 		return "null"
 	}

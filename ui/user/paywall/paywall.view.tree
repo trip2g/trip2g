@@ -5,6 +5,9 @@ $trip2g_user_paywall $mol_view
 	plugins /
 		<= Theme $mol_theme_auto
 	sub /
+		\Эта страница доступна только для подписчиков.
+		<= Message $mol_view
+			sub / <= message \
 		<= PurchaseItems $trip2g_user_paywall_activepurchases
 			subgraphs <= subgraphs
 		<= Offers $trip2g_user_paywall_offers

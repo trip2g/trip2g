@@ -14,5 +14,17 @@ namespace $.$$ {
 
 			return this.$.$mol_json_from_string(el.dataset.subgraphs) as string[]
 		}
+
+		override message(): string {
+			let val = 'Пожалуйста, авторизуйтесь'
+
+			if (this.subgraphs().length > 0) {
+				val += ` или рассмотрите покупку подписки.`
+			} else {
+				val += '.'
+			}
+
+			return val
+		}
 	}
 }

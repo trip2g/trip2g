@@ -68,6 +68,12 @@
         <div class="sidebar__menu">
           {%s= string(sidebar.HTML) %}
         </div>
+      {% else %}
+        <div class="sidebar__menu">
+          <ul>
+            <li><a href="/">Home</a></li>
+          </ul>
+        </div>
       {% endif %}
     </div>
 
@@ -120,13 +126,22 @@
 
 {% func PayWall(resp *Response, err *PaywallError) %}
 
-<h1 class="paywall__title">{%s resp.Note.Title %}</h1>
+<div class="noteview" id="noteview-layout">
+  <div class="noteview__header">
+    {%= Sidebar(resp) %}
 
-<p>
-  Эта страница доступна только для подписчиков. Авторизуйтесь или купите подписку.
-</p>
-<p>{%s err.Message %}</p>
+    <div class="noteview__header-space"></div>
 
-<div mol_view_root="$trip2g_user_paywall" data-subgraphs="{%s resp.NoteSubgraphsJSON() %}"></div>
+    <div>
+      <div mol_view_root="$trip2g_user_space"></div>
+    </div>
+  </div>
+
+  <div class="noteview__content" id="noteview-content">
+    <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
+
+    <div mol_view_root="$trip2g_user_paywall" data-subgraphs="{%s resp.NoteSubgraphsJSON() %}"></div>
+  </div>
+</div>
 
 {% endfunc %}
