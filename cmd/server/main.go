@@ -91,6 +91,8 @@ type app struct {
 	purchaseUpdatedMu       sync.Mutex
 	purchaseUpdatedHandlers map[string]map[int]func()
 	nextPurchaseHandlerID   int
+
+	adminJSURL string
 }
 
 func enablePragmas(db *sql.DB) error {
@@ -263,6 +265,10 @@ func main() {
 		nowpaymentsClient: nowpaymentsClient,
 	}
 
+	flag.StringVar(&a.adminJSURL, "admin-js-url", "/ui/admin/-/web.js", "Admin JS URL")
+
+	flag.Parse()
+
 	tokenManager.AddValidator(func(ctx context.Context, data *usertoken.Data) error {
 		ban, err := a.UserBanByUserID(ctx, int64(data.ID))
 		if err != nil {
@@ -311,7 +317,7 @@ func (a *app) assetURL(path string) string {
 }
 
 func (a *app) AdminJSURL() string {
-	return a.assetURL("/ui/admin/-/web.js")
+	return a.assetURL(a.adminJSURL)
 }
 
 func (a *app) UserJSURLs() []string {
@@ -804,17 +810,26 @@ func (a *app) startServer() {
 				return
 			}
 
-			if strings.HasPrefix(path, "/ui/") {
-				fs2Handler(ctx)
-				return
-			}
-
 			req := appreq.Acquire()
 			req.Env = a
 			req.Req = ctx
 			req.TokenManager = a.tokenManager
 			req.StoreInContext() // appreq.FromCtx(ctx)
 			defer appreq.Release(req)
+
+			if len(a.adminJSURL) > 0 && a.adminJSURL[0] == '/' && strings.HasPrefix(path, a.adminJSURL) {
+				userToken, err := req.UserToken()
+				if err != nil || userToken == nil {
+					ctx.SetStatusCode(http.StatusUnauthorized)
+					ctx.SetBodyString("401 Unauthorized")
+					return
+				}
+			}
+
+			if strings.HasPrefix(path, "/ui/") {
+				fs2Handler(ctx)
+				return
+			}
 
 			// handle purchase tokens from cookies
 			purchaseTokens, _ := a.purchaseTokenManager.Extract(ctx)

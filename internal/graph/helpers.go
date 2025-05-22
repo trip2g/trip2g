@@ -36,7 +36,7 @@ func checkAdmin(ctx context.Context) error {
 		return err
 	}
 
-	if token == nil || token.Role != "admin" {
+	if !token.IsAdmin() {
 		return errUnauthorized
 	}
 
