@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"trip2g/internal/appreq"
 )
 
 func resolveOne[T any, K any](
@@ -20,4 +21,24 @@ func resolveOne[T any, K any](
 	}
 
 	return &row, nil
+}
+
+var errUnauthorized = errors.New("unauthorized")
+
+func checkAdmin(ctx context.Context) error {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return err
+	}
+
+	token, err := req.UserToken()
+	if err != nil {
+		return err
+	}
+
+	if token == nil || token.Role != "admin" {
+		return errUnauthorized
+	}
+
+	return nil
 }

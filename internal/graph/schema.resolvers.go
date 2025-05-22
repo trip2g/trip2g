@@ -216,18 +216,9 @@ func (r *mutationResolver) UploadNoteAsset(ctx context.Context, input model.Uplo
 
 // Admin is the resolver for the admin field.
 func (r *mutationResolver) Admin(ctx context.Context) (*appmodel.AdminMutation, error) {
-	req, err := appreq.FromCtx(ctx)
+	err := checkAdmin(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	token, err := req.UserToken()
-	if err != nil {
-		return nil, err
-	}
-
-	if token == nil || token.Role != "admin" {
-		return nil, nil
 	}
 
 	return &appmodel.AdminMutation{}, nil
@@ -302,6 +293,11 @@ func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 
 // Admin is the resolver for the admin field.
 func (r *queryResolver) Admin(ctx context.Context) (*appmodel.AdminQuery, error) {
+	err := checkAdmin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &appmodel.AdminQuery{}, nil
 }
 
