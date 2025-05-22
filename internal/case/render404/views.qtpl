@@ -1,6 +1,10 @@
-{% func Content() %}
+{% func Content(params *Params) %}
+<div mol_view_root="$trip2g_user_space"></div>
 <div>
   Страница не найдена.
+  {% if params.UserToken == nil %}
+  Ее не существует или она доступна только после авторизации.
+  {% endif %}
 </div>
 <a href="/">Home</a>
 {% endfunc %}

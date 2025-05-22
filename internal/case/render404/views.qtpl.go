@@ -18,39 +18,51 @@ var (
 )
 
 //line views.qtpl:1
-func StreamContent(qw422016 *qt422016.Writer) {
+func StreamContent(qw422016 *qt422016.Writer, params *Params) {
 //line views.qtpl:1
 	qw422016.N().S(`
+<div mol_view_root="$trip2g_user_space"></div>
 <div>
   Страница не найдена.
+  `)
+//line views.qtpl:5
+	if params.UserToken == nil {
+//line views.qtpl:5
+		qw422016.N().S(`
+  Ее не существует или она доступна только после авторизации.
+  `)
+//line views.qtpl:7
+	}
+//line views.qtpl:7
+	qw422016.N().S(`
 </div>
 <a href="/">Home</a>
 `)
-//line views.qtpl:6
+//line views.qtpl:10
 }
 
-//line views.qtpl:6
-func WriteContent(qq422016 qtio422016.Writer) {
-//line views.qtpl:6
+//line views.qtpl:10
+func WriteContent(qq422016 qtio422016.Writer, params *Params) {
+//line views.qtpl:10
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.qtpl:6
-	StreamContent(qw422016)
-//line views.qtpl:6
+//line views.qtpl:10
+	StreamContent(qw422016, params)
+//line views.qtpl:10
 	qt422016.ReleaseWriter(qw422016)
-//line views.qtpl:6
+//line views.qtpl:10
 }
 
-//line views.qtpl:6
-func Content() string {
-//line views.qtpl:6
+//line views.qtpl:10
+func Content(params *Params) string {
+//line views.qtpl:10
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.qtpl:6
-	WriteContent(qb422016)
-//line views.qtpl:6
+//line views.qtpl:10
+	WriteContent(qb422016, params)
+//line views.qtpl:10
 	qs422016 := string(qb422016.B)
-//line views.qtpl:6
+//line views.qtpl:10
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.qtpl:6
+//line views.qtpl:10
 	return qs422016
-//line views.qtpl:6
+//line views.qtpl:10
 }
