@@ -15,6 +15,10 @@ type Data struct {
 	Role string `json:"r"`
 }
 
+func (d *Data) IsAdmin() bool {
+	return d != nil && d.Role == "admin"
+}
+
 type fullData struct {
 	ID   int    `json:"i"`
 	Role string `json:"r"`

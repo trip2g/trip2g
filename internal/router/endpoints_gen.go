@@ -7,10 +7,10 @@ package router
 import (
 	getnotehashesgetnotehashes "trip2g/internal/case/getnotehashes"
 	processnowpaymentsipnprocessnowpaymentsipn "trip2g/internal/case/processnowpaymentsipn"
+	renderadminpagerenderadminpage "trip2g/internal/case/renderadminpage"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
 	listnotepathslistnotepaths "trip2g/internal/case/admin/listnotepaths"
 	listuserslistusers "trip2g/internal/case/admin/listusers"
-	renderpagerenderpage "trip2g/internal/case/admin/renderpage"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
 
 	"trip2g/internal/logger"
@@ -19,20 +19,20 @@ import (
 var endpoints = []Endpoint{
 	&getnotehashesgetnotehashes.Endpoint{},
 	&processnowpaymentsipnprocessnowpaymentsipn.Endpoint{},
+	&renderadminpagerenderadminpage.Endpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
 	&listnotepathslistnotepaths.Endpoint{},
 	&listuserslistusers.Endpoint{},
-	&renderpagerenderpage.Endpoint{},
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
 }
 
 type Env interface {
 	getnotehashesgetnotehashes.Env
 	processnowpaymentsipnprocessnowpaymentsipn.Env
+	renderadminpagerenderadminpage.Env
 	rendernotepagerendernotepage.Env
 	listnotepathslistnotepaths.Env
 	listuserslistusers.Env
-	renderpagerenderpage.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
 
 	Logger() logger.Logger

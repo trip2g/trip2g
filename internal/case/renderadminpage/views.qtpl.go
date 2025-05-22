@@ -2,7 +2,7 @@
 // See https://github.com/valyala/quicktemplate for details.
 
 //line views.qtpl:1
-package renderpage
+package renderadminpage
 
 //line views.qtpl:1
 import (
@@ -18,7 +18,7 @@ var (
 )
 
 //line views.qtpl:1
-func StreamPage(qw422016 *qt422016.Writer) {
+func StreamPage(qw422016 *qt422016.Writer, resp *Response) {
 //line views.qtpl:1
 	qw422016.N().S(`<!DOCTYPE html>
 
@@ -33,7 +33,11 @@ func StreamPage(qw422016 *qt422016.Writer) {
 
   <body mol_view_root>
     <div mol_view_root="$trip2g_admin"></div>
-    <script src="/ui/admin/-/web.js"></script>
+    <script src="`)
+//line views.qtpl:15
+	qw422016.N().S(resp.JSURL)
+//line views.qtpl:15
+	qw422016.N().S(`"></script>
   </body
 </html>
 `)
@@ -41,22 +45,22 @@ func StreamPage(qw422016 *qt422016.Writer) {
 }
 
 //line views.qtpl:18
-func WritePage(qq422016 qtio422016.Writer) {
+func WritePage(qq422016 qtio422016.Writer, resp *Response) {
 //line views.qtpl:18
 	qw422016 := qt422016.AcquireWriter(qq422016)
 //line views.qtpl:18
-	StreamPage(qw422016)
+	StreamPage(qw422016, resp)
 //line views.qtpl:18
 	qt422016.ReleaseWriter(qw422016)
 //line views.qtpl:18
 }
 
 //line views.qtpl:18
-func Page() string {
+func Page(resp *Response) string {
 //line views.qtpl:18
 	qb422016 := qt422016.AcquireByteBuffer()
 //line views.qtpl:18
-	WritePage(qb422016)
+	WritePage(qb422016, resp)
 //line views.qtpl:18
 	qs422016 := string(qb422016.B)
 //line views.qtpl:18

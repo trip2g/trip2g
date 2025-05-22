@@ -301,6 +301,22 @@ func main() {
 	}
 }
 
+func (a *app) JSURL(path string) string {
+	if a.devMode {
+		path += fmt.Sprintf("?t=%d", time.Now().UnixMilli())
+	}
+
+	return path
+}
+
+func (a *app) AdminJSURL() string {
+	return a.JSURL("/ui/admin/-/web.js")
+}
+
+func (a *app) UserJSURL() string {
+	return a.JSURL("/ui/user/-/web.js")
+}
+
 func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error) {
 	a.currentNVS.mu.Lock()
 	defer a.currentNVS.mu.Unlock()
@@ -709,7 +725,7 @@ func (a *app) startServer() {
 		Root:               "./assets",
 		IndexNames:         []string{},
 		GenerateIndexPages: false,
-		Compress:           a.devMode,
+		Compress:           !a.devMode,
 		SkipCache:          a.devMode,
 		AcceptByteRange:    true,
 
@@ -723,7 +739,7 @@ func (a *app) startServer() {
 		Root:               "./ui",
 		IndexNames:         []string{},
 		GenerateIndexPages: false,
-		Compress:           a.devMode,
+		Compress:           !a.devMode,
 		SkipCache:          a.devMode,
 		AcceptByteRange:    true,
 

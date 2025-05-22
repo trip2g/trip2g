@@ -1,8 +1,9 @@
-package renderpage
+package renderadminpage
 
 import (
 	"net/http"
 	"trip2g/internal/appreq"
+	"trip2g/internal/case/render404"
 )
 
 //go:generate go run github.com/valyala/quicktemplate/qtc -dir=.
@@ -20,15 +21,20 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	ctx := req.Req
-	ctx.SetContentType("text/html; charset=utf-8")
-	ctx.SetStatusCode(http.StatusOK)
 
-	_, err = Resolve(ctx, req.Env.(Env), request)
+	resp, err := Resolve(ctx, req.Env.(Env), request)
 	if err != nil {
 		return nil, err
 	}
 
-	WritePage(ctx)
+	if resp == nil {
+		return render404.Handle(req)
+	}
+
+	ctx.SetContentType("text/html; charset=utf-8")
+	ctx.SetStatusCode(http.StatusOK)
+
+	WritePage(ctx, resp)
 
 	return nil, nil
 }

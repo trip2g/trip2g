@@ -1,4 +1,4 @@
-{%- func Page() -%}
+{%- func Page(resp *Response) -%}
 <!DOCTYPE html>
 
 <html mol_view_root>
@@ -12,7 +12,7 @@
 
   <body mol_view_root>
     <div mol_view_root="$trip2g_admin"></div>
-    <script src="/ui/admin/-/web.js"></script>
+    <script src="{%s= resp.JSURL %}"></script>
   </body
 </html>
 {%- endfunc -%}
