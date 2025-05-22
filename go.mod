@@ -152,4 +152,5 @@ tool (
 	github.com/99designs/gqlgen
 	github.com/amacneil/dbmate/v2
 	github.com/sqlc-dev/sqlc/cmd/sqlc
+	github.com/valyala/quicktemplate/qtc
 )

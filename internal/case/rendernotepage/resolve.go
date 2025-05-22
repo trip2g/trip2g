@@ -15,7 +15,6 @@ import (
 
 type Env interface {
 	Logger() logger.Logger
-	AssetVersion() string
 	AllNotes() *model.NoteViews
 	ListActiveSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
@@ -42,8 +41,6 @@ type Response struct {
 
 	UserToken *usertoken.Data
 	Time      int
-
-	AssetVersion string
 }
 
 func (r *Response) NoteSubgraphsJSON() string {
@@ -89,7 +86,6 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Notes = pages
 	response.UserToken = request.UserToken
 	response.Time = int(time.Now().Unix())
-	response.AssetVersion = env.AssetVersion()
 
 	// not sure if this is the right place to do this
 	for key := range note.InLinks {

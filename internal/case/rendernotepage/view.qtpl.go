@@ -375,170 +375,16 @@ func Sidebar(resp *Response) string {
 }
 
 //line view.qtpl:98
-func StreamNotFound(qw422016 *qt422016.Writer) {
-//line view.qtpl:98
-	qw422016.N().S(`
-<div>
-  Note not found.
-</div>
-`)
-//line view.qtpl:102
-}
-
-//line view.qtpl:102
-func WriteNotFound(qq422016 qtio422016.Writer) {
-//line view.qtpl:102
-	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.qtpl:102
-	StreamNotFound(qw422016)
-//line view.qtpl:102
-	qt422016.ReleaseWriter(qw422016)
-//line view.qtpl:102
-}
-
-//line view.qtpl:102
-func NotFound() string {
-//line view.qtpl:102
-	qb422016 := qt422016.AcquireByteBuffer()
-//line view.qtpl:102
-	WriteNotFound(qb422016)
-//line view.qtpl:102
-	qs422016 := string(qb422016.B)
-//line view.qtpl:102
-	qt422016.ReleaseByteBuffer(qb422016)
-//line view.qtpl:102
-	return qs422016
-//line view.qtpl:102
-}
-
-//line view.qtpl:104
-func StreamLayoutHeader(qw422016 *qt422016.Writer, resp *Response) {
-//line view.qtpl:104
-	qw422016.N().S(`
-<!DOCTYPE html>
-
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-
-<title>`)
-//line view.qtpl:113
-	qw422016.E().S(resp.Title)
-//line view.qtpl:113
-	qw422016.N().S(`</title>
-<link href="/assets/output.css?v=`)
-//line view.qtpl:114
-	qw422016.E().S(resp.AssetVersion)
-//line view.qtpl:114
-	qw422016.N().S(`" rel="stylesheet">
-
-</head>
-
-<div id="all-content">
-
-<!--
-<header class="container mx-auto px-4 py-2 flex">
-  <div class="flex-1">
-    <a href="/">Home</a>
-  </div>
-
-  <div mol_view_root="$trip2g_user_space"></div>
-</header>
--->
-
-<main class="main">
-`)
-//line view.qtpl:131
-}
-
-//line view.qtpl:131
-func WriteLayoutHeader(qq422016 qtio422016.Writer, resp *Response) {
-//line view.qtpl:131
-	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.qtpl:131
-	StreamLayoutHeader(qw422016, resp)
-//line view.qtpl:131
-	qt422016.ReleaseWriter(qw422016)
-//line view.qtpl:131
-}
-
-//line view.qtpl:131
-func LayoutHeader(resp *Response) string {
-//line view.qtpl:131
-	qb422016 := qt422016.AcquireByteBuffer()
-//line view.qtpl:131
-	WriteLayoutHeader(qb422016, resp)
-//line view.qtpl:131
-	qs422016 := string(qb422016.B)
-//line view.qtpl:131
-	qt422016.ReleaseByteBuffer(qb422016)
-//line view.qtpl:131
-	return qs422016
-//line view.qtpl:131
-}
-
-//line view.qtpl:133
-func StreamLayoutFooter(qw422016 *qt422016.Writer, resp *Response) {
-//line view.qtpl:133
-	qw422016.N().S(`
-
-</main>
-</div>
-
-<script src="/ui/user/-/web.js?t=`)
-//line view.qtpl:138
-	qw422016.N().D(resp.Time)
-//line view.qtpl:138
-	qw422016.N().S(`"></script>
-<script src="/assets/turbo.js?t=`)
-//line view.qtpl:139
-	qw422016.N().D(resp.Time)
-//line view.qtpl:139
-	qw422016.N().S(`"></script>
-
-`)
-//line view.qtpl:141
-}
-
-//line view.qtpl:141
-func WriteLayoutFooter(qq422016 qtio422016.Writer, resp *Response) {
-//line view.qtpl:141
-	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.qtpl:141
-	StreamLayoutFooter(qw422016, resp)
-//line view.qtpl:141
-	qt422016.ReleaseWriter(qw422016)
-//line view.qtpl:141
-}
-
-//line view.qtpl:141
-func LayoutFooter(resp *Response) string {
-//line view.qtpl:141
-	qb422016 := qt422016.AcquireByteBuffer()
-//line view.qtpl:141
-	WriteLayoutFooter(qb422016, resp)
-//line view.qtpl:141
-	qs422016 := string(qb422016.B)
-//line view.qtpl:141
-	qt422016.ReleaseByteBuffer(qb422016)
-//line view.qtpl:141
-	return qs422016
-//line view.qtpl:141
-}
-
-//line view.qtpl:143
 func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError) {
-//line view.qtpl:143
+//line view.qtpl:98
 	qw422016.N().S(`
 
 <div class="noteview" id="noteview-layout">
   <div class="noteview__header">
     `)
-//line view.qtpl:147
+//line view.qtpl:102
 	StreamSidebar(qw422016, resp)
-//line view.qtpl:147
+//line view.qtpl:102
 	qw422016.N().S(`
 
     <div class="noteview__header-space"></div>
@@ -550,55 +396,55 @@ func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError)
 
   <div class="noteview__content" id="noteview-content">
     `)
-//line view.qtpl:157
+//line view.qtpl:112
 	if !resp.Note.IsHomePage() {
-//line view.qtpl:157
+//line view.qtpl:112
 		qw422016.N().S(`
     <h1 class="noteview__main-title">`)
-//line view.qtpl:158
+//line view.qtpl:113
 		qw422016.E().S(resp.Note.Title)
-//line view.qtpl:158
+//line view.qtpl:113
 		qw422016.N().S(`</h1>
     `)
-//line view.qtpl:159
+//line view.qtpl:114
 	}
-//line view.qtpl:159
+//line view.qtpl:114
 	qw422016.N().S(`
 
     <div mol_view_root="$trip2g_user_paywall" data-subgraphs="`)
-//line view.qtpl:161
+//line view.qtpl:116
 	qw422016.E().S(resp.NoteSubgraphsJSON())
-//line view.qtpl:161
+//line view.qtpl:116
 	qw422016.N().S(`"></div>
   </div>
 </div>
 
 `)
-//line view.qtpl:165
+//line view.qtpl:120
 }
 
-//line view.qtpl:165
+//line view.qtpl:120
 func WritePayWall(qq422016 qtio422016.Writer, resp *Response, err *PaywallError) {
-//line view.qtpl:165
+//line view.qtpl:120
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.qtpl:165
+//line view.qtpl:120
 	StreamPayWall(qw422016, resp, err)
-//line view.qtpl:165
+//line view.qtpl:120
 	qt422016.ReleaseWriter(qw422016)
-//line view.qtpl:165
+//line view.qtpl:120
 }
 
-//line view.qtpl:165
+//line view.qtpl:120
 func PayWall(resp *Response, err *PaywallError) string {
-//line view.qtpl:165
+//line view.qtpl:120
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.qtpl:165
+//line view.qtpl:120
 	WritePayWall(qb422016, resp, err)
-//line view.qtpl:165
+//line view.qtpl:120
 	qs422016 := string(qb422016.B)
-//line view.qtpl:165
+//line view.qtpl:120
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.qtpl:165
+//line view.qtpl:120
 	return qs422016
-//line view.qtpl:165
+//line view.qtpl:120
 }

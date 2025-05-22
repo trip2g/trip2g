@@ -51,70 +51,66 @@ import (
 //line views/endpoints.qtpl:19
 	}
 //line views/endpoints.qtpl:19
-	qw422016.N().S(`
-	"trip2g/internal/logger"
-)
+	qw422016.N().S(`)
 
 var endpoints = []Endpoint{
 `)
-//line views/endpoints.qtpl:25
+//line views/endpoints.qtpl:23
 	for _, cs := range cases {
-//line views/endpoints.qtpl:25
+//line views/endpoints.qtpl:23
 		qw422016.N().S(`	&`)
-//line views/endpoints.qtpl:26
+//line views/endpoints.qtpl:24
 		qw422016.E().S(cs.PackageAlias)
-//line views/endpoints.qtpl:26
+//line views/endpoints.qtpl:24
 		qw422016.N().S(`.Endpoint{},
 `)
-//line views/endpoints.qtpl:27
+//line views/endpoints.qtpl:25
 	}
-//line views/endpoints.qtpl:27
+//line views/endpoints.qtpl:25
 	qw422016.N().S(`}
 
-type Env interface {
+type RoutesEnv interface {
 `)
-//line views/endpoints.qtpl:31
+//line views/endpoints.qtpl:29
 	for _, cs := range cases {
-//line views/endpoints.qtpl:31
+//line views/endpoints.qtpl:29
 		qw422016.N().S(`	`)
-//line views/endpoints.qtpl:32
+//line views/endpoints.qtpl:30
 		qw422016.E().S(cs.PackageAlias)
-//line views/endpoints.qtpl:32
+//line views/endpoints.qtpl:30
 		qw422016.N().S(`.Env
 `)
-//line views/endpoints.qtpl:33
+//line views/endpoints.qtpl:31
 	}
-//line views/endpoints.qtpl:33
-	qw422016.N().S(`
-	Logger() logger.Logger
-}
+//line views/endpoints.qtpl:31
+	qw422016.N().S(`}
 
 `)
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 }
 
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 func WriteCode(qq422016 qtio422016.Writer, cases []CaseItem) {
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 	StreamCode(qw422016, cases)
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 	qt422016.ReleaseWriter(qw422016)
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 }
 
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 func Code(cases []CaseItem) string {
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 	WriteCode(qb422016, cases)
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 	qs422016 := string(qb422016.B)
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 	return qs422016
-//line views/endpoints.qtpl:38
+//line views/endpoints.qtpl:34
 }

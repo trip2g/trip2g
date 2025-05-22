@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 	"trip2g/internal/appreq"
+	"trip2g/internal/case/render404"
+	"trip2g/internal/case/renderlayout"
 )
 
 //go:generate go run github.com/valyala/quicktemplate/qtc -dir=.
@@ -27,25 +29,25 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	ctx.SetContentType("text/html; charset=utf-8")
 	ctx.SetStatusCode(http.StatusOK)
 
+	layoutParams := renderlayout.Params{}
+
 	resp, err := Resolve(context.Background(), req.Env.(Env), request)
+	if resp != nil && resp.Note != nil {
+		layoutParams.Title = resp.Note.Title
+	}
+
 	if err != nil {
 		paywallErr, paywallOk := err.(*PaywallError)
 		if paywallOk {
-			WriteLayoutHeader(ctx, resp)
-			WritePayWall(ctx, resp, paywallErr)
-			WriteLayoutFooter(ctx, resp)
-
-			return nil, nil
+			return renderlayout.Handle(req, layoutParams, func() {
+				WritePayWall(ctx, resp, paywallErr)
+			})
 		}
 
 		if errors.Is(err, ErrNotFound) {
 			ctx.SetStatusCode(http.StatusNotFound)
 
-			WriteLayoutHeader(ctx, resp)
-			WriteNotFound(ctx)
-			WriteLayoutFooter(ctx, resp)
-
-			return nil, nil
+			return render404.Handle(req)
 		}
 
 		return nil, err
@@ -58,15 +60,13 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	WriteLayoutHeader(ctx, resp)
-	WriteNote(ctx, resp)
-	WriteLayoutFooter(ctx, resp)
-
-	return nil, nil
+	return renderlayout.Handle(req, layoutParams, func() {
+		WriteNote(ctx, resp)
+	})
 }
 
 func (Endpoint) Path() string {
-	return ""
+	return "" // means the default path that also resolves 404
 }
 
 func (Endpoint) Method() string {

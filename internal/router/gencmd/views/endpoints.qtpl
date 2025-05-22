@@ -17,8 +17,6 @@ import (
 {% for _, cs := range cases -%}
 	{%s cs.PackageAlias %} "{%s cs.ImportPath %}"
 {% endfor -%}
-
-	"trip2g/internal/logger"
 )
 
 var endpoints = []Endpoint{
@@ -27,12 +25,10 @@ var endpoints = []Endpoint{
 {% endfor -%}
 }
 
-type Env interface {
+type RoutesEnv interface {
 {% for _, cs := range cases -%}
 	{%s cs.PackageAlias %}.Env
 {% endfor -%}
-
-	Logger() logger.Logger
 }
 
 {% endfunc %}

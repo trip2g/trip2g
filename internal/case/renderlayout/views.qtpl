@@ -1,0 +1,34 @@
+{% func BeginLayout(params *Params) %}
+
+<!DOCTYPE html>
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+<title>{%s params.Title %}</title>
+
+{% for _, url := range params.CSSURLs %}
+<link href="{%s url %}" rel="stylesheet">
+{% endfor %}
+
+</head>
+
+<div id="all-content">
+
+<main class="main">
+
+{% endfunc %}
+
+{% func FinishLayout(params *Params) %}
+
+</main>
+</div>
+
+{% for _, url := range params.JSURLs %}
+<script src="{%s= url %}"></script>
+{% endfor %}
+
+{% endfunc %}

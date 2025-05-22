@@ -1,0 +1,6 @@
+{% func Content() %}
+<div>
+  Страница не найдена.
+</div>
+<a href="/">Home</a>
+{% endfunc %}

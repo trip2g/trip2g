@@ -12,8 +12,6 @@ import (
 	listnotepathslistnotepaths "trip2g/internal/case/admin/listnotepaths"
 	listuserslistusers "trip2g/internal/case/admin/listusers"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
-
-	"trip2g/internal/logger"
 )
 
 var endpoints = []Endpoint{
@@ -26,7 +24,7 @@ var endpoints = []Endpoint{
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
 }
 
-type Env interface {
+type RoutesEnv interface {
 	getnotehashesgetnotehashes.Env
 	processnowpaymentsipnprocessnowpaymentsipn.Env
 	renderadminpagerenderadminpage.Env
@@ -34,7 +32,5 @@ type Env interface {
 	listnotepathslistnotepaths.Env
 	listuserslistusers.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
-
-	Logger() logger.Logger
 }
 

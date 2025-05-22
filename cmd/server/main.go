@@ -301,7 +301,8 @@ func main() {
 	}
 }
 
-func (a *app) JSURL(path string) string {
+// TODO: read all asset urls from flags.
+func (a *app) assetURL(path string) string {
 	if a.devMode {
 		path += fmt.Sprintf("?t=%d", time.Now().UnixMilli())
 	}
@@ -310,11 +311,18 @@ func (a *app) JSURL(path string) string {
 }
 
 func (a *app) AdminJSURL() string {
-	return a.JSURL("/ui/admin/-/web.js")
+	return a.assetURL("/ui/admin/-/web.js")
 }
 
-func (a *app) UserJSURL() string {
-	return a.JSURL("/ui/user/-/web.js")
+func (a *app) UserJSURLs() []string {
+	return []string{
+		a.assetURL("/ui/user/-/web.js"),
+		a.assetURL("/assets/turbo.js"),
+	}
+}
+
+func (a *app) UserCSSURLs() []string {
+	return []string{a.assetURL("/assets/output.css")}
 }
 
 func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error) {
