@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"trip2g/assets"
 	"trip2g/internal/appreq"
 	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/case/signinbypurchasetoken"
@@ -93,6 +94,8 @@ type app struct {
 	nextPurchaseHandlerID   int
 
 	adminJSURL string
+
+	assetsFS *fasthttp.FS
 }
 
 func enablePragmas(db *sql.DB) error {
@@ -265,7 +268,7 @@ func main() {
 		nowpaymentsClient: nowpaymentsClient,
 	}
 
-	flag.StringVar(&a.adminJSURL, "admin-js-url", "/ui/admin/-/web.js", "Admin JS URL")
+	flag.StringVar(&a.adminJSURL, "admin-js-url", "/assets/ui/admin/-/web.js", "Admin JS URL")
 
 	flag.Parse()
 
@@ -295,6 +298,11 @@ func main() {
 		panic(err)
 	}
 
+	err = a.setupAssets()
+	if err != nil {
+		panic(err)
+	}
+
 	fileStorage.OnURLExpiring(func() {
 		_, err = a.PrepareNotes(ctx)
 		if err != nil {
@@ -305,6 +313,24 @@ func main() {
 	if os.Getenv("SERVER") == "y" {
 		a.startServer()
 	}
+}
+
+func (a *app) setupAssets() error {
+	a.assetsFS = &fasthttp.FS{
+		FS:                 assets.FS,
+		IndexNames:         []string{},
+		GenerateIndexPages: false,
+		Compress:           !a.devMode,
+		SkipCache:          a.devMode,
+		AcceptByteRange:    true,
+
+		PathRewrite: func(ctx *fasthttp.RequestCtx) []byte {
+			// remove /assets prefix
+			return ctx.Path()[7:]
+		},
+	}
+
+	return nil
 }
 
 // TODO: read all asset urls from flags.
@@ -322,7 +348,7 @@ func (a *app) AdminJSURL() string {
 
 func (a *app) UserJSURLs() []string {
 	return []string{
-		a.assetURL("/ui/user/-/web.js"),
+		a.assetURL("/assets/ui/user/-/web.js"),
 		a.assetURL("/assets/turbo.js"),
 	}
 }
@@ -735,36 +761,7 @@ func (a *app) AssetVersion() string {
 }
 
 func (a *app) startServer() {
-	fs := &fasthttp.FS{
-		Root:               "./assets",
-		IndexNames:         []string{},
-		GenerateIndexPages: false,
-		Compress:           !a.devMode,
-		SkipCache:          a.devMode,
-		AcceptByteRange:    true,
-
-		PathRewrite: func(ctx *fasthttp.RequestCtx) []byte {
-			// remove /assets prefix
-			return ctx.Path()[7:]
-		},
-	}
-
-	fs2 := &fasthttp.FS{
-		Root:               "./ui",
-		IndexNames:         []string{},
-		GenerateIndexPages: false,
-		Compress:           !a.devMode,
-		SkipCache:          a.devMode,
-		AcceptByteRange:    true,
-
-		PathRewrite: func(ctx *fasthttp.RequestCtx) []byte {
-			// remove /ui
-			return ctx.Path()[3:]
-		},
-	}
-
-	fsHandler := fs.NewRequestHandler()
-	fs2Handler := fs2.NewRequestHandler()
+	fsHandler := a.assetsFS.NewRequestHandler()
 
 	rtr := router.New(a)
 
@@ -805,11 +802,6 @@ func (a *app) startServer() {
 				}
 			}
 
-			if strings.HasPrefix(path, "/assets/") {
-				fsHandler(ctx)
-				return
-			}
-
 			req := appreq.Acquire()
 			req.Env = a
 			req.Req = ctx
@@ -826,8 +818,8 @@ func (a *app) startServer() {
 				}
 			}
 
-			if strings.HasPrefix(path, "/ui/") {
-				fs2Handler(ctx)
+			if strings.HasPrefix(path, "/assets/") {
+				fsHandler(ctx)
 				return
 			}
 
