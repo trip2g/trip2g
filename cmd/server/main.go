@@ -37,6 +37,8 @@ import (
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
 
+	_ "trip2g/internal/dbmate/sqlite"
+
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -53,7 +55,6 @@ import (
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
-	_ "github.com/amacneil/dbmate/v2/pkg/driver/sqlite"
 
 	_ "modernc.org/sqlite"
 )
