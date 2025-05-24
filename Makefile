@@ -4,8 +4,10 @@ build-amd64:
 deploy: build-amd64
 	cd infra && ansible-playbook site.yml
 
-graphqlgen:
+gqlgen:
 	go tool github.com/99designs/gqlgen generate
+
+graphqlgen: gqlgen
 	./scripts/waitfor localhost:8081
 	sleep 1 # avoid a strange error: connect ECONNREFUSED 127.0.0.1:8081
 	npm run graphqlgen

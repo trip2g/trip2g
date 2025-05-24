@@ -13,16 +13,8 @@ ProtectSystem=strict
 ProtectHome=true
 Restart=on-failure
 AmbientCapabilities=CAP_NET_BIND_SERVICE
-ExecStart={{ bin_path }} \
-  --log-level=info \
-  --db-file={{ data_dir }}/db.sqlite3 \
-  --listen-addr=:443 \
-  --acme-domain=demo.trip2g.com \
-  --minio-access-key-id={{ minio_access_key_id }} \
-  --minio-secret-key={{ minio_secret_key }} \
-  --minio-bucket={{ minio_bucket }} \
-  --minio-endpoint={{ minio_endpoint }} \
-  --minio-use-ssl
+EnvironmentFile=/etc/trip2g.env
+ExecStart={{ bin_path }} $ARGS
 
 [Install]
 WantedBy=multi-user.target

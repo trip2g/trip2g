@@ -5,7 +5,6 @@
 package router
 
 import (
-	getnotehashesgetnotehashes "trip2g/internal/case/getnotehashes"
 	processnowpaymentsipnprocessnowpaymentsipn "trip2g/internal/case/processnowpaymentsipn"
 	renderadminpagerenderadminpage "trip2g/internal/case/renderadminpage"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
@@ -15,7 +14,6 @@ import (
 )
 
 var endpoints = []Endpoint{
-	&getnotehashesgetnotehashes.Endpoint{},
 	&processnowpaymentsipnprocessnowpaymentsipn.Endpoint{},
 	&renderadminpagerenderadminpage.Endpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
@@ -25,7 +23,6 @@ var endpoints = []Endpoint{
 }
 
 type RoutesEnv interface {
-	getnotehashesgetnotehashes.Env
 	processnowpaymentsipnprocessnowpaymentsipn.Env
 	renderadminpagerenderadminpage.Env
 	rendernotepagerendernotepage.Env

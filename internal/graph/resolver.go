@@ -61,6 +61,7 @@ type Env interface {
 	ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error)
 
 	AllNotes() *model.NoteViews
+	AllNotePaths(ctx context.Context) ([]db.NotePath, error)
 
 	IDHash(entity string, id int64) string
 

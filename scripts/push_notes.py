@@ -7,7 +7,8 @@ import hashlib
 import base64
 import requests
 
-GET_HASHES_URL = "http://localhost:8081/api/getnotehashes"
+# get first arg or http://localhost:8081
+
 GRAPHQL_URL = "http://localhost:8081/graphql"
 
 def sha256_urlsafe_base64(content: bytes) -> str:
@@ -15,12 +16,28 @@ def sha256_urlsafe_base64(content: bytes) -> str:
     return base64.urlsafe_b64encode(h).decode("utf-8")
 
 def fetch_server_hashes():
+    query = """
+    query {
+      notePaths {
+        path: value
+        hash: latestContentHash
+      }
+    }
+    """
     try:
-        response = requests.get(GET_HASHES_URL)
+        response = requests.post(GRAPHQL_URL, json={"query": query})
         response.raise_for_status()
-        return response.json().get("map", {})
+        data = response.json()
+
+        if "errors" in data:
+            print(f"❌ GraphQL ошибка: {data['errors']}")
+            return {}
+
+        result = data.get("data", {}).get("notePaths", [])
+        return {item["path"]: item["hash"] for item in result if "path" in item and "hash" in item}
+
     except Exception as e:
-        print(f"Ошибка при получении хэшей: {e}")
+        print(f"❌ Ошибка при запросе хэшей через GraphQL: {e}")
         return {}
 
 def push_updates_graphql(updates):
@@ -64,9 +81,17 @@ def push_updates_graphql(updates):
         print(f"❌ Ошибка при отправке GraphQL: {e}")
 
 def main():
+    global GRAPHQL_URL
     base_path = sys.argv[1] if len(sys.argv) > 1 else "demo"
+
+    if len(sys.argv) > 2:
+        GRAPHQL_URL = sys.argv[2]
+
     server_hashes = fetch_server_hashes()
+    server_empty = len(server_hashes) == 0
     updates = []
+
+    print("GraphQL URL:", GRAPHQL_URL)
 
     print("📦 Сравнение файлов:")
     print("-" * 80)
@@ -93,7 +118,7 @@ def main():
             log_local = f"local={local_hash}"
             log_remote = f"remote={remote_hash or '—'}"
 
-            if remote_hash != local_hash:
+            if server_empty or remote_hash != local_hash:
                 print(f"{log_prefix} | {log_local} | {log_remote} | ⏩ SEND")
                 updates.append({
                     "path": rel_path,

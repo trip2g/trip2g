@@ -146,9 +146,14 @@ type Purchase {
   successful: Boolean!
 }
 
+type NotePath @goModel(model: "trip2g/internal/model.NotePath"){
+  value: String!
+  latestContentHash: String!
+}
+
 type Query {
   viewer: Viewer!
-  #subgraph(name: String!): Subgraph
+  notePaths: [NotePath!]!
   admin: AdminQuery!
 }
 
@@ -353,12 +358,3 @@ type AdminMutation {
   unbanUser(input: UnbanUserInput!): UnbanUserOrErrorPayload!
   banUser(input: BanUserInput!): BanUserOrErrorPayload!
 }
-
-# input ActivePurchasesInput {
-#   email: String
-#   subgraphs: [String!]!
-# }
-#
-# type Subscription {
-#   activePurchaseUpdated(input: ActivePurchasesInput!): [Purchase!]!
-# }

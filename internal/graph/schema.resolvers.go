@@ -291,6 +291,12 @@ func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 	return &appmodel.Viewer{UserToken: token}, nil
 }
 
+// NotePaths is the resolver for the notePaths field.
+func (r *queryResolver) NotePaths(ctx context.Context) ([]db.NotePath, error) {
+	// TODO: check API key
+	return r.env(ctx).AllNotePaths(ctx)
+}
+
 // Admin is the resolver for the admin field.
 func (r *queryResolver) Admin(ctx context.Context) (*appmodel.AdminQuery, error) {
 	err := checkAdmin(ctx)

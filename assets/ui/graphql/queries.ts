@@ -208,6 +208,12 @@ export type MutationUploadNoteAssetArgs = {
   input: UploadNoteAssetInput;
 };
 
+export type NoteHash = {
+  __typename?: 'NoteHash';
+  hash: Scalars['String']['output'];
+  path: Scalars['String']['output'];
+};
+
 export type NoteView = {
   __typename?: 'NoteView';
   content: Scalars['String']['output'];
@@ -269,6 +275,7 @@ export type PushedNoteAsset = {
 export type Query = {
   __typename?: 'Query';
   admin: AdminQuery;
+  noteHashes: Array<NoteHash>;
   viewer: Viewer;
 };
 
