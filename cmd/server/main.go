@@ -66,6 +66,15 @@ type currentNVS struct {
 	nvs *model.NoteViews
 }
 
+type appConfig struct {
+	ListenAddr   string
+	DatabaseFile string
+
+	DevMode    bool
+	AdminJSURL string
+	LogLevel   string
+}
+
 type app struct {
 	*db.Queries
 	*miniostorage.FileStorage
@@ -82,7 +91,7 @@ type app struct {
 
 	hotAuthTokenManager *hotauthtoken.Manager
 
-	devMode bool
+	config *appConfig
 
 	userBansMap map[int64]db.UserBan
 	userBans    []db.UserBan
@@ -95,8 +104,6 @@ type app struct {
 	purchaseUpdatedMu       sync.Mutex
 	purchaseUpdatedHandlers map[string]map[int]func()
 	nextPurchaseHandlerID   int
-
-	adminJSURL string
 
 	assetsFS *fasthttp.FS
 }
@@ -168,7 +175,28 @@ func showSqliteVersion(db *sql.DB) error {
 }
 
 func main() {
-	u, _ := url.Parse("sqlite:data.sqlite3")
+	appConfig := appConfig{}
+
+	flag.StringVar(&appConfig.ListenAddr, "listen-addr", ":8080", "Listen address")
+	flag.StringVar(&appConfig.DatabaseFile, "db-file", "data.sqlite3", "Database file")
+	flag.StringVar(&appConfig.AdminJSURL, "admin-js-url", "/assets/ui/admin/-/web.js", "Admin JS URL")
+	flag.StringVar(&appConfig.LogLevel, "log-level", "info", "Log level")
+	flag.BoolVar(&appConfig.DevMode, "dev", false, "Development mode")
+
+	storageConfig := miniostorage.Config{}
+
+	flag.StringVar(&storageConfig.Endpoint, "minio-endpoint", "localhost:9000", "MinIO endpoint")
+	flag.StringVar(&storageConfig.AccessKey, "minio-access-key-id", "root", "MinIO access key ID")
+	flag.StringVar(&storageConfig.SecretKey, "minio-secret-key", "password", "MinIO secret key")
+	flag.StringVar(&storageConfig.Bucket, "minio-bucket", "development", "MinIO bucket name")
+	flag.StringVar(&storageConfig.Region, "minio-region", "us-east-1", "MinIO region")
+	flag.BoolVar(&storageConfig.UseSSL, "minio-use-ssl", false, "Use SSL for MinIO")
+	flag.DurationVar(&storageConfig.InitTimeout, "minio-init-timeout", 5*time.Second, "MinIO init timeout (check and make bucket)")
+	flag.DurationVar(&storageConfig.URLExpiresIn, "minio-url-expires-in", 10*time.Minute, "MinIO presigned URL expiration time")
+
+	flag.Parse()
+
+	u, _ := url.Parse("sqlite:" + appConfig.DatabaseFile)
 	dbm := dbmate.New(u)
 	dbm.MigrationsDir = []string{"migrations"}
 	dbm.FS = mdb.FS
@@ -178,7 +206,7 @@ func main() {
 		panic(err)
 	}
 
-	conn, err := sql.Open("sqlite", "data.sqlite3?_journal=WAL&_timeout=5000")
+	conn, err := sql.Open("sqlite", appConfig.DatabaseFile+"?_journal=WAL&_timeout=5000")
 	if err != nil {
 		panic(err)
 	}
@@ -213,14 +241,7 @@ func main() {
 		panic(err)
 	}
 
-	devMode := os.Getenv("DEV") == "y"
-
-	logLevel := os.Getenv("LOG_LEVEL")
-	if logLevel == "" {
-		logLevel = "info"
-	}
-
-	log := zerologger.New(logLevel, devMode)
+	log := zerologger.New(appConfig.LogLevel, appConfig.DevMode)
 
 	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "no tx:")))
 
@@ -229,22 +250,11 @@ func main() {
 		panic(err)
 	}
 
-	storageConfig := miniostorage.Config{}
-
-	flag.StringVar(&storageConfig.Endpoint, "minio-endpoint", "localhost:9000", "MinIO endpoint")
-	flag.StringVar(&storageConfig.AccessKey, "minio-access-key-id", "root", "MinIO access key ID")
-	flag.StringVar(&storageConfig.SecretKey, "minio-secret-key", "password", "MinIO secret key")
-	flag.StringVar(&storageConfig.Bucket, "minio-bucket", "development", "MinIO bucket name")
-	flag.StringVar(&storageConfig.Region, "minio-region", "us-east-1", "MinIO region")
-	flag.BoolVar(&storageConfig.UseSSL, "minio-use-ssl", false, "Use SSL for MinIO")
-	flag.DurationVar(&storageConfig.InitTimeout, "minio-init-timeout", 5*time.Second, "MinIO init timeout (check and make bucket)")
-	flag.DurationVar(&storageConfig.URLExpiresIn, "minio-url-expires-in", 10*time.Minute, "MinIO presigned URL expiration time")
-
 	ctx := context.Background()
 
 	fileStorage, err := miniostorage.New(ctx, storageConfig)
 	if err != nil {
-		if devMode {
+		if appConfig.DevMode {
 			log.Warn("failed to create minio storage", "error", err)
 		} else {
 			panic(err)
@@ -255,6 +265,8 @@ func main() {
 		Queries: queries,
 
 		FileStorage: fileStorage,
+
+		config: &appConfig,
 
 		tokenManager: tokenManager,
 		queueClient:  queueClient,
@@ -268,14 +280,8 @@ func main() {
 		queries: queries,
 		conn:    conn,
 
-		devMode: devMode,
-
 		nowpaymentsClient: nowpaymentsClient,
 	}
-
-	flag.StringVar(&a.adminJSURL, "admin-js-url", "/assets/ui/admin/-/web.js", "Admin JS URL")
-
-	flag.Parse()
 
 	tokenManager.AddValidator(func(ctx context.Context, data *usertoken.Data) error {
 		ban, err := a.UserBanByUserID(ctx, int64(data.ID))
@@ -315,9 +321,7 @@ func main() {
 		}
 	})
 
-	if os.Getenv("SERVER") == "y" {
-		a.startServer()
-	}
+	a.startServer()
 }
 
 func (a *app) setupAssets() error {
@@ -325,8 +329,8 @@ func (a *app) setupAssets() error {
 		FS:                 assets.FS,
 		IndexNames:         []string{},
 		GenerateIndexPages: false,
-		Compress:           !a.devMode,
-		SkipCache:          a.devMode,
+		Compress:           !a.config.DevMode,
+		SkipCache:          a.config.DevMode,
 		AcceptByteRange:    true,
 
 		PathRewrite: func(ctx *fasthttp.RequestCtx) []byte {
@@ -340,7 +344,7 @@ func (a *app) setupAssets() error {
 
 // TODO: read all asset urls from flags.
 func (a *app) assetURL(path string) string {
-	if a.devMode {
+	if a.config.DevMode {
 		path += fmt.Sprintf("?t=%d", time.Now().UnixMilli())
 	}
 
@@ -348,7 +352,7 @@ func (a *app) assetURL(path string) string {
 }
 
 func (a *app) AdminJSURL() string {
-	return a.assetURL(a.adminJSURL)
+	return a.assetURL(a.config.AdminJSURL)
 }
 
 func (a *app) UserJSURLs() []string {
@@ -703,7 +707,7 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error
 		return "", err
 	}
 
-	if a.devMode {
+	if a.config.DevMode {
 		code = 111111
 	}
 
@@ -783,7 +787,7 @@ func (a *app) startServer() {
 		Handler: func(ctx *fasthttp.RequestCtx) {
 			path := string(ctx.Path())
 
-			if a.devMode {
+			if a.config.DevMode {
 				origin := string(ctx.Request.Header.Peek("Origin"))
 				if origin == "http://localhost:9080" {
 					ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
@@ -814,7 +818,8 @@ func (a *app) startServer() {
 			req.StoreInContext() // appreq.FromCtx(ctx)
 			defer appreq.Release(req)
 
-			if len(a.adminJSURL) > 0 && a.adminJSURL[0] == '/' && strings.HasPrefix(path, a.adminJSURL) {
+			// hide admin JS from public
+			if len(a.config.AdminJSURL) > 0 && a.config.AdminJSURL[0] == '/' && strings.HasPrefix(path, a.config.AdminJSURL) {
 				userToken, err := req.UserToken()
 				if err != nil || userToken == nil {
 					ctx.SetStatusCode(http.StatusUnauthorized)
@@ -908,7 +913,7 @@ func (a *app) startServer() {
 		}
 	}()
 
-	err := s.ListenAndServe(":8081")
+	err := s.ListenAndServe(a.config.ListenAddr)
 	if err != nil {
 		panic(err)
 	}
