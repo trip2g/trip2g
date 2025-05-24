@@ -11,6 +11,12 @@ import (
 	"trip2g/internal/model"
 )
 
+type AcmeCert struct {
+	Key       string       `json:"key"`
+	Value     []byte       `json:"value"`
+	UpdatedAt sql.NullTime `json:"updated_at"`
+}
+
 type Admin struct {
 	UserID    int64         `json:"user_id"`
 	GrantedAt time.Time     `json:"granted_at"`

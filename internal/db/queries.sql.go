@@ -11,6 +11,17 @@ import (
 	"strings"
 )
 
+const acmeCertByKey = `-- name: AcmeCertByKey :one
+select value from acme_certs where key = ?
+`
+
+func (q *Queries) AcmeCertByKey(ctx context.Context, key string) ([]byte, error) {
+	row := q.db.QueryRowContext(ctx, acmeCertByKey, key)
+	var value []byte
+	err := row.Scan(&value)
+	return value, err
+}
+
 const activeOfferByPublicID = `-- name: ActiveOfferByPublicID :one
 select o.id, o.public_id, o.created_at, o.lifetime, o.price_usd, o.starts_at, o.ends_at
   from offers o
@@ -383,6 +394,15 @@ func (q *Queries) CreateUserSubgraphAccess(ctx context.Context, arg CreateUserSu
 	return i, err
 }
 
+const deleteAcmeCert = `-- name: DeleteAcmeCert :exec
+delete from acme_certs where key = ?
+`
+
+func (q *Queries) DeleteAcmeCert(ctx context.Context, key string) error {
+	_, err := q.db.ExecContext(ctx, deleteAcmeCert, key)
+	return err
+}
+
 const deleteOffer = `-- name: DeleteOffer :one
 update offers
    set ends_at = datetime('now')
@@ -444,6 +464,21 @@ func (q *Queries) IncrementNoteVersionCount(ctx context.Context, arg IncrementNo
 	var version_count int64
 	err := row.Scan(&version_count)
 	return version_count, err
+}
+
+const insertAcmeCert = `-- name: InsertAcmeCert :exec
+insert into acme_certs (key, value)
+values (?, ?)
+`
+
+type InsertAcmeCertParams struct {
+	Key   string `json:"key"`
+	Value []byte `json:"value"`
+}
+
+func (q *Queries) InsertAcmeCert(ctx context.Context, arg InsertAcmeCertParams) error {
+	_, err := q.db.ExecContext(ctx, insertAcmeCert, arg.Key, arg.Value)
+	return err
 }
 
 const insertNoteAsset = `-- name: InsertNoteAsset :one

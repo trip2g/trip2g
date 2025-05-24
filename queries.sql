@@ -308,3 +308,13 @@ select p.value as path, path_id, v.id as version_id, content
   join note_paths p on v.path_id = p.id
  where v.id = ?
  limit 1;
+
+-- name: AcmeCertByKey :one
+select value from acme_certs where key = ?;
+
+-- name: InsertAcmeCert :exec
+insert into acme_certs (key, value)
+values (?, ?);
+
+-- name: DeleteAcmeCert :exec
+delete from acme_certs where key = ?;

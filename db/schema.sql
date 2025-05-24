@@ -136,6 +136,11 @@ CREATE TABLE note_version_assets (
   created_at datetime not null default current_timestamp,
   primary key (asset_id, version_id, path)
 );
+CREATE TABLE acme_certs (
+  key text primary key,
+  value blob,
+  updated_at datetime default current_timestamp
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -156,4 +161,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250506122811'),
   ('20250507032627'),
   ('20250515071315'),
-  ('20250515071316');
+  ('20250515071316'),
+  ('20250524091058');

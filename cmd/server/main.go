@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/tls"
 	"database/sql"
 	"encoding/binary"
 	"encoding/json"
@@ -12,6 +13,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -21,6 +23,7 @@ import (
 	"time"
 
 	"trip2g/assets"
+	"trip2g/internal/acmecache"
 	"trip2g/internal/appreq"
 	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/case/signinbypurchasetoken"
@@ -49,6 +52,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/gqlerror"
 	"github.com/vektah/gqlparser/v2/ast"
+	"golang.org/x/crypto/acme"
+	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/mikestefanello/backlite"
 	backliteui "github.com/mikestefanello/backlite/ui"
@@ -66,6 +71,17 @@ type currentNVS struct {
 	nvs *model.NoteViews
 }
 
+type arrayFlags []string
+
+func (i *arrayFlags) String() string {
+	return fmt.Sprintf("%v", *i)
+}
+
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
 type appConfig struct {
 	ListenAddr   string
 	DatabaseFile string
@@ -73,6 +89,8 @@ type appConfig struct {
 	DevMode    bool
 	AdminJSURL string
 	LogLevel   string
+
+	AcmeDomains arrayFlags
 }
 
 type app struct {
@@ -193,6 +211,7 @@ func main() {
 	flag.BoolVar(&storageConfig.UseSSL, "minio-use-ssl", false, "Use SSL for MinIO")
 	flag.DurationVar(&storageConfig.InitTimeout, "minio-init-timeout", 5*time.Second, "MinIO init timeout (check and make bucket)")
 	flag.DurationVar(&storageConfig.URLExpiresIn, "minio-url-expires-in", 10*time.Minute, "MinIO presigned URL expiration time")
+	flag.Var(&appConfig.AcmeDomains, "acme-domain", "ACME domains (multiple values allowed)")
 
 	flag.Parse()
 
@@ -913,7 +932,48 @@ func (a *app) startServer() {
 		}
 	}()
 
-	err := s.ListenAndServe(a.config.ListenAddr)
+	if len(a.config.AcmeDomains) == 0 {
+		err := s.ListenAndServe(a.config.ListenAddr)
+		if err != nil {
+			panic(err)
+		}
+
+		return
+	}
+
+	allowedDomains := make(map[string]struct{}, len(a.config.AcmeDomains))
+
+	for _, domain := range a.config.AcmeDomains {
+		a.log.Info("adding domain to ACME", "domain", domain)
+		allowedDomains[domain] = struct{}{}
+	}
+
+	certManager := autocert.Manager{
+		Prompt: autocert.AcceptTOS,
+		Cache:  acmecache.New(a),
+		HostPolicy: func(ctx context.Context, host string) error {
+			_, ok := allowedDomains[host]
+			if ok {
+				return nil
+			}
+
+			return fmt.Errorf("unauthorized domain: %s", host)
+		},
+	}
+
+	tlsConfig := &tls.Config{
+		GetCertificate: certManager.GetCertificate,
+		NextProtos:     []string{"http/1.1", acme.ALPNProto},
+	}
+
+	ln, err := net.Listen("tcp4", ":443") // #nosec G102
+	if err != nil {
+		panic(err)
+	}
+
+	lnTLS := tls.NewListener(ln, tlsConfig)
+
+	err = fasthttp.Serve(lnTLS, s.Handler)
 	if err != nil {
 		panic(err)
 	}
