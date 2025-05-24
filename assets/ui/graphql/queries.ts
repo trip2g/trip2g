@@ -17,6 +17,7 @@ export type Scalars = {
   Float: { input: number; output: number; }
   Int64: { input: any; output: any; }
   Time: { input: any; output: any; }
+  Upload: { input: any; output: any; }
 };
 
 export type Admin = {
@@ -175,14 +176,21 @@ export type Mutation = {
   __typename?: 'Mutation';
   admin: AdminMutation;
   createPaymentLink: CreatePaymentLinkOrErrorPayload;
+  pushNotes: PushNotesOrErrorPayload;
   requestEmailSignInCode: RequestEmailSignInCodeOrErrorPayload;
   signInByEmail: SignInOrErrorPayload;
   signOut: SignOutOrErrorPayload;
+  uploadNoteAsset: UploadNoteAssetOrErrorPayload;
 };
 
 
 export type MutationCreatePaymentLinkArgs = {
   input: CreatePaymentLinkInput;
+};
+
+
+export type MutationPushNotesArgs = {
+  input: PushNotesInput;
 };
 
 
@@ -193,6 +201,11 @@ export type MutationRequestEmailSignInCodeArgs = {
 
 export type MutationSignInByEmailArgs = {
   input: SignInByEmailInput;
+};
+
+
+export type MutationUploadNoteAssetArgs = {
+  input: UploadNoteAssetInput;
 };
 
 export type NoteView = {
@@ -222,6 +235,35 @@ export type Purchase = {
   id: Scalars['String']['output'];
   status: Scalars['String']['output'];
   successful: Scalars['Boolean']['output'];
+};
+
+export type PushNoteInput = {
+  content: Scalars['String']['input'];
+  path: Scalars['String']['input'];
+};
+
+export type PushNotesInput = {
+  updates: Array<PushNoteInput>;
+};
+
+export type PushNotesOrErrorPayload = ErrorPayload | PushNotesPayload;
+
+export type PushNotesPayload = {
+  __typename?: 'PushNotesPayload';
+  notes: Array<PushedNote>;
+};
+
+export type PushedNote = {
+  __typename?: 'PushedNote';
+  assets: Array<PushedNoteAsset>;
+  id: Scalars['Int64']['output'];
+  path: Scalars['String']['output'];
+};
+
+export type PushedNoteAsset = {
+  __typename?: 'PushedNoteAsset';
+  path: Scalars['String']['output'];
+  sha256Hash?: Maybe<Scalars['String']['output']>;
 };
 
 export type Query = {
@@ -309,6 +351,21 @@ export type UpdateUserSubgraphAccessOrErrorPayload = ErrorPayload | UpdateUserSu
 export type UpdateUserSubgraphAccessPayload = {
   __typename?: 'UpdateUserSubgraphAccessPayload';
   userSubgraphAccess: UserSubgraphAccess;
+};
+
+export type UploadNoteAssetInput = {
+  absolutePath: Scalars['String']['input'];
+  file: Scalars['Upload']['input'];
+  noteId: Scalars['Int64']['input'];
+  path: Scalars['String']['input'];
+  sha256Hash: Scalars['String']['input'];
+};
+
+export type UploadNoteAssetOrErrorPayload = ErrorPayload | UploadNoteAssetPayload;
+
+export type UploadNoteAssetPayload = {
+  __typename?: 'UploadNoteAssetPayload';
+  uploadSkipped: Scalars['Boolean']['output'];
 };
 
 export type User = {
