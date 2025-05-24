@@ -11,3 +11,4 @@ data.sqlite3-wal
 .env
 run.sh
 examples.json
+infra/hosts

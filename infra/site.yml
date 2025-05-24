@@ -1,0 +1,75 @@
+- name: Setup
+  hosts: all
+  become: yes
+  vars:
+    app_dir: /opt/trip2g
+    app_user: trip2g
+    app_group: trip2g
+    service_name: trip2g
+    bin_path: "{{ app_dir }}/bin/app"
+    data_dir: "{{ app_dir }}/data"
+  tasks:
+    - name: Create trip2g user
+      user:
+        name: "{{ app_user }}"
+        system: yes
+        shell: /usr/sbin/nologin
+        create_home: no
+
+    - name: Create readonly tree
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop:
+        - "{{ app_dir }}"
+        - "{{ app_dir }}/bin"
+
+    - name: Create writable data dir
+      file:
+        path: "{{ data_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0750'
+
+    - name: Create app directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Upload app binary
+      notify: Reload systemd
+      copy:
+        src: ../tmp/amd64
+        dest: "{{ app_dir }}/bin/app"
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Generate systemd unit
+      notify: Reload systemd
+      template:
+        src: service.j2
+        dest: "/etc/systemd/system/{{ service_name }}.service"
+        mode: '0644'
+
+    - name: Enable and start service
+      systemd:
+        name: "{{ service_name }}"
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: Reload systemd
+      block:
+        - name: Reload systemd
+          command: systemctl daemon-reload
+
+        - name: Restart service
+          systemd:
+            name: "{{ service_name }}"
+            state: restarted
