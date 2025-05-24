@@ -37,6 +37,8 @@ import (
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
 
+	mdb "trip2g/db"
+
 	_ "trip2g/internal/dbmate/sqlite"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -168,6 +170,8 @@ func showSqliteVersion(db *sql.DB) error {
 func main() {
 	u, _ := url.Parse("sqlite:data.sqlite3")
 	dbm := dbmate.New(u)
+	dbm.MigrationsDir = []string{"migrations"}
+	dbm.FS = mdb.FS
 
 	err := dbm.CreateAndMigrate()
 	if err != nil {
