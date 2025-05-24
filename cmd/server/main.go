@@ -177,7 +177,7 @@ func showSqliteVersion(db *sql.DB) error {
 func main() {
 	appConfig := appConfig{}
 
-	flag.StringVar(&appConfig.ListenAddr, "listen-addr", ":8080", "Listen address")
+	flag.StringVar(&appConfig.ListenAddr, "listen-addr", ":8081", "Listen address")
 	flag.StringVar(&appConfig.DatabaseFile, "db-file", "data.sqlite3", "Database file")
 	flag.StringVar(&appConfig.AdminJSURL, "admin-js-url", "/assets/ui/admin/-/web.js", "Admin JS URL")
 	flag.StringVar(&appConfig.LogLevel, "log-level", "info", "Log level")

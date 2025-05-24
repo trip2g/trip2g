@@ -1,4 +1,4 @@
-build-amd64: sqlc graphqlgen
+build-amd64:
 	GOOS=linux GOARCH=amd64 go build -o ./tmp/amd64 -ldflags="-s -w" ./cmd/server
 
 deploy: build-amd64

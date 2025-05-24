@@ -3,7 +3,6 @@ Description={{ service_name }} service
 After=network.target
 
 [Service]
-ExecStart={{ bin_path }}
 User={{ app_user }}
 WorkingDirectory={{ data_dir }}
 ReadOnlyPaths={{ app_dir }}
@@ -13,6 +12,10 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 Restart=on-failure
+ExecStart={{ bin_path }} \
+  --log-level=info \
+  --db-file={{ data_dir }}/db.sqlite3 \
+  --listen-addr=80
 
 [Install]
 WantedBy=multi-user.target
