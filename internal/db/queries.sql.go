@@ -58,6 +58,38 @@ func (q *Queries) AdminByUserID(ctx context.Context, userID int64) (Admin, error
 	return i, err
 }
 
+const allApiKeys = `-- name: AllApiKeys :many
+select id, value, created_at, created_by from api_keys order by created_by, created_at desc
+`
+
+func (q *Queries) AllApiKeys(ctx context.Context) ([]ApiKey, error) {
+	rows, err := q.db.QueryContext(ctx, allApiKeys)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ApiKey
+	for rows.Next() {
+		var i ApiKey
+		if err := rows.Scan(
+			&i.ID,
+			&i.Value,
+			&i.CreatedAt,
+			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allLatestNoteAssets = `-- name: AllLatestNoteAssets :many
 with ranked_assets as (
   select
@@ -296,6 +328,17 @@ func (q *Queries) AllOffers(ctx context.Context) ([]Offer, error) {
 	return items, nil
 }
 
+const apiKeyIDByValue = `-- name: ApiKeyIDByValue :one
+select id from api_keys where value = ?
+`
+
+func (q *Queries) ApiKeyIDByValue(ctx context.Context, value string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, apiKeyIDByValue, value)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const banUser = `-- name: BanUser :exec
 insert into user_bans (user_id, banned_by, reason)
 values (?, ?, ?)
@@ -403,6 +446,15 @@ func (q *Queries) DeleteAcmeCert(ctx context.Context, key string) error {
 	return err
 }
 
+const deleteApiKey = `-- name: DeleteApiKey :exec
+delete from api_keys where id = ?
+`
+
+func (q *Queries) DeleteApiKey(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteApiKey, id)
+	return err
+}
+
 const deleteOffer = `-- name: DeleteOffer :one
 update offers
    set ends_at = datetime('now')
@@ -478,6 +530,47 @@ type InsertAcmeCertParams struct {
 
 func (q *Queries) InsertAcmeCert(ctx context.Context, arg InsertAcmeCertParams) error {
 	_, err := q.db.ExecContext(ctx, insertAcmeCert, arg.Key, arg.Value)
+	return err
+}
+
+const insertApiKey = `-- name: InsertApiKey :one
+insert into api_keys (value, created_by)
+values (?, ?)
+returning id, value, created_at, created_by
+`
+
+type InsertApiKeyParams struct {
+	Value     string `json:"value"`
+	CreatedBy int64  `json:"created_by"`
+}
+
+func (q *Queries) InsertApiKey(ctx context.Context, arg InsertApiKeyParams) (ApiKey, error) {
+	row := q.db.QueryRowContext(ctx, insertApiKey, arg.Value, arg.CreatedBy)
+	var i ApiKey
+	err := row.Scan(
+		&i.ID,
+		&i.Value,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
+const insertApiKeyLog = `-- name: InsertApiKeyLog :exec
+insert into api_key_logs (api_key_id, ip_id, action_id)
+values (?,
+  (select id from api_key_log_ips where value = ?2),
+  (select id from api_key_log_actions where name = ?3))
+`
+
+type InsertApiKeyLogParams struct {
+	ApiKeyID int64  `json:"api_key_id"`
+	Ip       string `json:"ip"`
+	Action   string `json:"action"`
+}
+
+func (q *Queries) InsertApiKeyLog(ctx context.Context, arg InsertApiKeyLogParams) error {
+	_, err := q.db.ExecContext(ctx, insertApiKeyLog, arg.ApiKeyID, arg.Ip, arg.Action)
 	return err
 }
 
@@ -1386,6 +1479,28 @@ func (q *Queries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSu
 		&i.PurchaseID,
 	)
 	return i, err
+}
+
+const upsertApiKeyLogAction = `-- name: UpsertApiKeyLogAction :exec
+insert into api_key_log_actions (name)
+values (?)
+on conflict(name) do nothing
+`
+
+func (q *Queries) UpsertApiKeyLogAction(ctx context.Context, name string) error {
+	_, err := q.db.ExecContext(ctx, upsertApiKeyLogAction, name)
+	return err
+}
+
+const upsertApiKeyLogIP = `-- name: UpsertApiKeyLogIP :exec
+insert into api_key_log_ips (value)
+values (?)
+on conflict(value) do nothing
+`
+
+func (q *Queries) UpsertApiKeyLogIP(ctx context.Context, value string) error {
+	_, err := q.db.ExecContext(ctx, upsertApiKeyLogIP, value)
+	return err
 }
 
 const upsertNoteVersionAsset = `-- name: UpsertNoteVersionAsset :exec

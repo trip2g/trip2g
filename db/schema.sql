@@ -141,6 +141,27 @@ CREATE TABLE acme_certs (
   value blob,
   updated_at datetime default current_timestamp
 );
+CREATE TABLE api_keys (
+  id integer primary key autoincrement,
+  value text not null unique,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete cascade
+);
+CREATE TABLE api_key_log_actions (
+  id integer primary key autoincrement,
+  name text not null unique
+);
+CREATE TABLE api_key_log_ips (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  value text not null unique
+);
+CREATE TABLE api_key_logs (
+  api_key_id integer not null references api_keys(id) on delete cascade,
+  created_at datetime not null default current_timestamp,
+  action_id integer not null references api_key_log_actions(id) on delete restrict,
+  ip_id integer not null references api_key_log_ips(id) on delete restrict
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -162,4 +183,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250507032627'),
   ('20250515071315'),
   ('20250515071316'),
-  ('20250524091058');
+  ('20250524091058'),
+  ('20250525034319');

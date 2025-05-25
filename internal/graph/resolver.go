@@ -8,6 +8,7 @@ import (
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
+	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/requestemailsignin"
@@ -75,6 +76,7 @@ type Env interface {
 	createpaymentlink.Env
 	pushnotes.Env
 	uploadnoteasset.Env
+	checkapikey.Env
 
 	banuser.Env
 	updatesubgraph.Env

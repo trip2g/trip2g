@@ -318,3 +318,33 @@ values (?, ?);
 
 -- name: DeleteAcmeCert :exec
 delete from acme_certs where key = ?;
+
+-- name: ApiKeyIDByValue :one
+select id from api_keys where value = ?;
+
+-- name: InsertApiKey :one
+insert into api_keys (value, created_by)
+values (?, ?)
+returning *;
+
+-- name: DeleteApiKey :exec
+delete from api_keys where id = ?;
+
+-- name: AllApiKeys :many
+select * from api_keys order by created_by, created_at desc;
+
+-- name: InsertApiKeyLog :exec
+insert into api_key_logs (api_key_id, ip_id, action_id)
+values (?,
+  (select id from api_key_log_ips where value = sqlc.arg(ip)),
+  (select id from api_key_log_actions where name = sqlc.arg(action)));
+
+-- name: UpsertApiKeyLogAction :exec
+insert into api_key_log_actions (name)
+values (?)
+on conflict(name) do nothing;
+
+-- name: UpsertApiKeyLogIP :exec
+insert into api_key_log_ips (value)
+values (?)
+on conflict(value) do nothing;

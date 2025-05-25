@@ -10,6 +10,16 @@ import requests
 # get first arg or http://localhost:8081
 
 GRAPHQL_URL = "http://localhost:8081/graphql"
+API_KEY = os.getenv("API_KEY", None)
+
+if not API_KEY:
+    print("❌ Не указан API_KEY в переменных окружения. Установите переменную API_KEY.")
+    sys.exit(1)
+
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Key": API_KEY,
+}
 
 def sha256_urlsafe_base64(content: bytes) -> str:
     h = hashlib.sha256(content).digest()
@@ -25,7 +35,7 @@ def fetch_server_hashes():
     }
     """
     try:
-        response = requests.post(GRAPHQL_URL, json={"query": query})
+        response = requests.post(GRAPHQL_URL, json={"query": query}, headers=headers)
         response.raise_for_status()
         data = response.json()
 
@@ -67,7 +77,7 @@ def push_updates_graphql(updates):
     }
 
     try:
-        response = requests.post(GRAPHQL_URL, json={
+        response = requests.post(GRAPHQL_URL, headers=headers, json={
             "query": query,
             "variables": variables
         })

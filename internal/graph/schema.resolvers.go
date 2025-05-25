@@ -17,6 +17,7 @@ import (
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
+	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/requestemailsignin"
@@ -206,11 +207,21 @@ func (r *mutationResolver) CreatePaymentLink(ctx context.Context, input model.Cr
 
 // PushNotes is the resolver for the pushNotes field.
 func (r *mutationResolver) PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
+	err := checkapikey.Resolve(ctx, r.env(ctx), "push_notes")
+	if err != nil {
+		return nil, err
+	}
+
 	return pushnotes.Resolve(ctx, r.env(ctx), input)
 }
 
 // UploadNoteAsset is the resolver for the uploadNoteAsset field.
 func (r *mutationResolver) UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error) {
+	err := checkapikey.Resolve(ctx, r.env(ctx), "upload_note_asset")
+	if err != nil {
+		return nil, err
+	}
+
 	return uploadnoteasset.Resolve(ctx, r.env(ctx), input)
 }
 
@@ -293,7 +304,11 @@ func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 
 // NotePaths is the resolver for the notePaths field.
 func (r *queryResolver) NotePaths(ctx context.Context) ([]db.NotePath, error) {
-	// TODO: check API key
+	err := checkapikey.Resolve(ctx, r.env(ctx), "get_note_paths")
+	if err != nil {
+		return nil, err
+	}
+
 	return r.env(ctx).AllNotePaths(ctx)
 }
 

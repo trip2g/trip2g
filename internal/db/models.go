@@ -23,6 +23,31 @@ type Admin struct {
 	GrantedBy sql.NullInt64 `json:"granted_by"`
 }
 
+type ApiKey struct {
+	ID        int64     `json:"id"`
+	Value     string    `json:"value"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+}
+
+type ApiKeyLog struct {
+	ApiKeyID  int64     `json:"api_key_id"`
+	CreatedAt time.Time `json:"created_at"`
+	ActionID  int64     `json:"action_id"`
+	IpID      int64     `json:"ip_id"`
+}
+
+type ApiKeyLogAction struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+type ApiKeyLogIp struct {
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	Value     string    `json:"value"`
+}
+
 type BackliteTask struct {
 	ID             string        `json:"id"`
 	CreatedAt      int64         `json:"created_at"`
