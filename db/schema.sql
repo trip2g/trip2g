@@ -145,7 +145,8 @@ CREATE TABLE api_keys (
   id integer primary key autoincrement,
   value text not null unique,
   created_at datetime not null default current_timestamp,
-  created_by integer not null references admins(user_id) on delete cascade
+  created_by integer not null references admins(user_id) on delete cascade,
+  description not null default ''
 );
 CREATE TABLE api_key_log_actions (
   id integer primary key autoincrement,

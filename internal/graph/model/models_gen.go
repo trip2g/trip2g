@@ -17,8 +17,16 @@ type BanUserOrErrorPayload interface {
 	IsBanUserOrErrorPayload()
 }
 
+type CreateAPIKeyOrErrorPayload interface {
+	IsCreateAPIKeyOrErrorPayload()
+}
+
 type CreatePaymentLinkOrErrorPayload interface {
 	IsCreatePaymentLinkOrErrorPayload()
+}
+
+type DeleteAPIKeyOrErrorPayload interface {
+	IsDeleteAPIKeyOrErrorPayload()
 }
 
 type PushNotesOrErrorPayload interface {
@@ -89,6 +97,16 @@ type BanUserPayload struct {
 
 func (BanUserPayload) IsBanUserOrErrorPayload() {}
 
+type CreateAPIKeyInput struct {
+	Description string `json:"description"`
+}
+
+type CreateAPIKeyPayload struct {
+	APIKey *db.ApiKey `json:"apiKey"`
+}
+
+func (CreateAPIKeyPayload) IsCreateAPIKeyOrErrorPayload() {}
+
 type CreatePaymentLinkInput struct {
 	PaymentType PaymentType `json:"paymentType"`
 	OfferID     string      `json:"offerId"`
@@ -102,6 +120,16 @@ type CreatePaymentLinkPayload struct {
 }
 
 func (CreatePaymentLinkPayload) IsCreatePaymentLinkOrErrorPayload() {}
+
+type DeleteAPIKeyInput struct {
+	ID int `json:"id"`
+}
+
+type DeleteAPIKeyPayload struct {
+	ID int `json:"id"`
+}
+
+func (DeleteAPIKeyPayload) IsDeleteAPIKeyOrErrorPayload() {}
 
 type ErrorPayload struct {
 	Message  string         `json:"message"`
@@ -127,6 +155,10 @@ func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
 func (ErrorPayload) IsUnbanUserOrErrorPayload() {}
 
 func (ErrorPayload) IsBanUserOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateAPIKeyOrErrorPayload() {}
+
+func (ErrorPayload) IsDeleteAPIKeyOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`

@@ -93,6 +93,8 @@ type ComplexityRoot struct {
 
 	AdminMutation struct {
 		BanUser                  func(childComplexity int, input model.BanUserInput) int
+		CreateAPIKey             func(childComplexity int, input model.CreateAPIKeyInput) int
+		DeleteAPIKey             func(childComplexity int, input model.DeleteAPIKeyInput) int
 		UnbanUser                func(childComplexity int, input model.UnbanUserInput) int
 		UpdateSubgraph           func(childComplexity int, input updatesubgraph.Request) int
 		UpdateUserSubgraphAccess func(childComplexity int, input updateusersubgraphaccess.Request) int
@@ -159,9 +161,17 @@ type ComplexityRoot struct {
 		UserID func(childComplexity int) int
 	}
 
+	CreateApiKeyPayload struct {
+		APIKey func(childComplexity int) int
+	}
+
 	CreatePaymentLinkPayload struct {
 		RedirectURL func(childComplexity int) int
 		Token       func(childComplexity int) int
+	}
+
+	DeleteApiKeyPayload struct {
+		ID func(childComplexity int) int
 	}
 
 	ErrorPayload struct {
@@ -311,6 +321,8 @@ type AdminMutationResolver interface {
 	UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error)
 	UnbanUser(ctx context.Context, obj *model1.AdminMutation, input model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error)
 	BanUser(ctx context.Context, obj *model1.AdminMutation, input model.BanUserInput) (model.BanUserOrErrorPayload, error)
+	CreateAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error)
+	DeleteAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.DeleteAPIKeyInput) (model.DeleteAPIKeyOrErrorPayload, error)
 }
 type AdminNoteViewsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminNoteViewsConnection) ([]model1.NoteView, error)
@@ -479,6 +491,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.BanUser(childComplexity, args["input"].(model.BanUserInput)), true
+
+	case "AdminMutation.createApiKey":
+		if e.complexity.AdminMutation.CreateAPIKey == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_createApiKey_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.CreateAPIKey(childComplexity, args["input"].(model.CreateAPIKeyInput)), true
+
+	case "AdminMutation.deleteApiKey":
+		if e.complexity.AdminMutation.DeleteAPIKey == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_deleteApiKey_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.DeleteAPIKey(childComplexity, args["input"].(model.DeleteAPIKeyInput)), true
 
 	case "AdminMutation.unbanUser":
 		if e.complexity.AdminMutation.UnbanUser == nil {
@@ -748,6 +784,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.BanUserPayload.UserID(childComplexity), true
 
+	case "CreateApiKeyPayload.apiKey":
+		if e.complexity.CreateApiKeyPayload.APIKey == nil {
+			break
+		}
+
+		return e.complexity.CreateApiKeyPayload.APIKey(childComplexity), true
+
 	case "CreatePaymentLinkPayload.redirectUrl":
 		if e.complexity.CreatePaymentLinkPayload.RedirectURL == nil {
 			break
@@ -761,6 +804,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CreatePaymentLinkPayload.Token(childComplexity), true
+
+	case "DeleteApiKeyPayload.id":
+		if e.complexity.DeleteApiKeyPayload.ID == nil {
+			break
+		}
+
+		return e.complexity.DeleteApiKeyPayload.ID(childComplexity), true
 
 	case "ErrorPayload.byFields":
 		if e.complexity.ErrorPayload.ByFields == nil {
@@ -1242,7 +1292,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputBanUserInput,
+		ec.unmarshalInputCreateApiKeyInput,
 		ec.unmarshalInputCreatePaymentLinkInput,
+		ec.unmarshalInputDeleteApiKeyInput,
 		ec.unmarshalInputPushNoteInput,
 		ec.unmarshalInputPushNotesInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
@@ -1387,6 +1439,52 @@ func (ec *executionContext) field_AdminMutation_banUser_argsInput(
 	}
 
 	var zeroVal model.BanUserInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_createApiKey_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_createApiKey_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_createApiKey_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateAPIKeyInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateAPIKeyInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateAPIKeyInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_deleteApiKey_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_deleteApiKey_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_deleteApiKey_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.DeleteAPIKeyInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNDeleteApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteAPIKeyInput(ctx, tmp)
+	}
+
+	var zeroVal model.DeleteAPIKeyInput
 	return zeroVal, nil
 }
 
@@ -2251,6 +2349,116 @@ func (ec *executionContext) fieldContext_AdminMutation_banUser(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_banUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_createApiKey(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_createApiKey(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().CreateAPIKey(rctx, obj, fc.Args["input"].(model.CreateAPIKeyInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CreateAPIKeyOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNCreateApiKeyOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateAPIKeyOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createApiKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateApiKeyOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createApiKey_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deleteApiKey(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_deleteApiKey(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().DeleteAPIKey(rctx, obj, fc.Args["input"].(model.DeleteAPIKeyInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.DeleteAPIKeyOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNDeleteApiKeyOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteAPIKeyOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deleteApiKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeleteApiKeyOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_deleteApiKey_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3808,6 +4016,58 @@ func (ec *executionContext) fieldContext_BanUserPayload_user(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateApiKeyPayload_apiKey(ctx context.Context, field graphql.CollectedField, obj *model.CreateAPIKeyPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreateApiKeyPayload_apiKey(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.APIKey, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.ApiKey)
+	fc.Result = res
+	return ec.marshalNAdminApiKey2ᚖtrip2gᚋinternalᚋdbᚐApiKey(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreateApiKeyPayload_apiKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateApiKeyPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminApiKey_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminApiKey_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminApiKey_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminApiKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreatePaymentLinkPayload_redirectUrl(ctx context.Context, field graphql.CollectedField, obj *model.CreatePaymentLinkPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_CreatePaymentLinkPayload_redirectUrl(ctx, field)
 	if err != nil {
@@ -3888,6 +4148,50 @@ func (ec *executionContext) fieldContext_CreatePaymentLinkPayload_token(_ contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteApiKeyPayload_id(ctx context.Context, field graphql.CollectedField, obj *model.DeleteAPIKeyPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteApiKeyPayload_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt642int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeleteApiKeyPayload_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteApiKeyPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4441,6 +4745,10 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_unbanUser(ctx, field)
 			case "banUser":
 				return ec.fieldContext_AdminMutation_banUser(ctx, field)
+			case "createApiKey":
+				return ec.fieldContext_AdminMutation_createApiKey(ctx, field)
+			case "deleteApiKey":
+				return ec.fieldContext_AdminMutation_deleteApiKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -9027,6 +9335,33 @@ func (ec *executionContext) unmarshalInputBanUserInput(ctx context.Context, obj 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateApiKeyInput(ctx context.Context, obj any) (model.CreateAPIKeyInput, error) {
+	var it model.CreateAPIKeyInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreatePaymentLinkInput(ctx context.Context, obj any) (model.CreatePaymentLinkInput, error) {
 	var it model.CreatePaymentLinkInput
 	asMap := map[string]any{}
@@ -9069,6 +9404,33 @@ func (ec *executionContext) unmarshalInputCreatePaymentLinkInput(ctx context.Con
 				return it, err
 			}
 			it.ReturnPath = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteApiKeyInput(ctx context.Context, obj any) (model.DeleteAPIKeyInput, error) {
+	var it model.DeleteAPIKeyInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
 		}
 	}
 
@@ -9381,6 +9743,29 @@ func (ec *executionContext) _BanUserOrErrorPayload(ctx context.Context, sel ast.
 	}
 }
 
+func (ec *executionContext) _CreateApiKeyOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateAPIKeyOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateAPIKeyPayload:
+		return ec._CreateApiKeyPayload(ctx, sel, &obj)
+	case *model.CreateAPIKeyPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateApiKeyPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _CreatePaymentLinkOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreatePaymentLinkOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -9399,6 +9784,29 @@ func (ec *executionContext) _CreatePaymentLinkOrErrorPayload(ctx context.Context
 			return graphql.Null
 		}
 		return ec._CreatePaymentLinkPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _DeleteApiKeyOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteAPIKeyOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DeleteAPIKeyPayload:
+		return ec._DeleteApiKeyPayload(ctx, sel, &obj)
+	case *model.DeleteAPIKeyPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeleteApiKeyPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -9941,6 +10349,78 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_banUser(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createApiKey":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createApiKey(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deleteApiKey":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deleteApiKey(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -11087,6 +11567,45 @@ func (ec *executionContext) _BanUserPayload(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var createApiKeyPayloadImplementors = []string{"CreateApiKeyPayload", "CreateApiKeyOrErrorPayload"}
+
+func (ec *executionContext) _CreateApiKeyPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateAPIKeyPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createApiKeyPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateApiKeyPayload")
+		case "apiKey":
+			out.Values[i] = ec._CreateApiKeyPayload_apiKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createPaymentLinkPayloadImplementors = []string{"CreatePaymentLinkPayload", "CreatePaymentLinkOrErrorPayload"}
 
 func (ec *executionContext) _CreatePaymentLinkPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreatePaymentLinkPayload) graphql.Marshaler {
@@ -11128,7 +11647,46 @@ func (ec *executionContext) _CreatePaymentLinkPayload(ctx context.Context, sel a
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload"}
+var deleteApiKeyPayloadImplementors = []string{"DeleteApiKeyPayload", "DeleteApiKeyOrErrorPayload"}
+
+func (ec *executionContext) _DeleteApiKeyPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteAPIKeyPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteApiKeyPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteApiKeyPayload")
+		case "id":
+			out.Values[i] = ec._DeleteApiKeyPayload_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DeleteApiKeyOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -13367,6 +13925,16 @@ func (ec *executionContext) marshalNAdminApiKey2ᚕtrip2gᚋinternalᚋdbᚐApiK
 	return ret
 }
 
+func (ec *executionContext) marshalNAdminApiKey2ᚖtrip2gᚋinternalᚋdbᚐApiKey(ctx context.Context, sel ast.SelectionSet, v *db.ApiKey) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminApiKey(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminApiKeysConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminAPIKeysConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminAPIKeysConnection) graphql.Marshaler {
 	return ec._AdminApiKeysConnection(ctx, sel, &v)
 }
@@ -13674,6 +14242,21 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNCreateApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateAPIKeyInput(ctx context.Context, v any) (model.CreateAPIKeyInput, error) {
+	res, err := ec.unmarshalInputCreateApiKeyInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateApiKeyOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateAPIKeyOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateAPIKeyOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateApiKeyOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreatePaymentLinkInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePaymentLinkInput(ctx context.Context, v any) (model.CreatePaymentLinkInput, error) {
 	res, err := ec.unmarshalInputCreatePaymentLinkInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -13687,6 +14270,21 @@ func (ec *executionContext) marshalNCreatePaymentLinkOrErrorPayload2trip2gᚋint
 		return graphql.Null
 	}
 	return ec._CreatePaymentLinkOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeleteApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteAPIKeyInput(ctx context.Context, v any) (model.DeleteAPIKeyInput, error) {
+	res, err := ec.unmarshalInputDeleteApiKeyInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteApiKeyOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteAPIKeyOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteAPIKeyOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteApiKeyOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNFieldMessage2trip2gᚋinternalᚋgraphᚋmodelᚐFieldMessage(ctx context.Context, sel ast.SelectionSet, v model.FieldMessage) graphql.Marshaler {

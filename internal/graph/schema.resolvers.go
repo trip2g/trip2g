@@ -65,6 +65,16 @@ func (r *adminMutationResolver) BanUser(ctx context.Context, obj *appmodel.Admin
 	return banuser.Resolve(ctx, r.env(ctx), input)
 }
 
+// CreateAPIKey is the resolver for the createApiKey field.
+func (r *adminMutationResolver) CreateAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: CreateAPIKey - createApiKey"))
+}
+
+// DeleteAPIKey is the resolver for the deleteApiKey field.
+func (r *adminMutationResolver) DeleteAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteAPIKeyInput) (model.DeleteAPIKeyOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: DeleteAPIKey - deleteApiKey"))
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNoteViewsConnection) ([]appmodel.NoteView, error) {
 	notes := r.env(ctx).AllNotes()

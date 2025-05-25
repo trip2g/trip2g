@@ -363,9 +363,39 @@ type BanUserPayload {
 
 union BanUserOrErrorPayload = BanUserPayload | ErrorPayload
 
+#
+# createApiKey
+#
+
+input CreateApiKeyInput {
+  description: String!
+}
+
+type CreateApiKeyPayload {
+  apiKey: AdminApiKey!
+}
+
+union CreateApiKeyOrErrorPayload = CreateApiKeyPayload | ErrorPayload
+
+#
+# deleteApiKey
+#
+
+input DeleteApiKeyInput {
+  id: Int64!
+}
+
+type DeleteApiKeyPayload {
+  id: Int64!
+}
+
+union DeleteApiKeyOrErrorPayload = DeleteApiKeyPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
   unbanUser(input: UnbanUserInput!): UnbanUserOrErrorPayload!
   banUser(input: BanUserInput!): BanUserOrErrorPayload!
+  createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
+  deleteApiKey(input: DeleteApiKeyInput!): DeleteApiKeyOrErrorPayload!
 }

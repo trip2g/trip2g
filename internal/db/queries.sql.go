@@ -504,7 +504,7 @@ func (q *Queries) InsertAcmeCert(ctx context.Context, arg InsertAcmeCertParams) 
 const insertApiKey = `-- name: InsertApiKey :one
 insert into api_keys (value, created_by)
 values (?, ?)
-returning id, value, created_at, created_by
+returning id, value, created_at, created_by, description
 `
 
 type InsertApiKeyParams struct {
@@ -520,6 +520,7 @@ func (q *Queries) InsertApiKey(ctx context.Context, arg InsertApiKeyParams) (Api
 		&i.Value,
 		&i.CreatedAt,
 		&i.CreatedBy,
+		&i.Description,
 	)
 	return i, err
 }
@@ -999,7 +1000,7 @@ func (q *Queries) ListActiveUserSubgraphAccessesByUserID(ctx context.Context, us
 }
 
 const listAllApiKeys = `-- name: ListAllApiKeys :many
-select id, value, created_at, created_by from api_keys order by created_by, created_at desc
+select id, value, created_at, created_by, description from api_keys order by created_by, created_at desc
 `
 
 func (q *Queries) ListAllApiKeys(ctx context.Context) ([]ApiKey, error) {
@@ -1016,6 +1017,7 @@ func (q *Queries) ListAllApiKeys(ctx context.Context) ([]ApiKey, error) {
 			&i.Value,
 			&i.CreatedAt,
 			&i.CreatedBy,
+			&i.Description,
 		); err != nil {
 			return nil, err
 		}

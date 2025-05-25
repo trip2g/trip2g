@@ -4,7 +4,8 @@ create table api_keys (
   id integer primary key autoincrement,
   value text not null unique,
   created_at datetime not null default current_timestamp,
-  created_by integer not null references admins(user_id) on delete cascade
+  created_by integer not null references admins(user_id) on delete cascade,
+  description not null default '' -- the form field always has a value
 );
 
 create table api_key_log_actions (
