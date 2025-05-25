@@ -502,18 +502,19 @@ func (q *Queries) InsertAcmeCert(ctx context.Context, arg InsertAcmeCertParams) 
 }
 
 const insertApiKey = `-- name: InsertApiKey :one
-insert into api_keys (value, created_by)
-values (?, ?)
+insert into api_keys (value, created_by, description)
+values (?, ?, ?)
 returning id, value, created_at, created_by, description
 `
 
 type InsertApiKeyParams struct {
-	Value     string `json:"value"`
-	CreatedBy int64  `json:"created_by"`
+	Value       string      `json:"value"`
+	CreatedBy   int64       `json:"created_by"`
+	Description interface{} `json:"description"`
 }
 
 func (q *Queries) InsertApiKey(ctx context.Context, arg InsertApiKeyParams) (ApiKey, error) {
-	row := q.db.QueryRowContext(ctx, insertApiKey, arg.Value, arg.CreatedBy)
+	row := q.db.QueryRowContext(ctx, insertApiKey, arg.Value, arg.CreatedBy, arg.Description)
 	var i ApiKey
 	err := row.Scan(
 		&i.ID,

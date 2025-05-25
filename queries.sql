@@ -323,8 +323,8 @@ delete from acme_certs where key = ?;
 select id from api_keys where value = ?;
 
 -- name: InsertApiKey :one
-insert into api_keys (value, created_by)
-values (?, ?)
+insert into api_keys (value, created_by, description)
+values (?, ?, ?)
 returning *;
 
 -- name: DeleteApiKey :exec

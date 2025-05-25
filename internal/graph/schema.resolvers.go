@@ -14,6 +14,7 @@ import (
 	"time"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
+	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
@@ -67,7 +68,7 @@ func (r *adminMutationResolver) BanUser(ctx context.Context, obj *appmodel.Admin
 
 // CreateAPIKey is the resolver for the createApiKey field.
 func (r *adminMutationResolver) CreateAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: CreateAPIKey - createApiKey"))
+	return createapikey.Resolve(ctx, r.env(ctx), input)
 }
 
 // DeleteAPIKey is the resolver for the deleteApiKey field.

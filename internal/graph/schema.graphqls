@@ -372,6 +372,7 @@ input CreateApiKeyInput {
 }
 
 type CreateApiKeyPayload {
+  value: String!
   apiKey: AdminApiKey!
 }
 

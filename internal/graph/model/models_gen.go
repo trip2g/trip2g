@@ -102,6 +102,7 @@ type CreateAPIKeyInput struct {
 }
 
 type CreateAPIKeyPayload struct {
+	Value  string     `json:"value"`
 	APIKey *db.ApiKey `json:"apiKey"`
 }
 

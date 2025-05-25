@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
+	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
@@ -83,4 +84,5 @@ type Env interface {
 	updatesubgraph.Env
 	updateusersubgraphaccess.Env
 	unbanuser.Env
+	createapikey.Env
 }
