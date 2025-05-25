@@ -35,6 +35,16 @@ func (r *adminResolver) User(ctx context.Context, obj *db.Admin) (*db.User, erro
 	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
 }
 
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminApiKeyResolver) CreatedBy(ctx context.Context, obj *db.ApiKey) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminApiKeysConnectionResolver) Nodes(ctx context.Context, obj *model.AdminAPIKeysConnection) ([]db.ApiKey, error) {
+	return r.env(ctx).ListAllApiKeys(ctx)
+}
+
 // UpdateSubgraph is the resolver for the updateSubgraph field.
 func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *appmodel.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error) {
 	return input.Resolve(ctx, r.env(ctx))
@@ -97,6 +107,11 @@ func (r *adminQueryResolver) AllNoteViews(ctx context.Context, obj *appmodel.Adm
 // AllUserUserBans is the resolver for the allUserUserBans field.
 func (r *adminQueryResolver) AllUserUserBans(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminUserBansConnection, error) {
 	return &model.AdminUserBansConnection{}, nil
+}
+
+// AllAPIKeys is the resolver for the allApiKeys field.
+func (r *adminQueryResolver) AllAPIKeys(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminAPIKeysConnection, error) {
+	return &model.AdminAPIKeysConnection{}, nil
 }
 
 // Subgraph is the resolver for the subgraph field.
@@ -461,6 +476,14 @@ func (r *viewerResolver) ActivePurchases(ctx context.Context, obj *appmodel.View
 // Admin returns AdminResolver implementation.
 func (r *Resolver) Admin() AdminResolver { return &adminResolver{r} }
 
+// AdminApiKey returns AdminApiKeyResolver implementation.
+func (r *Resolver) AdminApiKey() AdminApiKeyResolver { return &adminApiKeyResolver{r} }
+
+// AdminApiKeysConnection returns AdminApiKeysConnectionResolver implementation.
+func (r *Resolver) AdminApiKeysConnection() AdminApiKeysConnectionResolver {
+	return &adminApiKeysConnectionResolver{r}
+}
+
 // AdminMutation returns AdminMutationResolver implementation.
 func (r *Resolver) AdminMutation() AdminMutationResolver { return &adminMutationResolver{r} }
 
@@ -548,6 +571,8 @@ func (r *Resolver) UserSubgraphAccess() UserSubgraphAccessResolver {
 func (r *Resolver) Viewer() ViewerResolver { return &viewerResolver{r} }
 
 type adminResolver struct{ *Resolver }
+type adminApiKeyResolver struct{ *Resolver }
+type adminApiKeysConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
 type adminNoteViewsConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }

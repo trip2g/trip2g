@@ -58,38 +58,6 @@ func (q *Queries) AdminByUserID(ctx context.Context, userID int64) (Admin, error
 	return i, err
 }
 
-const allApiKeys = `-- name: AllApiKeys :many
-select id, value, created_at, created_by from api_keys order by created_by, created_at desc
-`
-
-func (q *Queries) AllApiKeys(ctx context.Context) ([]ApiKey, error) {
-	rows, err := q.db.QueryContext(ctx, allApiKeys)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ApiKey
-	for rows.Next() {
-		var i ApiKey
-		if err := rows.Scan(
-			&i.ID,
-			&i.Value,
-			&i.CreatedAt,
-			&i.CreatedBy,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const allLatestNoteAssets = `-- name: AllLatestNoteAssets :many
 with ranked_assets as (
   select
@@ -1016,6 +984,38 @@ func (q *Queries) ListActiveUserSubgraphAccessesByUserID(ctx context.Context, us
 			&i.ExpiresAt,
 			&i.RevokeID,
 			&i.PurchaseID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllApiKeys = `-- name: ListAllApiKeys :many
+select id, value, created_at, created_by from api_keys order by created_by, created_at desc
+`
+
+func (q *Queries) ListAllApiKeys(ctx context.Context) ([]ApiKey, error) {
+	rows, err := q.db.QueryContext(ctx, listAllApiKeys)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ApiKey
+	for rows.Next() {
+		var i ApiKey
+		if err := rows.Scan(
+			&i.ID,
+			&i.Value,
+			&i.CreatedAt,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}

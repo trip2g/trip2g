@@ -53,6 +53,10 @@ type UploadNoteAssetOrErrorPayload interface {
 	IsUploadNoteAssetOrErrorPayload()
 }
 
+type AdminAPIKeysConnection struct {
+	Nodes []db.ApiKey `json:"nodes"`
+}
+
 type AdminNoteViewsConnection struct {
 	Nodes []model.NoteView `json:"nodes"`
 }

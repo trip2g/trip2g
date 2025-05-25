@@ -101,12 +101,23 @@ type AdminUserBansConnection {
   nodes: [UserBan!]! @goField(forceResolver: true)
 }
 
+type AdminApiKey @goModel(model: "trip2g/internal/db.ApiKey") {
+  id: Int64!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+}
+
+type AdminApiKeysConnection {
+  nodes: [AdminApiKey!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
   allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection!
   allNoteViews: AdminNoteViewsConnection!
   allUserUserBans: AdminUserBansConnection!
+  allApiKeys: AdminApiKeysConnection!
 
   subgraph(id: Int64!): AdminSubgraph
   noteView(id: String!): NoteView

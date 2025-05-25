@@ -330,7 +330,7 @@ returning *;
 -- name: DeleteApiKey :exec
 delete from api_keys where id = ?;
 
--- name: AllApiKeys :many
+-- name: ListAllApiKeys :many
 select * from api_keys order by created_by, created_at desc;
 
 -- name: InsertApiKeyLog :exec
