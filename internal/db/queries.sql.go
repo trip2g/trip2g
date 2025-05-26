@@ -447,10 +447,11 @@ func (q *Queries) DeleteSignInCodesByUserID(ctx context.Context, userID int64) e
 	return err
 }
 
-const disableApiKey = `-- name: DisableApiKey :exec
+const disableApiKey = `-- name: DisableApiKey :one
 update api_keys
   set disabled_by = ?, disabled_at = datetime('now')
  where id = ?
+returning id, value, created_at, created_by, disabled_at, disabled_by, description
 `
 
 type DisableApiKeyParams struct {
@@ -458,9 +459,19 @@ type DisableApiKeyParams struct {
 	ID         int64         `json:"id"`
 }
 
-func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) error {
-	_, err := q.db.ExecContext(ctx, disableApiKey, arg.DisabledBy, arg.ID)
-	return err
+func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (ApiKey, error) {
+	row := q.db.QueryRowContext(ctx, disableApiKey, arg.DisabledBy, arg.ID)
+	var i ApiKey
+	err := row.Scan(
+		&i.ID,
+		&i.Value,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DisabledAt,
+		&i.DisabledBy,
+		&i.Description,
+	)
+	return i, err
 }
 
 const increaseUserNoteViewCount = `-- name: IncreaseUserNoteViewCount :exec

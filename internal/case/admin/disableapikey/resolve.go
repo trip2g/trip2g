@@ -2,17 +2,17 @@ package disableapikey
 
 import (
 	"context"
+	"database/sql"
 	"trip2g/internal/appreq"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
-	"database/sql"
 )
 
 type Env interface {
-	DisableApiKey(ctx context.Context, params db.DisableApiKeyParams) error
+	DisableApiKey(ctx context.Context, params db.DisableApiKeyParams) (db.ApiKey, error)
 }
 
-func Resolve(ctx context.Context, env Env, input model.DeleteAPIKeyInput) (model.DeleteAPIKeyOrErrorPayload, error) {
+func Resolve(ctx context.Context, env Env, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error) {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {
 		return nil, err
@@ -32,13 +32,13 @@ func Resolve(ctx context.Context, env Env, input model.DeleteAPIKeyInput) (model
 		DisabledBy: sql.NullInt64{Valid: true, Int64: int64(token.ID)},
 	}
 
-	err = env.DisableApiKey(ctx, params)
+	apiKey, err := env.DisableApiKey(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 
-	response := model.DeleteAPIKeyPayload{
-		ID: input.ID,
+	response := model.DisableAPIKeyPayload{
+		APIKey: &apiKey,
 	}
 
 	return &response, nil

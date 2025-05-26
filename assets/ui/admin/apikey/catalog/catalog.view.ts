@@ -14,6 +14,11 @@ namespace $.$$ {
 									id
 									email
 								}
+								disabledAt
+								disabledBy {
+									id
+									email
+								}
 							}
 						}
 					}
@@ -31,9 +36,9 @@ namespace $.$$ {
 			}
 		}
 
-		@ $mol_mem
+		@$mol_mem
 		override spread_ids_filtered() {
-			return this.spread_ids().filter(id => id !== 'add')
+			return this.spread_ids().filter( id => id !== 'add' )
 		}
 
 		row( id: any ) {
@@ -60,6 +65,24 @@ namespace $.$$ {
 
 		override row_description( id: any ): string {
 			return this.row( id ).description || '-'
+		}
+
+		override row_disabled_at( id: any ): string {
+			const v = this.row(id).disabledAt
+			if (!v) {
+				return '-'
+			}
+
+			const m = new $mol_time_moment( v )
+			return m.toString( 'YYYY-MM-DD' )
+		}
+
+		override row_disabled_by( id: any ): string {
+			return this.row( id ).disabledBy?.email || ''
+		}
+
+		override row_disabled(id: any): boolean {
+			return !!this.row( id ).disabledAt
 		}
 	}
 }

@@ -3,7 +3,7 @@ namespace $.$$ {
 		@$mol_mem
 		data( reset?: null ) {
 			const res = $trip2g_graphql_request( `
-				query AdminApiKeyShow($filter: ApiKeyLogsFilterInput!) {
+				query AdminApiKeyShowQuery($filter: ApiKeyLogsFilterInput!) {
 					admin {
 						apiKeyLogs(filter: $filter) {
 							nodes {
@@ -17,6 +17,14 @@ namespace $.$$ {
 			`)
 
 			return $trip2g_graphql_make_map( res.admin.apiKeyLogs.nodes.map( ( row, id ) => ( { ...row, id } ) ) )
+		}
+
+		override body() {
+			if (this.disabled()) {
+				return super.body()
+			}
+
+			return [this.DisableButton(), ...super.body()]
 		}
 	}
 }

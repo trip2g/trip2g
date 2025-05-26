@@ -42,6 +42,20 @@ func (r *adminApiKeyResolver) CreatedBy(ctx context.Context, obj *db.ApiKey) (*d
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
 }
 
+// DisabledBy is the resolver for the disabledBy field.
+func (r *adminApiKeyResolver) DisabledBy(ctx context.Context, obj *db.ApiKey) (*db.User, error) {
+	if !obj.DisabledBy.Valid {
+		return nil, nil
+	}
+
+	return resolveOne[db.User](ctx, obj.DisabledBy.Int64, r.env(ctx).UserByID)
+}
+
+// DisabledAt is the resolver for the disabledAt field.
+func (r *adminApiKeyResolver) DisabledAt(ctx context.Context, obj *db.ApiKey) (*time.Time, error) {
+	return db.ToTimePtr(obj.DisabledAt), nil
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminApiKeyLogsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminAPIKeyLogsConnection) ([]db.ListApiKeyLogsByApiKeyIDRow, error) {
 	if obj.APIKeyID == nil {
@@ -82,7 +96,7 @@ func (r *adminMutationResolver) CreateAPIKey(ctx context.Context, obj *appmodel.
 }
 
 // DisableAPIKey is the resolver for the disableApiKey field.
-func (r *adminMutationResolver) DisableAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteAPIKeyInput) (model.DeleteAPIKeyOrErrorPayload, error) {
+func (r *adminMutationResolver) DisableAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error) {
 	return disableapikey.Resolve(ctx, r.env(ctx), input)
 }
 

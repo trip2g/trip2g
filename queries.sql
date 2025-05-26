@@ -327,10 +327,11 @@ insert into api_keys (value, created_by, description)
 values (?, ?, ?)
 returning *;
 
--- name: DisableApiKey :exec
+-- name: DisableApiKey :one
 update api_keys
   set disabled_by = ?, disabled_at = datetime('now')
- where id = ?;
+ where id = ?
+returning *;
 
 -- name: ListAllApiKeys :many
 select * from api_keys order by created_by, created_at desc;

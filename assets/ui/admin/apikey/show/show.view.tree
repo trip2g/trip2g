@@ -1,3 +1,8 @@
-$trip2g_admin_apikey_show $mol_view
+$trip2g_admin_apikey_show $mol_page
+	title \API Key Details
 	apikey_id 0
-	sub / \Hello
+	disabled false
+	DisableButton $trip2g_admin_apikey_button_disable
+		id <= apikey_id
+	body /
+		\Hello

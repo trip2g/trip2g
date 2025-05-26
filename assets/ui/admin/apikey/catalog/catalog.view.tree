@@ -9,6 +9,7 @@ $trip2g_admin_apikey_catalog $mol_book2_catalog
 	Empty $mol_status
 	Content* $trip2g_admin_apikey_show
 		apikey_id <= row_id* 0
+		disabled <= row_disabled* false
 	AddForm $trip2g_admin_apikey_create
 	menu_link_content* / <= ApiKeyItem* $mol_view
 		sub /
@@ -28,6 +29,12 @@ $trip2g_admin_apikey_catalog $mol_book2_catalog
 						title \Created By
 						Content <= Row_created_by* $trip2g_admin_cell
 							content <= row_created_by* \created_by
+					<= Row_disabled_at_labeler* $mol_labeler
+						title \Disabled At
+						Content <= Row_disabled_at* $trip2g_admin_cell
+							content <= row_disabled_at* \disabled_at
+							attr *
+								title <= row_disabled_by* \disabled_by
 					<= Row_description_labeler* $mol_labeler
 						title \Description
 						Content <= Row_description* $trip2g_admin_cell

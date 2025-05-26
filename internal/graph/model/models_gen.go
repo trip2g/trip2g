@@ -25,8 +25,8 @@ type CreatePaymentLinkOrErrorPayload interface {
 	IsCreatePaymentLinkOrErrorPayload()
 }
 
-type DeleteAPIKeyOrErrorPayload interface {
-	IsDeleteAPIKeyOrErrorPayload()
+type DisableAPIKeyOrErrorPayload interface {
+	IsDisableAPIKeyOrErrorPayload()
 }
 
 type PushNotesOrErrorPayload interface {
@@ -131,15 +131,15 @@ type CreatePaymentLinkPayload struct {
 
 func (CreatePaymentLinkPayload) IsCreatePaymentLinkOrErrorPayload() {}
 
-type DeleteAPIKeyInput struct {
+type DisableAPIKeyInput struct {
 	ID int `json:"id"`
 }
 
-type DeleteAPIKeyPayload struct {
-	ID int `json:"id"`
+type DisableAPIKeyPayload struct {
+	APIKey *db.ApiKey `json:"apiKey"`
 }
 
-func (DeleteAPIKeyPayload) IsDeleteAPIKeyOrErrorPayload() {}
+func (DisableAPIKeyPayload) IsDisableAPIKeyOrErrorPayload() {}
 
 type ErrorPayload struct {
 	Message  string         `json:"message"`
@@ -168,7 +168,7 @@ func (ErrorPayload) IsBanUserOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateAPIKeyOrErrorPayload() {}
 
-func (ErrorPayload) IsDeleteAPIKeyOrErrorPayload() {}
+func (ErrorPayload) IsDisableAPIKeyOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`

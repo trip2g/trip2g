@@ -106,6 +106,8 @@ type AdminApiKey @goModel(model: "trip2g/internal/db.ApiKey") {
   createdAt: Time!
   description: String!
   createdBy: AdminUser! @goField(forceResolver: true)
+  disabledBy: AdminUser @goField(forceResolver: true)
+  disabledAt: Time
 }
 
 type AdminApiKeysConnection {
@@ -400,15 +402,15 @@ union CreateApiKeyOrErrorPayload = CreateApiKeyPayload | ErrorPayload
 # disableApiKey
 #
 
-input DeleteApiKeyInput {
+input DisableApiKeyInput {
   id: Int64!
 }
 
-type DeleteApiKeyPayload {
-  id: Int64!
+type DisableApiKeyPayload {
+  apiKey: AdminApiKey!
 }
 
-union DeleteApiKeyOrErrorPayload = DeleteApiKeyPayload | ErrorPayload
+union DisableApiKeyOrErrorPayload = DisableApiKeyPayload | ErrorPayload
 
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
@@ -416,5 +418,5 @@ type AdminMutation {
   unbanUser(input: UnbanUserInput!): UnbanUserOrErrorPayload!
   banUser(input: BanUserInput!): BanUserOrErrorPayload!
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
-  disableApiKey(input: DeleteApiKeyInput!): DeleteApiKeyOrErrorPayload!
+  disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!
 }
