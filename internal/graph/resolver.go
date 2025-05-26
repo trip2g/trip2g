@@ -58,6 +58,7 @@ type Env interface {
 	UserSubgraphAccessByID(ctx context.Context, id int64) (db.UserSubgraphAccess, error)
 	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]db.Subgraph, error)
 	ListActiveUserSubgraphAccessesByUserID(ctx context.Context, userID int64) ([]db.UserSubgraphAccess, error)
+	ListApiKeyLogsByApiKeyID(ctx context.Context, apiKeyID int64) ([]db.ListApiKeyLogsByApiKeyIDRow, error)
 
 	// activePurchases
 	ListActivePurchasesByUserID(ctx context.Context, userID sql.NullInt64) ([]db.Purchase, error)

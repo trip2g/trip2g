@@ -46,6 +46,7 @@ type Config struct {
 type ResolverRoot interface {
 	Admin() AdminResolver
 	AdminApiKey() AdminApiKeyResolver
+	AdminApiKeyLogsConnection() AdminApiKeyLogsConnectionResolver
 	AdminApiKeysConnection() AdminApiKeysConnectionResolver
 	AdminMutation() AdminMutationResolver
 	AdminNoteViewsConnection() AdminNoteViewsConnectionResolver
@@ -88,6 +89,16 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 	}
 
+	AdminApiKeyLog struct {
+		ActionName func(childComplexity int) int
+		CreatedAt  func(childComplexity int) int
+		Ip         func(childComplexity int) int
+	}
+
+	AdminApiKeyLogsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
 	AdminApiKeysConnection struct {
 		Nodes func(childComplexity int) int
 	}
@@ -106,6 +117,7 @@ type ComplexityRoot struct {
 	}
 
 	AdminQuery struct {
+		APIKeyLogs              func(childComplexity int, filter model.APIKeyLogsFilterInput) int
 		AllAPIKeys              func(childComplexity int) int
 		AllNoteViews            func(childComplexity int) int
 		AllSubgraphs            func(childComplexity int) int
@@ -315,6 +327,9 @@ type AdminResolver interface {
 type AdminApiKeyResolver interface {
 	CreatedBy(ctx context.Context, obj *db.ApiKey) (*db.User, error)
 }
+type AdminApiKeyLogsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminAPIKeyLogsConnection) ([]db.ListApiKeyLogsByApiKeyIDRow, error)
+}
 type AdminApiKeysConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminAPIKeysConnection) ([]db.ApiKey, error)
 }
@@ -336,6 +351,7 @@ type AdminQueryResolver interface {
 	AllNoteViews(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNoteViewsConnection, error)
 	AllUserUserBans(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUserBansConnection, error)
 	AllAPIKeys(ctx context.Context, obj *model1.AdminQuery) (*model.AdminAPIKeysConnection, error)
+	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
 	UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int) (*db.UserSubgraphAccess, error)
@@ -482,6 +498,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminApiKey.ID(childComplexity), true
 
+	case "AdminApiKeyLog.actionName":
+		if e.complexity.AdminApiKeyLog.ActionName == nil {
+			break
+		}
+
+		return e.complexity.AdminApiKeyLog.ActionName(childComplexity), true
+
+	case "AdminApiKeyLog.createdAt":
+		if e.complexity.AdminApiKeyLog.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminApiKeyLog.CreatedAt(childComplexity), true
+
+	case "AdminApiKeyLog.ip":
+		if e.complexity.AdminApiKeyLog.Ip == nil {
+			break
+		}
+
+		return e.complexity.AdminApiKeyLog.Ip(childComplexity), true
+
+	case "AdminApiKeyLogsConnection.nodes":
+		if e.complexity.AdminApiKeyLogsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminApiKeyLogsConnection.Nodes(childComplexity), true
+
 	case "AdminApiKeysConnection.nodes":
 		if e.complexity.AdminApiKeysConnection.Nodes == nil {
 			break
@@ -567,6 +611,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminNoteViewsConnection.Nodes(childComplexity), true
+
+	case "AdminQuery.apiKeyLogs":
+		if e.complexity.AdminQuery.APIKeyLogs == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_apiKeyLogs_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.APIKeyLogs(childComplexity, args["filter"].(model.APIKeyLogsFilterInput)), true
 
 	case "AdminQuery.allApiKeys":
 		if e.complexity.AdminQuery.AllAPIKeys == nil {
@@ -1307,6 +1363,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputApiKeyLogsFilterInput,
 		ec.unmarshalInputBanUserInput,
 		ec.unmarshalInputCreateApiKeyInput,
 		ec.unmarshalInputCreatePaymentLinkInput,
@@ -1570,6 +1627,29 @@ func (ec *executionContext) field_AdminMutation_updateUserSubgraphAccess_argsInp
 	}
 
 	var zeroVal updateusersubgraphaccess.Request
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_apiKeyLogs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_apiKeyLogs_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_apiKeyLogs_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.APIKeyLogsFilterInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalNApiKeyLogsFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAPIKeyLogsFilterInput(ctx, tmp)
+	}
+
+	var zeroVal model.APIKeyLogsFilterInput
 	return zeroVal, nil
 }
 
@@ -2138,6 +2218,190 @@ func (ec *executionContext) fieldContext_AdminApiKey_createdBy(_ context.Context
 				return ec.fieldContext_AdminUser_ban(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminApiKeyLog_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.ListApiKeyLogsByApiKeyIDRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminApiKeyLog_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminApiKeyLog_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminApiKeyLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminApiKeyLog_actionName(ctx context.Context, field graphql.CollectedField, obj *db.ListApiKeyLogsByApiKeyIDRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminApiKeyLog_actionName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActionName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminApiKeyLog_actionName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminApiKeyLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminApiKeyLog_ip(ctx context.Context, field graphql.CollectedField, obj *db.ListApiKeyLogsByApiKeyIDRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminApiKeyLog_ip(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Ip, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminApiKeyLog_ip(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminApiKeyLog",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminApiKeyLogsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminAPIKeyLogsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminApiKeyLogsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminApiKeyLogsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.ListApiKeyLogsByApiKeyIDRow)
+	fc.Result = res
+	return ec.marshalNAdminApiKeyLog2ᚕtrip2gᚋinternalᚋdbᚐListApiKeyLogsByApiKeyIDRowᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminApiKeyLogsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminApiKeyLogsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "createdAt":
+				return ec.fieldContext_AdminApiKeyLog_createdAt(ctx, field)
+			case "actionName":
+				return ec.fieldContext_AdminApiKeyLog_actionName(ctx, field)
+			case "ip":
+				return ec.fieldContext_AdminApiKeyLog_ip(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminApiKeyLog", field.Name)
 		},
 	}
 	return fc, nil
@@ -2871,6 +3135,65 @@ func (ec *executionContext) fieldContext_AdminQuery_allApiKeys(_ context.Context
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminApiKeysConnection", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_apiKeyLogs(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().APIKeyLogs(rctx, obj, fc.Args["filter"].(model.APIKeyLogsFilterInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminAPIKeyLogsConnection)
+	fc.Result = res
+	return ec.marshalNAdminApiKeyLogsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminAPIKeyLogsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_apiKeyLogs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminApiKeyLogsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminApiKeyLogsConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_apiKeyLogs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -5964,6 +6287,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allUserUserBans(ctx, field)
 			case "allApiKeys":
 				return ec.fieldContext_AdminQuery_allApiKeys(ctx, field)
+			case "apiKeyLogs":
+				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "subgraph":
 				return ec.fieldContext_AdminQuery_subgraph(ctx, field)
 			case "noteView":
@@ -9409,6 +9734,33 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputApiKeyLogsFilterInput(ctx context.Context, obj any) (model.APIKeyLogsFilterInput, error) {
+	var it model.APIKeyLogsFilterInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"apiKeyId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "apiKeyId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKeyId"))
+			data, err := ec.unmarshalOInt642ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIKeyID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputBanUserInput(ctx context.Context, obj any) (model.BanUserInput, error) {
 	var it model.BanUserInput
 	asMap := map[string]any{}
@@ -10263,6 +10615,125 @@ func (ec *executionContext) _AdminApiKey(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
+var adminApiKeyLogImplementors = []string{"AdminApiKeyLog"}
+
+func (ec *executionContext) _AdminApiKeyLog(ctx context.Context, sel ast.SelectionSet, obj *db.ListApiKeyLogsByApiKeyIDRow) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminApiKeyLogImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminApiKeyLog")
+		case "createdAt":
+			out.Values[i] = ec._AdminApiKeyLog_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "actionName":
+			out.Values[i] = ec._AdminApiKeyLog_actionName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ip":
+			out.Values[i] = ec._AdminApiKeyLog_ip(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminApiKeyLogsConnectionImplementors = []string{"AdminApiKeyLogsConnection"}
+
+func (ec *executionContext) _AdminApiKeyLogsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminAPIKeyLogsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminApiKeyLogsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminApiKeyLogsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminApiKeyLogsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminApiKeysConnectionImplementors = []string{"AdminApiKeysConnection"}
 
 func (ec *executionContext) _AdminApiKeysConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminAPIKeysConnection) graphql.Marshaler {
@@ -10854,6 +11325,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_allApiKeys(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "apiKeyLogs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_apiKeyLogs(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -14053,6 +14560,68 @@ func (ec *executionContext) marshalNAdminApiKey2ᚖtrip2gᚋinternalᚋdbᚐApiK
 	return ec._AdminApiKey(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminApiKeyLog2trip2gᚋinternalᚋdbᚐListApiKeyLogsByApiKeyIDRow(ctx context.Context, sel ast.SelectionSet, v db.ListApiKeyLogsByApiKeyIDRow) graphql.Marshaler {
+	return ec._AdminApiKeyLog(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminApiKeyLog2ᚕtrip2gᚋinternalᚋdbᚐListApiKeyLogsByApiKeyIDRowᚄ(ctx context.Context, sel ast.SelectionSet, v []db.ListApiKeyLogsByApiKeyIDRow) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminApiKeyLog2trip2gᚋinternalᚋdbᚐListApiKeyLogsByApiKeyIDRow(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminApiKeyLogsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminAPIKeyLogsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminAPIKeyLogsConnection) graphql.Marshaler {
+	return ec._AdminApiKeyLogsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminApiKeyLogsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminAPIKeyLogsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminAPIKeyLogsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminApiKeyLogsConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminApiKeysConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminAPIKeysConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminAPIKeysConnection) graphql.Marshaler {
 	return ec._AdminApiKeysConnection(ctx, sel, &v)
 }
@@ -14327,6 +14896,11 @@ func (ec *executionContext) marshalNAdminUsersConnection2ᚖtrip2gᚋinternalᚋ
 		return graphql.Null
 	}
 	return ec._AdminUsersConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNApiKeyLogsFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAPIKeyLogsFilterInput(ctx context.Context, v any) (model.APIKeyLogsFilterInput, error) {
+	res, err := ec.unmarshalInputApiKeyLogsFilterInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNBanUserInput2trip2gᚋinternalᚋgraphᚋmodelᚐBanUserInput(ctx context.Context, v any) (model.BanUserInput, error) {
@@ -15505,6 +16079,24 @@ func (ec *executionContext) marshalOInt642int64(ctx context.Context, sel ast.Sel
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalInt64(v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOInt642ᚖint(ctx context.Context, v any) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt642ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalInt(*v)
 	return res
 }
 

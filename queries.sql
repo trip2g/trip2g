@@ -350,3 +350,11 @@ on conflict(name) do nothing;
 insert into api_key_log_ips (value)
 values (?)
 on conflict(value) do nothing;
+
+-- name: ListApiKeyLogsByApiKeyID :many
+select l.created_at, a.name as action_name, i.value as ip
+  from api_key_logs l
+  join api_key_log_actions a on l.action_id = a.id
+  join api_key_log_ips i on l.ip_id = i.id
+ where l.api_key_id = ?
+ order by l.created_at desc;

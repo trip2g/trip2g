@@ -43,6 +43,15 @@ func (r *adminApiKeyResolver) CreatedBy(ctx context.Context, obj *db.ApiKey) (*d
 }
 
 // Nodes is the resolver for the nodes field.
+func (r *adminApiKeyLogsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminAPIKeyLogsConnection) ([]db.ListApiKeyLogsByApiKeyIDRow, error) {
+	if obj.APIKeyID == nil {
+		return nil, nil
+	}
+
+	return r.env(ctx).ListApiKeyLogsByApiKeyID(ctx, int64(*obj.APIKeyID))
+}
+
+// Nodes is the resolver for the nodes field.
 func (r *adminApiKeysConnectionResolver) Nodes(ctx context.Context, obj *model.AdminAPIKeysConnection) ([]db.ApiKey, error) {
 	return r.env(ctx).ListAllApiKeys(ctx)
 }
@@ -124,6 +133,11 @@ func (r *adminQueryResolver) AllUserUserBans(ctx context.Context, obj *appmodel.
 // AllAPIKeys is the resolver for the allApiKeys field.
 func (r *adminQueryResolver) AllAPIKeys(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminAPIKeysConnection, error) {
 	return &model.AdminAPIKeysConnection{}, nil
+}
+
+// APIKeyLogs is the resolver for the apiKeyLogs field.
+func (r *adminQueryResolver) APIKeyLogs(ctx context.Context, obj *appmodel.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error) {
+	return &model.AdminAPIKeyLogsConnection{APIKeyID: filter.APIKeyID}, nil
 }
 
 // Subgraph is the resolver for the subgraph field.
@@ -491,6 +505,11 @@ func (r *Resolver) Admin() AdminResolver { return &adminResolver{r} }
 // AdminApiKey returns AdminApiKeyResolver implementation.
 func (r *Resolver) AdminApiKey() AdminApiKeyResolver { return &adminApiKeyResolver{r} }
 
+// AdminApiKeyLogsConnection returns AdminApiKeyLogsConnectionResolver implementation.
+func (r *Resolver) AdminApiKeyLogsConnection() AdminApiKeyLogsConnectionResolver {
+	return &adminApiKeyLogsConnectionResolver{r}
+}
+
 // AdminApiKeysConnection returns AdminApiKeysConnectionResolver implementation.
 func (r *Resolver) AdminApiKeysConnection() AdminApiKeysConnectionResolver {
 	return &adminApiKeysConnectionResolver{r}
@@ -584,6 +603,7 @@ func (r *Resolver) Viewer() ViewerResolver { return &viewerResolver{r} }
 
 type adminResolver struct{ *Resolver }
 type adminApiKeyResolver struct{ *Resolver }
+type adminApiKeyLogsConnectionResolver struct{ *Resolver }
 type adminApiKeysConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
 type adminNoteViewsConnectionResolver struct{ *Resolver }
@@ -609,15 +629,3 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *adminApiKeyResolver) Description(ctx context.Context, obj *db.ApiKey) (string, error) {
-	panic(fmt.Errorf("not implemented: Description - description"))
-}
-*/

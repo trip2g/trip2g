@@ -1,7 +1,7 @@
 namespace $.$$ {
 	const { rem } = $mol_style_unit
 
-	$mol_style_define($trip2g_admin_list_apikeys, {
+	$mol_style_define($trip2g_admin_apikey_catalog, {
 		Rows: {
 			flex: {
 				grow: 1,

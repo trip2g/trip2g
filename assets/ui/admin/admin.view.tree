@@ -20,7 +20,7 @@ $trip2g_admin_app $mol_book2_catalog
 		user_subgraph_accesses <= ListUsersSubgraphAccesses $trip2g_admin_list_usersubgraphaccesses
 		subgraphs <= ListSubgraphs $trip2g_admin_list_subgraphs
 		noteviews <= ListNoteviews $trip2g_admin_list_noteviews
-		apikeys <= ListApiKeys $trip2g_admin_list_apikeys
+		apikeys <= ListApiKeys $trip2g_admin_apikey_catalog
 
 $trip2g_admin_cell $mol_view
 	content \No Content

@@ -112,6 +112,21 @@ type AdminApiKeysConnection {
   nodes: [AdminApiKey!]! @goField(forceResolver: true)
 }
 
+input ApiKeyLogsFilterInput {
+  apiKeyId: Int64
+}
+
+type AdminApiKeyLog @goModel(model: "trip2g/internal/db.ListApiKeyLogsByApiKeyIDRow") {
+  createdAt: Time!
+  actionName: String!
+  ip: String!
+}
+
+type AdminApiKeyLogsConnection
+  @goExtraField(name: "APIKeyID", type: "*int") {
+  nodes: [AdminApiKeyLog!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -119,6 +134,8 @@ type AdminQuery {
   allNoteViews: AdminNoteViewsConnection!
   allUserUserBans: AdminUserBansConnection!
   allApiKeys: AdminApiKeysConnection!
+
+  apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
 
   subgraph(id: Int64!): AdminSubgraph
   noteView(id: String!): NoteView

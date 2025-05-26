@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+	"time"
 )
 
 const acmeCertByKey = `-- name: AcmeCertByKey :one
@@ -1163,6 +1164,44 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.LastSigninCodeSentAt,
 			&i.NoteViewCount,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listApiKeyLogsByApiKeyID = `-- name: ListApiKeyLogsByApiKeyID :many
+select l.created_at, a.name as action_name, i.value as ip
+  from api_key_logs l
+  join api_key_log_actions a on l.action_id = a.id
+  join api_key_log_ips i on l.ip_id = i.id
+ where l.api_key_id = ?
+ order by l.created_at desc
+`
+
+type ListApiKeyLogsByApiKeyIDRow struct {
+	CreatedAt  time.Time `json:"created_at"`
+	ActionName string    `json:"action_name"`
+	Ip         string    `json:"ip"`
+}
+
+func (q *Queries) ListApiKeyLogsByApiKeyID(ctx context.Context, apiKeyID int64) ([]ListApiKeyLogsByApiKeyIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, listApiKeyLogsByApiKeyID, apiKeyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListApiKeyLogsByApiKeyIDRow
+	for rows.Next() {
+		var i ListApiKeyLogsByApiKeyIDRow
+		if err := rows.Scan(&i.CreatedAt, &i.ActionName, &i.Ip); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

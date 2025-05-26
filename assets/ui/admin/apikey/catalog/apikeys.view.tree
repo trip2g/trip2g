@@ -1,11 +1,15 @@
-$trip2g_admin_list_apikeys $mol_book2_catalog
+$trip2g_admin_apikey_catalog $mol_book2_catalog
 	menu_title \API Keys
-	menu_tools / <= Spread_close
-	menu_filter_enabled true
+	menu_tools /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+		<= Spread_close
 	param \id
 	Empty $mol_status
-	Content* $trip2g_admin_show_apikey
+	Content* $trip2g_admin_apikey_show
 		apikey_id <= row_id* 0
+	AddForm $trip2g_admin_apikey_create
 	menu_link_content* / <= ApiKeyItem* $mol_view
 		sub /
 			<= Rows* $mol_row

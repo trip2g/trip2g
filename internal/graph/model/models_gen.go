@@ -61,6 +61,11 @@ type UploadNoteAssetOrErrorPayload interface {
 	IsUploadNoteAssetOrErrorPayload()
 }
 
+type AdminAPIKeyLogsConnection struct {
+	Nodes    []db.ListApiKeyLogsByApiKeyIDRow `json:"nodes"`
+	APIKeyID *int                             `json:"-"`
+}
+
 type AdminAPIKeysConnection struct {
 	Nodes []db.ApiKey `json:"nodes"`
 }
@@ -83,6 +88,10 @@ type AdminUserSubgraphAccessesConnection struct {
 
 type AdminUsersConnection struct {
 	Nodes []db.User `json:"nodes"`
+}
+
+type APIKeyLogsFilterInput struct {
+	APIKeyID *int `json:"apiKeyId,omitempty"`
 }
 
 type BanUserInput struct {

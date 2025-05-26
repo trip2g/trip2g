@@ -1,5 +1,5 @@
 namespace $.$$ {
-	export class $trip2g_admin_list_apikeys extends $.$trip2g_admin_list_apikeys {
+	export class $trip2g_admin_apikey_catalog extends $.$trip2g_admin_apikey_catalog {
 		@$mol_mem
 		data( reset?: null ) {
 			const res = $trip2g_graphql_request( `
@@ -25,7 +25,15 @@ namespace $.$$ {
 
 		@$mol_mem
 		spreads(): any {
-			return this.data().mapKeys( key => this.Content( key ) )
+			return {
+				add: this.AddForm(),
+				...this.data().mapKeys( key => this.Content( key ) )
+			}
+		}
+
+		@ $mol_mem
+		override spread_ids_filtered() {
+			return this.spread_ids().filter(id => id !== 'add')
 		}
 
 		row( id: any ) {
@@ -41,8 +49,8 @@ namespace $.$$ {
 		}
 
 		override row_created_at( id: any ): string {
-			const m = new $mol_time_moment(this.row(id).createdAt)
-			return m.toString('YYYY-MM-DD')
+			const m = new $mol_time_moment( this.row( id ).createdAt )
+			return m.toString( 'YYYY-MM-DD' )
 		}
 
 		override row_created_by( id: any ): string {

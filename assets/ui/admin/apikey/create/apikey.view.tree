@@ -1,0 +1,16 @@
+$trip2g_admin_apikey_create $mol_page
+	title \Create API Key
+	body /
+		<= Form $mol_form
+			body /
+				<= Description_field $mol_form_field
+					name \Description
+					bid <= description_bid \
+					Content <= description_control $mol_string
+						value? <=> description_color? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \
