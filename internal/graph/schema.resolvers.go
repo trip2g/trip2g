@@ -15,6 +15,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
+	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
@@ -71,9 +72,9 @@ func (r *adminMutationResolver) CreateAPIKey(ctx context.Context, obj *appmodel.
 	return createapikey.Resolve(ctx, r.env(ctx), input)
 }
 
-// DeleteAPIKey is the resolver for the deleteApiKey field.
-func (r *adminMutationResolver) DeleteAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteAPIKeyInput) (model.DeleteAPIKeyOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: DeleteAPIKey - deleteApiKey"))
+// DisableAPIKey is the resolver for the disableApiKey field.
+func (r *adminMutationResolver) DisableAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteAPIKeyInput) (model.DeleteAPIKeyOrErrorPayload, error) {
+	return disableapikey.Resolve(ctx, r.env(ctx), input)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -608,3 +609,15 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *adminMutationResolver) DeleteAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteAPIKeyInput) (model.DeleteAPIKeyOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: DeleteAPIKey - deleteApiKey"))
+}
+*/

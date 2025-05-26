@@ -320,15 +320,17 @@ values (?, ?);
 delete from acme_certs where key = ?;
 
 -- name: ApiKeyIDByValue :one
-select id from api_keys where value = ?;
+select id from api_keys where value = ? and disabled_at is null limit 1;
 
 -- name: InsertApiKey :one
 insert into api_keys (value, created_by, description)
 values (?, ?, ?)
 returning *;
 
--- name: DeleteApiKey :exec
-delete from api_keys where id = ?;
+-- name: DisableApiKey :exec
+update api_keys
+  set disabled_by = ?, disabled_at = datetime('now')
+ where id = ?;
 
 -- name: ListAllApiKeys :many
 select * from api_keys order by created_by, created_at desc;

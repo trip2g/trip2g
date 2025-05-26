@@ -297,7 +297,7 @@ func (q *Queries) AllOffers(ctx context.Context) ([]Offer, error) {
 }
 
 const apiKeyIDByValue = `-- name: ApiKeyIDByValue :one
-select id from api_keys where value = ?
+select id from api_keys where value = ? and disabled_at is null limit 1
 `
 
 func (q *Queries) ApiKeyIDByValue(ctx context.Context, value string) (int64, error) {
@@ -414,15 +414,6 @@ func (q *Queries) DeleteAcmeCert(ctx context.Context, key string) error {
 	return err
 }
 
-const deleteApiKey = `-- name: DeleteApiKey :exec
-delete from api_keys where id = ?
-`
-
-func (q *Queries) DeleteApiKey(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteApiKey, id)
-	return err
-}
-
 const deleteOffer = `-- name: DeleteOffer :one
 update offers
    set ends_at = datetime('now')
@@ -452,6 +443,22 @@ delete from sign_in_codes
 
 func (q *Queries) DeleteSignInCodesByUserID(ctx context.Context, userID int64) error {
 	_, err := q.db.ExecContext(ctx, deleteSignInCodesByUserID, userID)
+	return err
+}
+
+const disableApiKey = `-- name: DisableApiKey :exec
+update api_keys
+  set disabled_by = ?, disabled_at = datetime('now')
+ where id = ?
+`
+
+type DisableApiKeyParams struct {
+	DisabledBy sql.NullInt64 `json:"disabled_by"`
+	ID         int64         `json:"id"`
+}
+
+func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) error {
+	_, err := q.db.ExecContext(ctx, disableApiKey, arg.DisabledBy, arg.ID)
 	return err
 }
 
@@ -504,7 +511,7 @@ func (q *Queries) InsertAcmeCert(ctx context.Context, arg InsertAcmeCertParams) 
 const insertApiKey = `-- name: InsertApiKey :one
 insert into api_keys (value, created_by, description)
 values (?, ?, ?)
-returning id, value, created_at, created_by, description
+returning id, value, created_at, created_by, disabled_at, disabled_by, description
 `
 
 type InsertApiKeyParams struct {
@@ -521,6 +528,8 @@ func (q *Queries) InsertApiKey(ctx context.Context, arg InsertApiKeyParams) (Api
 		&i.Value,
 		&i.CreatedAt,
 		&i.CreatedBy,
+		&i.DisabledAt,
+		&i.DisabledBy,
 		&i.Description,
 	)
 	return i, err
@@ -1001,7 +1010,7 @@ func (q *Queries) ListActiveUserSubgraphAccessesByUserID(ctx context.Context, us
 }
 
 const listAllApiKeys = `-- name: ListAllApiKeys :many
-select id, value, created_at, created_by, description from api_keys order by created_by, created_at desc
+select id, value, created_at, created_by, disabled_at, disabled_by, description from api_keys order by created_by, created_at desc
 `
 
 func (q *Queries) ListAllApiKeys(ctx context.Context) ([]ApiKey, error) {
@@ -1018,6 +1027,8 @@ func (q *Queries) ListAllApiKeys(ctx context.Context) ([]ApiKey, error) {
 			&i.Value,
 			&i.CreatedAt,
 			&i.CreatedBy,
+			&i.DisabledAt,
+			&i.DisabledBy,
 			&i.Description,
 		); err != nil {
 			return nil, err

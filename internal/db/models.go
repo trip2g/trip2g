@@ -24,11 +24,13 @@ type Admin struct {
 }
 
 type ApiKey struct {
-	ID          int64       `json:"id"`
-	Value       string      `json:"value"`
-	CreatedAt   time.Time   `json:"created_at"`
-	CreatedBy   int64       `json:"created_by"`
-	Description interface{} `json:"description"`
+	ID          int64         `json:"id"`
+	Value       string        `json:"value"`
+	CreatedAt   time.Time     `json:"created_at"`
+	CreatedBy   int64         `json:"created_by"`
+	DisabledAt  sql.NullTime  `json:"disabled_at"`
+	DisabledBy  sql.NullInt64 `json:"disabled_by"`
+	Description interface{}   `json:"description"`
 }
 
 type ApiKeyLog struct {

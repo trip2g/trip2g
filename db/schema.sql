@@ -146,6 +146,8 @@ CREATE TABLE api_keys (
   value text not null unique,
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete cascade,
+  disabled_at datetime,
+  disabled_by integer references admins(user_id) on delete restrict,
   description not null default '' -- the form field always has a value
 );
 CREATE TABLE api_key_log_actions (

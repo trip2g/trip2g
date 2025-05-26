@@ -379,7 +379,7 @@ type CreateApiKeyPayload {
 union CreateApiKeyOrErrorPayload = CreateApiKeyPayload | ErrorPayload
 
 #
-# deleteApiKey
+# disableApiKey
 #
 
 input DeleteApiKeyInput {
@@ -398,5 +398,5 @@ type AdminMutation {
   unbanUser(input: UnbanUserInput!): UnbanUserOrErrorPayload!
   banUser(input: BanUserInput!): BanUserOrErrorPayload!
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
-  deleteApiKey(input: DeleteApiKeyInput!): DeleteApiKeyOrErrorPayload!
+  disableApiKey(input: DeleteApiKeyInput!): DeleteApiKeyOrErrorPayload!
 }

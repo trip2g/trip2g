@@ -94,7 +94,7 @@ type ComplexityRoot struct {
 	AdminMutation struct {
 		BanUser                  func(childComplexity int, input model.BanUserInput) int
 		CreateAPIKey             func(childComplexity int, input model.CreateAPIKeyInput) int
-		DeleteAPIKey             func(childComplexity int, input model.DeleteAPIKeyInput) int
+		DisableAPIKey            func(childComplexity int, input model.DeleteAPIKeyInput) int
 		UnbanUser                func(childComplexity int, input model.UnbanUserInput) int
 		UpdateSubgraph           func(childComplexity int, input updatesubgraph.Request) int
 		UpdateUserSubgraphAccess func(childComplexity int, input updateusersubgraphaccess.Request) int
@@ -323,7 +323,7 @@ type AdminMutationResolver interface {
 	UnbanUser(ctx context.Context, obj *model1.AdminMutation, input model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error)
 	BanUser(ctx context.Context, obj *model1.AdminMutation, input model.BanUserInput) (model.BanUserOrErrorPayload, error)
 	CreateAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error)
-	DeleteAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.DeleteAPIKeyInput) (model.DeleteAPIKeyOrErrorPayload, error)
+	DisableAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.DeleteAPIKeyInput) (model.DeleteAPIKeyOrErrorPayload, error)
 }
 type AdminNoteViewsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminNoteViewsConnection) ([]model1.NoteView, error)
@@ -505,17 +505,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.CreateAPIKey(childComplexity, args["input"].(model.CreateAPIKeyInput)), true
 
-	case "AdminMutation.deleteApiKey":
-		if e.complexity.AdminMutation.DeleteAPIKey == nil {
+	case "AdminMutation.disableApiKey":
+		if e.complexity.AdminMutation.DisableAPIKey == nil {
 			break
 		}
 
-		args, err := ec.field_AdminMutation_deleteApiKey_args(ctx, rawArgs)
+		args, err := ec.field_AdminMutation_disableApiKey_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.AdminMutation.DeleteAPIKey(childComplexity, args["input"].(model.DeleteAPIKeyInput)), true
+		return e.complexity.AdminMutation.DisableAPIKey(childComplexity, args["input"].(model.DeleteAPIKeyInput)), true
 
 	case "AdminMutation.unbanUser":
 		if e.complexity.AdminMutation.UnbanUser == nil {
@@ -1473,17 +1473,17 @@ func (ec *executionContext) field_AdminMutation_createApiKey_argsInput(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_AdminMutation_deleteApiKey_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_AdminMutation_disableApiKey_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_AdminMutation_deleteApiKey_argsInput(ctx, rawArgs)
+	arg0, err := ec.field_AdminMutation_disableApiKey_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_AdminMutation_deleteApiKey_argsInput(
+func (ec *executionContext) field_AdminMutation_disableApiKey_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (model.DeleteAPIKeyInput, error) {
@@ -2418,8 +2418,8 @@ func (ec *executionContext) fieldContext_AdminMutation_createApiKey(ctx context.
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminMutation_deleteApiKey(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminMutation_deleteApiKey(ctx, field)
+func (ec *executionContext) _AdminMutation_disableApiKey(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_disableApiKey(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2432,7 +2432,7 @@ func (ec *executionContext) _AdminMutation_deleteApiKey(ctx context.Context, fie
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminMutation().DeleteAPIKey(rctx, obj, fc.Args["input"].(model.DeleteAPIKeyInput))
+		return ec.resolvers.AdminMutation().DisableAPIKey(rctx, obj, fc.Args["input"].(model.DeleteAPIKeyInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2449,7 +2449,7 @@ func (ec *executionContext) _AdminMutation_deleteApiKey(ctx context.Context, fie
 	return ec.marshalNDeleteApiKeyOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteAPIKeyOrErrorPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminMutation_deleteApiKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminMutation_disableApiKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminMutation",
 		Field:      field,
@@ -2466,7 +2466,7 @@ func (ec *executionContext) fieldContext_AdminMutation_deleteApiKey(ctx context.
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_deleteApiKey_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_AdminMutation_disableApiKey_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4799,8 +4799,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_banUser(ctx, field)
 			case "createApiKey":
 				return ec.fieldContext_AdminMutation_createApiKey(ctx, field)
-			case "deleteApiKey":
-				return ec.fieldContext_AdminMutation_deleteApiKey(ctx, field)
+			case "disableApiKey":
+				return ec.fieldContext_AdminMutation_disableApiKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -10463,7 +10463,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "deleteApiKey":
+		case "disableApiKey":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -10472,7 +10472,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminMutation_deleteApiKey(ctx, field, obj)
+				res = ec._AdminMutation_disableApiKey(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
