@@ -22,6 +22,11 @@ namespace $.$$ {
 				basis: rem(12),
 			},
 		},
+		Row_disabled_at_labeler: {
+			flex: {
+				basis: rem(8),
+			},
+		},
 		Row_description_labeler: {
 			flex: {
 				basis: rem(15),

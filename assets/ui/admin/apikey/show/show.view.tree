@@ -5,4 +5,19 @@ $trip2g_admin_apikey_show $mol_page
 	DisableButton $trip2g_admin_apikey_button_disable
 		id <= apikey_id
 	body /
-		\Hello
+		<= Logs $mol_list
+			rows <= logs /
+				<= LogRow*0 $mol_row
+					sub <= log_content* /
+						<= CreatedAt_labeler* $mol_labeler
+							title \Created At
+							Content <= CreatedAt* $trip2g_table_cell_time
+								value <= log_created_at* null
+						<= IP_labeler* $mol_labeler
+							title \IP
+							Content <= IP* $trip2g_admin_cell
+								content <= log_ip* \
+						<= ActionName_labeler* $mol_labeler
+							title \Action
+							Content <= ActionName* $trip2g_admin_cell
+								content <= log_action_name* \

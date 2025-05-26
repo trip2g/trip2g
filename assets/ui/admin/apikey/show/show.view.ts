@@ -14,7 +14,11 @@ namespace $.$$ {
 						}
 					}
 				}
-			`)
+			`, {
+				filter: {
+					apiKeyId: this.apikey_id(),
+				},
+			})
 
 			return $trip2g_graphql_make_map( res.admin.apiKeyLogs.nodes.map( ( row, id ) => ( { ...row, id } ) ) )
 		}
@@ -25,6 +29,27 @@ namespace $.$$ {
 			}
 
 			return [this.DisableButton(), ...super.body()]
+		}
+
+		override logs() {
+			return this.data().map((_, idx) => this.LogRow(idx))
+		}
+
+		log(idx: any) {
+			return this.data().get(idx.toString())
+		}
+
+		override log_created_at( id: any ) {
+			const m = new $mol_time_moment( this.log( id ).createdAt )
+			return m.toString( 'YYYY-MM-DD' )
+		}
+
+		override log_action_name( id: any ): string {
+			return this.log( id ).actionName
+		}
+
+		override log_ip( id: any ): string {
+			return this.log( id ).ip
 		}
 	}
 }
