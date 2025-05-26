@@ -7,7 +7,7 @@ create table api_keys (
   created_by integer not null references admins(user_id) on delete cascade,
   disabled_at datetime,
   disabled_by integer references admins(user_id) on delete restrict,
-  description not null default '' -- the form field always has a value
+  description text not null default '' -- the form field always has a value
 );
 
 create table api_key_log_actions (

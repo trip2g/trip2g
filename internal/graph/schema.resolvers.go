@@ -617,7 +617,7 @@ type viewerResolver struct{ *Resolver }
 //    it when you're done.
 //  - You have helper methods in this file. Move them out to keep these resolver files clean.
 /*
-	func (r *adminMutationResolver) DeleteAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteAPIKeyInput) (model.DeleteAPIKeyOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: DeleteAPIKey - deleteApiKey"))
+	func (r *adminApiKeyResolver) Description(ctx context.Context, obj *db.ApiKey) (string, error) {
+	panic(fmt.Errorf("not implemented: Description - description"))
 }
 */

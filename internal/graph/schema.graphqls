@@ -104,6 +104,7 @@ type AdminUserBansConnection {
 type AdminApiKey @goModel(model: "trip2g/internal/db.ApiKey") {
   id: Int64!
   createdAt: Time!
+  description: String!
   createdBy: AdminUser! @goField(forceResolver: true)
 }
 

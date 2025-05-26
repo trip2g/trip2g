@@ -515,9 +515,9 @@ returning id, value, created_at, created_by, disabled_at, disabled_by, descripti
 `
 
 type InsertApiKeyParams struct {
-	Value       string      `json:"value"`
-	CreatedBy   int64       `json:"created_by"`
-	Description interface{} `json:"description"`
+	Value       string `json:"value"`
+	CreatedBy   int64  `json:"created_by"`
+	Description string `json:"description"`
 }
 
 func (q *Queries) InsertApiKey(ctx context.Context, arg InsertApiKeyParams) (ApiKey, error) {

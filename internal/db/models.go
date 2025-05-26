@@ -30,7 +30,7 @@ type ApiKey struct {
 	CreatedBy   int64         `json:"created_by"`
 	DisabledAt  sql.NullTime  `json:"disabled_at"`
 	DisabledBy  sql.NullInt64 `json:"disabled_by"`
-	Description interface{}   `json:"description"`
+	Description string        `json:"description"`
 }
 
 type ApiKeyLog struct {

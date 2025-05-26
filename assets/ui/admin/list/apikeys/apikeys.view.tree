@@ -1,0 +1,30 @@
+$trip2g_admin_list_apikeys $mol_book2_catalog
+	menu_title \API Keys
+	menu_tools / <= Spread_close
+	menu_filter_enabled true
+	param \id
+	Empty $mol_status
+	Content* $trip2g_admin_show_apikey
+		apikey_id <= row_id* 0
+	menu_link_content* / <= ApiKeyItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Row_id_labeler* $mol_labeler
+						title \ID
+						Content <= Row_id* $trip2g_admin_cell
+							content <= row_id_string* \
+					<= Row_created_at_labeler* $mol_labeler
+						title \Created At
+						Content <= Row_created_at* $trip2g_admin_cell
+							content <= row_created_at* \created_at
+					<= Row_created_by_labeler* $mol_labeler
+						title \Created By
+						Content <= Row_created_by* $trip2g_admin_cell
+							content <= row_created_by* \created_by
+					<= Row_description_labeler* $mol_labeler
+						title \Description
+						Content <= Row_description* $trip2g_admin_cell
+							content <= row_description* \description
