@@ -1,5 +1,11 @@
 $trip2g_admin_apikey_create $mol_page
 	title \Create API Key
+	ApiKeyView $mol_view
+		sub /
+			<= ApiKeyValue_labeler $mol_labeler
+				title \API Key
+				Content <= ApiKeyValue $trip2g_admin_cell
+					content <= api_key? \
 	body /
 		<= Form $mol_form
 			body /
@@ -7,7 +13,7 @@ $trip2g_admin_apikey_create $mol_page
 					name \Description
 					bid <= description_bid \
 					Content <= description_control $mol_string
-						value? <=> description_color? \
+						value? <=> description? \
 			buttons /
 				<= Submit $mol_button_major
 					title \Submit
