@@ -824,20 +824,20 @@ func (a *app) startServer() {
 		Handler: func(ctx *fasthttp.RequestCtx) {
 			path := string(ctx.Path())
 
+			origin := string(ctx.Request.Header.Peek("Origin"))
+			if origin == "http://localhost:9081" || origin == "app://obsidian.md" {
+				ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
+				ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+				ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Cookie, X-API-Key")
+				ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+			}
+
+			if ctx.IsOptions() {
+				ctx.SetStatusCode(fasthttp.StatusNoContent)
+				return
+			}
+
 			if a.config.DevMode {
-				origin := string(ctx.Request.Header.Peek("Origin"))
-				if origin == "http://localhost:9080" {
-					ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
-					ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
-					ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie")
-					ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-				}
-
-				if ctx.IsOptions() {
-					ctx.SetStatusCode(fasthttp.StatusNoContent)
-					return
-				}
-
 				if strings.HasPrefix(path, "/debug/nvs") {
 					ctx.SetContentType("application/json")
 					ctx.SetStatusCode(fasthttp.StatusOK)
