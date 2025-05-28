@@ -1,9 +1,12 @@
 package appconfig
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"trip2g/internal/logger"
@@ -108,6 +111,14 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 	ctx := context.Background()
 	cfg := DefaultConfig()
 
+	// Load .env file if it exists
+	if err := loadDotEnv(); err != nil {
+		if log != nil {
+			log.Debug("failed to load .env file", "error", err)
+		}
+		// Don't fail if .env file doesn't exist or has issues
+	}
+
 	// Define all flags
 	if err := cfg.defineFlags(); err != nil {
 		return nil, fmt.Errorf("failed to define flags: %w", err)
@@ -182,4 +193,63 @@ func (c *Config) validate() error {
 			return storage.ValidateConfig()
 		})),
 	)
+}
+
+// loadDotEnv loads environment variables from .env file in the current directory.
+// It doesn't override existing environment variables.
+func loadDotEnv() error {
+	return loadDotEnvFromPath(".env")
+}
+
+// loadDotEnvFromPath loads environment variables from a specific .env file path.
+// It doesn't override existing environment variables.
+func loadDotEnvFromPath(path string) error {
+	// Check if file exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return fmt.Errorf(".env file not found at %s", path)
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("failed to open .env file: %w", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineNum := 0
+
+	for scanner.Scan() {
+		lineNum++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Parse KEY=VALUE format
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid format in .env file at line %d: %s", lineNum, line)
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// Remove quotes if present
+		value = strings.Trim(value, "\"'")
+
+		// Only set if environment variable doesn't already exist
+		if _, exists := os.LookupEnv(key); !exists {
+			if err := os.Setenv(key, value); err != nil {
+				return fmt.Errorf("failed to set environment variable %s: %w", key, err)
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("error reading .env file: %w", err)
+	}
+
+	return nil
 }
