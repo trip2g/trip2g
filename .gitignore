@@ -14,3 +14,4 @@ run.sh
 examples.json
 infra/hosts
 demo/.obsidian
+internal/db/db/schema.sql

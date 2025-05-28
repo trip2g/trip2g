@@ -14,7 +14,6 @@ import (
 	"math/big"
 	"net"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -39,9 +38,6 @@ import (
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
 
-	mdb "trip2g/db"
-
-	_ "trip2g/internal/dbmate/sqlite"
 
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/gqlerror"
@@ -53,8 +49,6 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
-
-	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 
 	_ "modernc.org/sqlite"
 )
@@ -104,71 +98,6 @@ type app struct {
 	assetsFS *fasthttp.FS
 }
 
-func enablePragmas(db *sql.DB) error {
-	_, err := db.Exec(`
-		PRAGMA foreign_keys = ON;
-		PRAGMA journal_mode = WAL;
-		PRAGMA synchronous = NORMAL;
-		PRAGMA busy_timeout = 3000;
-		PRAGMA strict = ON;
-	`)
-	return err
-}
-
-func checkForeignKeys(db *sql.DB) error {
-	rows, err := db.Query("PRAGMA foreign_key_check;")
-	if err != nil {
-		return fmt.Errorf("failed to check foreign keys: %w", err)
-	}
-
-	defer rows.Close()
-
-	violationCount := 0
-
-	for rows.Next() {
-		var table string
-		var rowid int
-		var parent string
-		var fkid int
-
-		scanErr := rows.Scan(&table, &rowid, &parent, &fkid)
-		if scanErr != nil {
-			return fmt.Errorf("failed to scan foreign key check: %w", scanErr)
-		}
-
-		violationCount++
-
-		fmt.Printf("Foreign key violation in table %s (rowid %d): parent %s, fkid %d\n", table, rowid, parent, fkid)
-	}
-
-	if violationCount > 0 {
-		return fmt.Errorf("found %d foreign key violations", violationCount)
-	}
-
-	return nil
-}
-
-func showSqliteVersion(db *sql.DB) error {
-	rows, err := db.Query("SELECT sqlite_version();")
-	if err != nil {
-		return fmt.Errorf("failed to get SQLite version: %w", err)
-	}
-
-	defer rows.Close()
-
-	var version string
-
-	if rows.Next() {
-		err = rows.Scan(&version)
-		if err != nil {
-			return fmt.Errorf("failed to scan SQLite version: %w", err)
-		}
-	}
-
-	fmt.Printf("SQLite version: %s\n", version)
-
-	return nil
-}
 
 func main() {
 	config, err := appconfig.Get()
@@ -176,34 +105,15 @@ func main() {
 		panic(fmt.Errorf("failed to load configuration: %w", err))
 	}
 
-	u, _ := url.Parse("sqlite:" + config.DatabaseFile)
-	dbm := dbmate.New(u)
-	dbm.MigrationsDir = []string{"migrations"}
-	dbm.FS = mdb.FS
+	log := zerologger.New(config.LogLevel, config.DevMode)
 
-	err = dbm.CreateAndMigrate()
+	// Setup database
+	conn, err := db.Setup(db.SetupConfig{
+		DatabaseFile: config.DatabaseFile,
+		Logger:       log,
+	})
 	if err != nil {
-		panic(err)
-	}
-
-	conn, err := sql.Open("sqlite", config.DatabaseFile+"?_journal=WAL&_timeout=5000")
-	if err != nil {
-		panic(err)
-	}
-
-	err = enablePragmas(conn)
-	if err != nil {
-		panic(err)
-	}
-
-	err = checkForeignKeys(conn)
-	if err != nil {
-		panic(err)
-	}
-
-	err = showSqliteVersion(conn)
-	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to setup database: %w", err))
 	}
 
 	tokenManager := usertoken.NewManager("trip2g_token", []byte("secret"))
@@ -220,8 +130,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	log := zerologger.New(config.LogLevel, config.DevMode)
 
 	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "no tx:")))
 

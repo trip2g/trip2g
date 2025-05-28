@@ -1,9 +1,5 @@
   High Impact Refactoring Opportunities
 
-  1. Extract App Configuration (cmd/server/main.go:79-127)
-  - Move appConfig struct and flag setup to separate config package
-  - 100+ line main() function should be broken down
-
   2. Separate Database Setup Logic (cmd/server/main.go:218-246)
   - Extract database initialization, pragmas, and migration logic into internal/db/setup.go
 
