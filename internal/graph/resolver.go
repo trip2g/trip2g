@@ -70,8 +70,6 @@ type Env interface {
 
 	IDHash(entity string, id int64) string
 
-	OnPurchaseUpdatedSubscribe(email string, handler func()) func()
-
 	Logger() logger.Logger
 
 	AcquireTxEnvInRequest(ctx context.Context, label string) error

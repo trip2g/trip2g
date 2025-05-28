@@ -39,7 +39,6 @@ import (
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
 
-
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/gqlerror"
 	"golang.org/x/crypto/acme"
@@ -58,7 +57,6 @@ type currentNVS struct {
 	mu  sync.Mutex
 	nvs *model.NoteViews
 }
-
 
 type graphTransactions struct {
 	sync.Mutex
@@ -96,7 +94,6 @@ type app struct {
 
 	assetsFS *fasthttp.FS
 }
-
 
 func main() {
 	config, err := appconfig.Get()
@@ -353,57 +350,6 @@ func (a *app) IDHash(entity string, id int64) string {
 	return fmt.Sprintf("%x", sha256.Sum(nil))
 }
 
-func (a *app) NotifyPuchaseUpdated(email string) {
-	a.purchaseUpdatedMu.Lock()
-	defer a.purchaseUpdatedMu.Unlock()
-
-	handlers, ok := a.purchaseUpdatedHandlers[email]
-	if !ok {
-		return
-	}
-
-	for _, handler := range handlers {
-		handler()
-	}
-
-	a.log.Info("notified purchase updated", "email", email)
-}
-
-func (a *app) OnPurchaseUpdatedSubscribe(email string, handler func()) func() {
-	a.purchaseUpdatedMu.Lock()
-	defer a.purchaseUpdatedMu.Unlock()
-
-	if a.purchaseUpdatedHandlers == nil {
-		a.purchaseUpdatedHandlers = make(map[string]map[int]func())
-	}
-
-	if a.purchaseUpdatedHandlers[email] == nil {
-		a.purchaseUpdatedHandlers[email] = make(map[int]func())
-	}
-
-	id := a.nextPurchaseHandlerID
-	a.nextPurchaseHandlerID++
-	a.purchaseUpdatedHandlers[email][id] = handler
-
-	a.log.Info("subscribed to purchase updated", "email", email, "id", id)
-
-	return func() {
-		a.purchaseUpdatedMu.Lock()
-		defer a.purchaseUpdatedMu.Unlock()
-
-		a.log.Info("unsubscribed from purchase updated", "email", email, "id", id)
-
-		delete(a.purchaseUpdatedHandlers[email], id)
-
-		if len(a.purchaseUpdatedHandlers[email]) == 0 {
-			delete(a.purchaseUpdatedHandlers, email)
-		}
-	}
-}
-
-func (a *app) OnPurchaseUpdatedUnsubscribe(channel <-chan struct{}) {
-}
-
 func (a *app) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {
@@ -526,7 +472,6 @@ func (a *app) QueueRequestSignInEmail(_ context.Context, email string, code stri
 	a.log.Debug("queue sign in email", "email", email, "code", code)
 	return nil
 }
-
 
 func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) {
 	role := "user"
@@ -706,6 +651,9 @@ func (a *app) ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error) {
 
 func (a *app) AssetVersion() string {
 	return strconv.FormatInt(time.Now().UnixMilli(), 10)
+}
+
+func (a *app) NotifyPuchaseUpdated(email string) {
 }
 
 func (a *app) startServer() {
