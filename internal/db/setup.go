@@ -15,6 +15,7 @@ import (
 
 // SetupConfig contains configuration for database setup.
 type SetupConfig struct {
+	SkipDump     bool
 	DatabaseFile string
 	Logger       logger.Logger
 }
@@ -23,7 +24,7 @@ type SetupConfig struct {
 // It returns a configured database connection ready for use.
 func Setup(config SetupConfig) (*sql.DB, error) {
 	// Run migrations
-	if err := runMigrations(config.DatabaseFile); err != nil {
+	if err := runMigrations(config.DatabaseFile, config.SkipDump); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
@@ -54,7 +55,7 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 }
 
 // runMigrations executes database migrations using dbmate.
-func runMigrations(databaseFile string) error {
+func runMigrations(databaseFile string, skipDump bool) error {
 	u, err := url.Parse("sqlite:" + databaseFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse database URL: %w", err)
@@ -63,6 +64,7 @@ func runMigrations(databaseFile string) error {
 	dbm := dbmate.New(u)
 	dbm.MigrationsDir = []string{"migrations"}
 	dbm.FS = mdb.FS
+	dbm.AutoDumpSchema = !skipDump
 
 	if err := dbm.CreateAndMigrate(); err != nil {
 		return fmt.Errorf("dbmate migration failed: %w", err)
@@ -74,7 +76,7 @@ func runMigrations(databaseFile string) error {
 // openConnection opens a SQLite database connection with optimized settings.
 func openConnection(databaseFile string) (*sql.DB, error) {
 	connectionString := databaseFile + "?_journal=WAL&_timeout=5000"
-	
+
 	conn, err := sql.Open("sqlite", connectionString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open SQLite connection: %w", err)
@@ -168,4 +170,3 @@ func (e *ForeignKeyError) Error() string {
 	}
 	return fmt.Sprintf("found %d foreign key violations: %v", e.Count, e.Violations)
 }
-

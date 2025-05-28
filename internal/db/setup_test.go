@@ -14,6 +14,7 @@ func TestSetup(t *testing.T) {
 
 	// Test setup
 	config := SetupConfig{
+		SkipDump:     true,
 		DatabaseFile: dbFile,
 		Logger:       &logger.TestLogger{Prefix: "[test]"},
 	}
@@ -53,6 +54,7 @@ func TestSetup(t *testing.T) {
 func TestSetupWithNonexistentDatabase(t *testing.T) {
 	// Use invalid path
 	config := SetupConfig{
+		SkipDump:     true,
 		DatabaseFile: "/nonexistent/path/test.db",
 		Logger:       nil,
 	}

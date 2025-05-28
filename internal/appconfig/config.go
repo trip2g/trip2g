@@ -112,7 +112,8 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 	cfg := DefaultConfig()
 
 	// Load .env file if it exists
-	if err := loadDotEnv(); err != nil {
+	err := loadDotEnv()
+	if err != nil {
 		if log != nil {
 			log.Debug("failed to load .env file", "error", err)
 		}
@@ -120,7 +121,8 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 	}
 
 	// Define all flags
-	if err := cfg.defineFlags(); err != nil {
+	err = cfg.defineFlags()
+	if err != nil {
 		return nil, fmt.Errorf("failed to define flags: %w", err)
 	}
 
@@ -130,12 +132,14 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 	}
 
 	// Parse with environment variable support using package-level function
-	if err := Parse(ctx); err != nil {
+	err = Parse(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse configuration: %w", err)
 	}
 
 	// Validate configuration
-	if err := cfg.validate(); err != nil {
+	err = cfg.validate()
+	if err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
@@ -205,7 +209,8 @@ func loadDotEnv() error {
 // It doesn't override existing environment variables.
 func loadDotEnvFromPath(path string) error {
 	// Check if file exists
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
 		return fmt.Errorf(".env file not found at %s", path)
 	}
 
@@ -240,14 +245,17 @@ func loadDotEnvFromPath(path string) error {
 		value = strings.Trim(value, "\"'")
 
 		// Only set if environment variable doesn't already exist
-		if _, exists := os.LookupEnv(key); !exists {
-			if err := os.Setenv(key, value); err != nil {
+		_, exists := os.LookupEnv(key)
+		if !exists {
+			err = os.Setenv(key, value)
+			if err != nil {
 				return fmt.Errorf("failed to set environment variable %s: %w", key, err)
 			}
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
+	err = scanner.Err()
+	if err != nil {
 		return fmt.Errorf("error reading .env file: %w", err)
 	}
 

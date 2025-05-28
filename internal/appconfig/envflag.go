@@ -148,7 +148,8 @@ func (ef *EnvFlag) processEnvironmentVariables(ctx context.Context, flagEnvMap m
 		default:
 		}
 
-		if err := ef.processEnvLine(envLine, flagEnvMap); err != nil {
+		err := ef.processEnvLine(envLine, flagEnvMap)
+		if err != nil {
 			return err
 		}
 	}
@@ -186,7 +187,8 @@ func (ef *EnvFlag) processEnvLine(envLine string, flagEnvMap map[string]string) 
 		f.DefValue = value
 	}
 
-	if err := ef.flagSet.Set(flagKey, value); err != nil {
+	err := ef.flagSet.Set(flagKey, value)
+	if err != nil {
 		ef.logger.Error("failed to set flag from environment variable", "envKey", key, "flagKey", flagKey, "value", value, "error", err)
 		return &ProcessError{
 			Flag:  flagKey,
@@ -212,13 +214,15 @@ func (ef *EnvFlag) getFlagKey(envKey string) string {
 func (ef *EnvFlag) Parse(ctx context.Context, args []string) error {
 	ef.logger.Info("starting flag parsing", "args", len(args))
 
-	if err := ef.ProcessWithEnv(ctx); err != nil {
+	err := ef.ProcessWithEnv(ctx)
+	if err != nil {
 		ef.logger.Error("failed to process environment variables", "error", err)
 		return fmt.Errorf("processing environment variables: %w", err)
 	}
 
 	ef.logger.Debug("parsing command-line arguments", "args", args)
-	if err := ef.flagSet.Parse(args); err != nil {
+	err = ef.flagSet.Parse(args)
+	if err != nil {
 		ef.logger.Error("failed to parse command-line arguments", "error", err, "args", args)
 		return fmt.Errorf("parsing command-line arguments: %w", err)
 	}
