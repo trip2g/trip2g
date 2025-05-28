@@ -74,6 +74,9 @@ type Env interface {
 
 	Logger() logger.Logger
 
+	AcquireTxEnvInRequest(ctx context.Context, label string) error
+	ReleaseTxEnvInRequest(ctx context.Context, commit bool) error
+
 	requestemailsignin.Env
 	signinbyemail.Env
 	signout.Env

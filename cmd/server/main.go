@@ -44,14 +44,8 @@ import (
 
 	_ "trip2g/internal/dbmate/sqlite"
 
-	"github.com/99designs/gqlgen/graphql"
-	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/handler/extension"
-	"github.com/99designs/gqlgen/graphql/handler/lru"
-	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/gqlerror"
-	"github.com/vektah/gqlparser/v2/ast"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 
@@ -93,11 +87,17 @@ type appConfig struct {
 	AcmeDomains arrayFlags
 }
 
+type graphTransactions struct {
+	sync.Mutex
+	EnvMap map[*app]*sql.Tx
+}
+
 type app struct {
 	*db.Queries
 	*miniostorage.FileStorage
 
 	currentNVS *currentNVS
+	graphTxs   *graphTransactions
 
 	queries *db.Queries
 	conn    *sql.DB
@@ -291,6 +291,10 @@ func main() {
 		queueClient:  queueClient,
 		currentNVS:   &currentNVS{},
 
+		graphTxs: &graphTransactions{
+			EnvMap: make(map[*app]*sql.Tx),
+		},
+
 		hotAuthTokenManager: hotauthtoken.NewManager([]byte("secret")),
 
 		purchaseTokenManager: purchasetoken.NewManager("trip2g_purchase_token", []byte("secret")),
@@ -341,6 +345,70 @@ func main() {
 	})
 
 	a.startServer()
+}
+
+func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get request from context: %w", err)
+	}
+
+	tx, err := a.conn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	logLabel := fmt.Sprintf("tx %s", label+":")
+	queries := db.New(db.WithLogger(tx, logger.WithPrefix(a.log, logLabel)))
+
+	newEnv := *a // copy!
+	newEnv.queries = queries
+	newEnv.Queries = queries
+
+	// override the context with the new tx env
+	req.Env = &newEnv
+
+	a.graphTxs.Lock()
+	defer a.graphTxs.Unlock()
+
+	a.graphTxs.EnvMap[&newEnv] = tx
+
+	return nil
+}
+
+func (a *app) ReleaseTxEnvInRequest(ctx context.Context, commit bool) error {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get request from context: %w", err)
+	}
+
+	a.graphTxs.Lock()
+	defer a.graphTxs.Unlock()
+
+	envPtr := req.Env.(*app)
+	tx, ok := a.graphTxs.EnvMap[envPtr]
+	if !ok {
+		return fmt.Errorf("transactioned env not found for request: %v", req.Env)
+	}
+
+	// Clean up the map entry regardless of commit/rollback
+	delete(a.graphTxs.EnvMap, envPtr)
+
+	if commit {
+		commitErr := tx.Commit()
+		if commitErr != nil {
+			return fmt.Errorf("failed to commit transaction: %w", commitErr)
+		}
+
+		return nil
+	}
+
+	err = tx.Rollback()
+	if err != nil {
+		return fmt.Errorf("failed to rollback transaction: %w", err)
+	}
+
+	return nil
 }
 
 func (a *app) setupAssets() error {
@@ -812,13 +880,8 @@ func (a *app) startServer() {
 	rtr := router.New(a)
 
 	// graphql
-	resolver := graph.Resolver{DefaultEnv: a}
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &resolver}))
-
-	a.SetupGraphQL(srv)
-
 	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
-	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(srv)
+	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(graph.NewHandler(a))
 
 	s := &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
@@ -995,85 +1058,4 @@ func (a *app) startServer() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func (a *app) SetupGraphQL(srv *handler.Server) {
-	srv.AddTransport(transport.Options{})
-	srv.AddTransport(transport.GET{})
-	srv.AddTransport(transport.POST{})
-	srv.AddTransport(transport.MultipartForm{
-		MaxUploadSize: 30 * 1024 * 1024,
-		MaxMemory:     10 * 1024 * 1024,
-	})
-
-	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
-
-	srv.Use(extension.Introspection{})
-	srv.Use(extension.AutomaticPersistedQuery{
-		Cache: lru.New[string](100),
-	})
-
-	graphqlErr := func(err error) graphql.ResponseHandler {
-		a.log.Error("graphql error", "error", err)
-
-		return func(ctx context.Context) *graphql.Response {
-			return graphql.ErrorResponse(ctx, err.Error())
-		}
-	}
-
-	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
-		operationContext := graphql.GetOperationContext(ctx)
-
-		if operationContext.Operation.Operation == ast.Mutation {
-			req, err := appreq.FromCtx(ctx)
-			if err != nil {
-				return graphqlErr(err)
-			}
-
-			tx, err := a.conn.BeginTx(ctx, nil)
-			if err != nil {
-				return graphqlErr(err)
-			}
-
-			// TODO: use a pool
-			logLabel := fmt.Sprintf("tx %s", operationContext.Operation.Name+":")
-			queries := db.New(db.WithLogger(tx, logger.WithPrefix(a.log, logLabel)))
-
-			newEnv := *a // copy!
-			newEnv.queries = queries
-			newEnv.Queries = queries
-
-			// override the context with the new tx env
-			req.Env = &newEnv
-
-			rh := next(ctx)
-
-			return func(ctx context.Context) *graphql.Response {
-				resp := rh(ctx)
-
-				// А тут интересно, нужно ли отказывать транзакции только в случае ошибок
-				// или в случае ErrorPayload так же нужно? Похоже нужно откатывать в случае
-				// непредвиденных ошибок и дополнительно вводить специальную ошибку для rollback.
-				if len(resp.Errors) > 0 {
-					rollbackErr := tx.Rollback()
-					if rollbackErr != nil {
-						a.log.Error("failed to rollback transaction", "error", rollbackErr)
-					} else {
-						a.log.Debug("rolled back transaction")
-					}
-				} else {
-					commitErr := tx.Commit()
-					if commitErr != nil {
-						a.log.Error("failed to commit transaction", "error", commitErr)
-					} else {
-						a.log.Debug("committed transaction")
-					}
-				}
-
-				return resp
-			}
-		}
-
-		return next(ctx)
-	})
 }
