@@ -1,8 +1,8 @@
 module trip2g
 
-go 1.23.8
+go 1.24
 
-toolchain go1.24.2
+toolchain go1.24.3
 
 require (
 	github.com/99designs/gqlgen v0.17.73
@@ -79,6 +79,7 @@ require (
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/matryer/moq v0.5.3 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.28 // indirect
@@ -151,6 +152,7 @@ require (
 tool (
 	github.com/99designs/gqlgen
 	github.com/amacneil/dbmate/v2
+	github.com/matryer/moq
 	github.com/sqlc-dev/sqlc/cmd/sqlc
 	github.com/valyala/quicktemplate/qtc
 )
