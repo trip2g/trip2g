@@ -1,8 +1,5 @@
   High Impact Refactoring Opportunities
 
-  2. Separate Database Setup Logic (cmd/server/main.go:218-246)
-  - Extract database initialization, pragmas, and migration logic into internal/db/setup.go
-
   3. Extract Admin Authorization Helper (schema.resolvers.go:285-291)
   - Multiple admin resolvers duplicate identical auth checks
   - Create internal/auth/admin.go with RequireAdmin() helper

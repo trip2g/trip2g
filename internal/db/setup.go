@@ -24,7 +24,8 @@ type SetupConfig struct {
 // It returns a configured database connection ready for use.
 func Setup(config SetupConfig) (*sql.DB, error) {
 	// Run migrations
-	if err := runMigrations(config.DatabaseFile, config.SkipDump); err != nil {
+	err := runMigrations(config.DatabaseFile, config.SkipDump)
+	if err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
@@ -35,18 +36,21 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 	}
 
 	// Enable SQLite pragmas
-	if err := enablePragmas(conn); err != nil {
+	err = enablePragmas(conn)
+	if err != nil {
 		return nil, fmt.Errorf("failed to enable pragmas: %w", err)
 	}
 
 	// Check foreign key constraints
-	if err := checkForeignKeys(conn); err != nil {
+	err = checkForeignKeys(conn)
+	if err != nil {
 		return nil, fmt.Errorf("foreign key check failed: %w", err)
 	}
 
 	// Show SQLite version (optional, for debugging)
 	if config.Logger != nil {
-		if version, err := getSQLiteVersion(conn); err == nil {
+		version, err := getSQLiteVersion(conn)
+		if err == nil {
 			config.Logger.Info("SQLite database initialized", "version", version, "file", config.DatabaseFile)
 		}
 	}
@@ -66,7 +70,8 @@ func runMigrations(databaseFile string, skipDump bool) error {
 	dbm.FS = mdb.FS
 	dbm.AutoDumpSchema = !skipDump
 
-	if err := dbm.CreateAndMigrate(); err != nil {
+	err = dbm.CreateAndMigrate()
+	if err != nil {
 		return fmt.Errorf("dbmate migration failed: %w", err)
 	}
 
@@ -83,7 +88,8 @@ func openConnection(databaseFile string) (*sql.DB, error) {
 	}
 
 	// Test the connection
-	if err := conn.Ping(); err != nil {
+	err = conn.Ping()
+	if err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
@@ -101,7 +107,8 @@ func enablePragmas(db *sql.DB) error {
 		PRAGMA strict = ON;
 	`
 
-	if _, err := db.Exec(pragmas); err != nil {
+	_, err := db.Exec(pragmas)
+	if err != nil {
 		return fmt.Errorf("failed to enable pragmas: %w", err)
 	}
 
@@ -125,7 +132,8 @@ func checkForeignKeys(db *sql.DB) error {
 		var parent string
 		var fkid int
 
-		if err := rows.Scan(&table, &rowid, &parent, &fkid); err != nil {
+		err = rows.Scan(&table, &rowid, &parent, &fkid)
+		if err != nil {
 			return fmt.Errorf("failed to scan foreign key check result: %w", err)
 		}
 
@@ -134,7 +142,8 @@ func checkForeignKeys(db *sql.DB) error {
 		violations = append(violations, violation)
 	}
 
-	if err := rows.Err(); err != nil {
+	err = rows.Err()
+	if err != nil {
 		return fmt.Errorf("error during foreign key check: %w", err)
 	}
 
