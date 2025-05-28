@@ -9,14 +9,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"log/slog"
 	"math/big"
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,6 +22,7 @@ import (
 
 	"trip2g/assets"
 	"trip2g/internal/acmecache"
+	"trip2g/internal/appconfig"
 	"trip2g/internal/appreq"
 	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/case/signinbypurchasetoken"
@@ -65,27 +64,6 @@ type currentNVS struct {
 	nvs *model.NoteViews
 }
 
-type arrayFlags []string
-
-func (i *arrayFlags) String() string {
-	return fmt.Sprintf("%v", *i)
-}
-
-func (i *arrayFlags) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-
-type appConfig struct {
-	ListenAddr   string
-	DatabaseFile string
-
-	DevMode    bool
-	AdminJSURL string
-	LogLevel   string
-
-	AcmeDomains arrayFlags
-}
 
 type graphTransactions struct {
 	sync.Mutex
@@ -109,7 +87,7 @@ type app struct {
 
 	hotAuthTokenManager *hotauthtoken.Manager
 
-	config *appConfig
+	config *appconfig.Config
 
 	userBansMap map[int64]db.UserBan
 	userBans    []db.UserBan
@@ -193,39 +171,22 @@ func showSqliteVersion(db *sql.DB) error {
 }
 
 func main() {
-	appConfig := appConfig{}
+	config, err := appconfig.Get()
+	if err != nil {
+		panic(fmt.Errorf("failed to load configuration: %w", err))
+	}
 
-	flag.StringVar(&appConfig.ListenAddr, "listen-addr", ":8081", "Listen address")
-	flag.StringVar(&appConfig.DatabaseFile, "db-file", "data.sqlite3", "Database file")
-	flag.StringVar(&appConfig.AdminJSURL, "admin-js-url", "/assets/ui/admin/-/web.js", "Admin JS URL")
-	flag.StringVar(&appConfig.LogLevel, "log-level", "info", "Log level")
-	flag.BoolVar(&appConfig.DevMode, "dev", false, "Development mode")
-
-	storageConfig := miniostorage.Config{}
-
-	flag.StringVar(&storageConfig.Endpoint, "minio-endpoint", "localhost:9000", "MinIO endpoint")
-	flag.StringVar(&storageConfig.AccessKey, "minio-access-key-id", "root", "MinIO access key ID")
-	flag.StringVar(&storageConfig.SecretKey, "minio-secret-key", "password", "MinIO secret key")
-	flag.StringVar(&storageConfig.Bucket, "minio-bucket", "development", "MinIO bucket name")
-	flag.StringVar(&storageConfig.Region, "minio-region", "us-east-1", "MinIO region")
-	flag.BoolVar(&storageConfig.UseSSL, "minio-use-ssl", false, "Use SSL for MinIO")
-	flag.DurationVar(&storageConfig.InitTimeout, "minio-init-timeout", 5*time.Second, "MinIO init timeout (check and make bucket)")
-	flag.DurationVar(&storageConfig.URLExpiresIn, "minio-url-expires-in", 10*time.Minute, "MinIO presigned URL expiration time")
-	flag.Var(&appConfig.AcmeDomains, "acme-domain", "ACME domains (multiple values allowed)")
-
-	flag.Parse()
-
-	u, _ := url.Parse("sqlite:" + appConfig.DatabaseFile)
+	u, _ := url.Parse("sqlite:" + config.DatabaseFile)
 	dbm := dbmate.New(u)
 	dbm.MigrationsDir = []string{"migrations"}
 	dbm.FS = mdb.FS
 
-	err := dbm.CreateAndMigrate()
+	err = dbm.CreateAndMigrate()
 	if err != nil {
 		panic(err)
 	}
 
-	conn, err := sql.Open("sqlite", appConfig.DatabaseFile+"?_journal=WAL&_timeout=5000")
+	conn, err := sql.Open("sqlite", config.DatabaseFile+"?_journal=WAL&_timeout=5000")
 	if err != nil {
 		panic(err)
 	}
@@ -260,20 +221,20 @@ func main() {
 		panic(err)
 	}
 
-	log := zerologger.New(appConfig.LogLevel, appConfig.DevMode)
+	log := zerologger.New(config.LogLevel, config.DevMode)
 
 	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "no tx:")))
 
-	nowpaymentsClient, err := nowpayments.NewClient(os.Getenv("NOWPAYMENTS_API_KEY"))
+	nowpaymentsClient, err := nowpayments.NewClient(config.NowpaymentsAPIKey)
 	if err != nil {
 		panic(err)
 	}
 
 	ctx := context.Background()
 
-	fileStorage, err := miniostorage.New(ctx, storageConfig)
+	fileStorage, err := miniostorage.New(ctx, config.Storage)
 	if err != nil {
-		if appConfig.DevMode {
+		if config.DevMode {
 			log.Warn("failed to create minio storage", "error", err)
 		} else {
 			panic(err)
@@ -285,7 +246,7 @@ func main() {
 
 		FileStorage: fileStorage,
 
-		config: &appConfig,
+		config: config,
 
 		tokenManager: tokenManager,
 		queueClient:  queueClient,
@@ -782,11 +743,11 @@ func (a *app) GeneratePurchaseID() string {
 }
 
 func (a *app) PublicURL() string {
-	return os.Getenv("PUBLIC_URL")
+	return a.config.PublicURL
 }
 
 func (a *app) NowpaymentsIPNSecret() string {
-	return os.Getenv("NOWPAYMENTS_IPN_KEY")
+	return a.config.NowpaymentsIPNKey
 }
 
 var ErrFailedGeneration = errors.New("failed to generate code")

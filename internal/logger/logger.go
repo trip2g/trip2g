@@ -34,3 +34,18 @@ func (l *TestLogger) Debug(msg string, keysAndValues ...interface{}) {
 func (l *TestLogger) Warn(msg string, keysAndValues ...interface{}) {
 	fmt.Println(l.Prefix, msg, keysAndValues) //nolint:forbidigo // just for tests
 }
+
+// DummyLogger is a no-op logger.
+type DummyLogger struct{}
+
+// Info does nothing.
+func (l *DummyLogger) Info(msg string, keysAndValues ...interface{}) {}
+
+// Error does nothing.
+func (l *DummyLogger) Error(msg string, keysAndValues ...interface{}) {}
+
+// Debug does nothing.
+func (l *DummyLogger) Debug(msg string, keysAndValues ...interface{}) {}
+
+// Warn does nothing.
+func (l *DummyLogger) Warn(msg string, keysAndValues ...interface{}) {}
