@@ -18,9 +18,10 @@ type Env interface {
 }
 
 func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
-	if len(input.Updates) == 0 {
-		return &model.ErrorPayload{Message: "No updates provided"}, nil
-	}
+	// with empty updates, we should return assets anyway
+	// if len(input.Updates) == 0 {
+	// 	return &model.ErrorPayload{Message: "No updates provided"}, nil
+	// }
 
 	for _, update := range input.Updates {
 		note := db.Note{

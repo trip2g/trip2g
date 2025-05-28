@@ -12,3 +12,4 @@ data.sqlite3-wal
 run.sh
 examples.json
 infra/hosts
+demo/.obsidian
