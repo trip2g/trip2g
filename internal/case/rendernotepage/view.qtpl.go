@@ -192,33 +192,33 @@ func StreamNoteContent(qw422016 *qt422016.Writer, resp *Response) {
       <h2 class="sidebar__block-title">Связанные страницы:</h2>
 
       <div class="sidebar__block-content">
-      `)
+        `)
 //line view.qtpl:51
-		if len(resp.LatestNotes) > 0 {
+		for k := range resp.Note.InLinks {
 //line view.qtpl:51
 			qw422016.N().S(`
-        `)
+          `)
 //line view.qtpl:52
-			for _, n := range resp.LatestNotes {
+			if inNote := resp.Notes.GetByPath(k); inNote != nil {
 //line view.qtpl:52
 				qw422016.N().S(`
-          <div class="sidebar__block-link">
-            <a href="`)
+            <div class="sidebar__block-link">
+              <a href="`)
 //line view.qtpl:54
-				qw422016.E().S(n.Permalink)
+				qw422016.E().S(inNote.Permalink)
 //line view.qtpl:54
 				qw422016.N().S(`">`)
 //line view.qtpl:54
-				qw422016.E().S(n.Title)
+				qw422016.E().S(inNote.Title)
 //line view.qtpl:54
 				qw422016.N().S(`</a>
-          </div>
-        `)
+            </div>
+          `)
 //line view.qtpl:56
 			}
 //line view.qtpl:56
 			qw422016.N().S(`
-      `)
+        `)
 //line view.qtpl:57
 		}
 //line view.qtpl:57

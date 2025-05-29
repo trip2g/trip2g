@@ -372,7 +372,7 @@ func (a *app) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {
 	return req.UserToken()
 }
 
-var ErrNotAdmin = errors.New("not an admin user")
+var ErrNotAdmin = errors.New("unauthorized")
 
 func (a *app) CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error) {
 	req, err := appreq.FromCtx(ctx)
@@ -385,7 +385,8 @@ func (a *app) CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error
 		return nil, fmt.Errorf("failed to get user token: %w", err)
 	}
 
-	if data == nil || !data.IsAdmin() {
+	if !data.IsAdmin() {
+		a.log.Warn("unauthorized access attempt", "user_id", data.ID, "role", data.Role)
 		return nil, ErrNotAdmin
 	}
 
@@ -588,6 +589,39 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error
 
 func (a *app) NoteByPath(path string) (*model.NoteView, error) {
 	return a.latestNoteLoader.NoteByPath(path), nil
+}
+
+func (a *app) noteLoaderForRequest(ctx context.Context) *noteloader.Loader {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return a.liveNoteLoader
+	}
+
+	token, err := req.UserToken()
+	if err != nil || token == nil {
+		return a.liveNoteLoader
+	}
+
+	// Check if admin wants to see latest version
+	if token.IsAdmin() {
+		showLatest := string(req.Req.QueryArgs().Peek("version")) == "latest"
+		if showLatest {
+			return a.latestNoteLoader
+		}
+	}
+
+	// Default to live for everyone (including admins without ?version=latest)
+	return a.liveNoteLoader
+}
+
+func (a *app) NoteByPathForRequest(ctx context.Context, path string) (*model.NoteView, error) {
+	loader := a.noteLoaderForRequest(ctx)
+	return loader.NoteByPath(path), nil
+}
+
+func (a *app) NoteViewsForRequest(ctx context.Context) *model.NoteViews {
+	loader := a.noteLoaderForRequest(ctx)
+	return loader.NoteViews()
 }
 
 func (a *app) StorePurchaseToken(ctx context.Context, data model.PurchaseToken) (string, error) {
