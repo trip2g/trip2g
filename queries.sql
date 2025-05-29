@@ -359,3 +359,46 @@ select l.created_at, a.name as action_name, i.value as ip
   join api_key_log_ips i on l.ip_id = i.id
  where l.api_key_id = ?
  order by l.created_at desc;
+
+-- name: InsertRelease :one
+insert into releases (created_by, title, home_note_id, is_live)
+values (?, ?, ?, ?)
+returning *;
+
+-- name: InsertReleaseNoteVersion :exec
+insert into release_note_versions (release_id, note_version_id)
+values (?, ?);
+
+-- name: ChangeLiveRelease :exec
+update releases set is_live = (sqlc.arg(id) = id);
+
+-- name: AllLiveNotes :many
+select value as path, p.id as path_id, v.id as version_id, content
+  from note_paths p
+  join note_versions v on p.id = v.path_id
+  join release_note_versions rnv on v.id = rnv.note_version_id
+  join releases r on rnv.release_id = r.id
+ where r.is_live = true;
+
+-- name: AllLiveNoteAssets :many
+with ranked_assets as (
+  select
+    v.id as version_id,
+    na.id as asset_id,
+    a.path,
+    row_number() over (
+      partition by v.id, a.path
+      order by a.created_at desc
+    ) as rn
+  from note_paths p
+  join note_versions v on p.id = v.path_id
+  join note_version_assets a on v.id = a.version_id
+  join note_assets na on a.asset_id = na.id
+  join release_note_versions rnv on v.id = rnv.note_version_id
+  join releases r on rnv.release_id = r.id
+ where r.is_live = true
+)
+select version_id, path, sqlc.embed(note_assets)
+from ranked_assets
+join note_assets on ranked_assets.asset_id = note_assets.id
+where rn = 1;

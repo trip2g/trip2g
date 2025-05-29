@@ -32,6 +32,7 @@ import (
 	"trip2g/internal/mdloader"
 	"trip2g/internal/miniostorage"
 	"trip2g/internal/model"
+	"trip2g/internal/noteloader"
 	"trip2g/internal/nowpayments"
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/router"
@@ -53,11 +54,6 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-type currentNVS struct {
-	mu  sync.Mutex
-	nvs *model.NoteViews
-}
-
 type graphTransactions struct {
 	sync.Mutex
 	EnvMap map[*app]*sql.Tx
@@ -67,8 +63,7 @@ type app struct {
 	*db.Queries
 	*miniostorage.FileStorage
 
-	currentNVS *currentNVS
-	graphTxs   *graphTransactions
+	graphTxs *graphTransactions
 
 	queries *db.Queries
 	conn    *sql.DB
@@ -93,6 +88,9 @@ type app struct {
 	nextPurchaseHandlerID   int
 
 	assetsFS *fasthttp.FS
+
+	liveNoteLoader   *noteloader.Loader
+	latestNoteLoader *noteloader.Loader
 }
 
 func main() {
@@ -138,11 +136,7 @@ func main() {
 
 	fileStorage, err := miniostorage.New(ctx, config.Storage)
 	if err != nil {
-		if config.DevMode {
-			log.Warn("failed to create minio storage", "error", err)
-		} else {
-			panic(err)
-		}
+		panic(err)
 	}
 
 	a := &app{
@@ -154,7 +148,6 @@ func main() {
 
 		tokenManager: tokenManager,
 		queueClient:  queueClient,
-		currentNVS:   &currentNVS{},
 
 		graphTxs: &graphTransactions{
 			EnvMap: make(map[*app]*sql.Tx),
@@ -172,6 +165,9 @@ func main() {
 
 		nowpaymentsClient: nowpaymentsClient,
 	}
+
+	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a))
+	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a))
 
 	tokenManager.AddValidator(func(ctx context.Context, data *usertoken.Data) error {
 		ban, err := a.UserBanByUserID(ctx, int64(data.ID))
@@ -194,7 +190,7 @@ func main() {
 		panic(err)
 	}
 
-	_, err = a.PrepareNotes(ctx)
+	err = a.loadAllNotes(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -205,13 +201,33 @@ func main() {
 	}
 
 	fileStorage.OnURLExpiring(func() {
-		_, err = a.PrepareNotes(ctx)
+		reloadCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+
+		err := a.loadAllNotes(reloadCtx)
 		if err != nil {
-			log.Error("failed to prepare notes", "error", err)
+			log.Error("failed to reload all notes", "error", err)
 		}
 	})
 
 	a.startServer()
+}
+
+func (a app) loadAllNotes(ctx context.Context) error {
+	startCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	err := a.liveNoteLoader.Load(startCtx)
+	if err != nil {
+		return fmt.Errorf("failed to load live notes: %w", err)
+	}
+
+	err = a.latestNoteLoader.Load(startCtx)
+	if err != nil {
+		return fmt.Errorf("failed to load latest notes: %w", err)
+	}
+
+	return nil
 }
 
 func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
@@ -321,9 +337,6 @@ func (a *app) UserCSSURLs() []string {
 }
 
 func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error) {
-	a.currentNVS.mu.Lock()
-	defer a.currentNVS.mu.Unlock()
-
 	noteVersion, err := a.queries.NoteVersionByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get note version by ID: %w", err)
@@ -371,85 +384,17 @@ func (a *app) CreateNowpaymentsInvoice(params nowpayments.CreateInvoiceParams) (
 	return a.nowpaymentsClient.CreateInvoice(params)
 }
 
-func (a *app) PrepareNotes(ctx context.Context) (*model.NoteViews, error) {
-	var env *app
-
-	req, err := appreq.FromCtx(ctx)
-	if err == nil {
-		reqEnv, ok := req.Env.(*app)
-		if ok {
-			env = reqEnv
-		}
-	}
-
-	a.log.Info("preparing notes", "tx", env != nil)
-
-	if env == nil {
-		env = a
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	notes, err := env.AllLatestNotes(ctx)
+func (a *app) PrepareLatestNotes(ctx context.Context) (*model.NoteViews, error) {
+	err := a.latestNoteLoader.Load(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get notes: %w", err)
+		return nil, fmt.Errorf("failed to load latest notes: %w", err)
 	}
 
-	assets, err := env.AllLatestNoteAssets(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get note assets: %w", err)
-	}
-
-	assetMap := make(map[int64]map[string]string)
-
-	for _, asset := range assets {
-		noteMap, ok := assetMap[asset.VersionID]
-		if !ok {
-			noteMap = make(map[string]string)
-			assetMap[asset.VersionID] = noteMap
-		}
-
-		assetURL, err := a.NoteAssetURL(ctx, asset.NoteAsset)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get note asset URL: %w", err)
-		}
-
-		a.log.Debug("note asset URL", "path", asset.Path, "url", assetURL)
-
-		noteMap[asset.Path] = assetURL
-	}
-
-	sources := []mdloader.SourceFile{}
-
-	for _, note := range notes {
-		sources = append(sources, mdloader.SourceFile{
-			Path:      note.Path,
-			PathID:    note.PathID,
-			VersionID: note.VersionID,
-			Content:   []byte(note.Content),
-			Assets:    assetMap[note.VersionID],
-		})
-	}
-
-	nvs, err := mdloader.Load(sources, logger.WithPrefix(a.log, "mdloader:"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to load pages: %w", err)
-	}
-
-	a.currentNVS.mu.Lock()
-	a.currentNVS.nvs = nvs
-	a.currentNVS.mu.Unlock()
-
-	return nvs, nil
+	return a.latestNoteLoader.NoteViews(), nil
 }
 
 func (a *app) AllNotes() *model.NoteViews {
-	a.currentNVS.mu.Lock()
-	defer a.currentNVS.mu.Unlock()
-	c := a.currentNVS.nvs.Copy()
-
-	return c
+	return a.latestNoteLoader.NoteViews()
 }
 
 func (a *app) Now() time.Time {
@@ -609,15 +554,7 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error
 }
 
 func (a *app) NoteByPath(path string) (*model.NoteView, error) {
-	a.currentNVS.mu.Lock()
-	defer a.currentNVS.mu.Unlock()
-
-	page, ok := a.currentNVS.nvs.Map[path]
-	if !ok {
-		return nil, errors.New("page not found")
-	}
-
-	return page, nil
+	return a.latestNoteLoader.NoteByPath(path), nil
 }
 
 func (a *app) StorePurchaseToken(ctx context.Context, data model.PurchaseToken) (string, error) {

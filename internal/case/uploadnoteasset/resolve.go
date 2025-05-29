@@ -22,7 +22,7 @@ type Env interface {
 	UpsertNoteVersionAsset(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
-	PrepareNotes(ctx context.Context) (*appmodel.NoteViews, error)
+	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
 }
 
 // for sanitize file names
@@ -107,7 +107,7 @@ func Resolve(ctx context.Context, env Env, input model.UploadNoteAssetInput) (mo
 	}
 
 	// isn't optimal. TODO: fix it
-	_, err = env.PrepareNotes(ctx)
+	_, err = env.PrepareLatestNotes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}

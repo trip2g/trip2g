@@ -9,6 +9,8 @@ import (
 
 	mdb "trip2g/db"
 
+	_ "trip2g/internal/dbmate/sqlite"
+
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	_ "modernc.org/sqlite"
 )

@@ -165,6 +165,28 @@ CREATE TABLE api_key_logs (
   action_id integer not null references api_key_log_actions(id) on delete restrict,
   ip_id integer not null references api_key_log_ips(id) on delete restrict
 );
+CREATE VIEW active_offers as
+select *
+ from offers
+ where (starts_at < datetime('now') or starts_at is null)
+   and (ends_at > datetime('now') or ends_at is null)
+   and price_usd > 0
+ order by price_usd desc
+/* active_offers(id,public_id,created_at,lifetime,price_usd,starts_at,ends_at) */;
+CREATE TABLE releases (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  title text not null default '',
+  home_note_id integer references notes(id) on delete restrict,
+  is_live boolean not null default false
+);
+CREATE INDEX idx_releases_is_live on releases(is_live);
+CREATE TABLE release_note_versions (
+  release_id integer not null references releases(id) on delete cascade,
+  note_version_id integer not null references note_versions(id) on delete cascade,
+  primary key (release_id, note_version_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -187,4 +209,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250515071315'),
   ('20250515071316'),
   ('20250524091058'),
-  ('20250525034319');
+  ('20250525034319'),
+  ('20250528112143'),
+  ('20250528125918');

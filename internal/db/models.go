@@ -17,6 +17,16 @@ type AcmeCert struct {
 	UpdatedAt sql.NullTime `json:"updated_at"`
 }
 
+type ActiveOffer struct {
+	ID        int64           `json:"id"`
+	PublicID  string          `json:"public_id"`
+	CreatedAt time.Time       `json:"created_at"`
+	Lifetime  sql.NullString  `json:"lifetime"`
+	PriceUsd  sql.NullFloat64 `json:"price_usd"`
+	StartsAt  sql.NullTime    `json:"starts_at"`
+	EndsAt    sql.NullTime    `json:"ends_at"`
+}
+
 type Admin struct {
 	UserID    int64         `json:"user_id"`
 	GrantedAt time.Time     `json:"granted_at"`
@@ -133,6 +143,20 @@ type Purchase struct {
 	OfferID         int64         `json:"offer_id"`
 	UserID          sql.NullInt64 `json:"user_id"`
 	Email           string        `json:"email"`
+}
+
+type Release struct {
+	ID         int64         `json:"id"`
+	CreatedAt  time.Time     `json:"created_at"`
+	CreatedBy  int64         `json:"created_by"`
+	Title      string        `json:"title"`
+	HomeNoteID sql.NullInt64 `json:"home_note_id"`
+	IsLive     bool          `json:"is_live"`
+}
+
+type ReleaseNoteVersion struct {
+	ReleaseID     int64 `json:"release_id"`
+	NoteVersionID int64 `json:"note_version_id"`
 }
 
 type Revoke struct {

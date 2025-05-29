@@ -14,7 +14,7 @@ type Env interface {
 	Logger() logger.Logger
 	InsertNote(ctx context.Context, update db.Note) error
 	InsertSubgraph(ctx context.Context, name string) error
-	PrepareNotes(ctx context.Context) (*appmodel.NoteViews, error)
+	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
 }
 
 func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
@@ -36,7 +36,7 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		}
 	}
 
-	nvs, err := env.PrepareNotes(ctx)
+	nvs, err := env.PrepareLatestNotes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}

@@ -160,6 +160,113 @@ func (q *Queries) AllLatestNotes(ctx context.Context) ([]AllLatestNotesRow, erro
 	return items, nil
 }
 
+const allLiveNoteAssets = `-- name: AllLiveNoteAssets :many
+with ranked_assets as (
+  select
+    v.id as version_id,
+    na.id as asset_id,
+    a.path,
+    row_number() over (
+      partition by v.id, a.path
+      order by a.created_at desc
+    ) as rn
+  from note_paths p
+  join note_versions v on p.id = v.path_id
+  join note_version_assets a on v.id = a.version_id
+  join note_assets na on a.asset_id = na.id
+  join release_note_versions rnv on v.id = rnv.note_version_id
+  join releases r on rnv.release_id = r.id
+ where r.is_live = true
+)
+select version_id, path, note_assets.id, note_assets.absolute_path, note_assets.file_name, note_assets.sha256_hash, note_assets.content_type, note_assets.created_at, note_assets.size
+from ranked_assets
+join note_assets on ranked_assets.asset_id = note_assets.id
+where rn = 1
+`
+
+type AllLiveNoteAssetsRow struct {
+	VersionID int64     `json:"version_id"`
+	Path      string    `json:"path"`
+	NoteAsset NoteAsset `json:"note_asset"`
+}
+
+func (q *Queries) AllLiveNoteAssets(ctx context.Context) ([]AllLiveNoteAssetsRow, error) {
+	rows, err := q.db.QueryContext(ctx, allLiveNoteAssets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllLiveNoteAssetsRow
+	for rows.Next() {
+		var i AllLiveNoteAssetsRow
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.Path,
+			&i.NoteAsset.ID,
+			&i.NoteAsset.AbsolutePath,
+			&i.NoteAsset.FileName,
+			&i.NoteAsset.Sha256Hash,
+			&i.NoteAsset.ContentType,
+			&i.NoteAsset.CreatedAt,
+			&i.NoteAsset.Size,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allLiveNotes = `-- name: AllLiveNotes :many
+select value as path, p.id as path_id, v.id as version_id, content
+  from note_paths p
+  join note_versions v on p.id = v.path_id
+  join release_note_versions rnv on v.id = rnv.note_version_id
+  join releases r on rnv.release_id = r.id
+ where r.is_live = true
+`
+
+type AllLiveNotesRow struct {
+	Path      string `json:"path"`
+	PathID    int64  `json:"path_id"`
+	VersionID int64  `json:"version_id"`
+	Content   string `json:"content"`
+}
+
+func (q *Queries) AllLiveNotes(ctx context.Context) ([]AllLiveNotesRow, error) {
+	rows, err := q.db.QueryContext(ctx, allLiveNotes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllLiveNotesRow
+	for rows.Next() {
+		var i AllLiveNotesRow
+		if err := rows.Scan(
+			&i.Path,
+			&i.PathID,
+			&i.VersionID,
+			&i.Content,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allNotePaths = `-- name: AllNotePaths :many
 select id, value, value_hash, latest_content_hash, created_at, version_count from note_paths order by id
 `
@@ -321,6 +428,15 @@ type BanUserParams struct {
 
 func (q *Queries) BanUser(ctx context.Context, arg BanUserParams) error {
 	_, err := q.db.ExecContext(ctx, banUser, arg.UserID, arg.BannedBy, arg.Reason)
+	return err
+}
+
+const changeLiveRelease = `-- name: ChangeLiveRelease :exec
+update releases set is_live = (?1 = id)
+`
+
+func (q *Queries) ChangeLiveRelease(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, changeLiveRelease, id)
 	return err
 }
 
@@ -663,6 +779,53 @@ func (q *Queries) InsertPurchase(ctx context.Context, arg InsertPurchaseParams) 
 		arg.PaymentProvider,
 		arg.PaymentData,
 	)
+	return err
+}
+
+const insertRelease = `-- name: InsertRelease :one
+insert into releases (created_by, title, home_note_id, is_live)
+values (?, ?, ?, ?)
+returning id, created_at, created_by, title, home_note_id, is_live
+`
+
+type InsertReleaseParams struct {
+	CreatedBy  int64         `json:"created_by"`
+	Title      string        `json:"title"`
+	HomeNoteID sql.NullInt64 `json:"home_note_id"`
+	IsLive     bool          `json:"is_live"`
+}
+
+func (q *Queries) InsertRelease(ctx context.Context, arg InsertReleaseParams) (Release, error) {
+	row := q.db.QueryRowContext(ctx, insertRelease,
+		arg.CreatedBy,
+		arg.Title,
+		arg.HomeNoteID,
+		arg.IsLive,
+	)
+	var i Release
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Title,
+		&i.HomeNoteID,
+		&i.IsLive,
+	)
+	return i, err
+}
+
+const insertReleaseNoteVersion = `-- name: InsertReleaseNoteVersion :exec
+insert into release_note_versions (release_id, note_version_id)
+values (?, ?)
+`
+
+type InsertReleaseNoteVersionParams struct {
+	ReleaseID     int64 `json:"release_id"`
+	NoteVersionID int64 `json:"note_version_id"`
+}
+
+func (q *Queries) InsertReleaseNoteVersion(ctx context.Context, arg InsertReleaseNoteVersionParams) error {
+	_, err := q.db.ExecContext(ctx, insertReleaseNoteVersion, arg.ReleaseID, arg.NoteVersionID)
 	return err
 }
 
