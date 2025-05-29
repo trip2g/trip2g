@@ -2,29 +2,22 @@ package createapikey
 
 import (
 	"context"
-	"trip2g/internal/appreq"
+	"fmt"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/usertoken"
 )
 
 type Env interface {
 	GenerateApiKey() string
 	InsertApiKey(ctx context.Context, params db.InsertApiKeyParams) (db.ApiKey, error)
+	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
 }
 
 func Resolve(ctx context.Context, env Env, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error) {
-	req, err := appreq.FromCtx(ctx)
+	token, err := env.CurrentUserToken(ctx)
 	if err != nil {
-		return nil, err
-	}
-
-	token, err := req.UserToken()
-	if err != nil {
-		return nil, err
-	}
-
-	if !token.IsAdmin() {
-		return &model.ErrorPayload{Message: "Unauthorized"}, nil
+		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}
 
 	apiKey := env.GenerateApiKey()

@@ -15,7 +15,7 @@ import (
 
 type Env interface {
 	Logger() logger.Logger
-	AllNotes() *model.NoteViews
+	LatestNoteViews() *model.NoteViews
 	ListActiveSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
 	UpsertUserNoteDailyView(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
@@ -63,7 +63,7 @@ func (e *PaywallError) Error() string {
 }
 
 func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
-	pages := env.AllNotes()
+	pages := env.LatestNoteViews()
 
 	path := request.Path
 	if path == "/" {

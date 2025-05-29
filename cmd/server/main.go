@@ -393,8 +393,21 @@ func (a *app) PrepareLatestNotes(ctx context.Context) (*model.NoteViews, error) 
 	return a.latestNoteLoader.NoteViews(), nil
 }
 
-func (a *app) AllNotes() *model.NoteViews {
+func (a *app) PrepareLiveNotes(ctx context.Context) (*model.NoteViews, error) {
+	err := a.liveNoteLoader.Load(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load live notes: %w", err)
+	}
+
+	return a.liveNoteLoader.NoteViews(), nil
+}
+
+func (a *app) LatestNoteViews() *model.NoteViews {
 	return a.latestNoteLoader.NoteViews()
+}
+
+func (a *app) LiveNoteViews() *model.NoteViews {
+	return a.liveNoteLoader.NoteViews()
 }
 
 func (a *app) Now() time.Time {
@@ -620,11 +633,11 @@ func (a *app) startServer() {
 			}
 
 			if a.config.DevMode {
-				if strings.HasPrefix(path, "/debug/nvs") {
+				if strings.HasPrefix(path, "/debug/nvs/latest") {
 					ctx.SetContentType("application/json")
 					ctx.SetStatusCode(fasthttp.StatusOK)
 
-					data, _ := json.Marshal(a.AllNotes())
+					data, _ := json.Marshal(a.LatestNoteViews())
 					ctx.SetBody(data)
 					return
 				}

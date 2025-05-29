@@ -25,6 +25,10 @@ type CreatePaymentLinkOrErrorPayload interface {
 	IsCreatePaymentLinkOrErrorPayload()
 }
 
+type CreateReleaseOrErrorPayload interface {
+	IsCreateReleaseOrErrorPayload()
+}
+
 type DisableAPIKeyOrErrorPayload interface {
 	IsDisableAPIKeyOrErrorPayload()
 }
@@ -131,6 +135,17 @@ type CreatePaymentLinkPayload struct {
 
 func (CreatePaymentLinkPayload) IsCreatePaymentLinkOrErrorPayload() {}
 
+type CreateReleaseInput struct {
+	Title             string `json:"title"`
+	HomeNoteVersionID *int   `json:"homeNoteVersionId,omitempty"`
+}
+
+type CreateReleasePayload struct {
+	Release *db.Release `json:"release"`
+}
+
+func (CreateReleasePayload) IsCreateReleaseOrErrorPayload() {}
+
 type DisableAPIKeyInput struct {
 	ID int `json:"id"`
 }
@@ -169,6 +184,8 @@ func (ErrorPayload) IsBanUserOrErrorPayload() {}
 func (ErrorPayload) IsCreateAPIKeyOrErrorPayload() {}
 
 func (ErrorPayload) IsDisableAPIKeyOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateReleaseOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`

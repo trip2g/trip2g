@@ -1,11 +1,13 @@
 -- migrate:up
 
+pragma foreign_keys = on;
+
 create table releases (
   id integer primary key autoincrement,
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete restrict,
   title text not null default '',
-  home_note_id integer references notes(id) on delete restrict,
+  home_note_version_id integer references note_versions(id) on delete restrict,
   is_live boolean not null default false
 );
 

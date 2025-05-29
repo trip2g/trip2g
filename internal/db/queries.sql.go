@@ -783,23 +783,23 @@ func (q *Queries) InsertPurchase(ctx context.Context, arg InsertPurchaseParams) 
 }
 
 const insertRelease = `-- name: InsertRelease :one
-insert into releases (created_by, title, home_note_id, is_live)
+insert into releases (created_by, title, home_note_version_id, is_live)
 values (?, ?, ?, ?)
-returning id, created_at, created_by, title, home_note_id, is_live
+returning id, created_at, created_by, title, home_note_version_id, is_live
 `
 
 type InsertReleaseParams struct {
-	CreatedBy  int64         `json:"created_by"`
-	Title      string        `json:"title"`
-	HomeNoteID sql.NullInt64 `json:"home_note_id"`
-	IsLive     bool          `json:"is_live"`
+	CreatedBy         int64         `json:"created_by"`
+	Title             string        `json:"title"`
+	HomeNoteVersionID sql.NullInt64 `json:"home_note_version_id"`
+	IsLive            bool          `json:"is_live"`
 }
 
 func (q *Queries) InsertRelease(ctx context.Context, arg InsertReleaseParams) (Release, error) {
 	row := q.db.QueryRowContext(ctx, insertRelease,
 		arg.CreatedBy,
 		arg.Title,
-		arg.HomeNoteID,
+		arg.HomeNoteVersionID,
 		arg.IsLive,
 	)
 	var i Release
@@ -808,7 +808,7 @@ func (q *Queries) InsertRelease(ctx context.Context, arg InsertReleaseParams) (R
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.Title,
-		&i.HomeNoteID,
+		&i.HomeNoteVersionID,
 		&i.IsLive,
 	)
 	return i, err

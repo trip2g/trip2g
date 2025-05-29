@@ -129,6 +129,16 @@ type AdminApiKeyLogsConnection
   nodes: [AdminApiKeyLog!]! @goField(forceResolver: true)
 }
 
+type AdminRelease @goModel(model: "trip2g/internal/db.Release") {
+  id: Int64!
+  createdAt: Time!
+  homeNoteVersionId: Int64!
+  createdBy: AdminUser!
+  title: String!
+  homeNote: NoteView! @goField(forceResolver: true)
+  isLive: Boolean!
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -136,6 +146,7 @@ type AdminQuery {
   allNoteViews: AdminNoteViewsConnection!
   allUserUserBans: AdminUserBansConnection!
   allApiKeys: AdminApiKeysConnection!
+  allReleases: [AdminRelease!]!
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
 
@@ -412,11 +423,30 @@ type DisableApiKeyPayload {
 
 union DisableApiKeyOrErrorPayload = DisableApiKeyPayload | ErrorPayload
 
+#
+# createRelease
+#
+
+input CreateReleaseInput {
+  title: String!
+  homeNoteVersionId: Int64
+}
+
+type CreateReleasePayload {
+  release: AdminRelease!
+}
+
+union CreateReleaseOrErrorPayload = CreateReleasePayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
+
   unbanUser(input: UnbanUserInput!): UnbanUserOrErrorPayload!
   banUser(input: BanUserInput!): BanUserOrErrorPayload!
+
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
   disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!
+
+  createRelease(input: CreateReleaseInput!): CreateReleaseOrErrorPayload!
 }

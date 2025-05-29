@@ -146,12 +146,12 @@ type Purchase struct {
 }
 
 type Release struct {
-	ID         int64         `json:"id"`
-	CreatedAt  time.Time     `json:"created_at"`
-	CreatedBy  int64         `json:"created_by"`
-	Title      string        `json:"title"`
-	HomeNoteID sql.NullInt64 `json:"home_note_id"`
-	IsLive     bool          `json:"is_live"`
+	ID                int64         `json:"id"`
+	CreatedAt         time.Time     `json:"created_at"`
+	CreatedBy         int64         `json:"created_by"`
+	Title             string        `json:"title"`
+	HomeNoteVersionID sql.NullInt64 `json:"home_note_version_id"`
+	IsLive            bool          `json:"is_live"`
 }
 
 type ReleaseNoteVersion struct {

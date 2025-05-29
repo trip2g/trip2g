@@ -15,6 +15,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
+	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
@@ -100,9 +101,14 @@ func (r *adminMutationResolver) DisableAPIKey(ctx context.Context, obj *appmodel
 	return disableapikey.Resolve(ctx, r.env(ctx), input)
 }
 
+// CreateRelease is the resolver for the createRelease field.
+func (r *adminMutationResolver) CreateRelease(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateReleaseInput) (model.CreateReleaseOrErrorPayload, error) {
+	return createrelease.Resolve(ctx, r.env(ctx), input)
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNoteViewsConnection) ([]appmodel.NoteView, error) {
-	notes := r.env(ctx).AllNotes()
+	notes := r.env(ctx).LatestNoteViews()
 	res := make([]appmodel.NoteView, 0, len(notes.Map))
 	keys := make([]string, 0, len(notes.Map))
 
@@ -149,6 +155,11 @@ func (r *adminQueryResolver) AllAPIKeys(ctx context.Context, obj *appmodel.Admin
 	return &model.AdminAPIKeysConnection{}, nil
 }
 
+// AllReleases is the resolver for the allReleases field.
+func (r *adminQueryResolver) AllReleases(ctx context.Context, obj *appmodel.AdminQuery) ([]db.Release, error) {
+	panic(fmt.Errorf("not implemented: AllReleases - allReleases"))
+}
+
 // APIKeyLogs is the resolver for the apiKeyLogs field.
 func (r *adminQueryResolver) APIKeyLogs(ctx context.Context, obj *appmodel.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error) {
 	return &model.AdminAPIKeyLogsConnection{APIKeyID: filter.APIKeyID}, nil
@@ -161,7 +172,7 @@ func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *appmodel.AdminQu
 
 // NoteView is the resolver for the noteView field.
 func (r *adminQueryResolver) NoteView(ctx context.Context, obj *appmodel.AdminQuery, id string) (*appmodel.NoteView, error) {
-	notes := r.env(ctx).AllNotes()
+	notes := r.env(ctx).LatestNoteViews()
 
 	return notes.GetByPath(id), nil
 }
@@ -169,6 +180,21 @@ func (r *adminQueryResolver) NoteView(ctx context.Context, obj *appmodel.AdminQu
 // UserSubgraphAccess is the resolver for the userSubgraphAccess field.
 func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *appmodel.AdminQuery, id int) (*db.UserSubgraphAccess, error) {
 	return resolveOne[db.UserSubgraphAccess](ctx, int64(id), r.env(ctx).UserSubgraphAccessByID)
+}
+
+// HomeNoteVersionID is the resolver for the homeNoteVersionId field.
+func (r *adminReleaseResolver) HomeNoteVersionID(ctx context.Context, obj *db.Release) (int, error) {
+	panic(fmt.Errorf("not implemented: HomeNoteVersionID - homeNoteVersionId"))
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminReleaseResolver) CreatedBy(ctx context.Context, obj *db.Release) (*db.User, error) {
+	panic(fmt.Errorf("not implemented: CreatedBy - createdBy"))
+}
+
+// HomeNote is the resolver for the homeNote field.
+func (r *adminReleaseResolver) HomeNote(ctx context.Context, obj *db.Release) (*appmodel.NoteView, error) {
+	panic(fmt.Errorf("not implemented: HomeNote - homeNote"))
 }
 
 // Color is the resolver for the color field.
@@ -384,7 +410,7 @@ func (r *subgraphResolver) Offers(ctx context.Context, obj *db.Subgraph) ([]db.O
 
 // HomePath is the resolver for the homePath field.
 func (r *subgraphResolver) HomePath(ctx context.Context, obj *db.Subgraph) (string, error) {
-	notes := r.env(ctx).AllNotes()
+	notes := r.env(ctx).LatestNoteViews()
 	subgraph, ok := notes.Subgraphs[obj.Name]
 	if !ok || subgraph.Home == nil {
 		return "/", nil
@@ -540,6 +566,9 @@ func (r *Resolver) AdminNoteViewsConnection() AdminNoteViewsConnectionResolver {
 // AdminQuery returns AdminQueryResolver implementation.
 func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
 
+// AdminRelease returns AdminReleaseResolver implementation.
+func (r *Resolver) AdminRelease() AdminReleaseResolver { return &adminReleaseResolver{r} }
+
 // AdminSubgraph returns AdminSubgraphResolver implementation.
 func (r *Resolver) AdminSubgraph() AdminSubgraphResolver { return &adminSubgraphResolver{r} }
 
@@ -622,6 +651,7 @@ type adminApiKeysConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
 type adminNoteViewsConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }
+type adminReleaseResolver struct{ *Resolver }
 type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminUserResolver struct{ *Resolver }

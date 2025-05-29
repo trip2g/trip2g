@@ -361,7 +361,7 @@ select l.created_at, a.name as action_name, i.value as ip
  order by l.created_at desc;
 
 -- name: InsertRelease :one
-insert into releases (created_by, title, home_note_id, is_live)
+insert into releases (created_by, title, home_note_version_id, is_live)
 values (?, ?, ?, ?)
 returning *;
 

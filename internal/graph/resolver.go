@@ -6,6 +6,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
+	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
@@ -65,7 +66,7 @@ type Env interface {
 	ListActivePurchasesByIDs(ctx context.Context, ids []string) ([]db.Purchase, error)
 	ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error)
 
-	AllNotes() *model.NoteViews
+	LatestNoteViews() *model.NoteViews
 	AllNotePaths(ctx context.Context) ([]db.NotePath, error)
 
 	IDHash(entity string, id int64) string
@@ -89,4 +90,5 @@ type Env interface {
 	unbanuser.Env
 	createapikey.Env
 	disableapikey.Env
+	createrelease.Env
 }
