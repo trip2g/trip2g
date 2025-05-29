@@ -63,13 +63,13 @@ func (e *PaywallError) Error() string {
 }
 
 func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
-	var pages *model.NoteViews
+	var notes *model.NoteViews
 
 	// only admins can access the latest version
 	if request.Version == "latest" && request.UserToken.IsAdmin() {
-		pages = env.LatestNoteViews()
+		notes = env.LatestNoteViews()
 	} else {
-		pages = env.LiveNoteViews()
+		notes = env.LiveNoteViews()
 	}
 
 	path := request.Path
@@ -79,7 +79,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	response := Response{}
 
-	note := pages.GetByPath(path)
+	note := notes.GetByPath(path)
 	if note == nil {
 		return &response, ErrNotFound
 	}
@@ -90,7 +90,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	response.Title = note.Title
 	response.Note = note
-	response.Notes = pages
+	response.Notes = notes
 	response.UserToken = request.UserToken
 	response.Time = int(time.Now().Unix())
 
