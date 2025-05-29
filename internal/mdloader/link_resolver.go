@@ -2,6 +2,8 @@ package mdloader
 
 import (
 	"bytes"
+	"fmt"
+	"net/url"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
@@ -14,10 +16,15 @@ type myLinkResolver struct {
 	nvs *model.NoteViews
 
 	currentPage *model.NoteView
+
+	version string
 }
 
 const _html = ".html"
 const _hash = "#"
+
+// DefaultVersion does not add ?version= to the URL.
+const DefaultVersion = "live"
 
 func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 	assetPath, ok := r.currentPage.AssetReplaces[string(n.Target)]
@@ -31,24 +38,6 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 		target = target[:len(target)-len(_html)]
 	}
 
-	// currentParts := strings.Split(r.currentPage.Permalink, "/")
-	// pageFound := false
-	//
-	// for i := len(currentParts) - 1; i >= 0; i-- {
-	// 	targetPermalink := strings.Join(currentParts[:i], "/") + "/" + string(target)
-	//
-	// 	targetPage, ok := r.pages[targetPermalink]
-	// 	if ok {
-	// 		target = []byte(targetPage.Permalink)
-	// 		pageFound = true
-	// 		break
-	// 	}
-	// }
-	//
-	// if !pageFound {
-	// 	r.log.Warn("Page not found", "target", string(target), "page", r.currentPage.Permalink)
-	// }
-
 	dest := make([]byte, len(target)+len(_hash)+len(n.Fragment))
 	var i int
 	if len(target) > 0 {
@@ -58,5 +47,20 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 		i += copy(dest[i:], _hash)
 		i += copy(dest[i:], n.Fragment)
 	}
+
+	if len(r.version) > 0 && r.version != DefaultVersion {
+		// parse url and add ?version= to the end
+		u, err := url.Parse(string(dest[:i]))
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse URL: %w", err)
+		}
+
+		query := u.Query()
+		query.Set("version", r.version)
+		u.RawQuery = query.Encode()
+
+		return []byte(u.String()), nil
+	}
+
 	return dest[:i], nil
 }

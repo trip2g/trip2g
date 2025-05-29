@@ -35,12 +35,16 @@ type Loader struct {
 	env Env
 	nvs *model.NoteViews
 	log logger.Logger
+
+	version string
 }
 
-func New(name string, env Env) *Loader {
+func New(version string, env Env) *Loader {
 	return &Loader{
 		env: env,
-		log: logger.WithPrefix(env.Logger(), name+" noteloader:"),
+		log: logger.WithPrefix(env.Logger(), version+" noteloader:"),
+
+		version: version,
 	}
 }
 
@@ -84,7 +88,13 @@ func (l *Loader) Load(ctx context.Context) error {
 		})
 	}
 
-	nvs, err := mdloader.Load(sources, logger.WithPrefix(l.log, "mdloader:"))
+	options := mdloader.Options{
+		Sources: sources,
+		Log:     logger.WithPrefix(l.log, "mdloader:"),
+		Version: l.version,
+	}
+
+	nvs, err := mdloader.Load(options)
 	if err != nil {
 		return fmt.Errorf("failed to load pages: %w", err)
 	}

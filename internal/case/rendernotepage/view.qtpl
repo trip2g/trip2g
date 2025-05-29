@@ -51,7 +51,7 @@
         {% for k := range resp.Note.InLinks %}
           {% if inNote := resp.Notes.GetByPath(k); inNote != nil %}
             <div class="sidebar__block-link">
-              <a href="{%s inNote.Permalink %}">{%s inNote.Title %}</a>
+              <a href="{%s resp.Notes.ResolveURL(inNote) %}">{%s inNote.Title %}</a>
             </div>
           {% endif %}
         {% endfor %}
@@ -70,7 +70,7 @@
         <div class="sidebar__homepages">
           {% for _, homePage := range homePages %}
           <div class="sidebar__homepage">
-            <a href="{%s= homePage.Permalink %}">{%s= homePage.Title %}</a>
+            <a href="{%s= resp.Notes.ResolveURL(homePage) %}">{%s= homePage.Title %}</a>
           </div>
           {% endfor %}
         </div>

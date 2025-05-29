@@ -205,7 +205,7 @@ func StreamNoteContent(qw422016 *qt422016.Writer, resp *Response) {
             <div class="sidebar__block-link">
               <a href="`)
 //line view.qtpl:54
-				qw422016.E().S(inNote.Permalink)
+				qw422016.E().S(resp.Notes.ResolveURL(inNote))
 //line view.qtpl:54
 				qw422016.N().S(`">`)
 //line view.qtpl:54
@@ -283,7 +283,7 @@ func StreamSidebar(qw422016 *qt422016.Writer, resp *Response) {
           <div class="sidebar__homepage">
             <a href="`)
 //line view.qtpl:73
-			qw422016.N().S(homePage.Permalink)
+			qw422016.N().S(resp.Notes.ResolveURL(homePage))
 //line view.qtpl:73
 			qw422016.N().S(`">`)
 //line view.qtpl:73

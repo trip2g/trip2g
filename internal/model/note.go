@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"html/template"
+	"net/url"
 	"path/filepath"
 	"sort"
 
@@ -47,6 +48,8 @@ type NoteViews struct {
 	List []*NoteView
 
 	Subgraphs map[string]*NoteSubgraph
+
+	Version string
 }
 
 func (n *NoteView) ID() string {
@@ -148,6 +151,25 @@ func NewNoteViews() *NoteViews {
 func (nv *NoteViews) Copy() *NoteViews {
 	res := *nv
 	return &res
+}
+
+func (nv *NoteViews) ResolveURL(note *NoteView) string {
+	// TODO: extract this logict from here and internal/mdloader/link_resolver.go
+	if len(nv.Version) > 0 && nv.Version != "live" {
+		// parse url and add ?version= to the end
+		u, err := url.Parse(string(note.Permalink))
+		if err != nil {
+			return ""
+		}
+
+		query := u.Query()
+		query.Set("version", nv.Version)
+		u.RawQuery = query.Encode()
+
+		return u.String()
+	}
+
+	return note.Permalink
 }
 
 func (nv *NoteViews) ExtractNoteList() {

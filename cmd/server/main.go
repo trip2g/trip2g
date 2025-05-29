@@ -349,7 +349,12 @@ func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]s
 		Content:   []byte(noteVersion.Content),
 	}}
 
-	pages, err := mdloader.Load(sources, logger.WithPrefix(a.log, "uploadnoteasset: mdloader:"))
+	options := mdloader.Options{
+		Sources: sources,
+		Log:     logger.WithPrefix(a.log, "uploadnoteasset: mdloader:"),
+	}
+
+	pages, err := mdloader.Load(options)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load pages: %w", err)
 	}

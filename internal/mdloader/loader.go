@@ -36,17 +36,26 @@ type loader struct {
 	linkResolver *myLinkResolver
 }
 
+type Options struct {
+	Sources []SourceFile
+	Log     logger.Logger
+	Version string
+}
+
 // Load transforms markdown files into pages.
-func Load(sourceFiles []SourceFile, log logger.Logger) (*model.NoteViews, error) {
+func Load(options Options) (*model.NoteViews, error) {
 	ldr := &loader{
-		log: log,
+		log: options.Log,
 		nvs: model.NewNoteViews(),
 
-		linkResolver: &myLinkResolver{},
+		linkResolver: &myLinkResolver{
+			version: options.Version,
+		},
 	}
 
+	ldr.nvs.Version = options.Version
 	ldr.linkResolver.nvs = ldr.nvs
-	ldr.linkResolver.log = log
+	ldr.linkResolver.log = options.Log
 
 	ldr.md = goldmark.New(
 		goldmark.WithRendererOptions(
@@ -67,7 +76,7 @@ func Load(sourceFiles []SourceFile, log logger.Logger) (*model.NoteViews, error)
 		),
 	)
 
-	for _, src := range sourceFiles {
+	for _, src := range options.Sources {
 		page, err := ldr.parsePage(src)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load page: %w (%s)", err, src.Path)
