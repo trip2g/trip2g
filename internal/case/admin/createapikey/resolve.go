@@ -11,11 +11,11 @@ import (
 type Env interface {
 	GenerateApiKey() string
 	InsertApiKey(ctx context.Context, params db.InsertApiKeyParams) (db.ApiKey, error)
-	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
+	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
 
 func Resolve(ctx context.Context, env Env, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error) {
-	token, err := env.CurrentUserToken(ctx)
+	token, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}

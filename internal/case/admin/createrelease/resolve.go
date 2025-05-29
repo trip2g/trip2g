@@ -16,7 +16,7 @@ type Env interface {
 	InsertReleaseNoteVersion(ctx context.Context, arg db.InsertReleaseNoteVersionParams) error
 	ChangeLiveRelease(ctx context.Context, id int64) error
 	LatestNoteViews() *appmodel.NoteViews
-	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
+	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	PrepareLiveNotes(ctx context.Context) (*appmodel.NoteViews, error)
 }
 
@@ -25,7 +25,7 @@ func normalizeInput(i *model.CreateReleaseInput) {
 }
 
 func Resolve(ctx context.Context, env Env, input model.CreateReleaseInput) (model.CreateReleaseOrErrorPayload, error) {
-	token, err := env.CurrentUserToken(ctx)
+	token, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}

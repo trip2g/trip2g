@@ -372,6 +372,26 @@ func (a *app) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {
 	return req.UserToken()
 }
 
+var ErrNotAdmin = errors.New("not an admin user")
+
+func (a *app) CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error) {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := req.UserToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user token: %w", err)
+	}
+
+	if data == nil || !data.IsAdmin() {
+		return nil, ErrNotAdmin
+	}
+
+	return data, nil
+}
+
 func (a *app) GenerateHotAuthToken(_ context.Context, data model.HotAuthToken) (string, error) {
 	return a.hotAuthTokenManager.NewToken(data)
 }
