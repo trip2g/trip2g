@@ -92,6 +92,10 @@ html, body {
   @apply min-w-32 pr-8;
 }
 
+.sidebar__latest-banner {
+  @apply mb-8;
+}
+
 .sidebar__block-title {
   @apply text-lg font-bold my-4;
 }

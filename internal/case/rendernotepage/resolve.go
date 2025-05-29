@@ -31,6 +31,11 @@ type Request struct {
 	UserToken *usertoken.Data
 }
 
+type VersionBanner struct {
+	Label     string
+	Permalink string
+}
+
 type Response struct {
 	Title string
 	Note  *model.NoteView
@@ -41,6 +46,8 @@ type Response struct {
 
 	UserToken *usertoken.Data
 	Time      int
+
+	versionBanner *VersionBanner
 }
 
 func (r *Response) NoteSubgraphsJSON() string {
@@ -66,7 +73,10 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	var notes *model.NoteViews
 
 	// only admins can access the latest version
-	if request.Version == "latest" && request.UserToken.IsAdmin() {
+	isAdmin := request.UserToken.IsAdmin()
+	isLatest := request.Version == "latest" && isAdmin
+
+	if isLatest {
 		notes = env.LatestNoteViews()
 	} else {
 		notes = env.LiveNoteViews()
@@ -82,6 +92,29 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	note := notes.GetByPath(path)
 	if note == nil {
 		return &response, ErrNotFound
+	}
+
+	if isAdmin {
+		var alternativeNotes *model.NoteViews
+
+		if isLatest {
+			alternativeNotes = env.LiveNoteViews()
+		} else {
+			alternativeNotes = env.LatestNoteViews()
+		}
+
+		alternativeNote := alternativeNotes.GetByPath(path)
+		if alternativeNote != nil && alternativeNote.VersionID != note.VersionID {
+			response.versionBanner = &VersionBanner{
+				Permalink: alternativeNotes.ResolveURL(alternativeNote),
+			}
+
+			if isLatest {
+				response.versionBanner.Label = "Это последняя загруженная версия, которая отличается от опубликованной"
+			} else {
+				response.versionBanner.Label = "Это последняя опубликованная версия, которая отличается от загруженной"
+			}
+		}
 	}
 
 	// TODO: extract subgraphs
