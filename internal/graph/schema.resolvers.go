@@ -156,8 +156,8 @@ func (r *adminQueryResolver) AllAPIKeys(ctx context.Context, obj *appmodel.Admin
 }
 
 // AllReleases is the resolver for the allReleases field.
-func (r *adminQueryResolver) AllReleases(ctx context.Context, obj *appmodel.AdminQuery) ([]db.Release, error) {
-	panic(fmt.Errorf("not implemented: AllReleases - allReleases"))
+func (r *adminQueryResolver) AllReleases(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminReleasesConnection, error) {
+	return &model.AdminReleasesConnection{}, nil
 }
 
 // APIKeyLogs is the resolver for the apiKeyLogs field.
@@ -183,18 +183,28 @@ func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *appmod
 }
 
 // HomeNoteVersionID is the resolver for the homeNoteVersionId field.
-func (r *adminReleaseResolver) HomeNoteVersionID(ctx context.Context, obj *db.Release) (int, error) {
-	panic(fmt.Errorf("not implemented: HomeNoteVersionID - homeNoteVersionId"))
+func (r *adminReleaseResolver) HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int, error) {
+	if obj.HomeNoteVersionID.Valid {
+		v := int(obj.HomeNoteVersionID.Int64)
+		return &v, nil
+	}
+
+	return nil, nil
 }
 
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminReleaseResolver) CreatedBy(ctx context.Context, obj *db.Release) (*db.User, error) {
-	panic(fmt.Errorf("not implemented: CreatedBy - createdBy"))
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
 }
 
 // HomeNote is the resolver for the homeNote field.
 func (r *adminReleaseResolver) HomeNote(ctx context.Context, obj *db.Release) (*appmodel.NoteView, error) {
 	panic(fmt.Errorf("not implemented: HomeNote - homeNote"))
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminReleasesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminReleasesConnection) ([]db.Release, error) {
+	return r.env(ctx).ListAllReleases(ctx)
 }
 
 // Color is the resolver for the color field.
@@ -569,6 +579,11 @@ func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{
 // AdminRelease returns AdminReleaseResolver implementation.
 func (r *Resolver) AdminRelease() AdminReleaseResolver { return &adminReleaseResolver{r} }
 
+// AdminReleasesConnection returns AdminReleasesConnectionResolver implementation.
+func (r *Resolver) AdminReleasesConnection() AdminReleasesConnectionResolver {
+	return &adminReleasesConnectionResolver{r}
+}
+
 // AdminSubgraph returns AdminSubgraphResolver implementation.
 func (r *Resolver) AdminSubgraph() AdminSubgraphResolver { return &adminSubgraphResolver{r} }
 
@@ -652,6 +667,7 @@ type adminMutationResolver struct{ *Resolver }
 type adminNoteViewsConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }
 type adminReleaseResolver struct{ *Resolver }
+type adminReleasesConnectionResolver struct{ *Resolver }
 type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminUserResolver struct{ *Resolver }

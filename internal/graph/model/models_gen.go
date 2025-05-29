@@ -78,6 +78,10 @@ type AdminNoteViewsConnection struct {
 	Nodes []model.NoteView `json:"nodes"`
 }
 
+type AdminReleasesConnection struct {
+	Nodes []db.Release `json:"nodes"`
+}
+
 type AdminSubgraphsConnection struct {
 	Nodes []db.Subgraph `json:"nodes"`
 }

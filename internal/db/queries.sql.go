@@ -1219,6 +1219,42 @@ func (q *Queries) ListAllApiKeys(ctx context.Context) ([]ApiKey, error) {
 	return items, nil
 }
 
+const listAllReleases = `-- name: ListAllReleases :many
+select id, created_at, created_by, title, home_note_version_id, is_live
+  from releases
+ order by is_live desc, created_at desc
+`
+
+func (q *Queries) ListAllReleases(ctx context.Context) ([]Release, error) {
+	rows, err := q.db.QueryContext(ctx, listAllReleases)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Release
+	for rows.Next() {
+		var i Release
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.Title,
+			&i.HomeNoteVersionID,
+			&i.IsLive,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllSubgraphs = `-- name: ListAllSubgraphs :many
 select id, name, color, created_at from subgraphs order by id
 `

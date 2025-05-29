@@ -132,11 +132,15 @@ type AdminApiKeyLogsConnection
 type AdminRelease @goModel(model: "trip2g/internal/db.Release") {
   id: Int64!
   createdAt: Time!
-  homeNoteVersionId: Int64!
+  homeNoteVersionId: Int64
   createdBy: AdminUser!
   title: String!
-  homeNote: NoteView! @goField(forceResolver: true)
+  homeNote: NoteView @goField(forceResolver: true)
   isLive: Boolean!
+}
+
+type AdminReleasesConnection {
+  nodes: [AdminRelease!]! @goField(forceResolver: true)
 }
 
 type AdminQuery {
@@ -146,7 +150,7 @@ type AdminQuery {
   allNoteViews: AdminNoteViewsConnection!
   allUserUserBans: AdminUserBansConnection!
   allApiKeys: AdminApiKeysConnection!
-  allReleases: [AdminRelease!]!
+  allReleases: AdminReleasesConnection!
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
 

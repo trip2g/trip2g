@@ -52,6 +52,7 @@ type ResolverRoot interface {
 	AdminNoteViewsConnection() AdminNoteViewsConnectionResolver
 	AdminQuery() AdminQueryResolver
 	AdminRelease() AdminReleaseResolver
+	AdminReleasesConnection() AdminReleasesConnectionResolver
 	AdminSubgraph() AdminSubgraphResolver
 	AdminSubgraphsConnection() AdminSubgraphsConnectionResolver
 	AdminUser() AdminUserResolver
@@ -142,6 +143,10 @@ type ComplexityRoot struct {
 		ID                func(childComplexity int) int
 		IsLive            func(childComplexity int) int
 		Title             func(childComplexity int) int
+	}
+
+	AdminReleasesConnection struct {
+		Nodes func(childComplexity int) int
 	}
 
 	AdminSubgraph struct {
@@ -373,17 +378,20 @@ type AdminQueryResolver interface {
 	AllNoteViews(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNoteViewsConnection, error)
 	AllUserUserBans(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUserBansConnection, error)
 	AllAPIKeys(ctx context.Context, obj *model1.AdminQuery) (*model.AdminAPIKeysConnection, error)
-	AllReleases(ctx context.Context, obj *model1.AdminQuery) ([]db.Release, error)
+	AllReleases(ctx context.Context, obj *model1.AdminQuery) (*model.AdminReleasesConnection, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
 	UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int) (*db.UserSubgraphAccess, error)
 }
 type AdminReleaseResolver interface {
-	HomeNoteVersionID(ctx context.Context, obj *db.Release) (int, error)
+	HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int, error)
 	CreatedBy(ctx context.Context, obj *db.Release) (*db.User, error)
 
 	HomeNote(ctx context.Context, obj *db.Release) (*model1.NoteView, error)
+}
+type AdminReleasesConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminReleasesConnection) ([]db.Release, error)
 }
 type AdminSubgraphResolver interface {
 	Color(ctx context.Context, obj *db.Subgraph) (*string, error)
@@ -812,6 +820,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminRelease.Title(childComplexity), true
+
+	case "AdminReleasesConnection.nodes":
+		if e.complexity.AdminReleasesConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminReleasesConnection.Nodes(childComplexity), true
 
 	case "AdminSubgraph.color":
 		if e.complexity.AdminSubgraph.Color == nil {
@@ -3458,9 +3473,9 @@ func (ec *executionContext) _AdminQuery_allReleases(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]db.Release)
+	res := resTmp.(*model.AdminReleasesConnection)
 	fc.Result = res
-	return ec.marshalNAdminRelease2ᚕtrip2gᚋinternalᚋdbᚐReleaseᚄ(ctx, field.Selections, res)
+	return ec.marshalNAdminReleasesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminReleasesConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminQuery_allReleases(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3471,22 +3486,10 @@ func (ec *executionContext) fieldContext_AdminQuery_allReleases(_ context.Contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_AdminRelease_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_AdminRelease_createdAt(ctx, field)
-			case "homeNoteVersionId":
-				return ec.fieldContext_AdminRelease_homeNoteVersionId(ctx, field)
-			case "createdBy":
-				return ec.fieldContext_AdminRelease_createdBy(ctx, field)
-			case "title":
-				return ec.fieldContext_AdminRelease_title(ctx, field)
-			case "homeNote":
-				return ec.fieldContext_AdminRelease_homeNote(ctx, field)
-			case "isLive":
-				return ec.fieldContext_AdminRelease_isLive(ctx, field)
+			case "nodes":
+				return ec.fieldContext_AdminReleasesConnection_nodes(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminRelease", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type AdminReleasesConnection", field.Name)
 		},
 	}
 	return fc, nil
@@ -3858,14 +3861,11 @@ func (ec *executionContext) _AdminRelease_homeNoteVersionId(ctx context.Context,
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(*int)
 	fc.Result = res
-	return ec.marshalNInt642int(ctx, field.Selections, res)
+	return ec.marshalOInt642ᚖint(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminRelease_homeNoteVersionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4000,14 +4000,11 @@ func (ec *executionContext) _AdminRelease_homeNote(ctx context.Context, field gr
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*model1.NoteView)
 	fc.Result = res
-	return ec.marshalNNoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx, field.Selections, res)
+	return ec.marshalONoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminRelease_homeNote(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4078,6 +4075,66 @@ func (ec *executionContext) fieldContext_AdminRelease_isLive(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminReleasesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminReleasesConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminReleasesConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminReleasesConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.Release)
+	fc.Result = res
+	return ec.marshalNAdminRelease2ᚕtrip2gᚋinternalᚋdbᚐReleaseᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminReleasesConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminReleasesConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminRelease_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminRelease_createdAt(ctx, field)
+			case "homeNoteVersionId":
+				return ec.fieldContext_AdminRelease_homeNoteVersionId(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminRelease_createdBy(ctx, field)
+			case "title":
+				return ec.fieldContext_AdminRelease_title(ctx, field)
+			case "homeNote":
+				return ec.fieldContext_AdminRelease_homeNote(ctx, field)
+			case "isLive":
+				return ec.fieldContext_AdminRelease_isLive(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminRelease", field.Name)
 		},
 	}
 	return fc, nil
@@ -12497,16 +12554,13 @@ func (ec *executionContext) _AdminRelease(ctx context.Context, sel ast.Selection
 		case "homeNoteVersionId":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._AdminRelease_homeNoteVersionId(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
@@ -12574,16 +12628,13 @@ func (ec *executionContext) _AdminRelease(ctx context.Context, sel ast.Selection
 		case "homeNote":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._AdminRelease_homeNote(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
@@ -12612,6 +12663,76 @@ func (ec *executionContext) _AdminRelease(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminReleasesConnectionImplementors = []string{"AdminReleasesConnection"}
+
+func (ec *executionContext) _AdminReleasesConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminReleasesConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminReleasesConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminReleasesConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminReleasesConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -15901,6 +16022,20 @@ func (ec *executionContext) marshalNAdminRelease2ᚖtrip2gᚋinternalᚋdbᚐRel
 	return ec._AdminRelease(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminReleasesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminReleasesConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminReleasesConnection) graphql.Marshaler {
+	return ec._AdminReleasesConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminReleasesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminReleasesConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminReleasesConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminReleasesConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminSubgraph2trip2gᚋinternalᚋdbᚐSubgraph(ctx context.Context, sel ast.SelectionSet, v db.Subgraph) graphql.Marshaler {
 	return ec._AdminSubgraph(ctx, sel, &v)
 }
@@ -16423,16 +16558,6 @@ func (ec *executionContext) marshalNNoteView2ᚕtrip2gᚋinternalᚋmodelᚐNote
 	}
 
 	return ret
-}
-
-func (ec *executionContext) marshalNNoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx context.Context, sel ast.SelectionSet, v *model1.NoteView) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._NoteView(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNOffer2trip2gᚋinternalᚋdbᚐOffer(ctx context.Context, sel ast.SelectionSet, v db.Offer) graphql.Marshaler {
