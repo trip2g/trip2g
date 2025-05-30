@@ -1,0 +1,5 @@
+$trip2g_admin_noteview_graph $mol_page
+	title \Note Graph
+	Body $trip2g_admin_noteview_graph_cytoscape
+
+$trip2g_admin_noteview_graph_cytoscape $mol_view

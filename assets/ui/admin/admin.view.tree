@@ -22,6 +22,7 @@ $trip2g_admin_app $mol_book2_catalog
 		noteviews <= ListNoteviews $trip2g_admin_list_noteviews
 		apikeys <= ListApiKeys $trip2g_admin_apikey_catalog
 		releases <= ListReleases $trip2g_admin_release_catalog
+		noteGraph <= NoteGraph $trip2g_admin_noteview_graph
 
 $trip2g_admin_cell $mol_view
 	content \No Content
