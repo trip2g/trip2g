@@ -5,7 +5,9 @@
       "Bash(go build:*)",
       "Bash(go test:*)",
       "Bash(mkdir:*)",
-      "Bash(npm run graphqlgen:*)"
+      "Bash(npm run graphqlgen:*)",
+      "Bash(mv:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

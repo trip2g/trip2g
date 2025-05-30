@@ -12,7 +12,7 @@ $trip2g_admin_release_create $mol_page
 				<= HomeNote $mol_form_field
 					name \Home Note
 					bid <= home_note_bid \
-					Content <= home_note_control $trip2g_admin_select_noteview
+					Content <= home_note_control $trip2g_admin_noteview_select
 						version_id? <=> home_note_version_id? null number | null
 			buttons /
 				<= Submit $mol_button_major

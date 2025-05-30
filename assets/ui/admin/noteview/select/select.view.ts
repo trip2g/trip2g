@@ -1,5 +1,5 @@
 namespace $.$$ {
-	export class $trip2g_admin_select_noteview extends $.$trip2g_admin_select_noteview {
+	export class $trip2g_admin_noteview_select extends $.$trip2g_admin_noteview_select {
 		@$mol_mem
 		data( reset?: null ) {
 			const res = $trip2g_graphql_request(
