@@ -9,7 +9,8 @@
       "Bash(mv:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

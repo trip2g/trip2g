@@ -37,10 +37,8 @@ $trip2g_admin_release_catalog $mol_book2_catalog
 						title \Status
 						Content <= Row_is_live* $trip2g_admin_cell
 							content <= row_is_live_status* \status
-							attr *
-								title <= row_is_live_tooltip* \status_tooltip
 					<= Row_actions* $mol_labeler
 						title \Actions
 						Content <= Row_makelive* $trip2g_admin_release_button_makelive
 							release_id <= row_id* 0
-							is_live <= row_is_live* \status
+							is_live <= row_is_live* false

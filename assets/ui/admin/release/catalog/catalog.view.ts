@@ -62,12 +62,12 @@ namespace $.$$ {
 			return this.row( id ).title || '-'
 		}
 
-		override row_is_live_status( id: any ): string {
-			return this.row( id ).isLive ? 'LIVE' : 'DRAFT'
+		override row_is_live( id: any ): boolean {
+			return this.row( id ).isLive
 		}
 
-		override row_is_live_tooltip( id: any ): string {
-			return this.row( id ).isLive ? 'This release is currently live' : 'This release is in draft mode'
+		override row_is_live_status( id: any ): string {
+			return this.row_is_live( id ) ? 'LIVE' : 'DRAFT'
 		}
 
 		override on_create( next?: number ) {

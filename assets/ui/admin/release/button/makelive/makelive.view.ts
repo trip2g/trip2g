@@ -1,10 +1,10 @@
-namespace $$ {
+namespace $.$$ {
 	export class $trip2g_admin_release_button_makelive extends $.$trip2g_admin_release_button_makelive {
 		override handle_click() {
 			const res = $trip2g_graphql_request( `
 					mutation AdminMakeReleaseLive($input: MakeReleaseLiveInput!) {
 						admin {
-							makeReleaseLive(input:$input) {
+							data: makeReleaseLive(input:$input) {
 								... on ErrorPayload {
 									message
 								}
