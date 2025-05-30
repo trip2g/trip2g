@@ -1,5 +1,6 @@
 $trip2g_admin_release_create $mol_page
 	title \Create New Release
+	created_id? 0
 	body /
 		<= Form $mol_form
 			body /

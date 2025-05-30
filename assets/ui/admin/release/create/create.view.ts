@@ -32,7 +32,7 @@ namespace $.$$ {
 			}
 
 			if (res.admin.data.__typename === 'CreateReleasePayload') {
-				this.result(`Release created successfully (ID: ${res.admin.data.release.id})`)
+				this.created_id( res.admin.data.release.id )
 				return
 			}
 

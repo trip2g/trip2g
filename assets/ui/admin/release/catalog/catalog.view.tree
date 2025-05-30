@@ -10,6 +10,7 @@ $trip2g_admin_release_catalog $mol_book2_catalog
 	Content* $trip2g_admin_release_show
 		release_id <= row_id* 0
 	AddForm $trip2g_admin_release_create
+		created_id? <=> on_create? 0
 	menu_link_content* / <= ReleaseItem* $mol_view
 		sub /
 			<= Rows* $mol_row

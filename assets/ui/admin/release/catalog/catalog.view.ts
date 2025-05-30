@@ -69,5 +69,13 @@ namespace $.$$ {
 		override row_is_live_tooltip( id: any ): string {
 			return this.row( id ).isLive ? 'This release is currently live' : 'This release is in draft mode'
 		}
+
+		override on_create( next?: number ) {
+			if( next !== undefined ) {
+				this.$.$mol_state_arg.value( 'id', next.toString() )
+			}
+
+			return next || 0
+		}
 	}
 }
