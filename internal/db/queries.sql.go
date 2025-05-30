@@ -1616,6 +1616,26 @@ func (q *Queries) PurchaseByID(ctx context.Context, id string) (Purchase, error)
 	return i, err
 }
 
+const releaseByID = `-- name: ReleaseByID :one
+select id, created_at, created_by, title, home_note_version_id, is_live
+  from releases
+ where id = ?
+`
+
+func (q *Queries) ReleaseByID(ctx context.Context, id int64) (Release, error) {
+	row := q.db.QueryRowContext(ctx, releaseByID, id)
+	var i Release
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Title,
+		&i.HomeNoteVersionID,
+		&i.IsLive,
+	)
+	return i, err
+}
+
 const revokeUserSubgraphAccess = `-- name: RevokeUserSubgraphAccess :exec
 update user_subgraph_accesses
    set revoke_id = ?

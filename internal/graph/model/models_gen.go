@@ -33,6 +33,10 @@ type DisableAPIKeyOrErrorPayload interface {
 	IsDisableAPIKeyOrErrorPayload()
 }
 
+type MakeReleaseLiveOrErrorPayload interface {
+	IsMakeReleaseLiveOrErrorPayload()
+}
+
 type PushNotesOrErrorPayload interface {
 	IsPushNotesOrErrorPayload()
 }
@@ -191,10 +195,22 @@ func (ErrorPayload) IsDisableAPIKeyOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateReleaseOrErrorPayload() {}
 
+func (ErrorPayload) IsMakeReleaseLiveOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
+
+type MakeReleaseLiveInput struct {
+	ID int `json:"id"`
+}
+
+type MakeReleaseLivePayload struct {
+	Release *db.Release `json:"release"`
+}
+
+func (MakeReleaseLivePayload) IsMakeReleaseLiveOrErrorPayload() {}
 
 type Mutation struct {
 }

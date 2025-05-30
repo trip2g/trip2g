@@ -116,6 +116,7 @@ type ComplexityRoot struct {
 		CreateAPIKey             func(childComplexity int, input model.CreateAPIKeyInput) int
 		CreateRelease            func(childComplexity int, input model.CreateReleaseInput) int
 		DisableAPIKey            func(childComplexity int, input model.DisableAPIKeyInput) int
+		MakeReleaseLive          func(childComplexity int, input model.MakeReleaseLiveInput) int
 		UnbanUser                func(childComplexity int, input model.UnbanUserInput) int
 		UpdateSubgraph           func(childComplexity int, input updatesubgraph.Request) int
 		UpdateUserSubgraphAccess func(childComplexity int, input updateusersubgraphaccess.Request) int
@@ -220,6 +221,10 @@ type ComplexityRoot struct {
 	FieldMessage struct {
 		Name  func(childComplexity int) int
 		Value func(childComplexity int) int
+	}
+
+	MakeReleaseLivePayload struct {
+		Release func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -372,6 +377,7 @@ type AdminMutationResolver interface {
 	CreateAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error)
 	DisableAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error)
 	CreateRelease(ctx context.Context, obj *model1.AdminMutation, input model.CreateReleaseInput) (model.CreateReleaseOrErrorPayload, error)
+	MakeReleaseLive(ctx context.Context, obj *model1.AdminMutation, input model.MakeReleaseLiveInput) (model.MakeReleaseLiveOrErrorPayload, error)
 }
 type AdminQueryResolver interface {
 	AllUsers(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUsersConnection, error)
@@ -640,6 +646,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.DisableAPIKey(childComplexity, args["input"].(model.DisableAPIKeyInput)), true
+
+	case "AdminMutation.makeReleaseLive":
+		if e.complexity.AdminMutation.MakeReleaseLive == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_makeReleaseLive_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.MakeReleaseLive(childComplexity, args["input"].(model.MakeReleaseLiveInput)), true
 
 	case "AdminMutation.unbanUser":
 		if e.complexity.AdminMutation.UnbanUser == nil {
@@ -1046,6 +1064,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.FieldMessage.Value(childComplexity), true
+
+	case "MakeReleaseLivePayload.release":
+		if e.complexity.MakeReleaseLivePayload.Release == nil {
+			break
+		}
+
+		return e.complexity.MakeReleaseLivePayload.Release(childComplexity), true
 
 	case "Mutation.admin":
 		if e.complexity.Mutation.Admin == nil {
@@ -1518,6 +1543,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreatePaymentLinkInput,
 		ec.unmarshalInputCreateReleaseInput,
 		ec.unmarshalInputDisableApiKeyInput,
+		ec.unmarshalInputMakeReleaseLiveInput,
 		ec.unmarshalInputPushNoteInput,
 		ec.unmarshalInputPushNotesInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
@@ -1731,6 +1757,29 @@ func (ec *executionContext) field_AdminMutation_disableApiKey_argsInput(
 	}
 
 	var zeroVal model.DisableAPIKeyInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_makeReleaseLive_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_makeReleaseLive_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_makeReleaseLive_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.MakeReleaseLiveInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNMakeReleaseLiveInput2trip2gᚋinternalᚋgraphᚋmodelᚐMakeReleaseLiveInput(ctx, tmp)
+	}
+
+	var zeroVal model.MakeReleaseLiveInput
 	return zeroVal, nil
 }
 
@@ -3173,6 +3222,61 @@ func (ec *executionContext) fieldContext_AdminMutation_createRelease(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_createRelease_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_makeReleaseLive(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_makeReleaseLive(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().MakeReleaseLive(rctx, obj, fc.Args["input"].(model.MakeReleaseLiveInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.MakeReleaseLiveOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNMakeReleaseLiveOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐMakeReleaseLiveOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_makeReleaseLive(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type MakeReleaseLiveOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_makeReleaseLive_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5660,6 +5764,66 @@ func (ec *executionContext) fieldContext_FieldMessage_value(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _MakeReleaseLivePayload_release(ctx context.Context, field graphql.CollectedField, obj *model.MakeReleaseLivePayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MakeReleaseLivePayload_release(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Release, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Release)
+	fc.Result = res
+	return ec.marshalNAdminRelease2ᚖtrip2gᚋinternalᚋdbᚐRelease(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MakeReleaseLivePayload_release(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MakeReleaseLivePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminRelease_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminRelease_createdAt(ctx, field)
+			case "homeNoteVersionId":
+				return ec.fieldContext_AdminRelease_homeNoteVersionId(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminRelease_createdBy(ctx, field)
+			case "title":
+				return ec.fieldContext_AdminRelease_title(ctx, field)
+			case "homeNote":
+				return ec.fieldContext_AdminRelease_homeNote(ctx, field)
+			case "isLive":
+				return ec.fieldContext_AdminRelease_isLive(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminRelease", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_requestEmailSignInCode(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_requestEmailSignInCode(ctx, field)
 	if err != nil {
@@ -6032,6 +6196,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_disableApiKey(ctx, field)
 			case "createRelease":
 				return ec.fieldContext_AdminMutation_createRelease(ctx, field)
+			case "makeReleaseLive":
+				return ec.fieldContext_AdminMutation_makeReleaseLive(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -10873,6 +11039,33 @@ func (ec *executionContext) unmarshalInputDisableApiKeyInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputMakeReleaseLiveInput(ctx context.Context, obj any) (model.MakeReleaseLiveInput, error) {
+	var it model.MakeReleaseLiveInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPushNoteInput(ctx context.Context, obj any) (model.PushNoteInput, error) {
 	var it model.PushNoteInput
 	asMap := map[string]any{}
@@ -11266,6 +11459,29 @@ func (ec *executionContext) _DisableApiKeyOrErrorPayload(ctx context.Context, se
 			return graphql.Null
 		}
 		return ec._DisableApiKeyPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _MakeReleaseLiveOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.MakeReleaseLiveOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.MakeReleaseLivePayload:
+		return ec._MakeReleaseLivePayload(ctx, sel, &obj)
+	case *model.MakeReleaseLivePayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._MakeReleaseLivePayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -12176,6 +12392,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_createRelease(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "makeReleaseLive":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_makeReleaseLive(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -13713,7 +13965,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -13806,6 +14058,45 @@ func (ec *executionContext) _FieldMessage(ctx context.Context, sel ast.Selection
 			}
 		case "value":
 			out.Values[i] = ec._FieldMessage_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var makeReleaseLivePayloadImplementors = []string{"MakeReleaseLivePayload", "MakeReleaseLiveOrErrorPayload"}
+
+func (ec *executionContext) _MakeReleaseLivePayload(ctx context.Context, sel ast.SelectionSet, obj *model.MakeReleaseLivePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, makeReleaseLivePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MakeReleaseLivePayload")
+		case "release":
+			out.Values[i] = ec._MakeReleaseLivePayload_release(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -16588,6 +16879,21 @@ func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.Sel
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNMakeReleaseLiveInput2trip2gᚋinternalᚋgraphᚋmodelᚐMakeReleaseLiveInput(ctx context.Context, v any) (model.MakeReleaseLiveInput, error) {
+	res, err := ec.unmarshalInputMakeReleaseLiveInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMakeReleaseLiveOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐMakeReleaseLiveOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.MakeReleaseLiveOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MakeReleaseLiveOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNNotePath2trip2gᚋinternalᚋdbᚐNotePath(ctx context.Context, sel ast.SelectionSet, v db.NotePath) graphql.Marshaler {

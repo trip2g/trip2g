@@ -377,6 +377,11 @@ select *
   from releases
  order by is_live asc, created_at desc;
 
+-- name: ReleaseByID :one
+select *
+  from releases
+ where id = ?;
+
 -- name: AllLiveNotes :many
 select value as path, p.id as path_id, v.id as version_id, content
   from note_paths p

@@ -84,6 +84,95 @@ Do not add co-author comments or generated signatures unless specifically reques
 - Return `union ${Mutation}OrErrorPayload = ${Mutation}Payload | ErrorPayload`
 - Use Env interface pattern for testability
 
+## Adding New Features
+
+### Adding SQL Queries and Database Methods
+
+When you need new database operations:
+
+1. **Add SQL Query to `queries.sql`**:
+   ```sql
+   -- name: MethodName :one
+   select * from table_name where id = ?;
+   ```
+
+2. **Generate Go Code**:
+   ```bash
+   make sqlc
+   ```
+
+3. **Check Generated Method** in `internal/db/queries.sql.go`:
+   ```go
+   func (q *Queries) MethodName(ctx context.Context, id int64) (TableType, error)
+   ```
+
+4. **Add to Env Interface** (if needed for GraphQL resolvers):
+   - The main `Env` interface automatically includes all `*Queries` methods
+   - For case-specific interfaces, add method to the case's `Env` interface
+
+### Adding GraphQL Mutations
+
+1. **Check Schema** in `internal/graph/schema.graphqls`:
+   - Mutation may already be defined
+   - Input/Output types should follow pattern: `${Mutation}Input`, `${Mutation}Payload`, `${Mutation}OrErrorPayload`
+
+2. **Run GraphQL Generation**:
+   ```bash
+   make gqlgen
+   ```
+
+3. **Implement Business Logic**:
+   - Create directory: `internal/case/${mutationname}/` (for user mutations) or `internal/case/admin/${mutationname}/` (for admin mutations)
+   - Create `resolve.go` with:
+     ```go
+     func Resolve(ctx context.Context, env Env, input model.${Mutation}Input) (model.${Mutation}OrErrorPayload, error)
+     ```
+
+4. **Define Env Interface** in the case:
+   ```go
+   type Env interface {
+       RequiredMethod1(ctx context.Context, ...) (Type, error)
+       RequiredMethod2(ctx context.Context, ...) error
+   }
+   ```
+
+5. **Add Case Env to Main Interface** in `internal/graph/resolver.go`:
+   ```go
+   import "trip2g/internal/case/${mutationname}"        // for user mutations
+   import "trip2g/internal/case/admin/${mutationname}"  // for admin mutations
+   
+   type Env interface {
+       // ... existing methods ...
+       ${mutationname}.Env
+   }
+   ```
+
+6. **Update GraphQL Resolver** in `internal/graph/schema.resolvers.go`:
+   ```go
+   // For user mutations (in root Mutation type):
+   import "trip2g/internal/case/${mutationname}"
+   
+   func (r *mutationResolver) ${Mutation}(ctx context.Context, input model.${Mutation}Input) (model.${Mutation}OrErrorPayload, error) {
+       return ${mutationname}.Resolve(ctx, r.env(ctx), input)
+   }
+   
+   // For admin mutations (in AdminMutation type):
+   import "trip2g/internal/case/admin/${mutationname}"
+   
+   func (r *adminMutationResolver) ${Mutation}(ctx context.Context, obj *appmodel.AdminMutation, input model.${Mutation}Input) (model.${Mutation}OrErrorPayload, error) {
+       return ${mutationname}.Resolve(ctx, r.env(ctx), input)
+   }
+   ```
+
+7. **Write Tests** following the pattern in `internal/userbans/userbans_test.go`:
+   - Create `resolve_test.go` with table-driven tests
+   - Use `//go:generate moq` for mocking
+   - Test success, error, and edge cases
+   - **Don't forget**: Run `go generate` if tests contain `//go:generate moq` to generate mocks
+
+8. **Add Methods to Main Server** (if needed) in `cmd/server/main.go`:
+   - Only if the case requires methods not available in standard `*Queries`
+
 ### Frontend Components
 - **Naming**: `$trip2g_admin_entity_action` format
 - **Lists**: Use `$trip2g_graphql_make_map()` with `row(id)` methods

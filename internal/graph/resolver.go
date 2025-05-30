@@ -8,6 +8,7 @@ import (
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/disableapikey"
+	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
@@ -92,4 +93,5 @@ type Env interface {
 	createapikey.Env
 	disableapikey.Env
 	createrelease.Env
+	makereleaselive.Env
 }

@@ -1,0 +1,9 @@
+$trip2g_admin_release_button_makelive $mol_view
+	release_id 0
+	is_live false
+	sub /
+		<= Button $mol_button_major
+			title \Make Live
+			click?event <=> handle_click? null
+		<= Result $mol_status
+			message <= result? \

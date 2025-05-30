@@ -444,6 +444,20 @@ type CreateReleasePayload {
 
 union CreateReleaseOrErrorPayload = CreateReleasePayload | ErrorPayload
 
+#
+# makeReleaseLive
+#
+
+input MakeReleaseLiveInput {
+  id: Int64!
+}
+
+type MakeReleaseLivePayload {
+  release: AdminRelease!
+}
+
+union MakeReleaseLiveOrErrorPayload = MakeReleaseLivePayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
@@ -455,4 +469,5 @@ type AdminMutation {
   disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!
 
   createRelease(input: CreateReleaseInput!): CreateReleaseOrErrorPayload!
+  makeReleaseLive(input: MakeReleaseLiveInput!): MakeReleaseLiveOrErrorPayload!
 }

@@ -17,6 +17,7 @@ import (
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/disableapikey"
+	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
@@ -123,6 +124,11 @@ func (r *adminMutationResolver) DisableAPIKey(ctx context.Context, obj *appmodel
 // CreateRelease is the resolver for the createRelease field.
 func (r *adminMutationResolver) CreateRelease(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateReleaseInput) (model.CreateReleaseOrErrorPayload, error) {
 	return createrelease.Resolve(ctx, r.env(ctx), input)
+}
+
+// MakeReleaseLive is the resolver for the makeReleaseLive field.
+func (r *adminMutationResolver) MakeReleaseLive(ctx context.Context, obj *appmodel.AdminMutation, input model.MakeReleaseLiveInput) (model.MakeReleaseLiveOrErrorPayload, error) {
+	return makereleaselive.Resolve(ctx, r.env(ctx), input)
 }
 
 // AllUsers is the resolver for the allUsers field.

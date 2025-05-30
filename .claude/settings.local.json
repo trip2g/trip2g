@@ -8,7 +8,8 @@
       "Bash(npm run graphqlgen:*)",
       "Bash(mv:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(make:*)"
     ],
     "deny": []
   }
