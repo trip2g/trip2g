@@ -3,7 +3,9 @@
     "allow": [
       "Bash(grep:*)",
       "Bash(go build:*)",
-      "Bash(go test:*)"
+      "Bash(go test:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run graphqlgen:*)"
     ],
     "deny": []
   }

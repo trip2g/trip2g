@@ -375,7 +375,7 @@ update releases set is_live = (sqlc.arg(id) = id);
 -- name: ListAllReleases :many
 select *
   from releases
- order by is_live desc, created_at desc;
+ order by is_live asc, created_at desc;
 
 -- name: AllLiveNotes :many
 select value as path, p.id as path_id, v.id as version_id, content

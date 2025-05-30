@@ -74,7 +74,7 @@ type AdminAPIKeysConnection struct {
 	Nodes []db.ApiKey `json:"nodes"`
 }
 
-type AdminNoteViewsConnection struct {
+type AdminLatestNoteViewsConnection struct {
 	Nodes []model.NoteView `json:"nodes"`
 }
 

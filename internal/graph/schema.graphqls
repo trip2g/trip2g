@@ -79,6 +79,8 @@ type NoteView {
   html: String!
   permalink: String!
   free: Boolean!
+  pathId: Int64!
+  versionId: Int64!
 }
 
 type Admin {
@@ -93,7 +95,7 @@ type AdminSubgraphsConnection {
   nodes: [AdminSubgraph!]! @goField(forceResolver: true)
 }
 
-type AdminNoteViewsConnection {
+type AdminLatestNoteViewsConnection {
   nodes: [NoteView!]! @goField(forceResolver: true)
 }
 
@@ -147,7 +149,7 @@ type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
   allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection!
-  allNoteViews: AdminNoteViewsConnection!
+  allLatestNoteViews: AdminLatestNoteViewsConnection!
   allUserUserBans: AdminUserBansConnection!
   allApiKeys: AdminApiKeysConnection!
   allReleases: AdminReleasesConnection!

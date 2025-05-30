@@ -21,6 +21,7 @@ $trip2g_admin_app $mol_book2_catalog
 		subgraphs <= ListSubgraphs $trip2g_admin_list_subgraphs
 		noteviews <= ListNoteviews $trip2g_admin_list_noteviews
 		apikeys <= ListApiKeys $trip2g_admin_apikey_catalog
+		releases <= ListReleases $trip2g_admin_release_catalog
 
 $trip2g_admin_cell $mol_view
 	content \No Content

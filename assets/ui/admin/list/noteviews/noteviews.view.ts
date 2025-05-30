@@ -5,7 +5,7 @@ namespace $.$$ {
 			const res = $trip2g_graphql_request(`
 				query AdminListNoteViews {
 					admin {
-						allNoteViews {
+						allLatestNoteViews {
 							nodes {
 								id
 								path

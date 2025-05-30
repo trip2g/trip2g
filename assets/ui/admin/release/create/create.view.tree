@@ -1,0 +1,21 @@
+$trip2g_admin_release_create $mol_page
+	title \Create New Release
+	body /
+		<= Form $mol_form
+			body /
+				<= ReleaseTitle $mol_form_field
+					name \Title
+					bid <= release_title_bid \
+					Content <= title_control $mol_string
+						value? <=> release_title? \
+				<= HomeNote $mol_form_field
+					name \Home Note
+					bid <= home_note_bid \
+					Content <= home_note_control $trip2g_admin_select_noteview
+						string_value? <=> home_note_version_id? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \

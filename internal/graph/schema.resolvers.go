@@ -71,6 +71,25 @@ func (r *adminApiKeysConnectionResolver) Nodes(ctx context.Context, obj *model.A
 	return r.env(ctx).ListAllApiKeys(ctx)
 }
 
+// Nodes is the resolver for the nodes field.
+func (r *adminLatestNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminLatestNoteViewsConnection) ([]appmodel.NoteView, error) {
+	notes := r.env(ctx).LatestNoteViews()
+	res := make([]appmodel.NoteView, 0, len(notes.Map))
+	keys := make([]string, 0, len(notes.Map))
+
+	for _, note := range notes.Map {
+		keys = append(keys, note.ID())
+	}
+
+	slices.Sort(keys)
+
+	for _, key := range keys {
+		res = append(res, *notes.Map[key])
+	}
+
+	return res, nil
+}
+
 // UpdateSubgraph is the resolver for the updateSubgraph field.
 func (r *adminMutationResolver) UpdateSubgraph(ctx context.Context, obj *appmodel.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error) {
 	return input.Resolve(ctx, r.env(ctx))
@@ -106,25 +125,6 @@ func (r *adminMutationResolver) CreateRelease(ctx context.Context, obj *appmodel
 	return createrelease.Resolve(ctx, r.env(ctx), input)
 }
 
-// Nodes is the resolver for the nodes field.
-func (r *adminNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNoteViewsConnection) ([]appmodel.NoteView, error) {
-	notes := r.env(ctx).LatestNoteViews()
-	res := make([]appmodel.NoteView, 0, len(notes.Map))
-	keys := make([]string, 0, len(notes.Map))
-
-	for _, note := range notes.Map {
-		keys = append(keys, note.ID())
-	}
-
-	slices.Sort(keys)
-
-	for _, key := range keys {
-		res = append(res, *notes.Map[key])
-	}
-
-	return res, nil
-}
-
 // AllUsers is the resolver for the allUsers field.
 func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminUsersConnection, error) {
 	return &model.AdminUsersConnection{}, nil
@@ -140,9 +140,9 @@ func (r *adminQueryResolver) AllUserSubgraphAccesses(ctx context.Context, obj *a
 	return &model.AdminUserSubgraphAccessesConnection{}, nil
 }
 
-// AllNoteViews is the resolver for the allNoteViews field.
-func (r *adminQueryResolver) AllNoteViews(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminNoteViewsConnection, error) {
-	return &model.AdminNoteViewsConnection{}, nil
+// AllLatestNoteViews is the resolver for the allLatestNoteViews field.
+func (r *adminQueryResolver) AllLatestNoteViews(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminLatestNoteViewsConnection, error) {
+	return &model.AdminLatestNoteViewsConnection{}, nil
 }
 
 // AllUserUserBans is the resolver for the allUserUserBans field.
@@ -565,13 +565,13 @@ func (r *Resolver) AdminApiKeysConnection() AdminApiKeysConnectionResolver {
 	return &adminApiKeysConnectionResolver{r}
 }
 
+// AdminLatestNoteViewsConnection returns AdminLatestNoteViewsConnectionResolver implementation.
+func (r *Resolver) AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnectionResolver {
+	return &adminLatestNoteViewsConnectionResolver{r}
+}
+
 // AdminMutation returns AdminMutationResolver implementation.
 func (r *Resolver) AdminMutation() AdminMutationResolver { return &adminMutationResolver{r} }
-
-// AdminNoteViewsConnection returns AdminNoteViewsConnectionResolver implementation.
-func (r *Resolver) AdminNoteViewsConnection() AdminNoteViewsConnectionResolver {
-	return &adminNoteViewsConnectionResolver{r}
-}
 
 // AdminQuery returns AdminQueryResolver implementation.
 func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
@@ -663,8 +663,8 @@ type adminResolver struct{ *Resolver }
 type adminApiKeyResolver struct{ *Resolver }
 type adminApiKeyLogsConnectionResolver struct{ *Resolver }
 type adminApiKeysConnectionResolver struct{ *Resolver }
+type adminLatestNoteViewsConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
-type adminNoteViewsConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }
 type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }

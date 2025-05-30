@@ -1222,7 +1222,7 @@ func (q *Queries) ListAllApiKeys(ctx context.Context) ([]ApiKey, error) {
 const listAllReleases = `-- name: ListAllReleases :many
 select id, created_at, created_by, title, home_note_version_id, is_live
   from releases
- order by is_live desc, created_at desc
+ order by is_live asc, created_at desc
 `
 
 func (q *Queries) ListAllReleases(ctx context.Context) ([]Release, error) {
