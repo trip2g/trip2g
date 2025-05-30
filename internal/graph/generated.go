@@ -247,6 +247,7 @@ type ComplexityRoot struct {
 		Free      func(childComplexity int) int
 		HTML      func(childComplexity int) int
 		ID        func(childComplexity int) int
+		InLinks   func(childComplexity int) int
 		Path      func(childComplexity int) int
 		PathID    func(childComplexity int) int
 		Permalink func(childComplexity int) int
@@ -442,6 +443,8 @@ type MutationResolver interface {
 type NoteViewResolver interface {
 	Content(ctx context.Context, obj *model1.NoteView) (string, error)
 	HTML(ctx context.Context, obj *model1.NoteView) (string, error)
+
+	InLinks(ctx context.Context, obj *model1.NoteView) ([]model1.NoteView, error)
 }
 type OfferResolver interface {
 	ID(ctx context.Context, obj *db.Offer) (string, error)
@@ -1187,6 +1190,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NoteView.ID(childComplexity), true
+
+	case "NoteView.inLinks":
+		if e.complexity.NoteView.InLinks == nil {
+			break
+		}
+
+		return e.complexity.NoteView.InLinks(childComplexity), true
 
 	case "NoteView.path":
 		if e.complexity.NoteView.Path == nil {
@@ -2836,6 +2846,8 @@ func (ec *executionContext) fieldContext_AdminLatestNoteViewsConnection_nodes(_ 
 				return ec.fieldContext_NoteView_pathId(ctx, field)
 			case "versionId":
 				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -3794,6 +3806,8 @@ func (ec *executionContext) fieldContext_AdminQuery_noteView(ctx context.Context
 				return ec.fieldContext_NoteView_pathId(ctx, field)
 			case "versionId":
 				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -4161,6 +4175,8 @@ func (ec *executionContext) fieldContext_AdminRelease_homeNote(_ context.Context
 				return ec.fieldContext_NoteView_pathId(ctx, field)
 			case "versionId":
 				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -6684,6 +6700,72 @@ func (ec *executionContext) fieldContext_NoteView_versionId(_ context.Context, f
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteView_inLinks(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NoteView_inLinks(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.NoteView().InLinks(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model1.NoteView)
+	fc.Result = res
+	return ec.marshalNNoteView2ᚕtrip2gᚋinternalᚋmodelᚐNoteViewᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NoteView_inLinks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteView",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteView_id(ctx, field)
+			case "path":
+				return ec.fieldContext_NoteView_path(ctx, field)
+			case "title":
+				return ec.fieldContext_NoteView_title(ctx, field)
+			case "content":
+				return ec.fieldContext_NoteView_content(ctx, field)
+			case "html":
+				return ec.fieldContext_NoteView_html(ctx, field)
+			case "permalink":
+				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "free":
+				return ec.fieldContext_NoteView_free(ctx, field)
+			case "pathId":
+				return ec.fieldContext_NoteView_pathId(ctx, field)
+			case "versionId":
+				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
 	}
 	return fc, nil
@@ -14376,6 +14458,42 @@ func (ec *executionContext) _NoteView(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "inLinks":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NoteView_inLinks(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

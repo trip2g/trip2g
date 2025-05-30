@@ -342,6 +342,22 @@ func (r *noteViewResolver) HTML(ctx context.Context, obj *appmodel.NoteView) (st
 	return string(obj.HTML), nil
 }
 
+// InLinks is the resolver for the inLinks field.
+func (r *noteViewResolver) InLinks(ctx context.Context, obj *appmodel.NoteView) ([]appmodel.NoteView, error) {
+	res := []appmodel.NoteView{}
+
+	nvs := r.env(ctx).LatestNoteViews()
+
+	for permalink, _ := range obj.InLinks {
+		note := nvs.GetByPath(permalink)
+		if note != nil {
+			res = append(res, *note)
+		}
+	}
+
+	return res, nil
+}
+
 // ID is the resolver for the id field.
 func (r *offerResolver) ID(ctx context.Context, obj *db.Offer) (string, error) {
 	return obj.PublicID, nil
