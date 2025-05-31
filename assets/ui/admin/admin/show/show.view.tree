@@ -1,0 +1,8 @@
+$trip2g_admin_admin_show $mol_page
+	title <= admin_id 0
+	admin_id? 0
+	body /
+		<= Content $mol_view
+			sub /
+				<= Message $mol_text
+					text \TODO: Implement admin show page
