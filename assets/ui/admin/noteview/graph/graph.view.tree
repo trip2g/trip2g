@@ -1,5 +1,8 @@
 $trip2g_admin_noteview_graph $mol_page
 	title \Note Graph
-	Body $trip2g_admin_noteview_graph_cytoscape
+	body /
+		<= Header $mol_view
+			sub / <= save_message? \
+		<= Graph $trip2g_admin_noteview_graph_cytoscape
 
 $trip2g_admin_noteview_graph_cytoscape $mol_view

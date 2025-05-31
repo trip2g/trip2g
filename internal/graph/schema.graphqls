@@ -477,13 +477,17 @@ input UpdateNoteGraphPositionInput {
   y: Float!
 }
 
-type UpdateNoteGraphPositionPayload
-  @goExtraField(name: "PathID", type: "int64") {
-  success: Boolean!
-  noteView: NoteView! @goField(forceResolver: true)
+input UpdateNoteGraphPositionsInput {
+  positions: [UpdateNoteGraphPositionInput!]!
 }
 
-union UpdateNoteGraphPositionOrErrorPayload = UpdateNoteGraphPositionPayload | ErrorPayload
+type UpdateNoteGraphPositionsPayload
+  @goExtraField(name: "PathsID", type: "[]int64") {
+  success: Boolean!
+  updatedNoteViews: [NoteView!]! @goField(forceResolver: true)
+}
+
+union UpdateNoteGraphPositionsOrErrorPayload = UpdateNoteGraphPositionsPayload | ErrorPayload
 
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
@@ -498,5 +502,5 @@ type AdminMutation {
   createRelease(input: CreateReleaseInput!): CreateReleaseOrErrorPayload!
   makeReleaseLive(input: MakeReleaseLiveInput!): MakeReleaseLiveOrErrorPayload!
 
-  updateNoteGraphPosition(input: UpdateNoteGraphPositionInput!): UpdateNoteGraphPositionOrErrorPayload!
+  updateNoteGraphPositions(input: UpdateNoteGraphPositionsInput!): UpdateNoteGraphPositionsOrErrorPayload!
 }

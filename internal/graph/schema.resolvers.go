@@ -19,7 +19,7 @@ import (
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/unbanuser"
-	"trip2g/internal/case/admin/updatenotegraphposition"
+	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
@@ -132,9 +132,9 @@ func (r *adminMutationResolver) MakeReleaseLive(ctx context.Context, obj *appmod
 	return makereleaselive.Resolve(ctx, r.env(ctx), input)
 }
 
-// UpdateNoteGraphPosition is the resolver for the updateNoteGraphPosition field.
-func (r *adminMutationResolver) UpdateNoteGraphPosition(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateNoteGraphPositionInput) (model.UpdateNoteGraphPositionOrErrorPayload, error) {
-	return updatenotegraphposition.Resolve(ctx, r.env(ctx), input)
+// UpdateNoteGraphPositions is the resolver for the updateNoteGraphPositions field.
+func (r *adminMutationResolver) UpdateNoteGraphPositions(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateNoteGraphPositionsInput) (model.UpdateNoteGraphPositionsOrErrorPayload, error) {
+	return updatenotegraphpositions.Resolve(ctx, r.env(ctx), input)
 }
 
 // AllUsers is the resolver for the allUsers field.
@@ -486,6 +486,18 @@ func (r *updateNoteGraphPositionPayloadResolver) NoteView(ctx context.Context, o
 	return r.env(ctx).LatestNoteViews().GetByPathID(obj.PathID), nil
 }
 
+// UpdatedNoteViews is the resolver for the updatedNoteViews field.
+func (r *updateNoteGraphPositionsPayloadResolver) UpdatedNoteViews(ctx context.Context, obj *model.UpdateNoteGraphPositionsPayload) ([]appmodel.NoteView, error) {
+	var noteViews []appmodel.NoteView
+	for _, pathID := range obj.PathsID {
+		noteView := r.env(ctx).LatestNoteViews().GetByPathID(pathID)
+		if noteView != nil {
+			noteViews = append(noteViews, *noteView)
+		}
+	}
+	return noteViews, nil
+}
+
 // SubgraphAccesses is the resolver for the subgraphAccesses field.
 func (r *userResolver) SubgraphAccesses(ctx context.Context, obj *db.User) ([]db.UserSubgraphAccess, error) {
 	return r.env(ctx).ListActiveUserSubgraphAccessesByUserID(ctx, obj.ID)
@@ -702,6 +714,11 @@ func (r *Resolver) UpdateNoteGraphPositionPayload() UpdateNoteGraphPositionPaylo
 	return &updateNoteGraphPositionPayloadResolver{r}
 }
 
+// UpdateNoteGraphPositionsPayload returns UpdateNoteGraphPositionsPayloadResolver implementation.
+func (r *Resolver) UpdateNoteGraphPositionsPayload() UpdateNoteGraphPositionsPayloadResolver {
+	return &updateNoteGraphPositionsPayloadResolver{r}
+}
+
 // User returns UserResolver implementation.
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
 
@@ -743,6 +760,7 @@ type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
 type updateNoteGraphPositionPayloadResolver struct{ *Resolver }
+type updateNoteGraphPositionsPayloadResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }

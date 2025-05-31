@@ -178,26 +178,37 @@ namespace $.$$ {
 				const node = event.target
 				const position = node.position()
 
-				this.save_position( node.data('pathId'), position.x, position.y )
+				try {
+					this.save_position( node.data('pathId'), position.x, position.y )
+				} catch (err) {
+					console.error( 'Failed to save position:', err )
+				}
 			} )
 		}
 
 		save_position( pathId: string, x: number, y: number ) {
 			const res = $trip2g_graphql_request( `
-					mutation AdminUpdateNoteGraphPosition($input: UpdateNoteGraphPositionInput!) {
+					mutation AdminUpdateNoteGraphPositions($input: UpdateNoteGraphPositionsInput!) {
 						admin {
-							data: updateNoteGraphPosition(input: $input) {
+							data: updateNoteGraphPositions(input: $input) {
 								... on ErrorPayload {
 									message
 								}
-								... on UpdateNoteGraphPositionPayload {
+								... on UpdateNoteGraphPositionsPayload {
 									success
+									updatedNoteViews {
+										id
+										pathId
+										title
+									}
 								}
 							}
 						}
 					}
 				`, {
-				input: { pathId, x, y },
+				input: { 
+					positions: [{ pathId, x, y }]
+				},
 			} )
 
 			if( res.admin?.data?.__typename === 'ErrorPayload' ) {

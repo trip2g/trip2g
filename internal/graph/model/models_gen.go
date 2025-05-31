@@ -61,6 +61,10 @@ type UpdateNoteGraphPositionOrErrorPayload interface {
 	IsUpdateNoteGraphPositionOrErrorPayload()
 }
 
+type UpdateNoteGraphPositionsOrErrorPayload interface {
+	IsUpdateNoteGraphPositionsOrErrorPayload()
+}
+
 type UpdateSubgraphOrErrorPayload interface {
 	IsUpdateSubgraphOrErrorPayload()
 }
@@ -203,6 +207,8 @@ func (ErrorPayload) IsMakeReleaseLiveOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateNoteGraphPositionOrErrorPayload() {}
 
+func (ErrorPayload) IsUpdateNoteGraphPositionsOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -290,12 +296,23 @@ type UpdateNoteGraphPositionInput struct {
 }
 
 type UpdateNoteGraphPositionPayload struct {
-	Success  bool            `json:"success"`
 	NoteView *model.NoteView `json:"noteView"`
 	PathID   int64           `json:"-"`
 }
 
 func (UpdateNoteGraphPositionPayload) IsUpdateNoteGraphPositionOrErrorPayload() {}
+
+type UpdateNoteGraphPositionsInput struct {
+	Positions []UpdateNoteGraphPositionInput `json:"positions"`
+}
+
+type UpdateNoteGraphPositionsPayload struct {
+	Success          bool             `json:"success"`
+	UpdatedNoteViews []model.NoteView `json:"updatedNoteViews"`
+	PathsID          []int64          `json:"-"`
+}
+
+func (UpdateNoteGraphPositionsPayload) IsUpdateNoteGraphPositionsOrErrorPayload() {}
 
 type UpdateSubgraphPayload struct {
 	Subgraph *db.Subgraph `json:"subgraph"`
