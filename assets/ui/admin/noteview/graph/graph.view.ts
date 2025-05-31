@@ -169,6 +169,18 @@ namespace $.$$ {
 				coolingFactor: 0.95,
 				minTemp: 1.0
 			}).run()
+
+			// Add event listener for when node movement stops (mouseup after drag)
+			cy.nodes().on('free', (event) => {
+				const node = event.target
+				const position = node.position()
+				console.log('coords', {
+					id: node.id(),
+					label: node.data('label'),
+					x: position.x,
+					y: position.y
+				})
+			})
 		}
 	}
 }
