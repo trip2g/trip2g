@@ -96,12 +96,14 @@ type NoteAsset struct {
 }
 
 type NotePath struct {
-	ID                int64     `json:"id"`
-	Value             string    `json:"value"`
-	ValueHash         string    `json:"value_hash"`
-	LatestContentHash string    `json:"latest_content_hash"`
-	CreatedAt         time.Time `json:"created_at"`
-	VersionCount      int64     `json:"version_count"`
+	ID                int64           `json:"id"`
+	Value             string          `json:"value"`
+	ValueHash         string          `json:"value_hash"`
+	LatestContentHash string          `json:"latest_content_hash"`
+	CreatedAt         time.Time       `json:"created_at"`
+	VersionCount      int64           `json:"version_count"`
+	GraphPositionX    sql.NullFloat64 `json:"graph_position_x"`
+	GraphPositionY    sql.NullFloat64 `json:"graph_position_y"`
 }
 
 type NoteVersion struct {

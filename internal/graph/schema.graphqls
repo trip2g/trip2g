@@ -22,6 +22,11 @@ directive @goExtraField(
 	description: String
 ) repeatable on OBJECT | INPUT_OBJECT
 
+type Vector2 {
+  x: Float!
+  y: Float!
+}
+
 type UserBan {
   user: AdminUser! @goField(forceResolver: true)
   userId: Int64!
@@ -84,6 +89,7 @@ type NoteView {
   subgraphNames: [String!]!
 
   inLinks: [NoteView!]!
+  graphPosition: Vector2
 }
 
 type Admin {
@@ -461,6 +467,23 @@ type MakeReleaseLivePayload {
 
 union MakeReleaseLiveOrErrorPayload = MakeReleaseLivePayload | ErrorPayload
 
+#
+# updateNotePosition
+#
+
+input UpdateNoteGraphPositionInput {
+  pathId: Int64!
+  x: Float!
+  y: Float!
+}
+
+type UpdateNoteGraphPositionPayload
+  @goExtraField(name: "PathID", type: "int64") {
+  noteView: NoteView! @goField(forceResolver: true)
+}
+
+union UpdateNoteGraphPositionOrErrorPayload = UpdateNoteGraphPositionPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
@@ -473,4 +496,6 @@ type AdminMutation {
 
   createRelease(input: CreateReleaseInput!): CreateReleaseOrErrorPayload!
   makeReleaseLive(input: MakeReleaseLiveInput!): MakeReleaseLiveOrErrorPayload!
+
+  updateNoteGraphPosition(input: UpdateNoteGraphPositionInput!): UpdateNoteGraphPositionOrErrorPayload!
 }

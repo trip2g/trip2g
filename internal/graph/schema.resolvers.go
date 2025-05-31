@@ -131,6 +131,11 @@ func (r *adminMutationResolver) MakeReleaseLive(ctx context.Context, obj *appmod
 	return makereleaselive.Resolve(ctx, r.env(ctx), input)
 }
 
+// UpdateNoteGraphPosition is the resolver for the updateNoteGraphPosition field.
+func (r *adminMutationResolver) UpdateNoteGraphPosition(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateNoteGraphPositionInput) (model.UpdateNoteGraphPositionOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: UpdateNoteGraphPosition - updateNoteGraphPosition"))
+}
+
 // AllUsers is the resolver for the allUsers field.
 func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminUsersConnection, error) {
 	return &model.AdminUsersConnection{}, nil
@@ -358,6 +363,25 @@ func (r *noteViewResolver) InLinks(ctx context.Context, obj *appmodel.NoteView) 
 	return res, nil
 }
 
+// GraphPosition is the resolver for the graphPosition field.
+func (r *noteViewResolver) GraphPosition(ctx context.Context, obj *appmodel.NoteView) (*model.Vector2, error) {
+	data, err := r.env(ctx).NoteGraphPositionByPathID(ctx, obj.PathID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !data.X.Valid || !data.Y.Valid {
+		return nil, nil
+	}
+
+	pos := model.Vector2{
+		X: data.X.Float64,
+		Y: data.Y.Float64,
+	}
+
+	return &pos, nil
+}
+
 // ID is the resolver for the id field.
 func (r *offerResolver) ID(ctx context.Context, obj *db.Offer) (string, error) {
 	return obj.PublicID, nil
@@ -454,6 +478,11 @@ func (r *subgraphResolver) HomePath(ctx context.Context, obj *db.Subgraph) (stri
 // User is the resolver for the user field.
 func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error) {
 	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
+}
+
+// NoteView is the resolver for the noteView field.
+func (r *updateNoteGraphPositionPayloadResolver) NoteView(ctx context.Context, obj *model.UpdateNoteGraphPositionPayload) (*appmodel.NoteView, error) {
+	return r.env(ctx).LatestNoteViews().GetByPathID(obj.PathID), nil
 }
 
 // SubgraphAccesses is the resolver for the subgraphAccesses field.
@@ -667,6 +696,11 @@ func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
 // UnbanUserPayload returns UnbanUserPayloadResolver implementation.
 func (r *Resolver) UnbanUserPayload() UnbanUserPayloadResolver { return &unbanUserPayloadResolver{r} }
 
+// UpdateNoteGraphPositionPayload returns UpdateNoteGraphPositionPayloadResolver implementation.
+func (r *Resolver) UpdateNoteGraphPositionPayload() UpdateNoteGraphPositionPayloadResolver {
+	return &updateNoteGraphPositionPayloadResolver{r}
+}
+
 // User returns UserResolver implementation.
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
 
@@ -707,6 +741,7 @@ type pushedNoteResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
+type updateNoteGraphPositionPayloadResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }

@@ -70,6 +70,7 @@ type Env interface {
 
 	LatestNoteViews() *model.NoteViews
 	AllNotePaths(ctx context.Context) ([]db.NotePath, error)
+	NoteGraphPositionByPathID(ctx context.Context, id int64) (db.NoteGraphPositionByPathIDRow, error)
 
 	IDHash(entity string, id int64) string
 
@@ -94,4 +95,5 @@ type Env interface {
 	disableapikey.Env
 	createrelease.Env
 	makereleaselive.Env
+	updatenotegraphposition.Env
 }

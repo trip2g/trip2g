@@ -268,7 +268,7 @@ func (q *Queries) AllLiveNotes(ctx context.Context) ([]AllLiveNotesRow, error) {
 }
 
 const allNotePaths = `-- name: AllNotePaths :many
-select id, value, value_hash, latest_content_hash, created_at, version_count from note_paths order by id
+select id, value, value_hash, latest_content_hash, created_at, version_count, graph_position_x, graph_position_y from note_paths order by id
 `
 
 func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
@@ -287,6 +287,8 @@ func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
 			&i.LatestContentHash,
 			&i.CreatedAt,
 			&i.VersionCount,
+			&i.GraphPositionX,
+			&i.GraphPositionY,
 		); err != nil {
 			return nil, err
 		}
@@ -1550,6 +1552,25 @@ func (q *Queries) NoteAssetByPathAndHash(ctx context.Context, arg NoteAssetByPat
 	return i, err
 }
 
+const noteGraphPositionByPathID = `-- name: NoteGraphPositionByPathID :one
+select graph_position_x as x, graph_position_y as y
+  from note_paths
+ where id = ?
+ limit 1
+`
+
+type NoteGraphPositionByPathIDRow struct {
+	X sql.NullFloat64 `json:"x"`
+	Y sql.NullFloat64 `json:"y"`
+}
+
+func (q *Queries) NoteGraphPositionByPathID(ctx context.Context, id int64) (NoteGraphPositionByPathIDRow, error) {
+	row := q.db.QueryRowContext(ctx, noteGraphPositionByPathID, id)
+	var i NoteGraphPositionByPathIDRow
+	err := row.Scan(&i.X, &i.Y)
+	return i, err
+}
+
 const noteVersionByID = `-- name: NoteVersionByID :one
 select p.value as path, path_id, v.id as version_id, content
   from note_versions v
@@ -1715,6 +1736,24 @@ func (q *Queries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminSubgra
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const updateNoteGraphPositionByPathID = `-- name: UpdateNoteGraphPositionByPathID :exec
+update note_paths
+   set graph_position_x = ?
+     , graph_position_y = ?
+ where id = ?
+`
+
+type UpdateNoteGraphPositionByPathIDParams struct {
+	GraphPositionX sql.NullFloat64 `json:"graph_position_x"`
+	GraphPositionY sql.NullFloat64 `json:"graph_position_y"`
+	ID             int64           `json:"id"`
+}
+
+func (q *Queries) UpdateNoteGraphPositionByPathID(ctx context.Context, arg UpdateNoteGraphPositionByPathIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateNoteGraphPositionByPathID, arg.GraphPositionX, arg.GraphPositionY, arg.ID)
+	return err
 }
 
 const updatePurchaseStatus = `-- name: UpdatePurchaseStatus :exec

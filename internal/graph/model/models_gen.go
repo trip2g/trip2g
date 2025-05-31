@@ -57,6 +57,10 @@ type UnbanUserOrErrorPayload interface {
 	IsUnbanUserOrErrorPayload()
 }
 
+type UpdateNoteGraphPositionOrErrorPayload interface {
+	IsUpdateNoteGraphPositionOrErrorPayload()
+}
+
 type UpdateSubgraphOrErrorPayload interface {
 	IsUpdateSubgraphOrErrorPayload()
 }
@@ -197,6 +201,8 @@ func (ErrorPayload) IsCreateReleaseOrErrorPayload() {}
 
 func (ErrorPayload) IsMakeReleaseLiveOrErrorPayload() {}
 
+func (ErrorPayload) IsUpdateNoteGraphPositionOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -277,6 +283,19 @@ type UnbanUserPayload struct {
 
 func (UnbanUserPayload) IsUnbanUserOrErrorPayload() {}
 
+type UpdateNoteGraphPositionInput struct {
+	PathID int     `json:"pathId"`
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+}
+
+type UpdateNoteGraphPositionPayload struct {
+	NoteView *model.NoteView `json:"noteView"`
+	PathID   int64           `json:"-"`
+}
+
+func (UpdateNoteGraphPositionPayload) IsUpdateNoteGraphPositionOrErrorPayload() {}
+
 type UpdateSubgraphPayload struct {
 	Subgraph *db.Subgraph `json:"subgraph"`
 }
@@ -302,6 +321,11 @@ type UploadNoteAssetPayload struct {
 }
 
 func (UploadNoteAssetPayload) IsUploadNoteAssetOrErrorPayload() {}
+
+type Vector2 struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
 
 type PaymentType string
 

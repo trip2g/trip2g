@@ -412,3 +412,15 @@ select version_id, path, sqlc.embed(note_assets)
 from ranked_assets
 join note_assets on ranked_assets.asset_id = note_assets.id
 where rn = 1;
+
+-- name: NoteGraphPositionByPathID :one
+select graph_position_x as x, graph_position_y as y
+  from note_paths
+ where id = ?
+ limit 1;
+
+-- name: UpdateNoteGraphPositionByPathID :exec
+update note_paths
+   set graph_position_x = ?
+     , graph_position_y = ?
+ where id = ?;

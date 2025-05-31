@@ -70,6 +70,7 @@ type ResolverRoot interface {
 	Query() QueryResolver
 	Subgraph() SubgraphResolver
 	UnbanUserPayload() UnbanUserPayloadResolver
+	UpdateNoteGraphPositionPayload() UpdateNoteGraphPositionPayloadResolver
 	User() UserResolver
 	UserBan() UserBanResolver
 	UserSubgraphAccess() UserSubgraphAccessResolver
@@ -118,6 +119,7 @@ type ComplexityRoot struct {
 		DisableAPIKey            func(childComplexity int, input model.DisableAPIKeyInput) int
 		MakeReleaseLive          func(childComplexity int, input model.MakeReleaseLiveInput) int
 		UnbanUser                func(childComplexity int, input model.UnbanUserInput) int
+		UpdateNoteGraphPosition  func(childComplexity int, input model.UpdateNoteGraphPositionInput) int
 		UpdateSubgraph           func(childComplexity int, input updatesubgraph.Request) int
 		UpdateUserSubgraphAccess func(childComplexity int, input updateusersubgraphaccess.Request) int
 	}
@@ -245,6 +247,7 @@ type ComplexityRoot struct {
 	NoteView struct {
 		Content       func(childComplexity int) int
 		Free          func(childComplexity int) int
+		GraphPosition func(childComplexity int) int
 		HTML          func(childComplexity int) int
 		ID            func(childComplexity int) int
 		InLinks       func(childComplexity int) int
@@ -313,6 +316,10 @@ type ComplexityRoot struct {
 		UserID func(childComplexity int) int
 	}
 
+	UpdateNoteGraphPositionPayload struct {
+		NoteView func(childComplexity int) int
+	}
+
 	UpdateSubgraphPayload struct {
 		Subgraph func(childComplexity int) int
 	}
@@ -343,6 +350,11 @@ type ComplexityRoot struct {
 		ExpiresAt func(childComplexity int) int
 		ID        func(childComplexity int) int
 		Subgraph  func(childComplexity int) int
+	}
+
+	Vector2 struct {
+		X func(childComplexity int) int
+		Y func(childComplexity int) int
 	}
 
 	Viewer struct {
@@ -380,6 +392,7 @@ type AdminMutationResolver interface {
 	DisableAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error)
 	CreateRelease(ctx context.Context, obj *model1.AdminMutation, input model.CreateReleaseInput) (model.CreateReleaseOrErrorPayload, error)
 	MakeReleaseLive(ctx context.Context, obj *model1.AdminMutation, input model.MakeReleaseLiveInput) (model.MakeReleaseLiveOrErrorPayload, error)
+	UpdateNoteGraphPosition(ctx context.Context, obj *model1.AdminMutation, input model.UpdateNoteGraphPositionInput) (model.UpdateNoteGraphPositionOrErrorPayload, error)
 }
 type AdminQueryResolver interface {
 	AllUsers(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUsersConnection, error)
@@ -446,6 +459,7 @@ type NoteViewResolver interface {
 	HTML(ctx context.Context, obj *model1.NoteView) (string, error)
 
 	InLinks(ctx context.Context, obj *model1.NoteView) ([]model1.NoteView, error)
+	GraphPosition(ctx context.Context, obj *model1.NoteView) (*model.Vector2, error)
 }
 type OfferResolver interface {
 	ID(ctx context.Context, obj *db.Offer) (string, error)
@@ -471,6 +485,9 @@ type SubgraphResolver interface {
 }
 type UnbanUserPayloadResolver interface {
 	User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error)
+}
+type UpdateNoteGraphPositionPayloadResolver interface {
+	NoteView(ctx context.Context, obj *model.UpdateNoteGraphPositionPayload) (*model1.NoteView, error)
 }
 type UserResolver interface {
 	SubgraphAccesses(ctx context.Context, obj *db.User) ([]db.UserSubgraphAccess, error)
@@ -674,6 +691,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.UnbanUser(childComplexity, args["input"].(model.UnbanUserInput)), true
+
+	case "AdminMutation.updateNoteGraphPosition":
+		if e.complexity.AdminMutation.UpdateNoteGraphPosition == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_updateNoteGraphPosition_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.UpdateNoteGraphPosition(childComplexity, args["input"].(model.UpdateNoteGraphPositionInput)), true
 
 	case "AdminMutation.updateSubgraph":
 		if e.complexity.AdminMutation.UpdateSubgraph == nil {
@@ -1178,6 +1207,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.NoteView.Free(childComplexity), true
 
+	case "NoteView.graphPosition":
+		if e.complexity.NoteView.GraphPosition == nil {
+			break
+		}
+
+		return e.complexity.NoteView.GraphPosition(childComplexity), true
+
 	case "NoteView.html":
 		if e.complexity.NoteView.HTML == nil {
 			break
@@ -1409,6 +1445,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UnbanUserPayload.UserID(childComplexity), true
 
+	case "UpdateNoteGraphPositionPayload.noteView":
+		if e.complexity.UpdateNoteGraphPositionPayload.NoteView == nil {
+			break
+		}
+
+		return e.complexity.UpdateNoteGraphPositionPayload.NoteView(childComplexity), true
+
 	case "UpdateSubgraphPayload.subgraph":
 		if e.complexity.UpdateSubgraphPayload.Subgraph == nil {
 			break
@@ -1507,6 +1550,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UserSubgraphAccess.Subgraph(childComplexity), true
 
+	case "Vector2.x":
+		if e.complexity.Vector2.X == nil {
+			break
+		}
+
+		return e.complexity.Vector2.X(childComplexity), true
+
+	case "Vector2.y":
+		if e.complexity.Vector2.Y == nil {
+			break
+		}
+
+		return e.complexity.Vector2.Y(childComplexity), true
+
 	case "Viewer.activePurchases":
 		if e.complexity.Viewer.ActivePurchases == nil {
 			break
@@ -1567,6 +1624,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputSignInByEmailInput,
 		ec.unmarshalInputUnbanUserInput,
+		ec.unmarshalInputUpdateNoteGraphPositionInput,
 		ec.unmarshalInputUpdateSubgraphInput,
 		ec.unmarshalInputUpdateUserSubgraphAccessInput,
 		ec.unmarshalInputUploadNoteAssetInput,
@@ -1821,6 +1879,29 @@ func (ec *executionContext) field_AdminMutation_unbanUser_argsInput(
 	}
 
 	var zeroVal model.UnbanUserInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_updateNoteGraphPosition_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_updateNoteGraphPosition_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_updateNoteGraphPosition_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateNoteGraphPositionInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateNoteGraphPositionInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNoteGraphPositionInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateNoteGraphPositionInput
 	return zeroVal, nil
 }
 
@@ -2858,6 +2939,8 @@ func (ec *executionContext) fieldContext_AdminLatestNoteViewsConnection_nodes(_ 
 				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
 			case "inLinks":
 				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -3299,6 +3382,61 @@ func (ec *executionContext) fieldContext_AdminMutation_makeReleaseLive(ctx conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_makeReleaseLive_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_updateNoteGraphPosition(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_updateNoteGraphPosition(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().UpdateNoteGraphPosition(rctx, obj, fc.Args["input"].(model.UpdateNoteGraphPositionInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.UpdateNoteGraphPositionOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNUpdateNoteGraphPositionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNoteGraphPositionOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_updateNoteGraphPosition(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UpdateNoteGraphPositionOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_updateNoteGraphPosition_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3820,6 +3958,8 @@ func (ec *executionContext) fieldContext_AdminQuery_noteView(ctx context.Context
 				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
 			case "inLinks":
 				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -4191,6 +4331,8 @@ func (ec *executionContext) fieldContext_AdminRelease_homeNote(_ context.Context
 				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
 			case "inLinks":
 				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -6228,6 +6370,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_createRelease(ctx, field)
 			case "makeReleaseLive":
 				return ec.fieldContext_AdminMutation_makeReleaseLive(ctx, field)
+			case "updateNoteGraphPosition":
+				return ec.fieldContext_AdminMutation_updateNoteGraphPosition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -6824,8 +6968,57 @@ func (ec *executionContext) fieldContext_NoteView_inLinks(_ context.Context, fie
 				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
 			case "inLinks":
 				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteView_graphPosition(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NoteView_graphPosition(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.NoteView().GraphPosition(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Vector2)
+	fc.Result = res
+	return ec.marshalOVector22ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐVector2(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NoteView_graphPosition(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteView",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "x":
+				return ec.fieldContext_Vector2_x(ctx, field)
+			case "y":
+				return ec.fieldContext_Vector2_y(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Vector2", field.Name)
 		},
 	}
 	return fc, nil
@@ -8121,6 +8314,76 @@ func (ec *executionContext) fieldContext_UnbanUserPayload_user(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _UpdateNoteGraphPositionPayload_noteView(ctx context.Context, field graphql.CollectedField, obj *model.UpdateNoteGraphPositionPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpdateNoteGraphPositionPayload_noteView(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.UpdateNoteGraphPositionPayload().NoteView(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model1.NoteView)
+	fc.Result = res
+	return ec.marshalNNoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpdateNoteGraphPositionPayload_noteView(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateNoteGraphPositionPayload",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteView_id(ctx, field)
+			case "path":
+				return ec.fieldContext_NoteView_path(ctx, field)
+			case "title":
+				return ec.fieldContext_NoteView_title(ctx, field)
+			case "content":
+				return ec.fieldContext_NoteView_content(ctx, field)
+			case "html":
+				return ec.fieldContext_NoteView_html(ctx, field)
+			case "permalink":
+				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "free":
+				return ec.fieldContext_NoteView_free(ctx, field)
+			case "pathId":
+				return ec.fieldContext_NoteView_pathId(ctx, field)
+			case "versionId":
+				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UpdateSubgraphPayload_subgraph(ctx context.Context, field graphql.CollectedField, obj *model.UpdateSubgraphPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UpdateSubgraphPayload_subgraph(ctx, field)
 	if err != nil {
@@ -8778,6 +9041,94 @@ func (ec *executionContext) fieldContext_UserSubgraphAccess_subgraph(_ context.C
 				return ec.fieldContext_Subgraph_homePath(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Subgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Vector2_x(ctx context.Context, field graphql.CollectedField, obj *model.Vector2) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Vector2_x(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.X, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Vector2_x(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Vector2",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Vector2_y(ctx context.Context, field graphql.CollectedField, obj *model.Vector2) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Vector2_y(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Y, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Vector2_y(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Vector2",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -11357,6 +11708,47 @@ func (ec *executionContext) unmarshalInputUnbanUserInput(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateNoteGraphPositionInput(ctx context.Context, obj any) (model.UpdateNoteGraphPositionInput, error) {
+	var it model.UpdateNoteGraphPositionInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"pathId", "x", "y"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "pathId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pathId"))
+			data, err := ec.unmarshalNInt642int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PathID = data
+		case "x":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("x"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.X = data
+		case "y":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("y"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Y = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Context, obj any) (updatesubgraph.Request, error) {
 	var it updatesubgraph.Request
 	asMap := map[string]any{}
@@ -11732,6 +12124,29 @@ func (ec *executionContext) _UnbanUserOrErrorPayload(ctx context.Context, sel as
 			return graphql.Null
 		}
 		return ec._UnbanUserPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _UpdateNoteGraphPositionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateNoteGraphPositionOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UpdateNoteGraphPositionPayload:
+		return ec._UpdateNoteGraphPositionPayload(ctx, sel, &obj)
+	case *model.UpdateNoteGraphPositionPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateNoteGraphPositionPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -12570,6 +12985,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_makeReleaseLive(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "updateNoteGraphPosition":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_updateNoteGraphPosition(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -14107,7 +14558,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -14536,6 +14987,39 @@ func (ec *executionContext) _NoteView(ctx context.Context, sel ast.SelectionSet,
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "graphPosition":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NoteView_graphPosition(ctx, field, obj)
 				return res
 			}
 
@@ -15419,6 +15903,76 @@ func (ec *executionContext) _UnbanUserPayload(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var updateNoteGraphPositionPayloadImplementors = []string{"UpdateNoteGraphPositionPayload", "UpdateNoteGraphPositionOrErrorPayload"}
+
+func (ec *executionContext) _UpdateNoteGraphPositionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateNoteGraphPositionPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateNoteGraphPositionPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateNoteGraphPositionPayload")
+		case "noteView":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._UpdateNoteGraphPositionPayload_noteView(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var updateSubgraphPayloadImplementors = []string{"UpdateSubgraphPayload", "UpdateSubgraphOrErrorPayload"}
 
 func (ec *executionContext) _UpdateSubgraphPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateSubgraphPayload) graphql.Marshaler {
@@ -15850,6 +16404,50 @@ func (ec *executionContext) _UserSubgraphAccess(ctx context.Context, sel ast.Sel
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var vector2Implementors = []string{"Vector2"}
+
+func (ec *executionContext) _Vector2(ctx context.Context, sel ast.SelectionSet, obj *model.Vector2) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, vector2Implementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Vector2")
+		case "x":
+			out.Values[i] = ec._Vector2_x(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "y":
+			out.Values[i] = ec._Vector2_y(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -17175,6 +17773,16 @@ func (ec *executionContext) marshalNNoteView2ᚕtrip2gᚋinternalᚋmodelᚐNote
 	return ret
 }
 
+func (ec *executionContext) marshalNNoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx context.Context, sel ast.SelectionSet, v *model1.NoteView) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NoteView(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNOffer2trip2gᚋinternalᚋdbᚐOffer(ctx context.Context, sel ast.SelectionSet, v db.Offer) graphql.Marshaler {
 	return ec._Offer(ctx, sel, &v)
 }
@@ -17601,6 +18209,21 @@ func (ec *executionContext) marshalNUnbanUserOrErrorPayload2trip2gᚋinternalᚋ
 		return graphql.Null
 	}
 	return ec._UnbanUserOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateNoteGraphPositionInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNoteGraphPositionInput(ctx context.Context, v any) (model.UpdateNoteGraphPositionInput, error) {
+	res, err := ec.unmarshalInputUpdateNoteGraphPositionInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateNoteGraphPositionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNoteGraphPositionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateNoteGraphPositionOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateNoteGraphPositionOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateSubgraphInput2trip2gᚋinternalᚋcaseᚋadminᚋupdatesubgraphᚐRequest(ctx context.Context, v any) (updatesubgraph.Request, error) {
@@ -18216,6 +18839,13 @@ func (ec *executionContext) marshalOUserBan2ᚖtrip2gᚋinternalᚋdbᚐUserBan(
 		return graphql.Null
 	}
 	return ec._UserBan(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOVector22ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐVector2(ctx context.Context, sel ast.SelectionSet, v *model.Vector2) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Vector2(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {
