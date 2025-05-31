@@ -876,16 +876,17 @@ func (q *Queries) InsertUser(ctx context.Context, lower string) (User, error) {
 }
 
 const insertUserNoteView = `-- name: InsertUserNoteView :exec
-insert into user_note_views (user_id, path_id) values (?, ?)
+insert into user_note_views (user_id, version_id, referer_version_id) values (?, ?, ?)
 `
 
 type InsertUserNoteViewParams struct {
-	UserID int64 `json:"user_id"`
-	PathID int64 `json:"path_id"`
+	UserID           int64         `json:"user_id"`
+	VersionID        int64         `json:"version_id"`
+	RefererVersionID sql.NullInt64 `json:"referer_version_id"`
 }
 
 func (q *Queries) InsertUserNoteView(ctx context.Context, arg InsertUserNoteViewParams) error {
-	_, err := q.db.ExecContext(ctx, insertUserNoteView, arg.UserID, arg.PathID)
+	_, err := q.db.ExecContext(ctx, insertUserNoteView, arg.UserID, arg.VersionID, arg.RefererVersionID)
 	return err
 }
 
@@ -1417,41 +1418,6 @@ func (q *Queries) ListApiKeyLogsByApiKeyID(ctx context.Context, apiKeyID int64) 
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listLatestUserNoteViewPathIDS = `-- name: ListLatestUserNoteViewPathIDS :many
-select distinct path_id
-  from (
-    select path_id
-      from user_note_views
-     where user_id = ?
-     order by created_at desc
-     limit 50
-  ) as t
- limit 20
-`
-
-func (q *Queries) ListLatestUserNoteViewPathIDS(ctx context.Context, userID int64) ([]int64, error) {
-	rows, err := q.db.QueryContext(ctx, listLatestUserNoteViewPathIDS, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []int64
-	for rows.Next() {
-		var path_id int64
-		if err := rows.Scan(&path_id); err != nil {
-			return nil, err
-		}
-		items = append(items, path_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

@@ -168,7 +168,7 @@ delete from user_bans where user_id = ?;
 select * from admins where user_id = ?;
 
 -- name: InsertUserNoteView :exec
-insert into user_note_views (user_id, path_id) values (?, ?);
+insert into user_note_views (user_id, version_id, referer_version_id) values (?, ?, ?);
 
 -- name: UpsertUserNoteDailyView :one
 -- Unfortunately, sqlc cannot generate a parameter for greatest(count + 1, sqlc.arg(max_count)).
@@ -180,17 +180,6 @@ returning count;
 update users
    set note_view_count = note_view_count + 1
  where id = ?;
-
--- name: ListLatestUserNoteViewPathIDS :many
-select distinct path_id
-  from (
-    select path_id
-      from user_note_views
-     where user_id = ?
-     order by created_at desc
-     limit 50
-  ) as t
- limit 20;
 
 -- name: ListActiveOffersBySubgraphID :many
 select o.*

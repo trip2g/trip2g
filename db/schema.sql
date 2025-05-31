@@ -74,11 +74,6 @@ CREATE TABLE user_bans (
   banned_by integer references admins(user_id) on delete restrict,
   reason text not null
 );
-CREATE TABLE user_note_views (
-  user_id int not null references users(id) on delete cascade,
-  path_id int not null references note_paths(id) on delete cascade,
-  created_at datetime not null default current_timestamp
-);
 CREATE TABLE user_note_daily_view_counts (
   user_id int not null references users(id) on delete cascade,
   path_id int not null references note_paths(id) on delete cascade,
@@ -187,6 +182,12 @@ CREATE TABLE release_note_versions (
   note_version_id integer not null references note_versions(id) on delete cascade,
   primary key (release_id, note_version_id)
 );
+CREATE TABLE IF NOT EXISTS "user_note_views" (
+  user_id int not null references users(id) on delete cascade,
+  version_id integer not null references note_versions(id) on delete cascade,
+  referer_version_id integer references note_versions(id) on delete cascade,
+  created_at datetime not null default current_timestamp
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -212,4 +213,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250525034319'),
   ('20250528112143'),
   ('20250528125918'),
-  ('20250531040526');
+  ('20250531040526'),
+  ('20250531113101');

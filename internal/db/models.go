@@ -210,9 +210,10 @@ type UserNoteDailyViewCount struct {
 }
 
 type UserNoteView struct {
-	UserID    int64     `json:"user_id"`
-	PathID    int64     `json:"path_id"`
-	CreatedAt time.Time `json:"created_at"`
+	UserID           int64         `json:"user_id"`
+	VersionID        int64         `json:"version_id"`
+	RefererVersionID sql.NullInt64 `json:"referer_version_id"`
+	CreatedAt        time.Time     `json:"created_at"`
 }
 
 type UserSubgraphAccess struct {

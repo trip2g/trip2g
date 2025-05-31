@@ -20,8 +20,9 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	request := Request{
-		Path:    string(req.Req.URI().Path()),
-		Version: string(req.Req.QueryArgs().Peek("version")),
+		Path:     string(req.Req.URI().Path()),
+		Version:  string(req.Req.QueryArgs().Peek("version")),
+		Referrer: string(req.Req.Request.Header.Peek("Referer")),
 
 		UserToken: token,
 	}
