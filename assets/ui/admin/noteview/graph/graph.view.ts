@@ -24,8 +24,13 @@ namespace $.$$ {
 								id
 								subgraphNames
 								pathId
+								graphPosition{
+									x,
+									y,
+								}
 								inLinks {
 									title
+									pathId
 									id
 								}
 							}
@@ -49,27 +54,27 @@ namespace $.$$ {
 
 		render() {
 			const cy = this.cytoscape_instance()
-			const nodeFilter = (item: any) => !item.id.includes('sidebar')
+			const nodeFilter = ( item: any ) => !item.id.includes( 'sidebar' )
 			const { nodes, subgraphs } = this.data()
-			const data = nodes.filter(nodeFilter).map(item => ({
+			const data = nodes.filter( nodeFilter ).map( item => ( {
 				...item,
-				inLinks: item.inLinks.filter(nodeFilter),
-			}))
+				inLinks: item.inLinks.filter( nodeFilter ),
+			} ) )
 
 			// Clear all existing elements from the graph
 			cy.elements().remove()
 
 			// Create subgraph color mapping
 			const subgraphColors = new Map()
-			for (const subgraph of subgraphs) {
-				subgraphColors.set(subgraph.name, subgraph.color || '#666')
+			for( const subgraph of subgraphs ) {
+				subgraphColors.set( subgraph.name, subgraph.color || '#666' )
 			}
 
 			// Helper function to get node color from first subgraph
-			const getNodeColor = (nodeData: any) => {
-				if (nodeData.subgraphNames && nodeData.subgraphNames.length > 0) {
-					const firstSubgraph = nodeData.subgraphNames[0]
-					return subgraphColors.get(firstSubgraph) || '#666'
+			const getNodeColor = ( nodeData: any ) => {
+				if( nodeData.subgraphNames && nodeData.subgraphNames.length > 0 ) {
+					const firstSubgraph = nodeData.subgraphNames[ 0 ]
+					return subgraphColors.get( firstSubgraph ) || '#666'
 				}
 				return '#666'
 			}
@@ -79,53 +84,41 @@ namespace $.$$ {
 			const nodeIds = new Set()
 
 			// Add all nodes first
-			for (const node of data) {
-				if (!nodeIds.has(node.id)) {
-					elements.push({
-						data: { 
-							id: node.id,
-							label: node.id,
-							color: getNodeColor(node)
-						}
-					})
-					nodeIds.add(node.id)
-				}
-
-				// Add linked nodes
-				for (const inLink of node.inLinks) {
-					if (!nodeIds.has(inLink.id)) {
-						// For linked nodes, try to find their data in the original data array
-						const linkNodeData = data.find(n => n.id === inLink.id)
-						elements.push({
-							data: { 
-								id: inLink.id,
-								label: inLink.title,
-								color: linkNodeData ? getNodeColor(linkNodeData) : '#666'
-							}
-						})
-						nodeIds.add(inLink.id)
+			for( const node of data ) {
+				const element: any = {
+					data: {
+						id: node.id,
+						label: node.id,
+						pathId: node.pathId,
+						color: getNodeColor( node )
 					}
 				}
+
+				if( node.graphPosition ) {
+					element.position = node.graphPosition
+				}
+
+				elements.push( element )
 			}
 
 			// Add edges
-			for (const node of data) {
-				for (const inLink of node.inLinks) {
-					elements.push({
-						data: { 
-							id: `${inLink.id}-${node.id}`,
+			for( const node of data ) {
+				for( const inLink of node.inLinks ) {
+					elements.push( {
+						data: {
+							id: `${ inLink.id }-${ node.id }`,
 							source: inLink.id,
-							target: node.id 
+							target: node.id
 						}
-					})
+					} )
 				}
 			}
 
 			// Add elements to cytoscape
-			cy.add(elements)
+			cy.add( elements )
 
 			// Apply styling
-			cy.style([
+			cy.style( [
 				{
 					selector: 'node',
 					style: {
@@ -149,39 +142,67 @@ namespace $.$$ {
 						'curve-style': 'bezier'
 					}
 				}
-			])
+			] )
+
+			cy.layout({
+				name: 'preset',
+
+				// positions: (id) => {
+				// 	console.log(id)
+				// 	return {x:0, y:0}
+				// },
+			})
 
 			// Apply layout
-			cy.layout({
-				name: 'cose',
-				idealEdgeLength: 100,
-				nodeOverlap: 20,
-				refresh: 20,
-				fit: true,
-				padding: 30,
-				randomize: false,
-				componentSpacing: 100,
-				nodeRepulsion: 400000,
-				edgeElasticity: 100,
-				nestingFactor: 5,
-				gravity: 80,
-				numIter: 1000,
-				initialTemp: 200,
-				coolingFactor: 0.95,
-				minTemp: 1.0
-			}).run()
+			// cy.layout( {
+			// 	name: 'preset',
+			// 	idealEdgeLength: 100,
+			// 	nodeOverlap: 20,
+			// 	refresh: 20,
+			// 	fit: true,
+			// 	padding: 30,
+			// 	randomize: false,
+			// 	componentSpacing: 100,
+			// 	nodeRepulsion: 400000,
+			// 	edgeElasticity: 100,
+			// 	nestingFactor: 5,
+			// 	gravity: 80,
+			// 	numIter: 1000,
+			// 	initialTemp: 200,
+			// 	coolingFactor: 0.95,
+			// 	minTemp: 1.0
+			// } ).run()
 
 			// Add event listener for when node movement stops (mouseup after drag)
-			cy.nodes().on('free', (event) => {
+			cy.nodes().on( 'free', ( event: any ) => {
 				const node = event.target
 				const position = node.position()
-				console.log('coords', {
-					id: node.id(),
-					label: node.data('label'),
-					x: position.x,
-					y: position.y
-				})
-			})
+
+				this.save_position( node.data('pathId'), position.x, position.y )
+			} )
+		}
+
+		save_position( pathId: string, x: number, y: number ) {
+			const res = $trip2g_graphql_request( `
+					mutation AdminUpdateNoteGraphPosition($input: UpdateNoteGraphPositionInput!) {
+						admin {
+							data: updateNoteGraphPosition(input: $input) {
+								... on ErrorPayload {
+									message
+								}
+								... on UpdateNoteGraphPositionPayload {
+									success
+								}
+							}
+						}
+					}
+				`, {
+				input: { pathId, x, y },
+			} )
+
+			if( res.admin?.data?.__typename === 'ErrorPayload' ) {
+				console.error( 'Failed to save position:', res.admin.data.message )
+			}
 		}
 	}
 }
