@@ -481,11 +481,6 @@ func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUse
 	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
 }
 
-// NoteView is the resolver for the noteView field.
-func (r *updateNoteGraphPositionPayloadResolver) NoteView(ctx context.Context, obj *model.UpdateNoteGraphPositionPayload) (*appmodel.NoteView, error) {
-	return r.env(ctx).LatestNoteViews().GetByPathID(obj.PathID), nil
-}
-
 // UpdatedNoteViews is the resolver for the updatedNoteViews field.
 func (r *updateNoteGraphPositionsPayloadResolver) UpdatedNoteViews(ctx context.Context, obj *model.UpdateNoteGraphPositionsPayload) ([]appmodel.NoteView, error) {
 	var noteViews []appmodel.NoteView
@@ -709,11 +704,6 @@ func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
 // UnbanUserPayload returns UnbanUserPayloadResolver implementation.
 func (r *Resolver) UnbanUserPayload() UnbanUserPayloadResolver { return &unbanUserPayloadResolver{r} }
 
-// UpdateNoteGraphPositionPayload returns UpdateNoteGraphPositionPayloadResolver implementation.
-func (r *Resolver) UpdateNoteGraphPositionPayload() UpdateNoteGraphPositionPayloadResolver {
-	return &updateNoteGraphPositionPayloadResolver{r}
-}
-
 // UpdateNoteGraphPositionsPayload returns UpdateNoteGraphPositionsPayloadResolver implementation.
 func (r *Resolver) UpdateNoteGraphPositionsPayload() UpdateNoteGraphPositionsPayloadResolver {
 	return &updateNoteGraphPositionsPayloadResolver{r}
@@ -759,7 +749,6 @@ type pushedNoteResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
-type updateNoteGraphPositionPayloadResolver struct{ *Resolver }
 type updateNoteGraphPositionsPayloadResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }

@@ -57,10 +57,6 @@ type UnbanUserOrErrorPayload interface {
 	IsUnbanUserOrErrorPayload()
 }
 
-type UpdateNoteGraphPositionOrErrorPayload interface {
-	IsUpdateNoteGraphPositionOrErrorPayload()
-}
-
 type UpdateNoteGraphPositionsOrErrorPayload interface {
 	IsUpdateNoteGraphPositionsOrErrorPayload()
 }
@@ -205,8 +201,6 @@ func (ErrorPayload) IsCreateReleaseOrErrorPayload() {}
 
 func (ErrorPayload) IsMakeReleaseLiveOrErrorPayload() {}
 
-func (ErrorPayload) IsUpdateNoteGraphPositionOrErrorPayload() {}
-
 func (ErrorPayload) IsUpdateNoteGraphPositionsOrErrorPayload() {}
 
 type FieldMessage struct {
@@ -294,13 +288,6 @@ type UpdateNoteGraphPositionInput struct {
 	X      float64 `json:"x"`
 	Y      float64 `json:"y"`
 }
-
-type UpdateNoteGraphPositionPayload struct {
-	NoteView *model.NoteView `json:"noteView"`
-	PathID   int64           `json:"-"`
-}
-
-func (UpdateNoteGraphPositionPayload) IsUpdateNoteGraphPositionOrErrorPayload() {}
 
 type UpdateNoteGraphPositionsInput struct {
 	Positions []UpdateNoteGraphPositionInput `json:"positions"`

@@ -90,6 +90,7 @@ type NoteView {
 
   inLinks: [NoteView!]!
   graphPosition: Vector2
+  isHomePage: Boolean!
 }
 
 type Admin {

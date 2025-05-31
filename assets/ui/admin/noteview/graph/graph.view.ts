@@ -24,6 +24,8 @@ namespace $.$$ {
 								id
 								subgraphNames
 								pathId
+								free
+								isHomePage
 								graphPosition{
 									x,
 									y,
@@ -70,13 +72,31 @@ namespace $.$$ {
 				subgraphColors.set( subgraph.name, subgraph.color || '#666' )
 			}
 
-			// Helper function to get node color from first subgraph
+			// Helper function to get node color from first subgraph or free status
 			const getNodeColor = ( nodeData: any ) => {
+				// Free notes are always green
+				if( nodeData.free ) {
+					return '#00ff00'
+				}
+				
 				if( nodeData.subgraphNames && nodeData.subgraphNames.length > 0 ) {
 					const firstSubgraph = nodeData.subgraphNames[ 0 ]
 					return subgraphColors.get( firstSubgraph ) || '#666'
 				}
 				return '#666'
+			}
+
+			// Helper function to get node shape
+			const getNodeShape = ( nodeData: any ) => {
+				// Home page notes are diamonds
+				if( nodeData.isHomePage ) {
+					return 'diamond'
+				}
+				// Free notes are squares
+				if( nodeData.free ) {
+					return 'square'
+				}
+				return 'ellipse'
 			}
 
 			// Prepare nodes and edges from the data
@@ -90,7 +110,8 @@ namespace $.$$ {
 						id: node.id,
 						label: node.id,
 						pathId: node.pathId,
-						color: getNodeColor( node )
+						color: getNodeColor( node ),
+						shape: getNodeShape( node )
 					}
 				}
 
@@ -123,6 +144,7 @@ namespace $.$$ {
 					selector: 'node',
 					style: {
 						'background-color': 'data(color)',
+						'shape': 'data(shape)',
 						'label': 'data(label)',
 						'text-valign': 'center',
 						'text-halign': 'center',
