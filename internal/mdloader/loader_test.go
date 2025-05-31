@@ -27,7 +27,10 @@ First. Second [[second]] [[dead]]`),
 		Content: []byte(`Second.`),
 	}}
 
-	pages, err := mdloader.Load(sourceFiles, &log)
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
 	require.NoError(t, err)
 	require.Len(t, pages.Map, 3)
 
@@ -65,7 +68,10 @@ free: true
 nested second`),
 	}}
 
-	pages, err := mdloader.Load(sourceFiles, &log)
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
 	require.NoError(t, err)
 	require.Len(t, pages.Map, 3)
 
@@ -96,7 +102,10 @@ Hello [[hidden]]`),
 		Content: []byte(`Payed content`),
 	}}
 
-	pages, err := mdloader.Load(sourceFiles, &log)
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
 	require.NoError(t, err)
 
 	htmlSources := map[string]string{}
@@ -116,7 +125,10 @@ func TestAssets(t *testing.T) {
 		Content: []byte(`Hello ![[image.png]] and document [PDF](/file.pdf) and image ![hello](image2.png)`),
 	}}
 
-	pages, err := mdloader.Load(sourceFiles, &log)
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
 	require.NoError(t, err)
 
 	require.Equal(t, pages.Map["/index"].Assets, map[string]struct{}{

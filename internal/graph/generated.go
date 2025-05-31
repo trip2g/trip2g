@@ -318,6 +318,7 @@ type ComplexityRoot struct {
 
 	UpdateNoteGraphPositionPayload struct {
 		NoteView func(childComplexity int) int
+		Success  func(childComplexity int) int
 	}
 
 	UpdateSubgraphPayload struct {
@@ -1451,6 +1452,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UpdateNoteGraphPositionPayload.NoteView(childComplexity), true
+
+	case "UpdateNoteGraphPositionPayload.success":
+		if e.complexity.UpdateNoteGraphPositionPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.UpdateNoteGraphPositionPayload.Success(childComplexity), true
 
 	case "UpdateSubgraphPayload.subgraph":
 		if e.complexity.UpdateSubgraphPayload.Subgraph == nil {
@@ -8309,6 +8317,50 @@ func (ec *executionContext) fieldContext_UnbanUserPayload_user(_ context.Context
 				return ec.fieldContext_AdminUser_ban(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateNoteGraphPositionPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.UpdateNoteGraphPositionPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpdateNoteGraphPositionPayload_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpdateNoteGraphPositionPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateNoteGraphPositionPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -15914,6 +15966,11 @@ func (ec *executionContext) _UpdateNoteGraphPositionPayload(ctx context.Context,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("UpdateNoteGraphPositionPayload")
+		case "success":
+			out.Values[i] = ec._UpdateNoteGraphPositionPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "noteView":
 			field := field
 

@@ -479,6 +479,7 @@ input UpdateNoteGraphPositionInput {
 
 type UpdateNoteGraphPositionPayload
   @goExtraField(name: "PathID", type: "int64") {
+  success: Boolean!
   noteView: NoteView! @goField(forceResolver: true)
 }
 

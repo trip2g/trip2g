@@ -36,7 +36,7 @@ func NewHandler(env Env) *handler.Server {
 		log.Error("graphql error", "error", err)
 
 		return func(ctx context.Context) *graphql.Response {
-			return graphql.ErrorResponse(ctx, err.Error())
+			return graphql.ErrorResponse(ctx, "%s", err.Error())
 		}
 	}
 

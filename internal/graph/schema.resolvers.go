@@ -19,6 +19,7 @@ import (
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/unbanuser"
+	"trip2g/internal/case/admin/updatenotegraphposition"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
@@ -133,7 +134,7 @@ func (r *adminMutationResolver) MakeReleaseLive(ctx context.Context, obj *appmod
 
 // UpdateNoteGraphPosition is the resolver for the updateNoteGraphPosition field.
 func (r *adminMutationResolver) UpdateNoteGraphPosition(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateNoteGraphPositionInput) (model.UpdateNoteGraphPositionOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: UpdateNoteGraphPosition - updateNoteGraphPosition"))
+	return updatenotegraphposition.Resolve(ctx, r.env(ctx), input)
 }
 
 // AllUsers is the resolver for the allUsers field.

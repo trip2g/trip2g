@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/unbanuser"
+	"trip2g/internal/case/admin/updatenotegraphposition"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"

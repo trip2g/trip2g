@@ -290,6 +290,7 @@ type UpdateNoteGraphPositionInput struct {
 }
 
 type UpdateNoteGraphPositionPayload struct {
+	Success  bool            `json:"success"`
 	NoteView *model.NoteView `json:"noteView"`
 	PathID   int64           `json:"-"`
 }

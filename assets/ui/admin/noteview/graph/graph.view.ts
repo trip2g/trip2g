@@ -23,6 +23,7 @@ namespace $.$$ {
 							nodes {
 								id
 								subgraphNames
+								pathId
 								inLinks {
 									title
 									id
