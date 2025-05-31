@@ -13,9 +13,16 @@ namespace $.$$ {
 			const res = $trip2g_graphql_request( `
 				query AdminGraph {
 					admin {
+						allSubgraphs {
+							nodes {
+								name
+								color
+							}
+						}
 						allLatestNoteViews {
 							nodes {
 								id
+								subgraphNames
 								inLinks {
 									title
 									id
@@ -26,7 +33,10 @@ namespace $.$$ {
 				}
 			`)
 
-			return res.admin.allLatestNoteViews.nodes
+			return {
+				nodes: res.admin.allLatestNoteViews.nodes,
+				subgraphs: res.admin.allSubgraphs.nodes,
+			}
 		}
 
 		@$mol_mem
@@ -39,13 +49,29 @@ namespace $.$$ {
 		render() {
 			const cy = this.cytoscape_instance()
 			const nodeFilter = (item: any) => !item.id.includes('sidebar')
-			const data = this.data().filter(nodeFilter).map(item => ({
+			const { nodes, subgraphs } = this.data()
+			const data = nodes.filter(nodeFilter).map(item => ({
 				...item,
 				inLinks: item.inLinks.filter(nodeFilter),
 			}))
 
 			// Clear all existing elements from the graph
 			cy.elements().remove()
+
+			// Create subgraph color mapping
+			const subgraphColors = new Map()
+			for (const subgraph of subgraphs) {
+				subgraphColors.set(subgraph.name, subgraph.color || '#666')
+			}
+
+			// Helper function to get node color from first subgraph
+			const getNodeColor = (nodeData: any) => {
+				if (nodeData.subgraphNames && nodeData.subgraphNames.length > 0) {
+					const firstSubgraph = nodeData.subgraphNames[0]
+					return subgraphColors.get(firstSubgraph) || '#666'
+				}
+				return '#666'
+			}
 
 			// Prepare nodes and edges from the data
 			const elements = []
@@ -57,7 +83,8 @@ namespace $.$$ {
 					elements.push({
 						data: { 
 							id: node.id,
-							label: node.id 
+							label: node.id,
+							color: getNodeColor(node)
 						}
 					})
 					nodeIds.add(node.id)
@@ -66,10 +93,13 @@ namespace $.$$ {
 				// Add linked nodes
 				for (const inLink of node.inLinks) {
 					if (!nodeIds.has(inLink.id)) {
+						// For linked nodes, try to find their data in the original data array
+						const linkNodeData = data.find(n => n.id === inLink.id)
 						elements.push({
 							data: { 
 								id: inLink.id,
-								label: inLink.title 
+								label: inLink.title,
+								color: linkNodeData ? getNodeColor(linkNodeData) : '#666'
 							}
 						})
 						nodeIds.add(inLink.id)
@@ -98,12 +128,14 @@ namespace $.$$ {
 				{
 					selector: 'node',
 					style: {
-						'background-color': '#666',
+						'background-color': 'data(color)',
 						'label': 'data(label)',
 						'text-valign': 'center',
 						'text-halign': 'center',
 						'font-size': '12px',
-						'color': '#fff'
+						'color': '#fff',
+						'text-outline-width': 2,
+						'text-outline-color': '#000'
 					}
 				},
 				{

@@ -81,6 +81,7 @@ type NoteView {
   free: Boolean!
   pathId: Int64!
   versionId: Int64!
+  subgraphNames: [String!]!
 
   inLinks: [NoteView!]!
 }

@@ -106,8 +106,15 @@ def main():
     print("📦 Сравнение файлов:")
     print("-" * 80)
 
-    for root, _, files in os.walk(base_path):
+    for root, dirs, files in os.walk(base_path):
+        # Filter out directories that start with dot
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        
         for fname in files:
+            # Skip files that start with dot
+            if fname.startswith('.'):
+                continue
+                
             if not fname.lower().endswith(".md"):
                 continue
 

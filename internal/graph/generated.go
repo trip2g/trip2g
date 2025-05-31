@@ -243,16 +243,17 @@ type ComplexityRoot struct {
 	}
 
 	NoteView struct {
-		Content   func(childComplexity int) int
-		Free      func(childComplexity int) int
-		HTML      func(childComplexity int) int
-		ID        func(childComplexity int) int
-		InLinks   func(childComplexity int) int
-		Path      func(childComplexity int) int
-		PathID    func(childComplexity int) int
-		Permalink func(childComplexity int) int
-		Title     func(childComplexity int) int
-		VersionID func(childComplexity int) int
+		Content       func(childComplexity int) int
+		Free          func(childComplexity int) int
+		HTML          func(childComplexity int) int
+		ID            func(childComplexity int) int
+		InLinks       func(childComplexity int) int
+		Path          func(childComplexity int) int
+		PathID        func(childComplexity int) int
+		Permalink     func(childComplexity int) int
+		SubgraphNames func(childComplexity int) int
+		Title         func(childComplexity int) int
+		VersionID     func(childComplexity int) int
 	}
 
 	Offer struct {
@@ -1218,6 +1219,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NoteView.Permalink(childComplexity), true
+
+	case "NoteView.subgraphNames":
+		if e.complexity.NoteView.SubgraphNames == nil {
+			break
+		}
+
+		return e.complexity.NoteView.SubgraphNames(childComplexity), true
 
 	case "NoteView.title":
 		if e.complexity.NoteView.Title == nil {
@@ -2846,6 +2854,8 @@ func (ec *executionContext) fieldContext_AdminLatestNoteViewsConnection_nodes(_ 
 				return ec.fieldContext_NoteView_pathId(ctx, field)
 			case "versionId":
 				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
 			case "inLinks":
 				return ec.fieldContext_NoteView_inLinks(ctx, field)
 			}
@@ -3806,6 +3816,8 @@ func (ec *executionContext) fieldContext_AdminQuery_noteView(ctx context.Context
 				return ec.fieldContext_NoteView_pathId(ctx, field)
 			case "versionId":
 				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
 			case "inLinks":
 				return ec.fieldContext_NoteView_inLinks(ctx, field)
 			}
@@ -4175,6 +4187,8 @@ func (ec *executionContext) fieldContext_AdminRelease_homeNote(_ context.Context
 				return ec.fieldContext_NoteView_pathId(ctx, field)
 			case "versionId":
 				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
 			case "inLinks":
 				return ec.fieldContext_NoteView_inLinks(ctx, field)
 			}
@@ -6705,6 +6719,50 @@ func (ec *executionContext) fieldContext_NoteView_versionId(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _NoteView_subgraphNames(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NoteView_subgraphNames(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SubgraphNames, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NoteView_subgraphNames(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NoteView_inLinks(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_NoteView_inLinks(ctx, field)
 	if err != nil {
@@ -6762,6 +6820,8 @@ func (ec *executionContext) fieldContext_NoteView_inLinks(_ context.Context, fie
 				return ec.fieldContext_NoteView_pathId(ctx, field)
 			case "versionId":
 				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
 			case "inLinks":
 				return ec.fieldContext_NoteView_inLinks(ctx, field)
 			}
@@ -14458,6 +14518,11 @@ func (ec *executionContext) _NoteView(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "subgraphNames":
+			out.Values[i] = ec._NoteView_subgraphNames(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "inLinks":
 			field := field
 
@@ -17417,6 +17482,36 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNSubgraph2trip2gᚋinternalᚋdbᚐSubgraph(ctx context.Context, sel ast.SelectionSet, v db.Subgraph) graphql.Marshaler {
