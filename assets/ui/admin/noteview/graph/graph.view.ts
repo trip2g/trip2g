@@ -38,50 +38,105 @@ namespace $.$$ {
 
 		render() {
 			const cy = this.cytoscape_instance()
-			const data = this.data()
+			const nodeFilter = (item: any) => !item.id.includes('sidebar')
+			const data = this.data().filter(nodeFilter).map(item => ({
+				...item,
+				inLinks: item.inLinks.filter(nodeFilter),
+			}))
 
-			// this.cytoscape()( {
-			// 	container: this.dom_node(),
-			// 	elements: [ // list of graph elements to start with
-			// 		{ // node a
-			// 			data: { id: 'a' }
-			// 		},
-			// 		{ // node b
-			// 			data: { id: 'b' }
-			// 		},
-			// 		{ // edge ab
-			// 			data: { id: 'ab', source: 'a', target: 'b' }
-			// 		}
-			// 	],
+			// Clear all existing elements from the graph
+			cy.elements().remove()
 
-			// 	style: [ // the stylesheet for the graph
-			// 		{
-			// 			selector: 'node',
-			// 			style: {
-			// 				'background-color': '#666',
-			// 				'label': 'data(id)'
-			// 			}
-			// 		},
+			// Prepare nodes and edges from the data
+			const elements = []
+			const nodeIds = new Set()
 
-			// 		{
-			// 			selector: 'edge',
-			// 			style: {
-			// 				'width': 3,
-			// 				'line-color': '#ccc',
-			// 				'target-arrow-color': '#ccc',
-			// 				'target-arrow-shape': 'triangle',
-			// 				'curve-style': 'bezier'
-			// 			}
-			// 		}
-			// 	],
+			// Add all nodes first
+			for (const node of data) {
+				if (!nodeIds.has(node.id)) {
+					elements.push({
+						data: { 
+							id: node.id,
+							label: node.id 
+						}
+					})
+					nodeIds.add(node.id)
+				}
 
-			// 	layout: {
-			// 		name: 'grid',
-			// 		rows: 1
-			// 	}
-			// } )
+				// Add linked nodes
+				for (const inLink of node.inLinks) {
+					if (!nodeIds.has(inLink.id)) {
+						elements.push({
+							data: { 
+								id: inLink.id,
+								label: inLink.title 
+							}
+						})
+						nodeIds.add(inLink.id)
+					}
+				}
+			}
 
-			return 'test'
+			// Add edges
+			for (const node of data) {
+				for (const inLink of node.inLinks) {
+					elements.push({
+						data: { 
+							id: `${inLink.id}-${node.id}`,
+							source: inLink.id,
+							target: node.id 
+						}
+					})
+				}
+			}
+
+			// Add elements to cytoscape
+			cy.add(elements)
+
+			// Apply styling
+			cy.style([
+				{
+					selector: 'node',
+					style: {
+						'background-color': '#666',
+						'label': 'data(label)',
+						'text-valign': 'center',
+						'text-halign': 'center',
+						'font-size': '12px',
+						'color': '#fff'
+					}
+				},
+				{
+					selector: 'edge',
+					style: {
+						'width': 2,
+						'line-color': '#ccc',
+						'target-arrow-color': '#ccc',
+						'target-arrow-shape': 'triangle',
+						'curve-style': 'bezier'
+					}
+				}
+			])
+
+			// Apply layout
+			cy.layout({
+				name: 'cose',
+				idealEdgeLength: 100,
+				nodeOverlap: 20,
+				refresh: 20,
+				fit: true,
+				padding: 30,
+				randomize: false,
+				componentSpacing: 100,
+				nodeRepulsion: 400000,
+				edgeElasticity: 100,
+				nestingFactor: 5,
+				gravity: 80,
+				numIter: 1000,
+				initialTemp: 200,
+				coolingFactor: 0.95,
+				minTemp: 1.0
+			}).run()
 		}
 	}
 }
