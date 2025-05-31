@@ -53,6 +53,7 @@ type Env interface {
 	ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]db.Subgraph, error)
 	ListAllApiKeys(ctx context.Context) ([]db.ApiKey, error)
 	ListAllReleases(ctx context.Context) ([]db.Release, error)
+	ListAllAdmins(ctx context.Context) ([]db.Admin, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)

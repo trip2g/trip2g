@@ -35,9 +35,28 @@ import (
 	"trip2g/internal/nowpayments"
 )
 
+// ID is the resolver for the id field.
+func (r *adminResolver) ID(ctx context.Context, obj *db.Admin) (int, error) {
+	return int(obj.UserID), nil
+}
+
 // User is the resolver for the user field.
 func (r *adminResolver) User(ctx context.Context, obj *db.Admin) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
+}
+
+// GrantedBy is the resolver for the grantedBy field.
+func (r *adminResolver) GrantedBy(ctx context.Context, obj *db.Admin) (*db.User, error) {
+	if !obj.GrantedBy.Valid {
+		return nil, nil
+	}
+
+	return resolveOne[db.User](ctx, obj.GrantedBy.Int64, r.env(ctx).UserByID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminAdminsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminAdminsConnection) ([]db.Admin, error) {
+	return r.env(ctx).ListAllAdmins(ctx)
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -170,6 +189,11 @@ func (r *adminQueryResolver) AllAPIKeys(ctx context.Context, obj *appmodel.Admin
 // AllReleases is the resolver for the allReleases field.
 func (r *adminQueryResolver) AllReleases(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminReleasesConnection, error) {
 	return &model.AdminReleasesConnection{}, nil
+}
+
+// AllAdmins is the resolver for the allAdmins field.
+func (r *adminQueryResolver) AllAdmins(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminAdminsConnection, error) {
+	return &model.AdminAdminsConnection{}, nil
 }
 
 // APIKeyLogs is the resolver for the apiKeyLogs field.
@@ -611,6 +635,11 @@ func (r *viewerResolver) ActivePurchases(ctx context.Context, obj *appmodel.View
 // Admin returns AdminResolver implementation.
 func (r *Resolver) Admin() AdminResolver { return &adminResolver{r} }
 
+// AdminAdminsConnection returns AdminAdminsConnectionResolver implementation.
+func (r *Resolver) AdminAdminsConnection() AdminAdminsConnectionResolver {
+	return &adminAdminsConnectionResolver{r}
+}
+
 // AdminApiKey returns AdminApiKeyResolver implementation.
 func (r *Resolver) AdminApiKey() AdminApiKeyResolver { return &adminApiKeyResolver{r} }
 
@@ -724,6 +753,7 @@ func (r *Resolver) UserSubgraphAccess() UserSubgraphAccessResolver {
 func (r *Resolver) Viewer() ViewerResolver { return &viewerResolver{r} }
 
 type adminResolver struct{ *Resolver }
+type adminAdminsConnectionResolver struct{ *Resolver }
 type adminApiKeyResolver struct{ *Resolver }
 type adminApiKeyLogsConnectionResolver struct{ *Resolver }
 type adminApiKeysConnectionResolver struct{ *Resolver }

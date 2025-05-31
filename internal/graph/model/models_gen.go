@@ -73,6 +73,10 @@ type UploadNoteAssetOrErrorPayload interface {
 	IsUploadNoteAssetOrErrorPayload()
 }
 
+type AdminAdminsConnection struct {
+	Nodes []db.Admin `json:"nodes"`
+}
+
 type AdminAPIKeyLogsConnection struct {
 	Nodes    []db.ListApiKeyLogsByApiKeyIDRow `json:"nodes"`
 	APIKeyID *int                             `json:"-"`

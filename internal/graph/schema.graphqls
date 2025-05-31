@@ -47,6 +47,13 @@ type User {
   subgraphAccesses: [UserSubgraphAccess!]!
 }
 
+type Admin {
+  id: Int64!
+  user: AdminUser!
+  grantedAt: Time!
+  grantedBy: AdminUser
+}
+
 type AdminUser @goModel(model: "trip2g/internal/db.User") {
   id: Int64!
   email: String!
@@ -91,10 +98,6 @@ type NoteView {
   inLinks: [NoteView!]!
   graphPosition: Vector2
   isHomePage: Boolean!
-}
-
-type Admin {
-  user: AdminUser! @goField(forceResolver: true)
 }
 
 type AdminUserSubgraphAccessesConnection {
@@ -155,6 +158,10 @@ type AdminReleasesConnection {
   nodes: [AdminRelease!]! @goField(forceResolver: true)
 }
 
+type AdminAdminsConnection {
+  nodes: [Admin!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -163,6 +170,7 @@ type AdminQuery {
   allUserUserBans: AdminUserBansConnection!
   allApiKeys: AdminApiKeysConnection!
   allReleases: AdminReleasesConnection!
+  allAdmins: AdminAdminsConnection!
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
 

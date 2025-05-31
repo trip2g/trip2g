@@ -1187,6 +1187,33 @@ func (q *Queries) ListActiveUserSubgraphAccessesByUserID(ctx context.Context, us
 	return items, nil
 }
 
+const listAllAdmins = `-- name: ListAllAdmins :many
+select user_id, granted_at, granted_by from admins a order by user_id desc
+`
+
+func (q *Queries) ListAllAdmins(ctx context.Context) ([]Admin, error) {
+	rows, err := q.db.QueryContext(ctx, listAllAdmins)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Admin
+	for rows.Next() {
+		var i Admin
+		if err := rows.Scan(&i.UserID, &i.GrantedAt, &i.GrantedBy); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllApiKeys = `-- name: ListAllApiKeys :many
 select id, value, created_at, created_by, disabled_at, disabled_by, description from api_keys order by created_by, created_at desc
 `

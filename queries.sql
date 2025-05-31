@@ -413,3 +413,6 @@ update note_paths
    set graph_position_x = ?
      , graph_position_y = ?
  where id = ?;
+
+-- name: ListAllAdmins :many
+select * from admins a order by user_id desc;
