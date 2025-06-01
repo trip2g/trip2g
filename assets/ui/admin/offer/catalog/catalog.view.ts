@@ -26,8 +26,14 @@ namespace $.$$ {
 		@$mol_mem
 		spreads(): any {
 			return {
+				add: this.AddForm(),
 				...this.data().mapKeys( key => this.Content( key ) )
 			}
+		}
+
+		@$mol_mem
+		override spread_ids_filtered() {
+			return this.spread_ids().filter( id => id !== 'add' )
 		}
 
 		row( id: any ) {

@@ -2,8 +2,14 @@ $trip2g_admin_offer_catalog $mol_book2_catalog
 	menu_title \Offers
 	param \id
 	Empty $mol_status
+	menu_tools /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+		<= Spread_close
 	Content* $trip2g_admin_offer_show
 		offer_id <= row_id* 0
+	AddForm $trip2g_admin_offer_create
 	menu_link_content* / <= OfferItem* $mol_view
 		sub /
 			<= Rows* $mol_row

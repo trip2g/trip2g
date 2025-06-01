@@ -1,0 +1,37 @@
+$trip2g_admin_offer_create $mol_page
+	title \Create Offer
+	OfferView $mol_view
+		sub /
+			<= OfferPublicId_labeler $mol_labeler
+				title \Public ID
+				Content <= OfferPublicId $trip2g_admin_cell
+					content <= offer_public_id? \
+	body /
+		<= Form $mol_form
+			body /
+				<= Lifetime_field $mol_form_field
+					name \Lifetime
+					bid <= lifetime_bid \
+					Content <= lifetime_control $mol_string
+						value? <=> lifetime? \
+				<= PriceUsd_field $mol_form_field
+					name \Price USD
+					bid <= price_usd_bid \
+					Content <= price_usd_control $mol_number
+						value? <=> price_usd? 0
+				<= StartsAt_field $mol_form_field
+					name \Starts At
+					bid <= starts_at_bid \
+					Content <= starts_at_control $mol_date
+						value_moment? <=> starts_at_moment? null
+				<= EndsAt_field $mol_form_field
+					name \Ends At
+					bid <= ends_at_bid \
+					Content <= ends_at_control $mol_date
+						value_moment? <=> ends_at_moment? null
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \
