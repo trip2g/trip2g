@@ -12804,27 +12804,20 @@ func (ec *executionContext) unmarshalInputCreateOfferInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"publicId", "lifeTime", "priceUSD", "startsAt", "endsAt", "subgraphIds"}
+	fieldsInOrder := [...]string{"lifetime", "priceUSD", "startsAt", "endsAt", "subgraphIds"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "publicId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publicId"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PublicID = data
-		case "lifeTime":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifeTime"))
+		case "lifetime":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifetime"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.LifeTime = data
+			it.Lifetime = data
 		case "priceUSD":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priceUSD"))
 			data, err := ec.unmarshalNFloat2float64(ctx, v)
@@ -13219,7 +13212,7 @@ func (ec *executionContext) unmarshalInputUpdateOfferInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "publicId", "lifeTime", "priceUSD", "startsAt", "endsAt", "subgraphIds"}
+	fieldsInOrder := [...]string{"id", "lifetime", "priceUSD", "startsAt", "endsAt", "subgraphIds"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13233,20 +13226,13 @@ func (ec *executionContext) unmarshalInputUpdateOfferInput(ctx context.Context, 
 				return it, err
 			}
 			it.ID = data
-		case "publicId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publicId"))
+		case "lifetime":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifetime"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.PublicID = data
-		case "lifeTime":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifeTime"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.LifeTime = data
+			it.Lifetime = data
 		case "priceUSD":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priceUSD"))
 			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)

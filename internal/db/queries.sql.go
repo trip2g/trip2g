@@ -10,6 +10,8 @@ import (
 	"database/sql"
 	"strings"
 	"time"
+
+	"trip2g/internal/model"
 )
 
 const acmeCertByKey = `-- name: AcmeCertByKey :one
@@ -520,6 +522,15 @@ func (q *Queries) DeleteOffer(ctx context.Context, id int64) (Offer, error) {
 	return i, err
 }
 
+const deleteOfferSubgraphs = `-- name: DeleteOfferSubgraphs :exec
+delete from offer_subgraphs where offer_id = ?
+`
+
+func (q *Queries) DeleteOfferSubgraphs(ctx context.Context, offerID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteOfferSubgraphs, offerID)
+	return err
+}
+
 const deleteSignInCodesByUserID = `-- name: DeleteSignInCodesByUserID :exec
 delete from sign_in_codes
  where user_id = ?
@@ -722,6 +733,56 @@ type InsertNoteVersionParams struct {
 
 func (q *Queries) InsertNoteVersion(ctx context.Context, arg InsertNoteVersionParams) error {
 	_, err := q.db.ExecContext(ctx, insertNoteVersion, arg.PathID, arg.Version, arg.Content)
+	return err
+}
+
+const insertOffer = `-- name: InsertOffer :one
+insert into offers (public_id, lifetime, price_usd, starts_at, ends_at)
+values (?, ?, ?, ?, ?)
+returning id, public_id, created_at, lifetime, price_usd, starts_at, ends_at
+`
+
+type InsertOfferParams struct {
+	PublicID string          `json:"public_id"`
+	Lifetime *model.Lifetime `json:"lifetime"`
+	PriceUsd sql.NullFloat64 `json:"price_usd"`
+	StartsAt sql.NullTime    `json:"starts_at"`
+	EndsAt   sql.NullTime    `json:"ends_at"`
+}
+
+func (q *Queries) InsertOffer(ctx context.Context, arg InsertOfferParams) (Offer, error) {
+	row := q.db.QueryRowContext(ctx, insertOffer,
+		arg.PublicID,
+		arg.Lifetime,
+		arg.PriceUsd,
+		arg.StartsAt,
+		arg.EndsAt,
+	)
+	var i Offer
+	err := row.Scan(
+		&i.ID,
+		&i.PublicID,
+		&i.CreatedAt,
+		&i.Lifetime,
+		&i.PriceUsd,
+		&i.StartsAt,
+		&i.EndsAt,
+	)
+	return i, err
+}
+
+const insertOfferSubgraph = `-- name: InsertOfferSubgraph :exec
+insert into offer_subgraphs (offer_id, subgraph_id)
+values (?, ?)
+`
+
+type InsertOfferSubgraphParams struct {
+	OfferID    int64 `json:"offer_id"`
+	SubgraphID int64 `json:"subgraph_id"`
+}
+
+func (q *Queries) InsertOfferSubgraph(ctx context.Context, arg InsertOfferSubgraphParams) error {
+	_, err := q.db.ExecContext(ctx, insertOfferSubgraph, arg.OfferID, arg.SubgraphID)
 	return err
 }
 
@@ -1777,6 +1838,45 @@ type UpdateNoteGraphPositionByPathIDParams struct {
 func (q *Queries) UpdateNoteGraphPositionByPathID(ctx context.Context, arg UpdateNoteGraphPositionByPathIDParams) error {
 	_, err := q.db.ExecContext(ctx, updateNoteGraphPositionByPathID, arg.GraphPositionX, arg.GraphPositionY, arg.ID)
 	return err
+}
+
+const updateOffer = `-- name: UpdateOffer :one
+update offers
+   set lifetime = coalesce(?2, lifetime)
+     , price_usd = coalesce(?3, price_usd)
+     , starts_at = coalesce(?4, starts_at)
+     , ends_at = coalesce(?5, ends_at)
+ where id = ?
+returning id, public_id, created_at, lifetime, price_usd, starts_at, ends_at
+`
+
+type UpdateOfferParams struct {
+	Lifetime *model.Lifetime `json:"lifetime"`
+	PriceUsd sql.NullFloat64 `json:"price_usd"`
+	StartsAt sql.NullTime    `json:"starts_at"`
+	EndsAt   sql.NullTime    `json:"ends_at"`
+	ID       int64           `json:"id"`
+}
+
+func (q *Queries) UpdateOffer(ctx context.Context, arg UpdateOfferParams) (Offer, error) {
+	row := q.db.QueryRowContext(ctx, updateOffer,
+		arg.Lifetime,
+		arg.PriceUsd,
+		arg.StartsAt,
+		arg.EndsAt,
+		arg.ID,
+	)
+	var i Offer
+	err := row.Scan(
+		&i.ID,
+		&i.PublicID,
+		&i.CreatedAt,
+		&i.Lifetime,
+		&i.PriceUsd,
+		&i.StartsAt,
+		&i.EndsAt,
+	)
+	return i, err
 }
 
 const updatePurchaseStatus = `-- name: UpdatePurchaseStatus :exec

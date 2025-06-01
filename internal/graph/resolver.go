@@ -6,11 +6,13 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
+	"trip2g/internal/case/admin/createoffer"
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
+	"trip2g/internal/case/admin/updateoffer"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
@@ -100,4 +102,6 @@ type Env interface {
 	createrelease.Env
 	makereleaselive.Env
 	updatenotegraphpositions.Env
+	createoffer.Env
+	updateoffer.Env
 }

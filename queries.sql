@@ -422,3 +422,24 @@ select subgraph_id
 
 -- name: ListAllOffers :many
 select * from offers order by id;
+
+-- name: InsertOffer :one
+insert into offers (public_id, lifetime, price_usd, starts_at, ends_at)
+values (?, ?, ?, ?, ?)
+returning *;
+
+-- name: InsertOfferSubgraph :exec
+insert into offer_subgraphs (offer_id, subgraph_id)
+values (?, ?);
+
+-- name: UpdateOffer :one
+update offers
+   set lifetime = coalesce(sqlc.narg(lifetime), lifetime)
+     , price_usd = coalesce(sqlc.narg(price_usd), price_usd)
+     , starts_at = coalesce(sqlc.narg(starts_at), starts_at)
+     , ends_at = coalesce(sqlc.narg(ends_at), ends_at)
+ where id = ?
+returning *;
+
+-- name: DeleteOfferSubgraphs :exec
+delete from offer_subgraphs where offer_id = ?;

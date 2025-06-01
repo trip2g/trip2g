@@ -151,8 +151,7 @@ type CreateAPIKeyPayload struct {
 func (CreateAPIKeyPayload) IsCreateAPIKeyOrErrorPayload() {}
 
 type CreateOfferInput struct {
-	PublicID    string     `json:"publicId"`
-	LifeTime    *string    `json:"lifeTime,omitempty"`
+	Lifetime    *string    `json:"lifetime,omitempty"`
 	PriceUsd    float64    `json:"priceUSD"`
 	StartsAt    *time.Time `json:"startsAt,omitempty"`
 	EndsAt      *time.Time `json:"endsAt,omitempty"`
@@ -339,8 +338,7 @@ func (UpdateNoteGraphPositionsPayload) IsUpdateNoteGraphPositionsOrErrorPayload(
 
 type UpdateOfferInput struct {
 	ID          int64      `json:"id"`
-	PublicID    *string    `json:"publicId,omitempty"`
-	LifeTime    *string    `json:"lifeTime,omitempty"`
+	Lifetime    *string    `json:"lifetime,omitempty"`
 	PriceUsd    *float64   `json:"priceUSD,omitempty"`
 	StartsAt    *time.Time `json:"startsAt,omitempty"`
 	EndsAt      *time.Time `json:"endsAt,omitempty"`

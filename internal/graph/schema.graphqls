@@ -521,8 +521,7 @@ union UpdateNoteGraphPositionsOrErrorPayload = UpdateNoteGraphPositionsPayload |
 #
 
 input CreateOfferInput {
-  publicId: String!
-  lifeTime: String
+  lifetime: String
   priceUSD: Float!
   startsAt: Time
   endsAt: Time
@@ -541,8 +540,7 @@ union CreateOfferOrErrorPayload = CreateOfferPayload | ErrorPayload
 
 input UpdateOfferInput {
   id: Int64!
-  publicId: String
-  lifeTime: String
+  lifetime: String
   priceUSD: Float
   startsAt: Time
   endsAt: Time

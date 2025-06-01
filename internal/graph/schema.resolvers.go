@@ -15,11 +15,13 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
+	"trip2g/internal/case/admin/createoffer"
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
+	"trip2g/internal/case/admin/updateoffer"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
@@ -123,12 +125,12 @@ func (r *adminMutationResolver) UpdateUserSubgraphAccess(ctx context.Context, ob
 
 // CreateOffer is the resolver for the createOffer field.
 func (r *adminMutationResolver) CreateOffer(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateOfferInput) (model.CreateOfferOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: CreateOffer - createOffer"))
+	return createoffer.Resolve(ctx, r.env(ctx), input)
 }
 
 // UpdateOffer is the resolver for the updateOffer field.
 func (r *adminMutationResolver) UpdateOffer(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateOfferInput) (model.UpdateOfferOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: UpdateOffer - updateOffer"))
+	return updateoffer.Resolve(ctx, r.env(ctx), input)
 }
 
 // UnbanUser is the resolver for the unbanUser field.
