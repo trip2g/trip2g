@@ -1,3 +1,3 @@
-$trip2g_admin_select_subgraph $mol_select
+$trip2g_admin_subgraph_select $mol_select
 	Filter null
 	number_value? null number | null

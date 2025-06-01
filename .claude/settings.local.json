@@ -15,7 +15,9 @@
       "Bash(rg:*)",
       "Bash(/home/alexes/.nvm/versions/node/v20.16.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-linux/rg \"CreateOffer.*func\" /home/alexes/projects2/trip2g/internal/graph/schema.resolvers.go)",
       "Bash(sed:*)",
-      "Bash(go run:*)"
+      "Bash(go run:*)",
+      "Bash(touch:*)",
+      "Bash(cp:*)"
     ],
     "deny": []
   }
