@@ -1,0 +1,5 @@
+$trip2g_admin_offer_show $mol_page
+	offer_id? 0
+	title \Offer
+	body /
+		\TODO

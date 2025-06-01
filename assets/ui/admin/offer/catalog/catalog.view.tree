@@ -1,0 +1,40 @@
+$trip2g_admin_offer_catalog $mol_book2_catalog
+	menu_title \Offers
+	param \id
+	Empty $mol_status
+	Content* $trip2g_admin_offer_show
+		offer_id <= row_id* 0
+	menu_link_content* / <= OfferItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Row_id_labeler* $mol_labeler
+						title \ID
+						Content <= Row_id* $trip2g_admin_cell
+							content <= row_id_string* \
+					<= Row_public_id_labeler* $mol_labeler
+						title \Public ID
+						Content <= Row_public_id* $trip2g_admin_cell
+							content <= row_public_id* \public_id
+					<= Row_created_at_labeler* $mol_labeler
+						title \Created At
+						Content <= Row_created_at* $trip2g_admin_cell
+							content <= row_created_at* \created_at
+					<= Row_price_usd_labeler* $mol_labeler
+						title \Price USD
+						Content <= Row_price_usd* $trip2g_admin_cell
+							content <= row_price_usd* \price_usd
+					<= Row_lifetime_labeler* $mol_labeler
+						title \Lifetime
+						Content <= Row_lifetime* $trip2g_admin_cell
+							content <= row_lifetime* \lifetime
+					<= Row_starts_at_labeler* $mol_labeler
+						title \Starts At
+						Content <= Row_starts_at* $trip2g_admin_cell
+							content <= row_starts_at* \starts_at
+					<= Row_ends_at_labeler* $mol_labeler
+						title \Ends At
+						Content <= Row_ends_at* $trip2g_admin_cell
+							content <= row_ends_at* \ends_at
