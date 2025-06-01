@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
 
@@ -19,6 +20,10 @@ type BanUserOrErrorPayload interface {
 
 type CreateAPIKeyOrErrorPayload interface {
 	IsCreateAPIKeyOrErrorPayload()
+}
+
+type CreateOfferOrErrorPayload interface {
+	IsCreateOfferOrErrorPayload()
 }
 
 type CreatePaymentLinkOrErrorPayload interface {
@@ -61,6 +66,10 @@ type UpdateNoteGraphPositionsOrErrorPayload interface {
 	IsUpdateNoteGraphPositionsOrErrorPayload()
 }
 
+type UpdateOfferOrErrorPayload interface {
+	IsUpdateOfferOrErrorPayload()
+}
+
 type UpdateSubgraphOrErrorPayload interface {
 	IsUpdateSubgraphOrErrorPayload()
 }
@@ -79,7 +88,7 @@ type AdminAdminsConnection struct {
 
 type AdminAPIKeyLogsConnection struct {
 	Nodes    []db.ListApiKeyLogsByApiKeyIDRow `json:"nodes"`
-	APIKeyID *int                             `json:"-"`
+	APIKeyID *int64                           `json:"-"`
 }
 
 type AdminAPIKeysConnection struct {
@@ -88,6 +97,10 @@ type AdminAPIKeysConnection struct {
 
 type AdminLatestNoteViewsConnection struct {
 	Nodes []model.NoteView `json:"nodes"`
+}
+
+type AdminOffersConnection struct {
+	Nodes []db.Offer `json:"nodes"`
 }
 
 type AdminReleasesConnection struct {
@@ -111,16 +124,16 @@ type AdminUsersConnection struct {
 }
 
 type APIKeyLogsFilterInput struct {
-	APIKeyID *int `json:"apiKeyId,omitempty"`
+	APIKeyID *int64 `json:"apiKeyId,omitempty"`
 }
 
 type BanUserInput struct {
-	UserID int    `json:"userId"`
+	UserID int64  `json:"userId"`
 	Reason string `json:"reason"`
 }
 
 type BanUserPayload struct {
-	UserID int      `json:"userId"`
+	UserID int64    `json:"userId"`
 	User   *db.User `json:"user"`
 }
 
@@ -136,6 +149,21 @@ type CreateAPIKeyPayload struct {
 }
 
 func (CreateAPIKeyPayload) IsCreateAPIKeyOrErrorPayload() {}
+
+type CreateOfferInput struct {
+	PublicID    string     `json:"publicId"`
+	LifeTime    *string    `json:"lifeTime,omitempty"`
+	PriceUsd    float64    `json:"priceUSD"`
+	StartsAt    *time.Time `json:"startsAt,omitempty"`
+	EndsAt      *time.Time `json:"endsAt,omitempty"`
+	SubgraphIds []int64    `json:"subgraphIds"`
+}
+
+type CreateOfferPayload struct {
+	Offer *db.Offer `json:"offer"`
+}
+
+func (CreateOfferPayload) IsCreateOfferOrErrorPayload() {}
 
 type CreatePaymentLinkInput struct {
 	PaymentType PaymentType `json:"paymentType"`
@@ -153,7 +181,7 @@ func (CreatePaymentLinkPayload) IsCreatePaymentLinkOrErrorPayload() {}
 
 type CreateReleaseInput struct {
 	Title             string `json:"title"`
-	HomeNoteVersionID *int   `json:"homeNoteVersionId,omitempty"`
+	HomeNoteVersionID *int64 `json:"homeNoteVersionId,omitempty"`
 }
 
 type CreateReleasePayload struct {
@@ -163,7 +191,7 @@ type CreateReleasePayload struct {
 func (CreateReleasePayload) IsCreateReleaseOrErrorPayload() {}
 
 type DisableAPIKeyInput struct {
-	ID int `json:"id"`
+	ID int64 `json:"id"`
 }
 
 type DisableAPIKeyPayload struct {
@@ -207,13 +235,17 @@ func (ErrorPayload) IsMakeReleaseLiveOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateNoteGraphPositionsOrErrorPayload() {}
 
+func (ErrorPayload) IsCreateOfferOrErrorPayload() {}
+
+func (ErrorPayload) IsUpdateOfferOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
 type MakeReleaseLiveInput struct {
-	ID int `json:"id"`
+	ID int64 `json:"id"`
 }
 
 type MakeReleaseLivePayload struct {
@@ -277,18 +309,18 @@ type SignOutPayload struct {
 func (SignOutPayload) IsSignOutOrErrorPayload() {}
 
 type UnbanUserInput struct {
-	UserID int `json:"userId"`
+	UserID int64 `json:"userId"`
 }
 
 type UnbanUserPayload struct {
-	UserID int      `json:"userId"`
+	UserID int64    `json:"userId"`
 	User   *db.User `json:"user"`
 }
 
 func (UnbanUserPayload) IsUnbanUserOrErrorPayload() {}
 
 type UpdateNoteGraphPositionInput struct {
-	PathID int     `json:"pathId"`
+	PathID int64   `json:"pathId"`
 	X      float64 `json:"x"`
 	Y      float64 `json:"y"`
 }
@@ -305,6 +337,22 @@ type UpdateNoteGraphPositionsPayload struct {
 
 func (UpdateNoteGraphPositionsPayload) IsUpdateNoteGraphPositionsOrErrorPayload() {}
 
+type UpdateOfferInput struct {
+	ID          int64      `json:"id"`
+	PublicID    *string    `json:"publicId,omitempty"`
+	LifeTime    *string    `json:"lifeTime,omitempty"`
+	PriceUsd    *float64   `json:"priceUSD,omitempty"`
+	StartsAt    *time.Time `json:"startsAt,omitempty"`
+	EndsAt      *time.Time `json:"endsAt,omitempty"`
+	SubgraphIds []int64    `json:"subgraphIds,omitempty"`
+}
+
+type UpdateOfferPayload struct {
+	Offer *db.Offer `json:"offer"`
+}
+
+func (UpdateOfferPayload) IsUpdateOfferOrErrorPayload() {}
+
 type UpdateSubgraphPayload struct {
 	Subgraph *db.Subgraph `json:"subgraph"`
 }
@@ -319,7 +367,7 @@ func (UpdateUserSubgraphAccessPayload) IsUpdateUserSubgraphAccessOrErrorPayload(
 
 type UploadNoteAssetInput struct {
 	File         graphql.Upload `json:"file"`
-	NoteID       int            `json:"noteId"`
+	NoteID       int64          `json:"noteId"`
 	Sha256Hash   string         `json:"sha256Hash"`
 	Path         string         `json:"path"`
 	AbsolutePath string         `json:"absolutePath"`

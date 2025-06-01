@@ -140,7 +140,7 @@ type AdminApiKeyLog @goModel(model: "trip2g/internal/db.ListApiKeyLogsByApiKeyID
 }
 
 type AdminApiKeyLogsConnection
-  @goExtraField(name: "APIKeyID", type: "*int") {
+  @goExtraField(name: "APIKeyID", type: "*int64") {
   nodes: [AdminApiKeyLog!]! @goField(forceResolver: true)
 }
 
@@ -162,6 +162,23 @@ type AdminAdminsConnection {
   nodes: [Admin!]! @goField(forceResolver: true)
 }
 
+type AdminOffer @goModel(model: "trip2g/internal/db.Offer") {
+  id: Int64!
+  publicId: String!
+  createdAt: Time!
+  lifetime: String
+  priceUSD: Float!
+  startsAt: Time
+  endsAt: Time
+
+  subgraphIds: [Int64!]!
+  subgraphs: [AdminSubgraph!]!
+}
+
+type AdminOffersConnection {
+  nodes: [AdminOffer!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -171,6 +188,7 @@ type AdminQuery {
   allApiKeys: AdminApiKeysConnection!
   allReleases: AdminReleasesConnection!
   allAdmins: AdminAdminsConnection!
+  allOffers: AdminOffersConnection!
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
 
@@ -498,9 +516,51 @@ type UpdateNoteGraphPositionsPayload
 
 union UpdateNoteGraphPositionsOrErrorPayload = UpdateNoteGraphPositionsPayload | ErrorPayload
 
+#
+# createOffer
+#
+
+input CreateOfferInput {
+  publicId: String!
+  lifeTime: String
+  priceUSD: Float!
+  startsAt: Time
+  endsAt: Time
+  subgraphIds: [Int64!]!
+}
+
+type CreateOfferPayload {
+  offer: AdminOffer!
+}
+
+union CreateOfferOrErrorPayload = CreateOfferPayload | ErrorPayload
+
+#
+# updateOffer
+#
+
+input UpdateOfferInput {
+  id: Int64!
+  publicId: String
+  lifeTime: String
+  priceUSD: Float
+  startsAt: Time
+  endsAt: Time
+  subgraphIds: [Int64!]
+}
+
+type UpdateOfferPayload {
+  offer: AdminOffer!
+}
+
+union UpdateOfferOrErrorPayload = UpdateOfferPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
+
+  createOffer(input: CreateOfferInput!): CreateOfferOrErrorPayload!
+  updateOffer(input: UpdateOfferInput!): UpdateOfferOrErrorPayload!
 
   unbanUser(input: UnbanUserInput!): UnbanUserOrErrorPayload!
   banUser(input: BanUserInput!): BanUserOrErrorPayload!

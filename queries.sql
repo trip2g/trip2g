@@ -83,9 +83,6 @@ select user_id
 delete from sign_in_codes
  where user_id = ?;
 
--- name: AllOffers :many
-select * from offers order by id;
-
 -- name: DeleteOffer :one
 update offers
    set ends_at = datetime('now')
@@ -416,3 +413,12 @@ update note_paths
 
 -- name: ListAllAdmins :many
 select * from admins a order by user_id desc;
+
+-- name: ListSubgraphIDsByOfferID :many
+select subgraph_id
+  from offer_subgraphs
+ where offer_id = ?
+ order by subgraph_id;
+
+-- name: ListAllOffers :many
+select * from offers order by id;

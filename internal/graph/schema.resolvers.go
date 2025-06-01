@@ -36,8 +36,8 @@ import (
 )
 
 // ID is the resolver for the id field.
-func (r *adminResolver) ID(ctx context.Context, obj *db.Admin) (int, error) {
-	return int(obj.UserID), nil
+func (r *adminResolver) ID(ctx context.Context, obj *db.Admin) (int64, error) {
+	return obj.UserID, nil
 }
 
 // User is the resolver for the user field.
@@ -121,6 +121,16 @@ func (r *adminMutationResolver) UpdateUserSubgraphAccess(ctx context.Context, ob
 	return input.Resolve(ctx, r.env(ctx))
 }
 
+// CreateOffer is the resolver for the createOffer field.
+func (r *adminMutationResolver) CreateOffer(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateOfferInput) (model.CreateOfferOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: CreateOffer - createOffer"))
+}
+
+// UpdateOffer is the resolver for the updateOffer field.
+func (r *adminMutationResolver) UpdateOffer(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateOfferInput) (model.UpdateOfferOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: UpdateOffer - updateOffer"))
+}
+
 // UnbanUser is the resolver for the unbanUser field.
 func (r *adminMutationResolver) UnbanUser(ctx context.Context, obj *appmodel.AdminMutation, input model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error) {
 	return unbanuser.Resolve(ctx, r.env(ctx), input)
@@ -154,6 +164,50 @@ func (r *adminMutationResolver) MakeReleaseLive(ctx context.Context, obj *appmod
 // UpdateNoteGraphPositions is the resolver for the updateNoteGraphPositions field.
 func (r *adminMutationResolver) UpdateNoteGraphPositions(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateNoteGraphPositionsInput) (model.UpdateNoteGraphPositionsOrErrorPayload, error) {
 	return updatenotegraphpositions.Resolve(ctx, r.env(ctx), input)
+}
+
+// LifeTime is the resolver for the lifetime field.
+func (r *adminOfferResolver) Lifetime(ctx context.Context, obj *db.Offer) (*string, error) {
+	if obj.Lifetime != nil {
+		v := obj.Lifetime.String()
+		return &v, nil
+	}
+
+	return nil, nil
+}
+
+// PriceUsd is the resolver for the priceUSD field.
+func (r *adminOfferResolver) PriceUsd(ctx context.Context, obj *db.Offer) (float64, error) {
+	if !obj.PriceUsd.Valid {
+		return -1, nil
+	}
+
+	return obj.PriceUsd.Float64, nil
+}
+
+// StartsAt is the resolver for the startsAt field.
+func (r *adminOfferResolver) StartsAt(ctx context.Context, obj *db.Offer) (*time.Time, error) {
+	return db.ToTimePtr(obj.StartsAt), nil
+}
+
+// EndsAt is the resolver for the endsAt field.
+func (r *adminOfferResolver) EndsAt(ctx context.Context, obj *db.Offer) (*time.Time, error) {
+	return db.ToTimePtr(obj.EndsAt), nil
+}
+
+// SubgraphIds is the resolver for the subgraphIds field.
+func (r *adminOfferResolver) SubgraphIds(ctx context.Context, obj *db.Offer) ([]int64, error) {
+	return r.env(ctx).ListSubgraphIDsByOfferID(ctx, obj.ID)
+}
+
+// Subgraphs is the resolver for the subgraphs field.
+func (r *adminOfferResolver) Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subgraph, error) {
+	return r.env(ctx).ListSubgraphsByOfferID(ctx, obj.ID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminOffersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminOffersConnection) ([]db.Offer, error) {
+	return r.env(ctx).ListAllOffers(ctx)
 }
 
 // AllUsers is the resolver for the allUsers field.
@@ -196,13 +250,18 @@ func (r *adminQueryResolver) AllAdmins(ctx context.Context, obj *appmodel.AdminQ
 	return &model.AdminAdminsConnection{}, nil
 }
 
+// AllOffers is the resolver for the allOffers field.
+func (r *adminQueryResolver) AllOffers(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminOffersConnection, error) {
+	return &model.AdminOffersConnection{}, nil
+}
+
 // APIKeyLogs is the resolver for the apiKeyLogs field.
 func (r *adminQueryResolver) APIKeyLogs(ctx context.Context, obj *appmodel.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error) {
 	return &model.AdminAPIKeyLogsConnection{APIKeyID: filter.APIKeyID}, nil
 }
 
 // Subgraph is the resolver for the subgraph field.
-func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *appmodel.AdminQuery, id int) (*db.Subgraph, error) {
+func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.Subgraph, error) {
 	return resolveOne[db.Subgraph](ctx, int64(id), r.env(ctx).SubgraphByID)
 }
 
@@ -214,15 +273,14 @@ func (r *adminQueryResolver) NoteView(ctx context.Context, obj *appmodel.AdminQu
 }
 
 // UserSubgraphAccess is the resolver for the userSubgraphAccess field.
-func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *appmodel.AdminQuery, id int) (*db.UserSubgraphAccess, error) {
+func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.UserSubgraphAccess, error) {
 	return resolveOne[db.UserSubgraphAccess](ctx, int64(id), r.env(ctx).UserSubgraphAccessByID)
 }
 
 // HomeNoteVersionID is the resolver for the homeNoteVersionId field.
-func (r *adminReleaseResolver) HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int, error) {
+func (r *adminReleaseResolver) HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int64, error) {
 	if obj.HomeNoteVersionID.Valid {
-		v := int(obj.HomeNoteVersionID.Int64)
-		return &v, nil
+		return &obj.HomeNoteVersionID.Int64, nil
 	}
 
 	return nil, nil
@@ -432,8 +490,8 @@ func (r *purchaseResolver) Successful(ctx context.Context, obj *db.Purchase) (bo
 }
 
 // ID is the resolver for the id field.
-func (r *pushedNoteResolver) ID(ctx context.Context, obj *appmodel.NoteView) (int, error) {
-	return int(obj.VersionID), nil
+func (r *pushedNoteResolver) ID(ctx context.Context, obj *appmodel.NoteView) (int64, error) {
+	return obj.VersionID, nil
 }
 
 // Assets is the resolver for the assets field.
@@ -661,6 +719,14 @@ func (r *Resolver) AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnecti
 // AdminMutation returns AdminMutationResolver implementation.
 func (r *Resolver) AdminMutation() AdminMutationResolver { return &adminMutationResolver{r} }
 
+// AdminOffer returns AdminOfferResolver implementation.
+func (r *Resolver) AdminOffer() AdminOfferResolver { return &adminOfferResolver{r} }
+
+// AdminOffersConnection returns AdminOffersConnectionResolver implementation.
+func (r *Resolver) AdminOffersConnection() AdminOffersConnectionResolver {
+	return &adminOffersConnectionResolver{r}
+}
+
 // AdminQuery returns AdminQueryResolver implementation.
 func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
 
@@ -759,6 +825,8 @@ type adminApiKeyLogsConnectionResolver struct{ *Resolver }
 type adminApiKeysConnectionResolver struct{ *Resolver }
 type adminLatestNoteViewsConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
+type adminOfferResolver struct{ *Resolver }
+type adminOffersConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }
 type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }

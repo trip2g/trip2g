@@ -57,3 +57,7 @@ func (lt Lifetime) Duration() (time.Duration, error) {
 		return 0, ErrUnknownLifetimeUnit
 	}
 }
+
+func (lt Lifetime) String() string {
+	return string(lt)
+}

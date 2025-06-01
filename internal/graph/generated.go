@@ -51,6 +51,8 @@ type ResolverRoot interface {
 	AdminApiKeysConnection() AdminApiKeysConnectionResolver
 	AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnectionResolver
 	AdminMutation() AdminMutationResolver
+	AdminOffer() AdminOfferResolver
+	AdminOffersConnection() AdminOffersConnectionResolver
 	AdminQuery() AdminQueryResolver
 	AdminRelease() AdminReleaseResolver
 	AdminReleasesConnection() AdminReleasesConnectionResolver
@@ -123,13 +125,31 @@ type ComplexityRoot struct {
 	AdminMutation struct {
 		BanUser                  func(childComplexity int, input model.BanUserInput) int
 		CreateAPIKey             func(childComplexity int, input model.CreateAPIKeyInput) int
+		CreateOffer              func(childComplexity int, input model.CreateOfferInput) int
 		CreateRelease            func(childComplexity int, input model.CreateReleaseInput) int
 		DisableAPIKey            func(childComplexity int, input model.DisableAPIKeyInput) int
 		MakeReleaseLive          func(childComplexity int, input model.MakeReleaseLiveInput) int
 		UnbanUser                func(childComplexity int, input model.UnbanUserInput) int
 		UpdateNoteGraphPositions func(childComplexity int, input model.UpdateNoteGraphPositionsInput) int
+		UpdateOffer              func(childComplexity int, input model.UpdateOfferInput) int
 		UpdateSubgraph           func(childComplexity int, input updatesubgraph.Request) int
 		UpdateUserSubgraphAccess func(childComplexity int, input updateusersubgraphaccess.Request) int
+	}
+
+	AdminOffer struct {
+		CreatedAt   func(childComplexity int) int
+		EndsAt      func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Lifetime    func(childComplexity int) int
+		PriceUsd    func(childComplexity int) int
+		PublicID    func(childComplexity int) int
+		StartsAt    func(childComplexity int) int
+		SubgraphIds func(childComplexity int) int
+		Subgraphs   func(childComplexity int) int
+	}
+
+	AdminOffersConnection struct {
+		Nodes func(childComplexity int) int
 	}
 
 	AdminQuery struct {
@@ -137,14 +157,15 @@ type ComplexityRoot struct {
 		AllAPIKeys              func(childComplexity int) int
 		AllAdmins               func(childComplexity int) int
 		AllLatestNoteViews      func(childComplexity int) int
+		AllOffers               func(childComplexity int) int
 		AllReleases             func(childComplexity int) int
 		AllSubgraphs            func(childComplexity int) int
 		AllUserSubgraphAccesses func(childComplexity int) int
 		AllUserUserBans         func(childComplexity int) int
 		AllUsers                func(childComplexity int) int
 		NoteView                func(childComplexity int, id string) int
-		Subgraph                func(childComplexity int, id int) int
-		UserSubgraphAccess      func(childComplexity int, id int) int
+		Subgraph                func(childComplexity int, id int64) int
+		UserSubgraphAccess      func(childComplexity int, id int64) int
 	}
 
 	AdminRelease struct {
@@ -209,6 +230,10 @@ type ComplexityRoot struct {
 	CreateApiKeyPayload struct {
 		APIKey func(childComplexity int) int
 		Value  func(childComplexity int) int
+	}
+
+	CreateOfferPayload struct {
+		Offer func(childComplexity int) int
 	}
 
 	CreatePaymentLinkPayload struct {
@@ -331,6 +356,10 @@ type ComplexityRoot struct {
 		UpdatedNoteViews func(childComplexity int) int
 	}
 
+	UpdateOfferPayload struct {
+		Offer func(childComplexity int) int
+	}
+
 	UpdateSubgraphPayload struct {
 		Subgraph func(childComplexity int) int
 	}
@@ -378,7 +407,7 @@ type ComplexityRoot struct {
 }
 
 type AdminResolver interface {
-	ID(ctx context.Context, obj *db.Admin) (int, error)
+	ID(ctx context.Context, obj *db.Admin) (int64, error)
 	User(ctx context.Context, obj *db.Admin) (*db.User, error)
 
 	GrantedBy(ctx context.Context, obj *db.Admin) (*db.User, error)
@@ -403,6 +432,8 @@ type AdminLatestNoteViewsConnectionResolver interface {
 type AdminMutationResolver interface {
 	UpdateSubgraph(ctx context.Context, obj *model1.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error)
 	UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error)
+	CreateOffer(ctx context.Context, obj *model1.AdminMutation, input model.CreateOfferInput) (model.CreateOfferOrErrorPayload, error)
+	UpdateOffer(ctx context.Context, obj *model1.AdminMutation, input model.UpdateOfferInput) (model.UpdateOfferOrErrorPayload, error)
 	UnbanUser(ctx context.Context, obj *model1.AdminMutation, input model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error)
 	BanUser(ctx context.Context, obj *model1.AdminMutation, input model.BanUserInput) (model.BanUserOrErrorPayload, error)
 	CreateAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error)
@@ -410,6 +441,17 @@ type AdminMutationResolver interface {
 	CreateRelease(ctx context.Context, obj *model1.AdminMutation, input model.CreateReleaseInput) (model.CreateReleaseOrErrorPayload, error)
 	MakeReleaseLive(ctx context.Context, obj *model1.AdminMutation, input model.MakeReleaseLiveInput) (model.MakeReleaseLiveOrErrorPayload, error)
 	UpdateNoteGraphPositions(ctx context.Context, obj *model1.AdminMutation, input model.UpdateNoteGraphPositionsInput) (model.UpdateNoteGraphPositionsOrErrorPayload, error)
+}
+type AdminOfferResolver interface {
+	Lifetime(ctx context.Context, obj *db.Offer) (*string, error)
+	PriceUsd(ctx context.Context, obj *db.Offer) (float64, error)
+	StartsAt(ctx context.Context, obj *db.Offer) (*time.Time, error)
+	EndsAt(ctx context.Context, obj *db.Offer) (*time.Time, error)
+	SubgraphIds(ctx context.Context, obj *db.Offer) ([]int64, error)
+	Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subgraph, error)
+}
+type AdminOffersConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminOffersConnection) ([]db.Offer, error)
 }
 type AdminQueryResolver interface {
 	AllUsers(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUsersConnection, error)
@@ -420,13 +462,14 @@ type AdminQueryResolver interface {
 	AllAPIKeys(ctx context.Context, obj *model1.AdminQuery) (*model.AdminAPIKeysConnection, error)
 	AllReleases(ctx context.Context, obj *model1.AdminQuery) (*model.AdminReleasesConnection, error)
 	AllAdmins(ctx context.Context, obj *model1.AdminQuery) (*model.AdminAdminsConnection, error)
+	AllOffers(ctx context.Context, obj *model1.AdminQuery) (*model.AdminOffersConnection, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
-	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int) (*db.Subgraph, error)
+	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
-	UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int) (*db.UserSubgraphAccess, error)
+	UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.UserSubgraphAccess, error)
 }
 type AdminReleaseResolver interface {
-	HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int, error)
+	HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int64, error)
 	CreatedBy(ctx context.Context, obj *db.Release) (*db.User, error)
 
 	HomeNote(ctx context.Context, obj *db.Release) (*model1.NoteView, error)
@@ -488,7 +531,7 @@ type PurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
 }
 type PushedNoteResolver interface {
-	ID(ctx context.Context, obj *model1.NoteView) (int, error)
+	ID(ctx context.Context, obj *model1.NoteView) (int64, error)
 
 	Assets(ctx context.Context, obj *model1.NoteView) ([]model.PushedNoteAsset, error)
 }
@@ -690,6 +733,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.CreateAPIKey(childComplexity, args["input"].(model.CreateAPIKeyInput)), true
 
+	case "AdminMutation.createOffer":
+		if e.complexity.AdminMutation.CreateOffer == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_createOffer_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.CreateOffer(childComplexity, args["input"].(model.CreateOfferInput)), true
+
 	case "AdminMutation.createRelease":
 		if e.complexity.AdminMutation.CreateRelease == nil {
 			break
@@ -750,6 +805,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.UpdateNoteGraphPositions(childComplexity, args["input"].(model.UpdateNoteGraphPositionsInput)), true
 
+	case "AdminMutation.updateOffer":
+		if e.complexity.AdminMutation.UpdateOffer == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_updateOffer_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.UpdateOffer(childComplexity, args["input"].(model.UpdateOfferInput)), true
+
 	case "AdminMutation.updateSubgraph":
 		if e.complexity.AdminMutation.UpdateSubgraph == nil {
 			break
@@ -773,6 +840,76 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.UpdateUserSubgraphAccess(childComplexity, args["input"].(updateusersubgraphaccess.Request)), true
+
+	case "AdminOffer.createdAt":
+		if e.complexity.AdminOffer.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminOffer.CreatedAt(childComplexity), true
+
+	case "AdminOffer.endsAt":
+		if e.complexity.AdminOffer.EndsAt == nil {
+			break
+		}
+
+		return e.complexity.AdminOffer.EndsAt(childComplexity), true
+
+	case "AdminOffer.id":
+		if e.complexity.AdminOffer.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminOffer.ID(childComplexity), true
+
+	case "AdminOffer.lifetime":
+		if e.complexity.AdminOffer.Lifetime == nil {
+			break
+		}
+
+		return e.complexity.AdminOffer.Lifetime(childComplexity), true
+
+	case "AdminOffer.priceUSD":
+		if e.complexity.AdminOffer.PriceUsd == nil {
+			break
+		}
+
+		return e.complexity.AdminOffer.PriceUsd(childComplexity), true
+
+	case "AdminOffer.publicId":
+		if e.complexity.AdminOffer.PublicID == nil {
+			break
+		}
+
+		return e.complexity.AdminOffer.PublicID(childComplexity), true
+
+	case "AdminOffer.startsAt":
+		if e.complexity.AdminOffer.StartsAt == nil {
+			break
+		}
+
+		return e.complexity.AdminOffer.StartsAt(childComplexity), true
+
+	case "AdminOffer.subgraphIds":
+		if e.complexity.AdminOffer.SubgraphIds == nil {
+			break
+		}
+
+		return e.complexity.AdminOffer.SubgraphIds(childComplexity), true
+
+	case "AdminOffer.subgraphs":
+		if e.complexity.AdminOffer.Subgraphs == nil {
+			break
+		}
+
+		return e.complexity.AdminOffer.Subgraphs(childComplexity), true
+
+	case "AdminOffersConnection.nodes":
+		if e.complexity.AdminOffersConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminOffersConnection.Nodes(childComplexity), true
 
 	case "AdminQuery.apiKeyLogs":
 		if e.complexity.AdminQuery.APIKeyLogs == nil {
@@ -806,6 +943,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AllLatestNoteViews(childComplexity), true
+
+	case "AdminQuery.allOffers":
+		if e.complexity.AdminQuery.AllOffers == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllOffers(childComplexity), true
 
 	case "AdminQuery.allReleases":
 		if e.complexity.AdminQuery.AllReleases == nil {
@@ -864,7 +1008,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.AdminQuery.Subgraph(childComplexity, args["id"].(int)), true
+		return e.complexity.AdminQuery.Subgraph(childComplexity, args["id"].(int64)), true
 
 	case "AdminQuery.userSubgraphAccess":
 		if e.complexity.AdminQuery.UserSubgraphAccess == nil {
@@ -876,7 +1020,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.AdminQuery.UserSubgraphAccess(childComplexity, args["id"].(int)), true
+		return e.complexity.AdminQuery.UserSubgraphAccess(childComplexity, args["id"].(int64)), true
 
 	case "AdminRelease.createdAt":
 		if e.complexity.AdminRelease.CreatedAt == nil {
@@ -1094,6 +1238,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CreateApiKeyPayload.Value(childComplexity), true
+
+	case "CreateOfferPayload.offer":
+		if e.complexity.CreateOfferPayload.Offer == nil {
+			break
+		}
+
+		return e.complexity.CreateOfferPayload.Offer(childComplexity), true
 
 	case "CreatePaymentLinkPayload.redirectUrl":
 		if e.complexity.CreatePaymentLinkPayload.RedirectURL == nil {
@@ -1519,6 +1670,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UpdateNoteGraphPositionsPayload.UpdatedNoteViews(childComplexity), true
 
+	case "UpdateOfferPayload.offer":
+		if e.complexity.UpdateOfferPayload.Offer == nil {
+			break
+		}
+
+		return e.complexity.UpdateOfferPayload.Offer(childComplexity), true
+
 	case "UpdateSubgraphPayload.subgraph":
 		if e.complexity.UpdateSubgraphPayload.Subgraph == nil {
 			break
@@ -1682,6 +1840,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApiKeyLogsFilterInput,
 		ec.unmarshalInputBanUserInput,
 		ec.unmarshalInputCreateApiKeyInput,
+		ec.unmarshalInputCreateOfferInput,
 		ec.unmarshalInputCreatePaymentLinkInput,
 		ec.unmarshalInputCreateReleaseInput,
 		ec.unmarshalInputDisableApiKeyInput,
@@ -1693,6 +1852,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUnbanUserInput,
 		ec.unmarshalInputUpdateNoteGraphPositionInput,
 		ec.unmarshalInputUpdateNoteGraphPositionsInput,
+		ec.unmarshalInputUpdateOfferInput,
 		ec.unmarshalInputUpdateSubgraphInput,
 		ec.unmarshalInputUpdateUserSubgraphAccessInput,
 		ec.unmarshalInputUploadNoteAssetInput,
@@ -1858,6 +2018,29 @@ func (ec *executionContext) field_AdminMutation_createApiKey_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_createOffer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_createOffer_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_createOffer_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateOfferInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateOfferInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOfferInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateOfferInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_createRelease_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1973,6 +2156,29 @@ func (ec *executionContext) field_AdminMutation_updateNoteGraphPositions_argsInp
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_updateOffer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_updateOffer_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_updateOffer_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateOfferInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateOfferInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateOfferInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateOfferInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_updateSubgraph_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2078,13 +2284,13 @@ func (ec *executionContext) field_AdminQuery_subgraph_args(ctx context.Context, 
 func (ec *executionContext) field_AdminQuery_subgraph_argsID(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (int, error) {
+) (int64, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNInt642int(ctx, tmp)
+		return ec.unmarshalNInt642int64(ctx, tmp)
 	}
 
-	var zeroVal int
+	var zeroVal int64
 	return zeroVal, nil
 }
 
@@ -2101,13 +2307,13 @@ func (ec *executionContext) field_AdminQuery_userSubgraphAccess_args(ctx context
 func (ec *executionContext) field_AdminQuery_userSubgraphAccess_argsID(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (int, error) {
+) (int64, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNInt642int(ctx, tmp)
+		return ec.unmarshalNInt642int64(ctx, tmp)
 	}
 
-	var zeroVal int
+	var zeroVal int64
 	return zeroVal, nil
 }
 
@@ -2398,9 +2604,9 @@ func (ec *executionContext) _Admin_id(ctx context.Context, field graphql.Collect
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNInt642int(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Admin_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3321,6 +3527,116 @@ func (ec *executionContext) fieldContext_AdminMutation_updateUserSubgraphAccess(
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_createOffer(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_createOffer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().CreateOffer(rctx, obj, fc.Args["input"].(model.CreateOfferInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CreateOfferOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNCreateOfferOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOfferOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createOffer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateOfferOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createOffer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_updateOffer(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_updateOffer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().UpdateOffer(rctx, obj, fc.Args["input"].(model.UpdateOfferInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.UpdateOfferOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNUpdateOfferOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateOfferOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_updateOffer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UpdateOfferOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_updateOffer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminMutation_unbanUser(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminMutation_unbanUser(ctx, field)
 	if err != nil {
@@ -3702,6 +4018,467 @@ func (ec *executionContext) fieldContext_AdminMutation_updateNoteGraphPositions(
 	if fc.Args, err = ec.field_AdminMutation_updateNoteGraphPositions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOffer_id(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminOffer_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminOffer_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOffer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOffer_publicId(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminOffer_publicId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PublicID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminOffer_publicId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOffer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOffer_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminOffer_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminOffer_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOffer",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOffer_lifetime(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminOffer_lifetime(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminOffer().Lifetime(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminOffer_lifetime(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOffer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOffer_priceUSD(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminOffer_priceUSD(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminOffer().PriceUsd(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminOffer_priceUSD(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOffer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOffer_startsAt(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminOffer_startsAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminOffer().StartsAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminOffer_startsAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOffer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOffer_endsAt(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminOffer_endsAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminOffer().EndsAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminOffer_endsAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOffer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOffer_subgraphIds(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminOffer_subgraphIds(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminOffer().SubgraphIds(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]int64)
+	fc.Result = res
+	return ec.marshalNInt642ᚕint64ᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminOffer_subgraphIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOffer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOffer_subgraphs(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminOffer_subgraphs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminOffer().Subgraphs(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.Subgraph)
+	fc.Result = res
+	return ec.marshalNAdminSubgraph2ᚕtrip2gᚋinternalᚋdbᚐSubgraphᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminOffer_subgraphs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOffer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminSubgraph_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminSubgraph_name(ctx, field)
+			case "color":
+				return ec.fieldContext_AdminSubgraph_color(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminSubgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminOffersConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminOffersConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminOffersConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminOffersConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.Offer)
+	fc.Result = res
+	return ec.marshalNAdminOffer2ᚕtrip2gᚋinternalᚋdbᚐOfferᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminOffersConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminOffersConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminOffer_id(ctx, field)
+			case "publicId":
+				return ec.fieldContext_AdminOffer_publicId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminOffer_createdAt(ctx, field)
+			case "lifetime":
+				return ec.fieldContext_AdminOffer_lifetime(ctx, field)
+			case "priceUSD":
+				return ec.fieldContext_AdminOffer_priceUSD(ctx, field)
+			case "startsAt":
+				return ec.fieldContext_AdminOffer_startsAt(ctx, field)
+			case "endsAt":
+				return ec.fieldContext_AdminOffer_endsAt(ctx, field)
+			case "subgraphIds":
+				return ec.fieldContext_AdminOffer_subgraphIds(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_AdminOffer_subgraphs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminOffer", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -4090,6 +4867,54 @@ func (ec *executionContext) fieldContext_AdminQuery_allAdmins(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_allOffers(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allOffers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllOffers(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminOffersConnection)
+	fc.Result = res
+	return ec.marshalNAdminOffersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminOffersConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allOffers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminOffersConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminOffersConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_apiKeyLogs(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 	if err != nil {
@@ -4163,7 +4988,7 @@ func (ec *executionContext) _AdminQuery_subgraph(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminQuery().Subgraph(rctx, obj, fc.Args["id"].(int))
+		return ec.resolvers.AdminQuery().Subgraph(rctx, obj, fc.Args["id"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4305,7 +5130,7 @@ func (ec *executionContext) _AdminQuery_userSubgraphAccess(ctx context.Context, 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminQuery().UserSubgraphAccess(rctx, obj, fc.Args["id"].(int))
+		return ec.resolvers.AdminQuery().UserSubgraphAccess(rctx, obj, fc.Args["id"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4470,9 +5295,9 @@ func (ec *executionContext) _AdminRelease_homeNoteVersionId(ctx context.Context,
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*int)
+	res := resTmp.(*int64)
 	fc.Result = res
-	return ec.marshalOInt642ᚖint(ctx, field.Selections, res)
+	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminRelease_homeNoteVersionId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5692,9 +6517,9 @@ func (ec *executionContext) _BanUserPayload_userId(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNInt642int(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_BanUserPayload_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5861,6 +6686,70 @@ func (ec *executionContext) fieldContext_CreateApiKeyPayload_apiKey(_ context.Co
 				return ec.fieldContext_AdminApiKey_disabledAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminApiKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CreateOfferPayload_offer(ctx context.Context, field graphql.CollectedField, obj *model.CreateOfferPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreateOfferPayload_offer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Offer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Offer)
+	fc.Result = res
+	return ec.marshalNAdminOffer2ᚖtrip2gᚋinternalᚋdbᚐOffer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreateOfferPayload_offer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateOfferPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminOffer_id(ctx, field)
+			case "publicId":
+				return ec.fieldContext_AdminOffer_publicId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminOffer_createdAt(ctx, field)
+			case "lifetime":
+				return ec.fieldContext_AdminOffer_lifetime(ctx, field)
+			case "priceUSD":
+				return ec.fieldContext_AdminOffer_priceUSD(ctx, field)
+			case "startsAt":
+				return ec.fieldContext_AdminOffer_startsAt(ctx, field)
+			case "endsAt":
+				return ec.fieldContext_AdminOffer_endsAt(ctx, field)
+			case "subgraphIds":
+				return ec.fieldContext_AdminOffer_subgraphIds(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_AdminOffer_subgraphs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminOffer", field.Name)
 		},
 	}
 	return fc, nil
@@ -6673,6 +7562,10 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_updateSubgraph(ctx, field)
 			case "updateUserSubgraphAccess":
 				return ec.fieldContext_AdminMutation_updateUserSubgraphAccess(ctx, field)
+			case "createOffer":
+				return ec.fieldContext_AdminMutation_createOffer(ctx, field)
+			case "updateOffer":
+				return ec.fieldContext_AdminMutation_updateOffer(ctx, field)
 			case "unbanUser":
 				return ec.fieldContext_AdminMutation_unbanUser(ctx, field)
 			case "banUser":
@@ -7735,9 +8628,9 @@ func (ec *executionContext) _PushedNote_id(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNInt642int(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PushedNote_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8093,6 +8986,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allReleases(ctx, field)
 			case "allAdmins":
 				return ec.fieldContext_AdminQuery_allAdmins(ctx, field)
+			case "allOffers":
+				return ec.fieldContext_AdminQuery_allOffers(ctx, field)
 			case "apiKeyLogs":
 				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "subgraph":
@@ -8605,9 +9500,9 @@ func (ec *executionContext) _UnbanUserPayload_userId(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNInt642int(ctx, field.Selections, res)
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_UnbanUserPayload_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -8788,6 +9683,70 @@ func (ec *executionContext) fieldContext_UpdateNoteGraphPositionsPayload_updated
 				return ec.fieldContext_NoteView_isHomePage(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateOfferPayload_offer(ctx context.Context, field graphql.CollectedField, obj *model.UpdateOfferPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpdateOfferPayload_offer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Offer, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Offer)
+	fc.Result = res
+	return ec.marshalNAdminOffer2ᚖtrip2gᚋinternalᚋdbᚐOffer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpdateOfferPayload_offer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateOfferPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminOffer_id(ctx, field)
+			case "publicId":
+				return ec.fieldContext_AdminOffer_publicId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminOffer_createdAt(ctx, field)
+			case "lifetime":
+				return ec.fieldContext_AdminOffer_lifetime(ctx, field)
+			case "priceUSD":
+				return ec.fieldContext_AdminOffer_priceUSD(ctx, field)
+			case "startsAt":
+				return ec.fieldContext_AdminOffer_startsAt(ctx, field)
+			case "endsAt":
+				return ec.fieldContext_AdminOffer_endsAt(ctx, field)
+			case "subgraphIds":
+				return ec.fieldContext_AdminOffer_subgraphIds(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_AdminOffer_subgraphs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminOffer", field.Name)
 		},
 	}
 	return fc, nil
@@ -11766,7 +12725,7 @@ func (ec *executionContext) unmarshalInputApiKeyLogsFilterInput(ctx context.Cont
 		switch k {
 		case "apiKeyId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKeyId"))
-			data, err := ec.unmarshalOInt642ᚖint(ctx, v)
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11793,7 +12752,7 @@ func (ec *executionContext) unmarshalInputBanUserInput(ctx context.Context, obj 
 		switch k {
 		case "userId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-			data, err := ec.unmarshalNInt642int(ctx, v)
+			data, err := ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11832,6 +12791,68 @@ func (ec *executionContext) unmarshalInputCreateApiKeyInput(ctx context.Context,
 				return it, err
 			}
 			it.Description = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateOfferInput(ctx context.Context, obj any) (model.CreateOfferInput, error) {
+	var it model.CreateOfferInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"publicId", "lifeTime", "priceUSD", "startsAt", "endsAt", "subgraphIds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "publicId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publicId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PublicID = data
+		case "lifeTime":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifeTime"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifeTime = data
+		case "priceUSD":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priceUSD"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PriceUsd = data
+		case "startsAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startsAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StartsAt = data
+		case "endsAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endsAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EndsAt = data
+		case "subgraphIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphIds"))
+			data, err := ec.unmarshalNInt642ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubgraphIds = data
 		}
 	}
 
@@ -11909,7 +12930,7 @@ func (ec *executionContext) unmarshalInputCreateReleaseInput(ctx context.Context
 			it.Title = data
 		case "homeNoteVersionId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("homeNoteVersionId"))
-			data, err := ec.unmarshalOInt642ᚖint(ctx, v)
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11936,7 +12957,7 @@ func (ec *executionContext) unmarshalInputDisableApiKeyInput(ctx context.Context
 		switch k {
 		case "id":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalNInt642int(ctx, v)
+			data, err := ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -11963,7 +12984,7 @@ func (ec *executionContext) unmarshalInputMakeReleaseLiveInput(ctx context.Conte
 		switch k {
 		case "id":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalNInt642int(ctx, v)
+			data, err := ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -12112,7 +13133,7 @@ func (ec *executionContext) unmarshalInputUnbanUserInput(ctx context.Context, ob
 		switch k {
 		case "userId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-			data, err := ec.unmarshalNInt642int(ctx, v)
+			data, err := ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -12139,7 +13160,7 @@ func (ec *executionContext) unmarshalInputUpdateNoteGraphPositionInput(ctx conte
 		switch k {
 		case "pathId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pathId"))
-			data, err := ec.unmarshalNInt642int(ctx, v)
+			data, err := ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -12185,6 +13206,75 @@ func (ec *executionContext) unmarshalInputUpdateNoteGraphPositionsInput(ctx cont
 				return it, err
 			}
 			it.Positions = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateOfferInput(ctx context.Context, obj any) (model.UpdateOfferInput, error) {
+	var it model.UpdateOfferInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "publicId", "lifeTime", "priceUSD", "startsAt", "endsAt", "subgraphIds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "publicId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publicId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PublicID = data
+		case "lifeTime":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifeTime"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifeTime = data
+		case "priceUSD":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priceUSD"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PriceUsd = data
+		case "startsAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startsAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StartsAt = data
+		case "endsAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endsAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EndsAt = data
+		case "subgraphIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphIds"))
+			data, err := ec.unmarshalOInt642ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubgraphIds = data
 		}
 	}
 
@@ -12289,7 +13379,7 @@ func (ec *executionContext) unmarshalInputUploadNoteAssetInput(ctx context.Conte
 			it.File = data
 		case "noteId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("noteId"))
-			data, err := ec.unmarshalNInt642int(ctx, v)
+			data, err := ec.unmarshalNInt642int64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -12366,6 +13456,29 @@ func (ec *executionContext) _CreateApiKeyOrErrorPayload(ctx context.Context, sel
 			return graphql.Null
 		}
 		return ec._CreateApiKeyPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _CreateOfferOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateOfferOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateOfferPayload:
+		return ec._CreateOfferPayload(ctx, sel, &obj)
+	case *model.CreateOfferPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateOfferPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -12589,6 +13702,29 @@ func (ec *executionContext) _UpdateNoteGraphPositionsOrErrorPayload(ctx context.
 			return graphql.Null
 		}
 		return ec._UpdateNoteGraphPositionsPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _UpdateOfferOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateOfferOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UpdateOfferPayload:
+		return ec._UpdateOfferPayload(ctx, sel, &obj)
+	case *model.UpdateOfferPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateOfferPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -13381,6 +14517,78 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createOffer":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createOffer(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "updateOffer":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_updateOffer(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "unbanUser":
 			field := field
 
@@ -13607,6 +14815,332 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_updateNoteGraphPositions(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminOfferImplementors = []string{"AdminOffer"}
+
+func (ec *executionContext) _AdminOffer(ctx context.Context, sel ast.SelectionSet, obj *db.Offer) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminOfferImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminOffer")
+		case "id":
+			out.Values[i] = ec._AdminOffer_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "publicId":
+			out.Values[i] = ec._AdminOffer_publicId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminOffer_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "lifetime":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminOffer_lifetime(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "priceUSD":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminOffer_priceUSD(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "startsAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminOffer_startsAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "endsAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminOffer_endsAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "subgraphIds":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminOffer_subgraphIds(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "subgraphs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminOffer_subgraphs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminOffersConnectionImplementors = []string{"AdminOffersConnection"}
+
+func (ec *executionContext) _AdminOffersConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminOffersConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminOffersConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminOffersConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminOffersConnection_nodes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -13929,6 +15463,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_allAdmins(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allOffers":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allOffers(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -15061,6 +16631,45 @@ func (ec *executionContext) _CreateApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
+var createOfferPayloadImplementors = []string{"CreateOfferPayload", "CreateOfferOrErrorPayload"}
+
+func (ec *executionContext) _CreateOfferPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateOfferPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createOfferPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateOfferPayload")
+		case "offer":
+			out.Values[i] = ec._CreateOfferPayload_offer(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createPaymentLinkPayloadImplementors = []string{"CreatePaymentLinkPayload", "CreatePaymentLinkOrErrorPayload"}
 
 func (ec *executionContext) _CreatePaymentLinkPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreatePaymentLinkPayload) graphql.Marshaler {
@@ -15180,7 +16789,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -16605,6 +18214,45 @@ func (ec *executionContext) _UpdateNoteGraphPositionsPayload(ctx context.Context
 	return out
 }
 
+var updateOfferPayloadImplementors = []string{"UpdateOfferPayload", "UpdateOfferOrErrorPayload"}
+
+func (ec *executionContext) _UpdateOfferPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateOfferPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateOfferPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateOfferPayload")
+		case "offer":
+			out.Values[i] = ec._UpdateOfferPayload_offer(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var updateSubgraphPayloadImplementors = []string{"UpdateSubgraphPayload", "UpdateSubgraphOrErrorPayload"}
 
 func (ec *executionContext) _UpdateSubgraphPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateSubgraphPayload) graphql.Marshaler {
@@ -17842,6 +19490,78 @@ func (ec *executionContext) marshalNAdminMutation2ᚖtrip2gᚋinternalᚋmodel�
 	return ec._AdminMutation(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminOffer2trip2gᚋinternalᚋdbᚐOffer(ctx context.Context, sel ast.SelectionSet, v db.Offer) graphql.Marshaler {
+	return ec._AdminOffer(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminOffer2ᚕtrip2gᚋinternalᚋdbᚐOfferᚄ(ctx context.Context, sel ast.SelectionSet, v []db.Offer) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminOffer2trip2gᚋinternalᚋdbᚐOffer(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminOffer2ᚖtrip2gᚋinternalᚋdbᚐOffer(ctx context.Context, sel ast.SelectionSet, v *db.Offer) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminOffer(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminOffersConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminOffersConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminOffersConnection) graphql.Marshaler {
+	return ec._AdminOffersConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminOffersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminOffersConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminOffersConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminOffersConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminQuery2trip2gᚋinternalᚋmodelᚐAdminQuery(ctx context.Context, sel ast.SelectionSet, v model1.AdminQuery) graphql.Marshaler {
 	return ec._AdminQuery(ctx, sel, &v)
 }
@@ -18199,6 +19919,21 @@ func (ec *executionContext) marshalNCreateApiKeyOrErrorPayload2trip2gᚋinternal
 	return ec._CreateApiKeyOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCreateOfferInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOfferInput(ctx context.Context, v any) (model.CreateOfferInput, error) {
+	res, err := ec.unmarshalInputCreateOfferInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateOfferOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOfferOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateOfferOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateOfferOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreatePaymentLinkInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePaymentLinkInput(ctx context.Context, v any) (model.CreatePaymentLinkInput, error) {
 	res, err := ec.unmarshalInputCreatePaymentLinkInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -18324,22 +20059,6 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) unmarshalNInt642int(ctx context.Context, v any) (int, error) {
-	res, err := graphql.UnmarshalInt(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNInt642int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
-	_ = sel
-	res := graphql.MarshalInt(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
 func (ec *executionContext) unmarshalNInt642int64(ctx context.Context, v any) (int64, error) {
 	res, err := graphql.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -18354,6 +20073,36 @@ func (ec *executionContext) marshalNInt642int64(ctx context.Context, sel ast.Sel
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNInt642ᚕint64ᚄ(ctx context.Context, v any) ([]int64, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]int64, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNInt642int64(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNInt642ᚕint64ᚄ(ctx context.Context, sel ast.SelectionSet, v []int64) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNInt642int64(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNMakeReleaseLiveInput2trip2gᚋinternalᚋgraphᚋmodelᚐMakeReleaseLiveInput(ctx context.Context, v any) (model.MakeReleaseLiveInput, error) {
@@ -18930,6 +20679,21 @@ func (ec *executionContext) marshalNUpdateNoteGraphPositionsOrErrorPayload2trip2
 	return ec._UpdateNoteGraphPositionsOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNUpdateOfferInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateOfferInput(ctx context.Context, v any) (model.UpdateOfferInput, error) {
+	res, err := ec.unmarshalInputUpdateOfferInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateOfferOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateOfferOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateOfferOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateOfferOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNUpdateSubgraphInput2trip2gᚋinternalᚋcaseᚋadminᚋupdatesubgraphᚐRequest(ctx context.Context, v any) (updatesubgraph.Request, error) {
 	res, err := ec.unmarshalInputUpdateSubgraphInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19422,6 +21186,23 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	res := graphql.MarshalFloatContext(*v)
+	return graphql.WrapContextMarshaler(ctx, res)
+}
+
 func (ec *executionContext) unmarshalOInt642int64(ctx context.Context, v any) (int64, error) {
 	res, err := graphql.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19434,21 +21215,57 @@ func (ec *executionContext) marshalOInt642int64(ctx context.Context, sel ast.Sel
 	return res
 }
 
-func (ec *executionContext) unmarshalOInt642ᚖint(ctx context.Context, v any) (*int, error) {
+func (ec *executionContext) unmarshalOInt642ᚕint64ᚄ(ctx context.Context, v any) ([]int64, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := graphql.UnmarshalInt(v)
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]int64, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNInt642int64(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOInt642ᚕint64ᚄ(ctx context.Context, sel ast.SelectionSet, v []int64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNInt642int64(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOInt642ᚖint64(ctx context.Context, v any) (*int64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt64(v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOInt642ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+func (ec *executionContext) marshalOInt642ᚖint64(ctx context.Context, sel ast.SelectionSet, v *int64) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	_ = sel
 	_ = ctx
-	res := graphql.MarshalInt(*v)
+	res := graphql.MarshalInt64(*v)
 	return res
 }
 

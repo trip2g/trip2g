@@ -371,41 +371,6 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 	return items, nil
 }
 
-const allOffers = `-- name: AllOffers :many
-select id, public_id, created_at, lifetime, price_usd, starts_at, ends_at from offers order by id
-`
-
-func (q *Queries) AllOffers(ctx context.Context) ([]Offer, error) {
-	rows, err := q.db.QueryContext(ctx, allOffers)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Offer
-	for rows.Next() {
-		var i Offer
-		if err := rows.Scan(
-			&i.ID,
-			&i.PublicID,
-			&i.CreatedAt,
-			&i.Lifetime,
-			&i.PriceUsd,
-			&i.StartsAt,
-			&i.EndsAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const apiKeyIDByValue = `-- name: ApiKeyIDByValue :one
 select id from api_keys where value = ? and disabled_at is null limit 1
 `
@@ -1249,6 +1214,41 @@ func (q *Queries) ListAllApiKeys(ctx context.Context) ([]ApiKey, error) {
 	return items, nil
 }
 
+const listAllOffers = `-- name: ListAllOffers :many
+select id, public_id, created_at, lifetime, price_usd, starts_at, ends_at from offers order by id
+`
+
+func (q *Queries) ListAllOffers(ctx context.Context) ([]Offer, error) {
+	rows, err := q.db.QueryContext(ctx, listAllOffers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Offer
+	for rows.Next() {
+		var i Offer
+		if err := rows.Scan(
+			&i.ID,
+			&i.PublicID,
+			&i.CreatedAt,
+			&i.Lifetime,
+			&i.PriceUsd,
+			&i.StartsAt,
+			&i.EndsAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllReleases = `-- name: ListAllReleases :many
 select id, created_at, created_by, title, home_note_version_id, is_live
   from releases
@@ -1445,6 +1445,36 @@ func (q *Queries) ListApiKeyLogsByApiKeyID(ctx context.Context, apiKeyID int64) 
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSubgraphIDsByOfferID = `-- name: ListSubgraphIDsByOfferID :many
+select subgraph_id
+  from offer_subgraphs
+ where offer_id = ?
+ order by subgraph_id
+`
+
+func (q *Queries) ListSubgraphIDsByOfferID(ctx context.Context, offerID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listSubgraphIDsByOfferID, offerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var subgraph_id int64
+		if err := rows.Scan(&subgraph_id); err != nil {
+			return nil, err
+		}
+		items = append(items, subgraph_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
