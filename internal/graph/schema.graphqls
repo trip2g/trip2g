@@ -212,6 +212,7 @@ type AdminQuery {
   subgraph(id: Int64!): AdminSubgraph
   noteView(id: String!): NoteView
   userSubgraphAccess(id: Int64!): AdminUserSubgraphAccess
+  offer(id: Int64!): AdminOffer
 }
 
 enum Role {

@@ -1,5 +1,11 @@
 $trip2g_admin_offer_show $mol_page
 	offer_id? 0
 	title \Offer
+	tools /
+		<= EditLink $mol_link
+			arg * action \update
+			title \Edit
+	UpdateForm $trip2g_admin_offer_update
+		offer_id <= offer_id
 	body /
 		\TODO

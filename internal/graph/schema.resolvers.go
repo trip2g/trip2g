@@ -212,6 +212,31 @@ func (r *adminOffersConnectionResolver) Nodes(ctx context.Context, obj *model.Ad
 	return r.env(ctx).ListAllOffers(ctx)
 }
 
+// ID is the resolver for the id field.
+func (r *adminPurchaseResolver) ID(ctx context.Context, obj *db.Purchase) (int32, error) {
+	panic(fmt.Errorf("not implemented: ID - id"))
+}
+
+// Successful is the resolver for the successful field.
+func (r *adminPurchaseResolver) Successful(ctx context.Context, obj *db.Purchase) (bool, error) {
+	panic(fmt.Errorf("not implemented: Successful - successful"))
+}
+
+// UserID is the resolver for the userId field.
+func (r *adminPurchaseResolver) UserID(ctx context.Context, obj *db.Purchase) (*int64, error) {
+	panic(fmt.Errorf("not implemented: UserID - userId"))
+}
+
+// User is the resolver for the user field.
+func (r *adminPurchaseResolver) User(ctx context.Context, obj *db.Purchase) (*db.User, error) {
+	panic(fmt.Errorf("not implemented: User - user"))
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminPurchasesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminPurchasesConnection) ([]db.Purchase, error) {
+	panic(fmt.Errorf("not implemented: Nodes - nodes"))
+}
+
 // AllUsers is the resolver for the allUsers field.
 func (r *adminQueryResolver) AllUsers(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminUsersConnection, error) {
 	return &model.AdminUsersConnection{}, nil
@@ -257,6 +282,11 @@ func (r *adminQueryResolver) AllOffers(ctx context.Context, obj *appmodel.AdminQ
 	return &model.AdminOffersConnection{}, nil
 }
 
+// AllPurchases is the resolver for the allPurchases field.
+func (r *adminQueryResolver) AllPurchases(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminPurchasesConnection, error) {
+	panic(fmt.Errorf("not implemented: AllPurchases - allPurchases"))
+}
+
 // APIKeyLogs is the resolver for the apiKeyLogs field.
 func (r *adminQueryResolver) APIKeyLogs(ctx context.Context, obj *appmodel.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error) {
 	return &model.AdminAPIKeyLogsConnection{APIKeyID: filter.APIKeyID}, nil
@@ -277,6 +307,11 @@ func (r *adminQueryResolver) NoteView(ctx context.Context, obj *appmodel.AdminQu
 // UserSubgraphAccess is the resolver for the userSubgraphAccess field.
 func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.UserSubgraphAccess, error) {
 	return resolveOne[db.UserSubgraphAccess](ctx, int64(id), r.env(ctx).UserSubgraphAccessByID)
+}
+
+// Offer is the resolver for the offer field.
+func (r *adminQueryResolver) Offer(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.Offer, error) {
+	return resolveOne[db.Offer](ctx, int64(id), r.env(ctx).OfferByID)
 }
 
 // HomeNoteVersionID is the resolver for the homeNoteVersionId field.
@@ -729,6 +764,14 @@ func (r *Resolver) AdminOffersConnection() AdminOffersConnectionResolver {
 	return &adminOffersConnectionResolver{r}
 }
 
+// AdminPurchase returns AdminPurchaseResolver implementation.
+func (r *Resolver) AdminPurchase() AdminPurchaseResolver { return &adminPurchaseResolver{r} }
+
+// AdminPurchasesConnection returns AdminPurchasesConnectionResolver implementation.
+func (r *Resolver) AdminPurchasesConnection() AdminPurchasesConnectionResolver {
+	return &adminPurchasesConnectionResolver{r}
+}
+
 // AdminQuery returns AdminQueryResolver implementation.
 func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
 
@@ -829,6 +872,8 @@ type adminLatestNoteViewsConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
 type adminOfferResolver struct{ *Resolver }
 type adminOffersConnectionResolver struct{ *Resolver }
+type adminPurchaseResolver struct{ *Resolver }
+type adminPurchasesConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }
 type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }

@@ -438,7 +438,7 @@ update offers
      , price_usd = coalesce(sqlc.narg(price_usd), price_usd)
      , starts_at = coalesce(sqlc.narg(starts_at), starts_at)
      , ends_at = coalesce(sqlc.narg(ends_at), ends_at)
- where id = ?
+ where id = sqlc.arg(id)
 returning *;
 
 -- name: DeleteOfferSubgraphs :exec

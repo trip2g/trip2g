@@ -1842,11 +1842,11 @@ func (q *Queries) UpdateNoteGraphPositionByPathID(ctx context.Context, arg Updat
 
 const updateOffer = `-- name: UpdateOffer :one
 update offers
-   set lifetime = coalesce(?2, lifetime)
-     , price_usd = coalesce(?3, price_usd)
-     , starts_at = coalesce(?4, starts_at)
-     , ends_at = coalesce(?5, ends_at)
- where id = ?
+   set lifetime = coalesce(?1, lifetime)
+     , price_usd = coalesce(?2, price_usd)
+     , starts_at = coalesce(?3, starts_at)
+     , ends_at = coalesce(?4, ends_at)
+ where id = ?5
 returning id, public_id, created_at, lifetime, price_usd, starts_at, ends_at
 `
 

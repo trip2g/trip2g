@@ -38,7 +38,7 @@ func TestResolve(t *testing.T) {
 	
 	startsAt := time.Now()
 	endsAt := time.Now().Add(24 * time.Hour)
-	lifetime := "1 month"
+	lifetime := "+30 days"
 	
 	tests := []struct {
 		name          string

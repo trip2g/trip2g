@@ -103,6 +103,10 @@ type AdminOffersConnection struct {
 	Nodes []db.Offer `json:"nodes"`
 }
 
+type AdminPurchasesConnection struct {
+	Nodes []db.Purchase `json:"nodes"`
+}
+
 type AdminReleasesConnection struct {
 	Nodes []db.Release `json:"nodes"`
 }

@@ -26,14 +26,14 @@ namespace $.$$ {
 		@$mol_mem
 		spreads(): any {
 			return {
-				add: this.AddForm(),
-				...this.data().mapKeys( key => this.Content( key ) )
+				add: this.CreateForm(),
+				...this.data().mapKeys( key => this.Content( key ) ),
 			}
 		}
 
 		@$mol_mem
 		override spread_ids_filtered() {
-			return this.spread_ids().filter( id => id !== 'add' )
+			return this.spread_ids().filter( id => id !== 'add' && !id.startsWith( 'update/' ) )
 		}
 
 		row( id: any ) {
@@ -59,7 +59,7 @@ namespace $.$$ {
 
 		override row_price_usd( id: any ): string {
 			const price = this.row( id ).priceUSD
-			return price ? `$${price.toFixed(2)}` : '-'
+			return price ? `$${ price.toFixed( 2 ) }` : '-'
 		}
 
 		override row_lifetime( id: any ): string {

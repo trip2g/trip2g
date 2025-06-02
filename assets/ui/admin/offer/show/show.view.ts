@@ -1,7 +1,15 @@
 namespace $.$$ {
 	export class $trip2g_admin_offer_show extends $.$trip2g_admin_offer_show {
-		// TODO: Implement offer show functionality
-		// This should fetch and display detailed offer information
-		// including offer details, associated subgraphs, purchases, etc.
+		action() {
+			return this.$.$mol_state_arg.value('action') || 'view';
+		}
+
+		override body() {
+			if (this.action() === 'update') {
+				return [this.UpdateForm()]
+			}
+
+			return super.body()
+		}
 	}
 }
