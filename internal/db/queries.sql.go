@@ -787,16 +787,17 @@ func (q *Queries) InsertOfferSubgraph(ctx context.Context, arg InsertOfferSubgra
 }
 
 const insertPurchase = `-- name: InsertPurchase :exec
-insert into purchases (id, email, offer_id, payment_provider, payment_data)
-values (?, ?, ?, ?, ?)
+insert into purchases (id, email, offer_id, payment_provider, payment_data, price_usd)
+values (?, ?, ?, ?, ?, ?)
 `
 
 type InsertPurchaseParams struct {
-	ID              string `json:"id"`
-	Email           string `json:"email"`
-	OfferID         int64  `json:"offer_id"`
-	PaymentProvider string `json:"payment_provider"`
-	PaymentData     string `json:"payment_data"`
+	ID              string  `json:"id"`
+	Email           string  `json:"email"`
+	OfferID         int64   `json:"offer_id"`
+	PaymentProvider string  `json:"payment_provider"`
+	PaymentData     string  `json:"payment_data"`
+	PriceUsd        float64 `json:"price_usd"`
 }
 
 func (q *Queries) InsertPurchase(ctx context.Context, arg InsertPurchaseParams) error {
@@ -806,6 +807,7 @@ func (q *Queries) InsertPurchase(ctx context.Context, arg InsertPurchaseParams) 
 		arg.OfferID,
 		arg.PaymentProvider,
 		arg.PaymentData,
+		arg.PriceUsd,
 	)
 	return err
 }
@@ -1012,7 +1014,7 @@ func (q *Queries) ListActiveOffersBySubgraphNames(ctx context.Context, subgraphs
 }
 
 const listActivePurchasesByIDs = `-- name: ListActivePurchasesByIDs :many
-select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email from purchases
+select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email, price_usd from purchases
  where id in (/*SLICE:ids*/?)
    and status in ('pending', 'waiting', 'confirming', 'confirmed')
    and created_at > datetime('now', '-30 minutes')
@@ -1047,6 +1049,7 @@ func (q *Queries) ListActivePurchasesByIDs(ctx context.Context, ids []string) ([
 			&i.OfferID,
 			&i.UserID,
 			&i.Email,
+			&i.PriceUsd,
 		); err != nil {
 			return nil, err
 		}
@@ -1062,7 +1065,7 @@ func (q *Queries) ListActivePurchasesByIDs(ctx context.Context, ids []string) ([
 }
 
 const listActivePurchasesByUserID = `-- name: ListActivePurchasesByUserID :many
-select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email from purchases
+select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email, price_usd from purchases
  where user_id = ?
     and status in ('pending', 'waiting', 'confirming', 'confirmed')
     and created_at > datetime('now', '-30 minutes')
@@ -1087,6 +1090,7 @@ func (q *Queries) ListActivePurchasesByUserID(ctx context.Context, userID sql.Nu
 			&i.OfferID,
 			&i.UserID,
 			&i.Email,
+			&i.PriceUsd,
 		); err != nil {
 			return nil, err
 		}
@@ -1311,7 +1315,7 @@ func (q *Queries) ListAllOffers(ctx context.Context) ([]Offer, error) {
 }
 
 const listAllPurchases = `-- name: ListAllPurchases :many
-select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email from purchases order by created_at desc
+select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email, price_usd from purchases order by created_at desc
 `
 
 func (q *Queries) ListAllPurchases(ctx context.Context) ([]Purchase, error) {
@@ -1332,6 +1336,7 @@ func (q *Queries) ListAllPurchases(ctx context.Context) ([]Purchase, error) {
 			&i.OfferID,
 			&i.UserID,
 			&i.Email,
+			&i.PriceUsd,
 		); err != nil {
 			return nil, err
 		}
@@ -1738,7 +1743,7 @@ func (q *Queries) OfferByID(ctx context.Context, id int64) (Offer, error) {
 }
 
 const purchaseByID = `-- name: PurchaseByID :one
-select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email from purchases where id = ?
+select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email, price_usd from purchases where id = ?
 `
 
 func (q *Queries) PurchaseByID(ctx context.Context, id string) (Purchase, error) {
@@ -1753,6 +1758,7 @@ func (q *Queries) PurchaseByID(ctx context.Context, id string) (Purchase, error)
 		&i.OfferID,
 		&i.UserID,
 		&i.Email,
+		&i.PriceUsd,
 	)
 	return i, err
 }

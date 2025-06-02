@@ -95,16 +95,6 @@ CREATE TABLE offer_subgraphs (
   subgraph_id integer not null references subgraphs(id) on delete restrict,
   primary key (offer_id, subgraph_id)
 );
-CREATE TABLE IF NOT EXISTS "purchases" (
-  id text primary key,
-  created_at datetime not null default current_timestamp,
-  payment_provider text not null,
-  payment_data json not null,
-  status text not null default 'pending',
-  offer_id integer not null references offers(id) on delete restrict,
-  user_id integer references users(id) on delete restrict,
-  email text not null
-);
 CREATE TABLE IF NOT EXISTS "note_versions" (
   id integer primary key autoincrement,
   path_id integer not null,
@@ -188,6 +178,17 @@ CREATE TABLE IF NOT EXISTS "user_note_views" (
   referer_version_id integer references note_versions(id) on delete cascade,
   created_at datetime not null default current_timestamp
 );
+CREATE TABLE IF NOT EXISTS "purchases" (
+  id text primary key,
+  created_at datetime not null default current_timestamp,
+  payment_provider text not null,
+  payment_data text not null,
+  status text not null,
+  offer_id integer not null references offers(id) on delete restrict,
+  user_id integer references users(id) on delete set null,
+  email text not null,
+  price_usd numeric not null
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -214,4 +215,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250528112143'),
   ('20250528125918'),
   ('20250531040526'),
-  ('20250531113101');
+  ('20250531113101'),
+  ('20250602143243');

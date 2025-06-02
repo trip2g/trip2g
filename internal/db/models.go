@@ -145,6 +145,7 @@ type Purchase struct {
 	OfferID         int64         `json:"offer_id"`
 	UserID          sql.NullInt64 `json:"user_id"`
 	Email           string        `json:"email"`
+	PriceUsd        float64       `json:"price_usd"`
 }
 
 type Release struct {

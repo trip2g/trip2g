@@ -78,6 +78,7 @@ func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (mo
 		OfferID: offer.ID,
 		Email:   *req.Email,
 
+		PriceUsd:        offer.PriceUsd.Float64,
 		PaymentProvider: "nowpayments",
 		PaymentData:     "[]", // empty array
 	}
