@@ -24,6 +24,10 @@ $trip2g_admin_offer_catalog $mol_book2_catalog
 						title \Public ID
 						Content <= Row_public_id* $trip2g_admin_cell
 							content <= row_public_id* \public_id
+					<= Row_subgraphs_labeler* $mol_labeler
+						title \Public ID
+						Content <= Row_subgraphs* $trip2g_admin_cell
+							content <= row_subgraphs* \subgraphs
 					<= Row_created_at_labeler* $mol_labeler
 						title \Created At
 						Content <= Row_created_at* $trip2g_admin_cell

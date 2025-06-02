@@ -14,6 +14,9 @@ namespace $.$$ {
 								priceUSD
 								startsAt
 								endsAt
+								subgraphs {
+									name
+								}
 							}
 						}
 					}
@@ -42,6 +45,10 @@ namespace $.$$ {
 
 		override row_id( id: any ): number {
 			return this.row( id ).id
+		}
+
+		override row_subgraphs( id: any ): string {
+			return this.row( id ).subgraphs.map(s => s.name).join( ', ' )
 		}
 
 		override row_id_string( id: any ): string {
