@@ -32,6 +32,28 @@ namespace $.$$ {
 			return ''
 		}
 
+		override starts_at_bid(): string {
+			const startsAt = this.starts_at_moment()
+			const endsAt = this.ends_at_moment()
+			
+			if (startsAt && endsAt && startsAt.valueOf() >= endsAt.valueOf()) {
+				return 'Start date must be before end date'
+			}
+
+			return ''
+		}
+
+		override ends_at_bid(): string {
+			const startsAt = this.starts_at_moment()
+			const endsAt = this.ends_at_moment()
+			
+			if (startsAt && endsAt && startsAt.valueOf() >= endsAt.valueOf()) {
+				return 'End date must be after start date'
+			}
+
+			return ''
+		}
+
 		override submit() {
 			const res = $trip2g_graphql_request(
 				`

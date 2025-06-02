@@ -29,11 +29,27 @@ func normalizeInput(i *model.UpdateOfferInput) {
 }
 
 func validateInput(i *model.UpdateOfferInput) *model.ErrorPayload {
-	return model.NewOzzoError(ozzo.ValidateStruct(i,
+	err := ozzo.ValidateStruct(i,
 		ozzo.Field(&i.ID, ozzo.Required),
 		ozzo.Field(&i.PriceUsd, ozzo.When(i.PriceUsd != nil, ozzo.Min(0.0))),
 		ozzo.Field(&i.SubgraphIds, ozzo.When(i.SubgraphIds != nil, ozzo.Required)),
-	))
+	)
+	if err != nil {
+		return model.NewOzzoError(err)
+	}
+
+	// Custom validation: startsAt must be before endsAt
+	if i.StartsAt != nil && i.EndsAt != nil {
+		if !i.StartsAt.Before(*i.EndsAt) {
+			return &model.ErrorPayload{
+				ByFields: []model.FieldMessage{
+					{Name: "startsAt", Value: "must be before ends at"},
+				},
+			}
+		}
+	}
+
+	return nil
 }
 
 func Resolve(ctx context.Context, env Env, input model.UpdateOfferInput) (model.UpdateOfferOrErrorPayload, error) {

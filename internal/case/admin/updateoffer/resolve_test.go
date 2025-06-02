@@ -258,6 +258,29 @@ func TestResolve(t *testing.T) {
 			},
 		},
 		{
+			name: "validation error - starts at after ends at",
+			env: &envMock{
+				CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				input: model.UpdateOfferInput{
+					ID:       123,
+					StartsAt: func() *time.Time { t := time.Date(2025, 6, 5, 0, 0, 0, 0, time.UTC); return &t }(),
+					EndsAt:   func() *time.Time { t := time.Date(2025, 6, 4, 0, 0, 0, 0, time.UTC); return &t }(),
+				},
+			},
+			want: &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "startsAt", Value: "must be before ends at"}}},
+			wantErr: false,
+			afterCallback: func(t *testing.T, mockEnv *envMock) {
+				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
+				require.Equal(t, 0, len(mockEnv.OfferByIDCalls()))
+				require.Equal(t, 0, len(mockEnv.SubgraphByIDCalls()))
+			},
+		},
+		{
 			name: "subgraph not found",
 			env: &envMock{
 				CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
