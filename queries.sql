@@ -443,3 +443,6 @@ returning *;
 
 -- name: DeleteOfferSubgraphs :exec
 delete from offer_subgraphs where offer_id = ?;
+
+-- name: ListAllPurchases :many
+select * from purchases order by created_at desc;

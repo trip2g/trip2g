@@ -1,0 +1,40 @@
+$trip2g_admin_purchase_catalog $mol_book2_catalog
+	menu_title \Purchases
+	param \id
+	Empty $mol_status
+	ShowPage* $trip2g_admin_purchase_show
+		purchase_id <= row_id*
+	menu_link_content* / <= PurchaseItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Row_id_labeler* $mol_labeler
+						title \ID
+						Content <= Row_id* $trip2g_admin_cell
+							content <= row_id* \
+					<= Row_email_labeler* $mol_labeler
+						title \Email
+						Content <= Row_email* $trip2g_admin_cell
+							content <= row_email* \
+					<= Row_payment_provider_labeler* $mol_labeler
+						title \Payment Provider
+						Content <= Row_payment_provider* $trip2g_admin_cell
+							content <= row_payment_provider* \
+					<= Row_status_labeler* $mol_labeler
+						title \Status
+						Content <= Row_status* $trip2g_admin_cell
+							content <= row_status* \
+					<= Row_successful_labeler* $mol_labeler
+						title \Successful
+						Content <= Row_successful* $trip2g_admin_cell
+							content <= row_successful* \
+					<= Row_offer_id_labeler* $mol_labeler
+						title \Offer ID
+						Content <= Row_offer_id* $trip2g_admin_cell
+							content <= row_offer_id* \
+					<= Row_created_at_labeler* $mol_labeler
+						title \Created At
+						Content <= Row_created_at* $trip2g_admin_cell
+							content <= row_created_at* \

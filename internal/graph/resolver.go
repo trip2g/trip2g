@@ -57,6 +57,7 @@ type Env interface {
 	ListAllReleases(ctx context.Context) ([]db.Release, error)
 	ListAllAdmins(ctx context.Context) ([]db.Admin, error)
 	ListAllOffers(ctx context.Context) ([]db.Offer, error)
+	ListAllPurchases(ctx context.Context) ([]db.Purchase, error)
 	ListSubgraphIDsByOfferID(ctx context.Context, offerID int64) ([]int64, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)

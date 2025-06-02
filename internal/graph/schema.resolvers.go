@@ -212,29 +212,33 @@ func (r *adminOffersConnectionResolver) Nodes(ctx context.Context, obj *model.Ad
 	return r.env(ctx).ListAllOffers(ctx)
 }
 
-// ID is the resolver for the id field.
-func (r *adminPurchaseResolver) ID(ctx context.Context, obj *db.Purchase) (int32, error) {
-	panic(fmt.Errorf("not implemented: ID - id"))
-}
-
 // Successful is the resolver for the successful field.
 func (r *adminPurchaseResolver) Successful(ctx context.Context, obj *db.Purchase) (bool, error) {
-	panic(fmt.Errorf("not implemented: Successful - successful"))
+	return nowpayments.PaymentStatus(obj.Status).IsSuccessful(), nil
 }
 
 // UserID is the resolver for the userId field.
 func (r *adminPurchaseResolver) UserID(ctx context.Context, obj *db.Purchase) (*int64, error) {
-	panic(fmt.Errorf("not implemented: UserID - userId"))
+	return db.ToInt64Ptr(obj.UserID), nil
+}
+
+// Offer is the resolver for the offer field.
+func (r *adminPurchaseResolver) Offer(ctx context.Context, obj *db.Purchase) (*db.Offer, error) {
+	return resolveOne[db.Offer](ctx, obj.OfferID, r.env(ctx).OfferByID)
 }
 
 // User is the resolver for the user field.
 func (r *adminPurchaseResolver) User(ctx context.Context, obj *db.Purchase) (*db.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	if !obj.UserID.Valid {
+		return nil, nil
+	}
+
+	return resolveOne[db.User](ctx, obj.UserID.Int64, r.env(ctx).UserByID)
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *adminPurchasesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminPurchasesConnection) ([]db.Purchase, error) {
-	panic(fmt.Errorf("not implemented: Nodes - nodes"))
+	return r.env(ctx).ListAllPurchases(ctx)
 }
 
 // AllUsers is the resolver for the allUsers field.
@@ -284,7 +288,7 @@ func (r *adminQueryResolver) AllOffers(ctx context.Context, obj *appmodel.AdminQ
 
 // AllPurchases is the resolver for the allPurchases field.
 func (r *adminQueryResolver) AllPurchases(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminPurchasesConnection, error) {
-	panic(fmt.Errorf("not implemented: AllPurchases - allPurchases"))
+	return &model.AdminPurchasesConnection{}, nil
 }
 
 // APIKeyLogs is the resolver for the apiKeyLogs field.
@@ -312,6 +316,11 @@ func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *appmod
 // Offer is the resolver for the offer field.
 func (r *adminQueryResolver) Offer(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.Offer, error) {
 	return resolveOne[db.Offer](ctx, int64(id), r.env(ctx).OfferByID)
+}
+
+// Purchase is the resolver for the purchase field.
+func (r *adminQueryResolver) Purchase(ctx context.Context, obj *appmodel.AdminQuery, id string) (*db.Purchase, error) {
+	panic(fmt.Errorf("not implemented: Purchase - purchase"))
 }
 
 // HomeNoteVersionID is the resolver for the homeNoteVersionId field.

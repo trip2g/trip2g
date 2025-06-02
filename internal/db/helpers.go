@@ -71,6 +71,15 @@ func ToFloat64Ptr(v sql.NullFloat64) *float64 {
 	return nil
 }
 
+// ToInt64Ptr converts a sql.NullInt64 to a pointer to an int64.
+func ToInt64Ptr(v sql.NullInt64) *int64 {
+	if v.Valid {
+		return &v.Int64
+	}
+
+	return nil
+}
+
 // ToTimePtr converts a sql.NullTime to a pointer to a time.Time.
 func ToTimePtr(v sql.NullTime) *time.Time {
 	if v.Valid {

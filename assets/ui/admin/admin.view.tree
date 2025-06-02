@@ -23,6 +23,8 @@ $trip2g_admin_app $mol_book2_catalog
 		apikeys <= ListApiKeys $trip2g_admin_apikey_catalog
 		releases <= ListReleases $trip2g_admin_release_catalog
 		offers <= ListOffers $trip2g_admin_offer_catalog
+		purchases <= ListPurchases $trip2g_admin_purchase_catalog
+		admin_purchase_show <= ShowPurchase $trip2g_admin_purchase_show
 		noteGraph <= NoteGraph $trip2g_admin_noteview_graph
 		admins <= Admins $trip2g_admin_admin_catalog
 

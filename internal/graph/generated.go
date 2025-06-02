@@ -158,6 +158,7 @@ type ComplexityRoot struct {
 		CreatedAt       func(childComplexity int) int
 		Email           func(childComplexity int) int
 		ID              func(childComplexity int) int
+		Offer           func(childComplexity int) int
 		OfferID         func(childComplexity int) int
 		PaymentProvider func(childComplexity int) int
 		Status          func(childComplexity int) int
@@ -184,6 +185,7 @@ type ComplexityRoot struct {
 		AllUsers                func(childComplexity int) int
 		NoteView                func(childComplexity int, id string) int
 		Offer                   func(childComplexity int, id int64) int
+		Purchase                func(childComplexity int, id string) int
 		Subgraph                func(childComplexity int, id int64) int
 		UserSubgraphAccess      func(childComplexity int, id int64) int
 	}
@@ -474,11 +476,10 @@ type AdminOffersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminOffersConnection) ([]db.Offer, error)
 }
 type AdminPurchaseResolver interface {
-	ID(ctx context.Context, obj *db.Purchase) (int32, error)
-
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
 
 	UserID(ctx context.Context, obj *db.Purchase) (*int64, error)
+	Offer(ctx context.Context, obj *db.Purchase) (*db.Offer, error)
 	User(ctx context.Context, obj *db.Purchase) (*db.User, error)
 }
 type AdminPurchasesConnectionResolver interface {
@@ -500,6 +501,7 @@ type AdminQueryResolver interface {
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
 	UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.UserSubgraphAccess, error)
 	Offer(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Offer, error)
+	Purchase(ctx context.Context, obj *model1.AdminQuery, id string) (*db.Purchase, error)
 }
 type AdminReleaseResolver interface {
 	HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int64, error)
@@ -965,6 +967,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminPurchase.ID(childComplexity), true
 
+	case "AdminPurchase.offer":
+		if e.complexity.AdminPurchase.Offer == nil {
+			break
+		}
+
+		return e.complexity.AdminPurchase.Offer(childComplexity), true
+
 	case "AdminPurchase.offerId":
 		if e.complexity.AdminPurchase.OfferID == nil {
 			break
@@ -1119,6 +1128,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.Offer(childComplexity, args["id"].(int64)), true
+
+	case "AdminQuery.purchase":
+		if e.complexity.AdminQuery.Purchase == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_purchase_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.Purchase(childComplexity, args["id"].(string)), true
 
 	case "AdminQuery.subgraph":
 		if e.complexity.AdminQuery.Subgraph == nil {
@@ -2413,6 +2434,29 @@ func (ec *executionContext) field_AdminQuery_offer_argsID(
 	}
 
 	var zeroVal int64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_purchase_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_purchase_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_purchase_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNString2string(ctx, tmp)
+	}
+
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -4642,7 +4686,7 @@ func (ec *executionContext) _AdminPurchase_id(ctx context.Context, field graphql
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminPurchase().ID(rctx, obj)
+		return obj.ID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4654,19 +4698,19 @@ func (ec *executionContext) _AdminPurchase_id(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int32)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNInt2int32(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminPurchase_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminPurchase",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4977,6 +5021,70 @@ func (ec *executionContext) fieldContext_AdminPurchase_userId(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminPurchase_offer(ctx context.Context, field graphql.CollectedField, obj *db.Purchase) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPurchase_offer(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPurchase().Offer(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Offer)
+	fc.Result = res
+	return ec.marshalNAdminOffer2ᚖtrip2gᚋinternalᚋdbᚐOffer(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPurchase_offer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPurchase",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminOffer_id(ctx, field)
+			case "publicId":
+				return ec.fieldContext_AdminOffer_publicId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminOffer_createdAt(ctx, field)
+			case "lifetime":
+				return ec.fieldContext_AdminOffer_lifetime(ctx, field)
+			case "priceUSD":
+				return ec.fieldContext_AdminOffer_priceUSD(ctx, field)
+			case "startsAt":
+				return ec.fieldContext_AdminOffer_startsAt(ctx, field)
+			case "endsAt":
+				return ec.fieldContext_AdminOffer_endsAt(ctx, field)
+			case "subgraphIds":
+				return ec.fieldContext_AdminOffer_subgraphIds(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_AdminOffer_subgraphs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminOffer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminPurchase_user(ctx context.Context, field graphql.CollectedField, obj *db.Purchase) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminPurchase_user(ctx, field)
 	if err != nil {
@@ -5083,6 +5191,8 @@ func (ec *executionContext) fieldContext_AdminPurchasesConnection_nodes(_ contex
 				return ec.fieldContext_AdminPurchase_email(ctx, field)
 			case "userId":
 				return ec.fieldContext_AdminPurchase_userId(ctx, field)
+			case "offer":
+				return ec.fieldContext_AdminPurchase_offer(ctx, field)
 			case "user":
 				return ec.fieldContext_AdminPurchase_user(ctx, field)
 			}
@@ -5907,6 +6017,80 @@ func (ec *executionContext) fieldContext_AdminQuery_offer(ctx context.Context, f
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_offer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_purchase(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_purchase(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().Purchase(rctx, obj, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.Purchase)
+	fc.Result = res
+	return ec.marshalOAdminPurchase2ᚖtrip2gᚋinternalᚋdbᚐPurchase(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_purchase(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminPurchase_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminPurchase_createdAt(ctx, field)
+			case "paymentProvider":
+				return ec.fieldContext_AdminPurchase_paymentProvider(ctx, field)
+			case "status":
+				return ec.fieldContext_AdminPurchase_status(ctx, field)
+			case "successful":
+				return ec.fieldContext_AdminPurchase_successful(ctx, field)
+			case "offerId":
+				return ec.fieldContext_AdminPurchase_offerId(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminPurchase_email(ctx, field)
+			case "userId":
+				return ec.fieldContext_AdminPurchase_userId(ctx, field)
+			case "offer":
+				return ec.fieldContext_AdminPurchase_offer(ctx, field)
+			case "user":
+				return ec.fieldContext_AdminPurchase_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPurchase", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_purchase_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -9729,6 +9913,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_userSubgraphAccess(ctx, field)
 			case "offer":
 				return ec.fieldContext_AdminQuery_offer(ctx, field)
+			case "purchase":
+				return ec.fieldContext_AdminQuery_purchase(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -15921,41 +16107,10 @@ func (ec *executionContext) _AdminPurchase(ctx context.Context, sel ast.Selectio
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("AdminPurchase")
 		case "id":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminPurchase_id(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._AdminPurchase_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdAt":
 			out.Values[i] = ec._AdminPurchase_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -16027,6 +16182,42 @@ func (ec *executionContext) _AdminPurchase(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminPurchase_userId(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "offer":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPurchase_offer(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -16692,6 +16883,39 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_offer(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "purchase":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_purchase(ctx, field, obj)
 				return res
 			}
 
@@ -21176,22 +21400,6 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) unmarshalNInt2int32(ctx context.Context, v any) (int32, error) {
-	res, err := graphql.UnmarshalInt32(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNInt2int32(ctx context.Context, sel ast.SelectionSet, v int32) graphql.Marshaler {
-	_ = sel
-	res := graphql.MarshalInt32(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
 func (ec *executionContext) unmarshalNInt642int64(ctx context.Context, v any) (int64, error) {
 	res, err := graphql.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -22273,6 +22481,13 @@ func (ec *executionContext) marshalOAdminOffer2ᚖtrip2gᚋinternalᚋdbᚐOffer
 		return graphql.Null
 	}
 	return ec._AdminOffer(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminPurchase2ᚖtrip2gᚋinternalᚋdbᚐPurchase(ctx context.Context, sel ast.SelectionSet, v *db.Purchase) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminPurchase(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgraph(ctx context.Context, sel ast.SelectionSet, v *db.Subgraph) graphql.Marshaler {

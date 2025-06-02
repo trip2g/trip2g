@@ -180,7 +180,7 @@ type AdminOffersConnection {
 }
 
 type AdminPurchase @goModel(model: "trip2g/internal/db.Purchase") {
-  id: Int!
+  id: String!
   createdAt: Time!
   paymentProvider: String!
   status: String!
@@ -188,6 +188,8 @@ type AdminPurchase @goModel(model: "trip2g/internal/db.Purchase") {
   offerId: Int64!
   email: String!
   userId: Int64
+
+  offer: AdminOffer!
   user: AdminUser
 }
 
@@ -213,6 +215,7 @@ type AdminQuery {
   noteView(id: String!): NoteView
   userSubgraphAccess(id: Int64!): AdminUserSubgraphAccess
   offer(id: Int64!): AdminOffer
+  purchase(id: String!): AdminPurchase
 }
 
 enum Role {

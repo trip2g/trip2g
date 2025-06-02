@@ -30,7 +30,7 @@ namespace $.$$ {
 		spreads(): any {
 			return {
 				add: this.CreateForm(),
-				...this.data().mapKeys( key => this.Content( key ) ),
+				...this.data().mapKeys( key => this.ShowPage( key ) ),
 			}
 		}
 
