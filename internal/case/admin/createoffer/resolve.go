@@ -29,7 +29,7 @@ func normalizeInput(i *model.CreateOfferInput) {
 
 func validateInput(i *model.CreateOfferInput) *model.ErrorPayload {
 	return model.NewOzzoError(ozzo.ValidateStruct(i,
-		ozzo.Field(&i.PriceUsd, ozzo.Required, ozzo.Min(0.0)),
+		ozzo.Field(&i.PriceUsd, ozzo.Min(0.0)),
 		ozzo.Field(&i.SubgraphIds, ozzo.Required),
 	))
 }

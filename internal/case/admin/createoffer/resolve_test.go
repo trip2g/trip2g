@@ -158,11 +158,11 @@ func TestResolve(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				input: model.CreateOfferInput{
-					PriceUsd:    0,
+					PriceUsd:    -0.01,
 					SubgraphIds: []int64{1},
 				},
 			},
-			want:    &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "priceUSD", Value: "cannot be blank"}}},
+			want:    &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "priceUSD", Value: "must be no less than 0"}}},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
 				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))

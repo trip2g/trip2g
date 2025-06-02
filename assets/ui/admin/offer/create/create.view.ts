@@ -24,6 +24,14 @@ namespace $.$$ {
 			return super.ends_at_moment(next)
 		}
 
+		override subgraphs_bid(): string {
+			if (this.subgraph_ids().length === 0) {
+				return 'Select subgraphs'
+			}
+
+			return ''
+		}
+
 		override submit() {
 			const res = $trip2g_graphql_request(
 				`

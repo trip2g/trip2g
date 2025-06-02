@@ -8,6 +8,7 @@ $trip2g_admin_offer_create $mol_page
 					content <= offer_public_id? \
 	body /
 		<= Form $mol_form
+			submit_allowed => submit_allowed
 			body /
 				<= Subgraphs_field $mol_form_field
 					name \Subgraphs
@@ -38,5 +39,6 @@ $trip2g_admin_offer_create $mol_page
 				<= Submit $mol_button_major
 					title \Submit
 					click? <=> submit? null
+					enabled <= submit_allowed
 				<= Result $mol_status
 					message <= result? \
