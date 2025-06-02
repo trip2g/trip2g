@@ -122,9 +122,12 @@ module.exports.plugin = (schema, documents, config) => {
 			if (def.operation === 'mutation') {
 				prefix = 'Mutation'
 			}
+
 			if (def.operation === 'subscription') {
 				prefix = 'Subscription'
 			}
+
+      console.log('found operation:', def.name.value, prefix)
 
 			hashes[def.name.value] = queryHash(doc.rawSDL)
 

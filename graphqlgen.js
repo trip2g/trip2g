@@ -1,11 +1,11 @@
 module.exports = {
 	schema: 'http://localhost:8081/graphql',
-	documents: [__dirname + '/**/*.ts'],
+  documents: ['assets/ui/**/*.ts'],
 	pluckConfig: {
 		globalGqlIdentifierName: ['gql', '$trip2g_graphql_request', '$trip2g_graphql_subscription'],
 	},
 	generates: {
-		[__dirname + '/graphql/queries.ts']: {
+    ['assets/ui/graphql/queries.ts']: {
 			plugins: [
 				{
 					add: {
@@ -14,7 +14,7 @@ module.exports = {
 				},
 				'typescript',
 				'typescript-operations',
-				__dirname + '/-graphqlmol.js',
+        './graphqlmol.js',
 			],
 			config: {
 				// noExport: true,

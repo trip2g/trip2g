@@ -61,7 +61,6 @@ namespace $.$$ {
 		}
 
 		submit() {
-			console.log('subgraph_id', this.subgraph_id())
 			const res = $trip2g_graphql_request(
 				`
 					mutation AdminUpdateUserSubgraphAccess($input: UpdateUserSubgraphAccessInput!) {
@@ -83,7 +82,7 @@ namespace $.$$ {
 				{
 					input: {
 						id: this.access_id(),
-						expiresAt: this.expires_at_moment()?.toString('YYYY-MM-DDThh:mm:ss.sssZ') || null,
+						expiresAt: $trip2g_moment_toserver(this.expires_at_moment()),
 						subgraphId: this.subgraph_id(),
 					},
 				}

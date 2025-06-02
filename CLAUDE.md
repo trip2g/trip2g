@@ -729,6 +729,49 @@ Note: There is old way howto to use property with id. Instead of `*` you can wri
 - property + `*` or `!` - property takes ID as first argument, e.g. `Task_row* $mol_view`
 - property + `?` - property can be changed by providing an additional optional argument, e.g. `value <=> name? \`
 
+## Date/Time Formatting
+
+### $mol_time_moment
+
+When working with dates and times in frontend components, use `$mol_time_moment` for proper formatting:
+
+**Date Input Controls:**
+- Use `$mol_date` in `.view.tree` files for date inputs
+- Bind with `value_moment? <=> date_moment? null`
+
+**Time/DateTime Formatting for GraphQL:**
+- Use `moment.toString()` to format for Go backend (produces ISO8601 format)
+- **For date-only inputs** (from `$mol_date`), convert to full datetime:
+  ```typescript
+  // Convert date-only to full datetime format for Go
+  startsAt: this.starts_at_moment() ? new $mol_time_moment(this.starts_at_moment().toString() + 'T00:00:00Z').toString() : null,
+  endsAt: this.ends_at_moment() ? new $mol_time_moment(this.ends_at_moment().toString() + 'T23:59:59Z').toString() : null,
+  ```
+- **For datetime inputs** (from `$mol_time_moment` with time):
+  ```typescript
+  createdAt: this.created_at_moment()?.toString() || null,
+  ```
+
+**Patterns:**
+- `toString()` produces `YYYY-MM-DDThh:mm:ss.sssZ` (default ISO8601)
+- Custom patterns: `toString('YYYY-MM-DD')` for date-only
+- For display: `toString('DD.MM.YYYY hh:mm')`
+
+**Date Control Binding:**
+```tree
+<= StartsAt_field $mol_form_field
+    name \Starts At
+    Content <= starts_at_control $mol_date
+        value_moment? <=> starts_at_moment? null
+```
+
+```typescript
+// In .view.ts file for GraphQL submission:
+input: {
+    startsAt: this.starts_at_moment()?.toString() || null,
+}
+```
+
 ## view.ts
 
 In addition to declarative description of component, next to it could be created a file of the same name with `view.ts` extension, where a behavior could be described. Using a special construction, it could be inherited from realization obtained of `view.tree` and it would be overloaded automatically by heir:  

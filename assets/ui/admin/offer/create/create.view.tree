@@ -13,7 +13,7 @@ $trip2g_admin_offer_create $mol_page
 					name \Subgraphs
 					bid <= subgraphs_bid \
 					Content <= subgraphs_control $trip2g_admin_subgraph_select_list
-						ids? <=> subgraph_ids? /
+						ids? <=> subgraph_ids? /number
 				<= Lifetime_field $mol_form_field
 					name \Lifetime
 					bid <= lifetime_bid \

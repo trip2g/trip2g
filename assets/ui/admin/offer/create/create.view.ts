@@ -1,23 +1,39 @@
 namespace $.$$ {
 	export class $trip2g_admin_offer_create extends $.$trip2g_admin_offer_create {
 		override body() {
-			if (this.offer_public_id() !== '') {
-				return [this.OfferView()]
+			if( this.offer_public_id() !== '' ) {
+				return [ this.OfferView() ]
 			}
 
 			return super.body()
 		}
 
+		override starts_at_moment( next?: $mol_time_moment | null ) {
+			if (next) {
+				next = new $mol_time_moment().merge(next);
+			}
+
+			return super.starts_at_moment(next)
+		}
+
+		override ends_at_moment( next?: $mol_time_moment | null ) {
+			if (next) {
+				next = new $mol_time_moment().merge(next);
+			}
+
+			return super.ends_at_moment(next)
+		}
+
 		override submit() {
 			const res = $trip2g_graphql_request(
 				`
-					mutation AdminCreateOffer($input: CreateOfferInput!) {
+					mutation AdminCreateOfferMutation($input: CreateOfferInput!) {
 						admin {
 							data: createOffer(input: $input) {
 								... on CreateOfferPayload {
 									offer {
-									id
-									publicId
+										id
+										publicId
 									}
 								}
 								... on ErrorPayload {
@@ -30,26 +46,25 @@ namespace $.$$ {
 				{
 					input: {
 						priceUSD: this.price_usd(),
-						subgraphIds: this.subgraph_ids(),
+						subgraphIds: this.subgraph_ids() as number[],
 						lifetime: this.lifetime() || null,
-						startsAt: this.starts_at_moment()?.toISOString() || null,
-						endsAt: this.ends_at_moment()?.toISOString() || null,
+						startsAt: $trip2g_moment_toserver(this.starts_at_moment()),
+						endsAt: $trip2g_moment_toserver(this.ends_at_moment())
 					},
 				}
 			)
 
-			console.log(res)
-			if (res.admin.data.__typename === 'ErrorPayload') {
-				this.result(this.admin.data.message)
+			if( res.admin.data.__typename === 'ErrorPayload' ) {
+				this.result( res.admin.data.message )
 				return
 			}
 
-			if (res.admin.data.__typename === 'CreateOfferPayload') {
-				this.offer_public_id(res.admin.data.offer.publicId)
+			if( res.admin.data.__typename === 'CreateOfferPayload' ) {
+				this.offer_public_id( res.admin.data.offer.publicId )
 				return
 			}
 
-			this.result('Unexpected response type')
+			this.result( 'Unexpected response type' )
 		}
 	}
 }
