@@ -10,7 +10,7 @@ ReadWritePaths={{ data_dir }}
 NoNewPrivileges=true
 Restart=on-failure
 EnvironmentFile=/etc/trip2g.env
-ExecStart={{ bin_path }} $ARGS
+ExecStart={{ bin_path }}
 
 RemoveIPC=true
 RootDirectory={{ app_dir }}

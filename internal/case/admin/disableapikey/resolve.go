@@ -3,28 +3,21 @@ package disableapikey
 import (
 	"context"
 	"database/sql"
-	"trip2g/internal/appreq"
+	"fmt"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/usertoken"
 )
 
 type Env interface {
 	DisableApiKey(ctx context.Context, params db.DisableApiKeyParams) (db.ApiKey, error)
+	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
 
 func Resolve(ctx context.Context, env Env, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error) {
-	req, err := appreq.FromCtx(ctx)
+	token, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
-		return nil, err
-	}
-
-	token, err := req.UserToken()
-	if err != nil {
-		return nil, err
-	}
-
-	if !token.IsAdmin() {
-		return &model.ErrorPayload{Message: "Unauthorized"}, nil
+		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}
 
 	params := db.DisableApiKeyParams{

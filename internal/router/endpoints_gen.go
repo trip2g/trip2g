@@ -8,8 +8,6 @@ import (
 	processnowpaymentsipnprocessnowpaymentsipn "trip2g/internal/case/processnowpaymentsipn"
 	renderadminpagerenderadminpage "trip2g/internal/case/renderadminpage"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
-	listnotepathslistnotepaths "trip2g/internal/case/admin/listnotepaths"
-	listuserslistusers "trip2g/internal/case/admin/listusers"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
 )
 
@@ -17,8 +15,6 @@ var endpoints = []Endpoint{
 	&processnowpaymentsipnprocessnowpaymentsipn.Endpoint{},
 	&renderadminpagerenderadminpage.Endpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
-	&listnotepathslistnotepaths.Endpoint{},
-	&listuserslistusers.Endpoint{},
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
 }
 
@@ -26,8 +22,6 @@ type RoutesEnv interface {
 	processnowpaymentsipnprocessnowpaymentsipn.Env
 	renderadminpagerenderadminpage.Env
 	rendernotepagerendernotepage.Env
-	listnotepathslistnotepaths.Env
-	listuserslistusers.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
 }
 
