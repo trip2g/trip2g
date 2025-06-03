@@ -183,12 +183,7 @@ func main() {
 	})
 
 	queueClient.Register(sendsignincode.NewQueue(a))
-	// queueClient.Start(ctx)
-
-	err = queueClient.Add(sendsignincode.Task{Email: "test@example.com", Code: 313353}).Save()
-	if err != nil {
-		panic(err)
-	}
+	queueClient.Start(ctx)
 
 	err = a.loadAllNotes(ctx)
 	if err != nil {
@@ -213,7 +208,12 @@ func main() {
 	a.startServer()
 }
 
-func (a app) loadAllNotes(ctx context.Context) error {
+func (a *app) SendMail(ctx context.Context, data model.Mail) error {
+	fmt.Println(string(data.Plain))
+	return nil
+}
+
+func (a *app) loadAllNotes(ctx context.Context) error {
 	startCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -454,7 +454,7 @@ func (a *app) Logger() logger.Logger {
 
 func (a *app) QueueRequestSignInEmail(_ context.Context, email string, code string) error {
 	a.log.Debug("queue sign in email", "email", email, "code", code)
-	return nil
+	return a.queueClient.Add(sendsignincode.Task{Email: email, Code: code}).Save()
 }
 
 func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) {

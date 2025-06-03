@@ -1,0 +1,5 @@
+{% func PlainView(task Task) %}
+Hello!
+
+Your sign in code: {%s= task.Code %}
+{% endfunc %}

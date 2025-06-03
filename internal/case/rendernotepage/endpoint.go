@@ -9,7 +9,7 @@ import (
 	"trip2g/internal/case/renderlayout"
 )
 
-//go:generate go run github.com/valyala/quicktemplate/qtc -dir=.
+//go:generate go tool github.com/valyala/quicktemplate/qtc -dir=.
 
 type Endpoint struct{}
 
