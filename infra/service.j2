@@ -1,47 +1,44 @@
 [Unit]
-Description={{ service_name }} service
+Description=trip2g service
 After=network.target
 
 [Service]
-User={{ app_user }}
-WorkingDirectory=/data
-ReadOnlyPaths=/
-ReadWritePaths=/data
-NoNewPrivileges=true
-Restart=on-failure
+User=trip2g
+Group=trip2g
+
+WorkingDirectory=/opt/trip2g/data
+ExecStart=/opt/trip2g/bin/app
 EnvironmentFile=/etc/trip2g.env
-ExecStart=/bin/app
-
-RemoveIPC=true
-RootDirectory={{ app_dir }}
-
-AmbientCapabilities=CAP_NET_BIND_SERVICE
+Restart=on-failure
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 
-PrivateDevices=true
-ProtectClock=true
-ProtectKernelModules=true
-ProtectControlGroups=true
-ProtectKernelTunables=true
-ProtectKernelLogs=true
-ProtectHostname=true
-
-ProtectProc=invisible
-ProcSubset=pid
-MemoryDenyWriteExecute=true
-ProtectHome=true
-ProtectSystem=strict
-PrivateTmp=true
-
-RestrictNamespaces=true
-SystemCallFilter=~@clock @debug @module @mount @raw-io @reboot @swap @privileged @cpu-emulation @obsolete @resources
-RestrictSUIDSGID=true
-UMask=0077
-
-LockPersonality=true
-RestrictRealtime=true
-PrivateUsers=true
-SystemCallArchitectures=native
+# NoNewPrivileges=true
+# PrivateTmp=true
+#
+# ProtectSystem=full
+# ProtectHome=true
+# ReadWritePaths=/opt/trip2g/data
+#
+#
+# # Доп. sandbox
+# ProtectClock=true
+# ProtectKernelModules=true
+# ProtectControlGroups=true
+# ProtectKernelTunables=true
+# ProtectKernelLogs=true
+# ProtectHostname=true
+# ProtectProc=invisible
+# ProcSubset=pid
+# MemoryDenyWriteExecute=true
+# RestrictNamespaces=true
+# RestrictSUIDSGID=true
+# UMask=0077
+# LockPersonality=true
+# RestrictRealtime=true
+# PrivateUsers=true
+# SystemCallArchitectures=native
+# SystemCallFilter=~@clock @debug @module @mount @raw-io @reboot @swap @privileged @cpu-emulation @obsolete @resources
 
 [Install]
 WantedBy=multi-user.target

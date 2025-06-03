@@ -1,8 +1,14 @@
 build-amd64:
 	GOOS=linux GOARCH=amd64 go build -o ./tmp/amd64 -ldflags="-s -w" ./cmd/server
 
-deploy: build-amd64
+build-docker:
+	docker build -t trip2g .
+	docker save trip2g | bzip2 > ./tmp/app.tar.bz2
+
+deploy:
 	cd infra && ansible-playbook site.yml
+
+build_and_deploy: build-amd64 deploy
 
 gqlgen:
 	go tool github.com/99designs/gqlgen generate
