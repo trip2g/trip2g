@@ -4,13 +4,13 @@ After=network.target
 
 [Service]
 User={{ app_user }}
-WorkingDirectory={{ data_dir }}
-ReadOnlyPaths={{ app_dir }}
-ReadWritePaths={{ data_dir }}
+WorkingDirectory=/data
+ReadOnlyPaths=/
+ReadWritePaths=/data
 NoNewPrivileges=true
 Restart=on-failure
 EnvironmentFile=/etc/trip2g.env
-ExecStart={{ bin_path }}
+ExecStart=/bin/app
 
 RemoveIPC=true
 RootDirectory={{ app_dir }}
