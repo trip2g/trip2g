@@ -24,6 +24,7 @@ $trip2g_admin_offer_create $mol_page
 					name \Price USD
 					bid <= price_usd_bid \
 					Content <= price_usd_control $mol_number
+						precision 0.01
 						value? <=> price_usd? 0
 				<= StartsAt_field $mol_form_field
 					name \Starts At
