@@ -6,7 +6,7 @@ CREATE TABLE note_paths (
   latest_content_hash text not null,
   created_at datetime not null default current_timestamp,
   version_count integer not null default 0
-, graph_position_x real, graph_position_y real);
+, graph_position_x real, graph_position_y real, hidden_by integer references admins(user_id) on delete restrict, hidden_at datetime);
 CREATE TABLE users (
   id integer primary key,
   email text not null unique,
@@ -216,4 +216,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250528125918'),
   ('20250531040526'),
   ('20250531113101'),
-  ('20250602143243');
+  ('20250602143243'),
+  ('20250604130924');

@@ -383,6 +383,20 @@ type UploadNoteAssetPayload {
 
 union UploadNoteAssetOrErrorPayload = UploadNoteAssetPayload | ErrorPayload
 
+#
+# hideNote
+#
+
+input HideNoteInput {
+  path: String!
+}
+
+type HideNotePayload {
+  success: Boolean!
+}
+
+union HideNoteOrErrorPayload = HideNotePayload | ErrorPayload
+
 type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
@@ -390,6 +404,7 @@ type Mutation {
   createPaymentLink(input: CreatePaymentLinkInput!): CreatePaymentLinkOrErrorPayload!
 
   pushNotes(input: PushNotesInput!): PushNotesOrErrorPayload!
+  hideNote(input: HideNoteInput!): HideNoteOrErrorPayload!
   uploadNoteAsset(input: UploadNoteAssetInput!): UploadNoteAssetOrErrorPayload!
 
   admin: AdminMutation!

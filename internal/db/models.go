@@ -104,6 +104,8 @@ type NotePath struct {
 	VersionCount      int64           `json:"version_count"`
 	GraphPositionX    sql.NullFloat64 `json:"graph_position_x"`
 	GraphPositionY    sql.NullFloat64 `json:"graph_position_y"`
+	HiddenBy          sql.NullInt64   `json:"hidden_by"`
+	HiddenAt          sql.NullTime    `json:"hidden_at"`
 }
 
 type NoteVersion struct {

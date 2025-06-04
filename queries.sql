@@ -451,3 +451,9 @@ select * from purchases order by created_at desc;
 insert into admins (user_id, granted_by)
 values (?, ?)
 returning *;
+
+-- name: HideNotePath :exec
+update note_paths
+   set hidden_by = ?
+     , hidden_at = datetime('now')
+ where value = ?;

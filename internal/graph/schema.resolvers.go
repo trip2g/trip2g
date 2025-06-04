@@ -446,6 +446,11 @@ func (r *mutationResolver) PushNotes(ctx context.Context, input model.PushNotesI
 	return pushnotes.Resolve(ctx, r.env(ctx), input)
 }
 
+// HideNote is the resolver for the hideNote field.
+func (r *mutationResolver) HideNote(ctx context.Context, input model.HideNoteInput) (model.HideNoteOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: HideNote - hideNote"))
+}
+
 // UploadNoteAsset is the resolver for the uploadNoteAsset field.
 func (r *mutationResolver) UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error) {
 	err := checkapikey.Resolve(ctx, r.env(ctx), "upload_note_asset")

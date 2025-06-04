@@ -270,7 +270,7 @@ func (q *Queries) AllLiveNotes(ctx context.Context) ([]AllLiveNotesRow, error) {
 }
 
 const allNotePaths = `-- name: AllNotePaths :many
-select id, value, value_hash, latest_content_hash, created_at, version_count, graph_position_x, graph_position_y from note_paths order by id
+select id, value, value_hash, latest_content_hash, created_at, version_count, graph_position_x, graph_position_y, hidden_by, hidden_at from note_paths order by id
 `
 
 func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
@@ -291,6 +291,8 @@ func (q *Queries) AllNotePaths(ctx context.Context) ([]NotePath, error) {
 			&i.VersionCount,
 			&i.GraphPositionX,
 			&i.GraphPositionY,
+			&i.HiddenBy,
+			&i.HiddenAt,
 		); err != nil {
 			return nil, err
 		}
@@ -566,6 +568,23 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 		&i.Description,
 	)
 	return i, err
+}
+
+const hideNotePath = `-- name: HideNotePath :exec
+update note_paths
+   set hidden_by = ?
+     , hidden_at = datetime('now')
+ where value = ?
+`
+
+type HideNotePathParams struct {
+	HiddenBy sql.NullInt64 `json:"hidden_by"`
+	Value    string        `json:"value"`
+}
+
+func (q *Queries) HideNotePath(ctx context.Context, arg HideNotePathParams) error {
+	_, err := q.db.ExecContext(ctx, hideNotePath, arg.HiddenBy, arg.Value)
+	return err
 }
 
 const increaseUserNoteViewCount = `-- name: IncreaseUserNoteViewCount :exec
