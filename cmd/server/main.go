@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"math/big"
 	"net"
 	"net/http"
@@ -45,7 +44,6 @@ import (
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 
-	"github.com/mikestefanello/backlite"
 	backliteui "github.com/mikestefanello/backlite/ui"
 	"github.com/oklog/ulid/v2"
 	"github.com/valyala/fasthttp"
@@ -71,7 +69,6 @@ type app struct {
 	log logger.Logger
 
 	tokenManager *usertoken.Manager
-	queueClient  *backlite.Client
 
 	hotAuthTokenManager *hotauthtoken.Manager
 
@@ -112,19 +109,6 @@ func main() {
 
 	tokenManager := usertoken.NewManager("trip2g_token", []byte("secret"))
 
-	queueConfig := backlite.ClientConfig{
-		DB:              conn,
-		Logger:          slog.Default(),
-		ReleaseAfter:    10 * time.Minute,
-		NumWorkers:      10,
-		CleanupInterval: time.Hour,
-	}
-
-	queueClient, err := backlite.NewClient(queueConfig)
-	if err != nil {
-		panic(err)
-	}
-
 	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "no tx:")))
 
 	nowpaymentsClient, err := nowpayments.NewClient(config.NowpaymentsAPIKey)
@@ -147,7 +131,6 @@ func main() {
 		config: config,
 
 		tokenManager: tokenManager,
-		queueClient:  queueClient,
 
 		graphTxs: &graphTransactions{
 			EnvMap: make(map[*app]*sql.Tx),
@@ -181,9 +164,6 @@ func main() {
 
 		return nil
 	})
-
-	queueClient.Register(sendsignincode.NewQueue(a))
-	queueClient.Start(ctx)
 
 	err = a.loadAllNotes(ctx)
 	if err != nil {
@@ -452,9 +432,22 @@ func (a *app) Logger() logger.Logger {
 	return a.log
 }
 
-func (a *app) QueueRequestSignInEmail(_ context.Context, email string, code string) error {
-	a.log.Debug("queue sign in email", "email", email, "code", code)
-	return a.queueClient.Add(sendsignincode.Task{Email: email, Code: code}).Save()
+func (a *app) QueueRequestSignInEmail(ctx context.Context, email string, code string) error {
+	params := sendsignincode.Params{
+		Email: email,
+		Code:  code,
+	}
+
+	// TODO: add a background jobs
+	go func() {
+		err := sendsignincode.Resolve(ctx, a, params)
+		if err != nil {
+			a.log.Error("failed to send sign-in code", "error", err, "email", email)
+			return
+		}
+	}()
+
+	return nil
 }
 
 func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) {

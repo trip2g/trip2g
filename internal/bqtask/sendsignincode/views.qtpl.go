@@ -18,7 +18,7 @@ var (
 )
 
 //line internal/bqtask/sendsignincode/views.qtpl:1
-func StreamPlainView(qw422016 *qt422016.Writer, task Task) {
+func StreamPlainView(qw422016 *qt422016.Writer, task Params) {
 //line internal/bqtask/sendsignincode/views.qtpl:1
 	qw422016.N().S(`
 Hello!
@@ -33,7 +33,7 @@ Your sign in code: `)
 }
 
 //line internal/bqtask/sendsignincode/views.qtpl:5
-func WritePlainView(qq422016 qtio422016.Writer, task Task) {
+func WritePlainView(qq422016 qtio422016.Writer, task Params) {
 //line internal/bqtask/sendsignincode/views.qtpl:5
 	qw422016 := qt422016.AcquireWriter(qq422016)
 //line internal/bqtask/sendsignincode/views.qtpl:5
@@ -44,7 +44,7 @@ func WritePlainView(qq422016 qtio422016.Writer, task Task) {
 }
 
 //line internal/bqtask/sendsignincode/views.qtpl:5
-func PlainView(task Task) string {
+func PlainView(task Params) string {
 //line internal/bqtask/sendsignincode/views.qtpl:5
 	qb422016 := qt422016.AcquireByteBuffer()
 //line internal/bqtask/sendsignincode/views.qtpl:5
