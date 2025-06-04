@@ -11,7 +11,7 @@ import (
 	"trip2g/internal/nowpayments"
 )
 
-//go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
+//go:generate go tool github.com/mailru/easyjson/easyjson -snake_case -all -no_std_marshalers ./resolve.go
 
 type Env interface {
 	NowpaymentsIPNSecret() string

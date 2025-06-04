@@ -152,6 +152,7 @@ require (
 tool (
 	github.com/99designs/gqlgen
 	github.com/amacneil/dbmate/v2
+	github.com/mailru/easyjson/easyjson
 	github.com/matryer/moq
 	github.com/sqlc-dev/sqlc/cmd/sqlc
 	github.com/valyala/quicktemplate/qtc

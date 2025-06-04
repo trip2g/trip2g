@@ -10,7 +10,7 @@ import (
 	"trip2g/internal/usertoken"
 )
 
-//go:generate easyjson -snake_case -all -no_std_marshalers ./resolve.go
+//go:generate go tool github.com/mailru/easyjson/easyjson -snake_case -all -no_std_marshalers ./resolve.go
 
 type Env interface {
 	CreateRevoke(ctx context.Context, arg db.CreateRevokeParams) (int64, error)

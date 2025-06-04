@@ -10,12 +10,12 @@ import (
 	"sort"
 )
 
-//go:generate easyjson -snake_case -all -no_std_marshalers ./ipn.go
+//go:generate go tool github.com/mailru/easyjson/easyjson -snake_case -all -no_std_marshalers ./ipn.go
 
 type IPNFee struct {
 	Currency      string  `json:"currency"`
 	DepositFee    float64 `json:"depositFee"`
-	ServiceFee    int     `json:"serviceFee"`
+	ServiceFee    float64 `json:"serviceFee"`
 	WithdrawalFee float64 `json:"withdrawalFee"`
 }
 

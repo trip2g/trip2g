@@ -262,7 +262,7 @@ func easyjson605c3369DecodeTrip2gInternalNowpayments1(in *jlexer.Lexer, out *IPN
 		case "depositFee":
 			out.DepositFee = float64(in.Float64())
 		case "serviceFee":
-			out.ServiceFee = int(in.Int())
+			out.ServiceFee = float64(in.Float64())
 		case "withdrawalFee":
 			out.WithdrawalFee = float64(in.Float64())
 		default:
@@ -292,7 +292,7 @@ func easyjson605c3369EncodeTrip2gInternalNowpayments1(out *jwriter.Writer, in IP
 	{
 		const prefix string = ",\"serviceFee\":"
 		out.RawString(prefix)
-		out.Int(int(in.ServiceFee))
+		out.Float64(float64(in.ServiceFee))
 	}
 	{
 		const prefix string = ",\"withdrawalFee\":"
