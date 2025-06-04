@@ -42,7 +42,9 @@
         mode: '0755'
 
     - name: Upload app binary
-      notify: Reload systemd
+      notify:
+        - Reload systemd
+        - Restart service
       copy:
         src: ../tmp/amd64
         dest: "{{ app_dir }}/bin/app"
@@ -51,7 +53,9 @@
         mode: '0755'
 
     - name: Generate systemd unit
-      notify: Reload systemd
+      notify:
+        - Reload systemd
+        - Restart service
       template:
         src: service.j2
         dest: "/etc/systemd/system/{{ service_name }}.service"
@@ -65,11 +69,9 @@
 
   handlers:
     - name: Reload systemd
-      block:
-        - name: Reload systemd
-          command: systemctl daemon-reload
+      command: systemctl daemon-reload
 
-        - name: Restart service
-          systemd:
-            name: "{{ service_name }}"
-            state: restarted
+    - name: Restart service
+      systemd:
+        name: "{{ service_name }}"
+        state: restarted
