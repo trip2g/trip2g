@@ -48,7 +48,9 @@ type Config struct {
 	Storage miniostorage.Config
 
 	// Additional application settings
-	PublicURL         string
+	PublicURL  string
+	OwnerEmail string
+
 	NowpaymentsAPIKey string
 	NowpaymentsIPNKey string
 
@@ -179,6 +181,8 @@ func (c *Config) defineFlags() error {
 
 	// Additional application settings
 	flag.StringVar(&c.PublicURL, "public-url", c.PublicURL, "Public URL for the application")
+	flag.StringVar(&c.OwnerEmail, "owner-email", c.OwnerEmail, "Owner email for the application")
+
 	flag.StringVar(&c.NowpaymentsAPIKey, "nowpayments-api-key", c.NowpaymentsAPIKey, "Nowpayments API key")
 	flag.StringVar(&c.NowpaymentsIPNKey, "nowpayments-ipn-key", c.NowpaymentsIPNKey, "Nowpayments IPN key")
 

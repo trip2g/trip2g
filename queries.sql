@@ -446,3 +446,8 @@ delete from offer_subgraphs where offer_id = ?;
 
 -- name: ListAllPurchases :many
 select * from purchases order by created_at desc;
+
+-- name: InsertAdmin :one
+insert into admins (user_id, granted_by)
+values (?, ?)
+returning *;

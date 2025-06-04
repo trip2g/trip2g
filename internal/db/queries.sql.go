@@ -614,6 +614,24 @@ func (q *Queries) InsertAcmeCert(ctx context.Context, arg InsertAcmeCertParams) 
 	return err
 }
 
+const insertAdmin = `-- name: InsertAdmin :one
+insert into admins (user_id, granted_by)
+values (?, ?)
+returning user_id, granted_at, granted_by
+`
+
+type InsertAdminParams struct {
+	UserID    int64         `json:"user_id"`
+	GrantedBy sql.NullInt64 `json:"granted_by"`
+}
+
+func (q *Queries) InsertAdmin(ctx context.Context, arg InsertAdminParams) (Admin, error) {
+	row := q.db.QueryRowContext(ctx, insertAdmin, arg.UserID, arg.GrantedBy)
+	var i Admin
+	err := row.Scan(&i.UserID, &i.GrantedAt, &i.GrantedBy)
+	return i, err
+}
+
 const insertApiKey = `-- name: InsertApiKey :one
 insert into api_keys (value, created_by, description)
 values (?, ?, ?)

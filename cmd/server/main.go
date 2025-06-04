@@ -176,6 +176,11 @@ func main() {
 		return nil
 	})
 
+	err = a.createOwnerIfNotExists(ctx)
+	if err != nil {
+		panic(err)
+	}
+
 	err = a.loadAllNotes(ctx)
 	if err != nil {
 		panic(err)
@@ -197,6 +202,40 @@ func main() {
 	})
 
 	a.startServer()
+}
+
+func (a *app) createOwnerIfNotExists(ctx context.Context) error {
+	if a.config.OwnerEmail == "" {
+		return nil // No owner email configured
+	}
+
+	user, err := a.Queries.UserByEmail(ctx, a.config.OwnerEmail)
+	if err != nil {
+		if db.IsNoFound(err) {
+			_, err := a.InsertUser(ctx, a.config.OwnerEmail)
+			if err != nil {
+				return fmt.Errorf("failed to insert owner user: %w", err)
+			}
+		} else {
+			return fmt.Errorf("failed to check if owner exists: %w", err)
+		}
+	}
+
+	_, err = a.AdminByUserID(ctx, user.ID)
+	if err != nil {
+		if db.IsNoFound(err) {
+			_, err := a.InsertAdmin(ctx, db.InsertAdminParams{UserID: user.ID})
+			if err != nil {
+				return fmt.Errorf("failed to insert owner admin: %w", err)
+			}
+		} else {
+			return fmt.Errorf("failed to check if owner admin exists: %w", err)
+		}
+	}
+
+	a.log.Info("owner exists", "email", a.config.OwnerEmail)
+
+	return nil
 }
 
 func (a *app) SendMail(ctx context.Context, data model.Mail) error {
