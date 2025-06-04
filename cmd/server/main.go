@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"math/big"
 	"net"
 	"net/http"
@@ -86,7 +87,9 @@ type app struct {
 	purchaseUpdatedHandlers map[string]map[int]func()
 	nextPurchaseHandlerID   int
 
-	assetsFS *fasthttp.FS
+	assetsFS    *fasthttp.FS
+	assetHashes map[string]string
+	assetsMu    sync.Mutex
 
 	liveNoteLoader   *noteloader.Loader
 	latestNoteLoader *noteloader.Loader
@@ -352,16 +355,50 @@ func (a *app) setupAssets() error {
 		},
 	}
 
+	// initialize asset hashes map
+	a.assetHashes = make(map[string]string)
+
 	return nil
 }
 
 // TODO: read all asset urls from flags.
 func (a *app) assetURL(path string) string {
-	if a.config.DevMode {
-		path += fmt.Sprintf("?t=%d", time.Now().UnixMilli())
+	// Remove leading / if it exists
+	assetPath := path
+	if strings.HasPrefix(assetPath, "/") {
+		assetPath = assetPath[1:]
 	}
 
-	return path
+	// Remove /assets/ prefix if it exists
+	if strings.HasPrefix(assetPath, "assets/") {
+		assetPath = assetPath[7:]
+	}
+
+	a.assetsMu.Lock()
+	defer a.assetsMu.Unlock()
+
+	// Check if hash already calculated (non-dev mode only)
+	if hash, exists := a.assetHashes[assetPath]; exists && !a.config.DevMode {
+		return path + "?h=" + hash[:8]
+	}
+
+	// Calculate hash on the fly
+	content, err := fs.ReadFile(assets.FS, assetPath)
+	if err != nil {
+		a.log.Debug("asset file not found", "path", assetPath, "original", path)
+		return path
+	}
+
+	// Calculate SHA256 hash
+	hash := sha256.Sum256(content)
+	hashStr := fmt.Sprintf("%x", hash)
+
+	// Store hash for future use (non-dev mode only)
+	if !a.config.DevMode {
+		a.assetHashes[assetPath] = hashStr
+	}
+
+	return path + "?h=" + hashStr[:8]
 }
 
 func (a *app) AdminJSURL() string {
