@@ -805,8 +805,8 @@ func (q *Queries) InsertOfferSubgraph(ctx context.Context, arg InsertOfferSubgra
 }
 
 const insertPurchase = `-- name: InsertPurchase :exec
-insert into purchases (id, email, offer_id, payment_provider, payment_data, price_usd)
-values (?, ?, ?, ?, ?, ?)
+insert into purchases (id, email, offer_id, payment_provider, payment_data, price_usd, status)
+values (?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertPurchaseParams struct {
@@ -816,6 +816,7 @@ type InsertPurchaseParams struct {
 	PaymentProvider string  `json:"payment_provider"`
 	PaymentData     string  `json:"payment_data"`
 	PriceUsd        float64 `json:"price_usd"`
+	Status          string  `json:"status"`
 }
 
 func (q *Queries) InsertPurchase(ctx context.Context, arg InsertPurchaseParams) error {
@@ -826,6 +827,7 @@ func (q *Queries) InsertPurchase(ctx context.Context, arg InsertPurchaseParams) 
 		arg.PaymentProvider,
 		arg.PaymentData,
 		arg.PriceUsd,
+		arg.Status,
 	)
 	return err
 }

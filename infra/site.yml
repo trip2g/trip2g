@@ -16,17 +16,6 @@
         shell: /usr/sbin/nologin
         create_home: no
 
-    - name: Create readonly tree
-      file:
-        path: "{{ item }}"
-        state: directory
-        owner: root
-        group: root
-        mode: '0755'
-      loop:
-        - "{{ app_dir }}"
-        - "{{ app_dir }}/bin"
-
     - name: Create writable data dir
       file:
         path: "{{ data_dir }}"

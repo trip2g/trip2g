@@ -81,6 +81,7 @@ func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (mo
 		PriceUsd:        offer.PriceUsd.Float64,
 		PaymentProvider: "nowpayments",
 		PaymentData:     "[]", // empty array
+		Status:          "pending",
 	}
 
 	err = insertPurchase(ctx, env, &purchaseParams)

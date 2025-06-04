@@ -390,6 +390,55 @@ func TestResolve(t *testing.T) {
 				require.Equal(t, 1, len(mockEnv.CreateNowpaymentsInvoiceCalls()))
 			},
 		},
+		{
+			name: "purchase status is set to pending",
+			env: &envMock{
+				CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				},
+				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
+					return db.User{ID: 1, Email: "test@example.com"}, nil
+				},
+				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
+					return db.Offer{
+						ID:       1,
+						PriceUsd: sql.NullFloat64{Valid: true, Float64: 10.0},
+					}, nil
+				},
+				InsertPurchaseFunc: func(ctx context.Context, arg db.InsertPurchaseParams) error {
+					require.Equal(t, "pending", arg.Status, "Status should be set to 'pending'")
+					require.Equal(t, "test@example.com", arg.Email)
+					require.Equal(t, int64(1), arg.OfferID)
+					require.Equal(t, "nowpayments", arg.PaymentProvider)
+					require.Equal(t, "[]", arg.PaymentData)
+					require.Equal(t, 10.0, arg.PriceUsd)
+					return nil
+				},
+				GeneratePurchaseIDFunc: func() string {
+					return "purchase-123"
+				},
+				CreateNowpaymentsInvoiceFunc: func(params nowpayments.CreateInvoiceParams) (*nowpayments.CreateInvoiceResponse, error) {
+					return &nowpayments.CreateInvoiceResponse{
+						InvoiceURL: "https://payments.example.com/invoice/123",
+					}, nil
+				},
+				PublicURLFunc: func() string {
+					return "https://example.com"
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				req: model.CreatePaymentLinkInput{
+					OfferID:    "offer-123",
+					ReturnPath: "/user/space",
+				},
+			},
+			want: &model.CreatePaymentLinkPayload{
+				RedirectURL: "https://payments.example.com/invoice/123",
+				Token:       nil,
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {

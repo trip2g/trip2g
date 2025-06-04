@@ -216,8 +216,8 @@ select o.*
  limit 1;
 
 -- name: InsertPurchase :exec
-insert into purchases (id, email, offer_id, payment_provider, payment_data, price_usd)
-values (?, ?, ?, ?, ?, ?);
+insert into purchases (id, email, offer_id, payment_provider, payment_data, price_usd, status)
+values (?, ?, ?, ?, ?, ?, ?);
 
 -- name: PurchaseByID :one
 select * from purchases where id = ?;
