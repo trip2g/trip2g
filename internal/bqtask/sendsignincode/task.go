@@ -21,7 +21,7 @@ type Env interface {
 }
 
 func Resolve(ctx context.Context, env Env, task Params) error {
-	env.Logger().Info("Sending sign-in code to %s: %d", task.Email, task.Code)
+	env.Logger().Info("Sending sign-in code", "email", task.Email, "code", task.Code)
 
 	var buf bytes.Buffer
 	WritePlainView(&buf, task)

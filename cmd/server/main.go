@@ -44,8 +44,8 @@ import (
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 
-	backliteui "github.com/mikestefanello/backlite/ui"
 	"github.com/oklog/ulid/v2"
+	"github.com/resend/resend-go/v2"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpadaptor"
 
@@ -67,6 +67,8 @@ type app struct {
 	conn    *sql.DB
 
 	log logger.Logger
+
+	// mail *mailyak.MailYak
 
 	tokenManager *usertoken.Manager
 
@@ -123,6 +125,14 @@ func main() {
 		panic(err)
 	}
 
+	// mailAddr := fmt.Sprintf("%s:%d", config.SMTPHost, config.SMTPPort)
+	// mailAuth := smtp.PlainAuth(
+	// 	"",
+	// 	config.SMTPUser,
+	// 	config.SMTPPass,
+	// 	config.SMTPHost,
+	// )
+
 	a := &app{
 		Queries: queries,
 
@@ -143,6 +153,7 @@ func main() {
 		log:     log,
 		queries: queries,
 		conn:    conn,
+		// mail:    mailyak.New(mailAddr, mailAuth),
 
 		UserBans: userbans.New(queries),
 
@@ -189,7 +200,20 @@ func main() {
 }
 
 func (a *app) SendMail(ctx context.Context, data model.Mail) error {
-	fmt.Println(string(data.Plain))
+	client := resend.NewClient(a.config.ResendAPIKey)
+
+	params := &resend.SendEmailRequest{
+		From:    "onboarding@resend.dev",
+		To:      []string{data.To},
+		Subject: data.Subject,
+		Text:    string(data.Plain),
+	}
+
+	_, err := client.Emails.Send(params)
+	if err != nil {
+		return fmt.Errorf("failed to send email: %w", err)
+	}
+
 	return nil
 }
 
@@ -778,24 +802,6 @@ func (a *app) startServer() {
 			ctx.SetBodyString("404 Not Found")
 		},
 	}
-
-	go func() {
-		mux := http.DefaultServeMux
-		backliteui.NewHandler(a.conn).Register(mux)
-
-		server := &http.Server{
-			Addr:         ":8082",
-			Handler:      mux,
-			ReadTimeout:  15 * time.Second,
-			WriteTimeout: 15 * time.Second,
-			IdleTimeout:  60 * time.Second,
-		}
-
-		backErr := server.ListenAndServe()
-		if backErr != nil {
-			panic(backErr)
-		}
-	}()
 
 	if len(a.config.AcmeDomains) == 0 {
 		err := s.ListenAndServe(a.config.ListenAddr)

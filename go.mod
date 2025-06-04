@@ -13,9 +13,9 @@ require (
 	github.com/kr/pretty v0.3.1
 	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.9.0
-	github.com/mikestefanello/backlite v0.4.0
 	github.com/minio/minio-go/v7 v7.0.91
 	github.com/oklog/ulid/v2 v2.1.0
+	github.com/resend/resend-go/v2 v2.20.0
 	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasthttp v1.60.0
@@ -48,7 +48,6 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/cubicdaiya/gonp v1.0.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/domodwyer/mailyak/v3 v3.6.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
