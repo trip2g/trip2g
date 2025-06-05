@@ -62,6 +62,9 @@ type Config struct {
 
 	// Resend
 	ResendAPIKey string
+
+	// Mail
+	MailFrom string
 }
 
 // Default values for configuration
@@ -194,6 +197,9 @@ func (c *Config) defineFlags() error {
 
 	// Resend
 	flag.StringVar(&c.ResendAPIKey, "resend-api-key", "", "Resend API key")
+
+	// Mail
+	flag.StringVar(&c.MailFrom, "mail-from", "no-reply@resend.trip2g.com", "Email address to use as sender")
 
 	return nil
 }

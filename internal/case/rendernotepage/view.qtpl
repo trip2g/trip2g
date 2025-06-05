@@ -63,9 +63,22 @@
 
 {% endfunc %}
 
+{% func LatestBanner(resp *Response) %}
+
+      {% if vb := resp.versionBanner; vb != nil %}
+        <div class="sidebar__latest-banner">
+          <div>{%s= vb.Label %}</div>
+          <a href="{%s= vb.Permalink %}">Перейти</a>
+        </div>
+      {% endif %}
+
+{% endfunc %}
+
 {% func Sidebar(resp *Response) %}
 
     <div id="noteview-sidebar" class="sidebar">
+      {%= LatestBanner(resp) %}
+
       {% if vb := resp.versionBanner; vb != nil %}
         <div class="sidebar__latest-banner">
           <div>{%s= vb.Label %}</div>

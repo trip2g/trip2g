@@ -55,6 +55,12 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, err
 	}
 
+	if resp.Note.Redirect != nil {
+		ctx.Response.Header.Set("Location", *resp.Note.Redirect)
+		ctx.SetStatusCode(http.StatusFound)
+		return nil, nil
+	}
+
 	turbo := len(ctx.Request.Header.Peek("X-Turbo")) > 0
 	if turbo {
 		ctx.Response.Header.Set("X-Turbo-Response", "true")

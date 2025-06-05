@@ -245,7 +245,7 @@ func (a *app) SendMail(ctx context.Context, data model.Mail) error {
 	client := resend.NewClient(a.config.ResendAPIKey)
 
 	params := &resend.SendEmailRequest{
-		From:    "onboarding@resend.dev",
+		From:    a.config.MailFrom,
 		To:      []string{data.To},
 		Subject: data.Subject,
 		Text:    string(data.Plain),

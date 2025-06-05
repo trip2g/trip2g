@@ -253,6 +253,11 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) { //nolint
 		return nil, fmt.Errorf("failed to extract subgraphs: %w", err)
 	}
 
+	err = pp.ExtractMetaData()
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract metadata: %w", err)
+	}
+
 	ldr.log.Info("read page", "path", pp.Path)
 
 	return &pp, nil

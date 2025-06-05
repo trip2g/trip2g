@@ -17,7 +17,8 @@
       "Bash(sed:*)",
       "Bash(go run:*)",
       "Bash(touch:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(go tool:*)"
     ],
     "deny": []
   }

@@ -23,6 +23,7 @@ type NoteView struct {
 
 	Permalink string
 	Free      bool // without the paywall
+	Redirect  *string
 
 	InLinks map[string]struct{}
 	RawMeta map[string]interface{}
@@ -94,6 +95,31 @@ func (n *NoteView) ExtractSubgraphs() error {
 	}
 
 	n.SubgraphNames = res
+
+	return nil
+}
+
+func (n *NoteView) ExtractMetaData() error {
+	err := n.ExtractRedirect()
+	if err != nil {
+		return fmt.Errorf("error extracting redirect: %w", err)
+	}
+
+	return nil
+}
+
+func (n *NoteView) ExtractRedirect() error {
+	redirect, ok := n.RawMeta["redirect"]
+	if !ok {
+		return nil
+	}
+
+	switch v := redirect.(type) {
+	case string:
+		n.Redirect = &v
+	default:
+		return fmt.Errorf("invalid redirect type: %T", redirect)
+	}
 
 	return nil
 }
