@@ -7,12 +7,15 @@ import (
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createoffer"
+	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
+	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updateoffer"
+	"trip2g/internal/case/admin/updateredirect"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
@@ -60,6 +63,7 @@ type Env interface {
 	ListAllOffers(ctx context.Context) ([]db.Offer, error)
 	ListAllPurchases(ctx context.Context) ([]db.Purchase, error)
 	ListSubgraphIDsByOfferID(ctx context.Context, offerID int64) ([]int64, error)
+	ListAllRedirects(ctx context.Context) ([]db.Redirect, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
@@ -68,6 +72,8 @@ type Env interface {
 	SubgraphByName(ctx context.Context, name string) (db.Subgraph, error)
 	UserSubgraphAccessByID(ctx context.Context, id int64) (db.UserSubgraphAccess, error)
 	OfferByID(ctx context.Context, id int64) (db.Offer, error)
+	PurchaseByID(ctx context.Context, id string) (db.Purchase, error)
+
 	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]db.Subgraph, error)
 	ListActiveUserSubgraphAccessesByUserID(ctx context.Context, userID int64) ([]db.UserSubgraphAccess, error)
 	ListApiKeyLogsByApiKeyID(ctx context.Context, apiKeyID int64) ([]db.ListApiKeyLogsByApiKeyIDRow, error)
@@ -107,5 +113,8 @@ type Env interface {
 	updatenotegraphpositions.Env
 	createoffer.Env
 	updateoffer.Env
+	createredirect.Env
+	updateredirect.Env
+	deleteredirect.Env
 	hidenotes.Env
 }

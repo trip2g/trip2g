@@ -16,12 +16,15 @@ import (
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createoffer"
+	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
+	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updateoffer"
+	"trip2g/internal/case/admin/updateredirect"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
@@ -132,6 +135,21 @@ func (r *adminMutationResolver) CreateOffer(ctx context.Context, obj *appmodel.A
 // UpdateOffer is the resolver for the updateOffer field.
 func (r *adminMutationResolver) UpdateOffer(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateOfferInput) (model.UpdateOfferOrErrorPayload, error) {
 	return updateoffer.Resolve(ctx, r.env(ctx), input)
+}
+
+// CreateRedirect is the resolver for the createRedirect field.
+func (r *adminMutationResolver) CreateRedirect(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateRedirectInput) (model.CreateRedirectOrErrorPayload, error) {
+	return createredirect.Resolve(ctx, r.env(ctx), input)
+}
+
+// UpdateRedirect is the resolver for the updateRedirect field.
+func (r *adminMutationResolver) UpdateRedirect(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateRedirectInput) (model.UpdateRedirectOrErrorPayload, error) {
+	return updateredirect.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteRedirect is the resolver for the deleteRedirect field.
+func (r *adminMutationResolver) DeleteRedirect(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteRedirectInput) (model.DeleteRedirectOrErrorPayload, error) {
+	return deleteredirect.Resolve(ctx, r.env(ctx), input)
 }
 
 // UnbanUser is the resolver for the unbanUser field.
@@ -292,6 +310,11 @@ func (r *adminQueryResolver) AllPurchases(ctx context.Context, obj *appmodel.Adm
 	return &model.AdminPurchasesConnection{}, nil
 }
 
+// AllRedirects is the resolver for the allRedirects field.
+func (r *adminQueryResolver) AllRedirects(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminRedirectsConnection, error) {
+	return &model.AdminRedirectsConnection{}, nil
+}
+
 // APIKeyLogs is the resolver for the apiKeyLogs field.
 func (r *adminQueryResolver) APIKeyLogs(ctx context.Context, obj *appmodel.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error) {
 	return &model.AdminAPIKeyLogsConnection{APIKeyID: filter.APIKeyID}, nil
@@ -321,7 +344,17 @@ func (r *adminQueryResolver) Offer(ctx context.Context, obj *appmodel.AdminQuery
 
 // Purchase is the resolver for the purchase field.
 func (r *adminQueryResolver) Purchase(ctx context.Context, obj *appmodel.AdminQuery, id string) (*db.Purchase, error) {
-	panic(fmt.Errorf("not implemented: Purchase - purchase"))
+	return resolveOne[db.Purchase](ctx, id, r.env(ctx).PurchaseByID)
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminRedirectResolver) CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminRedirectsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminRedirectsConnection) ([]db.Redirect, error) {
+	return r.env(ctx).ListAllRedirects(ctx)
 }
 
 // HomeNoteVersionID is the resolver for the homeNoteVersionId field.
@@ -801,6 +834,14 @@ func (r *Resolver) AdminPurchasesConnection() AdminPurchasesConnectionResolver {
 // AdminQuery returns AdminQueryResolver implementation.
 func (r *Resolver) AdminQuery() AdminQueryResolver { return &adminQueryResolver{r} }
 
+// AdminRedirect returns AdminRedirectResolver implementation.
+func (r *Resolver) AdminRedirect() AdminRedirectResolver { return &adminRedirectResolver{r} }
+
+// AdminRedirectsConnection returns AdminRedirectsConnectionResolver implementation.
+func (r *Resolver) AdminRedirectsConnection() AdminRedirectsConnectionResolver {
+	return &adminRedirectsConnectionResolver{r}
+}
+
 // AdminRelease returns AdminReleaseResolver implementation.
 func (r *Resolver) AdminRelease() AdminReleaseResolver { return &adminReleaseResolver{r} }
 
@@ -901,6 +942,8 @@ type adminOffersConnectionResolver struct{ *Resolver }
 type adminPurchaseResolver struct{ *Resolver }
 type adminPurchasesConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }
+type adminRedirectResolver struct{ *Resolver }
+type adminRedirectsConnectionResolver struct{ *Resolver }
 type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }
 type adminSubgraphResolver struct{ *Resolver }
@@ -925,22 +968,3 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *mutationResolver) HideNote(ctx context.Context, input model.HideNoteInput) (model.HideNoteOrErrorPayload, error) {
-	apiKey, err := checkapikey.Resolve(ctx, r.env(ctx), "hide_note")
-	if err != nil {
-		return nil, err
-	}
-
-	input.ApiKey = *apiKey
-
-	return hidenote.Resolve(ctx, r.env(ctx), input)
-}
-*/

@@ -150,6 +150,16 @@ type Purchase struct {
 	PriceUsd        float64       `json:"price_usd"`
 }
 
+type Redirect struct {
+	ID         int64     `json:"id"`
+	CreatedAt  time.Time `json:"created_at"`
+	CreatedBy  int64     `json:"created_by"`
+	Pattern    string    `json:"pattern"`
+	IgnoreCase bool      `json:"ignore_case"`
+	IsRegex    bool      `json:"is_regex"`
+	Target     string    `json:"target"`
+}
+
 type Release struct {
 	ID                int64         `json:"id"`
 	CreatedAt         time.Time     `json:"created_at"`

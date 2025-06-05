@@ -56,6 +56,8 @@ type ResolverRoot interface {
 	AdminPurchase() AdminPurchaseResolver
 	AdminPurchasesConnection() AdminPurchasesConnectionResolver
 	AdminQuery() AdminQueryResolver
+	AdminRedirect() AdminRedirectResolver
+	AdminRedirectsConnection() AdminRedirectsConnectionResolver
 	AdminRelease() AdminReleaseResolver
 	AdminReleasesConnection() AdminReleasesConnectionResolver
 	AdminSubgraph() AdminSubgraphResolver
@@ -128,12 +130,15 @@ type ComplexityRoot struct {
 		BanUser                  func(childComplexity int, input model.BanUserInput) int
 		CreateAPIKey             func(childComplexity int, input model.CreateAPIKeyInput) int
 		CreateOffer              func(childComplexity int, input model.CreateOfferInput) int
+		CreateRedirect           func(childComplexity int, input model.CreateRedirectInput) int
 		CreateRelease            func(childComplexity int, input model.CreateReleaseInput) int
+		DeleteRedirect           func(childComplexity int, input model.DeleteRedirectInput) int
 		DisableAPIKey            func(childComplexity int, input model.DisableAPIKeyInput) int
 		MakeReleaseLive          func(childComplexity int, input model.MakeReleaseLiveInput) int
 		UnbanUser                func(childComplexity int, input model.UnbanUserInput) int
 		UpdateNoteGraphPositions func(childComplexity int, input model.UpdateNoteGraphPositionsInput) int
 		UpdateOffer              func(childComplexity int, input model.UpdateOfferInput) int
+		UpdateRedirect           func(childComplexity int, input model.UpdateRedirectInput) int
 		UpdateSubgraph           func(childComplexity int, input updatesubgraph.Request) int
 		UpdateUserSubgraphAccess func(childComplexity int, input updateusersubgraphaccess.Request) int
 	}
@@ -178,6 +183,7 @@ type ComplexityRoot struct {
 		AllLatestNoteViews      func(childComplexity int) int
 		AllOffers               func(childComplexity int) int
 		AllPurchases            func(childComplexity int) int
+		AllRedirects            func(childComplexity int) int
 		AllReleases             func(childComplexity int) int
 		AllSubgraphs            func(childComplexity int) int
 		AllUserSubgraphAccesses func(childComplexity int) int
@@ -188,6 +194,20 @@ type ComplexityRoot struct {
 		Purchase                func(childComplexity int, id string) int
 		Subgraph                func(childComplexity int, id int64) int
 		UserSubgraphAccess      func(childComplexity int, id int64) int
+	}
+
+	AdminRedirect struct {
+		CreatedAt  func(childComplexity int) int
+		CreatedBy  func(childComplexity int) int
+		ID         func(childComplexity int) int
+		IgnoreCase func(childComplexity int) int
+		IsRegex    func(childComplexity int) int
+		Pattern    func(childComplexity int) int
+		Target     func(childComplexity int) int
+	}
+
+	AdminRedirectsConnection struct {
+		Nodes func(childComplexity int) int
 	}
 
 	AdminRelease struct {
@@ -263,8 +283,16 @@ type ComplexityRoot struct {
 		Token       func(childComplexity int) int
 	}
 
+	CreateRedirectPayload struct {
+		Redirect func(childComplexity int) int
+	}
+
 	CreateReleasePayload struct {
 		Release func(childComplexity int) int
+	}
+
+	DeleteRedirectPayload struct {
+		ID func(childComplexity int) int
 	}
 
 	DisableApiKeyPayload struct {
@@ -387,6 +415,10 @@ type ComplexityRoot struct {
 		Offer func(childComplexity int) int
 	}
 
+	UpdateRedirectPayload struct {
+		Redirect func(childComplexity int) int
+	}
+
 	UpdateSubgraphPayload struct {
 		Subgraph func(childComplexity int) int
 	}
@@ -461,6 +493,9 @@ type AdminMutationResolver interface {
 	UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error)
 	CreateOffer(ctx context.Context, obj *model1.AdminMutation, input model.CreateOfferInput) (model.CreateOfferOrErrorPayload, error)
 	UpdateOffer(ctx context.Context, obj *model1.AdminMutation, input model.UpdateOfferInput) (model.UpdateOfferOrErrorPayload, error)
+	CreateRedirect(ctx context.Context, obj *model1.AdminMutation, input model.CreateRedirectInput) (model.CreateRedirectOrErrorPayload, error)
+	UpdateRedirect(ctx context.Context, obj *model1.AdminMutation, input model.UpdateRedirectInput) (model.UpdateRedirectOrErrorPayload, error)
+	DeleteRedirect(ctx context.Context, obj *model1.AdminMutation, input model.DeleteRedirectInput) (model.DeleteRedirectOrErrorPayload, error)
 	UnbanUser(ctx context.Context, obj *model1.AdminMutation, input model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error)
 	BanUser(ctx context.Context, obj *model1.AdminMutation, input model.BanUserInput) (model.BanUserOrErrorPayload, error)
 	CreateAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error)
@@ -501,12 +536,19 @@ type AdminQueryResolver interface {
 	AllAdmins(ctx context.Context, obj *model1.AdminQuery) (*model.AdminAdminsConnection, error)
 	AllOffers(ctx context.Context, obj *model1.AdminQuery) (*model.AdminOffersConnection, error)
 	AllPurchases(ctx context.Context, obj *model1.AdminQuery) (*model.AdminPurchasesConnection, error)
+	AllRedirects(ctx context.Context, obj *model1.AdminQuery) (*model.AdminRedirectsConnection, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
 	UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.UserSubgraphAccess, error)
 	Offer(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Offer, error)
 	Purchase(ctx context.Context, obj *model1.AdminQuery, id string) (*db.Purchase, error)
+}
+type AdminRedirectResolver interface {
+	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
+}
+type AdminRedirectsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminRedirectsConnection) ([]db.Redirect, error)
 }
 type AdminReleaseResolver interface {
 	HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int64, error)
@@ -786,6 +828,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.CreateOffer(childComplexity, args["input"].(model.CreateOfferInput)), true
 
+	case "AdminMutation.createRedirect":
+		if e.complexity.AdminMutation.CreateRedirect == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_createRedirect_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.CreateRedirect(childComplexity, args["input"].(model.CreateRedirectInput)), true
+
 	case "AdminMutation.createRelease":
 		if e.complexity.AdminMutation.CreateRelease == nil {
 			break
@@ -797,6 +851,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.CreateRelease(childComplexity, args["input"].(model.CreateReleaseInput)), true
+
+	case "AdminMutation.deleteRedirect":
+		if e.complexity.AdminMutation.DeleteRedirect == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_deleteRedirect_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.DeleteRedirect(childComplexity, args["input"].(model.DeleteRedirectInput)), true
 
 	case "AdminMutation.disableApiKey":
 		if e.complexity.AdminMutation.DisableAPIKey == nil {
@@ -857,6 +923,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.UpdateOffer(childComplexity, args["input"].(model.UpdateOfferInput)), true
+
+	case "AdminMutation.updateRedirect":
+		if e.complexity.AdminMutation.UpdateRedirect == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_updateRedirect_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.UpdateRedirect(childComplexity, args["input"].(model.UpdateRedirectInput)), true
 
 	case "AdminMutation.updateSubgraph":
 		if e.complexity.AdminMutation.UpdateSubgraph == nil {
@@ -1076,6 +1154,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminQuery.AllPurchases(childComplexity), true
 
+	case "AdminQuery.allRedirects":
+		if e.complexity.AdminQuery.AllRedirects == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllRedirects(childComplexity), true
+
 	case "AdminQuery.allReleases":
 		if e.complexity.AdminQuery.AllReleases == nil {
 			break
@@ -1170,6 +1255,62 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.UserSubgraphAccess(childComplexity, args["id"].(int64)), true
+
+	case "AdminRedirect.createdAt":
+		if e.complexity.AdminRedirect.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminRedirect.CreatedAt(childComplexity), true
+
+	case "AdminRedirect.createdBy":
+		if e.complexity.AdminRedirect.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.AdminRedirect.CreatedBy(childComplexity), true
+
+	case "AdminRedirect.id":
+		if e.complexity.AdminRedirect.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminRedirect.ID(childComplexity), true
+
+	case "AdminRedirect.ignoreCase":
+		if e.complexity.AdminRedirect.IgnoreCase == nil {
+			break
+		}
+
+		return e.complexity.AdminRedirect.IgnoreCase(childComplexity), true
+
+	case "AdminRedirect.isRegex":
+		if e.complexity.AdminRedirect.IsRegex == nil {
+			break
+		}
+
+		return e.complexity.AdminRedirect.IsRegex(childComplexity), true
+
+	case "AdminRedirect.pattern":
+		if e.complexity.AdminRedirect.Pattern == nil {
+			break
+		}
+
+		return e.complexity.AdminRedirect.Pattern(childComplexity), true
+
+	case "AdminRedirect.target":
+		if e.complexity.AdminRedirect.Target == nil {
+			break
+		}
+
+		return e.complexity.AdminRedirect.Target(childComplexity), true
+
+	case "AdminRedirectsConnection.nodes":
+		if e.complexity.AdminRedirectsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminRedirectsConnection.Nodes(childComplexity), true
 
 	case "AdminRelease.createdAt":
 		if e.complexity.AdminRelease.CreatedAt == nil {
@@ -1409,12 +1550,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.CreatePaymentLinkPayload.Token(childComplexity), true
 
+	case "CreateRedirectPayload.redirect":
+		if e.complexity.CreateRedirectPayload.Redirect == nil {
+			break
+		}
+
+		return e.complexity.CreateRedirectPayload.Redirect(childComplexity), true
+
 	case "CreateReleasePayload.release":
 		if e.complexity.CreateReleasePayload.Release == nil {
 			break
 		}
 
 		return e.complexity.CreateReleasePayload.Release(childComplexity), true
+
+	case "DeleteRedirectPayload.id":
+		if e.complexity.DeleteRedirectPayload.ID == nil {
+			break
+		}
+
+		return e.complexity.DeleteRedirectPayload.ID(childComplexity), true
 
 	case "DisableApiKeyPayload.apiKey":
 		if e.complexity.DisableApiKeyPayload.APIKey == nil {
@@ -1845,6 +2000,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UpdateOfferPayload.Offer(childComplexity), true
 
+	case "UpdateRedirectPayload.redirect":
+		if e.complexity.UpdateRedirectPayload.Redirect == nil {
+			break
+		}
+
+		return e.complexity.UpdateRedirectPayload.Redirect(childComplexity), true
+
 	case "UpdateSubgraphPayload.subgraph":
 		if e.complexity.UpdateSubgraphPayload.Subgraph == nil {
 			break
@@ -2010,7 +2172,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateApiKeyInput,
 		ec.unmarshalInputCreateOfferInput,
 		ec.unmarshalInputCreatePaymentLinkInput,
+		ec.unmarshalInputCreateRedirectInput,
 		ec.unmarshalInputCreateReleaseInput,
+		ec.unmarshalInputDeleteRedirectInput,
 		ec.unmarshalInputDisableApiKeyInput,
 		ec.unmarshalInputHideNotesInput,
 		ec.unmarshalInputMakeReleaseLiveInput,
@@ -2022,6 +2186,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateNoteGraphPositionInput,
 		ec.unmarshalInputUpdateNoteGraphPositionsInput,
 		ec.unmarshalInputUpdateOfferInput,
+		ec.unmarshalInputUpdateRedirectInput,
 		ec.unmarshalInputUpdateSubgraphInput,
 		ec.unmarshalInputUpdateUserSubgraphAccessInput,
 		ec.unmarshalInputUploadNoteAssetInput,
@@ -2210,6 +2375,29 @@ func (ec *executionContext) field_AdminMutation_createOffer_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_createRedirect_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_createRedirect_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_createRedirect_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateRedirectInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateRedirectInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateRedirectInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateRedirectInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_createRelease_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2230,6 +2418,29 @@ func (ec *executionContext) field_AdminMutation_createRelease_argsInput(
 	}
 
 	var zeroVal model.CreateReleaseInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_deleteRedirect_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_deleteRedirect_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_deleteRedirect_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.DeleteRedirectInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNDeleteRedirectInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteRedirectInput(ctx, tmp)
+	}
+
+	var zeroVal model.DeleteRedirectInput
 	return zeroVal, nil
 }
 
@@ -2345,6 +2556,29 @@ func (ec *executionContext) field_AdminMutation_updateOffer_argsInput(
 	}
 
 	var zeroVal model.UpdateOfferInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_updateRedirect_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_updateRedirect_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_updateRedirect_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateRedirectInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateRedirectInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateRedirectInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateRedirectInput
 	return zeroVal, nil
 }
 
@@ -3869,6 +4103,171 @@ func (ec *executionContext) fieldContext_AdminMutation_updateOffer(ctx context.C
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_updateOffer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_createRedirect(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_createRedirect(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().CreateRedirect(rctx, obj, fc.Args["input"].(model.CreateRedirectInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CreateRedirectOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNCreateRedirectOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateRedirectOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createRedirect(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateRedirectOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createRedirect_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_updateRedirect(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_updateRedirect(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().UpdateRedirect(rctx, obj, fc.Args["input"].(model.UpdateRedirectInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.UpdateRedirectOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNUpdateRedirectOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateRedirectOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_updateRedirect(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UpdateRedirectOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_updateRedirect_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deleteRedirect(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_deleteRedirect(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().DeleteRedirect(rctx, obj, fc.Args["input"].(model.DeleteRedirectInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.DeleteRedirectOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNDeleteRedirectOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteRedirectOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deleteRedirect(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeleteRedirectOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_deleteRedirect_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5731,6 +6130,54 @@ func (ec *executionContext) fieldContext_AdminQuery_allPurchases(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_allRedirects(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allRedirects(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllRedirects(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminRedirectsConnection)
+	fc.Result = res
+	return ec.marshalNAdminRedirectsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminRedirectsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allRedirects(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminRedirectsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminRedirectsConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_apiKeyLogs(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 	if err != nil {
@@ -6142,6 +6589,384 @@ func (ec *executionContext) fieldContext_AdminQuery_purchase(ctx context.Context
 	if fc.Args, err = ec.field_AdminQuery_purchase_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRedirect_id(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminRedirect_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminRedirect_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRedirect",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRedirect_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminRedirect_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminRedirect_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRedirect",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRedirect_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminRedirect_createdBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminRedirect().CreatedBy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminRedirect_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRedirect",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRedirect_pattern(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminRedirect_pattern(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pattern, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminRedirect_pattern(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRedirect",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRedirect_ignoreCase(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminRedirect_ignoreCase(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IgnoreCase, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminRedirect_ignoreCase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRedirect",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRedirect_isRegex(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminRedirect_isRegex(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsRegex, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminRedirect_isRegex(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRedirect",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRedirect_target(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminRedirect_target(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Target, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminRedirect_target(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRedirect",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminRedirectsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminRedirectsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminRedirectsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminRedirectsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.Redirect)
+	fc.Result = res
+	return ec.marshalNAdminRedirect2ᚕtrip2gᚋinternalᚋdbᚐRedirectᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminRedirectsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminRedirectsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminRedirect_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminRedirect_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminRedirect_createdBy(ctx, field)
+			case "pattern":
+				return ec.fieldContext_AdminRedirect_pattern(ctx, field)
+			case "ignoreCase":
+				return ec.fieldContext_AdminRedirect_ignoreCase(ctx, field)
+			case "isRegex":
+				return ec.fieldContext_AdminRedirect_isRegex(ctx, field)
+			case "target":
+				return ec.fieldContext_AdminRedirect_target(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminRedirect", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -7802,6 +8627,66 @@ func (ec *executionContext) fieldContext_CreatePaymentLinkPayload_token(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateRedirectPayload_redirect(ctx context.Context, field graphql.CollectedField, obj *model.CreateRedirectPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreateRedirectPayload_redirect(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Redirect, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Redirect)
+	fc.Result = res
+	return ec.marshalNAdminRedirect2ᚖtrip2gᚋinternalᚋdbᚐRedirect(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreateRedirectPayload_redirect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateRedirectPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminRedirect_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminRedirect_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminRedirect_createdBy(ctx, field)
+			case "pattern":
+				return ec.fieldContext_AdminRedirect_pattern(ctx, field)
+			case "ignoreCase":
+				return ec.fieldContext_AdminRedirect_ignoreCase(ctx, field)
+			case "isRegex":
+				return ec.fieldContext_AdminRedirect_isRegex(ctx, field)
+			case "target":
+				return ec.fieldContext_AdminRedirect_target(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminRedirect", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreateReleasePayload_release(ctx context.Context, field graphql.CollectedField, obj *model.CreateReleasePayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_CreateReleasePayload_release(ctx, field)
 	if err != nil {
@@ -7857,6 +8742,50 @@ func (ec *executionContext) fieldContext_CreateReleasePayload_release(_ context.
 				return ec.fieldContext_AdminRelease_isLive(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminRelease", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteRedirectPayload_id(ctx context.Context, field graphql.CollectedField, obj *model.DeleteRedirectPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteRedirectPayload_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeleteRedirectPayload_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteRedirectPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8627,6 +9556,12 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_createOffer(ctx, field)
 			case "updateOffer":
 				return ec.fieldContext_AdminMutation_updateOffer(ctx, field)
+			case "createRedirect":
+				return ec.fieldContext_AdminMutation_createRedirect(ctx, field)
+			case "updateRedirect":
+				return ec.fieldContext_AdminMutation_updateRedirect(ctx, field)
+			case "deleteRedirect":
+				return ec.fieldContext_AdminMutation_deleteRedirect(ctx, field)
 			case "unbanUser":
 				return ec.fieldContext_AdminMutation_unbanUser(ctx, field)
 			case "banUser":
@@ -10051,6 +10986,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allOffers(ctx, field)
 			case "allPurchases":
 				return ec.fieldContext_AdminQuery_allPurchases(ctx, field)
+			case "allRedirects":
+				return ec.fieldContext_AdminQuery_allRedirects(ctx, field)
 			case "apiKeyLogs":
 				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "subgraph":
@@ -10814,6 +11751,66 @@ func (ec *executionContext) fieldContext_UpdateOfferPayload_offer(_ context.Cont
 				return ec.fieldContext_AdminOffer_subgraphs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminOffer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateRedirectPayload_redirect(ctx context.Context, field graphql.CollectedField, obj *model.UpdateRedirectPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpdateRedirectPayload_redirect(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Redirect, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Redirect)
+	fc.Result = res
+	return ec.marshalNAdminRedirect2ᚖtrip2gᚋinternalᚋdbᚐRedirect(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpdateRedirectPayload_redirect(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateRedirectPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminRedirect_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminRedirect_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminRedirect_createdBy(ctx, field)
+			case "pattern":
+				return ec.fieldContext_AdminRedirect_pattern(ctx, field)
+			case "ignoreCase":
+				return ec.fieldContext_AdminRedirect_ignoreCase(ctx, field)
+			case "isRegex":
+				return ec.fieldContext_AdminRedirect_isRegex(ctx, field)
+			case "target":
+				return ec.fieldContext_AdminRedirect_target(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminRedirect", field.Name)
 		},
 	}
 	return fc, nil
@@ -13967,6 +14964,54 @@ func (ec *executionContext) unmarshalInputCreatePaymentLinkInput(ctx context.Con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateRedirectInput(ctx context.Context, obj any) (model.CreateRedirectInput, error) {
+	var it model.CreateRedirectInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"pattern", "ignoreCase", "isRegex", "target"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "pattern":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pattern"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Pattern = data
+		case "ignoreCase":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ignoreCase"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IgnoreCase = data
+		case "isRegex":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isRegex"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IsRegex = data
+		case "target":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("target"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Target = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateReleaseInput(ctx context.Context, obj any) (model.CreateReleaseInput, error) {
 	var it model.CreateReleaseInput
 	asMap := map[string]any{}
@@ -13995,6 +15040,33 @@ func (ec *executionContext) unmarshalInputCreateReleaseInput(ctx context.Context
 				return it, err
 			}
 			it.HomeNoteVersionID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteRedirectInput(ctx context.Context, obj any) (model.DeleteRedirectInput, error) {
+	var it model.DeleteRedirectInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
 		}
 	}
 
@@ -14361,6 +15433,61 @@ func (ec *executionContext) unmarshalInputUpdateOfferInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateRedirectInput(ctx context.Context, obj any) (model.UpdateRedirectInput, error) {
+	var it model.UpdateRedirectInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "pattern", "ignoreCase", "isRegex", "target"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "pattern":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pattern"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Pattern = data
+		case "ignoreCase":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ignoreCase"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IgnoreCase = data
+		case "isRegex":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isRegex"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IsRegex = data
+		case "target":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("target"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Target = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Context, obj any) (updatesubgraph.Request, error) {
 	var it updatesubgraph.Request
 	asMap := map[string]any{}
@@ -14587,6 +15714,29 @@ func (ec *executionContext) _CreatePaymentLinkOrErrorPayload(ctx context.Context
 	}
 }
 
+func (ec *executionContext) _CreateRedirectOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateRedirectOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateRedirectPayload:
+		return ec._CreateRedirectPayload(ctx, sel, &obj)
+	case *model.CreateRedirectPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateRedirectPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _CreateReleaseOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateReleaseOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -14605,6 +15755,29 @@ func (ec *executionContext) _CreateReleaseOrErrorPayload(ctx context.Context, se
 			return graphql.Null
 		}
 		return ec._CreateReleasePayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _DeleteRedirectOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteRedirectOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DeleteRedirectPayload:
+		return ec._DeleteRedirectPayload(ctx, sel, &obj)
+	case *model.DeleteRedirectPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeleteRedirectPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -14828,6 +16001,29 @@ func (ec *executionContext) _UpdateOfferOrErrorPayload(ctx context.Context, sel 
 			return graphql.Null
 		}
 		return ec._UpdateOfferPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _UpdateRedirectOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateRedirectOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UpdateRedirectPayload:
+		return ec._UpdateRedirectPayload(ctx, sel, &obj)
+	case *model.UpdateRedirectPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateRedirectPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -15666,6 +16862,114 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_updateOffer(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createRedirect":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createRedirect(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "updateRedirect":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_updateRedirect(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deleteRedirect":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deleteRedirect(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -16936,6 +18240,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allRedirects":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allRedirects(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "apiKeyLogs":
 			field := field
 
@@ -17114,6 +18454,176 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_purchase(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminRedirectImplementors = []string{"AdminRedirect"}
+
+func (ec *executionContext) _AdminRedirect(ctx context.Context, sel ast.SelectionSet, obj *db.Redirect) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminRedirectImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminRedirect")
+		case "id":
+			out.Values[i] = ec._AdminRedirect_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminRedirect_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminRedirect_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "pattern":
+			out.Values[i] = ec._AdminRedirect_pattern(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ignoreCase":
+			out.Values[i] = ec._AdminRedirect_ignoreCase(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "isRegex":
+			out.Values[i] = ec._AdminRedirect_isRegex(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "target":
+			out.Values[i] = ec._AdminRedirect_target(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminRedirectsConnectionImplementors = []string{"AdminRedirectsConnection"}
+
+func (ec *executionContext) _AdminRedirectsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminRedirectsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminRedirectsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminRedirectsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminRedirectsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -18188,6 +19698,45 @@ func (ec *executionContext) _CreatePaymentLinkPayload(ctx context.Context, sel a
 	return out
 }
 
+var createRedirectPayloadImplementors = []string{"CreateRedirectPayload", "CreateRedirectOrErrorPayload"}
+
+func (ec *executionContext) _CreateRedirectPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateRedirectPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createRedirectPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateRedirectPayload")
+		case "redirect":
+			out.Values[i] = ec._CreateRedirectPayload_redirect(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createReleasePayloadImplementors = []string{"CreateReleasePayload", "CreateReleaseOrErrorPayload"}
 
 func (ec *executionContext) _CreateReleasePayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateReleasePayload) graphql.Marshaler {
@@ -18201,6 +19750,45 @@ func (ec *executionContext) _CreateReleasePayload(ctx context.Context, sel ast.S
 			out.Values[i] = graphql.MarshalString("CreateReleasePayload")
 		case "release":
 			out.Values[i] = ec._CreateReleasePayload_release(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var deleteRedirectPayloadImplementors = []string{"DeleteRedirectPayload", "DeleteRedirectOrErrorPayload"}
+
+func (ec *executionContext) _DeleteRedirectPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteRedirectPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteRedirectPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteRedirectPayload")
+		case "id":
+			out.Values[i] = ec._DeleteRedirectPayload_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -18266,7 +19854,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -19776,6 +21364,45 @@ func (ec *executionContext) _UpdateOfferPayload(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var updateRedirectPayloadImplementors = []string{"UpdateRedirectPayload", "UpdateRedirectOrErrorPayload"}
+
+func (ec *executionContext) _UpdateRedirectPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateRedirectPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateRedirectPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateRedirectPayload")
+		case "redirect":
+			out.Values[i] = ec._UpdateRedirectPayload_redirect(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var updateSubgraphPayloadImplementors = []string{"UpdateSubgraphPayload", "UpdateSubgraphOrErrorPayload"}
 
 func (ec *executionContext) _UpdateSubgraphPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateSubgraphPayload) graphql.Marshaler {
@@ -21161,6 +22788,78 @@ func (ec *executionContext) marshalNAdminQuery2ᚖtrip2gᚋinternalᚋmodelᚐAd
 	return ec._AdminQuery(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminRedirect2trip2gᚋinternalᚋdbᚐRedirect(ctx context.Context, sel ast.SelectionSet, v db.Redirect) graphql.Marshaler {
+	return ec._AdminRedirect(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminRedirect2ᚕtrip2gᚋinternalᚋdbᚐRedirectᚄ(ctx context.Context, sel ast.SelectionSet, v []db.Redirect) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminRedirect2trip2gᚋinternalᚋdbᚐRedirect(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminRedirect2ᚖtrip2gᚋinternalᚋdbᚐRedirect(ctx context.Context, sel ast.SelectionSet, v *db.Redirect) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminRedirect(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminRedirectsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminRedirectsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminRedirectsConnection) graphql.Marshaler {
+	return ec._AdminRedirectsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminRedirectsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminRedirectsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminRedirectsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminRedirectsConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminRelease2trip2gᚋinternalᚋdbᚐRelease(ctx context.Context, sel ast.SelectionSet, v db.Release) graphql.Marshaler {
 	return ec._AdminRelease(ctx, sel, &v)
 }
@@ -21534,6 +23233,21 @@ func (ec *executionContext) marshalNCreatePaymentLinkOrErrorPayload2trip2gᚋint
 	return ec._CreatePaymentLinkOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCreateRedirectInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateRedirectInput(ctx context.Context, v any) (model.CreateRedirectInput, error) {
+	res, err := ec.unmarshalInputCreateRedirectInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateRedirectOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateRedirectOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateRedirectOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateRedirectOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateReleaseInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateReleaseInput(ctx context.Context, v any) (model.CreateReleaseInput, error) {
 	res, err := ec.unmarshalInputCreateReleaseInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -21547,6 +23261,21 @@ func (ec *executionContext) marshalNCreateReleaseOrErrorPayload2trip2gᚋinterna
 		return graphql.Null
 	}
 	return ec._CreateReleaseOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeleteRedirectInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteRedirectInput(ctx context.Context, v any) (model.DeleteRedirectInput, error) {
+	res, err := ec.unmarshalInputDeleteRedirectInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteRedirectOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteRedirectOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteRedirectOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteRedirectOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDisableApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐDisableAPIKeyInput(ctx context.Context, v any) (model.DisableAPIKeyInput, error) {
@@ -22292,6 +24021,21 @@ func (ec *executionContext) marshalNUpdateOfferOrErrorPayload2trip2gᚋinternal�
 		return graphql.Null
 	}
 	return ec._UpdateOfferOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateRedirectInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateRedirectInput(ctx context.Context, v any) (model.UpdateRedirectInput, error) {
+	res, err := ec.unmarshalInputUpdateRedirectInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateRedirectOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateRedirectOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateRedirectOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateRedirectOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateSubgraphInput2trip2gᚋinternalᚋcaseᚋadminᚋupdatesubgraphᚐRequest(ctx context.Context, v any) (updatesubgraph.Request, error) {

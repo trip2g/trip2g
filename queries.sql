@@ -464,3 +464,23 @@ update note_paths
    set hidden_by = null
      , hidden_at = null
  where value = ?;
+
+-- name: ListAllRedirects :many
+select * from redirects order by id;
+
+-- name: InsertRedirect :one
+insert into redirects (created_by, pattern, ignore_case, is_regex, target)
+values (?, ?, ?, ?, ?)
+returning *;
+
+-- name: UpdateRedirect :one
+update redirects
+   set pattern = ?
+     , ignore_case = ?
+     , is_regex = ?
+     , target = ?
+ where id = ?
+returning *;
+
+-- name: DeleteRedirect :exec
+delete from redirects where id = ?;

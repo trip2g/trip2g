@@ -189,6 +189,15 @@ CREATE TABLE IF NOT EXISTS "purchases" (
   email text not null,
   price_usd numeric not null
 );
+CREATE TABLE redirects (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  pattern text not null,
+  ignore_case boolean not null default true,
+  is_regex boolean not null default false,
+  target text not null
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -217,4 +226,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250531040526'),
   ('20250531113101'),
   ('20250602143243'),
-  ('20250604130924');
+  ('20250604130924'),
+  ('20250605090619');

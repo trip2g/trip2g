@@ -542,6 +542,15 @@ func (q *Queries) DeleteOfferSubgraphs(ctx context.Context, offerID int64) error
 	return err
 }
 
+const deleteRedirect = `-- name: DeleteRedirect :exec
+delete from redirects where id = ?
+`
+
+func (q *Queries) DeleteRedirect(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteRedirect, id)
+	return err
+}
+
 const deleteSignInCodesByUserID = `-- name: DeleteSignInCodesByUserID :exec
 delete from sign_in_codes
  where user_id = ?
@@ -858,6 +867,41 @@ func (q *Queries) InsertPurchase(ctx context.Context, arg InsertPurchaseParams) 
 		arg.Status,
 	)
 	return err
+}
+
+const insertRedirect = `-- name: InsertRedirect :one
+insert into redirects (created_by, pattern, ignore_case, is_regex, target)
+values (?, ?, ?, ?, ?)
+returning id, created_at, created_by, pattern, ignore_case, is_regex, target
+`
+
+type InsertRedirectParams struct {
+	CreatedBy  int64  `json:"created_by"`
+	Pattern    string `json:"pattern"`
+	IgnoreCase bool   `json:"ignore_case"`
+	IsRegex    bool   `json:"is_regex"`
+	Target     string `json:"target"`
+}
+
+func (q *Queries) InsertRedirect(ctx context.Context, arg InsertRedirectParams) (Redirect, error) {
+	row := q.db.QueryRowContext(ctx, insertRedirect,
+		arg.CreatedBy,
+		arg.Pattern,
+		arg.IgnoreCase,
+		arg.IsRegex,
+		arg.Target,
+	)
+	var i Redirect
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Pattern,
+		&i.IgnoreCase,
+		&i.IsRegex,
+		&i.Target,
+	)
+	return i, err
 }
 
 const insertRelease = `-- name: InsertRelease :one
@@ -1385,6 +1429,41 @@ func (q *Queries) ListAllPurchases(ctx context.Context) ([]Purchase, error) {
 			&i.UserID,
 			&i.Email,
 			&i.PriceUsd,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllRedirects = `-- name: ListAllRedirects :many
+select id, created_at, created_by, pattern, ignore_case, is_regex, target from redirects order by id
+`
+
+func (q *Queries) ListAllRedirects(ctx context.Context) ([]Redirect, error) {
+	rows, err := q.db.QueryContext(ctx, listAllRedirects)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Redirect
+	for rows.Next() {
+		var i Redirect
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.Pattern,
+			&i.IgnoreCase,
+			&i.IsRegex,
+			&i.Target,
 		); err != nil {
 			return nil, err
 		}
@@ -1997,6 +2076,45 @@ type UpdatePurchaseStatusParams struct {
 func (q *Queries) UpdatePurchaseStatus(ctx context.Context, arg UpdatePurchaseStatusParams) error {
 	_, err := q.db.ExecContext(ctx, updatePurchaseStatus, arg.Status, arg.PaymentData, arg.ID)
 	return err
+}
+
+const updateRedirect = `-- name: UpdateRedirect :one
+update redirects
+   set pattern = ?
+     , ignore_case = ?
+     , is_regex = ?
+     , target = ?
+ where id = ?
+returning id, created_at, created_by, pattern, ignore_case, is_regex, target
+`
+
+type UpdateRedirectParams struct {
+	Pattern    string `json:"pattern"`
+	IgnoreCase bool   `json:"ignore_case"`
+	IsRegex    bool   `json:"is_regex"`
+	Target     string `json:"target"`
+	ID         int64  `json:"id"`
+}
+
+func (q *Queries) UpdateRedirect(ctx context.Context, arg UpdateRedirectParams) (Redirect, error) {
+	row := q.db.QueryRowContext(ctx, updateRedirect,
+		arg.Pattern,
+		arg.IgnoreCase,
+		arg.IsRegex,
+		arg.Target,
+		arg.ID,
+	)
+	var i Redirect
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Pattern,
+		&i.IgnoreCase,
+		&i.IsRegex,
+		&i.Target,
+	)
+	return i, err
 }
 
 const updateUserSubgraphAccess = `-- name: UpdateUserSubgraphAccess :one

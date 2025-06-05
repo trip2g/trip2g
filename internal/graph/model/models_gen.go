@@ -30,8 +30,16 @@ type CreatePaymentLinkOrErrorPayload interface {
 	IsCreatePaymentLinkOrErrorPayload()
 }
 
+type CreateRedirectOrErrorPayload interface {
+	IsCreateRedirectOrErrorPayload()
+}
+
 type CreateReleaseOrErrorPayload interface {
 	IsCreateReleaseOrErrorPayload()
+}
+
+type DeleteRedirectOrErrorPayload interface {
+	IsDeleteRedirectOrErrorPayload()
 }
 
 type DisableAPIKeyOrErrorPayload interface {
@@ -74,6 +82,10 @@ type UpdateOfferOrErrorPayload interface {
 	IsUpdateOfferOrErrorPayload()
 }
 
+type UpdateRedirectOrErrorPayload interface {
+	IsUpdateRedirectOrErrorPayload()
+}
+
 type UpdateSubgraphOrErrorPayload interface {
 	IsUpdateSubgraphOrErrorPayload()
 }
@@ -109,6 +121,10 @@ type AdminOffersConnection struct {
 
 type AdminPurchasesConnection struct {
 	Nodes []db.Purchase `json:"nodes"`
+}
+
+type AdminRedirectsConnection struct {
+	Nodes []db.Redirect `json:"nodes"`
 }
 
 type AdminReleasesConnection struct {
@@ -186,6 +202,19 @@ type CreatePaymentLinkPayload struct {
 
 func (CreatePaymentLinkPayload) IsCreatePaymentLinkOrErrorPayload() {}
 
+type CreateRedirectInput struct {
+	Pattern    string `json:"pattern"`
+	IgnoreCase bool   `json:"ignoreCase"`
+	IsRegex    bool   `json:"isRegex"`
+	Target     string `json:"target"`
+}
+
+type CreateRedirectPayload struct {
+	Redirect *db.Redirect `json:"redirect"`
+}
+
+func (CreateRedirectPayload) IsCreateRedirectOrErrorPayload() {}
+
 type CreateReleaseInput struct {
 	Title             string `json:"title"`
 	HomeNoteVersionID *int64 `json:"homeNoteVersionId,omitempty"`
@@ -196,6 +225,16 @@ type CreateReleasePayload struct {
 }
 
 func (CreateReleasePayload) IsCreateReleaseOrErrorPayload() {}
+
+type DeleteRedirectInput struct {
+	ID int64 `json:"id"`
+}
+
+type DeleteRedirectPayload struct {
+	ID int64 `json:"id"`
+}
+
+func (DeleteRedirectPayload) IsDeleteRedirectOrErrorPayload() {}
 
 type DisableAPIKeyInput struct {
 	ID int64 `json:"id"`
@@ -247,6 +286,12 @@ func (ErrorPayload) IsUpdateNoteGraphPositionsOrErrorPayload() {}
 func (ErrorPayload) IsCreateOfferOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateOfferOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateRedirectOrErrorPayload() {}
+
+func (ErrorPayload) IsUpdateRedirectOrErrorPayload() {}
+
+func (ErrorPayload) IsDeleteRedirectOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`
@@ -372,6 +417,20 @@ type UpdateOfferPayload struct {
 }
 
 func (UpdateOfferPayload) IsUpdateOfferOrErrorPayload() {}
+
+type UpdateRedirectInput struct {
+	ID         int64  `json:"id"`
+	Pattern    string `json:"pattern"`
+	IgnoreCase bool   `json:"ignoreCase"`
+	IsRegex    bool   `json:"isRegex"`
+	Target     string `json:"target"`
+}
+
+type UpdateRedirectPayload struct {
+	Redirect *db.Redirect `json:"redirect"`
+}
+
+func (UpdateRedirectPayload) IsUpdateRedirectOrErrorPayload() {}
 
 type UpdateSubgraphPayload struct {
 	Subgraph *db.Subgraph `json:"subgraph"`

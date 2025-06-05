@@ -197,6 +197,20 @@ type AdminPurchasesConnection {
   nodes: [AdminPurchase!]! @goField(forceResolver: true)
 }
 
+type AdminRedirect @goModel(model: "trip2g/internal/db.Redirect") {
+  id: Int64!
+  createdAt: Time!
+  createdBy: AdminUser!
+  pattern: String!
+  ignoreCase: Boolean!
+  isRegex: Boolean!
+  target: String!
+}
+
+type AdminRedirectsConnection {
+  nodes: [AdminRedirect!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -208,6 +222,7 @@ type AdminQuery {
   allAdmins: AdminAdminsConnection!
   allOffers: AdminOffersConnection!
   allPurchases: AdminPurchasesConnection!
+  allRedirects: AdminRedirectsConnection!
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
 
@@ -589,12 +604,65 @@ type UpdateOfferPayload {
 
 union UpdateOfferOrErrorPayload = UpdateOfferPayload | ErrorPayload
 
+#
+# createRedirect
+#
+
+input CreateRedirectInput {
+  pattern: String!
+  ignoreCase: Boolean!
+  isRegex: Boolean!
+  target: String!
+}
+
+type CreateRedirectPayload {
+  redirect: AdminRedirect!
+}
+
+union CreateRedirectOrErrorPayload = CreateRedirectPayload | ErrorPayload
+
+#
+# updateRedirect
+#
+
+input UpdateRedirectInput {
+  id: Int64!
+  pattern: String!
+  ignoreCase: Boolean!
+  isRegex: Boolean!
+  target: String!
+}
+
+type UpdateRedirectPayload {
+  redirect: AdminRedirect!
+}
+
+union UpdateRedirectOrErrorPayload = UpdateRedirectPayload | ErrorPayload
+
+#
+# deleteRedirect
+#
+
+input DeleteRedirectInput {
+  id: Int64!
+}
+
+type DeleteRedirectPayload {
+  id: Int64!
+}
+
+union DeleteRedirectOrErrorPayload = DeleteRedirectPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
 
   createOffer(input: CreateOfferInput!): CreateOfferOrErrorPayload!
   updateOffer(input: UpdateOfferInput!): UpdateOfferOrErrorPayload!
+
+  createRedirect(input: CreateRedirectInput!): CreateRedirectOrErrorPayload!
+  updateRedirect(input: UpdateRedirectInput!): UpdateRedirectOrErrorPayload!
+  deleteRedirect(input: DeleteRedirectInput!): DeleteRedirectOrErrorPayload!
 
   unbanUser(input: UnbanUserInput!): UnbanUserOrErrorPayload!
   banUser(input: BanUserInput!): BanUserOrErrorPayload!
