@@ -1,3 +1,4 @@
 $trip2g_admin_purchase_show $mol_view
+	purchase_id \
 	sub /
 		\TODO

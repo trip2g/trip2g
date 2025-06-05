@@ -7,7 +7,7 @@ $trip2g_admin_offer_update $mol_view
 				<= PublicId_labeler $mol_labeler
 					title \Public ID
 					Content <= PublicId $trip2g_admin_cell
-						content <= offer_public_id
+						content <= offer_public_id \
 				<= Subgraphs_field $mol_form_field
 					name \Subgraphs
 					bid <= subgraphs_bid \

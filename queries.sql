@@ -484,3 +484,6 @@ returning *;
 
 -- name: DeleteRedirect :exec
 delete from redirects where id = ?;
+
+-- name: RedirectByID :one
+select * from redirects where id = ?;

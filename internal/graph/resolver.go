@@ -73,6 +73,7 @@ type Env interface {
 	UserSubgraphAccessByID(ctx context.Context, id int64) (db.UserSubgraphAccess, error)
 	OfferByID(ctx context.Context, id int64) (db.Offer, error)
 	PurchaseByID(ctx context.Context, id string) (db.Purchase, error)
+	RedirectByID(ctx context.Context, id int64) (db.Redirect, error)
 
 	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]db.Subgraph, error)
 	ListActiveUserSubgraphAccessesByUserID(ctx context.Context, userID int64) ([]db.UserSubgraphAccess, error)

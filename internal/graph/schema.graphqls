@@ -231,6 +231,7 @@ type AdminQuery {
   userSubgraphAccess(id: Int64!): AdminUserSubgraphAccess
   offer(id: Int64!): AdminOffer
   purchase(id: String!): AdminPurchase
+  redirect(id: Int64!): AdminRedirect
 }
 
 enum Role {

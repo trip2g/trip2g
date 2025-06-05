@@ -347,6 +347,11 @@ func (r *adminQueryResolver) Purchase(ctx context.Context, obj *appmodel.AdminQu
 	return resolveOne[db.Purchase](ctx, id, r.env(ctx).PurchaseByID)
 }
 
+// Redirect is the resolver for the redirect field.
+func (r *adminQueryResolver) Redirect(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.Redirect, error) {
+	return resolveOne[db.Redirect](ctx, int64(id), r.env(ctx).RedirectByID)
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminRedirectResolver) CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)

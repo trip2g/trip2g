@@ -1,5 +1,5 @@
 $trip2g_admin_admin_show $mol_page
-	title <= admin_id 0
+	title \Admin
 	admin_id? 0
 	body /
 		<= Content $mol_view

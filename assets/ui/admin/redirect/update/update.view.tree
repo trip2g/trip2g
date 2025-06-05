@@ -1,0 +1,31 @@
+$trip2g_admin_redirect_update $mol_view
+	redirect_id 0
+	sub /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Pattern_field $mol_form_field
+					name \Pattern
+					bid <= pattern_bid \
+					Content <= pattern_control $mol_string
+						value? <=> pattern? \
+				<= Target_field $mol_form_field
+					name \Target
+					bid <= target_bid \
+					Content <= target_control $mol_string
+						value? <=> target? \
+				<= IsRegex_field $mol_form_field
+					name \Regex Pattern
+					Content <= is_regex_control $mol_check_box
+						checked? <=> is_regex? false
+				<= IgnoreCase_field $mol_form_field
+					name \Ignore Case
+					Content <= ignore_case_control $mol_check_box
+						checked? <=> ignore_case? true
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

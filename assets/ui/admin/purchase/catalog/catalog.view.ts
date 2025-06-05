@@ -34,11 +34,11 @@ namespace $.$$ {
 			return this.data().get( id )
 		}
 
-		override row_id( id: any ): string {
+		override row_id( id: any ) {
 			return this.row( id ).id
 		}
 
-		override row_email( id: any ): string {
+		override row_email( id: any ) {
 			return this.row( id ).email || '-'
 		}
 

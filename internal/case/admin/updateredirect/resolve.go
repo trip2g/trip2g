@@ -3,9 +3,13 @@ package updateredirect
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/usertoken"
+
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type Env interface {
@@ -13,10 +17,47 @@ type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
 
+func normalizeInput(i *model.UpdateRedirectInput) {
+	i.Pattern = strings.TrimSpace(i.Pattern)
+	i.Target = strings.TrimSpace(i.Target)
+}
+
+func validateInput(i *model.UpdateRedirectInput) *model.ErrorPayload {
+	err := ozzo.ValidateStruct(i,
+		ozzo.Field(&i.ID, ozzo.Required, ozzo.Min(1)),
+		ozzo.Field(&i.Pattern, ozzo.Required),
+		ozzo.Field(&i.Target, ozzo.Required),
+	)
+	if err != nil {
+		return model.NewOzzoError(err)
+	}
+
+	// Custom validation: if isRegex is true, pattern must be valid regex
+	if i.IsRegex {
+		_, err := regexp.Compile(i.Pattern)
+		if err != nil {
+			return &model.ErrorPayload{
+				ByFields: []model.FieldMessage{
+					{Name: "pattern", Value: "must be a valid regular expression"},
+				},
+			}
+		}
+	}
+
+	return nil
+}
+
 func Resolve(ctx context.Context, env Env, input model.UpdateRedirectInput) (model.UpdateRedirectOrErrorPayload, error) {
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current admin user token: %w", err)
+	}
+
+	normalizeInput(&input)
+
+	errorPayload := validateInput(&input)
+	if errorPayload != nil {
+		return errorPayload, nil
 	}
 
 	params := db.UpdateRedirectParams{

@@ -27,6 +27,7 @@ $trip2g_admin_app $mol_book2_catalog
 		admin_purchase_show <= ShowPurchase $trip2g_admin_purchase_show
 		noteGraph <= NoteGraph $trip2g_admin_noteview_graph
 		admins <= Admins $trip2g_admin_admin_catalog
+		redirects <= ListRedirects $trip2g_admin_redirect_catalog
 
 $trip2g_admin_cell $mol_view
 	content \No Content

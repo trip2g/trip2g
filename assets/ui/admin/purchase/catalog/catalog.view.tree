@@ -3,7 +3,7 @@ $trip2g_admin_purchase_catalog $mol_book2_catalog
 	param \id
 	Empty $mol_status
 	ShowPage* $trip2g_admin_purchase_show
-		purchase_id <= row_id*
+		purchase_id <= row_id* \
 	menu_link_content* / <= PurchaseItem* $mol_view
 		sub /
 			<= Rows* $mol_row

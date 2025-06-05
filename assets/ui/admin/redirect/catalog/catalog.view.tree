@@ -1,0 +1,42 @@
+$trip2g_admin_redirect_catalog $mol_book2_catalog
+	menu_title \Redirects
+	param \id
+	Empty $mol_status
+	menu_tools /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+		<= Spread_close
+	ShowPage* $trip2g_admin_redirect_show
+		redirect_id <= row_id* 0
+	CreateForm $trip2g_admin_redirect_create
+	menu_link_content* / <= RedirectItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 800
+				sub <= row_content* /
+					<= Row_id_labeler* $mol_labeler
+						title \ID
+						Content <= Row_id* $trip2g_admin_cell
+							content <= row_id_string* \
+					<= Row_pattern_labeler* $mol_labeler
+						title \Pattern
+						Content <= Row_pattern* $trip2g_admin_cell
+							content <= row_pattern* \pattern
+					<= Row_target_labeler* $mol_labeler
+						title \Target
+						Content <= Row_target* $trip2g_admin_cell
+							content <= row_target* \target
+					<= Row_type_labeler* $mol_labeler
+						title \Type
+						Content <= Row_type* $trip2g_admin_cell
+							content <= row_type* \type
+					<= Row_case_labeler* $mol_labeler
+						title \Case
+						Content <= Row_case* $trip2g_admin_cell
+							content <= row_case* \case
+					<= Row_created_at_labeler* $mol_labeler
+						title \Created At
+						Content <= Row_created_at* $trip2g_admin_cell
+							content <= row_created_at* \created_at

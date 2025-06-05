@@ -192,6 +192,7 @@ type ComplexityRoot struct {
 		NoteView                func(childComplexity int, id string) int
 		Offer                   func(childComplexity int, id int64) int
 		Purchase                func(childComplexity int, id string) int
+		Redirect                func(childComplexity int, id int64) int
 		Subgraph                func(childComplexity int, id int64) int
 		UserSubgraphAccess      func(childComplexity int, id int64) int
 	}
@@ -543,6 +544,7 @@ type AdminQueryResolver interface {
 	UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.UserSubgraphAccess, error)
 	Offer(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Offer, error)
 	Purchase(ctx context.Context, obj *model1.AdminQuery, id string) (*db.Purchase, error)
+	Redirect(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Redirect, error)
 }
 type AdminRedirectResolver interface {
 	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
@@ -1231,6 +1233,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.Purchase(childComplexity, args["id"].(string)), true
+
+	case "AdminQuery.redirect":
+		if e.complexity.AdminQuery.Redirect == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_redirect_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.Redirect(childComplexity, args["id"].(int64)), true
 
 	case "AdminQuery.subgraph":
 		if e.complexity.AdminQuery.Subgraph == nil {
@@ -2717,6 +2731,29 @@ func (ec *executionContext) field_AdminQuery_purchase_argsID(
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_redirect_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_redirect_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_redirect_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int64, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNInt642int64(ctx, tmp)
+	}
+
+	var zeroVal int64
 	return zeroVal, nil
 }
 
@@ -6587,6 +6624,74 @@ func (ec *executionContext) fieldContext_AdminQuery_purchase(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_purchase_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_redirect(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_redirect(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().Redirect(rctx, obj, fc.Args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.Redirect)
+	fc.Result = res
+	return ec.marshalOAdminRedirect2ᚖtrip2gᚋinternalᚋdbᚐRedirect(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_redirect(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminRedirect_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminRedirect_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminRedirect_createdBy(ctx, field)
+			case "pattern":
+				return ec.fieldContext_AdminRedirect_pattern(ctx, field)
+			case "ignoreCase":
+				return ec.fieldContext_AdminRedirect_ignoreCase(ctx, field)
+			case "isRegex":
+				return ec.fieldContext_AdminRedirect_isRegex(ctx, field)
+			case "target":
+				return ec.fieldContext_AdminRedirect_target(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminRedirect", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_redirect_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -11000,6 +11105,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_offer(ctx, field)
 			case "purchase":
 				return ec.fieldContext_AdminQuery_purchase(ctx, field)
+			case "redirect":
+				return ec.fieldContext_AdminQuery_redirect(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -18477,6 +18584,39 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "redirect":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_redirect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -24491,6 +24631,13 @@ func (ec *executionContext) marshalOAdminPurchase2ᚖtrip2gᚋinternalᚋdbᚐPu
 		return graphql.Null
 	}
 	return ec._AdminPurchase(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminRedirect2ᚖtrip2gᚋinternalᚋdbᚐRedirect(ctx context.Context, sel ast.SelectionSet, v *db.Redirect) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminRedirect(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgraph(ctx context.Context, sel ast.SelectionSet, v *db.Subgraph) graphql.Marshaler {

@@ -1890,6 +1890,25 @@ func (q *Queries) PurchaseByID(ctx context.Context, id string) (Purchase, error)
 	return i, err
 }
 
+const redirectByID = `-- name: RedirectByID :one
+select id, created_at, created_by, pattern, ignore_case, is_regex, target from redirects where id = ?
+`
+
+func (q *Queries) RedirectByID(ctx context.Context, id int64) (Redirect, error) {
+	row := q.db.QueryRowContext(ctx, redirectByID, id)
+	var i Redirect
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Pattern,
+		&i.IgnoreCase,
+		&i.IsRegex,
+		&i.Target,
+	)
+	return i, err
+}
+
 const releaseByID = `-- name: ReleaseByID :one
 select id, created_at, created_by, title, home_note_version_id, is_live
   from releases
