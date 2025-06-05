@@ -29,7 +29,8 @@ select * from note_versions
 -- name: AllLatestNotes :many
 select value as path, p.id as path_id, v.id as version_id, content
   from note_paths p
-  join note_versions v on p.id = v.path_id and p.version_count = v.version;
+  join note_versions v on p.id = v.path_id and p.version_count = v.version
+ where p.hidden_by is null;
 
 -- name: AllLatestNoteAssets :many
 with ranked_assets as (
@@ -305,8 +306,8 @@ values (?, ?);
 -- name: DeleteAcmeCert :exec
 delete from acme_certs where key = ?;
 
--- name: ApiKeyIDByValue :one
-select id from api_keys where value = ? and disabled_at is null limit 1;
+-- name: ApiKeyByValue :one
+select * from api_keys where value = ? and disabled_at is null limit 1;
 
 -- name: InsertApiKey :one
 insert into api_keys (value, created_by, description)
@@ -456,4 +457,10 @@ returning *;
 update note_paths
    set hidden_by = ?
      , hidden_at = datetime('now')
+ where value = ?;
+
+-- name: UnhideNotePath :exec
+update note_paths
+   set hidden_by = null
+     , hidden_at = null
  where value = ?;

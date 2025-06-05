@@ -26,6 +26,7 @@ import (
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createpaymentlink"
+	"trip2g/internal/case/hidenote"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
@@ -438,25 +439,36 @@ func (r *mutationResolver) CreatePaymentLink(ctx context.Context, input model.Cr
 
 // PushNotes is the resolver for the pushNotes field.
 func (r *mutationResolver) PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
-	err := checkapikey.Resolve(ctx, r.env(ctx), "push_notes")
+	apiKey, err := checkapikey.Resolve(ctx, r.env(ctx), "push_notes")
 	if err != nil {
 		return nil, err
 	}
+
+	input.ApiKey = *apiKey
 
 	return pushnotes.Resolve(ctx, r.env(ctx), input)
 }
 
 // HideNote is the resolver for the hideNote field.
 func (r *mutationResolver) HideNote(ctx context.Context, input model.HideNoteInput) (model.HideNoteOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: HideNote - hideNote"))
+	apiKey, err := checkapikey.Resolve(ctx, r.env(ctx), "hide_note")
+	if err != nil {
+		return nil, err
+	}
+
+	input.ApiKey = *apiKey
+
+	return hidenote.Resolve(ctx, r.env(ctx), input)
 }
 
 // UploadNoteAsset is the resolver for the uploadNoteAsset field.
 func (r *mutationResolver) UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error) {
-	err := checkapikey.Resolve(ctx, r.env(ctx), "upload_note_asset")
+	apiKey, err := checkapikey.Resolve(ctx, r.env(ctx), "upload_note_asset")
 	if err != nil {
 		return nil, err
 	}
+
+	input.ApiKey = *apiKey
 
 	return uploadnoteasset.Resolve(ctx, r.env(ctx), input)
 }
@@ -575,7 +587,7 @@ func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 
 // NotePaths is the resolver for the notePaths field.
 func (r *queryResolver) NotePaths(ctx context.Context) ([]db.NotePath, error) {
-	err := checkapikey.Resolve(ctx, r.env(ctx), "get_note_paths")
+	_, err := checkapikey.Resolve(ctx, r.env(ctx), "get_note_paths")
 	if err != nil {
 		return nil, err
 	}

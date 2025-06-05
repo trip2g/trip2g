@@ -125,6 +125,7 @@ const allLatestNotes = `-- name: AllLatestNotes :many
 select value as path, p.id as path_id, v.id as version_id, content
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version
+ where p.hidden_by is null
 `
 
 type AllLatestNotesRow struct {
@@ -375,15 +376,23 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 	return items, nil
 }
 
-const apiKeyIDByValue = `-- name: ApiKeyIDByValue :one
-select id from api_keys where value = ? and disabled_at is null limit 1
+const apiKeyByValue = `-- name: ApiKeyByValue :one
+select id, value, created_at, created_by, disabled_at, disabled_by, description from api_keys where value = ? and disabled_at is null limit 1
 `
 
-func (q *Queries) ApiKeyIDByValue(ctx context.Context, value string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, apiKeyIDByValue, value)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+func (q *Queries) ApiKeyByValue(ctx context.Context, value string) (ApiKey, error) {
+	row := q.db.QueryRowContext(ctx, apiKeyByValue, value)
+	var i ApiKey
+	err := row.Scan(
+		&i.ID,
+		&i.Value,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DisabledAt,
+		&i.DisabledBy,
+		&i.Description,
+	)
+	return i, err
 }
 
 const banUser = `-- name: BanUser :exec
@@ -1876,6 +1885,18 @@ delete from user_bans where user_id = ?
 
 func (q *Queries) UnbanUser(ctx context.Context, userID int64) error {
 	_, err := q.db.ExecContext(ctx, unbanUser, userID)
+	return err
+}
+
+const unhideNotePath = `-- name: UnhideNotePath :exec
+update note_paths
+   set hidden_by = null
+     , hidden_at = null
+ where value = ?
+`
+
+func (q *Queries) UnhideNotePath(ctx context.Context, value string) error {
+	_, err := q.db.ExecContext(ctx, unhideNotePath, value)
 	return err
 }
 

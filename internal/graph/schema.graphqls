@@ -343,7 +343,7 @@ input PushNoteInput {
   content: String!
 }
 
-input PushNotesInput {
+input PushNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
   updates: [PushNoteInput!]!
 }
 
@@ -369,7 +369,7 @@ union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
 # uploadNoteAsset
 #
 
-input UploadNoteAssetInput {
+input UploadNoteAssetInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
   file: Upload!
   noteId: Int64!
   sha256Hash: String! # must be calculated by the client, the request will be reqected if the hash does not match after upload
@@ -387,7 +387,7 @@ union UploadNoteAssetOrErrorPayload = UploadNoteAssetPayload | ErrorPayload
 # hideNote
 #
 
-input HideNoteInput {
+input HideNoteInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
   path: String!
 }
 

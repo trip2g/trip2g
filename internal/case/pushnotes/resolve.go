@@ -15,6 +15,7 @@ type Env interface {
 	InsertNote(ctx context.Context, update db.Note) error
 	InsertSubgraph(ctx context.Context, name string) error
 	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
+	UnhideNotePath(ctx context.Context, value string) error
 }
 
 func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
@@ -33,6 +34,12 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		insertErr := env.InsertNote(ctx, note)
 		if insertErr != nil {
 			return nil, fmt.Errorf("failed to insert note: %w", insertErr)
+		}
+
+		// Reset hidden_by and hidden_at when note is pushed
+		unhideErr := env.UnhideNotePath(ctx, update.Path)
+		if unhideErr != nil {
+			return nil, fmt.Errorf("failed to unhide note path: %w", unhideErr)
 		}
 	}
 

@@ -254,7 +254,8 @@ type FieldMessage struct {
 }
 
 type HideNoteInput struct {
-	Path string `json:"path"`
+	Path   string    `json:"path"`
+	ApiKey db.ApiKey `json:"-"`
 }
 
 type HideNotePayload struct {
@@ -283,6 +284,7 @@ type PushNoteInput struct {
 
 type PushNotesInput struct {
 	Updates []PushNoteInput `json:"updates"`
+	ApiKey  db.ApiKey       `json:"-"`
 }
 
 type PushNotesPayload struct {
@@ -389,6 +391,7 @@ type UploadNoteAssetInput struct {
 	Sha256Hash   string         `json:"sha256Hash"`
 	Path         string         `json:"path"`
 	AbsolutePath string         `json:"absolutePath"`
+	ApiKey       db.ApiKey      `json:"-"`
 }
 
 type UploadNoteAssetPayload struct {
