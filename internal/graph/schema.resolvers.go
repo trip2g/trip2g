@@ -26,7 +26,7 @@ import (
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createpaymentlink"
-	"trip2g/internal/case/hidenote"
+	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
@@ -449,16 +449,16 @@ func (r *mutationResolver) PushNotes(ctx context.Context, input model.PushNotesI
 	return pushnotes.Resolve(ctx, r.env(ctx), input)
 }
 
-// HideNote is the resolver for the hideNote field.
-func (r *mutationResolver) HideNote(ctx context.Context, input model.HideNoteInput) (model.HideNoteOrErrorPayload, error) {
-	apiKey, err := checkapikey.Resolve(ctx, r.env(ctx), "hide_note")
+// HideNotes is the resolver for the hideNotes field.
+func (r *mutationResolver) HideNotes(ctx context.Context, input model.HideNotesInput) (model.HideNotesOrErrorPayload, error) {
+	apiKey, err := checkapikey.Resolve(ctx, r.env(ctx), "hide_notes")
 	if err != nil {
 		return nil, err
 	}
 
 	input.ApiKey = *apiKey
 
-	return hidenote.Resolve(ctx, r.env(ctx), input)
+	return hidenotes.Resolve(ctx, r.env(ctx), input)
 }
 
 // UploadNoteAsset is the resolver for the uploadNoteAsset field.
@@ -925,3 +925,22 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *mutationResolver) HideNote(ctx context.Context, input model.HideNoteInput) (model.HideNoteOrErrorPayload, error) {
+	apiKey, err := checkapikey.Resolve(ctx, r.env(ctx), "hide_note")
+	if err != nil {
+		return nil, err
+	}
+
+	input.ApiKey = *apiKey
+
+	return hidenote.Resolve(ctx, r.env(ctx), input)
+}
+*/

@@ -79,13 +79,6 @@
     <div id="noteview-sidebar" class="sidebar">
       {%= LatestBanner(resp) %}
 
-      {% if vb := resp.versionBanner; vb != nil %}
-        <div class="sidebar__latest-banner">
-          <div>{%s= vb.Label %}</div>
-          <a href="{%s= vb.Permalink %}">Перейти</a>
-        </div>
-      {% endif %}
-
       {% if homePages := resp.Notes.HomePages(resp.Note); len(homePages) > 0 %}
         <div class="sidebar__homepages">
           {% for _, homePage := range homePages %}

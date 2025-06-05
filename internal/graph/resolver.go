@@ -17,7 +17,7 @@ import (
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createpaymentlink"
-	"trip2g/internal/case/hidenote"
+	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
@@ -107,5 +107,5 @@ type Env interface {
 	updatenotegraphpositions.Env
 	createoffer.Env
 	updateoffer.Env
-	hidenote.Env
+	hidenotes.Env
 }

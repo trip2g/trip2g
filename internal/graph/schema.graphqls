@@ -384,18 +384,18 @@ type UploadNoteAssetPayload {
 union UploadNoteAssetOrErrorPayload = UploadNoteAssetPayload | ErrorPayload
 
 #
-# hideNote
+# hideNotes
 #
 
-input HideNoteInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
-  path: String!
+input HideNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
+  paths: [String!]!
 }
 
-type HideNotePayload {
+type HideNotesPayload {
   success: Boolean!
 }
 
-union HideNoteOrErrorPayload = HideNotePayload | ErrorPayload
+union HideNotesOrErrorPayload = HideNotesPayload | ErrorPayload
 
 type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
@@ -404,7 +404,7 @@ type Mutation {
   createPaymentLink(input: CreatePaymentLinkInput!): CreatePaymentLinkOrErrorPayload!
 
   pushNotes(input: PushNotesInput!): PushNotesOrErrorPayload!
-  hideNote(input: HideNoteInput!): HideNoteOrErrorPayload!
+  hideNotes(input: HideNotesInput!): HideNotesOrErrorPayload!
   uploadNoteAsset(input: UploadNoteAssetInput!): UploadNoteAssetOrErrorPayload!
 
   admin: AdminMutation!

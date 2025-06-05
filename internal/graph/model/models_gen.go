@@ -38,8 +38,8 @@ type DisableAPIKeyOrErrorPayload interface {
 	IsDisableAPIKeyOrErrorPayload()
 }
 
-type HideNoteOrErrorPayload interface {
-	IsHideNoteOrErrorPayload()
+type HideNotesOrErrorPayload interface {
+	IsHideNotesOrErrorPayload()
 }
 
 type MakeReleaseLiveOrErrorPayload interface {
@@ -224,7 +224,7 @@ func (ErrorPayload) IsPushNotesOrErrorPayload() {}
 
 func (ErrorPayload) IsUploadNoteAssetOrErrorPayload() {}
 
-func (ErrorPayload) IsHideNoteOrErrorPayload() {}
+func (ErrorPayload) IsHideNotesOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
@@ -253,16 +253,16 @@ type FieldMessage struct {
 	Value string `json:"value"`
 }
 
-type HideNoteInput struct {
-	Path   string    `json:"path"`
+type HideNotesInput struct {
+	Paths  []string  `json:"paths"`
 	ApiKey db.ApiKey `json:"-"`
 }
 
-type HideNotePayload struct {
+type HideNotesPayload struct {
 	Success bool `json:"success"`
 }
 
-func (HideNotePayload) IsHideNoteOrErrorPayload() {}
+func (HideNotesPayload) IsHideNotesOrErrorPayload() {}
 
 type MakeReleaseLiveInput struct {
 	ID int64 `json:"id"`

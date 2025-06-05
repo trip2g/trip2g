@@ -281,7 +281,7 @@ type ComplexityRoot struct {
 		Value func(childComplexity int) int
 	}
 
-	HideNotePayload struct {
+	HideNotesPayload struct {
 		Success func(childComplexity int) int
 	}
 
@@ -292,7 +292,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		Admin                  func(childComplexity int) int
 		CreatePaymentLink      func(childComplexity int, input model.CreatePaymentLinkInput) int
-		HideNote               func(childComplexity int, input model.HideNoteInput) int
+		HideNotes              func(childComplexity int, input model.HideNotesInput) int
 		PushNotes              func(childComplexity int, input model.PushNotesInput) int
 		RequestEmailSignInCode func(childComplexity int, input model.RequestEmailSignInCodeInput) int
 		SignInByEmail          func(childComplexity int, input model.SignInByEmailInput) int
@@ -552,7 +552,7 @@ type MutationResolver interface {
 	SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error)
 	CreatePaymentLink(ctx context.Context, input model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error)
 	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
-	HideNote(ctx context.Context, input model.HideNoteInput) (model.HideNoteOrErrorPayload, error)
+	HideNotes(ctx context.Context, input model.HideNotesInput) (model.HideNotesOrErrorPayload, error)
 	UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error)
 	Admin(ctx context.Context) (*model1.AdminMutation, error)
 }
@@ -1451,12 +1451,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.FieldMessage.Value(childComplexity), true
 
-	case "HideNotePayload.success":
-		if e.complexity.HideNotePayload.Success == nil {
+	case "HideNotesPayload.success":
+		if e.complexity.HideNotesPayload.Success == nil {
 			break
 		}
 
-		return e.complexity.HideNotePayload.Success(childComplexity), true
+		return e.complexity.HideNotesPayload.Success(childComplexity), true
 
 	case "MakeReleaseLivePayload.release":
 		if e.complexity.MakeReleaseLivePayload.Release == nil {
@@ -1484,17 +1484,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.CreatePaymentLink(childComplexity, args["input"].(model.CreatePaymentLinkInput)), true
 
-	case "Mutation.hideNote":
-		if e.complexity.Mutation.HideNote == nil {
+	case "Mutation.hideNotes":
+		if e.complexity.Mutation.HideNotes == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_hideNote_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_hideNotes_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.HideNote(childComplexity, args["input"].(model.HideNoteInput)), true
+		return e.complexity.Mutation.HideNotes(childComplexity, args["input"].(model.HideNotesInput)), true
 
 	case "Mutation.pushNotes":
 		if e.complexity.Mutation.PushNotes == nil {
@@ -2012,7 +2012,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreatePaymentLinkInput,
 		ec.unmarshalInputCreateReleaseInput,
 		ec.unmarshalInputDisableApiKeyInput,
-		ec.unmarshalInputHideNoteInput,
+		ec.unmarshalInputHideNotesInput,
 		ec.unmarshalInputMakeReleaseLiveInput,
 		ec.unmarshalInputPushNoteInput,
 		ec.unmarshalInputPushNotesInput,
@@ -2555,26 +2555,26 @@ func (ec *executionContext) field_Mutation_createPaymentLink_argsInput(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Mutation_hideNote_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_hideNotes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_hideNote_argsInput(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_hideNotes_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_hideNote_argsInput(
+func (ec *executionContext) field_Mutation_hideNotes_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (model.HideNoteInput, error) {
+) (model.HideNotesInput, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNHideNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐHideNoteInput(ctx, tmp)
+		return ec.unmarshalNHideNotesInput2trip2gᚋinternalᚋgraphᚋmodelᚐHideNotesInput(ctx, tmp)
 	}
 
-	var zeroVal model.HideNoteInput
+	var zeroVal model.HideNotesInput
 	return zeroVal, nil
 }
 
@@ -8102,8 +8102,8 @@ func (ec *executionContext) fieldContext_FieldMessage_value(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _HideNotePayload_success(ctx context.Context, field graphql.CollectedField, obj *model.HideNotePayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_HideNotePayload_success(ctx, field)
+func (ec *executionContext) _HideNotesPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.HideNotesPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_HideNotesPayload_success(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -8133,9 +8133,9 @@ func (ec *executionContext) _HideNotePayload_success(ctx context.Context, field 
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_HideNotePayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_HideNotesPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "HideNotePayload",
+		Object:     "HideNotesPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -8470,8 +8470,8 @@ func (ec *executionContext) fieldContext_Mutation_pushNotes(ctx context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_hideNote(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_hideNote(ctx, field)
+func (ec *executionContext) _Mutation_hideNotes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_hideNotes(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -8484,7 +8484,7 @@ func (ec *executionContext) _Mutation_hideNote(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().HideNote(rctx, fc.Args["input"].(model.HideNoteInput))
+		return ec.resolvers.Mutation().HideNotes(rctx, fc.Args["input"].(model.HideNotesInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8496,19 +8496,19 @@ func (ec *executionContext) _Mutation_hideNote(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.HideNoteOrErrorPayload)
+	res := resTmp.(model.HideNotesOrErrorPayload)
 	fc.Result = res
-	return ec.marshalNHideNoteOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐHideNoteOrErrorPayload(ctx, field.Selections, res)
+	return ec.marshalNHideNotesOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐHideNotesOrErrorPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_hideNote(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_hideNotes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type HideNoteOrErrorPayload does not have child fields")
+			return nil, errors.New("field of type HideNotesOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -8518,7 +8518,7 @@ func (ec *executionContext) fieldContext_Mutation_hideNote(ctx context.Context, 
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_hideNote_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_hideNotes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -14028,27 +14028,27 @@ func (ec *executionContext) unmarshalInputDisableApiKeyInput(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputHideNoteInput(ctx context.Context, obj any) (model.HideNoteInput, error) {
-	var it model.HideNoteInput
+func (ec *executionContext) unmarshalInputHideNotesInput(ctx context.Context, obj any) (model.HideNotesInput, error) {
+	var it model.HideNotesInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"path"}
+	fieldsInOrder := [...]string{"paths"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "path":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "paths":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("paths"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Path = data
+			it.Paths = data
 		}
 	}
 
@@ -14633,17 +14633,17 @@ func (ec *executionContext) _DisableApiKeyOrErrorPayload(ctx context.Context, se
 	}
 }
 
-func (ec *executionContext) _HideNoteOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.HideNoteOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) _HideNotesOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.HideNotesOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.HideNotePayload:
-		return ec._HideNotePayload(ctx, sel, &obj)
-	case *model.HideNotePayload:
+	case model.HideNotesPayload:
+		return ec._HideNotesPayload(ctx, sel, &obj)
+	case *model.HideNotesPayload:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._HideNotePayload(ctx, sel, obj)
+		return ec._HideNotesPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -18266,7 +18266,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNoteOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -18385,19 +18385,19 @@ func (ec *executionContext) _FieldMessage(ctx context.Context, sel ast.Selection
 	return out
 }
 
-var hideNotePayloadImplementors = []string{"HideNotePayload", "HideNoteOrErrorPayload"}
+var hideNotesPayloadImplementors = []string{"HideNotesPayload", "HideNotesOrErrorPayload"}
 
-func (ec *executionContext) _HideNotePayload(ctx context.Context, sel ast.SelectionSet, obj *model.HideNotePayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, hideNotePayloadImplementors)
+func (ec *executionContext) _HideNotesPayload(ctx context.Context, sel ast.SelectionSet, obj *model.HideNotesPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, hideNotesPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("HideNotePayload")
+			out.Values[i] = graphql.MarshalString("HideNotesPayload")
 		case "success":
-			out.Values[i] = ec._HideNotePayload_success(ctx, field, obj)
+			out.Values[i] = ec._HideNotesPayload_success(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -18517,9 +18517,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "hideNote":
+		case "hideNotes":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_hideNote(ctx, field)
+				return ec._Mutation_hideNotes(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -21628,19 +21628,19 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
-func (ec *executionContext) unmarshalNHideNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐHideNoteInput(ctx context.Context, v any) (model.HideNoteInput, error) {
-	res, err := ec.unmarshalInputHideNoteInput(ctx, v)
+func (ec *executionContext) unmarshalNHideNotesInput2trip2gᚋinternalᚋgraphᚋmodelᚐHideNotesInput(ctx context.Context, v any) (model.HideNotesInput, error) {
+	res, err := ec.unmarshalInputHideNotesInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNHideNoteOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐHideNoteOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.HideNoteOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNHideNotesOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐHideNotesOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.HideNotesOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._HideNoteOrErrorPayload(ctx, sel, v)
+	return ec._HideNotesOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {

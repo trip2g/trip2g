@@ -90,6 +90,47 @@ def push_updates_graphql(updates):
     except Exception as e:
         print(f"❌ Ошибка при отправке GraphQL: {e}")
 
+def hide_notes_graphql(paths):
+    query = """
+    mutation HideNotes($input: HideNotesInput!) {
+      hideNotes(input: $input) {
+        ... on HideNotesPayload {
+          success
+        }
+        ... on ErrorPayload {
+          message
+        }
+      }
+    }
+    """
+    variables = {
+        "input": {
+            "paths": paths
+        }
+    }
+
+    try:
+        response = requests.post(GRAPHQL_URL, headers=headers, json={
+            "query": query,
+            "variables": variables
+        })
+        response.raise_for_status()
+        result = response.json()
+        if 'errors' in result:
+            print(f"❌ GraphQL ошибка при скрытии заметок: {result['errors']}")
+            return False
+        else:
+            payload = result.get("data", {}).get("hideNotes", {})
+            if "message" in payload:
+                print(f"❌ Ошибка при скрытии заметок: {payload['message']}")
+                return False
+            else:
+                print(f"✅ Успешно скрыто {len(paths)} заметок.")
+                return True
+    except Exception as e:
+        print(f"❌ Ошибка при скрытии заметок через GraphQL: {e}")
+        return False
+
 def main():
     global GRAPHQL_URL
     base_path = sys.argv[1] if len(sys.argv) > 1 else "demo"
@@ -100,6 +141,7 @@ def main():
     server_hashes = fetch_server_hashes()
     server_empty = len(server_hashes) == 0
     updates = []
+    local_paths = set()
 
     print("GraphQL URL:", GRAPHQL_URL)
 
@@ -120,6 +162,7 @@ def main():
 
             full_path = os.path.join(root, fname)
             rel_path = os.path.relpath(full_path, base_path)
+            local_paths.add(rel_path)
 
             try:
                 with open(full_path, 'rb') as f:
@@ -144,12 +187,23 @@ def main():
             else:
                 print(f"{log_prefix} | {log_local} | {log_remote} | ✅ SKIP")
 
+    # Find server notes that don't exist locally (should be hidden)
+    server_only_paths = []
+    for server_path in server_hashes.keys():
+        if server_path not in local_paths:
+            server_only_paths.append(server_path)
+            print(f"{server_path:<30} | local=— | remote={server_hashes[server_path]} | 🙈 HIDE")
+
     print("-" * 80)
     if updates:
         print(f"📤 Отправка {len(updates)} файлов через GraphQL...")
         push_updates_graphql(updates)
     else:
         print("✅ Все файлы актуальны. Обновлений нет.")
+
+    if server_only_paths:
+        print(f"🙈 Скрытие {len(server_only_paths)} заметок, отсутствующих локально...")
+        hide_notes_graphql(server_only_paths)
 
 if __name__ == "__main__":
     main()

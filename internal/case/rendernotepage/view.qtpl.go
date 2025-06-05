@@ -332,91 +332,69 @@ func StreamSidebar(qw422016 *qt422016.Writer, resp *Response) {
 	StreamLatestBanner(qw422016, resp)
 //line view.qtpl:80
 	qw422016.N().S(`
-      `)
-//line view.qtpl:81
-	if vb := resp.versionBanner; vb != nil {
-//line view.qtpl:81
-		qw422016.N().S(`
-        <div class="sidebar__latest-banner">
-          <div>`)
-//line view.qtpl:83
-		qw422016.N().S(vb.Label)
-//line view.qtpl:83
-		qw422016.N().S(`</div>
-          <a href="`)
-//line view.qtpl:84
-		qw422016.N().S(vb.Permalink)
-//line view.qtpl:84
-		qw422016.N().S(`">Перейти</a>
-        </div>
-      `)
-//line view.qtpl:86
-	}
-//line view.qtpl:86
-	qw422016.N().S(`
 
       `)
-//line view.qtpl:88
+//line view.qtpl:82
 	if homePages := resp.Notes.HomePages(resp.Note); len(homePages) > 0 {
-//line view.qtpl:88
+//line view.qtpl:82
 		qw422016.N().S(`
         <div class="sidebar__homepages">
           `)
-//line view.qtpl:90
+//line view.qtpl:84
 		for _, homePage := range homePages {
-//line view.qtpl:90
+//line view.qtpl:84
 			qw422016.N().S(`
           <div class="sidebar__homepage">
             <a href="`)
-//line view.qtpl:92
+//line view.qtpl:86
 			qw422016.N().S(resp.Notes.ResolveURL(homePage))
-//line view.qtpl:92
+//line view.qtpl:86
 			qw422016.N().S(`">`)
-//line view.qtpl:92
+//line view.qtpl:86
 			qw422016.N().S(homePage.Title)
-//line view.qtpl:92
+//line view.qtpl:86
 			qw422016.N().S(`</a>
           </div>
           `)
-//line view.qtpl:94
+//line view.qtpl:88
 		}
-//line view.qtpl:94
+//line view.qtpl:88
 		qw422016.N().S(`
         </div>
       `)
-//line view.qtpl:96
+//line view.qtpl:90
 	}
-//line view.qtpl:96
+//line view.qtpl:90
 	qw422016.N().S(`
 
       `)
-//line view.qtpl:98
+//line view.qtpl:92
 	if sidebars := resp.Notes.Sidebars(resp.Note); len(sidebars) > 0 {
-//line view.qtpl:98
+//line view.qtpl:92
 		qw422016.N().S(`
         <div class="sidebar__menus">
           `)
-//line view.qtpl:100
+//line view.qtpl:94
 		for _, sidebar := range sidebars {
-//line view.qtpl:100
+//line view.qtpl:94
 			qw422016.N().S(`
           <div class="sidebar__menu">
             `)
-//line view.qtpl:102
+//line view.qtpl:96
 			qw422016.N().S(string(sidebar.HTML))
-//line view.qtpl:102
+//line view.qtpl:96
 			qw422016.N().S(`
           </div>
           `)
-//line view.qtpl:104
+//line view.qtpl:98
 		}
-//line view.qtpl:104
+//line view.qtpl:98
 		qw422016.N().S(`
         </div>
       `)
-//line view.qtpl:106
+//line view.qtpl:100
 	} else {
-//line view.qtpl:106
+//line view.qtpl:100
 		qw422016.N().S(`
         <div class="sidebar__menu">
           <ul>
@@ -424,53 +402,53 @@ func StreamSidebar(qw422016 *qt422016.Writer, resp *Response) {
           </ul>
         </div>
       `)
-//line view.qtpl:112
+//line view.qtpl:106
 	}
-//line view.qtpl:112
+//line view.qtpl:106
 	qw422016.N().S(`
     </div>
 
 `)
-//line view.qtpl:115
+//line view.qtpl:109
 }
 
-//line view.qtpl:115
+//line view.qtpl:109
 func WriteSidebar(qq422016 qtio422016.Writer, resp *Response) {
-//line view.qtpl:115
+//line view.qtpl:109
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.qtpl:115
+//line view.qtpl:109
 	StreamSidebar(qw422016, resp)
-//line view.qtpl:115
+//line view.qtpl:109
 	qt422016.ReleaseWriter(qw422016)
-//line view.qtpl:115
+//line view.qtpl:109
 }
 
-//line view.qtpl:115
+//line view.qtpl:109
 func Sidebar(resp *Response) string {
-//line view.qtpl:115
+//line view.qtpl:109
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.qtpl:115
+//line view.qtpl:109
 	WriteSidebar(qb422016, resp)
-//line view.qtpl:115
+//line view.qtpl:109
 	qs422016 := string(qb422016.B)
-//line view.qtpl:115
+//line view.qtpl:109
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.qtpl:115
+//line view.qtpl:109
 	return qs422016
-//line view.qtpl:115
+//line view.qtpl:109
 }
 
-//line view.qtpl:117
+//line view.qtpl:111
 func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError) {
-//line view.qtpl:117
+//line view.qtpl:111
 	qw422016.N().S(`
 
 <div class="noteview" id="noteview-layout">
   <div class="noteview__header">
     `)
-//line view.qtpl:121
+//line view.qtpl:115
 	StreamSidebar(qw422016, resp)
-//line view.qtpl:121
+//line view.qtpl:115
 	qw422016.N().S(`
 
     <div class="noteview__header-space"></div>
@@ -482,55 +460,55 @@ func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError)
 
   <div class="noteview__content" id="noteview-content">
     `)
-//line view.qtpl:131
+//line view.qtpl:125
 	if !resp.Note.IsHomePage() {
-//line view.qtpl:131
+//line view.qtpl:125
 		qw422016.N().S(`
     <h1 class="noteview__main-title">`)
-//line view.qtpl:132
+//line view.qtpl:126
 		qw422016.E().S(resp.Note.Title)
-//line view.qtpl:132
+//line view.qtpl:126
 		qw422016.N().S(`</h1>
     `)
-//line view.qtpl:133
+//line view.qtpl:127
 	}
-//line view.qtpl:133
+//line view.qtpl:127
 	qw422016.N().S(`
 
     <div mol_view_root="$trip2g_user_paywall" data-subgraphs="`)
-//line view.qtpl:135
+//line view.qtpl:129
 	qw422016.E().S(resp.NoteSubgraphsJSON())
-//line view.qtpl:135
+//line view.qtpl:129
 	qw422016.N().S(`"></div>
   </div>
 </div>
 
 `)
-//line view.qtpl:139
+//line view.qtpl:133
 }
 
-//line view.qtpl:139
+//line view.qtpl:133
 func WritePayWall(qq422016 qtio422016.Writer, resp *Response, err *PaywallError) {
-//line view.qtpl:139
+//line view.qtpl:133
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.qtpl:139
+//line view.qtpl:133
 	StreamPayWall(qw422016, resp, err)
-//line view.qtpl:139
+//line view.qtpl:133
 	qt422016.ReleaseWriter(qw422016)
-//line view.qtpl:139
+//line view.qtpl:133
 }
 
-//line view.qtpl:139
+//line view.qtpl:133
 func PayWall(resp *Response, err *PaywallError) string {
-//line view.qtpl:139
+//line view.qtpl:133
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.qtpl:139
+//line view.qtpl:133
 	WritePayWall(qb422016, resp, err)
-//line view.qtpl:139
+//line view.qtpl:133
 	qs422016 := string(qb422016.B)
-//line view.qtpl:139
+//line view.qtpl:133
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.qtpl:139
+//line view.qtpl:133
 	return qs422016
-//line view.qtpl:139
+//line view.qtpl:133
 }
