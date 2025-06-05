@@ -466,7 +466,7 @@ update note_paths
  where value = ?;
 
 -- name: ListAllRedirects :many
-select * from redirects order by id;
+select * from redirects order by is_regex;
 
 -- name: InsertRedirect :one
 insert into redirects (created_by, pattern, ignore_case, is_regex, target)

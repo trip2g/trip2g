@@ -35,6 +35,7 @@ import (
 	"trip2g/internal/noteloader"
 	"trip2g/internal/nowpayments"
 	"trip2g/internal/purchasetoken"
+	"trip2g/internal/redirectmanager"
 	"trip2g/internal/router"
 	"trip2g/internal/userbans"
 	"trip2g/internal/usertoken"
@@ -72,6 +73,8 @@ type app struct {
 	// mail *mailyak.MailYak
 
 	tokenManager *usertoken.Manager
+
+	redirectManager *redirectmanager.Manager
 
 	hotAuthTokenManager *hotauthtoken.Manager
 
@@ -161,6 +164,11 @@ func main() {
 		UserBans: userbans.New(queries),
 
 		nowpaymentsClient: nowpaymentsClient,
+	}
+
+	a.redirectManager, err = redirectmanager.New(ctx, a)
+	if err != nil {
+		panic(fmt.Errorf("failed to create redirect manager: %w", err))
 	}
 
 	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a))
@@ -858,6 +866,13 @@ func (a *app) startServer() {
 					graphqlHandler(ctx)
 				}
 
+				return
+			}
+
+			newPath := a.redirectManager.Match(path)
+			if newPath != nil {
+				ctx.SetStatusCode(http.StatusFound)
+				ctx.Response.Header.Set("Location", *newPath)
 				return
 			}
 
