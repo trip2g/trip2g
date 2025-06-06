@@ -7,7 +7,7 @@ import (
 )
 
 // DefaultTable maps Russian Cyrillic runes to rough ASCII Latin equivalents.
-var DefaultTable = map[rune]string{
+var DefaultTable = map[rune]string{ //nolint:gochecknoglobals // it's ok
 	'а': "a", 'б': "b", 'в': "v", 'г': "g", 'д': "d", 'е': "e",
 	'ё': "yo", 'ж': "zh", 'з': "z", 'и': "i", 'й': "j", 'к': "k",
 	'л': "l", 'м': "m", 'н': "n", 'о': "o", 'п': "p", 'р': "r",

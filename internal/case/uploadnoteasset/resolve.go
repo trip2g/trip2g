@@ -33,7 +33,7 @@ type Input = model.UploadNoteAssetInput
 type Payload = model.UploadNoteAssetOrErrorPayload
 
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
-	assetPaths, err := env.NoteVersionAssetPaths(ctx, int64(input.NoteID))
+	assetPaths, err := env.NoteVersionAssetPaths(ctx, input.NoteID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get note version asset paths: %w", err)
 	}
@@ -77,7 +77,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	noteVersionAssetParams := db.UpsertNoteVersionAssetParams{
 		AssetID:   asset.ID,
-		VersionID: int64(input.NoteID),
+		VersionID: input.NoteID,
 		Path:      input.Path,
 	}
 

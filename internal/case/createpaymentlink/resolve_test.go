@@ -110,12 +110,12 @@ func TestResolve(t *testing.T) {
 				require.Equal(t, "purchase-123", purchase.ID)
 				require.Equal(t, "user@example.com", purchase.Email)
 				require.Equal(t, int64(1), purchase.OfferID)
-				require.Equal(t, 9.99, purchase.PriceUsd)
+				require.InDelta(t, 9.99, purchase.PriceUsd, 0.001)
 				require.Equal(t, "nowpayments", purchase.PaymentProvider)
 
 				// Verify invoice creation
 				invoice := mockEnv.CreateNowpaymentsInvoiceCalls()[0].Params
-				require.Equal(t, 9.99, invoice.PriceAmount)
+				require.InDelta(t, 9.99, invoice.PriceAmount, 0.001)
 				require.Equal(t, "usd", invoice.PriceCurrency)
 				require.Equal(t, "purchase-123", invoice.OrderID)
 				require.Contains(t, invoice.SuccessURL, "payment_result=success")
@@ -411,7 +411,7 @@ func TestResolve(t *testing.T) {
 					require.Equal(t, int64(1), arg.OfferID)
 					require.Equal(t, "nowpayments", arg.PaymentProvider)
 					require.Equal(t, "[]", arg.PaymentData)
-					require.Equal(t, 10.0, arg.PriceUsd)
+					require.InDelta(t, 10.0, arg.PriceUsd, 0.001)
 					return nil
 				},
 				GeneratePurchaseIDFunc: func() string {

@@ -90,7 +90,7 @@ func (r *adminApiKeyLogsConnectionResolver) Nodes(ctx context.Context, obj *mode
 		return nil, nil
 	}
 
-	return r.env(ctx).ListApiKeyLogsByApiKeyID(ctx, int64(*obj.APIKeyID))
+	return r.env(ctx).ListApiKeyLogsByApiKeyID(ctx, *obj.APIKeyID)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -322,7 +322,7 @@ func (r *adminQueryResolver) APIKeyLogs(ctx context.Context, obj *appmodel.Admin
 
 // Subgraph is the resolver for the subgraph field.
 func (r *adminQueryResolver) Subgraph(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.Subgraph, error) {
-	return resolveOne[db.Subgraph](ctx, int64(id), r.env(ctx).SubgraphByID)
+	return resolveOne[db.Subgraph](ctx, id, r.env(ctx).SubgraphByID)
 }
 
 // NoteView is the resolver for the noteView field.
@@ -334,12 +334,12 @@ func (r *adminQueryResolver) NoteView(ctx context.Context, obj *appmodel.AdminQu
 
 // UserSubgraphAccess is the resolver for the userSubgraphAccess field.
 func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.UserSubgraphAccess, error) {
-	return resolveOne[db.UserSubgraphAccess](ctx, int64(id), r.env(ctx).UserSubgraphAccessByID)
+	return resolveOne[db.UserSubgraphAccess](ctx, id, r.env(ctx).UserSubgraphAccessByID)
 }
 
 // Offer is the resolver for the offer field.
 func (r *adminQueryResolver) Offer(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.Offer, error) {
-	return resolveOne[db.Offer](ctx, int64(id), r.env(ctx).OfferByID)
+	return resolveOne[db.Offer](ctx, id, r.env(ctx).OfferByID)
 }
 
 // Purchase is the resolver for the purchase field.
@@ -349,7 +349,7 @@ func (r *adminQueryResolver) Purchase(ctx context.Context, obj *appmodel.AdminQu
 
 // Redirect is the resolver for the redirect field.
 func (r *adminQueryResolver) Redirect(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.Redirect, error) {
-	return resolveOne[db.Redirect](ctx, int64(id), r.env(ctx).RedirectByID)
+	return resolveOne[db.Redirect](ctx, id, r.env(ctx).RedirectByID)
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -433,7 +433,7 @@ func (r *adminUsersConnectionResolver) Nodes(ctx context.Context, obj *model.Adm
 
 // User is the resolver for the user field.
 func (r *banUserPayloadResolver) User(ctx context.Context, obj *model.BanUserPayload) (*db.User, error) {
-	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
+	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
 }
 
 // Message is the resolver for the message field.
@@ -661,7 +661,7 @@ func (r *subgraphResolver) HomePath(ctx context.Context, obj *db.Subgraph) (stri
 
 // User is the resolver for the user field.
 func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error) {
-	return resolveOne[db.User](ctx, int64(obj.UserID), r.env(ctx).UserByID)
+	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
 }
 
 // UpdatedNoteViews is the resolver for the updatedNoteViews field.

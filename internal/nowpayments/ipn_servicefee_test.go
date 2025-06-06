@@ -50,12 +50,12 @@ func TestServiceFeeFloatParsing(t *testing.T) {
 
 	// Verify the fee values are correctly parsed
 	require.Equal(t, "usdtmatic", req.Fee.Currency)
-	require.Equal(t, 0.003117, req.Fee.DepositFee)
-	require.Equal(t, 0.000173, req.Fee.ServiceFee) // This was the problematic field
-	require.Equal(t, 0.006711, req.Fee.WithdrawalFee)
+	require.InDelta(t, 0.003117, req.Fee.DepositFee, 0.000001)
+	require.InDelta(t, 0.000173, req.Fee.ServiceFee, 0.000001) // This was the problematic field
+	require.InDelta(t, 0.006711, req.Fee.WithdrawalFee, 0.000001)
 
 	// Verify other fields are also correctly parsed
-	require.Equal(t, 0.13598286, req.ActuallyPaid)
+	require.InDelta(t, 0.13598286, req.ActuallyPaid, 0.000001)
 	require.Equal(t, int64(6301727088), req.InvoiceID)
 	require.Equal(t, "N12MWGYZ", req.OrderID)
 	require.Equal(t, nowpayments.PaymentStatusFinished, req.PaymentStatus)
@@ -97,5 +97,5 @@ func TestServiceFeeIntegerValue(t *testing.T) {
 	require.NoError(t, err, "Should be able to parse IPN request with integer serviceFee")
 
 	// Verify integer value is correctly parsed as float
-	require.Equal(t, 5.0, req.Fee.ServiceFee)
+	require.InDelta(t, 5.0, req.Fee.ServiceFee, 0.000001)
 }

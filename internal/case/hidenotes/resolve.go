@@ -18,7 +18,7 @@ type Payload = model.HideNotesOrErrorPayload
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	for _, path := range input.Paths {
 		params := db.HideNotePathParams{
-			HiddenBy: sql.NullInt64{Valid: true, Int64: int64(input.ApiKey.CreatedBy)},
+			HiddenBy: sql.NullInt64{Valid: true, Int64: input.ApiKey.CreatedBy},
 			Value:    path,
 		}
 

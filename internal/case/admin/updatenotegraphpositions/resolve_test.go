@@ -60,17 +60,17 @@ func TestResolve(t *testing.T) {
 				updateCall1 := mockEnv.UpdateNoteGraphPositionByPathIDCalls()[0]
 				require.Equal(t, int64(123), updateCall1.Arg.ID)
 				require.True(t, updateCall1.Arg.GraphPositionX.Valid)
-				require.Equal(t, 250.5, updateCall1.Arg.GraphPositionX.Float64)
+				require.InDelta(t, 250.5, updateCall1.Arg.GraphPositionX.Float64, 0.001)
 				require.True(t, updateCall1.Arg.GraphPositionY.Valid)
-				require.Equal(t, 180.7, updateCall1.Arg.GraphPositionY.Float64)
+				require.InDelta(t, 180.7, updateCall1.Arg.GraphPositionY.Float64, 0.001)
 
 				// Verify correct parameters were passed for second position
 				updateCall2 := mockEnv.UpdateNoteGraphPositionByPathIDCalls()[1]
 				require.Equal(t, int64(456), updateCall2.Arg.ID)
 				require.True(t, updateCall2.Arg.GraphPositionX.Valid)
-				require.Equal(t, 100.0, updateCall2.Arg.GraphPositionX.Float64)
+				require.InDelta(t, 100.0, updateCall2.Arg.GraphPositionX.Float64, 0.001)
 				require.True(t, updateCall2.Arg.GraphPositionY.Valid)
-				require.Equal(t, 200.0, updateCall2.Arg.GraphPositionY.Float64)
+				require.InDelta(t, 200.0, updateCall2.Arg.GraphPositionY.Float64, 0.001)
 			},
 		},
 		{
@@ -126,8 +126,8 @@ func TestResolve(t *testing.T) {
 				// Verify parameters were passed correctly for the first position that failed
 				updateCall := mockEnv.UpdateNoteGraphPositionByPathIDCalls()[0]
 				require.Equal(t, int64(999), updateCall.Arg.ID)
-				require.Equal(t, 100.0, updateCall.Arg.GraphPositionX.Float64)
-				require.Equal(t, 200.0, updateCall.Arg.GraphPositionY.Float64)
+				require.InDelta(t, 100.0, updateCall.Arg.GraphPositionX.Float64, 0.001)
+				require.InDelta(t, 200.0, updateCall.Arg.GraphPositionY.Float64, 0.001)
 			},
 		},
 		{
@@ -160,8 +160,8 @@ func TestResolve(t *testing.T) {
 				// Verify zero coordinates are handled correctly
 				updateCall := mockEnv.UpdateNoteGraphPositionByPathIDCalls()[0]
 				require.Equal(t, int64(456), updateCall.Arg.ID)
-				require.Equal(t, 0.0, updateCall.Arg.GraphPositionX.Float64)
-				require.Equal(t, 0.0, updateCall.Arg.GraphPositionY.Float64)
+				require.InDelta(t, 0.0, updateCall.Arg.GraphPositionX.Float64, 0.001)
+				require.InDelta(t, 0.0, updateCall.Arg.GraphPositionY.Float64, 0.001)
 			},
 		},
 		{

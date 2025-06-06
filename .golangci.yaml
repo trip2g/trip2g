@@ -408,7 +408,7 @@ linters:
     # Excluding configuration per-path, per-linter, per-text and per-source.
     rules:
       - path: 'internal/graph/schema\.resolvers\.go'
-        linters: [ golines ]
+        linters: [ golines, nilnil ]
       - source: 'TODO'
         linters: [ godot ]
       - text: 'should have a package comment'

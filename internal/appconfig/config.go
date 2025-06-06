@@ -136,10 +136,7 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 	}
 
 	// Define all flags
-	err = cfg.defineFlags()
-	if err != nil {
-		return nil, fmt.Errorf("failed to define flags: %w", err)
-	}
+	cfg.defineFlags()
 
 	// Set up envflag logger if provided
 	if log != nil {
@@ -162,7 +159,7 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 }
 
 // defineFlags sets up all command-line flags.
-func (c *Config) defineFlags() error {
+func (c *Config) defineFlags() {
 	// Server flags
 	flag.StringVar(&c.ListenAddr, "listen-addr", c.ListenAddr, "Listen address")
 	flag.StringVar(&c.DatabaseFile, "db-file", c.DatabaseFile, "Database file")
@@ -211,8 +208,6 @@ func (c *Config) defineFlags() error {
 
 	// Mail
 	flag.StringVar(&c.MailFrom, "mail-from", "no-reply@resend.trip2g.com", "Email address to use as sender")
-
-	return nil
 }
 
 // validate checks if the configuration is valid using ozzo validation.

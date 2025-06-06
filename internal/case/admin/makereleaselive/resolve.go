@@ -25,7 +25,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}
 
-	release, err := env.ReleaseByID(ctx, int64(input.ID))
+	release, err := env.ReleaseByID(ctx, input.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get release: %w", err)
 	}

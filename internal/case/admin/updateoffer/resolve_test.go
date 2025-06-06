@@ -123,7 +123,7 @@ func TestResolve(t *testing.T) {
 				// Verify update params
 				updateParams := mockEnv.UpdateOfferCalls()[0].Arg
 				require.Equal(t, int64(123), updateParams.ID)
-				require.Equal(t, priceUSD, updateParams.PriceUsd.Float64)
+				require.InDelta(t, priceUSD, updateParams.PriceUsd.Float64, 0.001)
 				require.True(t, updateParams.PriceUsd.Valid)
 			},
 		},

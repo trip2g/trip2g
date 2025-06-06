@@ -37,7 +37,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	noteViews := env.LatestNoteViews()
 
-	homeID, payloadErr := getHomeID(env, noteViews, input)
+	homeID, payloadErr := getHomeID(noteViews, input)
 	if payloadErr != nil {
 		return payloadErr, nil
 	}
@@ -82,10 +82,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	return &payload, nil
 }
 
-func getHomeID(env Env, nvs *appmodel.NoteViews, input Input) (sql.NullInt64, Payload) {
+func getHomeID(nvs *appmodel.NoteViews, input Input) (sql.NullInt64, Payload) {
 	if input.HomeNoteVersionID != nil {
 		for _, view := range nvs.List {
-			if view.VersionID == int64(*input.HomeNoteVersionID) {
+			if view.VersionID == *input.HomeNoteVersionID {
 				return sql.NullInt64{Int64: view.VersionID, Valid: true}, nil
 			}
 		}

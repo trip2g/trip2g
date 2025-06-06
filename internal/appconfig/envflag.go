@@ -158,7 +158,8 @@ func (ef *EnvFlag) processEnvironmentVariables(ctx context.Context, flagEnvMap m
 }
 
 // processEnvLine processes a single environment variable line.
-func (ef *EnvFlag) processEnvLine(envLine string, flagEnvMap map[string]string) error {
+// not sure about flagEnvMap. It's just copied from the original repo.
+func (ef *EnvFlag) processEnvLine(envLine string, _ map[string]string) error {
 	envKV := strings.SplitN(envLine, "=", 2)
 	if len(envKV) == 0 {
 		return nil
@@ -255,7 +256,7 @@ func (ef *EnvFlag) SetLogger(log logger.Logger) {
 }
 
 // Standard instance for package-level functions.
-var std = New(DefaultEnvFlagConfig())
+var std = New(DefaultEnvFlagConfig()) //nolint:gochecknoglobals // it's a common pattern
 
 // ProcessWithEnv processes environment variables using the standard instance.
 func ProcessWithEnv(ctx context.Context) error {

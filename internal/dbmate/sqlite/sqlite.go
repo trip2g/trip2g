@@ -21,7 +21,7 @@ import (
 	_ "modernc.org/sqlite" // driver
 )
 
-func init() {
+func init() { //nolint:gochecknoinits // init function to register the driver
 	dbmate.RegisterDriver(NewDriver, "sqlite")
 	dbmate.RegisterDriver(NewDriver, "sqlite3")
 }

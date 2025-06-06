@@ -29,7 +29,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		params := db.UpdateNoteGraphPositionByPathIDParams{
 			GraphPositionX: sql.NullFloat64{Valid: true, Float64: position.X},
 			GraphPositionY: sql.NullFloat64{Valid: true, Float64: position.Y},
-			ID:             int64(position.PathID),
+			ID:             position.PathID,
 		}
 
 		err = env.UpdateNoteGraphPositionByPathID(ctx, params)
@@ -37,7 +37,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 			return nil, fmt.Errorf("failed to update note graph position for pathId %d: %w", position.PathID, err)
 		}
 
-		pathsID = append(pathsID, int64(position.PathID))
+		pathsID = append(pathsID, position.PathID)
 	}
 
 	payload := model.UpdateNoteGraphPositionsPayload{

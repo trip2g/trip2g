@@ -24,7 +24,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	params := db.DisableApiKeyParams{
-		ID:         int64(input.ID),
+		ID:         input.ID,
 		DisabledBy: sql.NullInt64{Valid: true, Int64: int64(token.ID)},
 	}
 

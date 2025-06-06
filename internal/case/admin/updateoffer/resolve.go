@@ -68,14 +68,14 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return errorPayload, nil
 	}
 
-	_, err = env.OfferByID(ctx, int64(input.ID))
+	_, err = env.OfferByID(ctx, input.ID)
 	if err != nil {
 		return &model.ErrorPayload{Message: "offer not found"}, nil
 	}
 
 	if input.SubgraphIds != nil {
 		for _, subgraphID := range input.SubgraphIds {
-			_, err := env.SubgraphByID(ctx, int64(subgraphID))
+			_, err := env.SubgraphByID(ctx, subgraphID)
 			if err != nil {
 				return &model.ErrorPayload{Message: fmt.Sprintf("subgraph with ID %d does not exist", subgraphID)}, nil
 			}
@@ -83,7 +83,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	updateParams := db.UpdateOfferParams{
-		ID: int64(input.ID),
+		ID: input.ID,
 	}
 
 	if input.Lifetime != nil {
@@ -117,7 +117,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		for _, subgraphID := range input.SubgraphIds {
 			osParams := db.InsertOfferSubgraphParams{
 				OfferID:    offer.ID,
-				SubgraphID: int64(subgraphID),
+				SubgraphID: subgraphID,
 			}
 
 			err := env.InsertOfferSubgraph(ctx, osParams)

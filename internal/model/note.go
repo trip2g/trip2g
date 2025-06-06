@@ -183,7 +183,7 @@ func (nv *NoteViews) ResolveURL(note *NoteView) string {
 	// TODO: extract this logict from here and internal/mdloader/link_resolver.go
 	if len(nv.Version) > 0 && nv.Version != "live" {
 		// parse url and add ?version= to the end
-		u, err := url.Parse(string(note.Permalink))
+		u, err := url.Parse(note.Permalink)
 		if err != nil {
 			return ""
 		}

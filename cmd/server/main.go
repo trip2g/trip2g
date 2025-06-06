@@ -194,10 +194,7 @@ func main() {
 		panic(err)
 	}
 
-	err = a.setupAssets()
-	if err != nil {
-		panic(err)
-	}
+	a.setupAssets()
 
 	fileStorage.OnURLExpiring(func() {
 		reloadCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -348,7 +345,7 @@ func (a *app) ReleaseTxEnvInRequest(ctx context.Context, commit bool) error {
 	return nil
 }
 
-func (a *app) setupAssets() error {
+func (a *app) setupAssets() {
 	a.assetsFS = &fasthttp.FS{
 		FS:                 assets.FS,
 		IndexNames:         []string{},
@@ -365,8 +362,6 @@ func (a *app) setupAssets() error {
 
 	// initialize asset hashes map
 	a.assetHashes = make(map[string]string)
-
-	return nil
 }
 
 // TODO: read all asset urls from flags.
@@ -693,8 +688,8 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error
 	return sCode, nil
 }
 
-func (a *app) NoteByPath(path string) (*model.NoteView, error) {
-	return a.latestNoteLoader.NoteByPath(path), nil
+func (a *app) NoteByPath(path string) *model.NoteView {
+	return a.latestNoteLoader.NoteByPath(path)
 }
 
 func (a *app) noteLoaderForRequest(ctx context.Context) *noteloader.Loader {
@@ -720,9 +715,9 @@ func (a *app) noteLoaderForRequest(ctx context.Context) *noteloader.Loader {
 	return a.liveNoteLoader
 }
 
-func (a *app) NoteByPathForRequest(ctx context.Context, path string) (*model.NoteView, error) {
+func (a *app) NoteByPathForRequest(ctx context.Context, path string) *model.NoteView {
 	loader := a.noteLoaderForRequest(ctx)
-	return loader.NoteByPath(path), nil
+	return loader.NoteByPath(path)
 }
 
 func (a *app) NoteViewsForRequest(ctx context.Context) *model.NoteViews {
