@@ -714,6 +714,35 @@ func (q *Queries) InsertAdmin(ctx context.Context, arg InsertAdminParams) (Admin
 	return i, err
 }
 
+const insertNotFoundHit = `-- name: InsertNotFoundHit :exec
+insert into not_found_paths (path)
+values (?)
+on conflict (path) do update set total_hits = total_hits + 1, last_hit_at = datetime('now')
+`
+
+func (q *Queries) InsertNotFoundHit(ctx context.Context, path string) error {
+	_, err := q.db.ExecContext(ctx, insertNotFoundHit, path)
+	return err
+}
+
+const insertNotFoundIPHit = `-- name: InsertNotFoundIPHit :exec
+insert into not_found_ip_hits (path_id, ip)
+values (?, ?)
+on conflict(path_id, ip) do
+update set total_hits = total_hits + 1, last_hit_at = datetime('now')
+returning total_hits
+`
+
+type InsertNotFoundIPHitParams struct {
+	PathID int64 `json:"path_id"`
+	Ip     int64 `json:"ip"`
+}
+
+func (q *Queries) InsertNotFoundIPHit(ctx context.Context, arg InsertNotFoundIPHitParams) error {
+	_, err := q.db.ExecContext(ctx, insertNotFoundIPHit, arg.PathID, arg.Ip)
+	return err
+}
+
 const insertNoteAsset = `-- name: InsertNoteAsset :one
 insert into note_assets (absolute_path, file_name, sha256_hash, content_type, size)
 values (?, ?, ?, ?, ?)
@@ -1396,6 +1425,70 @@ func (q *Queries) ListAllAdmins(ctx context.Context) ([]Admin, error) {
 	for rows.Next() {
 		var i Admin
 		if err := rows.Scan(&i.UserID, &i.GrantedAt, &i.GrantedBy); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllNotFoundIPHits = `-- name: ListAllNotFoundIPHits :many
+select path_id, ip, total_hits, last_hit_at from not_found_ip_hits
+`
+
+func (q *Queries) ListAllNotFoundIPHits(ctx context.Context) ([]NotFoundIpHit, error) {
+	rows, err := q.db.QueryContext(ctx, listAllNotFoundIPHits)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NotFoundIpHit
+	for rows.Next() {
+		var i NotFoundIpHit
+		if err := rows.Scan(
+			&i.PathID,
+			&i.Ip,
+			&i.TotalHits,
+			&i.LastHitAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllNotFoundIgnoredPatterns = `-- name: ListAllNotFoundIgnoredPatterns :many
+select id, pattern, created_at, created_by from not_found_ignored_patterns
+`
+
+func (q *Queries) ListAllNotFoundIgnoredPatterns(ctx context.Context) ([]NotFoundIgnoredPattern, error) {
+	rows, err := q.db.QueryContext(ctx, listAllNotFoundIgnoredPatterns)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NotFoundIgnoredPattern
+	for rows.Next() {
+		var i NotFoundIgnoredPattern
+		if err := rows.Scan(
+			&i.ID,
+			&i.Pattern,
+			&i.CreatedAt,
+			&i.CreatedBy,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

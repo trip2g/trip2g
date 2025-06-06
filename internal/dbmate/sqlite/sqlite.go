@@ -193,6 +193,7 @@ func (drv *Driver) SelectMigrations(db *sql.DB, limit int) (map[string]bool, err
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	defer dbutil.MustClose(rows)
 

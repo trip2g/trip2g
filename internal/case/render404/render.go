@@ -1,7 +1,6 @@
 package render404
 
 import (
-	"fmt"
 	"net/http"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/renderlayout"
@@ -15,7 +14,7 @@ type Params struct {
 }
 
 type Env interface {
-	TrackNotFound(path string) error
+	TrackNotFound(path string)
 }
 
 func Handle(req *appreq.Request) (interface{}, error) {
@@ -27,10 +26,7 @@ func Handle(req *appreq.Request) (interface{}, error) {
 		return nil, appreq.ErrInvalidEnv
 	}
 
-	err := env.TrackNotFound(string(req.Req.Path()))
-	if err != nil {
-		return nil, fmt.Errorf("failed to track not found: %w", err)
-	}
+	env.TrackNotFound(string(req.Req.Path()))
 
 	token, err := req.UserToken()
 	if err != nil {

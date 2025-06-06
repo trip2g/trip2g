@@ -70,14 +70,20 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	_, err = env.OfferByID(ctx, input.ID)
 	if err != nil {
-		return &model.ErrorPayload{Message: "offer not found"}, nil
+		if db.IsNoFound(err) {
+			return &model.ErrorPayload{Message: "offer not found"}, nil
+		}
+		return nil, fmt.Errorf("failed to get offer %d: %w", input.ID, err)
 	}
 
 	if input.SubgraphIds != nil {
 		for _, subgraphID := range input.SubgraphIds {
 			_, subgraphErr := env.SubgraphByID(ctx, subgraphID)
 			if subgraphErr != nil {
-				return &model.ErrorPayload{Message: fmt.Sprintf("subgraph with ID %d does not exist", subgraphID)}, nil
+				if db.IsNoFound(subgraphErr) {
+					return &model.ErrorPayload{Message: fmt.Sprintf("subgraph with ID %d does not exist", subgraphID)}, nil
+				}
+				return nil, fmt.Errorf("failed to get subgraph %d: %w", subgraphID, subgraphErr)
 			}
 		}
 	}

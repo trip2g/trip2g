@@ -20,7 +20,6 @@ import (
 
 func assertAPIKeyPayload(t *testing.T, want, got model.CreateAPIKeyOrErrorPayload) {
 	t.Helper()
-	
 	// Skip time comparison for CreatedAt field
 	if payload, ok := got.(*model.CreateAPIKeyPayload); ok {
 		if wantPayload, wantOk := want.(*model.CreateAPIKeyPayload); wantOk {
@@ -32,7 +31,7 @@ func assertAPIKeyPayload(t *testing.T, want, got model.CreateAPIKeyOrErrorPayloa
 			return
 		}
 	}
-	
+
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Resolve() = %v, want %v", got, want)
 		for _, desc := range pretty.Diff(got, want) {

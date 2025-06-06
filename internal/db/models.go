@@ -85,6 +85,27 @@ type BackliteTasksCompleted struct {
 	Error             sql.NullString `json:"error"`
 }
 
+type NotFoundIgnoredPattern struct {
+	ID        int64     `json:"id"`
+	Pattern   string    `json:"pattern"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+}
+
+type NotFoundIpHit struct {
+	PathID    int64     `json:"path_id"`
+	Ip        int64     `json:"ip"`
+	TotalHits int64     `json:"total_hits"`
+	LastHitAt time.Time `json:"last_hit_at"`
+}
+
+type NotFoundPath struct {
+	ID        int64     `json:"id"`
+	Path      string    `json:"path"`
+	TotalHits int64     `json:"total_hits"`
+	LastHitAt time.Time `json:"last_hit_at"`
+}
+
 type NoteAsset struct {
 	ID           int64     `json:"id"`
 	AbsolutePath string    `json:"absolute_path"`

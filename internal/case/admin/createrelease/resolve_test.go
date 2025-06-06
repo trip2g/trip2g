@@ -22,7 +22,6 @@ import (
 
 func assertReleasePayload(t *testing.T, want, got model.CreateReleaseOrErrorPayload) {
 	t.Helper()
-	
 	// Skip time comparison for CreatedAt field
 	if payload, ok := got.(*model.CreateReleasePayload); ok {
 		if wantPayload, wantOk := want.(*model.CreateReleasePayload); wantOk {
@@ -34,7 +33,7 @@ func assertReleasePayload(t *testing.T, want, got model.CreateReleaseOrErrorPayl
 			return
 		}
 	}
-	
+
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Resolve() = %v, want %v", got, want)
 		for _, desc := range pretty.Diff(got, want) {

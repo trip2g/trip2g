@@ -34,6 +34,7 @@ import (
 	"trip2g/internal/miniostorage"
 	"trip2g/internal/model"
 	"trip2g/internal/noteloader"
+	"trip2g/internal/notfoundtracker"
 	"trip2g/internal/nowpayments"
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/redirectmanager"
@@ -74,6 +75,8 @@ type app struct {
 	// mail *mailyak.MailYak
 
 	tokenManager *usertoken.Manager
+
+	notFoundTracker *notfoundtracker.Tracker
 
 	redirectManager *redirectmanager.Manager
 
@@ -166,6 +169,11 @@ func main() {
 	a.redirectManager, err = redirectmanager.New(ctx, a)
 	if err != nil {
 		panic(fmt.Errorf("failed to create redirect manager: %w", err))
+	}
+
+	a.notFoundTracker, err = notfoundtracker.New(ctx, a)
+	if err != nil {
+		panic(fmt.Errorf("failed to create not found tracker: %w", err))
 	}
 
 	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a))
@@ -754,6 +762,13 @@ func (a *app) AssetVersion() string {
 	return strconv.FormatInt(time.Now().UnixMilli(), 10)
 }
 
+func (a *app) TrackNotFound(path string) {
+	err := a.notFoundTracker.Track(path)
+	if err != nil {
+		a.log.Error("failed to track not found", "path", path, "error", err)
+	}
+}
+
 func (a *app) NotifyPuchaseUpdated(email string) {
 }
 
@@ -784,7 +799,7 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 		ctx.SetContentType("application/json")
 		ctx.SetStatusCode(fasthttp.StatusOK)
 
-		data, _ := json.Marshal(a.LatestNoteViews())
+		data, _ := json.Marshal(a.LatestNoteViews()) //nolint:musttag // debug endpoint
 		ctx.SetBody(data)
 		return true
 	}

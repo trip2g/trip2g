@@ -69,7 +69,7 @@ func (client *Client) Status() error {
 		Message string
 	}
 
-	err = json.Unmarshal(resp.Body(), &respData)
+	err = json.Unmarshal(resp.Body(), &respData) //nolint:musttag // internal API response
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal response: %w", err)
 	}

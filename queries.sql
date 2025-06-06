@@ -487,3 +487,21 @@ delete from redirects where id = ?;
 
 -- name: RedirectByID :one
 select * from redirects where id = ?;
+
+-- name: ListAllNotFoundIgnoredPatterns :many
+select * from not_found_ignored_patterns;
+
+-- name: ListAllNotFoundIPHits :many
+select * from not_found_ip_hits;
+
+-- name: InsertNotFoundHit :exec
+insert into not_found_paths (path)
+values (?)
+on conflict (path) do update set total_hits = total_hits + 1, last_hit_at = datetime('now');
+
+-- name: InsertNotFoundIPHit :exec
+insert into not_found_ip_hits (path_id, ip)
+values (?, ?)
+on conflict(path_id, ip) do
+update set total_hits = total_hits + 1, last_hit_at = datetime('now')
+returning total_hits;

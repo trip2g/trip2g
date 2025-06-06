@@ -146,13 +146,9 @@ func TestUserBans_UserBanByUserID(t *testing.T) {
 			// Verify cache behavior for non-error cases
 			if !tt.wantErr {
 				mockEnv := tt.env.(*envMock)
-				if tt.name == "cache hit - second lookup" {
-					// Should have been called only once (during first lookup)
-					require.Len(t, mockEnv.ListAllUserBansCalls(), 1)
-				} else {
-					// Should have been called once
-					require.Len(t, mockEnv.ListAllUserBansCalls(), 1)
-				}
+				// Should have been called only once (during first lookup for cache hit,
+				// or during the current lookup for other cases)
+				require.Len(t, mockEnv.ListAllUserBansCalls(), 1)
 			}
 		})
 	}

@@ -33,7 +33,7 @@ type Env interface {
 type Input = model.CreatePaymentLinkInput
 type Payload = model.CreatePaymentLinkOrErrorPayload
 
-func Resolve(ctx context.Context, env Env, input Input) (Payload, error) { //nolint:golines // one line is preferred
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	isAuthenticated := false
 
 	if input.Email == nil {

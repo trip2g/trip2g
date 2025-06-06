@@ -378,7 +378,7 @@ func (r *adminReleaseResolver) CreatedBy(ctx context.Context, obj *db.Release) (
 
 // HomeNote is the resolver for the homeNote field.
 func (r *adminReleaseResolver) HomeNote(ctx context.Context, obj *db.Release) (*appmodel.NoteView, error) {
-	panic(fmt.Errorf("not implemented: HomeNote - homeNote"))
+	panic(errors.New("not implemented: HomeNote - homeNote"))
 }
 
 // Nodes is the resolver for the nodes field.

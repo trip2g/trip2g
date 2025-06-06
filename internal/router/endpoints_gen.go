@@ -6,6 +6,7 @@ package router
 
 import (
 	processnowpaymentsipnprocessnowpaymentsipn "trip2g/internal/case/processnowpaymentsipn"
+	render404render404 "trip2g/internal/case/render404"
 	renderadminpagerenderadminpage "trip2g/internal/case/renderadminpage"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
@@ -13,6 +14,7 @@ import (
 
 var endpoints = []Endpoint{
 	&processnowpaymentsipnprocessnowpaymentsipn.Endpoint{},
+	&render404render404.Endpoint{},
 	&renderadminpagerenderadminpage.Endpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
@@ -20,6 +22,7 @@ var endpoints = []Endpoint{
 
 type RoutesEnv interface {
 	processnowpaymentsipnprocessnowpaymentsipn.Env
+	render404render404.Env
 	renderadminpagerenderadminpage.Env
 	rendernotepagerendernotepage.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
