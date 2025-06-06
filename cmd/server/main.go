@@ -761,6 +761,72 @@ func (a *app) AssetVersion() string {
 func (a *app) NotifyPuchaseUpdated(email string) {
 }
 
+func (a *app) handleCors(ctx *fasthttp.RequestCtx) bool {
+	origin := string(ctx.Request.Header.Peek("Origin"))
+	if origin == "http://localhost:9081" || origin == "app://obsidian.md" {
+		ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
+		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+		ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Cookie, X-API-Key")
+		ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+	}
+
+	if ctx.IsOptions() {
+		ctx.SetStatusCode(fasthttp.StatusNoContent)
+		return true
+	}
+
+	return false
+}
+
+func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
+	if !a.config.DevMode {
+		return false
+	}
+
+	path := string(ctx.Path())
+	if strings.HasPrefix(path, "/debug/nvs/latest") {
+		ctx.SetContentType("application/json")
+		ctx.SetStatusCode(fasthttp.StatusOK)
+
+		data, _ := json.Marshal(a.LatestNoteViews())
+		ctx.SetBody(data)
+		return true
+	}
+
+	return false
+}
+
+func (a *app) handleAdminAssets(req *appreq.Request, path string) bool {
+	if len(a.config.AdminJSURL) > 0 && a.config.AdminJSURL[0] == '/' &&
+		strings.HasPrefix(path, a.config.AdminJSURL) {
+		userToken, err := req.UserToken()
+		if err != nil || userToken == nil {
+			req.Req.SetStatusCode(http.StatusUnauthorized)
+			req.Req.SetBodyString("401 Unauthorized")
+			return true
+		}
+	}
+
+	return false
+}
+
+func (a *app) handlePurchaseTokens(ctx *fasthttp.RequestCtx) bool {
+	purchaseTokens, _ := a.purchaseTokenManager.Extract(ctx)
+	if len(purchaseTokens) > 0 {
+		processed, err := signinbypurchasetoken.Resolve(ctx, a, purchaseTokens)
+		if err != nil {
+			a.log.Warn("failed to resolve purchase token", "error", err)
+		} else if processed {
+			err = a.purchaseTokenManager.Delete(ctx)
+			if err != nil {
+				a.log.Warn("failed to delete purchase token", "error", err)
+			}
+		}
+	}
+
+	return false
+}
+
 func (a *app) startServer() {
 	fsHandler := a.assetsFS.NewRequestHandler()
 
@@ -774,28 +840,12 @@ func (a *app) startServer() {
 		Handler: func(ctx *fasthttp.RequestCtx) {
 			path := string(ctx.Path())
 
-			origin := string(ctx.Request.Header.Peek("Origin"))
-			if origin == "http://localhost:9081" || origin == "app://obsidian.md" {
-				ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
-				ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
-				ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Cookie, X-API-Key")
-				ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-			}
-
-			if ctx.IsOptions() {
-				ctx.SetStatusCode(fasthttp.StatusNoContent)
+			if a.handleCors(ctx) {
 				return
 			}
 
-			if a.config.DevMode {
-				if strings.HasPrefix(path, "/debug/nvs/latest") {
-					ctx.SetContentType("application/json")
-					ctx.SetStatusCode(fasthttp.StatusOK)
-
-					data, _ := json.Marshal(a.LatestNoteViews())
-					ctx.SetBody(data)
-					return
-				}
+			if a.handleDebugAPI(ctx) {
+				return
 			}
 
 			req := appreq.Acquire()
@@ -805,15 +855,8 @@ func (a *app) startServer() {
 			req.StoreInContext() // appreq.FromCtx(ctx)
 			defer appreq.Release(req)
 
-			// hide admin JS from public
-			if len(a.config.AdminJSURL) > 0 && a.config.AdminJSURL[0] == '/' &&
-				strings.HasPrefix(path, a.config.AdminJSURL) {
-				userToken, err := req.UserToken()
-				if err != nil || userToken == nil {
-					ctx.SetStatusCode(http.StatusUnauthorized)
-					ctx.SetBodyString("401 Unauthorized")
-					return
-				}
+			if a.handleAdminAssets(req, path) {
+				return
 			}
 
 			if strings.HasPrefix(path, "/assets/") {
@@ -821,18 +864,8 @@ func (a *app) startServer() {
 				return
 			}
 
-			// handle purchase tokens from cookies
-			purchaseTokens, _ := a.purchaseTokenManager.Extract(ctx)
-			if len(purchaseTokens) > 0 {
-				processed, err := signinbypurchasetoken.Resolve(ctx, a, purchaseTokens)
-				if err != nil {
-					a.log.Warn("failed to resolve purchase token", "error", err)
-				} else if processed {
-					err = a.purchaseTokenManager.Delete(ctx)
-					if err != nil {
-						a.log.Warn("failed to delete purchase token", "error", err)
-					}
-				}
+			if a.handlePurchaseTokens(ctx) {
+				return
 			}
 
 			// handle hot auth token from ?hot=...

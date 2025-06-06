@@ -15,6 +15,11 @@ err = ...
 if err != nil {
 ```
 
+**IMPORTANT**: You must run `make lint` at the end of editing Golang code to ensure:
+- Code compiles without errors
+- All linting rules pass
+- Generated code is up to date
+
 ## Commit Guidelines
 
 When creating commits, follow these guidelines:
