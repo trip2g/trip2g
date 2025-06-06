@@ -9,8 +9,8 @@ import (
 )
 
 type Env interface {
-	GenerateApiKey() string
-	InsertApiKey(ctx context.Context, params db.InsertApiKeyParams) (db.ApiKey, error)
+	GenerateAPIKey() string
+	InsertAPIKey(ctx context.Context, params db.InsertAPIKeyParams) (db.ApiKey, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
 
@@ -23,15 +23,15 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}
 
-	apiKey := env.GenerateApiKey()
+	apiKey := env.GenerateAPIKey()
 
-	params := db.InsertApiKeyParams{
+	params := db.InsertAPIKeyParams{
 		Value:       apiKey,
 		CreatedBy:   int64(token.ID),
 		Description: input.Description,
 	}
 
-	createdKey, err := env.InsertApiKey(ctx, params)
+	createdKey, err := env.InsertAPIKey(ctx, params)
 	if err != nil {
 		return nil, err
 	}

@@ -309,7 +309,7 @@ delete from acme_certs where key = ?;
 -- name: ApiKeyByValue :one
 select * from api_keys where value = ? and disabled_at is null limit 1;
 
--- name: InsertApiKey :one
+-- name: InsertAPIKey :one
 insert into api_keys (value, created_by, description)
 values (?, ?, ?)
 returning *;
@@ -320,26 +320,26 @@ update api_keys
  where id = ?
 returning *;
 
--- name: ListAllApiKeys :many
+-- name: ListAllAPIKeys :many
 select * from api_keys order by created_by, created_at desc;
 
--- name: InsertApiKeyLog :exec
+-- name: InsertAPIKeyLog :exec
 insert into api_key_logs (api_key_id, ip_id, action_id)
 values (?,
   (select id from api_key_log_ips where value = sqlc.arg(ip)),
   (select id from api_key_log_actions where name = sqlc.arg(action)));
 
--- name: UpsertApiKeyLogAction :exec
+-- name: UpsertAPIKeyLogAction :exec
 insert into api_key_log_actions (name)
 values (?)
 on conflict(name) do nothing;
 
--- name: UpsertApiKeyLogIP :exec
+-- name: UpsertAPIKeyLogIP :exec
 insert into api_key_log_ips (value)
 values (?)
 on conflict(value) do nothing;
 
--- name: ListApiKeyLogsByApiKeyID :many
+-- name: ListAPIKeyLogsByAPIKeyID :many
 select l.created_at, a.name as action_name, i.value as ip
   from api_key_logs l
   join api_key_log_actions a on l.action_id = a.id

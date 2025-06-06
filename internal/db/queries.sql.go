@@ -636,6 +636,51 @@ func (q *Queries) IncrementNoteVersionCount(ctx context.Context, arg IncrementNo
 	return version_count, err
 }
 
+const insertAPIKey = `-- name: InsertAPIKey :one
+insert into api_keys (value, created_by, description)
+values (?, ?, ?)
+returning id, value, created_at, created_by, disabled_at, disabled_by, description
+`
+
+type InsertAPIKeyParams struct {
+	Value       string `json:"value"`
+	CreatedBy   int64  `json:"created_by"`
+	Description string `json:"description"`
+}
+
+func (q *Queries) InsertAPIKey(ctx context.Context, arg InsertAPIKeyParams) (ApiKey, error) {
+	row := q.db.QueryRowContext(ctx, insertAPIKey, arg.Value, arg.CreatedBy, arg.Description)
+	var i ApiKey
+	err := row.Scan(
+		&i.ID,
+		&i.Value,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DisabledAt,
+		&i.DisabledBy,
+		&i.Description,
+	)
+	return i, err
+}
+
+const insertAPIKeyLog = `-- name: InsertAPIKeyLog :exec
+insert into api_key_logs (api_key_id, ip_id, action_id)
+values (?,
+  (select id from api_key_log_ips where value = ?2),
+  (select id from api_key_log_actions where name = ?3))
+`
+
+type InsertAPIKeyLogParams struct {
+	ApiKeyID int64  `json:"api_key_id"`
+	Ip       string `json:"ip"`
+	Action   string `json:"action"`
+}
+
+func (q *Queries) InsertAPIKeyLog(ctx context.Context, arg InsertAPIKeyLogParams) error {
+	_, err := q.db.ExecContext(ctx, insertAPIKeyLog, arg.ApiKeyID, arg.Ip, arg.Action)
+	return err
+}
+
 const insertAcmeCert = `-- name: InsertAcmeCert :exec
 insert into acme_certs (key, value)
 values (?, ?)
@@ -667,51 +712,6 @@ func (q *Queries) InsertAdmin(ctx context.Context, arg InsertAdminParams) (Admin
 	var i Admin
 	err := row.Scan(&i.UserID, &i.GrantedAt, &i.GrantedBy)
 	return i, err
-}
-
-const insertApiKey = `-- name: InsertApiKey :one
-insert into api_keys (value, created_by, description)
-values (?, ?, ?)
-returning id, value, created_at, created_by, disabled_at, disabled_by, description
-`
-
-type InsertApiKeyParams struct {
-	Value       string `json:"value"`
-	CreatedBy   int64  `json:"created_by"`
-	Description string `json:"description"`
-}
-
-func (q *Queries) InsertApiKey(ctx context.Context, arg InsertApiKeyParams) (ApiKey, error) {
-	row := q.db.QueryRowContext(ctx, insertApiKey, arg.Value, arg.CreatedBy, arg.Description)
-	var i ApiKey
-	err := row.Scan(
-		&i.ID,
-		&i.Value,
-		&i.CreatedAt,
-		&i.CreatedBy,
-		&i.DisabledAt,
-		&i.DisabledBy,
-		&i.Description,
-	)
-	return i, err
-}
-
-const insertApiKeyLog = `-- name: InsertApiKeyLog :exec
-insert into api_key_logs (api_key_id, ip_id, action_id)
-values (?,
-  (select id from api_key_log_ips where value = ?2),
-  (select id from api_key_log_actions where name = ?3))
-`
-
-type InsertApiKeyLogParams struct {
-	ApiKeyID int64  `json:"api_key_id"`
-	Ip       string `json:"ip"`
-	Action   string `json:"action"`
-}
-
-func (q *Queries) InsertApiKeyLog(ctx context.Context, arg InsertApiKeyLogParams) error {
-	_, err := q.db.ExecContext(ctx, insertApiKeyLog, arg.ApiKeyID, arg.Ip, arg.Action)
-	return err
 }
 
 const insertNoteAsset = `-- name: InsertNoteAsset :one
@@ -1008,6 +1008,44 @@ type InsertUserNoteViewParams struct {
 func (q *Queries) InsertUserNoteView(ctx context.Context, arg InsertUserNoteViewParams) error {
 	_, err := q.db.ExecContext(ctx, insertUserNoteView, arg.UserID, arg.VersionID, arg.RefererVersionID)
 	return err
+}
+
+const listAPIKeyLogsByAPIKeyID = `-- name: ListAPIKeyLogsByAPIKeyID :many
+select l.created_at, a.name as action_name, i.value as ip
+  from api_key_logs l
+  join api_key_log_actions a on l.action_id = a.id
+  join api_key_log_ips i on l.ip_id = i.id
+ where l.api_key_id = ?
+ order by l.created_at desc
+`
+
+type ListAPIKeyLogsByAPIKeyIDRow struct {
+	CreatedAt  time.Time `json:"created_at"`
+	ActionName string    `json:"action_name"`
+	Ip         string    `json:"ip"`
+}
+
+func (q *Queries) ListAPIKeyLogsByAPIKeyID(ctx context.Context, apiKeyID int64) ([]ListAPIKeyLogsByAPIKeyIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAPIKeyLogsByAPIKeyID, apiKeyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAPIKeyLogsByAPIKeyIDRow
+	for rows.Next() {
+		var i ListAPIKeyLogsByAPIKeyIDRow
+		if err := rows.Scan(&i.CreatedAt, &i.ActionName, &i.Ip); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listActiveOffersBySubgraphID = `-- name: ListActiveOffersBySubgraphID :many
@@ -1309,39 +1347,12 @@ func (q *Queries) ListActiveUserSubgraphAccessesByUserID(ctx context.Context, us
 	return items, nil
 }
 
-const listAllAdmins = `-- name: ListAllAdmins :many
-select user_id, granted_at, granted_by from admins a order by user_id desc
-`
-
-func (q *Queries) ListAllAdmins(ctx context.Context) ([]Admin, error) {
-	rows, err := q.db.QueryContext(ctx, listAllAdmins)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Admin
-	for rows.Next() {
-		var i Admin
-		if err := rows.Scan(&i.UserID, &i.GrantedAt, &i.GrantedBy); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listAllApiKeys = `-- name: ListAllApiKeys :many
+const listAllAPIKeys = `-- name: ListAllAPIKeys :many
 select id, value, created_at, created_by, disabled_at, disabled_by, description from api_keys order by created_by, created_at desc
 `
 
-func (q *Queries) ListAllApiKeys(ctx context.Context) ([]ApiKey, error) {
-	rows, err := q.db.QueryContext(ctx, listAllApiKeys)
+func (q *Queries) ListAllAPIKeys(ctx context.Context) ([]ApiKey, error) {
+	rows, err := q.db.QueryContext(ctx, listAllAPIKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -1358,6 +1369,33 @@ func (q *Queries) ListAllApiKeys(ctx context.Context) ([]ApiKey, error) {
 			&i.DisabledBy,
 			&i.Description,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllAdmins = `-- name: ListAllAdmins :many
+select user_id, granted_at, granted_by from admins a order by user_id desc
+`
+
+func (q *Queries) ListAllAdmins(ctx context.Context) ([]Admin, error) {
+	rows, err := q.db.QueryContext(ctx, listAllAdmins)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Admin
+	for rows.Next() {
+		var i Admin
+		if err := rows.Scan(&i.UserID, &i.GrantedAt, &i.GrantedBy); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1444,7 +1482,7 @@ func (q *Queries) ListAllPurchases(ctx context.Context) ([]Purchase, error) {
 }
 
 const listAllRedirects = `-- name: ListAllRedirects :many
-select id, created_at, created_by, pattern, ignore_case, is_regex, target from redirects order by id
+select id, created_at, created_by, pattern, ignore_case, is_regex, target from redirects order by is_regex
 `
 
 func (q *Queries) ListAllRedirects(ctx context.Context) ([]Redirect, error) {
@@ -1633,44 +1671,6 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.LastSigninCodeSentAt,
 			&i.NoteViewCount,
 		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listApiKeyLogsByApiKeyID = `-- name: ListApiKeyLogsByApiKeyID :many
-select l.created_at, a.name as action_name, i.value as ip
-  from api_key_logs l
-  join api_key_log_actions a on l.action_id = a.id
-  join api_key_log_ips i on l.ip_id = i.id
- where l.api_key_id = ?
- order by l.created_at desc
-`
-
-type ListApiKeyLogsByApiKeyIDRow struct {
-	CreatedAt  time.Time `json:"created_at"`
-	ActionName string    `json:"action_name"`
-	Ip         string    `json:"ip"`
-}
-
-func (q *Queries) ListApiKeyLogsByApiKeyID(ctx context.Context, apiKeyID int64) ([]ListApiKeyLogsByApiKeyIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, listApiKeyLogsByApiKeyID, apiKeyID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListApiKeyLogsByApiKeyIDRow
-	for rows.Next() {
-		var i ListApiKeyLogsByApiKeyIDRow
-		if err := rows.Scan(&i.CreatedAt, &i.ActionName, &i.Ip); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -2165,25 +2165,25 @@ func (q *Queries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSu
 	return i, err
 }
 
-const upsertApiKeyLogAction = `-- name: UpsertApiKeyLogAction :exec
+const upsertAPIKeyLogAction = `-- name: UpsertAPIKeyLogAction :exec
 insert into api_key_log_actions (name)
 values (?)
 on conflict(name) do nothing
 `
 
-func (q *Queries) UpsertApiKeyLogAction(ctx context.Context, name string) error {
-	_, err := q.db.ExecContext(ctx, upsertApiKeyLogAction, name)
+func (q *Queries) UpsertAPIKeyLogAction(ctx context.Context, name string) error {
+	_, err := q.db.ExecContext(ctx, upsertAPIKeyLogAction, name)
 	return err
 }
 
-const upsertApiKeyLogIP = `-- name: UpsertApiKeyLogIP :exec
+const upsertAPIKeyLogIP = `-- name: UpsertAPIKeyLogIP :exec
 insert into api_key_log_ips (value)
 values (?)
 on conflict(value) do nothing
 `
 
-func (q *Queries) UpsertApiKeyLogIP(ctx context.Context, value string) error {
-	_, err := q.db.ExecContext(ctx, upsertApiKeyLogIP, value)
+func (q *Queries) UpsertAPIKeyLogIP(ctx context.Context, value string) error {
+	_, err := q.db.ExecContext(ctx, upsertAPIKeyLogIP, value)
 	return err
 }
 

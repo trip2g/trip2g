@@ -481,7 +481,7 @@ type AdminApiKeyResolver interface {
 	DisabledAt(ctx context.Context, obj *db.ApiKey) (*time.Time, error)
 }
 type AdminApiKeyLogsConnectionResolver interface {
-	Nodes(ctx context.Context, obj *model.AdminAPIKeyLogsConnection) ([]db.ListApiKeyLogsByApiKeyIDRow, error)
+	Nodes(ctx context.Context, obj *model.AdminAPIKeyLogsConnection) ([]db.ListAPIKeyLogsByAPIKeyIDRow, error)
 }
 type AdminApiKeysConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminAPIKeysConnection) ([]db.ApiKey, error)
@@ -3612,7 +3612,7 @@ func (ec *executionContext) fieldContext_AdminApiKey_disabledAt(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminApiKeyLog_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.ListApiKeyLogsByApiKeyIDRow) (ret graphql.Marshaler) {
+func (ec *executionContext) _AdminApiKeyLog_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.ListAPIKeyLogsByAPIKeyIDRow) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminApiKeyLog_createdAt(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -3656,7 +3656,7 @@ func (ec *executionContext) fieldContext_AdminApiKeyLog_createdAt(_ context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminApiKeyLog_actionName(ctx context.Context, field graphql.CollectedField, obj *db.ListApiKeyLogsByApiKeyIDRow) (ret graphql.Marshaler) {
+func (ec *executionContext) _AdminApiKeyLog_actionName(ctx context.Context, field graphql.CollectedField, obj *db.ListAPIKeyLogsByAPIKeyIDRow) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminApiKeyLog_actionName(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -3700,7 +3700,7 @@ func (ec *executionContext) fieldContext_AdminApiKeyLog_actionName(_ context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminApiKeyLog_ip(ctx context.Context, field graphql.CollectedField, obj *db.ListApiKeyLogsByApiKeyIDRow) (ret graphql.Marshaler) {
+func (ec *executionContext) _AdminApiKeyLog_ip(ctx context.Context, field graphql.CollectedField, obj *db.ListAPIKeyLogsByAPIKeyIDRow) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminApiKeyLog_ip(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -3770,9 +3770,9 @@ func (ec *executionContext) _AdminApiKeyLogsConnection_nodes(ctx context.Context
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]db.ListApiKeyLogsByApiKeyIDRow)
+	res := resTmp.([]db.ListAPIKeyLogsByAPIKeyIDRow)
 	fc.Result = res
-	return ec.marshalNAdminApiKeyLog2ᚕtrip2gᚋinternalᚋdbᚐListApiKeyLogsByApiKeyIDRowᚄ(ctx, field.Selections, res)
+	return ec.marshalNAdminApiKeyLog2ᚕtrip2gᚋinternalᚋdbᚐListAPIKeyLogsByAPIKeyIDRowᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminApiKeyLogsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -16583,7 +16583,7 @@ func (ec *executionContext) _AdminApiKey(ctx context.Context, sel ast.SelectionS
 
 var adminApiKeyLogImplementors = []string{"AdminApiKeyLog"}
 
-func (ec *executionContext) _AdminApiKeyLog(ctx context.Context, sel ast.SelectionSet, obj *db.ListApiKeyLogsByApiKeyIDRow) graphql.Marshaler {
+func (ec *executionContext) _AdminApiKeyLog(ctx context.Context, sel ast.SelectionSet, obj *db.ListAPIKeyLogsByAPIKeyIDRow) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, adminApiKeyLogImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -22676,11 +22676,11 @@ func (ec *executionContext) marshalNAdminApiKey2ᚖtrip2gᚋinternalᚋdbᚐApiK
 	return ec._AdminApiKey(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNAdminApiKeyLog2trip2gᚋinternalᚋdbᚐListApiKeyLogsByApiKeyIDRow(ctx context.Context, sel ast.SelectionSet, v db.ListApiKeyLogsByApiKeyIDRow) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminApiKeyLog2trip2gᚋinternalᚋdbᚐListAPIKeyLogsByAPIKeyIDRow(ctx context.Context, sel ast.SelectionSet, v db.ListAPIKeyLogsByAPIKeyIDRow) graphql.Marshaler {
 	return ec._AdminApiKeyLog(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAdminApiKeyLog2ᚕtrip2gᚋinternalᚋdbᚐListApiKeyLogsByApiKeyIDRowᚄ(ctx context.Context, sel ast.SelectionSet, v []db.ListApiKeyLogsByApiKeyIDRow) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminApiKeyLog2ᚕtrip2gᚋinternalᚋdbᚐListAPIKeyLogsByAPIKeyIDRowᚄ(ctx context.Context, sel ast.SelectionSet, v []db.ListAPIKeyLogsByAPIKeyIDRow) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -22704,7 +22704,7 @@ func (ec *executionContext) marshalNAdminApiKeyLog2ᚕtrip2gᚋinternalᚋdbᚐL
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNAdminApiKeyLog2trip2gᚋinternalᚋdbᚐListApiKeyLogsByApiKeyIDRow(ctx, sel, v[i])
+			ret[i] = ec.marshalNAdminApiKeyLog2trip2gᚋinternalᚋdbᚐListAPIKeyLogsByAPIKeyIDRow(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)

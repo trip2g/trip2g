@@ -133,7 +133,7 @@ input ApiKeyLogsFilterInput {
   apiKeyId: Int64
 }
 
-type AdminApiKeyLog @goModel(model: "trip2g/internal/db.ListApiKeyLogsByApiKeyIDRow") {
+type AdminApiKeyLog @goModel(model: "trip2g/internal/db.ListAPIKeyLogsByAPIKeyIDRow") {
   createdAt: Time!
   actionName: String!
   ip: String!

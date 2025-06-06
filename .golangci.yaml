@@ -409,6 +409,9 @@ linters:
     rules:
       - path: 'internal/graph/schema\.resolvers\.go'
         linters: [ golines, nilnil ]
+      - path: 'internal/graph/schema\.resolvers\.go'
+        text: 'ST1003'
+        linters: [ staticcheck ]
       - source: 'TODO'
         linters: [ godot ]
       - text: 'should have a package comment'

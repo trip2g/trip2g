@@ -603,7 +603,7 @@ func (a *app) GenerateUniqID() string {
 	return ulid.Make().String()
 }
 
-func (a *app) GenerateApiKey() string {
+func (a *app) GenerateAPIKey() string {
 	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	const length = 64
 

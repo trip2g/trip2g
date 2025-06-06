@@ -57,7 +57,7 @@ type Env interface {
 	ListActiveOffersBySubgraphID(ctx context.Context, subgraphID int64) ([]db.Offer, error)
 	ListActiveOffersBySubgraphNames(ctx context.Context, subgraphNames []string) ([]db.Offer, error)
 	ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]db.Subgraph, error)
-	ListAllApiKeys(ctx context.Context) ([]db.ApiKey, error)
+	ListAllAPIKeys(ctx context.Context) ([]db.ApiKey, error)
 	ListAllReleases(ctx context.Context) ([]db.Release, error)
 	ListAllAdmins(ctx context.Context) ([]db.Admin, error)
 	ListAllOffers(ctx context.Context) ([]db.Offer, error)
@@ -77,7 +77,7 @@ type Env interface {
 
 	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]db.Subgraph, error)
 	ListActiveUserSubgraphAccessesByUserID(ctx context.Context, userID int64) ([]db.UserSubgraphAccess, error)
-	ListApiKeyLogsByApiKeyID(ctx context.Context, apiKeyID int64) ([]db.ListApiKeyLogsByApiKeyIDRow, error)
+	ListAPIKeyLogsByAPIKeyID(ctx context.Context, apiKeyID int64) ([]db.ListAPIKeyLogsByAPIKeyIDRow, error)
 
 	// activePurchases
 	ListActivePurchasesByUserID(ctx context.Context, userID sql.NullInt64) ([]db.Purchase, error)

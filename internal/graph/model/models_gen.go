@@ -103,7 +103,7 @@ type AdminAdminsConnection struct {
 }
 
 type AdminAPIKeyLogsConnection struct {
-	Nodes    []db.ListApiKeyLogsByApiKeyIDRow `json:"nodes"`
+	Nodes    []db.ListAPIKeyLogsByAPIKeyIDRow `json:"nodes"`
 	APIKeyID *int64                           `json:"-"`
 }
 

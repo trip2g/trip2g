@@ -85,17 +85,17 @@ func (r *adminApiKeyResolver) DisabledAt(ctx context.Context, obj *db.ApiKey) (*
 }
 
 // Nodes is the resolver for the nodes field.
-func (r *adminApiKeyLogsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminAPIKeyLogsConnection) ([]db.ListApiKeyLogsByApiKeyIDRow, error) {
+func (r *adminApiKeyLogsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminAPIKeyLogsConnection) ([]db.ListAPIKeyLogsByAPIKeyIDRow, error) {
 	if obj.APIKeyID == nil {
 		return nil, nil
 	}
 
-	return r.env(ctx).ListApiKeyLogsByApiKeyID(ctx, *obj.APIKeyID)
+	return r.env(ctx).ListAPIKeyLogsByAPIKeyID(ctx, *obj.APIKeyID)
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *adminApiKeysConnectionResolver) Nodes(ctx context.Context, obj *model.AdminAPIKeysConnection) ([]db.ApiKey, error) {
-	return r.env(ctx).ListAllApiKeys(ctx)
+	return r.env(ctx).ListAllAPIKeys(ctx)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -537,7 +537,7 @@ func (r *noteViewResolver) InLinks(ctx context.Context, obj *appmodel.NoteView) 
 
 	nvs := r.env(ctx).LatestNoteViews()
 
-	for permalink, _ := range obj.InLinks {
+	for permalink := range obj.InLinks {
 		note := nvs.GetByPath(permalink)
 		if note != nil {
 			res = append(res, *note)
