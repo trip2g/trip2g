@@ -26,8 +26,8 @@ func TestSetup(t *testing.T) {
 	defer conn.Close()
 
 	// Verify connection works
-	if err := conn.Ping(); err != nil {
-		t.Fatalf("Database ping failed: %v", err)
+	if pingErr := conn.Ping(); pingErr != nil {
+		t.Fatalf("Database ping failed: %v", pingErr)
 	}
 
 	// Verify foreign keys are enabled

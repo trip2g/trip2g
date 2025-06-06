@@ -47,7 +47,7 @@ func (m *Manager) Refresh(ctx context.Context) error {
 	items := make([]item, 0, len(redirects))
 
 	for _, redirect := range redirects {
-		item := item{
+		redirectItem := item{
 			data: redirect,
 		}
 
@@ -58,15 +58,15 @@ func (m *Manager) Refresh(ctx context.Context) error {
 				pattern = "(?i)" + pattern
 			}
 
-			compiledRegex, err := regexp.Compile(pattern)
-			if err != nil {
+			compiledRegex, compileErr := regexp.Compile(pattern)
+			if compileErr != nil {
 				// Skip invalid regex patterns
 				continue
 			}
-			item.regexp = compiledRegex
+			redirectItem.regexp = compiledRegex
 		}
 
-		items = append(items, item)
+		items = append(items, redirectItem)
 	}
 
 	m.Lock()

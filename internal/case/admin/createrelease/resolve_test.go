@@ -20,6 +20,29 @@ import (
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg createrelease_test . Env
 
+func assertReleasePayload(t *testing.T, want, got model.CreateReleaseOrErrorPayload) {
+	t.Helper()
+	
+	// Skip time comparison for CreatedAt field
+	if payload, ok := got.(*model.CreateReleasePayload); ok {
+		if wantPayload, wantOk := want.(*model.CreateReleasePayload); wantOk {
+			require.Equal(t, wantPayload.Release.ID, payload.Release.ID)
+			require.Equal(t, wantPayload.Release.Title, payload.Release.Title)
+			require.Equal(t, wantPayload.Release.CreatedBy, payload.Release.CreatedBy)
+			require.Equal(t, wantPayload.Release.HomeNoteVersionID, payload.Release.HomeNoteVersionID)
+			require.Equal(t, wantPayload.Release.IsLive, payload.Release.IsLive)
+			return
+		}
+	}
+	
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Resolve() = %v, want %v", got, want)
+		for _, desc := range pretty.Diff(got, want) {
+			t.Error(desc)
+		}
+	}
+}
+
 type Env interface {
 	InsertRelease(ctx context.Context, arg db.InsertReleaseParams) (db.Release, error)
 	InsertReleaseNoteVersion(ctx context.Context, arg db.InsertReleaseNoteVersionParams) error
@@ -264,28 +287,14 @@ func TestResolve(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := createrelease.Resolve(tt.args.ctx, tt.env, tt.args.input)
+			
 			if tt.wantErr {
 				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				// Skip time comparison for CreatedAt field
-				if payload, ok := got.(*model.CreateReleasePayload); ok {
-					if want, ok := tt.want.(*model.CreateReleasePayload); ok {
-						require.Equal(t, want.Release.ID, payload.Release.ID)
-						require.Equal(t, want.Release.Title, payload.Release.Title)
-						require.Equal(t, want.Release.CreatedBy, payload.Release.CreatedBy)
-						require.Equal(t, want.Release.HomeNoteVersionID, payload.Release.HomeNoteVersionID)
-						require.Equal(t, want.Release.IsLive, payload.Release.IsLive)
-						return
-					}
-				}
-				if !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("Resolve() = %v, want %v", got, tt.want)
-					for _, desc := range pretty.Diff(got, tt.want) {
-						t.Error(desc)
-					}
-				}
+				return
 			}
+			
+			require.NoError(t, err)
+			assertReleasePayload(t, tt.want, got)
 
 			if tt.afterCallback != nil {
 				mockEnv := tt.env.(*envMock)

@@ -100,15 +100,15 @@ func (router *Router) Handle(req *appreq.Request) (bool, error) {
 
 	respI, err := endpoint.Handle(req)
 	if err != nil {
-		jsonErr, ok := err.(easyjson.Marshaler)
-		if ok {
+		jsonErr, isJSONErr := err.(easyjson.Marshaler)
+		if isJSONErr {
 			ctx.SetStatusCode(http.StatusBadRequest)
 			ctx.SetContentType("application/json")
 
-			rawBytes, err := easyjson.Marshal(jsonErr)
-			if err != nil {
-				router.env.Logger().Error("failed to marshal error response", "err", err, "path", path)
-				ctx.SetBody([]byte(err.Error()))
+			rawBytes, marshalErr := easyjson.Marshal(jsonErr)
+			if marshalErr != nil {
+				router.env.Logger().Error("failed to marshal error response", "err", marshalErr, "path", path)
+				ctx.SetBody([]byte(marshalErr.Error()))
 				return true, err
 			}
 

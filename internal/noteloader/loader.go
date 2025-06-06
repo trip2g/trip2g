@@ -68,9 +68,9 @@ func (l *Loader) Load(ctx context.Context) error {
 			assetMap[asset.VersionID] = noteMap
 		}
 
-		assetURL, err := l.env.NoteAssetURL(ctx, asset.NoteAsset)
-		if err != nil {
-			return fmt.Errorf("failed to get note asset URL: %w", err)
+		assetURL, assetErr := l.env.NoteAssetURL(ctx, asset.NoteAsset)
+		if assetErr != nil {
+			return fmt.Errorf("failed to get note asset URL: %w", assetErr)
 		}
 
 		noteMap[asset.Path] = assetURL

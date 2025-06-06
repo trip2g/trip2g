@@ -494,7 +494,7 @@ func TestItem_Match(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			item := item{
+			testItem := item{
 				data: tt.redirect,
 			}
 
@@ -505,11 +505,11 @@ func TestItem_Match(t *testing.T) {
 					pattern = "(?i)" + pattern
 				}
 				var err error
-				item.regexp, err = regexp.Compile(pattern)
+				testItem.regexp, err = regexp.Compile(pattern)
 				require.NoError(t, err)
 			}
 
-			result, match := item.Match(tt.path)
+			result, match := testItem.Match(tt.path)
 
 			require.Equal(t, tt.match, match)
 			if tt.expected == nil {

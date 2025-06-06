@@ -18,9 +18,32 @@ import (
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg createapikey_test . Env
 
+func assertAPIKeyPayload(t *testing.T, want, got model.CreateAPIKeyOrErrorPayload) {
+	t.Helper()
+	
+	// Skip time comparison for CreatedAt field
+	if payload, ok := got.(*model.CreateAPIKeyPayload); ok {
+		if wantPayload, wantOk := want.(*model.CreateAPIKeyPayload); wantOk {
+			require.Equal(t, wantPayload.Value, payload.Value)
+			require.Equal(t, wantPayload.APIKey.ID, payload.APIKey.ID)
+			require.Equal(t, wantPayload.APIKey.Value, payload.APIKey.Value)
+			require.Equal(t, wantPayload.APIKey.CreatedBy, payload.APIKey.CreatedBy)
+			require.Equal(t, wantPayload.APIKey.Description, payload.APIKey.Description)
+			return
+		}
+	}
+	
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Resolve() = %v, want %v", got, want)
+		for _, desc := range pretty.Diff(got, want) {
+			t.Error(desc)
+		}
+	}
+}
+
 type Env interface {
-	GenerateApiKey() string
-	InsertApiKey(ctx context.Context, params db.InsertApiKeyParams) (db.ApiKey, error)
+	GenerateAPIKey() string
+	InsertAPIKey(ctx context.Context, params db.InsertAPIKeyParams) (db.ApiKey, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
 
@@ -46,10 +69,10 @@ func TestResolve(t *testing.T) {
 				CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 123}, nil
 				},
-				GenerateApiKeyFunc: func() string {
+				GenerateAPIKeyFunc: func() string {
 					return "api-key-12345"
 				},
-				InsertApiKeyFunc: func(ctx context.Context, params db.InsertApiKeyParams) (db.ApiKey, error) {
+				InsertAPIKeyFunc: func(ctx context.Context, params db.InsertAPIKeyParams) (db.ApiKey, error) {
 					return db.ApiKey{
 						ID:          1,
 						Value:       params.Value,
@@ -78,11 +101,11 @@ func TestResolve(t *testing.T) {
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
 				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
-				require.Len(t, mockEnv.GenerateApiKeyCalls(), 1)
-				require.Len(t, mockEnv.InsertApiKeyCalls(), 1)
+				require.Len(t, mockEnv.GenerateAPIKeyCalls(), 1)
+				require.Len(t, mockEnv.InsertAPIKeyCalls(), 1)
 
 				// Verify API key parameters
-				params := mockEnv.InsertApiKeyCalls()[0].Params
+				params := mockEnv.InsertAPIKeyCalls()[0].Params
 				require.Equal(t, "api-key-12345", params.Value)
 				require.Equal(t, int64(123), params.CreatedBy)
 				require.Equal(t, "Test API Key", params.Description)
@@ -94,10 +117,10 @@ func TestResolve(t *testing.T) {
 				CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 456}, nil
 				},
-				GenerateApiKeyFunc: func() string {
+				GenerateAPIKeyFunc: func() string {
 					return "api-key-67890"
 				},
-				InsertApiKeyFunc: func(ctx context.Context, params db.InsertApiKeyParams) (db.ApiKey, error) {
+				InsertAPIKeyFunc: func(ctx context.Context, params db.InsertAPIKeyParams) (db.ApiKey, error) {
 					return db.ApiKey{
 						ID:          2,
 						Value:       params.Value,
@@ -126,10 +149,10 @@ func TestResolve(t *testing.T) {
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
 				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
-				require.Len(t, mockEnv.GenerateApiKeyCalls(), 1)
-				require.Len(t, mockEnv.InsertApiKeyCalls(), 1)
+				require.Len(t, mockEnv.GenerateAPIKeyCalls(), 1)
+				require.Len(t, mockEnv.InsertAPIKeyCalls(), 1)
 
-				params := mockEnv.InsertApiKeyCalls()[0].Params
+				params := mockEnv.InsertAPIKeyCalls()[0].Params
 				require.Empty(t, params.Description)
 			},
 		},
@@ -150,8 +173,8 @@ func TestResolve(t *testing.T) {
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
 				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
-				require.Empty(t, mockEnv.GenerateApiKeyCalls())
-				require.Empty(t, mockEnv.InsertApiKeyCalls())
+				require.Empty(t, mockEnv.GenerateAPIKeyCalls())
+				require.Empty(t, mockEnv.InsertAPIKeyCalls())
 			},
 		},
 		{
@@ -160,10 +183,10 @@ func TestResolve(t *testing.T) {
 				CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 789}, nil
 				},
-				GenerateApiKeyFunc: func() string {
+				GenerateAPIKeyFunc: func() string {
 					return "api-key-fail"
 				},
-				InsertApiKeyFunc: func(ctx context.Context, params db.InsertApiKeyParams) (db.ApiKey, error) {
+				InsertAPIKeyFunc: func(ctx context.Context, params db.InsertAPIKeyParams) (db.ApiKey, error) {
 					return db.ApiKey{}, errors.New("database constraint violation")
 				},
 			},
@@ -177,8 +200,8 @@ func TestResolve(t *testing.T) {
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
 				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
-				require.Len(t, mockEnv.GenerateApiKeyCalls(), 1)
-				require.Len(t, mockEnv.InsertApiKeyCalls(), 1)
+				require.Len(t, mockEnv.GenerateAPIKeyCalls(), 1)
+				require.Len(t, mockEnv.InsertAPIKeyCalls(), 1)
 			},
 		},
 	}
@@ -186,28 +209,14 @@ func TestResolve(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := createapikey.Resolve(tt.args.ctx, tt.env, tt.args.input)
+			
 			if tt.wantErr {
 				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				// Skip time comparison for CreatedAt field
-				if payload, ok := got.(*model.CreateAPIKeyPayload); ok {
-					if want, ok := tt.want.(*model.CreateAPIKeyPayload); ok {
-						require.Equal(t, want.Value, payload.Value)
-						require.Equal(t, want.APIKey.ID, payload.APIKey.ID)
-						require.Equal(t, want.APIKey.Value, payload.APIKey.Value)
-						require.Equal(t, want.APIKey.CreatedBy, payload.APIKey.CreatedBy)
-						require.Equal(t, want.APIKey.Description, payload.APIKey.Description)
-						return
-					}
-				}
-				if !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("Resolve() = %v, want %v", got, tt.want)
-					for _, desc := range pretty.Diff(got, tt.want) {
-						t.Error(desc)
-					}
-				}
+				return
 			}
+			
+			require.NoError(t, err)
+			assertAPIKeyPayload(t, tt.want, got)
 
 			if tt.afterCallback != nil {
 				mockEnv := tt.env.(*envMock)

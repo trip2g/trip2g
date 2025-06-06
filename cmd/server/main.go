@@ -368,14 +368,10 @@ func (a *app) setupAssets() {
 func (a *app) assetURL(path string) string {
 	// Remove leading / if it exists
 	assetPath := path
-	if strings.HasPrefix(assetPath, "/") {
-		assetPath = assetPath[1:]
-	}
+	assetPath = strings.TrimPrefix(assetPath, "/")
 
 	// Remove /assets/ prefix if it exists
-	if strings.HasPrefix(assetPath, "assets/") {
-		assetPath = assetPath[7:]
-	}
+	assetPath = strings.TrimPrefix(assetPath, "assets/")
 
 	a.assetsMu.Lock()
 	defer a.assetsMu.Unlock()
@@ -916,6 +912,7 @@ func (a *app) startServer() {
 				return
 			}
 
+			// TODO: remove this code because rendernotepage handles 404
 			if handled {
 				a.log.Debug("router handled request", "path", path)
 				return

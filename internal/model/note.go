@@ -242,8 +242,8 @@ func (nv *NoteViews) ExtractSubgraphs() {
 		}
 
 		for _, homePath := range homePathVariants {
-			home, ok := nv.Map[homePath]
-			if ok {
+			home, homeOk := nv.Map[homePath]
+			if homeOk {
 				subgraph.Home = home
 				break
 			}

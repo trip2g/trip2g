@@ -11,6 +11,7 @@ import (
 
 var ErrNotFound = errors.New("appreq: not found in context")
 var ErrInvalidType = errors.New("appreq: invalid type")
+var ErrInvalidEnv = errors.New("appreq: invalid env")
 
 type ctxKeyW struct{}
 

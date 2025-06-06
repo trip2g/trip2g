@@ -51,8 +51,8 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 
 	// Show SQLite version (optional, for debugging)
 	if config.Logger != nil {
-		version, err := getSQLiteVersion(conn)
-		if err == nil {
+		version, versionErr := getSQLiteVersion(conn)
+		if versionErr == nil {
 			config.Logger.Info("SQLite database initialized", "version", version, "file", config.DatabaseFile)
 		}
 	}

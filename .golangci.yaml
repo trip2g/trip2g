@@ -434,6 +434,7 @@ linters:
           - gosec
           - noctx
           - wrapcheck
+          - nilnil
       - path: 'endpoint\.go'
         linters:
           - errcheck

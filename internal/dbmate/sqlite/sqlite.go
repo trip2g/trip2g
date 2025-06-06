@@ -199,8 +199,8 @@ func (drv *Driver) SelectMigrations(db *sql.DB, limit int) (map[string]bool, err
 	migrations := map[string]bool{}
 	for rows.Next() {
 		var version string
-		if err := rows.Scan(&version); err != nil {
-			return nil, err
+		if scanErr := rows.Scan(&version); scanErr != nil {
+			return nil, scanErr
 		}
 
 		migrations[version] = true
@@ -244,7 +244,7 @@ func (drv *Driver) Ping() error {
 	return db.Ping()
 }
 
-// Return a normalized version of the driver-specific error type.
+// QueryError returns a normalized version of the driver-specific error type.
 func (drv *Driver) QueryError(query string, err error) error {
 	return &dbmate.QueryError{Err: err, Query: query}
 }

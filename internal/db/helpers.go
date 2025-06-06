@@ -15,7 +15,7 @@ func IsUniqueViolation(err error) bool {
 	return strings.Contains(err.Error(), "UNIQUE constraint failed")
 }
 
-// ToNullable helpers for converting Go types to SQL nullable types.
+// ToNullableFloat64 converts a float64 pointer to sql.NullFloat64.
 func ToNullableFloat64(value *float64) sql.NullFloat64 {
 	if value == nil {
 		return sql.NullFloat64{Valid: false}

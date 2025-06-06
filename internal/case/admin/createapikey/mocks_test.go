@@ -24,11 +24,11 @@ var _ createapikey.Env = &EnvMock{}
 //			CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentAdminUserToken method")
 //			},
-//			GenerateApiKeyFunc: func() string {
-//				panic("mock out the GenerateApiKey method")
+//			GenerateAPIKeyFunc: func() string {
+//				panic("mock out the GenerateAPIKey method")
 //			},
-//			InsertApiKeyFunc: func(ctx context.Context, params db.InsertApiKeyParams) (db.ApiKey, error) {
-//				panic("mock out the InsertApiKey method")
+//			InsertAPIKeyFunc: func(ctx context.Context, params db.InsertAPIKeyParams) (db.ApiKey, error) {
+//				panic("mock out the InsertAPIKey method")
 //			},
 //		}
 //
@@ -40,11 +40,11 @@ type EnvMock struct {
 	// CurrentAdminUserTokenFunc mocks the CurrentAdminUserToken method.
 	CurrentAdminUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
 
-	// GenerateApiKeyFunc mocks the GenerateApiKey method.
-	GenerateApiKeyFunc func() string
+	// GenerateAPIKeyFunc mocks the GenerateAPIKey method.
+	GenerateAPIKeyFunc func() string
 
-	// InsertApiKeyFunc mocks the InsertApiKey method.
-	InsertApiKeyFunc func(ctx context.Context, params db.InsertApiKeyParams) (db.ApiKey, error)
+	// InsertAPIKeyFunc mocks the InsertAPIKey method.
+	InsertAPIKeyFunc func(ctx context.Context, params db.InsertAPIKeyParams) (db.ApiKey, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -53,20 +53,20 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
-		// GenerateApiKey holds details about calls to the GenerateApiKey method.
-		GenerateApiKey []struct {
+		// GenerateAPIKey holds details about calls to the GenerateAPIKey method.
+		GenerateAPIKey []struct {
 		}
-		// InsertApiKey holds details about calls to the InsertApiKey method.
-		InsertApiKey []struct {
+		// InsertAPIKey holds details about calls to the InsertAPIKey method.
+		InsertAPIKey []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Params is the params argument value.
-			Params db.InsertApiKeyParams
+			Params db.InsertAPIKeyParams
 		}
 	}
 	lockCurrentAdminUserToken sync.RWMutex
-	lockGenerateApiKey        sync.RWMutex
-	lockInsertApiKey          sync.RWMutex
+	lockGenerateAPIKey        sync.RWMutex
+	lockInsertAPIKey          sync.RWMutex
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -101,65 +101,65 @@ func (mock *EnvMock) CurrentAdminUserTokenCalls() []struct {
 	return calls
 }
 
-// GenerateApiKey calls GenerateApiKeyFunc.
-func (mock *EnvMock) GenerateApiKey() string {
-	if mock.GenerateApiKeyFunc == nil {
-		panic("EnvMock.GenerateApiKeyFunc: method is nil but Env.GenerateApiKey was just called")
+// GenerateAPIKey calls GenerateAPIKeyFunc.
+func (mock *EnvMock) GenerateAPIKey() string {
+	if mock.GenerateAPIKeyFunc == nil {
+		panic("EnvMock.GenerateAPIKeyFunc: method is nil but Env.GenerateAPIKey was just called")
 	}
 	callInfo := struct {
 	}{}
-	mock.lockGenerateApiKey.Lock()
-	mock.calls.GenerateApiKey = append(mock.calls.GenerateApiKey, callInfo)
-	mock.lockGenerateApiKey.Unlock()
-	return mock.GenerateApiKeyFunc()
+	mock.lockGenerateAPIKey.Lock()
+	mock.calls.GenerateAPIKey = append(mock.calls.GenerateAPIKey, callInfo)
+	mock.lockGenerateAPIKey.Unlock()
+	return mock.GenerateAPIKeyFunc()
 }
 
-// GenerateApiKeyCalls gets all the calls that were made to GenerateApiKey.
+// GenerateAPIKeyCalls gets all the calls that were made to GenerateAPIKey.
 // Check the length with:
 //
-//	len(mockedEnv.GenerateApiKeyCalls())
-func (mock *EnvMock) GenerateApiKeyCalls() []struct {
+//	len(mockedEnv.GenerateAPIKeyCalls())
+func (mock *EnvMock) GenerateAPIKeyCalls() []struct {
 } {
 	var calls []struct {
 	}
-	mock.lockGenerateApiKey.RLock()
-	calls = mock.calls.GenerateApiKey
-	mock.lockGenerateApiKey.RUnlock()
+	mock.lockGenerateAPIKey.RLock()
+	calls = mock.calls.GenerateAPIKey
+	mock.lockGenerateAPIKey.RUnlock()
 	return calls
 }
 
-// InsertApiKey calls InsertApiKeyFunc.
-func (mock *EnvMock) InsertApiKey(ctx context.Context, params db.InsertApiKeyParams) (db.ApiKey, error) {
-	if mock.InsertApiKeyFunc == nil {
-		panic("EnvMock.InsertApiKeyFunc: method is nil but Env.InsertApiKey was just called")
+// InsertAPIKey calls InsertAPIKeyFunc.
+func (mock *EnvMock) InsertAPIKey(ctx context.Context, params db.InsertAPIKeyParams) (db.ApiKey, error) {
+	if mock.InsertAPIKeyFunc == nil {
+		panic("EnvMock.InsertAPIKeyFunc: method is nil but Env.InsertAPIKey was just called")
 	}
 	callInfo := struct {
 		Ctx    context.Context
-		Params db.InsertApiKeyParams
+		Params db.InsertAPIKeyParams
 	}{
 		Ctx:    ctx,
 		Params: params,
 	}
-	mock.lockInsertApiKey.Lock()
-	mock.calls.InsertApiKey = append(mock.calls.InsertApiKey, callInfo)
-	mock.lockInsertApiKey.Unlock()
-	return mock.InsertApiKeyFunc(ctx, params)
+	mock.lockInsertAPIKey.Lock()
+	mock.calls.InsertAPIKey = append(mock.calls.InsertAPIKey, callInfo)
+	mock.lockInsertAPIKey.Unlock()
+	return mock.InsertAPIKeyFunc(ctx, params)
 }
 
-// InsertApiKeyCalls gets all the calls that were made to InsertApiKey.
+// InsertAPIKeyCalls gets all the calls that were made to InsertAPIKey.
 // Check the length with:
 //
-//	len(mockedEnv.InsertApiKeyCalls())
-func (mock *EnvMock) InsertApiKeyCalls() []struct {
+//	len(mockedEnv.InsertAPIKeyCalls())
+func (mock *EnvMock) InsertAPIKeyCalls() []struct {
 	Ctx    context.Context
-	Params db.InsertApiKeyParams
+	Params db.InsertAPIKeyParams
 } {
 	var calls []struct {
 		Ctx    context.Context
-		Params db.InsertApiKeyParams
+		Params db.InsertAPIKeyParams
 	}
-	mock.lockInsertApiKey.RLock()
-	calls = mock.calls.InsertApiKey
-	mock.lockInsertApiKey.RUnlock()
+	mock.lockInsertAPIKey.RLock()
+	calls = mock.calls.InsertAPIKey
+	mock.lockInsertAPIKey.RUnlock()
 	return calls
 }
