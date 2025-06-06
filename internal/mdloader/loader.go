@@ -120,21 +120,13 @@ func (ldr *loader) findAssets() error {
 			case wikilink.Kind:
 
 				wl, ok := n.(*wikilink.Node)
-				if !ok {
-					return ast.WalkContinue, nil
-				}
-
-				if wl.Embed {
+				if ok && wl.Embed {
 					p.Assets[string(wl.Target)] = struct{}{}
 				}
 
 			case ast.KindLink:
 				l, ok := n.(*ast.Link)
-				if !ok {
-					return ast.WalkContinue, nil
-				}
-
-				if l.Destination != nil {
+				if ok && l.Destination != nil {
 					url := string(l.Destination)
 
 					// not sure if this is the right way to check for a file link
@@ -145,11 +137,7 @@ func (ldr *loader) findAssets() error {
 
 			case ast.KindImage:
 				i, ok := n.(*ast.Image)
-				if !ok {
-					return ast.WalkContinue, nil
-				}
-
-				if i.Destination != nil {
+				if ok && i.Destination != nil {
 					p.Assets[string(i.Destination)] = struct{}{}
 				}
 			}

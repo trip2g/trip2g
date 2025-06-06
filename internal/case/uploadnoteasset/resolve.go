@@ -54,7 +54,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	fileName = reUnsafeChars.ReplaceAllString(fileName, "_")
 
 	asset, err := env.NoteAssetByPathAndHash(ctx, findAssetParams)
-	if err != nil {
+	if err != nil { //nolint:nestif // I don't know to avoid this nesting
 		if db.IsNoFound(err) {
 			noteAssetParams := db.InsertNoteAssetParams{
 				AbsolutePath: input.AbsolutePath,

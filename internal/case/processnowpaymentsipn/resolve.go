@@ -24,10 +24,7 @@ type Env interface {
 	UserByEmail(ctx context.Context, email string) (db.User, error)
 	InsertUser(ctx context.Context, email string) (db.User, error)
 	CountUserSubgraphAccessByPurchaseID(ctx context.Context, purchaseID string) (int64, error)
-	CreateUserSubgraphAccess(
-		ctx context.Context,
-		params db.CreateUserSubgraphAccessParams,
-	) (db.UserSubgraphAccess, error)
+	CreateUserSubgraphAccess(ctx context.Context, params db.CreateUserSubgraphAccessParams) (db.UserSubgraphAccess, error)
 	NotifyPuchaseUpdated(email string)
 }
 
@@ -53,7 +50,7 @@ func Resolve(ctx context.Context, env Env, req nowpayments.IPNRequest) (*Respons
 
 	env.Logger().Info("purchase updated", "order_id", req.OrderID, "status", req.PaymentStatus)
 
-	if req.PaymentStatus == nowpayments.PaymentStatusConfirmed {
+	if req.PaymentStatus == nowpayments.PaymentStatusConfirmed { //nolint:nestif // I don't know how to avoid this nesting
 		accessCount, countErr := env.CountUserSubgraphAccessByPurchaseID(ctx, purchase.ID)
 		if countErr != nil {
 			return nil, fmt.Errorf("failed to count user subgraph access by purchase ID: %w", countErr)

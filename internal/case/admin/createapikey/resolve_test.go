@@ -208,12 +208,12 @@ func TestResolve(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := createapikey.Resolve(tt.args.ctx, tt.env, tt.args.input)
-			
+
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
-			
+
 			require.NoError(t, err)
 			assertAPIKeyPayload(t, tt.want, got)
 

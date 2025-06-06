@@ -36,7 +36,7 @@ type Payload = model.CreatePaymentLinkOrErrorPayload
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	isAuthenticated := false
 
-	if input.Email == nil {
+	if input.Email == nil { //nolint:nestif // I don't know how to avoid this nesting
 		token, err := env.CurrentUserToken(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user token: %w", err)

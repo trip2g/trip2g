@@ -300,7 +300,7 @@ func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
 	logLabel := fmt.Sprintf("tx %s", label+":")
 	queries := db.New(db.WithLogger(tx, logger.WithPrefix(a.log, logLabel)))
 
-	newEnv := *a // copy!
+	newEnv := *a //nolint:govet // I will fix this later (copy mutex)
 	newEnv.queries = queries
 	newEnv.Queries = queries
 

@@ -104,20 +104,20 @@ func (i *item) Match(path string) (*string, bool) {
 		}
 
 		return nil, false
-	} else {
-		// Simple string matching
-		pattern := i.data.Pattern
-		matchPath := path
-
-		if i.data.IgnoreCase {
-			pattern = strings.ToLower(pattern)
-			matchPath = strings.ToLower(path)
-		}
-
-		if pattern == matchPath {
-			return &i.data.Target, true
-		}
-
-		return nil, false
 	}
+
+	// Simple string matching
+	pattern := i.data.Pattern
+	matchPath := path
+
+	if i.data.IgnoreCase {
+		pattern = strings.ToLower(pattern)
+		matchPath = strings.ToLower(path)
+	}
+
+	if pattern == matchPath {
+		return &i.data.Target, true
+	}
+
+	return nil, false
 }

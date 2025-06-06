@@ -43,42 +43,44 @@ func NewHandler(env Env) *handler.Server {
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		operationContext := graphql.GetOperationContext(ctx)
 
-		if operationContext.Operation.Operation == ast.Mutation {
-			err := env.AcquireTxEnvInRequest(ctx, operationContext.Operation.Name)
-			if err != nil {
-				log.Error("failed to acquire transactioned env", "error", err)
-				return graphqlErr(err)
-			}
+		if operationContext.Operation.Operation != ast.Mutation {
+			return next(ctx)
+		}
 
-			rh := next(ctx)
+		err := env.AcquireTxEnvInRequest(ctx, operationContext.Operation.Name)
+		if err != nil {
+			log.Error("failed to acquire transactioned env", "error", err)
+			return graphqlErr(err)
+		}
 
-			return func(ctx context.Context) *graphql.Response {
-				resp := rh(ctx)
+		rh := next(ctx)
 
-				// А тут интересно, нужно ли отказывать транзакции только в случае ошибок
-				// или в случае ErrorPayload так же нужно? Похоже нужно откатывать в случае
-				// непредвиденных ошибок и дополнительно вводить специальную ошибку для rollback.
-				if len(resp.Errors) > 0 {
-					rollbackErr := env.ReleaseTxEnvInRequest(ctx, false)
-					if rollbackErr != nil {
-						log.Error("failed to release transactioned env with rollback", "error", rollbackErr)
-					} else {
-						log.Info("released transactioned env with rollback")
-					}
+		return func(ctx context.Context) *graphql.Response {
+			resp := rh(ctx)
+
+			// А тут интересно, нужно ли отказывать транзакции только в случае ошибок
+			// или в случае ErrorPayload так же нужно? Похоже нужно откатывать в случае
+			// непредвиденных ошибок и дополнительно вводить специальную ошибку для rollback.
+			if len(resp.Errors) > 0 {
+				rollbackErr := env.ReleaseTxEnvInRequest(ctx, false)
+				if rollbackErr != nil {
+					log.Error("failed to release transactioned env with rollback", "error", rollbackErr)
 				} else {
-					commitErr := env.ReleaseTxEnvInRequest(ctx, true)
-					if commitErr != nil {
-						log.Error("failed to release transactioned env with commit", "error", commitErr)
-					} else {
-						log.Debug("released transactioned env with commit")
-					}
+					log.Info("released transactioned env with rollback")
 				}
 
 				return resp
 			}
-		}
 
-		return next(ctx)
+			commitErr := env.ReleaseTxEnvInRequest(ctx, true)
+			if commitErr != nil {
+				log.Error("failed to release transactioned env with commit", "error", commitErr)
+			} else {
+				log.Debug("released transactioned env with commit")
+			}
+
+			return resp
+		}
 	})
 
 	return srv
