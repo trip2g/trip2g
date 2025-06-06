@@ -1,6 +1,8 @@
 package model
 
 import (
+	"errors"
+
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
@@ -15,14 +17,14 @@ func NewOzzoError(err error) *ErrorPayload {
 		return nil
 	}
 
-	errors, ok := err.(ozzo.Errors)
-	if !ok {
+	var ozzoErrors ozzo.Errors
+	if !errors.As(err, &ozzoErrors) {
 		return &ErrorPayload{Message: err.Error()}
 	}
 
 	payload := ErrorPayload{}
 
-	for key, fieldErr := range errors {
+	for key, fieldErr := range ozzoErrors {
 		payload.ByFields = append(payload.ByFields, FieldMessage{
 			Name:  key,
 			Value: fieldErr.Error(),

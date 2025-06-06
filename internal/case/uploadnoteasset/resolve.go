@@ -3,6 +3,7 @@ package uploadnoteasset
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -25,10 +26,13 @@ type Env interface {
 	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
 }
 
-// for sanitize file names
+// for sanitize file names.
 var reUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9_.-]`)
 
-func Resolve(ctx context.Context, env Env, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error) {
+type Input = model.UploadNoteAssetInput
+type Payload = model.UploadNoteAssetOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	assetPaths, err := env.NoteVersionAssetPaths(ctx, int64(input.NoteID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get note version asset paths: %w", err)
@@ -93,7 +97,7 @@ func Resolve(ctx context.Context, env Env, input model.UploadNoteAssetInput) (mo
 			return nil, fmt.Errorf("failed to upload asset: %w", err)
 		}
 
-		actualHash := fmt.Sprintf("%x", hasher.Sum(nil))
+		actualHash := hex.EncodeToString(hasher.Sum(nil))
 		if actualHash != input.Sha256Hash {
 			// delete the asset from storage
 			deleteErr := env.DeleteAssetObject(ctx, asset)

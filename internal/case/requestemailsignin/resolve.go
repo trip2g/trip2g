@@ -31,7 +31,11 @@ func ValidateInput(req *model.RequestEmailSignInCodeInput) *model.ErrorPayload {
 	))
 }
 
-func Resolve(ctx context.Context, env Env, input model.RequestEmailSignInCodeInput) (model.RequestEmailSignInCodeOrErrorPayload, error) {
+func Resolve(
+	ctx context.Context,
+	env Env,
+	input model.RequestEmailSignInCodeInput,
+) (model.RequestEmailSignInCodeOrErrorPayload, error) {
 	NormalizeInput(&input)
 
 	errPayload := ValidateInput(&input)

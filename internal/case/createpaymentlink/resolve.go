@@ -2,6 +2,7 @@ package createpaymentlink
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -29,10 +30,13 @@ type Env interface {
 	requestemailsignin.Env
 }
 
-func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error) {
+type Input = model.CreatePaymentLinkInput
+type Payload = model.CreatePaymentLinkOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) { //nolint:golines // one line is preferred
 	isAuthenticated := false
 
-	if req.Email == nil {
+	if input.Email == nil {
 		token, err := env.CurrentUserToken(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user token: %w", err)
@@ -47,11 +51,11 @@ func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (mo
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 
-		req.Email = &user.Email
+		input.Email = &user.Email
 
 		isAuthenticated = true
 	} else {
-		_, userErr := env.UserByEmail(ctx, *req.Email)
+		_, userErr := env.UserByEmail(ctx, *input.Email)
 		if userErr != nil {
 			if !db.IsNoFound(userErr) {
 				return nil, fmt.Errorf("failed to get user by email: %w", userErr)
@@ -61,7 +65,7 @@ func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (mo
 		}
 	}
 
-	offer, err := env.ActiveOfferByPublicID(ctx, req.OfferID)
+	offer, err := env.ActiveOfferByPublicID(ctx, input.OfferID)
 	if err != nil {
 		if db.IsNoFound(err) {
 			return &model.ErrorPayload{Message: "offer_not_found"}, nil
@@ -76,7 +80,7 @@ func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (mo
 
 	purchaseParams := db.InsertPurchaseParams{
 		OfferID: offer.ID,
-		Email:   *req.Email,
+		Email:   *input.Email,
 
 		PriceUsd:        offer.PriceUsd.Float64,
 		PaymentProvider: "nowpayments",
@@ -89,7 +93,7 @@ func Resolve(ctx context.Context, env Env, req model.CreatePaymentLinkInput) (mo
 		return nil, err
 	}
 
-	callbackURLs, err := prepareCallbackURLs(ctx, env, req, isAuthenticated)
+	callbackURLs, err := prepareCallbackURLs(ctx, env, input, isAuthenticated)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +139,14 @@ type callbackURLs struct {
 	cancelURL      string
 }
 
-func prepareCallbackURLs(ctx context.Context, env Env, req model.CreatePaymentLinkInput, isAuthenticated bool) (*callbackURLs, error) {
+func prepareCallbackURLs(
+	ctx context.Context,
+	env Env,
+	input model.CreatePaymentLinkInput,
+	isAuthenticated bool,
+) (*callbackURLs, error) {
 	publicURL := strings.TrimRight(env.PublicURL(), "/")
-	rawReturnURL := fmt.Sprintf("%s/%s", publicURL, strings.Trim(req.ReturnPath, "/"))
+	rawReturnURL := fmt.Sprintf("%s/%s", publicURL, strings.Trim(input.ReturnPath, "/"))
 
 	result := callbackURLs{
 		IPNCallbackURL: fmt.Sprintf("%s/%s", publicURL, (&processnowpaymentsipn.Endpoint{}).Path()),
@@ -156,7 +165,7 @@ func prepareCallbackURLs(ctx context.Context, env Env, req model.CreatePaymentLi
 
 	// build successURL
 	if !isAuthenticated {
-		hotAuthToken, err := env.GenerateHotAuthToken(ctx, appmodel.HotAuthToken{Email: *req.Email})
+		hotAuthToken, err := env.GenerateHotAuthToken(ctx, appmodel.HotAuthToken{Email: *input.Email})
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate hot auth token: %w", err)
 		}
@@ -171,11 +180,11 @@ func prepareCallbackURLs(ctx context.Context, env Env, req model.CreatePaymentLi
 	return &result, nil
 }
 
-var ErrDuplicatePurchaseID = fmt.Errorf("duplicate purchase ID")
+var ErrDuplicatePurchaseID = errors.New("duplicate purchase ID")
 
 func insertPurchase(ctx context.Context, env Env, params *db.InsertPurchaseParams) error {
 	// 16 tryes to insert purchase with unique ID
-	for tryCount := 0; tryCount < 16; tryCount++ {
+	for range 16 {
 		params.ID = env.GeneratePurchaseID()
 
 		err := env.InsertPurchase(ctx, *params)

@@ -148,10 +148,10 @@ func TestUserBans_UserBanByUserID(t *testing.T) {
 				mockEnv := tt.env.(*envMock)
 				if tt.name == "cache hit - second lookup" {
 					// Should have been called only once (during first lookup)
-					require.Equal(t, 1, len(mockEnv.ListAllUserBansCalls()))
+					require.Len(t, mockEnv.ListAllUserBansCalls(), 1)
 				} else {
 					// Should have been called once
-					require.Equal(t, 1, len(mockEnv.ListAllUserBansCalls()))
+					require.Len(t, mockEnv.ListAllUserBansCalls(), 1)
 				}
 			}
 		})
@@ -186,7 +186,7 @@ func TestUserBans_ResetBanCache(t *testing.T) {
 			wantErr: false,
 			checkCalls: func(t *testing.T, mock *envMock) {
 				// Should be called once during reset
-				require.Equal(t, 1, len(mock.ListAllUserBansCalls()))
+				require.Len(t, mock.ListAllUserBansCalls(), 1)
 			},
 		},
 		{
@@ -207,7 +207,7 @@ func TestUserBans_ResetBanCache(t *testing.T) {
 			wantErr: false,
 			checkCalls: func(t *testing.T, mock *envMock) {
 				// Should be called twice: once during setup, once during reset
-				require.Equal(t, 2, len(mock.ListAllUserBansCalls()))
+				require.Len(t, mock.ListAllUserBansCalls(), 2)
 			},
 		},
 		{
@@ -236,7 +236,6 @@ func TestUserBans_ResetBanCache(t *testing.T) {
 			if tt.setupFunc != nil {
 				tt.setupFunc(userBans, tt.args.ctx)
 			}
-
 
 			err := userBans.ResetBanCache(tt.args.ctx)
 			if tt.wantErr {

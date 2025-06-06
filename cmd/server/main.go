@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -85,10 +86,6 @@ type app struct {
 	nowpaymentsClient *nowpayments.Client
 
 	purchaseTokenManager *purchasetoken.Manager
-
-	purchaseUpdatedMu       sync.Mutex
-	purchaseUpdatedHandlers map[string]map[int]func()
-	nextPurchaseHandlerID   int
 
 	assetsFS    *fasthttp.FS
 	assetHashes map[string]string
@@ -322,7 +319,10 @@ func (a *app) ReleaseTxEnvInRequest(ctx context.Context, commit bool) error {
 	a.graphTxs.Lock()
 	defer a.graphTxs.Unlock()
 
-	envPtr := req.Env.(*app)
+	envPtr, ok := req.Env.(*app)
+	if !ok {
+		return errors.New("failed to cast env to *app")
+	}
 	tx, ok := a.graphTxs.EnvMap[envPtr]
 	if !ok {
 		return fmt.Errorf("transactioned env not found for request: %v", req.Env)
@@ -399,7 +399,7 @@ func (a *app) assetURL(path string) string {
 
 	// Calculate SHA256 hash
 	hash := sha256.Sum256(content)
-	hashStr := fmt.Sprintf("%x", hash)
+	hashStr := hex.EncodeToString(hash[:])
 
 	// Store hash for future use (non-dev mode only)
 	if !a.config.DevMode {
@@ -452,8 +452,8 @@ func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]s
 
 func (a *app) IDHash(entity string, id int64) string {
 	sha256 := sha256.New()
-	sha256.Write([]byte(fmt.Sprintf("%s:%d", entity, id)))
-	return fmt.Sprintf("%x", sha256.Sum(nil))
+	fmt.Fprintf(sha256, "%s:%d", entity, id)
+	return hex.EncodeToString(sha256.Sum(nil))
 }
 
 func (a *app) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {
@@ -614,7 +614,7 @@ func (a *app) GenerateApiKey() string {
 
 	result := make([]byte, length)
 
-	for i := 0; i < length; i++ {
+	for i := range length {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(alphabet))))
 		if err != nil {
 			panic(err)
@@ -633,7 +633,7 @@ func (a *app) GeneratePurchaseID() string {
 
 	result := make([]byte, length)
 
-	for i := 0; i < length; i++ {
+	for i := range length {
 		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(purchaseAlphabet))))
 		if err != nil {
 			panic(err)
@@ -811,7 +811,8 @@ func (a *app) startServer() {
 			defer appreq.Release(req)
 
 			// hide admin JS from public
-			if len(a.config.AdminJSURL) > 0 && a.config.AdminJSURL[0] == '/' && strings.HasPrefix(path, a.config.AdminJSURL) {
+			if len(a.config.AdminJSURL) > 0 && a.config.AdminJSURL[0] == '/' &&
+				strings.HasPrefix(path, a.config.AdminJSURL) {
 				userToken, err := req.UserToken()
 				if err != nil || userToken == nil {
 					ctx.SetStatusCode(http.StatusUnauthorized)
@@ -832,7 +833,10 @@ func (a *app) startServer() {
 				if err != nil {
 					a.log.Warn("failed to resolve purchase token", "error", err)
 				} else if processed {
-					a.purchaseTokenManager.Delete(ctx)
+					err = a.purchaseTokenManager.Delete(ctx)
+					if err != nil {
+						a.log.Warn("failed to delete purchase token", "error", err)
+					}
 				}
 			}
 
@@ -926,6 +930,7 @@ func (a *app) startServer() {
 	tlsConfig := &tls.Config{
 		GetCertificate: certManager.GetCertificate,
 		NextProtos:     []string{"http/1.1", acme.ALPNProto},
+		MinVersion:     tls.VersionTLS12,
 	}
 
 	ln, err := net.Listen("tcp4", ":443") // #nosec G102

@@ -63,7 +63,7 @@ func CheckIPNSignature(secretKey string, sig string, body []byte) (bool, error) 
 		if err != nil {
 			return false, fmt.Errorf("failed to marshal value for key %q: %w", k, err)
 		}
-		buffer.WriteString(fmt.Sprintf("%q:%s", k, val))
+		fmt.Fprintf(buffer, "%q:%s", k, val)
 		if i != len(keys)-1 {
 			buffer.WriteString(",")
 		}

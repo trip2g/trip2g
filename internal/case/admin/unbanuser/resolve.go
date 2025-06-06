@@ -11,8 +11,11 @@ type Env interface {
 	ResetBanCache(ctx context.Context) error
 }
 
-func Resolve(ctx context.Context, env Env, req model.UnbanUserInput) (model.UnbanUserOrErrorPayload, error) {
-	err := env.UnbanUser(ctx, int64(req.UserID))
+type Input = model.UnbanUserInput
+type Payload = model.UnbanUserOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	err := env.UnbanUser(ctx, input.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unban user: %w", err)
 	}
@@ -23,7 +26,7 @@ func Resolve(ctx context.Context, env Env, req model.UnbanUserInput) (model.Unba
 	}
 
 	response := model.UnbanUserPayload{
-		UserID: req.UserID,
+		UserID: input.UserID,
 	}
 
 	return &response, nil

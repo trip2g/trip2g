@@ -50,7 +50,10 @@ func validateInput(i *model.CreateOfferInput) *model.ErrorPayload {
 	return nil
 }
 
-func Resolve(ctx context.Context, env Env, input model.CreateOfferInput) (model.CreateOfferOrErrorPayload, error) {
+type Input = model.CreateOfferInput
+type Payload = model.CreateOfferOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
@@ -66,7 +69,7 @@ func Resolve(ctx context.Context, env Env, input model.CreateOfferInput) (model.
 	publicID := env.GenerateUniqID()
 
 	for _, subgraphID := range input.SubgraphIds {
-		_, err := env.SubgraphByID(ctx, int64(subgraphID))
+		_, err := env.SubgraphByID(ctx, subgraphID)
 		if err != nil {
 			return &model.ErrorPayload{Message: fmt.Sprintf("subgraph with ID %d does not exist", subgraphID)}, nil
 		}
@@ -92,7 +95,7 @@ func Resolve(ctx context.Context, env Env, input model.CreateOfferInput) (model.
 	for _, subgraphID := range input.SubgraphIds {
 		osParams := db.InsertOfferSubgraphParams{
 			OfferID:    offer.ID,
-			SubgraphID: int64(subgraphID),
+			SubgraphID: subgraphID,
 		}
 
 		err := env.InsertOfferSubgraph(ctx, osParams)

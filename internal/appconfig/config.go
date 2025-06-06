@@ -3,6 +3,7 @@ package appconfig
 import (
 	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -67,7 +68,7 @@ type Config struct {
 	MailFrom string
 }
 
-// Default values for configuration
+// Default values for configuration.
 const (
 	DefaultListenAddr   = ":8081"
 	DefaultDatabaseFile = "data.sqlite3"
@@ -75,7 +76,7 @@ const (
 	DefaultLogLevel     = "info"
 	DefaultDevMode      = false
 
-	// MinIO defaults
+	// MinIO defaults.
 	DefaultMinIOEndpoint    = "localhost:9000"
 	DefaultMinIOAccessKey   = "root"
 	DefaultMinIOSecretKey   = "password"
@@ -176,8 +177,18 @@ func (c *Config) defineFlags() error {
 	flag.StringVar(&c.Storage.Bucket, "minio-bucket", c.Storage.Bucket, "MinIO bucket name")
 	flag.StringVar(&c.Storage.Region, "minio-region", c.Storage.Region, "MinIO region")
 	flag.BoolVar(&c.Storage.UseSSL, "minio-use-ssl", c.Storage.UseSSL, "Use SSL for MinIO")
-	flag.DurationVar(&c.Storage.InitTimeout, "minio-init-timeout", c.Storage.InitTimeout, "MinIO init timeout (check and make bucket)")
-	flag.DurationVar(&c.Storage.URLExpiresIn, "minio-url-expires-in", c.Storage.URLExpiresIn, "MinIO presigned URL expiration time")
+	flag.DurationVar(
+		&c.Storage.InitTimeout,
+		"minio-init-timeout",
+		c.Storage.InitTimeout,
+		"MinIO init timeout (check and make bucket)",
+	)
+	flag.DurationVar(
+		&c.Storage.URLExpiresIn,
+		"minio-url-expires-in",
+		c.Storage.URLExpiresIn,
+		"MinIO presigned URL expiration time",
+	)
 
 	// ACME domains (multiple values allowed)
 	flag.Var(&c.AcmeDomains, "acme-domain", "ACME domains (multiple values allowed)")
@@ -220,7 +231,7 @@ func (c *Config) validate() error {
 		ozzo.Field(&c.Storage, ozzo.By(func(value interface{}) error {
 			storage, ok := value.(miniostorage.Config)
 			if !ok {
-				return fmt.Errorf("invalid storage config type")
+				return errors.New("invalid storage config type")
 			}
 			return storage.ValidateConfig()
 		})),

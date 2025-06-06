@@ -12,7 +12,10 @@ type Env interface {
 	HideNotePath(ctx context.Context, params db.HideNotePathParams) error
 }
 
-func Resolve(ctx context.Context, env Env, input model.HideNotesInput) (model.HideNotesOrErrorPayload, error) {
+type Input = model.HideNotesInput
+type Payload = model.HideNotesOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	for _, path := range input.Paths {
 		params := db.HideNotePathParams{
 			HiddenBy: sql.NullInt64{Valid: true, Int64: int64(input.ApiKey.CreatedBy)},

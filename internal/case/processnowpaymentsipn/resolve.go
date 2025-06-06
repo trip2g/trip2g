@@ -24,7 +24,10 @@ type Env interface {
 	UserByEmail(ctx context.Context, email string) (db.User, error)
 	InsertUser(ctx context.Context, email string) (db.User, error)
 	CountUserSubgraphAccessByPurchaseID(ctx context.Context, purchaseID string) (int64, error)
-	CreateUserSubgraphAccess(ctx context.Context, params db.CreateUserSubgraphAccessParams) (db.UserSubgraphAccess, error)
+	CreateUserSubgraphAccess(
+		ctx context.Context,
+		params db.CreateUserSubgraphAccessParams,
+	) (db.UserSubgraphAccess, error)
 	NotifyPuchaseUpdated(email string)
 }
 

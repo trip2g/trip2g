@@ -4,6 +4,7 @@ package appconfig
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -83,7 +84,7 @@ func (e *ProcessError) Unwrap() error {
 }
 
 // ErrAlreadyParsed is returned when attempting to process flags that have already been parsed.
-var ErrAlreadyParsed = fmt.Errorf("flags have already been parsed")
+var ErrAlreadyParsed = errors.New("flags have already been parsed")
 
 // ProcessWithEnv processes environment variables and updates flag defaults.
 // It returns an error if flags have already been parsed or if there's an issue
@@ -189,7 +190,13 @@ func (ef *EnvFlag) processEnvLine(envLine string, flagEnvMap map[string]string) 
 
 	err := ef.flagSet.Set(flagKey, value)
 	if err != nil {
-		ef.logger.Error("failed to set flag from environment variable", "envKey", key, "flagKey", flagKey, "value", value, "error", err)
+		ef.logger.Error(
+			"failed to set flag from environment variable",
+			"envKey", key,
+			"flagKey", flagKey,
+			"value", value,
+			"error", err,
+		)
 		return &ProcessError{
 			Flag:  flagKey,
 			Value: value,
@@ -247,7 +254,7 @@ func (ef *EnvFlag) SetLogger(log logger.Logger) {
 	}
 }
 
-// Standard instance for package-level functions
+// Standard instance for package-level functions.
 var std = New(DefaultEnvFlagConfig())
 
 // ProcessWithEnv processes environment variables using the standard instance.

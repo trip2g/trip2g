@@ -16,13 +16,20 @@ type Request struct {
 	Color string
 }
 
-func (req *Request) Resolve(ctx context.Context, env Env) (model.UpdateSubgraphOrErrorPayload, error) {
+type Input = Request
+type Payload = model.UpdateSubgraphOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	return input.Resolve(ctx, env)
+}
+
+func (input *Request) Resolve(ctx context.Context, env Env) (Payload, error) {
 	params := db.UpdateAdminSubgraphParams{
-		ID: req.ID,
+		ID: input.ID,
 	}
 
-	if req.Color != "" {
-		params.Color = db.ToNullableString(&req.Color)
+	if input.Color != "" {
+		params.Color = db.ToNullableString(&input.Color)
 	}
 
 	subgraph, err := env.UpdateAdminSubgraph(ctx, params)

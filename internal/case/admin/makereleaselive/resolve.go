@@ -16,7 +16,10 @@ type Env interface {
 	PrepareLiveNotes(ctx context.Context) (*appmodel.NoteViews, error)
 }
 
-func Resolve(ctx context.Context, env Env, input model.MakeReleaseLiveInput) (model.MakeReleaseLiveOrErrorPayload, error) {
+type Input = model.MakeReleaseLiveInput
+type Payload = model.MakeReleaseLiveOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)

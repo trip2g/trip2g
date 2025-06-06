@@ -12,7 +12,10 @@ type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
 
-func Resolve(ctx context.Context, env Env, input model.DeleteRedirectInput) (model.DeleteRedirectOrErrorPayload, error) {
+type Input = model.DeleteRedirectInput
+type Payload = model.DeleteRedirectOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current admin user token: %w", err)
@@ -23,9 +26,7 @@ func Resolve(ctx context.Context, env Env, input model.DeleteRedirectInput) (mod
 		return nil, fmt.Errorf("failed to delete redirect: %w", err)
 	}
 
-	response := model.DeleteRedirectPayload{
-		ID: input.ID,
-	}
+	response := model.DeleteRedirectPayload(input)
 
 	return &response, nil
 }

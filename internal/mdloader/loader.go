@@ -119,14 +119,20 @@ func (ldr *loader) findAssets() error {
 			switch n.Kind() {
 			case wikilink.Kind:
 
-				wl := n.(*wikilink.Node)
+				wl, ok := n.(*wikilink.Node)
+				if !ok {
+					return ast.WalkContinue, nil
+				}
 
 				if wl.Embed {
 					p.Assets[string(wl.Target)] = struct{}{}
 				}
 
 			case ast.KindLink:
-				l := n.(*ast.Link)
+				l, ok := n.(*ast.Link)
+				if !ok {
+					return ast.WalkContinue, nil
+				}
 
 				if l.Destination != nil {
 					url := string(l.Destination)
@@ -138,7 +144,10 @@ func (ldr *loader) findAssets() error {
 				}
 
 			case ast.KindImage:
-				i := n.(*ast.Image)
+				i, ok := n.(*ast.Image)
+				if !ok {
+					return ast.WalkContinue, nil
+				}
 
 				if i.Destination != nil {
 					p.Assets[string(i.Destination)] = struct{}{}
@@ -227,7 +236,7 @@ func (ldr *loader) extractInLinks() error {
 	return nil
 }
 
-func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) { //nolint:unparam // it's a placeholder
+func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	context := parser.NewContext()
 
 	doc := ldr.md.Parser().Parse(text.NewReader(src.Content), parser.WithContext(context))

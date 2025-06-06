@@ -48,6 +48,13 @@ func (s PaymentStatus) IsSuccessful() bool {
 		PaymentStatusSending,
 		PaymentStatusFinished:
 		return true
+	case PaymentStatusWaiting,
+		PaymentStatusConfirming,
+		PaymentStatusPartiallyPaid,
+		PaymentStatusFailed,
+		PaymentStatusRefunded,
+		PaymentStatusExpired:
+		return false
 	default:
 		return false
 	}

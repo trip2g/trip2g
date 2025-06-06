@@ -185,7 +185,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	return &response, nil
 }
 
-// extractReferrerVersionID tries to find the version ID from a referrer URL
+// extractReferrerVersionID tries to find the version ID from a referrer URL.
 func extractReferrerVersionID(referrer string, notes *model.NoteViews) sql.NullInt64 {
 	if referrer == "" {
 		return sql.NullInt64{}
@@ -221,8 +221,15 @@ func extractReferrerVersionID(referrer string, notes *model.NoteViews) sql.NullI
 	}
 }
 
-// recordUserNoteView records a user's note view with daily limits and referrer tracking
-func recordUserNoteView(ctx context.Context, env Env, userID int64, note *model.NoteView, referrer string, notes *model.NoteViews) error {
+// recordUserNoteView records a user's note view with daily limits and referrer tracking.
+func recordUserNoteView(
+	ctx context.Context,
+	env Env,
+	userID int64,
+	note *model.NoteView,
+	referrer string,
+	notes *model.NoteViews,
+) error {
 	const maxCount = int64(100)
 
 	dailyParams := db.UpsertUserNoteDailyViewParams{

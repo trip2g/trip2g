@@ -48,10 +48,10 @@ func TestResolve(t *testing.T) {
 				},
 				ReleaseByIDFunc: func(ctx context.Context, id int64) (db.Release, error) {
 					return db.Release{
-						ID:          123,
-						Title:       "Test Release",
-						CreatedBy:   1,
-						IsLive:      false,
+						ID:        123,
+						Title:     "Test Release",
+						CreatedBy: 1,
+						IsLive:    false,
 					}, nil
 				},
 				ChangeLiveReleaseFunc: func(ctx context.Context, id int64) error {
@@ -69,19 +69,19 @@ func TestResolve(t *testing.T) {
 			},
 			want: &model.MakeReleaseLivePayload{
 				Release: &db.Release{
-					ID:          123,
-					Title:       "Test Release",
-					CreatedBy:   1,
-					IsLive:      false,
+					ID:        123,
+					Title:     "Test Release",
+					CreatedBy: 1,
+					IsLive:    false,
 				},
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.ReleaseByIDCalls()))
-				require.Equal(t, 1, len(mockEnv.ChangeLiveReleaseCalls()))
-				require.Equal(t, 1, len(mockEnv.PrepareLiveNotesCalls()))
-				
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.ReleaseByIDCalls(), 1)
+				require.Len(t, mockEnv.ChangeLiveReleaseCalls(), 1)
+				require.Len(t, mockEnv.PrepareLiveNotesCalls(), 1)
+
 				// Verify correct ID was passed
 				require.Equal(t, int64(123), mockEnv.ReleaseByIDCalls()[0].ID)
 				require.Equal(t, int64(123), mockEnv.ChangeLiveReleaseCalls()[0].ID)
@@ -103,11 +103,11 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
 				// Other methods should not be called due to early error
-				require.Equal(t, 0, len(mockEnv.ReleaseByIDCalls()))
-				require.Equal(t, 0, len(mockEnv.ChangeLiveReleaseCalls()))
-				require.Equal(t, 0, len(mockEnv.PrepareLiveNotesCalls()))
+				require.Empty(t, mockEnv.ReleaseByIDCalls())
+				require.Empty(t, mockEnv.ChangeLiveReleaseCalls())
+				require.Empty(t, mockEnv.PrepareLiveNotesCalls())
 			},
 		},
 		{
@@ -129,12 +129,12 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.ReleaseByIDCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.ReleaseByIDCalls(), 1)
 				// Later methods should not be called due to error
-				require.Equal(t, 0, len(mockEnv.ChangeLiveReleaseCalls()))
-				require.Equal(t, 0, len(mockEnv.PrepareLiveNotesCalls()))
-				
+				require.Empty(t, mockEnv.ChangeLiveReleaseCalls())
+				require.Empty(t, mockEnv.PrepareLiveNotesCalls())
+
 				// Verify correct ID was passed
 				require.Equal(t, int64(999), mockEnv.ReleaseByIDCalls()[0].ID)
 			},
@@ -147,10 +147,10 @@ func TestResolve(t *testing.T) {
 				},
 				ReleaseByIDFunc: func(ctx context.Context, id int64) (db.Release, error) {
 					return db.Release{
-						ID:          123,
-						Title:       "Test Release",
-						CreatedBy:   1,
-						IsLive:      false,
+						ID:        123,
+						Title:     "Test Release",
+						CreatedBy: 1,
+						IsLive:    false,
 					}, nil
 				},
 				ChangeLiveReleaseFunc: func(ctx context.Context, id int64) error {
@@ -166,12 +166,12 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.ReleaseByIDCalls()))
-				require.Equal(t, 1, len(mockEnv.ChangeLiveReleaseCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.ReleaseByIDCalls(), 1)
+				require.Len(t, mockEnv.ChangeLiveReleaseCalls(), 1)
 				// PrepareNotes should not be called due to error
-				require.Equal(t, 0, len(mockEnv.PrepareLiveNotesCalls()))
-				
+				require.Empty(t, mockEnv.PrepareLiveNotesCalls())
+
 				// Verify correct IDs were passed
 				require.Equal(t, int64(123), mockEnv.ReleaseByIDCalls()[0].ID)
 				require.Equal(t, int64(123), mockEnv.ChangeLiveReleaseCalls()[0].ID)
@@ -185,10 +185,10 @@ func TestResolve(t *testing.T) {
 				},
 				ReleaseByIDFunc: func(ctx context.Context, id int64) (db.Release, error) {
 					return db.Release{
-						ID:          123,
-						Title:       "Test Release",
-						CreatedBy:   1,
-						IsLive:      false,
+						ID:        123,
+						Title:     "Test Release",
+						CreatedBy: 1,
+						IsLive:    false,
 					}, nil
 				},
 				ChangeLiveReleaseFunc: func(ctx context.Context, id int64) error {
@@ -207,11 +207,11 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.ReleaseByIDCalls()))
-				require.Equal(t, 1, len(mockEnv.ChangeLiveReleaseCalls()))
-				require.Equal(t, 1, len(mockEnv.PrepareLiveNotesCalls()))
-				
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.ReleaseByIDCalls(), 1)
+				require.Len(t, mockEnv.ChangeLiveReleaseCalls(), 1)
+				require.Len(t, mockEnv.PrepareLiveNotesCalls(), 1)
+
 				// Verify correct IDs were passed
 				require.Equal(t, int64(123), mockEnv.ReleaseByIDCalls()[0].ID)
 				require.Equal(t, int64(123), mockEnv.ChangeLiveReleaseCalls()[0].ID)

@@ -46,7 +46,10 @@ func validateInput(i *model.CreateRedirectInput) *model.ErrorPayload {
 	return nil
 }
 
-func Resolve(ctx context.Context, env Env, input model.CreateRedirectInput) (model.CreateRedirectOrErrorPayload, error) {
+type Input = model.CreateRedirectInput
+type Payload = model.CreateRedirectOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	token, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current admin user token: %w", err)

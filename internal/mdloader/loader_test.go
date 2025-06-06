@@ -131,9 +131,9 @@ func TestAssets(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.Equal(t, pages.Map["/index"].Assets, map[string]struct{}{
+	require.Equal(t, map[string]struct{}{
 		"image.png":  struct{}{},
 		"/file.pdf":  struct{}{},
 		"image2.png": struct{}{},
-	})
+	}, pages.Map["/index"].Assets)
 }

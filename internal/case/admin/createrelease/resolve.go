@@ -24,7 +24,10 @@ func normalizeInput(i *model.CreateReleaseInput) {
 	i.Title = strings.TrimSpace(strings.ToLower(i.Title))
 }
 
-func Resolve(ctx context.Context, env Env, input model.CreateReleaseInput) (model.CreateReleaseOrErrorPayload, error) {
+type Input = model.CreateReleaseInput
+type Payload = model.CreateReleaseOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	token, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
@@ -79,7 +82,7 @@ func Resolve(ctx context.Context, env Env, input model.CreateReleaseInput) (mode
 	return &payload, nil
 }
 
-func getHomeID(env Env, nvs *appmodel.NoteViews, input model.CreateReleaseInput) (sql.NullInt64, model.CreateReleaseOrErrorPayload) {
+func getHomeID(env Env, nvs *appmodel.NoteViews, input Input) (sql.NullInt64, Payload) {
 	if input.HomeNoteVersionID != nil {
 		for _, view := range nvs.List {
 			if view.VersionID == int64(*input.HomeNoteVersionID) {

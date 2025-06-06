@@ -50,7 +50,7 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.ResetUserTokenCalls()))
+				require.Len(t, mockEnv.ResetUserTokenCalls(), 1)
 			},
 		},
 		{
@@ -66,7 +66,7 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.ResetUserTokenCalls()))
+				require.Len(t, mockEnv.ResetUserTokenCalls(), 1)
 			},
 		},
 	}

@@ -269,7 +269,7 @@ func (nvs *NoteViews) HomePages(note *NoteView) []*NoteView {
 }
 
 // Sidebars returns the sidebar for a given path.
-// Looking path: note meta "sidebar" path to md, "_sidebar_<subgraph>.md", "_sidebar.md"
+// Looking path: note meta "sidebar" path to md, "_sidebar_<subgraph>.md", "_sidebar.md".
 func (nvs *NoteViews) Sidebars(note *NoteView) []*NoteView {
 	sidebarI, sidebarOk := note.RawMeta["sidebar"]
 	if sidebarOk {

@@ -39,8 +39,8 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	if err != nil {
-		paywallErr, paywallOk := err.(*PaywallError)
-		if paywallOk {
+		var paywallErr *PaywallError
+		if errors.As(err, &paywallErr) {
 			return renderlayout.Handle(req, layoutParams, func() {
 				WritePayWall(ctx, resp, paywallErr)
 			})

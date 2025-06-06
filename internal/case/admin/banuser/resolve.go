@@ -13,10 +13,13 @@ type Env interface {
 	ResetBanCache(ctx context.Context) error
 }
 
-func Resolve(ctx context.Context, env Env, req model.BanUserInput) (model.BanUserOrErrorPayload, error) {
+type Input = model.BanUserInput
+type Payload = model.BanUserOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	params := db.BanUserParams{
-		UserID: int64(req.UserID),
-		Reason: req.Reason,
+		UserID: input.UserID,
+		Reason: input.Reason,
 	}
 
 	err := env.BanUser(ctx, params)
@@ -34,7 +37,7 @@ func Resolve(ctx context.Context, env Env, req model.BanUserInput) (model.BanUse
 	}
 
 	response := model.BanUserPayload{
-		UserID: req.UserID,
+		UserID: input.UserID,
 	}
 
 	return &response, nil

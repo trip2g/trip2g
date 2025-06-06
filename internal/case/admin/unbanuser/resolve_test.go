@@ -57,8 +57,8 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.UnbanUserCalls()))
-				require.Equal(t, 1, len(mockEnv.ResetBanCacheCalls()))
+				require.Len(t, mockEnv.UnbanUserCalls(), 1)
+				require.Len(t, mockEnv.ResetBanCacheCalls(), 1)
 
 				// Verify unban parameters
 				require.Equal(t, int64(123), mockEnv.UnbanUserCalls()[0].UserID)
@@ -80,8 +80,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.UnbanUserCalls()))
-				require.Equal(t, 0, len(mockEnv.ResetBanCacheCalls())) // cache reset not called on error
+				require.Len(t, mockEnv.UnbanUserCalls(), 1)
+				require.Empty(t, mockEnv.ResetBanCacheCalls()) // cache reset not called on error
 			},
 		},
 		{
@@ -103,8 +103,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.UnbanUserCalls()))
-				require.Equal(t, 1, len(mockEnv.ResetBanCacheCalls()))
+				require.Len(t, mockEnv.UnbanUserCalls(), 1)
+				require.Len(t, mockEnv.ResetBanCacheCalls(), 1)
 			},
 		},
 	}

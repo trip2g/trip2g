@@ -2,12 +2,13 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"strings"
 	"time"
 )
 
 func IsNoFound(err error) bool {
-	return err == sql.ErrNoRows
+	return errors.Is(err, sql.ErrNoRows)
 }
 
 func IsUniqueViolation(err error) bool {

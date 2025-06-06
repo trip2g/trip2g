@@ -77,9 +77,9 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.GenerateApiKeyCalls()))
-				require.Equal(t, 1, len(mockEnv.InsertApiKeyCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.GenerateApiKeyCalls(), 1)
+				require.Len(t, mockEnv.InsertApiKeyCalls(), 1)
 
 				// Verify API key parameters
 				params := mockEnv.InsertApiKeyCalls()[0].Params
@@ -125,12 +125,12 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.GenerateApiKeyCalls()))
-				require.Equal(t, 1, len(mockEnv.InsertApiKeyCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.GenerateApiKeyCalls(), 1)
+				require.Len(t, mockEnv.InsertApiKeyCalls(), 1)
 
 				params := mockEnv.InsertApiKeyCalls()[0].Params
-				require.Equal(t, "", params.Description)
+				require.Empty(t, params.Description)
 			},
 		},
 		{
@@ -149,9 +149,9 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.GenerateApiKeyCalls()))
-				require.Equal(t, 0, len(mockEnv.InsertApiKeyCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.GenerateApiKeyCalls())
+				require.Empty(t, mockEnv.InsertApiKeyCalls())
 			},
 		},
 		{
@@ -176,9 +176,9 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.GenerateApiKeyCalls()))
-				require.Equal(t, 1, len(mockEnv.InsertApiKeyCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.GenerateApiKeyCalls(), 1)
+				require.Len(t, mockEnv.InsertApiKeyCalls(), 1)
 			},
 		},
 	}

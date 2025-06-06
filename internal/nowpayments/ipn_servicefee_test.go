@@ -10,7 +10,7 @@ import (
 )
 
 // TestServiceFeeFloatParsing tests that ServiceFee can be parsed as a float
-// This test addresses the error: strconv.ParseInt: parsing "0.000173": invalid syntax
+// This test addresses the error: strconv.ParseInt: parsing "0.000173": invalid syntax.
 func TestServiceFeeFloatParsing(t *testing.T) {
 	// This is the actual JSON from the error log that was failing
 	jsonData := `{
@@ -43,7 +43,7 @@ func TestServiceFeeFloatParsing(t *testing.T) {
 
 	var req nowpayments.IPNRequest
 	err := json.Unmarshal([]byte(jsonData), &req)
-	
+
 	// Before the fix, this would fail with:
 	// "parse error: strconv.ParseInt: parsing \"0.000173\": invalid syntax"
 	require.NoError(t, err, "Should be able to parse IPN request with float serviceFee")
@@ -62,7 +62,7 @@ func TestServiceFeeFloatParsing(t *testing.T) {
 	require.Equal(t, "4713616180", req.PurchaseID)
 }
 
-// TestServiceFeeIntegerValue tests that ServiceFee still works with integer values
+// TestServiceFeeIntegerValue tests that ServiceFee still works with integer values.
 func TestServiceFeeIntegerValue(t *testing.T) {
 	jsonData := `{
 		"actually_paid": 1.0,

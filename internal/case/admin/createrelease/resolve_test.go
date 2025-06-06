@@ -82,7 +82,7 @@ func TestResolve(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				input: model.CreateReleaseInput{
-					Title:                "  Test Release  ", // will be normalized
+					Title:             "  Test Release  ", // will be normalized
 					HomeNoteVersionID: nil,
 				},
 			},
@@ -98,12 +98,12 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.LatestNoteViewsCalls()))
-				require.Equal(t, 1, len(mockEnv.InsertReleaseCalls()))
-				require.Equal(t, 1, len(mockEnv.ChangeLiveReleaseCalls()))
-				require.Equal(t, 2, len(mockEnv.InsertReleaseNoteVersionCalls())) // 2 note views
-				require.Equal(t, 1, len(mockEnv.PrepareLiveNotesCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.LatestNoteViewsCalls(), 1)
+				require.Len(t, mockEnv.InsertReleaseCalls(), 1)
+				require.Len(t, mockEnv.ChangeLiveReleaseCalls(), 1)
+				require.Len(t, mockEnv.InsertReleaseNoteVersionCalls(), 2) // 2 note views
+				require.Len(t, mockEnv.PrepareLiveNotesCalls(), 1)
 
 				// Verify release parameters
 				releaseParams := mockEnv.InsertReleaseCalls()[0].Arg
@@ -158,7 +158,7 @@ func TestResolve(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				input: model.CreateReleaseInput{
-					Title:                "Release with Home",
+					Title:             "Release with Home",
 					HomeNoteVersionID: int64Ptr(10),
 				},
 			},
@@ -197,16 +197,16 @@ func TestResolve(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				input: model.CreateReleaseInput{
-					Title:                "Test Release",
+					Title:             "Test Release",
 					HomeNoteVersionID: int64Ptr(999), // not in note views
 				},
 			},
 			want:    &model.ErrorPayload{Message: "home note version ID does not exist in latest note views"},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.LatestNoteViewsCalls()))
-				require.Equal(t, 0, len(mockEnv.InsertReleaseCalls())) // should not insert
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.LatestNoteViewsCalls(), 1)
+				require.Empty(t, mockEnv.InsertReleaseCalls()) // should not insert
 			},
 		},
 		{
@@ -225,8 +225,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.LatestNoteViewsCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.LatestNoteViewsCalls())
 			},
 		},
 		{
@@ -255,8 +255,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.InsertReleaseCalls()))
-				require.Equal(t, 0, len(mockEnv.ChangeLiveReleaseCalls()))
+				require.Len(t, mockEnv.InsertReleaseCalls(), 1)
+				require.Empty(t, mockEnv.ChangeLiveReleaseCalls())
 			},
 		},
 	}

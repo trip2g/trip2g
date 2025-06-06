@@ -52,7 +52,10 @@ func validateInput(i *model.UpdateOfferInput) *model.ErrorPayload {
 	return nil
 }
 
-func Resolve(ctx context.Context, env Env, input model.UpdateOfferInput) (model.UpdateOfferOrErrorPayload, error) {
+type Input = model.UpdateOfferInput
+type Payload = model.UpdateOfferOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
@@ -71,7 +74,6 @@ func Resolve(ctx context.Context, env Env, input model.UpdateOfferInput) (model.
 	}
 
 	if input.SubgraphIds != nil {
-
 		for _, subgraphID := range input.SubgraphIds {
 			_, err := env.SubgraphByID(ctx, int64(subgraphID))
 			if err != nil {

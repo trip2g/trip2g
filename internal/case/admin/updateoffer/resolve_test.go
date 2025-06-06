@@ -36,12 +36,12 @@ func TestResolve(t *testing.T) {
 		ctx   context.Context
 		input model.UpdateOfferInput
 	}
-	
+
 	startsAt := time.Now()
 	endsAt := time.Now().Add(24 * time.Hour)
 	lifetime := "1 month"
 	priceUSD := 19.99
-	
+
 	tests := []struct {
 		name          string
 		env           updateoffer.Env
@@ -106,20 +106,20 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.OfferByIDCalls()))
-				require.Equal(t, 2, len(mockEnv.SubgraphByIDCalls()))
-				require.Equal(t, 1, len(mockEnv.UpdateOfferCalls()))
-				require.Equal(t, 1, len(mockEnv.DeleteOfferSubgraphsCalls()))
-				require.Equal(t, 2, len(mockEnv.InsertOfferSubgraphCalls()))
-				
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.OfferByIDCalls(), 1)
+				require.Len(t, mockEnv.SubgraphByIDCalls(), 2)
+				require.Len(t, mockEnv.UpdateOfferCalls(), 1)
+				require.Len(t, mockEnv.DeleteOfferSubgraphsCalls(), 1)
+				require.Len(t, mockEnv.InsertOfferSubgraphCalls(), 2)
+
 				// Verify offer ID was checked
 				require.Equal(t, int64(123), mockEnv.OfferByIDCalls()[0].ID)
-				
+
 				// Verify subgraph IDs were checked
 				require.Equal(t, int64(1), mockEnv.SubgraphByIDCalls()[0].ID)
 				require.Equal(t, int64(2), mockEnv.SubgraphByIDCalls()[1].ID)
-				
+
 				// Verify update params
 				updateParams := mockEnv.UpdateOfferCalls()[0].Arg
 				require.Equal(t, int64(123), updateParams.ID)
@@ -161,12 +161,12 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.OfferByIDCalls()))
-				require.Equal(t, 0, len(mockEnv.SubgraphByIDCalls()))
-				require.Equal(t, 1, len(mockEnv.UpdateOfferCalls()))
-				require.Equal(t, 0, len(mockEnv.DeleteOfferSubgraphsCalls()))
-				require.Equal(t, 0, len(mockEnv.InsertOfferSubgraphCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.OfferByIDCalls(), 1)
+				require.Empty(t, mockEnv.SubgraphByIDCalls())
+				require.Len(t, mockEnv.UpdateOfferCalls(), 1)
+				require.Empty(t, mockEnv.DeleteOfferSubgraphsCalls())
+				require.Empty(t, mockEnv.InsertOfferSubgraphCalls())
 			},
 		},
 		{
@@ -179,14 +179,14 @@ func TestResolve(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				input: model.UpdateOfferInput{
-					ID:       123,
+					ID: 123,
 				},
 			},
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.OfferByIDCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.OfferByIDCalls())
 			},
 		},
 		{
@@ -202,14 +202,14 @@ func TestResolve(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				input: model.UpdateOfferInput{
-					ID:       999,
+					ID: 999,
 				},
 			},
-			want: &model.ErrorPayload{Message: "offer not found"},
+			want:    &model.ErrorPayload{Message: "offer not found"},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.OfferByIDCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.OfferByIDCalls(), 1)
 				require.Equal(t, int64(999), mockEnv.OfferByIDCalls()[0].ID)
 			},
 		},
@@ -227,12 +227,14 @@ func TestResolve(t *testing.T) {
 					PriceUsd: func() *float64 { p := -0.01; return &p }(),
 				},
 			},
-			want: &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "priceUSD", Value: "must be no less than 0"}}},
+			want: &model.ErrorPayload{
+				ByFields: []model.FieldMessage{{Name: "priceUSD", Value: "must be no less than 0"}},
+			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.OfferByIDCalls()))
-				require.Equal(t, 0, len(mockEnv.UpdateOfferCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.OfferByIDCalls())
+				require.Empty(t, mockEnv.UpdateOfferCalls())
 			},
 		},
 		{
@@ -249,12 +251,14 @@ func TestResolve(t *testing.T) {
 					SubgraphIds: []int64{},
 				},
 			},
-			want: &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "subgraphIds", Value: "cannot be blank"}}},
+			want: &model.ErrorPayload{
+				ByFields: []model.FieldMessage{{Name: "subgraphIds", Value: "cannot be blank"}},
+			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.OfferByIDCalls()))
-				require.Equal(t, 0, len(mockEnv.SubgraphByIDCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.OfferByIDCalls())
+				require.Empty(t, mockEnv.SubgraphByIDCalls())
 			},
 		},
 		{
@@ -272,12 +276,14 @@ func TestResolve(t *testing.T) {
 					EndsAt:   func() *time.Time { t := time.Date(2025, 6, 4, 0, 0, 0, 0, time.UTC); return &t }(),
 				},
 			},
-			want: &model.ErrorPayload{ByFields: []model.FieldMessage{{Name: "startsAt", Value: "must be before ends at"}}},
+			want: &model.ErrorPayload{
+				ByFields: []model.FieldMessage{{Name: "startsAt", Value: "must be before ends at"}},
+			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.OfferByIDCalls()))
-				require.Equal(t, 0, len(mockEnv.SubgraphByIDCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.OfferByIDCalls())
+				require.Empty(t, mockEnv.SubgraphByIDCalls())
 			},
 		},
 		{
@@ -300,12 +306,12 @@ func TestResolve(t *testing.T) {
 					SubgraphIds: []int64{999},
 				},
 			},
-			want: &model.ErrorPayload{Message: "subgraph with ID 999 does not exist"},
+			want:    &model.ErrorPayload{Message: "subgraph with ID 999 does not exist"},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.OfferByIDCalls()))
-				require.Equal(t, 1, len(mockEnv.SubgraphByIDCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.OfferByIDCalls(), 1)
+				require.Len(t, mockEnv.SubgraphByIDCalls(), 1)
 				require.Equal(t, int64(999), mockEnv.SubgraphByIDCalls()[0].ID)
 			},
 		},
@@ -325,15 +331,15 @@ func TestResolve(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				input: model.UpdateOfferInput{
-					ID:       123,
+					ID: 123,
 				},
 			},
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.OfferByIDCalls()))
-				require.Equal(t, 1, len(mockEnv.UpdateOfferCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.OfferByIDCalls(), 1)
+				require.Len(t, mockEnv.UpdateOfferCalls(), 1)
 			},
 		},
 		{
@@ -365,12 +371,12 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.OfferByIDCalls()))
-				require.Equal(t, 1, len(mockEnv.SubgraphByIDCalls()))
-				require.Equal(t, 1, len(mockEnv.UpdateOfferCalls()))
-				require.Equal(t, 1, len(mockEnv.DeleteOfferSubgraphsCalls()))
-				require.Equal(t, 0, len(mockEnv.InsertOfferSubgraphCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.OfferByIDCalls(), 1)
+				require.Len(t, mockEnv.SubgraphByIDCalls(), 1)
+				require.Len(t, mockEnv.UpdateOfferCalls(), 1)
+				require.Len(t, mockEnv.DeleteOfferSubgraphsCalls(), 1)
+				require.Empty(t, mockEnv.InsertOfferSubgraphCalls())
 			},
 		},
 	}

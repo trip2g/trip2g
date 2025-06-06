@@ -60,9 +60,9 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.ParseHotAuthTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.UserByEmailCalls()))
-				require.Equal(t, 1, len(mockEnv.SetupUserTokenCalls()))
+				require.Len(t, mockEnv.ParseHotAuthTokenCalls(), 1)
+				require.Len(t, mockEnv.UserByEmailCalls(), 1)
+				require.Len(t, mockEnv.SetupUserTokenCalls(), 1)
 
 				// Verify token parsing
 				require.Equal(t, "valid-hot-auth-token", mockEnv.ParseHotAuthTokenCalls()[0].Token)
@@ -87,9 +87,9 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.ParseHotAuthTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.UserByEmailCalls()))
-				require.Equal(t, 0, len(mockEnv.SetupUserTokenCalls()))
+				require.Len(t, mockEnv.ParseHotAuthTokenCalls(), 1)
+				require.Empty(t, mockEnv.UserByEmailCalls())
+				require.Empty(t, mockEnv.SetupUserTokenCalls())
 			},
 		},
 		{
@@ -110,9 +110,9 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.ParseHotAuthTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.UserByEmailCalls()))
-				require.Equal(t, 0, len(mockEnv.SetupUserTokenCalls()))
+				require.Len(t, mockEnv.ParseHotAuthTokenCalls(), 1)
+				require.Len(t, mockEnv.UserByEmailCalls(), 1)
+				require.Empty(t, mockEnv.SetupUserTokenCalls())
 			},
 		},
 		{
@@ -139,9 +139,9 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.ParseHotAuthTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.UserByEmailCalls()))
-				require.Equal(t, 1, len(mockEnv.SetupUserTokenCalls()))
+				require.Len(t, mockEnv.ParseHotAuthTokenCalls(), 1)
+				require.Len(t, mockEnv.UserByEmailCalls(), 1)
+				require.Len(t, mockEnv.SetupUserTokenCalls(), 1)
 			},
 		},
 	}

@@ -14,7 +14,10 @@ type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
 
-func Resolve(ctx context.Context, env Env, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error) {
+type Input = model.DisableAPIKeyInput
+type Payload = model.DisableAPIKeyOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	token, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)

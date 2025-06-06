@@ -92,7 +92,7 @@ func openConnection(databaseFile string) (*sql.DB, error) {
 	// Test the connection
 	err = conn.Ping()
 	if err != nil {
-		conn.Close()
+		_ = conn.Close() // Ignore close error since we're already handling ping error
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 

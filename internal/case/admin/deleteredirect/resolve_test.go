@@ -50,8 +50,8 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.DeleteRedirectCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.DeleteRedirectCalls(), 1)
 
 				id := mockEnv.DeleteRedirectCalls()[0].ID
 				require.Equal(t, int64(1), id)
@@ -73,8 +73,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.DeleteRedirectCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.DeleteRedirectCalls())
 			},
 		},
 		{
@@ -96,8 +96,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.DeleteRedirectCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.DeleteRedirectCalls(), 1)
 
 				id := mockEnv.DeleteRedirectCalls()[0].ID
 				require.Equal(t, int64(999), id)
@@ -122,8 +122,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.DeleteRedirectCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.DeleteRedirectCalls(), 1)
 
 				id := mockEnv.DeleteRedirectCalls()[0].ID
 				require.Equal(t, int64(2), id)
@@ -150,8 +150,8 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.DeleteRedirectCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.DeleteRedirectCalls(), 1)
 
 				id := mockEnv.DeleteRedirectCalls()[0].ID
 				require.Equal(t, int64(9223372036854775807), id)
@@ -173,8 +173,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.DeleteRedirectCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.DeleteRedirectCalls())
 			},
 		},
 	}

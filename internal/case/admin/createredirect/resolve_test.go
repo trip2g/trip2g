@@ -69,8 +69,8 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.InsertRedirectCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.InsertRedirectCalls(), 1)
 
 				params := mockEnv.InsertRedirectCalls()[0].Params
 				require.Equal(t, int64(123), params.CreatedBy)
@@ -99,8 +99,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.InsertRedirectCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.InsertRedirectCalls())
 			},
 		},
 		{
@@ -125,8 +125,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.InsertRedirectCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.InsertRedirectCalls(), 1)
 
 				params := mockEnv.InsertRedirectCalls()[0].Params
 				require.Equal(t, int64(456), params.CreatedBy)
@@ -172,8 +172,8 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.InsertRedirectCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.InsertRedirectCalls(), 1)
 
 				params := mockEnv.InsertRedirectCalls()[0].Params
 				require.Equal(t, int64(789), params.CreatedBy)
@@ -222,8 +222,8 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.InsertRedirectCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.InsertRedirectCalls(), 1)
 
 				params := mockEnv.InsertRedirectCalls()[0].Params
 				require.Equal(t, int64(999), params.CreatedBy)

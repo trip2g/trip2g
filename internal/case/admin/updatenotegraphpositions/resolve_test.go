@@ -53,8 +53,8 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *EnvMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 2, len(mockEnv.UpdateNoteGraphPositionByPathIDCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.UpdateNoteGraphPositionByPathIDCalls(), 2)
 
 				// Verify correct parameters were passed for first position
 				updateCall1 := mockEnv.UpdateNoteGraphPositionByPathIDCalls()[0]
@@ -94,8 +94,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *EnvMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.UpdateNoteGraphPositionByPathIDCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.UpdateNoteGraphPositionByPathIDCalls())
 			},
 		},
 		{
@@ -120,8 +120,8 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *EnvMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.UpdateNoteGraphPositionByPathIDCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.UpdateNoteGraphPositionByPathIDCalls(), 1)
 
 				// Verify parameters were passed correctly for the first position that failed
 				updateCall := mockEnv.UpdateNoteGraphPositionByPathIDCalls()[0]
@@ -154,8 +154,8 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *EnvMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.UpdateNoteGraphPositionByPathIDCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Len(t, mockEnv.UpdateNoteGraphPositionByPathIDCalls(), 1)
 
 				// Verify zero coordinates are handled correctly
 				updateCall := mockEnv.UpdateNoteGraphPositionByPathIDCalls()[0]
@@ -186,8 +186,8 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *EnvMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentAdminUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.UpdateNoteGraphPositionByPathIDCalls()))
+				require.Len(t, mockEnv.CurrentAdminUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.UpdateNoteGraphPositionByPathIDCalls())
 			},
 		},
 	}

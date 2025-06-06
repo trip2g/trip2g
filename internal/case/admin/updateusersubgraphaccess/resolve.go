@@ -18,12 +18,19 @@ type Request struct {
 	SubgraphID int64
 }
 
-func (req *Request) Resolve(ctx context.Context, env Env) (model.UpdateUserSubgraphAccessOrErrorPayload, error) {
-	params := db.UpdateUserSubgraphAccessParams{
-		ID: req.ID,
+type Input = Request
+type Payload = model.UpdateUserSubgraphAccessOrErrorPayload
 
-		ExpiresAt:  db.ToNullableTime(req.ExpiresAt),
-		SubgraphID: req.SubgraphID,
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	return input.Resolve(ctx, env)
+}
+
+func (input *Request) Resolve(ctx context.Context, env Env) (Payload, error) {
+	params := db.UpdateUserSubgraphAccessParams{
+		ID: input.ID,
+
+		ExpiresAt:  db.ToNullableTime(input.ExpiresAt),
+		SubgraphID: input.SubgraphID,
 	}
 
 	access, err := env.UpdateUserSubgraphAccess(ctx, params)

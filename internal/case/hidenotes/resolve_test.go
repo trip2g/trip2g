@@ -50,7 +50,7 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.HideNotePathCalls()))
+				require.Len(t, mockEnv.HideNotePathCalls(), 1)
 
 				hideParams := mockEnv.HideNotePathCalls()[0].Params
 				require.Equal(t, "/test/note.md", hideParams.Value)
@@ -79,7 +79,7 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 3, len(mockEnv.HideNotePathCalls()))
+				require.Len(t, mockEnv.HideNotePathCalls(), 3)
 
 				expectedPaths := []string{"/test/note1.md", "/test/note2.md", "/folder/note3.md"}
 				for i, call := range mockEnv.HideNotePathCalls() {
@@ -108,7 +108,7 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.HideNotePathCalls()))
+				require.Len(t, mockEnv.HideNotePathCalls(), 1)
 
 				hideParams := mockEnv.HideNotePathCalls()[0].Params
 				require.Equal(t, "/another/note.md", hideParams.Value)
@@ -137,7 +137,7 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 0, len(mockEnv.HideNotePathCalls()))
+				require.Empty(t, mockEnv.HideNotePathCalls())
 			},
 		},
 		{
@@ -161,7 +161,7 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 2, len(mockEnv.HideNotePathCalls()))
+				require.Len(t, mockEnv.HideNotePathCalls(), 2)
 
 				expectedPaths := []string{"/folder with spaces/note-with-dashes.md", "/unicode/файл.md"}
 				for i, call := range mockEnv.HideNotePathCalls() {

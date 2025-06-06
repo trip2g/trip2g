@@ -96,11 +96,11 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentUserTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.UserByIDCalls()))
-				require.Equal(t, 1, len(mockEnv.ActiveOfferByPublicIDCalls()))
-				require.Equal(t, 1, len(mockEnv.InsertPurchaseCalls()))
-				require.Equal(t, 1, len(mockEnv.CreateNowpaymentsInvoiceCalls()))
+				require.Len(t, mockEnv.CurrentUserTokenCalls(), 1)
+				require.Len(t, mockEnv.UserByIDCalls(), 1)
+				require.Len(t, mockEnv.ActiveOfferByPublicIDCalls(), 1)
+				require.Len(t, mockEnv.InsertPurchaseCalls(), 1)
+				require.Len(t, mockEnv.CreateNowpaymentsInvoiceCalls(), 1)
 
 				// Verify offer lookup
 				require.Equal(t, "offer-123", mockEnv.ActiveOfferByPublicIDCalls()[0].ID)
@@ -172,10 +172,10 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 0, len(mockEnv.CurrentUserTokenCalls())) // not called for unauthenticated with email
-				require.Equal(t, 1, len(mockEnv.UserByEmailCalls()))
-				require.Equal(t, 1, len(mockEnv.GenerateHotAuthTokenCalls()))
-				require.Equal(t, 1, len(mockEnv.StorePurchaseTokenCalls()))
+				require.Empty(t, mockEnv.CurrentUserTokenCalls()) // not called for unauthenticated with email
+				require.Len(t, mockEnv.UserByEmailCalls(), 1)
+				require.Len(t, mockEnv.GenerateHotAuthTokenCalls(), 1)
+				require.Len(t, mockEnv.StorePurchaseTokenCalls(), 1)
 
 				// Verify hot auth token generation
 				hotAuthData := mockEnv.GenerateHotAuthTokenCalls()[0].Data
@@ -208,8 +208,8 @@ func TestResolve(t *testing.T) {
 			want:    &model.ErrorPayload{Message: "unauthenticated"},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentUserTokenCalls()))
-				require.Equal(t, 0, len(mockEnv.ActiveOfferByPublicIDCalls()))
+				require.Len(t, mockEnv.CurrentUserTokenCalls(), 1)
+				require.Empty(t, mockEnv.ActiveOfferByPublicIDCalls())
 			},
 		},
 		{
@@ -236,8 +236,8 @@ func TestResolve(t *testing.T) {
 			want:    &model.ErrorPayload{Message: "sign_in_required"},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.UserByEmailCalls()))
-				require.Equal(t, 0, len(mockEnv.ActiveOfferByPublicIDCalls()))
+				require.Len(t, mockEnv.UserByEmailCalls(), 1)
+				require.Empty(t, mockEnv.ActiveOfferByPublicIDCalls())
 			},
 		},
 		{
@@ -266,8 +266,8 @@ func TestResolve(t *testing.T) {
 			want:    &model.ErrorPayload{Message: "offer_not_found"},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.ActiveOfferByPublicIDCalls()))
-				require.Equal(t, 0, len(mockEnv.InsertPurchaseCalls()))
+				require.Len(t, mockEnv.ActiveOfferByPublicIDCalls(), 1)
+				require.Empty(t, mockEnv.InsertPurchaseCalls())
 			},
 		},
 		{
@@ -299,8 +299,8 @@ func TestResolve(t *testing.T) {
 			want:    &model.ErrorPayload{Message: "offer_not_found"},
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.ActiveOfferByPublicIDCalls()))
-				require.Equal(t, 0, len(mockEnv.InsertPurchaseCalls()))
+				require.Len(t, mockEnv.ActiveOfferByPublicIDCalls(), 1)
+				require.Empty(t, mockEnv.InsertPurchaseCalls())
 			},
 		},
 		{
@@ -320,7 +320,7 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CurrentUserTokenCalls()))
+				require.Len(t, mockEnv.CurrentUserTokenCalls(), 1)
 			},
 		},
 		{
@@ -343,7 +343,7 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.UserByIDCalls()))
+				require.Len(t, mockEnv.UserByIDCalls(), 1)
 			},
 		},
 		{
@@ -387,7 +387,7 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Equal(t, 1, len(mockEnv.CreateNowpaymentsInvoiceCalls()))
+				require.Len(t, mockEnv.CreateNowpaymentsInvoiceCalls(), 1)
 			},
 		},
 		{

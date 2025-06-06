@@ -23,7 +23,6 @@ type Env interface {
 
 type envMock = EnvMock
 
-
 func TestResolve(t *testing.T) {
 	type args struct {
 		ctx   context.Context
