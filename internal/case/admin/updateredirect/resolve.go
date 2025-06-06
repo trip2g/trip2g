@@ -34,8 +34,8 @@ func validateInput(i *model.UpdateRedirectInput) *model.ErrorPayload {
 
 	// Custom validation: if isRegex is true, pattern must be valid regex
 	if i.IsRegex {
-		_, err := regexp.Compile(i.Pattern)
-		if err != nil {
+		_, compileErr := regexp.Compile(i.Pattern)
+		if compileErr != nil {
 			return &model.ErrorPayload{
 				ByFields: []model.FieldMessage{
 					{Name: "pattern", Value: "must be a valid regular expression"},

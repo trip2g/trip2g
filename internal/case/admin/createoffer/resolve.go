@@ -69,8 +69,8 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	publicID := env.GenerateUniqID()
 
 	for _, subgraphID := range input.SubgraphIds {
-		_, err := env.SubgraphByID(ctx, subgraphID)
-		if err != nil {
+		_, subgraphErr := env.SubgraphByID(ctx, subgraphID)
+		if subgraphErr != nil {
 			return &model.ErrorPayload{Message: fmt.Sprintf("subgraph with ID %d does not exist", subgraphID)}, nil
 		}
 	}
@@ -98,9 +98,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 			SubgraphID: subgraphID,
 		}
 
-		err := env.InsertOfferSubgraph(ctx, osParams)
-		if err != nil {
-			return nil, fmt.Errorf("failed to insert offer subgraph: %w", err)
+		insertErr := env.InsertOfferSubgraph(ctx, osParams)
+		if insertErr != nil {
+			return nil, fmt.Errorf("failed to insert offer subgraph: %w", insertErr)
 		}
 	}
 

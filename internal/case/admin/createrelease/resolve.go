@@ -64,9 +64,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 			ReleaseID:     release.ID,
 		}
 
-		err := env.InsertReleaseNoteVersion(ctx, rnvParams)
-		if err != nil {
-			return nil, fmt.Errorf("failed to insert release note version: %w", err)
+		insertErr := env.InsertReleaseNoteVersion(ctx, rnvParams)
+		if insertErr != nil {
+			return nil, fmt.Errorf("failed to insert release note version: %w", insertErr)
 		}
 	}
 

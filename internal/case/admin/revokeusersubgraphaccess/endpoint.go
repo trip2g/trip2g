@@ -24,8 +24,8 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 	request.UserToken = userToken
 
-	if err := request.Validate(); err != nil {
-		return nil, err
+	if validateErr := request.Validate(); validateErr != nil {
+		return nil, validateErr
 	}
 
 	return Resolve(context.Background(), req.Env.(Env), request)

@@ -59,16 +59,16 @@ func NewHandler(env Env) *handler.Server {
 				// или в случае ErrorPayload так же нужно? Похоже нужно откатывать в случае
 				// непредвиденных ошибок и дополнительно вводить специальную ошибку для rollback.
 				if len(resp.Errors) > 0 {
-					err := env.ReleaseTxEnvInRequest(ctx, false)
-					if err != nil {
-						log.Error("failed to release transactioned env with rollback", "error", err)
+					rollbackErr := env.ReleaseTxEnvInRequest(ctx, false)
+					if rollbackErr != nil {
+						log.Error("failed to release transactioned env with rollback", "error", rollbackErr)
 					} else {
 						log.Info("released transactioned env with rollback")
 					}
 				} else {
-					err := env.ReleaseTxEnvInRequest(ctx, true)
-					if err != nil {
-						log.Error("failed to release transactioned env with commit", "error", err)
+					commitErr := env.ReleaseTxEnvInRequest(ctx, true)
+					if commitErr != nil {
+						log.Error("failed to release transactioned env with commit", "error", commitErr)
 					} else {
 						log.Debug("released transactioned env with commit")
 					}

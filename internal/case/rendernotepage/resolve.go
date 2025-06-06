@@ -100,26 +100,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	}
 
 	if isAdmin {
-		var alternativeNotes *model.NoteViews
-
-		if isLatest {
-			alternativeNotes = env.LiveNoteViews()
-		} else {
-			alternativeNotes = env.LatestNoteViews()
-		}
-
-		alternativeNote := alternativeNotes.GetByPath(path)
-		if alternativeNote != nil && alternativeNote.VersionID != note.VersionID {
-			response.versionBanner = &VersionBanner{
-				Permalink: alternativeNotes.ResolveURL(alternativeNote),
-			}
-
-			if isLatest {
-				response.versionBanner.Label = "Это последняя загруженная версия, которая отличается от опубликованной"
-			} else {
-				response.versionBanner.Label = "Это последняя опубликованная версия, которая отличается от загруженной"
-			}
-		}
+		checkLatestBanner(env, &response, isLatest, path, note)
 	}
 
 	// TODO: extract subgraphs
@@ -183,6 +164,29 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	}
 
 	return &response, nil
+}
+
+func checkLatestBanner(env Env, response *Response, isLatest bool, path string, note *model.NoteView) {
+	var alternativeNotes *model.NoteViews
+
+	if isLatest {
+		alternativeNotes = env.LiveNoteViews()
+	} else {
+		alternativeNotes = env.LatestNoteViews()
+	}
+
+	alternativeNote := alternativeNotes.GetByPath(path)
+	if alternativeNote != nil && alternativeNote.VersionID != note.VersionID {
+		response.versionBanner = &VersionBanner{
+			Permalink: alternativeNotes.ResolveURL(alternativeNote),
+		}
+
+		if isLatest {
+			response.versionBanner.Label = "Это последняя загруженная версия, которая отличается от опубликованной"
+		} else {
+			response.versionBanner.Label = "Это последняя опубликованная версия, которая отличается от загруженной"
+		}
+	}
 }
 
 // extractReferrerVersionID tries to find the version ID from a referrer URL.

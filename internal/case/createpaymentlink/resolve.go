@@ -122,9 +122,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) { //nol
 			PurchaseID: purchaseParams.ID,
 		}
 
-		rawToken, err := env.StorePurchaseToken(ctx, purchaseToken)
-		if err != nil {
-			return nil, fmt.Errorf("failed to store purchase token: %w", err)
+		rawToken, storeErr := env.StorePurchaseToken(ctx, purchaseToken)
+		if storeErr != nil {
+			return nil, fmt.Errorf("failed to store purchase token: %w", storeErr)
 		}
 
 		response.Token = &rawToken
@@ -165,9 +165,9 @@ func prepareCallbackURLs(
 
 	// build successURL
 	if !isAuthenticated {
-		hotAuthToken, err := env.GenerateHotAuthToken(ctx, appmodel.HotAuthToken{Email: *input.Email})
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate hot auth token: %w", err)
+		hotAuthToken, hotAuthErr := env.GenerateHotAuthToken(ctx, appmodel.HotAuthToken{Email: *input.Email})
+		if hotAuthErr != nil {
+			return nil, fmt.Errorf("failed to generate hot auth token: %w", hotAuthErr)
 		}
 
 		q.Set("hat", hotAuthToken)

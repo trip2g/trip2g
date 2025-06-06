@@ -172,9 +172,9 @@ func main() {
 	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a))
 
 	tokenManager.AddValidator(func(ctx context.Context, data *usertoken.Data) error {
-		ban, err := a.UserBanByUserID(ctx, int64(data.ID))
-		if err != nil {
-			return fmt.Errorf("failed to get user ban: %w", err)
+		ban, banErr := a.UserBanByUserID(ctx, int64(data.ID))
+		if banErr != nil {
+			return fmt.Errorf("failed to get user ban: %w", banErr)
 		}
 
 		if ban != nil {
@@ -200,9 +200,9 @@ func main() {
 		reloadCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 
-		err := a.loadAllNotes(reloadCtx)
-		if err != nil {
-			log.Error("failed to reload all notes", "error", err)
+		loadErr := a.loadAllNotes(reloadCtx)
+		if loadErr != nil {
+			log.Error("failed to reload all notes", "error", loadErr)
 		}
 	})
 
@@ -217,9 +217,9 @@ func (a *app) createOwnerIfNotExists(ctx context.Context) error {
 	user, err := a.Queries.UserByEmail(ctx, a.config.OwnerEmail)
 	if err != nil {
 		if db.IsNoFound(err) {
-			_, err := a.InsertUser(ctx, a.config.OwnerEmail)
-			if err != nil {
-				return fmt.Errorf("failed to insert owner user: %w", err)
+			_, insertErr := a.InsertUser(ctx, a.config.OwnerEmail)
+			if insertErr != nil {
+				return fmt.Errorf("failed to insert owner user: %w", insertErr)
 			}
 		} else {
 			return fmt.Errorf("failed to check if owner exists: %w", err)
@@ -229,9 +229,9 @@ func (a *app) createOwnerIfNotExists(ctx context.Context) error {
 	_, err = a.AdminByUserID(ctx, user.ID)
 	if err != nil {
 		if db.IsNoFound(err) {
-			_, err := a.InsertAdmin(ctx, db.InsertAdminParams{UserID: user.ID})
-			if err != nil {
-				return fmt.Errorf("failed to insert owner admin: %w", err)
+			_, insertErr := a.InsertAdmin(ctx, db.InsertAdminParams{UserID: user.ID})
+			if insertErr != nil {
+				return fmt.Errorf("failed to insert owner admin: %w", insertErr)
 			}
 		} else {
 			return fmt.Errorf("failed to check if owner admin exists: %w", err)

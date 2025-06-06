@@ -54,9 +54,9 @@ func Resolve(ctx context.Context, env Env, req nowpayments.IPNRequest) (*Respons
 	env.Logger().Info("purchase updated", "order_id", req.OrderID, "status", req.PaymentStatus)
 
 	if req.PaymentStatus == nowpayments.PaymentStatusConfirmed {
-		accessCount, err := env.CountUserSubgraphAccessByPurchaseID(ctx, purchase.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to count user subgraph access by purchase ID: %w", err)
+		accessCount, countErr := env.CountUserSubgraphAccessByPurchaseID(ctx, purchase.ID)
+		if countErr != nil {
+			return nil, fmt.Errorf("failed to count user subgraph access by purchase ID: %w", countErr)
 		}
 
 		// not granted yet
@@ -106,9 +106,9 @@ func grantAccesses(ctx context.Context, env Env, purchase *db.Purchase) error {
 
 	expiresAt := sql.NullTime{}
 	if offer.Lifetime != nil {
-		lifetime, err := offer.Lifetime.Duration()
-		if err != nil {
-			return fmt.Errorf("failed to get lifetime duration: %w", err)
+		lifetime, lifetimeErr := offer.Lifetime.Duration()
+		if lifetimeErr != nil {
+			return fmt.Errorf("failed to get lifetime duration: %w", lifetimeErr)
 		}
 
 		expiresAt.Time = env.Now().Add(lifetime)
