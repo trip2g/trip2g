@@ -12,6 +12,7 @@ import (
 type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	InsertNotFoundIgnoredPattern(ctx context.Context, arg db.InsertNotFoundIgnoredPatternParams) (db.NotFoundIgnoredPattern, error)
+	RefreshNotFoundTracker(ctx context.Context) error
 }
 
 func Resolve(ctx context.Context, env Env, input model.CreateNotFoundIgnoredPatternInput) (model.CreateNotFoundIgnoredPatternOrErrorPayload, error) {
@@ -28,16 +29,25 @@ func Resolve(ctx context.Context, env Env, input model.CreateNotFoundIgnoredPatt
 		}, nil
 	}
 
-	// Create the ignored pattern
-	pattern, err := env.InsertNotFoundIgnoredPattern(ctx, db.InsertNotFoundIgnoredPatternParams{
+	params := db.InsertNotFoundIgnoredPatternParams{
 		Pattern:   input.Pattern,
 		CreatedBy: int64(token.ID),
-	})
+	}
+
+	// Create the ignored pattern
+	pattern, err := env.InsertNotFoundIgnoredPattern(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert not found ignored pattern: %w", err)
 	}
 
-	return &model.CreateNotFoundIgnoredPatternPayload{
+	err = env.RefreshNotFoundTracker(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to refresh not found tracker: %w", err)
+	}
+
+	payload := model.CreateNotFoundIgnoredPatternPayload{
 		NotFoundIgnoredPattern: &pattern,
-	}, nil
+	}
+
+	return &payload, nil
 }

@@ -48,6 +48,9 @@ func TestResolve(t *testing.T) {
 						CreatedBy: 1,
 					}, nil
 				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return nil
+				}
 				return env
 			},
 			assert: func(t *testing.T, result model.UpdateNotFoundIgnoredPatternOrErrorPayload, err error) {
@@ -72,6 +75,9 @@ func TestResolve(t *testing.T) {
 				}
 				env.NotFoundIgnoredPatternByIDFunc = func(ctx context.Context, id int64) (db.NotFoundIgnoredPattern, error) {
 					return db.NotFoundIgnoredPattern{}, sql.ErrNoRows
+				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return nil
 				}
 				return env
 			},
@@ -100,6 +106,9 @@ func TestResolve(t *testing.T) {
 						CreatedBy: 1,
 					}, nil
 				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return nil
+				}
 				return env
 			},
 			assert: func(t *testing.T, result model.UpdateNotFoundIgnoredPatternOrErrorPayload, err error) {
@@ -120,11 +129,49 @@ func TestResolve(t *testing.T) {
 				env.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return nil, errors.New("admin auth failed")
 				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return nil
+				}
 				return env
 			},
 			assert: func(t *testing.T, result model.UpdateNotFoundIgnoredPatternOrErrorPayload, err error) {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "failed to get admin user token")
+			},
+		},
+		{
+			name: "refresh tracker failed",
+			input: model.UpdateNotFoundIgnoredPatternInput{
+				ID:      1,
+				Pattern: "^/admin/updated/.*",
+			},
+			env: func() *EnvMock {
+				env := &EnvMock{}
+				env.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				}
+				env.NotFoundIgnoredPatternByIDFunc = func(ctx context.Context, id int64) (db.NotFoundIgnoredPattern, error) {
+					return db.NotFoundIgnoredPattern{
+						ID:        1,
+						Pattern:   "^/admin/.*",
+						CreatedBy: 1,
+					}, nil
+				}
+				env.UpdateNotFoundIgnoredPatternFunc = func(ctx context.Context, arg db.UpdateNotFoundIgnoredPatternParams) (db.NotFoundIgnoredPattern, error) {
+					return db.NotFoundIgnoredPattern{
+						ID:        1,
+						Pattern:   "^/admin/updated/.*",
+						CreatedBy: 1,
+					}, nil
+				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return errors.New("tracker refresh failed")
+				}
+				return env
+			},
+			assert: func(t *testing.T, result model.UpdateNotFoundIgnoredPatternOrErrorPayload, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to refresh not found tracker")
 			},
 		},
 	}

@@ -29,6 +29,9 @@ var _ Env = &EnvMock{}
 //			NotFoundIgnoredPatternByIDFunc: func(ctx context.Context, id int64) (db.NotFoundIgnoredPattern, error) {
 //				panic("mock out the NotFoundIgnoredPatternByID method")
 //			},
+//			RefreshNotFoundTrackerFunc: func(ctx context.Context) error {
+//				panic("mock out the RefreshNotFoundTracker method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires Env
@@ -44,6 +47,9 @@ type EnvMock struct {
 
 	// NotFoundIgnoredPatternByIDFunc mocks the NotFoundIgnoredPatternByID method.
 	NotFoundIgnoredPatternByIDFunc func(ctx context.Context, id int64) (db.NotFoundIgnoredPattern, error)
+
+	// RefreshNotFoundTrackerFunc mocks the RefreshNotFoundTracker method.
+	RefreshNotFoundTrackerFunc func(ctx context.Context) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -66,10 +72,16 @@ type EnvMock struct {
 			// ID is the id argument value.
 			ID int64
 		}
+		// RefreshNotFoundTracker holds details about calls to the RefreshNotFoundTracker method.
+		RefreshNotFoundTracker []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 	}
 	lockCurrentAdminUserToken        sync.RWMutex
 	lockDeleteNotFoundIgnoredPattern sync.RWMutex
 	lockNotFoundIgnoredPatternByID   sync.RWMutex
+	lockRefreshNotFoundTracker       sync.RWMutex
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -173,5 +185,37 @@ func (mock *EnvMock) NotFoundIgnoredPatternByIDCalls() []struct {
 	mock.lockNotFoundIgnoredPatternByID.RLock()
 	calls = mock.calls.NotFoundIgnoredPatternByID
 	mock.lockNotFoundIgnoredPatternByID.RUnlock()
+	return calls
+}
+
+// RefreshNotFoundTracker calls RefreshNotFoundTrackerFunc.
+func (mock *EnvMock) RefreshNotFoundTracker(ctx context.Context) error {
+	if mock.RefreshNotFoundTrackerFunc == nil {
+		panic("EnvMock.RefreshNotFoundTrackerFunc: method is nil but Env.RefreshNotFoundTracker was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockRefreshNotFoundTracker.Lock()
+	mock.calls.RefreshNotFoundTracker = append(mock.calls.RefreshNotFoundTracker, callInfo)
+	mock.lockRefreshNotFoundTracker.Unlock()
+	return mock.RefreshNotFoundTrackerFunc(ctx)
+}
+
+// RefreshNotFoundTrackerCalls gets all the calls that were made to RefreshNotFoundTracker.
+// Check the length with:
+//
+//	len(mockedEnv.RefreshNotFoundTrackerCalls())
+func (mock *EnvMock) RefreshNotFoundTrackerCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockRefreshNotFoundTracker.RLock()
+	calls = mock.calls.RefreshNotFoundTracker
+	mock.lockRefreshNotFoundTracker.RUnlock()
 	return calls
 }

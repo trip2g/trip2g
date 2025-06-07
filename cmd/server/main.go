@@ -762,6 +762,10 @@ func (a *app) AssetVersion() string {
 	return strconv.FormatInt(time.Now().UnixMilli(), 10)
 }
 
+func (a *app) RefreshNotFoundTracker(ctx context.Context) error {
+	return a.notFoundTracker.Refresh(ctx)
+}
+
 func (a *app) TrackNotFound(path string, ip string) {
 	err := a.notFoundTracker.Track(path, ip)
 	if err != nil {

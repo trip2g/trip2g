@@ -43,6 +43,9 @@ func TestResolve(t *testing.T) {
 				env.DeleteNotFoundIgnoredPatternFunc = func(ctx context.Context, id int64) error {
 					return nil
 				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return nil
+				}
 				return env
 			},
 			assert: func(t *testing.T, result model.DeleteNotFoundIgnoredPatternOrErrorPayload, err error) {
@@ -65,6 +68,9 @@ func TestResolve(t *testing.T) {
 				env.NotFoundIgnoredPatternByIDFunc = func(ctx context.Context, id int64) (db.NotFoundIgnoredPattern, error) {
 					return db.NotFoundIgnoredPattern{}, sql.ErrNoRows
 				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return nil
+				}
 				return env
 			},
 			assert: func(t *testing.T, result model.DeleteNotFoundIgnoredPatternOrErrorPayload, err error) {
@@ -84,11 +90,44 @@ func TestResolve(t *testing.T) {
 				env.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return nil, errors.New("admin auth failed")
 				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return nil
+				}
 				return env
 			},
 			assert: func(t *testing.T, result model.DeleteNotFoundIgnoredPatternOrErrorPayload, err error) {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "failed to get admin user token")
+			},
+		},
+		{
+			name: "refresh tracker failed",
+			input: model.DeleteNotFoundIgnoredPatternInput{
+				ID: 1,
+			},
+			env: func() *EnvMock {
+				env := &EnvMock{}
+				env.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				}
+				env.NotFoundIgnoredPatternByIDFunc = func(ctx context.Context, id int64) (db.NotFoundIgnoredPattern, error) {
+					return db.NotFoundIgnoredPattern{
+						ID:        1,
+						Pattern:   "^/admin/.*",
+						CreatedBy: 1,
+					}, nil
+				}
+				env.DeleteNotFoundIgnoredPatternFunc = func(ctx context.Context, id int64) error {
+					return nil
+				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return errors.New("tracker refresh failed")
+				}
+				return env
+			},
+			assert: func(t *testing.T, result model.DeleteNotFoundIgnoredPatternOrErrorPayload, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to refresh not found tracker")
 			},
 		},
 	}

@@ -26,6 +26,9 @@ var _ Env = &EnvMock{}
 //			NotFoundIgnoredPatternByIDFunc: func(ctx context.Context, id int64) (db.NotFoundIgnoredPattern, error) {
 //				panic("mock out the NotFoundIgnoredPatternByID method")
 //			},
+//			RefreshNotFoundTrackerFunc: func(ctx context.Context) error {
+//				panic("mock out the RefreshNotFoundTracker method")
+//			},
 //			UpdateNotFoundIgnoredPatternFunc: func(ctx context.Context, arg db.UpdateNotFoundIgnoredPatternParams) (db.NotFoundIgnoredPattern, error) {
 //				panic("mock out the UpdateNotFoundIgnoredPattern method")
 //			},
@@ -41,6 +44,9 @@ type EnvMock struct {
 
 	// NotFoundIgnoredPatternByIDFunc mocks the NotFoundIgnoredPatternByID method.
 	NotFoundIgnoredPatternByIDFunc func(ctx context.Context, id int64) (db.NotFoundIgnoredPattern, error)
+
+	// RefreshNotFoundTrackerFunc mocks the RefreshNotFoundTracker method.
+	RefreshNotFoundTrackerFunc func(ctx context.Context) error
 
 	// UpdateNotFoundIgnoredPatternFunc mocks the UpdateNotFoundIgnoredPattern method.
 	UpdateNotFoundIgnoredPatternFunc func(ctx context.Context, arg db.UpdateNotFoundIgnoredPatternParams) (db.NotFoundIgnoredPattern, error)
@@ -59,6 +65,11 @@ type EnvMock struct {
 			// ID is the id argument value.
 			ID int64
 		}
+		// RefreshNotFoundTracker holds details about calls to the RefreshNotFoundTracker method.
+		RefreshNotFoundTracker []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// UpdateNotFoundIgnoredPattern holds details about calls to the UpdateNotFoundIgnoredPattern method.
 		UpdateNotFoundIgnoredPattern []struct {
 			// Ctx is the ctx argument value.
@@ -69,6 +80,7 @@ type EnvMock struct {
 	}
 	lockCurrentAdminUserToken        sync.RWMutex
 	lockNotFoundIgnoredPatternByID   sync.RWMutex
+	lockRefreshNotFoundTracker       sync.RWMutex
 	lockUpdateNotFoundIgnoredPattern sync.RWMutex
 }
 
@@ -137,6 +149,38 @@ func (mock *EnvMock) NotFoundIgnoredPatternByIDCalls() []struct {
 	mock.lockNotFoundIgnoredPatternByID.RLock()
 	calls = mock.calls.NotFoundIgnoredPatternByID
 	mock.lockNotFoundIgnoredPatternByID.RUnlock()
+	return calls
+}
+
+// RefreshNotFoundTracker calls RefreshNotFoundTrackerFunc.
+func (mock *EnvMock) RefreshNotFoundTracker(ctx context.Context) error {
+	if mock.RefreshNotFoundTrackerFunc == nil {
+		panic("EnvMock.RefreshNotFoundTrackerFunc: method is nil but Env.RefreshNotFoundTracker was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockRefreshNotFoundTracker.Lock()
+	mock.calls.RefreshNotFoundTracker = append(mock.calls.RefreshNotFoundTracker, callInfo)
+	mock.lockRefreshNotFoundTracker.Unlock()
+	return mock.RefreshNotFoundTrackerFunc(ctx)
+}
+
+// RefreshNotFoundTrackerCalls gets all the calls that were made to RefreshNotFoundTracker.
+// Check the length with:
+//
+//	len(mockedEnv.RefreshNotFoundTrackerCalls())
+func (mock *EnvMock) RefreshNotFoundTrackerCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockRefreshNotFoundTracker.RLock()
+	calls = mock.calls.RefreshNotFoundTracker
+	mock.lockRefreshNotFoundTracker.RUnlock()
 	return calls
 }
 

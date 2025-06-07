@@ -12,6 +12,7 @@ type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	NotFoundIgnoredPatternByID(ctx context.Context, id int64) (db.NotFoundIgnoredPattern, error)
 	DeleteNotFoundIgnoredPattern(ctx context.Context, id int64) error
+	RefreshNotFoundTracker(ctx context.Context) error
 }
 
 func Resolve(ctx context.Context, env Env, input model.DeleteNotFoundIgnoredPatternInput) (model.DeleteNotFoundIgnoredPatternOrErrorPayload, error) {
@@ -33,6 +34,11 @@ func Resolve(ctx context.Context, env Env, input model.DeleteNotFoundIgnoredPatt
 	err = env.DeleteNotFoundIgnoredPattern(ctx, input.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete not found ignored pattern: %w", err)
+	}
+
+	err = env.RefreshNotFoundTracker(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to refresh not found tracker: %w", err)
 	}
 
 	return &model.DeleteNotFoundIgnoredPatternPayload{

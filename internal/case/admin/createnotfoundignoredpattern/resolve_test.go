@@ -39,6 +39,9 @@ func TestResolve(t *testing.T) {
 						CreatedBy: 1,
 					}, nil
 				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return nil
+				}
 				return env
 			},
 			assert: func(t *testing.T, result model.CreateNotFoundIgnoredPatternOrErrorPayload, err error) {
@@ -59,6 +62,9 @@ func TestResolve(t *testing.T) {
 				env := &EnvMock{}
 				env.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
+				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return nil
 				}
 				return env
 			},
@@ -99,11 +105,41 @@ func TestResolve(t *testing.T) {
 				env.InsertNotFoundIgnoredPatternFunc = func(ctx context.Context, arg db.InsertNotFoundIgnoredPatternParams) (db.NotFoundIgnoredPattern, error) {
 					return db.NotFoundIgnoredPattern{}, errors.New("database error")
 				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return nil
+				}
 				return env
 			},
 			assert: func(t *testing.T, result model.CreateNotFoundIgnoredPatternOrErrorPayload, err error) {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "failed to insert not found ignored pattern")
+			},
+		},
+		{
+			name: "refresh tracker failed",
+			input: model.CreateNotFoundIgnoredPatternInput{
+				Pattern: "^/admin/.*",
+			},
+			env: func() *EnvMock {
+				env := &EnvMock{}
+				env.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				}
+				env.InsertNotFoundIgnoredPatternFunc = func(ctx context.Context, arg db.InsertNotFoundIgnoredPatternParams) (db.NotFoundIgnoredPattern, error) {
+					return db.NotFoundIgnoredPattern{
+						ID:        1,
+						Pattern:   "^/admin/.*",
+						CreatedBy: 1,
+					}, nil
+				}
+				env.RefreshNotFoundTrackerFunc = func(ctx context.Context) error {
+					return errors.New("tracker refresh failed")
+				}
+				return env
+			},
+			assert: func(t *testing.T, result model.CreateNotFoundIgnoredPatternOrErrorPayload, err error) {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "failed to refresh not found tracker")
 			},
 		},
 	}

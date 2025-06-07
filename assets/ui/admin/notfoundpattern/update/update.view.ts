@@ -30,8 +30,9 @@ namespace $.$$ {
 			return pattern
 		}
 
-		override pattern(): string {
-			return this.data().pattern
+		@$mol_mem
+		override pattern(next?: string): string {
+			return next || this.data().pattern
 		}
 
 		override pattern_bid(): string {

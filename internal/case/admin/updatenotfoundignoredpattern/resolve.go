@@ -13,9 +13,13 @@ type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	NotFoundIgnoredPatternByID(ctx context.Context, id int64) (db.NotFoundIgnoredPattern, error)
 	UpdateNotFoundIgnoredPattern(ctx context.Context, arg db.UpdateNotFoundIgnoredPatternParams) (db.NotFoundIgnoredPattern, error)
+	RefreshNotFoundTracker(ctx context.Context) error
 }
 
-func Resolve(ctx context.Context, env Env, input model.UpdateNotFoundIgnoredPatternInput) (model.UpdateNotFoundIgnoredPatternOrErrorPayload, error) {
+type Input = model.UpdateNotFoundIgnoredPatternInput
+type Payload = model.UpdateNotFoundIgnoredPatternOrErrorPayload
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get admin user token: %w", err)
@@ -47,6 +51,11 @@ func Resolve(ctx context.Context, env Env, input model.UpdateNotFoundIgnoredPatt
 	updatedPattern, err := env.UpdateNotFoundIgnoredPattern(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update not found ignored pattern: %w", err)
+	}
+
+	err = env.RefreshNotFoundTracker(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to refresh not found tracker: %w", err)
 	}
 
 	return &model.UpdateNotFoundIgnoredPatternPayload{

@@ -41,7 +41,7 @@ func New(ctx context.Context, env Env) (*Tracker, error) {
 		ticker: time.NewTicker(time.Minute),
 	}
 
-	err := t.load(ctx)
+	err := t.Refresh(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to refresh tracker: %w", err)
 	}
@@ -89,7 +89,7 @@ func (t *Tracker) Dump() error {
 	return nil
 }
 
-func (t *Tracker) load(ctx context.Context) error {
+func (t *Tracker) Refresh(ctx context.Context) error {
 	ignorePatterRows, err := t.env.ListAllNotFoundIgnoredPatterns(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list ignored patterns: %w", err)
