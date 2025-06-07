@@ -1,0 +1,24 @@
+$trip2g_admin_notfoundpattern_create $mol_page
+	title \Create Ignored Pattern
+	PatternView $mol_view
+		sub /
+			<= PatternId_labeler $mol_labeler
+				title \ID
+				Content <= PatternId $trip2g_admin_cell
+					content <= pattern_id_string? \
+	body /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Pattern_field $mol_form_field
+					name \Pattern
+					bid <= pattern_bid \
+					Content <= pattern_control $mol_string
+						value? <=> pattern? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

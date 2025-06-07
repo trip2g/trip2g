@@ -28,6 +28,8 @@ $trip2g_admin_app $mol_book2_catalog
 		noteGraph <= NoteGraph $trip2g_admin_noteview_graph
 		admins <= Admins $trip2g_admin_admin_catalog
 		redirects <= ListRedirects $trip2g_admin_redirect_catalog
+		notfoundpaths <= ListNotFoundPaths $trip2g_admin_notfoundpath_catalog
+		notfoundpatterns <= ListNotFoundPatterns $trip2g_admin_notfoundpattern_catalog
 
 $trip2g_admin_cell $mol_view
 	content \No Content

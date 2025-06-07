@@ -238,7 +238,7 @@ func TestResolve(t *testing.T) {
 					return "generated-offer-id"
 				},
 				SubgraphByIDFunc: func(ctx context.Context, id int64) (db.Subgraph, error) {
-					return db.Subgraph{}, errors.New("not found")
+					return db.Subgraph{}, sql.ErrNoRows
 				},
 			},
 			args: args{

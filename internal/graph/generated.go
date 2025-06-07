@@ -130,20 +130,24 @@ type ComplexityRoot struct {
 	}
 
 	AdminMutation struct {
-		BanUser                  func(childComplexity int, input model.BanUserInput) int
-		CreateAPIKey             func(childComplexity int, input model.CreateAPIKeyInput) int
-		CreateOffer              func(childComplexity int, input model.CreateOfferInput) int
-		CreateRedirect           func(childComplexity int, input model.CreateRedirectInput) int
-		CreateRelease            func(childComplexity int, input model.CreateReleaseInput) int
-		DeleteRedirect           func(childComplexity int, input model.DeleteRedirectInput) int
-		DisableAPIKey            func(childComplexity int, input model.DisableAPIKeyInput) int
-		MakeReleaseLive          func(childComplexity int, input model.MakeReleaseLiveInput) int
-		UnbanUser                func(childComplexity int, input model.UnbanUserInput) int
-		UpdateNoteGraphPositions func(childComplexity int, input model.UpdateNoteGraphPositionsInput) int
-		UpdateOffer              func(childComplexity int, input model.UpdateOfferInput) int
-		UpdateRedirect           func(childComplexity int, input model.UpdateRedirectInput) int
-		UpdateSubgraph           func(childComplexity int, input updatesubgraph.Request) int
-		UpdateUserSubgraphAccess func(childComplexity int, input updateusersubgraphaccess.Request) int
+		BanUser                      func(childComplexity int, input model.BanUserInput) int
+		CreateAPIKey                 func(childComplexity int, input model.CreateAPIKeyInput) int
+		CreateNotFoundIgnoredPattern func(childComplexity int, input model.CreateNotFoundIgnoredPatternInput) int
+		CreateOffer                  func(childComplexity int, input model.CreateOfferInput) int
+		CreateRedirect               func(childComplexity int, input model.CreateRedirectInput) int
+		CreateRelease                func(childComplexity int, input model.CreateReleaseInput) int
+		DeleteNotFoundIgnoredPattern func(childComplexity int, input model.DeleteNotFoundIgnoredPatternInput) int
+		DeleteRedirect               func(childComplexity int, input model.DeleteRedirectInput) int
+		DisableAPIKey                func(childComplexity int, input model.DisableAPIKeyInput) int
+		MakeReleaseLive              func(childComplexity int, input model.MakeReleaseLiveInput) int
+		ResetNotFoundPath            func(childComplexity int, input model.ResetNotFoundPathInput) int
+		UnbanUser                    func(childComplexity int, input model.UnbanUserInput) int
+		UpdateNotFoundIgnoredPattern func(childComplexity int, input model.UpdateNotFoundIgnoredPatternInput) int
+		UpdateNoteGraphPositions     func(childComplexity int, input model.UpdateNoteGraphPositionsInput) int
+		UpdateOffer                  func(childComplexity int, input model.UpdateOfferInput) int
+		UpdateRedirect               func(childComplexity int, input model.UpdateRedirectInput) int
+		UpdateSubgraph               func(childComplexity int, input updatesubgraph.Request) int
+		UpdateUserSubgraphAccess     func(childComplexity int, input updateusersubgraphaccess.Request) int
 	}
 
 	AdminNotFoundIgnoredPattern struct {
@@ -302,6 +306,10 @@ type ComplexityRoot struct {
 		Value  func(childComplexity int) int
 	}
 
+	CreateNotFoundIgnoredPatternPayload struct {
+		NotFoundIgnoredPattern func(childComplexity int) int
+	}
+
 	CreateOfferPayload struct {
 		Offer func(childComplexity int) int
 	}
@@ -317,6 +325,10 @@ type ComplexityRoot struct {
 
 	CreateReleasePayload struct {
 		Release func(childComplexity int) int
+	}
+
+	DeleteNotFoundIgnoredPatternPayload struct {
+		DeletedID func(childComplexity int) int
 	}
 
 	DeleteRedirectPayload struct {
@@ -414,6 +426,10 @@ type ComplexityRoot struct {
 		Success func(childComplexity int) int
 	}
 
+	ResetNotFoundPathPayload struct {
+		NotFoundPath func(childComplexity int) int
+	}
+
 	SignInPayload struct {
 		Token  func(childComplexity int) int
 		Viewer func(childComplexity int) int
@@ -432,6 +448,10 @@ type ComplexityRoot struct {
 	UnbanUserPayload struct {
 		User   func(childComplexity int) int
 		UserID func(childComplexity int) int
+	}
+
+	UpdateNotFoundIgnoredPatternPayload struct {
+		NotFoundIgnoredPattern func(childComplexity int) int
 	}
 
 	UpdateNoteGraphPositionsPayload struct {
@@ -521,6 +541,10 @@ type AdminMutationResolver interface {
 	UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error)
 	CreateOffer(ctx context.Context, obj *model1.AdminMutation, input model.CreateOfferInput) (model.CreateOfferOrErrorPayload, error)
 	UpdateOffer(ctx context.Context, obj *model1.AdminMutation, input model.UpdateOfferInput) (model.UpdateOfferOrErrorPayload, error)
+	ResetNotFoundPath(ctx context.Context, obj *model1.AdminMutation, input model.ResetNotFoundPathInput) (model.ResetNotFoundPathOrErrorPayload, error)
+	CreateNotFoundIgnoredPattern(ctx context.Context, obj *model1.AdminMutation, input model.CreateNotFoundIgnoredPatternInput) (model.CreateNotFoundIgnoredPatternOrErrorPayload, error)
+	UpdateNotFoundIgnoredPattern(ctx context.Context, obj *model1.AdminMutation, input model.UpdateNotFoundIgnoredPatternInput) (model.UpdateNotFoundIgnoredPatternOrErrorPayload, error)
+	DeleteNotFoundIgnoredPattern(ctx context.Context, obj *model1.AdminMutation, input model.DeleteNotFoundIgnoredPatternInput) (model.DeleteNotFoundIgnoredPatternOrErrorPayload, error)
 	CreateRedirect(ctx context.Context, obj *model1.AdminMutation, input model.CreateRedirectInput) (model.CreateRedirectOrErrorPayload, error)
 	UpdateRedirect(ctx context.Context, obj *model1.AdminMutation, input model.UpdateRedirectInput) (model.UpdateRedirectOrErrorPayload, error)
 	DeleteRedirect(ctx context.Context, obj *model1.AdminMutation, input model.DeleteRedirectInput) (model.DeleteRedirectOrErrorPayload, error)
@@ -856,6 +880,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.CreateAPIKey(childComplexity, args["input"].(model.CreateAPIKeyInput)), true
 
+	case "AdminMutation.createNotFoundIgnoredPattern":
+		if e.complexity.AdminMutation.CreateNotFoundIgnoredPattern == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_createNotFoundIgnoredPattern_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.CreateNotFoundIgnoredPattern(childComplexity, args["input"].(model.CreateNotFoundIgnoredPatternInput)), true
+
 	case "AdminMutation.createOffer":
 		if e.complexity.AdminMutation.CreateOffer == nil {
 			break
@@ -891,6 +927,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.CreateRelease(childComplexity, args["input"].(model.CreateReleaseInput)), true
+
+	case "AdminMutation.deleteNotFoundIgnoredPattern":
+		if e.complexity.AdminMutation.DeleteNotFoundIgnoredPattern == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_deleteNotFoundIgnoredPattern_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.DeleteNotFoundIgnoredPattern(childComplexity, args["input"].(model.DeleteNotFoundIgnoredPatternInput)), true
 
 	case "AdminMutation.deleteRedirect":
 		if e.complexity.AdminMutation.DeleteRedirect == nil {
@@ -928,6 +976,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.MakeReleaseLive(childComplexity, args["input"].(model.MakeReleaseLiveInput)), true
 
+	case "AdminMutation.resetNotFoundPath":
+		if e.complexity.AdminMutation.ResetNotFoundPath == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_resetNotFoundPath_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.ResetNotFoundPath(childComplexity, args["input"].(model.ResetNotFoundPathInput)), true
+
 	case "AdminMutation.unbanUser":
 		if e.complexity.AdminMutation.UnbanUser == nil {
 			break
@@ -939,6 +999,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.UnbanUser(childComplexity, args["input"].(model.UnbanUserInput)), true
+
+	case "AdminMutation.updateNotFoundIgnoredPattern":
+		if e.complexity.AdminMutation.UpdateNotFoundIgnoredPattern == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_updateNotFoundIgnoredPattern_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.UpdateNotFoundIgnoredPattern(childComplexity, args["input"].(model.UpdateNotFoundIgnoredPatternInput)), true
 
 	case "AdminMutation.updateNoteGraphPositions":
 		if e.complexity.AdminMutation.UpdateNoteGraphPositions == nil {
@@ -1665,6 +1737,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.CreateApiKeyPayload.Value(childComplexity), true
 
+	case "CreateNotFoundIgnoredPatternPayload.notFoundIgnoredPattern":
+		if e.complexity.CreateNotFoundIgnoredPatternPayload.NotFoundIgnoredPattern == nil {
+			break
+		}
+
+		return e.complexity.CreateNotFoundIgnoredPatternPayload.NotFoundIgnoredPattern(childComplexity), true
+
 	case "CreateOfferPayload.offer":
 		if e.complexity.CreateOfferPayload.Offer == nil {
 			break
@@ -1699,6 +1778,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CreateReleasePayload.Release(childComplexity), true
+
+	case "DeleteNotFoundIgnoredPatternPayload.deletedId":
+		if e.complexity.DeleteNotFoundIgnoredPatternPayload.DeletedID == nil {
+			break
+		}
+
+		return e.complexity.DeleteNotFoundIgnoredPatternPayload.DeletedID(childComplexity), true
 
 	case "DeleteRedirectPayload.id":
 		if e.complexity.DeleteRedirectPayload.ID == nil {
@@ -2059,6 +2145,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.RequestEmailSignInCodePayload.Success(childComplexity), true
 
+	case "ResetNotFoundPathPayload.notFoundPath":
+		if e.complexity.ResetNotFoundPathPayload.NotFoundPath == nil {
+			break
+		}
+
+		return e.complexity.ResetNotFoundPathPayload.NotFoundPath(childComplexity), true
+
 	case "SignInPayload.token":
 		if e.complexity.SignInPayload.Token == nil {
 			break
@@ -2114,6 +2207,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UnbanUserPayload.UserID(childComplexity), true
+
+	case "UpdateNotFoundIgnoredPatternPayload.notFoundIgnoredPattern":
+		if e.complexity.UpdateNotFoundIgnoredPatternPayload.NotFoundIgnoredPattern == nil {
+			break
+		}
+
+		return e.complexity.UpdateNotFoundIgnoredPatternPayload.NotFoundIgnoredPattern(childComplexity), true
 
 	case "UpdateNoteGraphPositionsPayload.success":
 		if e.complexity.UpdateNoteGraphPositionsPayload.Success == nil {
@@ -2306,10 +2406,12 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApiKeyLogsFilterInput,
 		ec.unmarshalInputBanUserInput,
 		ec.unmarshalInputCreateApiKeyInput,
+		ec.unmarshalInputCreateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputCreateOfferInput,
 		ec.unmarshalInputCreatePaymentLinkInput,
 		ec.unmarshalInputCreateRedirectInput,
 		ec.unmarshalInputCreateReleaseInput,
+		ec.unmarshalInputDeleteNotFoundIgnoredPatternInput,
 		ec.unmarshalInputDeleteRedirectInput,
 		ec.unmarshalInputDisableApiKeyInput,
 		ec.unmarshalInputHideNotesInput,
@@ -2317,8 +2419,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputPushNoteInput,
 		ec.unmarshalInputPushNotesInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
+		ec.unmarshalInputResetNotFoundPathInput,
 		ec.unmarshalInputSignInByEmailInput,
 		ec.unmarshalInputUnbanUserInput,
+		ec.unmarshalInputUpdateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputUpdateNoteGraphPositionInput,
 		ec.unmarshalInputUpdateNoteGraphPositionsInput,
 		ec.unmarshalInputUpdateOfferInput,
@@ -2488,6 +2592,29 @@ func (ec *executionContext) field_AdminMutation_createApiKey_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_createNotFoundIgnoredPattern_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_createNotFoundIgnoredPattern_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_createNotFoundIgnoredPattern_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateNotFoundIgnoredPatternInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateNotFoundIgnoredPatternInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateNotFoundIgnoredPatternInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_createOffer_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2554,6 +2681,29 @@ func (ec *executionContext) field_AdminMutation_createRelease_argsInput(
 	}
 
 	var zeroVal model.CreateReleaseInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_deleteNotFoundIgnoredPattern_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_deleteNotFoundIgnoredPattern_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_deleteNotFoundIgnoredPattern_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.DeleteNotFoundIgnoredPatternInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNDeleteNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteNotFoundIgnoredPatternInput(ctx, tmp)
+	}
+
+	var zeroVal model.DeleteNotFoundIgnoredPatternInput
 	return zeroVal, nil
 }
 
@@ -2626,6 +2776,29 @@ func (ec *executionContext) field_AdminMutation_makeReleaseLive_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_resetNotFoundPath_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_resetNotFoundPath_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_resetNotFoundPath_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.ResetNotFoundPathInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNResetNotFoundPathInput2trip2gᚋinternalᚋgraphᚋmodelᚐResetNotFoundPathInput(ctx, tmp)
+	}
+
+	var zeroVal model.ResetNotFoundPathInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_unbanUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2646,6 +2819,29 @@ func (ec *executionContext) field_AdminMutation_unbanUser_argsInput(
 	}
 
 	var zeroVal model.UnbanUserInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_updateNotFoundIgnoredPattern_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_updateNotFoundIgnoredPattern_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_updateNotFoundIgnoredPattern_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateNotFoundIgnoredPatternInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNotFoundIgnoredPatternInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateNotFoundIgnoredPatternInput
 	return zeroVal, nil
 }
 
@@ -4262,6 +4458,226 @@ func (ec *executionContext) fieldContext_AdminMutation_updateOffer(ctx context.C
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_updateOffer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_resetNotFoundPath(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_resetNotFoundPath(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().ResetNotFoundPath(rctx, obj, fc.Args["input"].(model.ResetNotFoundPathInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.ResetNotFoundPathOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNResetNotFoundPathOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐResetNotFoundPathOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_resetNotFoundPath(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ResetNotFoundPathOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_resetNotFoundPath_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_createNotFoundIgnoredPattern(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_createNotFoundIgnoredPattern(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().CreateNotFoundIgnoredPattern(rctx, obj, fc.Args["input"].(model.CreateNotFoundIgnoredPatternInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CreateNotFoundIgnoredPatternOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNCreateNotFoundIgnoredPatternOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateNotFoundIgnoredPatternOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createNotFoundIgnoredPattern(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateNotFoundIgnoredPatternOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createNotFoundIgnoredPattern_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_updateNotFoundIgnoredPattern(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_updateNotFoundIgnoredPattern(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().UpdateNotFoundIgnoredPattern(rctx, obj, fc.Args["input"].(model.UpdateNotFoundIgnoredPatternInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.UpdateNotFoundIgnoredPatternOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNUpdateNotFoundIgnoredPatternOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNotFoundIgnoredPatternOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_updateNotFoundIgnoredPattern(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UpdateNotFoundIgnoredPatternOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_updateNotFoundIgnoredPattern_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deleteNotFoundIgnoredPattern(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_deleteNotFoundIgnoredPattern(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().DeleteNotFoundIgnoredPattern(rctx, obj, fc.Args["input"].(model.DeleteNotFoundIgnoredPatternInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.DeleteNotFoundIgnoredPatternOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNDeleteNotFoundIgnoredPatternOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteNotFoundIgnoredPatternOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deleteNotFoundIgnoredPattern(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeleteNotFoundIgnoredPatternOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_deleteNotFoundIgnoredPattern_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -9271,6 +9687,60 @@ func (ec *executionContext) fieldContext_CreateApiKeyPayload_apiKey(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateNotFoundIgnoredPatternPayload_notFoundIgnoredPattern(ctx context.Context, field graphql.CollectedField, obj *model.CreateNotFoundIgnoredPatternPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreateNotFoundIgnoredPatternPayload_notFoundIgnoredPattern(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NotFoundIgnoredPattern, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.NotFoundIgnoredPattern)
+	fc.Result = res
+	return ec.marshalNAdminNotFoundIgnoredPattern2ᚖtrip2gᚋinternalᚋdbᚐNotFoundIgnoredPattern(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreateNotFoundIgnoredPatternPayload_notFoundIgnoredPattern(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateNotFoundIgnoredPatternPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_id(ctx, field)
+			case "pattern":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_pattern(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNotFoundIgnoredPattern", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreateOfferPayload_offer(ctx context.Context, field graphql.CollectedField, obj *model.CreateOfferPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_CreateOfferPayload_offer(ctx, field)
 	if err != nil {
@@ -9535,6 +10005,50 @@ func (ec *executionContext) fieldContext_CreateReleasePayload_release(_ context.
 				return ec.fieldContext_AdminRelease_isLive(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminRelease", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteNotFoundIgnoredPatternPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteNotFoundIgnoredPatternPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteNotFoundIgnoredPatternPayload_deletedId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeletedID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeleteNotFoundIgnoredPatternPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteNotFoundIgnoredPatternPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
 		},
 	}
 	return fc, nil
@@ -10349,6 +10863,14 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_createOffer(ctx, field)
 			case "updateOffer":
 				return ec.fieldContext_AdminMutation_updateOffer(ctx, field)
+			case "resetNotFoundPath":
+				return ec.fieldContext_AdminMutation_resetNotFoundPath(ctx, field)
+			case "createNotFoundIgnoredPattern":
+				return ec.fieldContext_AdminMutation_createNotFoundIgnoredPattern(ctx, field)
+			case "updateNotFoundIgnoredPattern":
+				return ec.fieldContext_AdminMutation_updateNotFoundIgnoredPattern(ctx, field)
+			case "deleteNotFoundIgnoredPattern":
+				return ec.fieldContext_AdminMutation_deleteNotFoundIgnoredPattern(ctx, field)
 			case "createRedirect":
 				return ec.fieldContext_AdminMutation_createRedirect(ctx, field)
 			case "updateRedirect":
@@ -11981,6 +12503,60 @@ func (ec *executionContext) fieldContext_RequestEmailSignInCodePayload_success(_
 	return fc, nil
 }
 
+func (ec *executionContext) _ResetNotFoundPathPayload_notFoundPath(ctx context.Context, field graphql.CollectedField, obj *model.ResetNotFoundPathPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResetNotFoundPathPayload_notFoundPath(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NotFoundPath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.NotFoundPath)
+	fc.Result = res
+	return ec.marshalNAdminNotFoundPath2ᚖtrip2gᚋinternalᚋdbᚐNotFoundPath(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResetNotFoundPathPayload_notFoundPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResetNotFoundPathPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminNotFoundPath_id(ctx, field)
+			case "path":
+				return ec.fieldContext_AdminNotFoundPath_path(ctx, field)
+			case "totalHits":
+				return ec.fieldContext_AdminNotFoundPath_totalHits(ctx, field)
+			case "lastHitAt":
+				return ec.fieldContext_AdminNotFoundPath_lastHitAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNotFoundPath", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SignInPayload_token(ctx context.Context, field graphql.CollectedField, obj *model.SignInPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SignInPayload_token(ctx, field)
 	if err != nil {
@@ -12370,6 +12946,60 @@ func (ec *executionContext) fieldContext_UnbanUserPayload_user(_ context.Context
 				return ec.fieldContext_AdminUser_ban(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateNotFoundIgnoredPatternPayload_notFoundIgnoredPattern(ctx context.Context, field graphql.CollectedField, obj *model.UpdateNotFoundIgnoredPatternPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpdateNotFoundIgnoredPatternPayload_notFoundIgnoredPattern(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NotFoundIgnoredPattern, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.NotFoundIgnoredPattern)
+	fc.Result = res
+	return ec.marshalNAdminNotFoundIgnoredPattern2ᚖtrip2gᚋinternalᚋdbᚐNotFoundIgnoredPattern(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpdateNotFoundIgnoredPatternPayload_notFoundIgnoredPattern(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateNotFoundIgnoredPatternPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_id(ctx, field)
+			case "pattern":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_pattern(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNotFoundIgnoredPattern", field.Name)
 		},
 	}
 	return fc, nil
@@ -15660,6 +16290,33 @@ func (ec *executionContext) unmarshalInputCreateApiKeyInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateNotFoundIgnoredPatternInput(ctx context.Context, obj any) (model.CreateNotFoundIgnoredPatternInput, error) {
+	var it model.CreateNotFoundIgnoredPatternInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"pattern"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "pattern":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pattern"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Pattern = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateOfferInput(ctx context.Context, obj any) (model.CreateOfferInput, error) {
 	var it model.CreateOfferInput
 	asMap := map[string]any{}
@@ -15839,6 +16496,33 @@ func (ec *executionContext) unmarshalInputCreateReleaseInput(ctx context.Context
 				return it, err
 			}
 			it.HomeNoteVersionID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteNotFoundIgnoredPatternInput(ctx context.Context, obj any) (model.DeleteNotFoundIgnoredPatternInput, error) {
+	var it model.DeleteNotFoundIgnoredPatternInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
 		}
 	}
 
@@ -16041,6 +16725,33 @@ func (ec *executionContext) unmarshalInputRequestEmailSignInCodeInput(ctx contex
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputResetNotFoundPathInput(ctx context.Context, obj any) (model.ResetNotFoundPathInput, error) {
+	var it model.ResetNotFoundPathInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSignInByEmailInput(ctx context.Context, obj any) (model.SignInByEmailInput, error) {
 	var it model.SignInByEmailInput
 	asMap := map[string]any{}
@@ -16096,6 +16807,40 @@ func (ec *executionContext) unmarshalInputUnbanUserInput(ctx context.Context, ob
 				return it, err
 			}
 			it.UserID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateNotFoundIgnoredPatternInput(ctx context.Context, obj any) (model.UpdateNotFoundIgnoredPatternInput, error) {
+	var it model.UpdateNotFoundIgnoredPatternInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "pattern"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "pattern":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pattern"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Pattern = data
 		}
 	}
 
@@ -16467,6 +17212,29 @@ func (ec *executionContext) _CreateApiKeyOrErrorPayload(ctx context.Context, sel
 	}
 }
 
+func (ec *executionContext) _CreateNotFoundIgnoredPatternOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateNotFoundIgnoredPatternOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateNotFoundIgnoredPatternPayload:
+		return ec._CreateNotFoundIgnoredPatternPayload(ctx, sel, &obj)
+	case *model.CreateNotFoundIgnoredPatternPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateNotFoundIgnoredPatternPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _CreateOfferOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateOfferOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -16554,6 +17322,29 @@ func (ec *executionContext) _CreateReleaseOrErrorPayload(ctx context.Context, se
 			return graphql.Null
 		}
 		return ec._CreateReleasePayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _DeleteNotFoundIgnoredPatternOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteNotFoundIgnoredPatternOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DeleteNotFoundIgnoredPatternPayload:
+		return ec._DeleteNotFoundIgnoredPatternPayload(ctx, sel, &obj)
+	case *model.DeleteNotFoundIgnoredPatternPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeleteNotFoundIgnoredPatternPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -16697,6 +17488,29 @@ func (ec *executionContext) _RequestEmailSignInCodeOrErrorPayload(ctx context.Co
 	}
 }
 
+func (ec *executionContext) _ResetNotFoundPathOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.ResetNotFoundPathOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ResetNotFoundPathPayload:
+		return ec._ResetNotFoundPathPayload(ctx, sel, &obj)
+	case *model.ResetNotFoundPathPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ResetNotFoundPathPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _SignInOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SignInOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -16754,6 +17568,29 @@ func (ec *executionContext) _UnbanUserOrErrorPayload(ctx context.Context, sel as
 			return graphql.Null
 		}
 		return ec._UnbanUserPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _UpdateNotFoundIgnoredPatternOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateNotFoundIgnoredPatternOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UpdateNotFoundIgnoredPatternPayload:
+		return ec._UpdateNotFoundIgnoredPatternPayload(ctx, sel, &obj)
+	case *model.UpdateNotFoundIgnoredPatternPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateNotFoundIgnoredPatternPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -17661,6 +18498,150 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_updateOffer(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "resetNotFoundPath":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_resetNotFoundPath(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createNotFoundIgnoredPattern":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createNotFoundIgnoredPattern(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "updateNotFoundIgnoredPattern":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_updateNotFoundIgnoredPattern(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deleteNotFoundIgnoredPattern":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deleteNotFoundIgnoredPattern(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -20801,6 +21782,45 @@ func (ec *executionContext) _CreateApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
+var createNotFoundIgnoredPatternPayloadImplementors = []string{"CreateNotFoundIgnoredPatternPayload", "CreateNotFoundIgnoredPatternOrErrorPayload"}
+
+func (ec *executionContext) _CreateNotFoundIgnoredPatternPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateNotFoundIgnoredPatternPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createNotFoundIgnoredPatternPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateNotFoundIgnoredPatternPayload")
+		case "notFoundIgnoredPattern":
+			out.Values[i] = ec._CreateNotFoundIgnoredPatternPayload_notFoundIgnoredPattern(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createOfferPayloadImplementors = []string{"CreateOfferPayload", "CreateOfferOrErrorPayload"}
 
 func (ec *executionContext) _CreateOfferPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateOfferPayload) graphql.Marshaler {
@@ -20959,6 +21979,45 @@ func (ec *executionContext) _CreateReleasePayload(ctx context.Context, sel ast.S
 	return out
 }
 
+var deleteNotFoundIgnoredPatternPayloadImplementors = []string{"DeleteNotFoundIgnoredPatternPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload"}
+
+func (ec *executionContext) _DeleteNotFoundIgnoredPatternPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteNotFoundIgnoredPatternPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteNotFoundIgnoredPatternPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteNotFoundIgnoredPatternPayload")
+		case "deletedId":
+			out.Values[i] = ec._DeleteNotFoundIgnoredPatternPayload_deletedId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var deleteRedirectPayloadImplementors = []string{"DeleteRedirectPayload", "DeleteRedirectOrErrorPayload"}
 
 func (ec *executionContext) _DeleteRedirectPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteRedirectPayload) graphql.Marshaler {
@@ -21037,7 +22096,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -22164,6 +23223,45 @@ func (ec *executionContext) _RequestEmailSignInCodePayload(ctx context.Context, 
 	return out
 }
 
+var resetNotFoundPathPayloadImplementors = []string{"ResetNotFoundPathPayload", "ResetNotFoundPathOrErrorPayload"}
+
+func (ec *executionContext) _ResetNotFoundPathPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ResetNotFoundPathPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resetNotFoundPathPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResetNotFoundPathPayload")
+		case "notFoundPath":
+			out.Values[i] = ec._ResetNotFoundPathPayload_notFoundPath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var signInPayloadImplementors = []string{"SignInPayload", "SignInOrErrorPayload"}
 
 func (ec *executionContext) _SignInPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SignInPayload) graphql.Marshaler {
@@ -22410,6 +23508,45 @@ func (ec *executionContext) _UnbanUserPayload(ctx context.Context, sel ast.Selec
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var updateNotFoundIgnoredPatternPayloadImplementors = []string{"UpdateNotFoundIgnoredPatternPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload"}
+
+func (ec *executionContext) _UpdateNotFoundIgnoredPatternPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateNotFoundIgnoredPatternPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateNotFoundIgnoredPatternPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateNotFoundIgnoredPatternPayload")
+		case "notFoundIgnoredPattern":
+			out.Values[i] = ec._UpdateNotFoundIgnoredPatternPayload_notFoundIgnoredPattern(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -23871,6 +25008,16 @@ func (ec *executionContext) marshalNAdminNotFoundIgnoredPattern2ᚕtrip2gᚋinte
 	return ret
 }
 
+func (ec *executionContext) marshalNAdminNotFoundIgnoredPattern2ᚖtrip2gᚋinternalᚋdbᚐNotFoundIgnoredPattern(ctx context.Context, sel ast.SelectionSet, v *db.NotFoundIgnoredPattern) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminNotFoundIgnoredPattern(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminNotFoundIgnoredPatternsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNotFoundIgnoredPatternsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminNotFoundIgnoredPatternsConnection) graphql.Marshaler {
 	return ec._AdminNotFoundIgnoredPatternsConnection(ctx, sel, &v)
 }
@@ -23931,6 +25078,16 @@ func (ec *executionContext) marshalNAdminNotFoundPath2ᚕtrip2gᚋinternalᚋdb�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNAdminNotFoundPath2ᚖtrip2gᚋinternalᚋdbᚐNotFoundPath(ctx context.Context, sel ast.SelectionSet, v *db.NotFoundPath) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminNotFoundPath(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNAdminNotFoundPathsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNotFoundPathsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminNotFoundPathsConnection) graphql.Marshaler {
@@ -24510,6 +25667,21 @@ func (ec *executionContext) marshalNCreateApiKeyOrErrorPayload2trip2gᚋinternal
 	return ec._CreateApiKeyOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCreateNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateNotFoundIgnoredPatternInput(ctx context.Context, v any) (model.CreateNotFoundIgnoredPatternInput, error) {
+	res, err := ec.unmarshalInputCreateNotFoundIgnoredPatternInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateNotFoundIgnoredPatternOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateNotFoundIgnoredPatternOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateNotFoundIgnoredPatternOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateNotFoundIgnoredPatternOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateOfferInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateOfferInput(ctx context.Context, v any) (model.CreateOfferInput, error) {
 	res, err := ec.unmarshalInputCreateOfferInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -24568,6 +25740,21 @@ func (ec *executionContext) marshalNCreateReleaseOrErrorPayload2trip2gᚋinterna
 		return graphql.Null
 	}
 	return ec._CreateReleaseOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeleteNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteNotFoundIgnoredPatternInput(ctx context.Context, v any) (model.DeleteNotFoundIgnoredPatternInput, error) {
+	res, err := ec.unmarshalInputDeleteNotFoundIgnoredPatternInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteNotFoundIgnoredPatternOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteNotFoundIgnoredPatternOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteNotFoundIgnoredPatternOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteNotFoundIgnoredPatternOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDeleteRedirectInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteRedirectInput(ctx context.Context, v any) (model.DeleteRedirectInput, error) {
@@ -25110,6 +26297,21 @@ func (ec *executionContext) marshalNRequestEmailSignInCodeOrErrorPayload2trip2g�
 	return ec._RequestEmailSignInCodeOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNResetNotFoundPathInput2trip2gᚋinternalᚋgraphᚋmodelᚐResetNotFoundPathInput(ctx context.Context, v any) (model.ResetNotFoundPathInput, error) {
+	res, err := ec.unmarshalInputResetNotFoundPathInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNResetNotFoundPathOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐResetNotFoundPathOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.ResetNotFoundPathOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ResetNotFoundPathOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐRole(ctx context.Context, v any) (model.Role, error) {
 	var res model.Role
 	err := res.UnmarshalGQL(v)
@@ -25278,6 +26480,21 @@ func (ec *executionContext) marshalNUnbanUserOrErrorPayload2trip2gᚋinternalᚋ
 		return graphql.Null
 	}
 	return ec._UnbanUserOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNotFoundIgnoredPatternInput(ctx context.Context, v any) (model.UpdateNotFoundIgnoredPatternInput, error) {
+	res, err := ec.unmarshalInputUpdateNotFoundIgnoredPatternInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateNotFoundIgnoredPatternOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNotFoundIgnoredPatternOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateNotFoundIgnoredPatternOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateNotFoundIgnoredPatternOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateNoteGraphPositionInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNoteGraphPositionInput(ctx context.Context, v any) (model.UpdateNoteGraphPositionInput, error) {

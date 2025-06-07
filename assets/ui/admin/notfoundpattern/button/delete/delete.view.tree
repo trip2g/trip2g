@@ -1,0 +1,3 @@
+$trip2g_admin_notfoundpattern_button_delete $mol_button_minor
+	pattern_id 0
+	title \Delete

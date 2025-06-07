@@ -678,12 +678,74 @@ type DeleteRedirectPayload {
 
 union DeleteRedirectOrErrorPayload = DeleteRedirectPayload | ErrorPayload
 
+#
+# resetNotFoundPath
+#
+
+input ResetNotFoundPathInput {
+  id: Int64!
+}
+
+type ResetNotFoundPathPayload {
+  notFoundPath: AdminNotFoundPath!
+}
+
+union ResetNotFoundPathOrErrorPayload = ResetNotFoundPathPayload | ErrorPayload
+
+#
+# createNotFoundIgnoredPattern
+#
+
+input CreateNotFoundIgnoredPatternInput {
+  pattern: String!
+}
+
+type CreateNotFoundIgnoredPatternPayload {
+  notFoundIgnoredPattern: AdminNotFoundIgnoredPattern!
+}
+
+union CreateNotFoundIgnoredPatternOrErrorPayload = CreateNotFoundIgnoredPatternPayload | ErrorPayload
+
+#
+# updateNotFoundIgnoredPattern
+#
+
+input UpdateNotFoundIgnoredPatternInput {
+  id: Int64!
+  pattern: String!
+}
+
+type UpdateNotFoundIgnoredPatternPayload {
+  notFoundIgnoredPattern: AdminNotFoundIgnoredPattern!
+}
+
+union UpdateNotFoundIgnoredPatternOrErrorPayload = UpdateNotFoundIgnoredPatternPayload | ErrorPayload
+
+#
+# deleteNotFoundIgnoredPattern
+#
+
+input DeleteNotFoundIgnoredPatternInput {
+  id: Int64!
+}
+
+type DeleteNotFoundIgnoredPatternPayload {
+  deletedId: Int64!
+}
+
+union DeleteNotFoundIgnoredPatternOrErrorPayload = DeleteNotFoundIgnoredPatternPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
 
   createOffer(input: CreateOfferInput!): CreateOfferOrErrorPayload!
   updateOffer(input: UpdateOfferInput!): UpdateOfferOrErrorPayload!
+
+  resetNotFoundPath(input: ResetNotFoundPathInput!): ResetNotFoundPathOrErrorPayload!
+  createNotFoundIgnoredPattern(input: CreateNotFoundIgnoredPatternInput!): CreateNotFoundIgnoredPatternOrErrorPayload!
+  updateNotFoundIgnoredPattern(input: UpdateNotFoundIgnoredPatternInput!): UpdateNotFoundIgnoredPatternOrErrorPayload!
+  deleteNotFoundIgnoredPattern(input: DeleteNotFoundIgnoredPatternInput!): DeleteNotFoundIgnoredPatternOrErrorPayload!
 
   createRedirect(input: CreateRedirectInput!): CreateRedirectOrErrorPayload!
   updateRedirect(input: UpdateRedirectInput!): UpdateRedirectOrErrorPayload!

@@ -15,14 +15,18 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
+	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
 	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
+	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
+	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
+	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
 	"trip2g/internal/case/admin/updateoffer"
 	"trip2g/internal/case/admin/updateredirect"
 	"trip2g/internal/case/admin/updatesubgraph"
@@ -135,6 +139,26 @@ func (r *adminMutationResolver) CreateOffer(ctx context.Context, obj *appmodel.A
 // UpdateOffer is the resolver for the updateOffer field.
 func (r *adminMutationResolver) UpdateOffer(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateOfferInput) (model.UpdateOfferOrErrorPayload, error) {
 	return updateoffer.Resolve(ctx, r.env(ctx), input)
+}
+
+// ResetNotFoundPath is the resolver for the resetNotFoundPath field.
+func (r *adminMutationResolver) ResetNotFoundPath(ctx context.Context, obj *appmodel.AdminMutation, input model.ResetNotFoundPathInput) (model.ResetNotFoundPathOrErrorPayload, error) {
+	return resetnotfoundpath.Resolve(ctx, r.env(ctx), input)
+}
+
+// CreateNotFoundIgnoredPattern is the resolver for the createNotFoundIgnoredPattern field.
+func (r *adminMutationResolver) CreateNotFoundIgnoredPattern(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateNotFoundIgnoredPatternInput) (model.CreateNotFoundIgnoredPatternOrErrorPayload, error) {
+	return createnotfoundignoredpattern.Resolve(ctx, r.env(ctx), input)
+}
+
+// UpdateNotFoundIgnoredPattern is the resolver for the updateNotFoundIgnoredPattern field.
+func (r *adminMutationResolver) UpdateNotFoundIgnoredPattern(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateNotFoundIgnoredPatternInput) (model.UpdateNotFoundIgnoredPatternOrErrorPayload, error) {
+	return updatenotfoundignoredpattern.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteNotFoundIgnoredPattern is the resolver for the deleteNotFoundIgnoredPattern field.
+func (r *adminMutationResolver) DeleteNotFoundIgnoredPattern(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteNotFoundIgnoredPatternInput) (model.DeleteNotFoundIgnoredPatternOrErrorPayload, error) {
+	return deletenotfoundignoredpattern.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreateRedirect is the resolver for the createRedirect field.

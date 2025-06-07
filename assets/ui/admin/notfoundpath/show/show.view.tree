@@ -1,0 +1,24 @@
+$trip2g_admin_notfoundpath_show $mol_page
+	notfoundpath_id? 0
+	title \Not Found Path
+	body /
+		<= NotFoundPathDetails $mol_view
+			sub /
+				<= Details_labeler $mol_labeler
+					title \Not Found Path Details
+					Content <= Details $mol_view
+						sub /
+							<= Path_labeler $mol_labeler
+								title \Path
+								Content <= Path $trip2g_admin_cell
+									content <= notfoundpath_path \
+							<= TotalHits_labeler $mol_labeler
+								title \Total Hits
+								Content <= TotalHits $trip2g_admin_cell
+									content <= notfoundpath_total_hits \
+							<= LastHitAt_labeler $mol_labeler
+								title \Last Hit At
+								Content <= LastHitAt $trip2g_admin_cell
+									content <= notfoundpath_last_hit_at \
+		<= ResetResult $mol_status
+			message <= reset_result? \

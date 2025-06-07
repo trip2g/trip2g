@@ -507,3 +507,29 @@ insert into not_found_ip_hits (ip, total_hits)
 values (?, ?)
 on conflict(ip) do
 update set total_hits = excluded.total_hits, last_hit_at = datetime('now');
+
+-- name: InsertNotFoundIgnoredPattern :one
+insert into not_found_ignored_patterns (pattern, created_by)
+values (?, ?)
+returning *;
+
+-- name: UpdateNotFoundIgnoredPattern :one
+update not_found_ignored_patterns
+set pattern = ?
+where id = ?
+returning *;
+
+-- name: DeleteNotFoundIgnoredPattern :exec
+delete from not_found_ignored_patterns where id = ?;
+
+-- name: NotFoundIgnoredPatternByID :one
+select * from not_found_ignored_patterns where id = ?;
+
+-- name: NotFoundPathByID :one
+select * from not_found_paths where id = ?;
+
+-- name: ResetNotFoundPathTotalHits :one
+update not_found_paths
+set total_hits = 1, last_hit_at = datetime('now')
+where id = ?
+returning *;

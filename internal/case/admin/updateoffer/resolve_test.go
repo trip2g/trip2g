@@ -196,7 +196,7 @@ func TestResolve(t *testing.T) {
 					return &usertoken.Data{ID: 1}, nil
 				},
 				OfferByIDFunc: func(ctx context.Context, id int64) (db.Offer, error) {
-					return db.Offer{}, errors.New("not found")
+					return db.Offer{}, sql.ErrNoRows
 				},
 			},
 			args: args{
@@ -296,7 +296,7 @@ func TestResolve(t *testing.T) {
 					return db.Offer{ID: id}, nil
 				},
 				SubgraphByIDFunc: func(ctx context.Context, id int64) (db.Subgraph, error) {
-					return db.Subgraph{}, errors.New("not found")
+					return db.Subgraph{}, sql.ErrNoRows
 				},
 			},
 			args: args{

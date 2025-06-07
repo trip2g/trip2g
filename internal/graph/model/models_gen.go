@@ -22,6 +22,10 @@ type CreateAPIKeyOrErrorPayload interface {
 	IsCreateAPIKeyOrErrorPayload()
 }
 
+type CreateNotFoundIgnoredPatternOrErrorPayload interface {
+	IsCreateNotFoundIgnoredPatternOrErrorPayload()
+}
+
 type CreateOfferOrErrorPayload interface {
 	IsCreateOfferOrErrorPayload()
 }
@@ -36,6 +40,10 @@ type CreateRedirectOrErrorPayload interface {
 
 type CreateReleaseOrErrorPayload interface {
 	IsCreateReleaseOrErrorPayload()
+}
+
+type DeleteNotFoundIgnoredPatternOrErrorPayload interface {
+	IsDeleteNotFoundIgnoredPatternOrErrorPayload()
 }
 
 type DeleteRedirectOrErrorPayload interface {
@@ -62,6 +70,10 @@ type RequestEmailSignInCodeOrErrorPayload interface {
 	IsRequestEmailSignInCodeOrErrorPayload()
 }
 
+type ResetNotFoundPathOrErrorPayload interface {
+	IsResetNotFoundPathOrErrorPayload()
+}
+
 type SignInOrErrorPayload interface {
 	IsSignInOrErrorPayload()
 }
@@ -72,6 +84,10 @@ type SignOutOrErrorPayload interface {
 
 type UnbanUserOrErrorPayload interface {
 	IsUnbanUserOrErrorPayload()
+}
+
+type UpdateNotFoundIgnoredPatternOrErrorPayload interface {
+	IsUpdateNotFoundIgnoredPatternOrErrorPayload()
 }
 
 type UpdateNoteGraphPositionsOrErrorPayload interface {
@@ -182,6 +198,16 @@ type CreateAPIKeyPayload struct {
 
 func (CreateAPIKeyPayload) IsCreateAPIKeyOrErrorPayload() {}
 
+type CreateNotFoundIgnoredPatternInput struct {
+	Pattern string `json:"pattern"`
+}
+
+type CreateNotFoundIgnoredPatternPayload struct {
+	NotFoundIgnoredPattern *db.NotFoundIgnoredPattern `json:"notFoundIgnoredPattern"`
+}
+
+func (CreateNotFoundIgnoredPatternPayload) IsCreateNotFoundIgnoredPatternOrErrorPayload() {}
+
 type CreateOfferInput struct {
 	Lifetime    *string    `json:"lifetime,omitempty"`
 	PriceUsd    float64    `json:"priceUSD"`
@@ -233,6 +259,16 @@ type CreateReleasePayload struct {
 }
 
 func (CreateReleasePayload) IsCreateReleaseOrErrorPayload() {}
+
+type DeleteNotFoundIgnoredPatternInput struct {
+	ID int64 `json:"id"`
+}
+
+type DeleteNotFoundIgnoredPatternPayload struct {
+	DeletedID int64 `json:"deletedId"`
+}
+
+func (DeleteNotFoundIgnoredPatternPayload) IsDeleteNotFoundIgnoredPatternOrErrorPayload() {}
 
 type DeleteRedirectInput struct {
 	ID int64 `json:"id"`
@@ -301,6 +337,14 @@ func (ErrorPayload) IsUpdateRedirectOrErrorPayload() {}
 
 func (ErrorPayload) IsDeleteRedirectOrErrorPayload() {}
 
+func (ErrorPayload) IsResetNotFoundPathOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateNotFoundIgnoredPatternOrErrorPayload() {}
+
+func (ErrorPayload) IsUpdateNotFoundIgnoredPatternOrErrorPayload() {}
+
+func (ErrorPayload) IsDeleteNotFoundIgnoredPatternOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -364,6 +408,16 @@ type RequestEmailSignInCodePayload struct {
 
 func (RequestEmailSignInCodePayload) IsRequestEmailSignInCodeOrErrorPayload() {}
 
+type ResetNotFoundPathInput struct {
+	ID int64 `json:"id"`
+}
+
+type ResetNotFoundPathPayload struct {
+	NotFoundPath *db.NotFoundPath `json:"notFoundPath"`
+}
+
+func (ResetNotFoundPathPayload) IsResetNotFoundPathOrErrorPayload() {}
+
 type SignInByEmailInput struct {
 	Email string `json:"email"`
 	Code  string `json:"code"`
@@ -392,6 +446,17 @@ type UnbanUserPayload struct {
 }
 
 func (UnbanUserPayload) IsUnbanUserOrErrorPayload() {}
+
+type UpdateNotFoundIgnoredPatternInput struct {
+	ID      int64  `json:"id"`
+	Pattern string `json:"pattern"`
+}
+
+type UpdateNotFoundIgnoredPatternPayload struct {
+	NotFoundIgnoredPattern *db.NotFoundIgnoredPattern `json:"notFoundIgnoredPattern"`
+}
+
+func (UpdateNotFoundIgnoredPatternPayload) IsUpdateNotFoundIgnoredPatternOrErrorPayload() {}
 
 type UpdateNoteGraphPositionInput struct {
 	PathID int64   `json:"pathId"`

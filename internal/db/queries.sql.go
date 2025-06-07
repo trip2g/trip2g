@@ -511,6 +511,15 @@ func (q *Queries) DeleteAcmeCert(ctx context.Context, key string) error {
 	return err
 }
 
+const deleteNotFoundIgnoredPattern = `-- name: DeleteNotFoundIgnoredPattern :exec
+delete from not_found_ignored_patterns where id = ?
+`
+
+func (q *Queries) DeleteNotFoundIgnoredPattern(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteNotFoundIgnoredPattern, id)
+	return err
+}
+
 const deleteOffer = `-- name: DeleteOffer :one
 update offers
    set ends_at = datetime('now')
@@ -711,6 +720,29 @@ func (q *Queries) InsertAdmin(ctx context.Context, arg InsertAdminParams) (Admin
 	row := q.db.QueryRowContext(ctx, insertAdmin, arg.UserID, arg.GrantedBy)
 	var i Admin
 	err := row.Scan(&i.UserID, &i.GrantedAt, &i.GrantedBy)
+	return i, err
+}
+
+const insertNotFoundIgnoredPattern = `-- name: InsertNotFoundIgnoredPattern :one
+insert into not_found_ignored_patterns (pattern, created_by)
+values (?, ?)
+returning id, pattern, created_at, created_by
+`
+
+type InsertNotFoundIgnoredPatternParams struct {
+	Pattern   string `json:"pattern"`
+	CreatedBy int64  `json:"created_by"`
+}
+
+func (q *Queries) InsertNotFoundIgnoredPattern(ctx context.Context, arg InsertNotFoundIgnoredPatternParams) (NotFoundIgnoredPattern, error) {
+	row := q.db.QueryRowContext(ctx, insertNotFoundIgnoredPattern, arg.Pattern, arg.CreatedBy)
+	var i NotFoundIgnoredPattern
+	err := row.Scan(
+		&i.ID,
+		&i.Pattern,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
 	return i, err
 }
 
@@ -1841,6 +1873,38 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 	return items, nil
 }
 
+const notFoundIgnoredPatternByID = `-- name: NotFoundIgnoredPatternByID :one
+select id, pattern, created_at, created_by from not_found_ignored_patterns where id = ?
+`
+
+func (q *Queries) NotFoundIgnoredPatternByID(ctx context.Context, id int64) (NotFoundIgnoredPattern, error) {
+	row := q.db.QueryRowContext(ctx, notFoundIgnoredPatternByID, id)
+	var i NotFoundIgnoredPattern
+	err := row.Scan(
+		&i.ID,
+		&i.Pattern,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
+const notFoundPathByID = `-- name: NotFoundPathByID :one
+select id, path, total_hits, last_hit_at from not_found_paths where id = ?
+`
+
+func (q *Queries) NotFoundPathByID(ctx context.Context, id int64) (NotFoundPath, error) {
+	row := q.db.QueryRowContext(ctx, notFoundPathByID, id)
+	var i NotFoundPath
+	err := row.Scan(
+		&i.ID,
+		&i.Path,
+		&i.TotalHits,
+		&i.LastHitAt,
+	)
+	return i, err
+}
+
 const noteAssetByAbsolutePathAndSha256Hash = `-- name: NoteAssetByAbsolutePathAndSha256Hash :one
 select id, absolute_path, file_name, sha256_hash, content_type, created_at, size from note_assets
  where absolute_path = ?
@@ -2020,6 +2084,25 @@ func (q *Queries) ReleaseByID(ctx context.Context, id int64) (Release, error) {
 	return i, err
 }
 
+const resetNotFoundPathTotalHits = `-- name: ResetNotFoundPathTotalHits :one
+update not_found_paths
+set total_hits = 1, last_hit_at = datetime('now')
+where id = ?
+returning id, path, total_hits, last_hit_at
+`
+
+func (q *Queries) ResetNotFoundPathTotalHits(ctx context.Context, id int64) (NotFoundPath, error) {
+	row := q.db.QueryRowContext(ctx, resetNotFoundPathTotalHits, id)
+	var i NotFoundPath
+	err := row.Scan(
+		&i.ID,
+		&i.Path,
+		&i.TotalHits,
+		&i.LastHitAt,
+	)
+	return i, err
+}
+
 const revokeUserSubgraphAccess = `-- name: RevokeUserSubgraphAccess :exec
 update user_subgraph_accesses
    set revoke_id = ?
@@ -2109,6 +2192,30 @@ func (q *Queries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminSubgra
 		&i.Name,
 		&i.Color,
 		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateNotFoundIgnoredPattern = `-- name: UpdateNotFoundIgnoredPattern :one
+update not_found_ignored_patterns
+set pattern = ?
+where id = ?
+returning id, pattern, created_at, created_by
+`
+
+type UpdateNotFoundIgnoredPatternParams struct {
+	Pattern string `json:"pattern"`
+	ID      int64  `json:"id"`
+}
+
+func (q *Queries) UpdateNotFoundIgnoredPattern(ctx context.Context, arg UpdateNotFoundIgnoredPatternParams) (NotFoundIgnoredPattern, error) {
+	row := q.db.QueryRowContext(ctx, updateNotFoundIgnoredPattern, arg.Pattern, arg.ID)
+	var i NotFoundIgnoredPattern
+	err := row.Scan(
+		&i.ID,
+		&i.Pattern,
+		&i.CreatedAt,
+		&i.CreatedBy,
 	)
 	return i, err
 }

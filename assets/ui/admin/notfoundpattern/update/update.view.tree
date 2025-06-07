@@ -1,0 +1,19 @@
+$trip2g_admin_notfoundpattern_update $mol_page
+	pattern_id? 0
+	title \Update Ignored Pattern
+	body /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Pattern_field $mol_form_field
+					name \Pattern
+					bid <= pattern_bid \
+					Content <= pattern_control $mol_string
+						value? <=> pattern? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Update
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

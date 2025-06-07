@@ -1,0 +1,34 @@
+$trip2g_admin_notfoundpattern_catalog $mol_book2_catalog
+	menu_title \Not Found Ignored Patterns
+	param \id
+	Empty $mol_status
+	menu_tools /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+		<= Spread_close
+	ShowPage* $trip2g_admin_notfoundpattern_show
+		pattern_id <= row_id* 0
+	CreateForm $trip2g_admin_notfoundpattern_create
+	menu_link_content* / <= PatternItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Row_id_labeler* $mol_labeler
+						title \ID
+						Content <= Row_id* $trip2g_admin_cell
+							content <= row_id_string* \
+					<= Row_pattern_labeler* $mol_labeler
+						title \Pattern
+						Content <= Row_pattern* $trip2g_admin_cell
+							content <= row_pattern* \pattern
+					<= Row_created_at_labeler* $mol_labeler
+						title \Created At
+						Content <= Row_created_at* $trip2g_admin_cell
+							content <= row_created_at* \created_at
+					<= Row_created_by_labeler* $mol_labeler
+						title \Created By
+						Content <= Row_created_by* $trip2g_admin_cell
+							content <= row_created_by* \created_by

@@ -1,0 +1,3 @@
+$trip2g_admin_notfoundpath_button_reset $mol_button_minor
+	notfoundpath_id 0
+	title \Reset
