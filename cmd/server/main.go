@@ -762,8 +762,8 @@ func (a *app) AssetVersion() string {
 	return strconv.FormatInt(time.Now().UnixMilli(), 10)
 }
 
-func (a *app) TrackNotFound(path string) {
-	err := a.notFoundTracker.Track(path)
+func (a *app) TrackNotFound(path string, ip string) {
+	err := a.notFoundTracker.Track(path, ip)
 	if err != nil {
 		a.log.Error("failed to track not found", "path", path, "error", err)
 	}

@@ -14,7 +14,7 @@ type Params struct {
 }
 
 type Env interface {
-	TrackNotFound(path string)
+	TrackNotFound(path string, ip string)
 }
 
 func Handle(req *appreq.Request) (interface{}, error) {
@@ -26,7 +26,7 @@ func Handle(req *appreq.Request) (interface{}, error) {
 		return nil, appreq.ErrInvalidEnv
 	}
 
-	env.TrackNotFound(string(req.Req.Path()))
+	env.TrackNotFound(string(req.Req.Path()), req.Req.RemoteIP().String())
 
 	token, err := req.UserToken()
 	if err != nil {

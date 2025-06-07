@@ -93,8 +93,7 @@ type NotFoundIgnoredPattern struct {
 }
 
 type NotFoundIpHit struct {
-	PathID    int64     `json:"path_id"`
-	Ip        int64     `json:"ip"`
+	Ip        string    `json:"ip"`
 	TotalHits int64     `json:"total_hits"`
 	LastHitAt time.Time `json:"last_hit_at"`
 }

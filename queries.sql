@@ -491,17 +491,23 @@ select * from redirects where id = ?;
 -- name: ListAllNotFoundIgnoredPatterns :many
 select * from not_found_ignored_patterns;
 
--- name: ListAllNotFoundIPHits :many
-select * from not_found_ip_hits;
+-- name: ListActiveNotFoundIPHits :many
+select * from not_found_ip_hits where last_hit_at > datetime('now', '-7 days');
 
 -- name: InsertNotFoundHit :exec
 insert into not_found_paths (path)
 values (?)
 on conflict (path) do update set total_hits = total_hits + 1, last_hit_at = datetime('now');
 
--- name: InsertNotFoundIPHit :exec
-insert into not_found_ip_hits (path_id, ip)
-values (?, ?)
-on conflict(path_id, ip) do
+-- name: UpsertNotFoundIPHit :one
+insert into not_found_ip_hits (ip)
+values (?)
+on conflict(ip) do
 update set total_hits = total_hits + 1, last_hit_at = datetime('now')
 returning total_hits;
+
+-- name: UpsertNotFoundIPHit :exec
+insert into not_found_ip_hits (ip, total_hits)
+values (?, ?)
+on conflict(ip) do
+update set total_hits = excluded.total_hits, last_hit_at = datetime('now');

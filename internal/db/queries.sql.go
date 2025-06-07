@@ -725,22 +725,19 @@ func (q *Queries) InsertNotFoundHit(ctx context.Context, path string) error {
 	return err
 }
 
-const insertNotFoundIPHit = `-- name: InsertNotFoundIPHit :exec
-insert into not_found_ip_hits (path_id, ip)
-values (?, ?)
-on conflict(path_id, ip) do
+const insertNotFoundIPHit = `-- name: InsertNotFoundIPHit :one
+insert into not_found_ip_hits (ip)
+values (?)
+on conflict(ip) do
 update set total_hits = total_hits + 1, last_hit_at = datetime('now')
 returning total_hits
 `
 
-type InsertNotFoundIPHitParams struct {
-	PathID int64 `json:"path_id"`
-	Ip     int64 `json:"ip"`
-}
-
-func (q *Queries) InsertNotFoundIPHit(ctx context.Context, arg InsertNotFoundIPHitParams) error {
-	_, err := q.db.ExecContext(ctx, insertNotFoundIPHit, arg.PathID, arg.Ip)
-	return err
+func (q *Queries) InsertNotFoundIPHit(ctx context.Context, ip string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, insertNotFoundIPHit, ip)
+	var total_hits int64
+	err := row.Scan(&total_hits)
+	return total_hits, err
 }
 
 const insertNoteAsset = `-- name: InsertNoteAsset :one
@@ -1064,6 +1061,33 @@ func (q *Queries) ListAPIKeyLogsByAPIKeyID(ctx context.Context, apiKeyID int64) 
 	for rows.Next() {
 		var i ListAPIKeyLogsByAPIKeyIDRow
 		if err := rows.Scan(&i.CreatedAt, &i.ActionName, &i.Ip); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveNotFoundIPHits = `-- name: ListActiveNotFoundIPHits :many
+select ip, total_hits, last_hit_at from not_found_ip_hits where last_hit_at > datetime('now', '-7 days')
+`
+
+func (q *Queries) ListActiveNotFoundIPHits(ctx context.Context) ([]NotFoundIpHit, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveNotFoundIPHits)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NotFoundIpHit
+	for rows.Next() {
+		var i NotFoundIpHit
+		if err := rows.Scan(&i.Ip, &i.TotalHits, &i.LastHitAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1425,38 +1449,6 @@ func (q *Queries) ListAllAdmins(ctx context.Context) ([]Admin, error) {
 	for rows.Next() {
 		var i Admin
 		if err := rows.Scan(&i.UserID, &i.GrantedAt, &i.GrantedBy); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listAllNotFoundIPHits = `-- name: ListAllNotFoundIPHits :many
-select path_id, ip, total_hits, last_hit_at from not_found_ip_hits
-`
-
-func (q *Queries) ListAllNotFoundIPHits(ctx context.Context) ([]NotFoundIpHit, error) {
-	rows, err := q.db.QueryContext(ctx, listAllNotFoundIPHits)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []NotFoundIpHit
-	for rows.Next() {
-		var i NotFoundIpHit
-		if err := rows.Scan(
-			&i.PathID,
-			&i.Ip,
-			&i.TotalHits,
-			&i.LastHitAt,
-		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -2277,6 +2269,23 @@ on conflict(value) do nothing
 
 func (q *Queries) UpsertAPIKeyLogIP(ctx context.Context, value string) error {
 	_, err := q.db.ExecContext(ctx, upsertAPIKeyLogIP, value)
+	return err
+}
+
+const upsertNotFoundIPHit = `-- name: UpsertNotFoundIPHit :exec
+insert into not_found_ip_hits (ip, total_hits)
+values (?, ?)
+on conflict(ip) do
+update set total_hits = excluded.total_hits, last_hit_at = datetime('now')
+`
+
+type UpsertNotFoundIPHitParams struct {
+	Ip        string `json:"ip"`
+	TotalHits int64  `json:"total_hits"`
+}
+
+func (q *Queries) UpsertNotFoundIPHit(ctx context.Context, arg UpsertNotFoundIPHitParams) error {
+	_, err := q.db.ExecContext(ctx, upsertNotFoundIPHit, arg.Ip, arg.TotalHits)
 	return err
 }
 
