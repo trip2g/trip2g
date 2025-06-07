@@ -64,6 +64,8 @@ type Env interface {
 	ListAllPurchases(ctx context.Context) ([]db.Purchase, error)
 	ListSubgraphIDsByOfferID(ctx context.Context, offerID int64) ([]int64, error)
 	ListAllRedirects(ctx context.Context) ([]db.Redirect, error)
+	ListAllNotFoundIgnoredPatterns(ctx context.Context) ([]db.NotFoundIgnoredPattern, error)
+	ListAllNotFoundPaths(ctx context.Context) ([]db.NotFoundPath, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)

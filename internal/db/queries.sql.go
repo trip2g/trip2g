@@ -714,32 +714,6 @@ func (q *Queries) InsertAdmin(ctx context.Context, arg InsertAdminParams) (Admin
 	return i, err
 }
 
-const insertNotFoundHit = `-- name: InsertNotFoundHit :exec
-insert into not_found_paths (path)
-values (?)
-on conflict (path) do update set total_hits = total_hits + 1, last_hit_at = datetime('now')
-`
-
-func (q *Queries) InsertNotFoundHit(ctx context.Context, path string) error {
-	_, err := q.db.ExecContext(ctx, insertNotFoundHit, path)
-	return err
-}
-
-const insertNotFoundIPHit = `-- name: InsertNotFoundIPHit :one
-insert into not_found_ip_hits (ip)
-values (?)
-on conflict(ip) do
-update set total_hits = total_hits + 1, last_hit_at = datetime('now')
-returning total_hits
-`
-
-func (q *Queries) InsertNotFoundIPHit(ctx context.Context, ip string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, insertNotFoundIPHit, ip)
-	var total_hits int64
-	err := row.Scan(&total_hits)
-	return total_hits, err
-}
-
 const insertNoteAsset = `-- name: InsertNoteAsset :one
 insert into note_assets (absolute_path, file_name, sha256_hash, content_type, size)
 values (?, ?, ?, ?, ?)
@@ -1480,6 +1454,38 @@ func (q *Queries) ListAllNotFoundIgnoredPatterns(ctx context.Context) ([]NotFoun
 			&i.Pattern,
 			&i.CreatedAt,
 			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllNotFoundPaths = `-- name: ListAllNotFoundPaths :many
+select id, path, total_hits, last_hit_at from not_found_paths order by total_hits desc
+`
+
+func (q *Queries) ListAllNotFoundPaths(ctx context.Context) ([]NotFoundPath, error) {
+	rows, err := q.db.QueryContext(ctx, listAllNotFoundPaths)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NotFoundPath
+	for rows.Next() {
+		var i NotFoundPath
+		if err := rows.Scan(
+			&i.ID,
+			&i.Path,
+			&i.TotalHits,
+			&i.LastHitAt,
 		); err != nil {
 			return nil, err
 		}
@@ -2269,6 +2275,17 @@ on conflict(value) do nothing
 
 func (q *Queries) UpsertAPIKeyLogIP(ctx context.Context, value string) error {
 	_, err := q.db.ExecContext(ctx, upsertAPIKeyLogIP, value)
+	return err
+}
+
+const upsertNotFoundHit = `-- name: UpsertNotFoundHit :exec
+insert into not_found_paths (path)
+values (?)
+on conflict (path) do update set total_hits = total_hits + 1, last_hit_at = datetime('now')
+`
+
+func (q *Queries) UpsertNotFoundHit(ctx context.Context, path string) error {
+	_, err := q.db.ExecContext(ctx, upsertNotFoundHit, path)
 	return err
 }
 

@@ -81,7 +81,7 @@ func TestTracker_StopUpsertNotFoundHitsAfterLimitWithExistsHistory(t *testing.T)
 	err = tracker.Dump()
 	require.NoError(t, err)
 
-	require.Len(t, env.calls.UpsertNotFoundHit, 0)
+	require.Empty(t, env.calls.UpsertNotFoundHit)
 
 	require.Len(t, env.calls.UpsertNotFoundIPHit, 1)
 	require.Equal(t, "127.0.0.1", env.calls.UpsertNotFoundIPHit[0].Arg.Ip)
@@ -149,7 +149,7 @@ func TestTracker_InvalidRegexPattern(t *testing.T) {
 		ListAllNotFoundIgnoredPatternsFunc: func(ctx context.Context) ([]db.NotFoundIgnoredPattern, error) {
 			return []db.NotFoundIgnoredPattern{
 				{Pattern: `[invalid-regex`}, // Invalid regex
-				{Pattern: `^/static/.*`},     // Valid regex
+				{Pattern: `^/static/.*`},    // Valid regex
 			}, nil
 		},
 		ListActiveNotFoundIPHitsFunc: func(ctx context.Context) ([]db.NotFoundIpHit, error) {
@@ -411,6 +411,6 @@ func TestTracker_EmptyDump(t *testing.T) {
 	err = tracker.Dump()
 	require.NoError(t, err)
 
-	require.Len(t, env.calls.UpsertNotFoundHit, 0)
-	require.Len(t, env.calls.UpsertNotFoundIPHit, 0)
+	require.Empty(t, env.calls.UpsertNotFoundHit)
+	require.Empty(t, env.calls.UpsertNotFoundIPHit)
 }

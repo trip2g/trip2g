@@ -103,9 +103,9 @@ func (t *Tracker) load(ctx context.Context) error {
 	ignorePatters := make([]*regexp.Regexp, 0, len(ignorePatterRows))
 
 	for _, row := range ignorePatterRows {
-		pattern, err := regexp.Compile(row.Pattern)
-		if err != nil {
-			t.env.Logger().Warn("failed to compile pattern", "pattern", row.Pattern, "error", err)
+		pattern, compileErr := regexp.Compile(row.Pattern)
+		if compileErr != nil {
+			t.env.Logger().Warn("failed to compile pattern", "pattern", row.Pattern, "error", compileErr)
 			continue
 		}
 

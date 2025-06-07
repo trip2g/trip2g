@@ -211,6 +211,28 @@ type AdminRedirectsConnection {
   nodes: [AdminRedirect!]! @goField(forceResolver: true)
 }
 
+type AdminNotFoundPath @goModel(model: "trip2g/internal/db.NotFoundPath") {
+  id: Int64!
+  path: String!
+  totalHits: Int64!
+  lastHitAt: Time!
+}
+
+type AdminNotFoundPathsConnection {
+  nodes: [AdminNotFoundPath!]! @goField(forceResolver: true)
+}
+
+type AdminNotFoundIgnoredPattern @goModel(model: "trip2g/internal/db.NotFoundIgnoredPattern") {
+  id: Int64!
+  pattern: String!
+  createdAt: Time!
+  createdBy: AdminUser!
+}
+
+type AdminNotFoundIgnoredPatternsConnection {
+  nodes: [AdminNotFoundIgnoredPattern!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -223,6 +245,8 @@ type AdminQuery {
   allOffers: AdminOffersConnection!
   allPurchases: AdminPurchasesConnection!
   allRedirects: AdminRedirectsConnection!
+  allNotFoundPaths: AdminNotFoundPathsConnection!
+  allNotFoundIgnoredPatterns: AdminNotFoundIgnoredPatternsConnection!
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
 

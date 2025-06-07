@@ -187,6 +187,21 @@ func (r *adminMutationResolver) UpdateNoteGraphPositions(ctx context.Context, ob
 	return updatenotegraphpositions.Resolve(ctx, r.env(ctx), input)
 }
 
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminNotFoundIgnoredPatternResolver) CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminNotFoundIgnoredPatternsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNotFoundIgnoredPatternsConnection) ([]db.NotFoundIgnoredPattern, error) {
+	return r.env(ctx).ListAllNotFoundIgnoredPatterns(ctx)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminNotFoundPathsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNotFoundPathsConnection) ([]db.NotFoundPath, error) {
+	return r.env(ctx).ListAllNotFoundPaths(ctx)
+}
+
 // LifeTime is the resolver for the lifetime field.
 func (r *adminOfferResolver) Lifetime(ctx context.Context, obj *db.Offer) (*string, error) {
 	if obj.Lifetime != nil {
@@ -313,6 +328,16 @@ func (r *adminQueryResolver) AllPurchases(ctx context.Context, obj *appmodel.Adm
 // AllRedirects is the resolver for the allRedirects field.
 func (r *adminQueryResolver) AllRedirects(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminRedirectsConnection, error) {
 	return &model.AdminRedirectsConnection{}, nil
+}
+
+// AllNotFoundPaths is the resolver for the allNotFoundPaths field.
+func (r *adminQueryResolver) AllNotFoundPaths(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminNotFoundPathsConnection, error) {
+	return &model.AdminNotFoundPathsConnection{}, nil
+}
+
+// AllNotFoundIgnoredPatterns is the resolver for the allNotFoundIgnoredPatterns field.
+func (r *adminQueryResolver) AllNotFoundIgnoredPatterns(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminNotFoundIgnoredPatternsConnection, error) {
+	return &model.AdminNotFoundIgnoredPatternsConnection{}, nil
 }
 
 // APIKeyLogs is the resolver for the apiKeyLogs field.
@@ -820,6 +845,21 @@ func (r *Resolver) AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnecti
 // AdminMutation returns AdminMutationResolver implementation.
 func (r *Resolver) AdminMutation() AdminMutationResolver { return &adminMutationResolver{r} }
 
+// AdminNotFoundIgnoredPattern returns AdminNotFoundIgnoredPatternResolver implementation.
+func (r *Resolver) AdminNotFoundIgnoredPattern() AdminNotFoundIgnoredPatternResolver {
+	return &adminNotFoundIgnoredPatternResolver{r}
+}
+
+// AdminNotFoundIgnoredPatternsConnection returns AdminNotFoundIgnoredPatternsConnectionResolver implementation.
+func (r *Resolver) AdminNotFoundIgnoredPatternsConnection() AdminNotFoundIgnoredPatternsConnectionResolver {
+	return &adminNotFoundIgnoredPatternsConnectionResolver{r}
+}
+
+// AdminNotFoundPathsConnection returns AdminNotFoundPathsConnectionResolver implementation.
+func (r *Resolver) AdminNotFoundPathsConnection() AdminNotFoundPathsConnectionResolver {
+	return &adminNotFoundPathsConnectionResolver{r}
+}
+
 // AdminOffer returns AdminOfferResolver implementation.
 func (r *Resolver) AdminOffer() AdminOfferResolver { return &adminOfferResolver{r} }
 
@@ -942,6 +982,9 @@ type adminApiKeyLogsConnectionResolver struct{ *Resolver }
 type adminApiKeysConnectionResolver struct{ *Resolver }
 type adminLatestNoteViewsConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
+type adminNotFoundIgnoredPatternResolver struct{ *Resolver }
+type adminNotFoundIgnoredPatternsConnectionResolver struct{ *Resolver }
+type adminNotFoundPathsConnectionResolver struct{ *Resolver }
 type adminOfferResolver struct{ *Resolver }
 type adminOffersConnectionResolver struct{ *Resolver }
 type adminPurchaseResolver struct{ *Resolver }

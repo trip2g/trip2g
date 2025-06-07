@@ -51,6 +51,9 @@ type ResolverRoot interface {
 	AdminApiKeysConnection() AdminApiKeysConnectionResolver
 	AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnectionResolver
 	AdminMutation() AdminMutationResolver
+	AdminNotFoundIgnoredPattern() AdminNotFoundIgnoredPatternResolver
+	AdminNotFoundIgnoredPatternsConnection() AdminNotFoundIgnoredPatternsConnectionResolver
+	AdminNotFoundPathsConnection() AdminNotFoundPathsConnectionResolver
 	AdminOffer() AdminOfferResolver
 	AdminOffersConnection() AdminOffersConnectionResolver
 	AdminPurchase() AdminPurchaseResolver
@@ -143,6 +146,28 @@ type ComplexityRoot struct {
 		UpdateUserSubgraphAccess func(childComplexity int, input updateusersubgraphaccess.Request) int
 	}
 
+	AdminNotFoundIgnoredPattern struct {
+		CreatedAt func(childComplexity int) int
+		CreatedBy func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Pattern   func(childComplexity int) int
+	}
+
+	AdminNotFoundIgnoredPatternsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminNotFoundPath struct {
+		ID        func(childComplexity int) int
+		LastHitAt func(childComplexity int) int
+		Path      func(childComplexity int) int
+		TotalHits func(childComplexity int) int
+	}
+
+	AdminNotFoundPathsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
 	AdminOffer struct {
 		CreatedAt   func(childComplexity int) int
 		EndsAt      func(childComplexity int) int
@@ -177,24 +202,26 @@ type ComplexityRoot struct {
 	}
 
 	AdminQuery struct {
-		APIKeyLogs              func(childComplexity int, filter model.APIKeyLogsFilterInput) int
-		AllAPIKeys              func(childComplexity int) int
-		AllAdmins               func(childComplexity int) int
-		AllLatestNoteViews      func(childComplexity int) int
-		AllOffers               func(childComplexity int) int
-		AllPurchases            func(childComplexity int) int
-		AllRedirects            func(childComplexity int) int
-		AllReleases             func(childComplexity int) int
-		AllSubgraphs            func(childComplexity int) int
-		AllUserSubgraphAccesses func(childComplexity int) int
-		AllUserUserBans         func(childComplexity int) int
-		AllUsers                func(childComplexity int) int
-		NoteView                func(childComplexity int, id string) int
-		Offer                   func(childComplexity int, id int64) int
-		Purchase                func(childComplexity int, id string) int
-		Redirect                func(childComplexity int, id int64) int
-		Subgraph                func(childComplexity int, id int64) int
-		UserSubgraphAccess      func(childComplexity int, id int64) int
+		APIKeyLogs                 func(childComplexity int, filter model.APIKeyLogsFilterInput) int
+		AllAPIKeys                 func(childComplexity int) int
+		AllAdmins                  func(childComplexity int) int
+		AllLatestNoteViews         func(childComplexity int) int
+		AllNotFoundIgnoredPatterns func(childComplexity int) int
+		AllNotFoundPaths           func(childComplexity int) int
+		AllOffers                  func(childComplexity int) int
+		AllPurchases               func(childComplexity int) int
+		AllRedirects               func(childComplexity int) int
+		AllReleases                func(childComplexity int) int
+		AllSubgraphs               func(childComplexity int) int
+		AllUserSubgraphAccesses    func(childComplexity int) int
+		AllUserUserBans            func(childComplexity int) int
+		AllUsers                   func(childComplexity int) int
+		NoteView                   func(childComplexity int, id string) int
+		Offer                      func(childComplexity int, id int64) int
+		Purchase                   func(childComplexity int, id string) int
+		Redirect                   func(childComplexity int, id int64) int
+		Subgraph                   func(childComplexity int, id int64) int
+		UserSubgraphAccess         func(childComplexity int, id int64) int
 	}
 
 	AdminRedirect struct {
@@ -505,6 +532,15 @@ type AdminMutationResolver interface {
 	MakeReleaseLive(ctx context.Context, obj *model1.AdminMutation, input model.MakeReleaseLiveInput) (model.MakeReleaseLiveOrErrorPayload, error)
 	UpdateNoteGraphPositions(ctx context.Context, obj *model1.AdminMutation, input model.UpdateNoteGraphPositionsInput) (model.UpdateNoteGraphPositionsOrErrorPayload, error)
 }
+type AdminNotFoundIgnoredPatternResolver interface {
+	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
+}
+type AdminNotFoundIgnoredPatternsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminNotFoundIgnoredPatternsConnection) ([]db.NotFoundIgnoredPattern, error)
+}
+type AdminNotFoundPathsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminNotFoundPathsConnection) ([]db.NotFoundPath, error)
+}
 type AdminOfferResolver interface {
 	Lifetime(ctx context.Context, obj *db.Offer) (*string, error)
 	PriceUsd(ctx context.Context, obj *db.Offer) (float64, error)
@@ -538,6 +574,8 @@ type AdminQueryResolver interface {
 	AllOffers(ctx context.Context, obj *model1.AdminQuery) (*model.AdminOffersConnection, error)
 	AllPurchases(ctx context.Context, obj *model1.AdminQuery) (*model.AdminPurchasesConnection, error)
 	AllRedirects(ctx context.Context, obj *model1.AdminQuery) (*model.AdminRedirectsConnection, error)
+	AllNotFoundPaths(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNotFoundPathsConnection, error)
+	AllNotFoundIgnoredPatterns(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNotFoundIgnoredPatternsConnection, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
@@ -962,6 +1000,76 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.UpdateUserSubgraphAccess(childComplexity, args["input"].(updateusersubgraphaccess.Request)), true
 
+	case "AdminNotFoundIgnoredPattern.createdAt":
+		if e.complexity.AdminNotFoundIgnoredPattern.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminNotFoundIgnoredPattern.CreatedAt(childComplexity), true
+
+	case "AdminNotFoundIgnoredPattern.createdBy":
+		if e.complexity.AdminNotFoundIgnoredPattern.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.AdminNotFoundIgnoredPattern.CreatedBy(childComplexity), true
+
+	case "AdminNotFoundIgnoredPattern.id":
+		if e.complexity.AdminNotFoundIgnoredPattern.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminNotFoundIgnoredPattern.ID(childComplexity), true
+
+	case "AdminNotFoundIgnoredPattern.pattern":
+		if e.complexity.AdminNotFoundIgnoredPattern.Pattern == nil {
+			break
+		}
+
+		return e.complexity.AdminNotFoundIgnoredPattern.Pattern(childComplexity), true
+
+	case "AdminNotFoundIgnoredPatternsConnection.nodes":
+		if e.complexity.AdminNotFoundIgnoredPatternsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminNotFoundIgnoredPatternsConnection.Nodes(childComplexity), true
+
+	case "AdminNotFoundPath.id":
+		if e.complexity.AdminNotFoundPath.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminNotFoundPath.ID(childComplexity), true
+
+	case "AdminNotFoundPath.lastHitAt":
+		if e.complexity.AdminNotFoundPath.LastHitAt == nil {
+			break
+		}
+
+		return e.complexity.AdminNotFoundPath.LastHitAt(childComplexity), true
+
+	case "AdminNotFoundPath.path":
+		if e.complexity.AdminNotFoundPath.Path == nil {
+			break
+		}
+
+		return e.complexity.AdminNotFoundPath.Path(childComplexity), true
+
+	case "AdminNotFoundPath.totalHits":
+		if e.complexity.AdminNotFoundPath.TotalHits == nil {
+			break
+		}
+
+		return e.complexity.AdminNotFoundPath.TotalHits(childComplexity), true
+
+	case "AdminNotFoundPathsConnection.nodes":
+		if e.complexity.AdminNotFoundPathsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminNotFoundPathsConnection.Nodes(childComplexity), true
+
 	case "AdminOffer.createdAt":
 		if e.complexity.AdminOffer.CreatedAt == nil {
 			break
@@ -1141,6 +1249,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AllLatestNoteViews(childComplexity), true
+
+	case "AdminQuery.allNotFoundIgnoredPatterns":
+		if e.complexity.AdminQuery.AllNotFoundIgnoredPatterns == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllNotFoundIgnoredPatterns(childComplexity), true
+
+	case "AdminQuery.allNotFoundPaths":
+		if e.complexity.AdminQuery.AllNotFoundPaths == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllNotFoundPaths(childComplexity), true
 
 	case "AdminQuery.allOffers":
 		if e.complexity.AdminQuery.AllOffers == nil {
@@ -4696,6 +4818,476 @@ func (ec *executionContext) fieldContext_AdminMutation_updateNoteGraphPositions(
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminNotFoundIgnoredPattern_id(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundIgnoredPattern) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNotFoundIgnoredPattern_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNotFoundIgnoredPattern_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNotFoundIgnoredPattern",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNotFoundIgnoredPattern_pattern(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundIgnoredPattern) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNotFoundIgnoredPattern_pattern(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pattern, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNotFoundIgnoredPattern_pattern(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNotFoundIgnoredPattern",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNotFoundIgnoredPattern_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundIgnoredPattern) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNotFoundIgnoredPattern_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNotFoundIgnoredPattern_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNotFoundIgnoredPattern",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNotFoundIgnoredPattern_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundIgnoredPattern) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNotFoundIgnoredPattern_createdBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminNotFoundIgnoredPattern().CreatedBy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNotFoundIgnoredPattern_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNotFoundIgnoredPattern",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNotFoundIgnoredPatternsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminNotFoundIgnoredPatternsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNotFoundIgnoredPatternsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminNotFoundIgnoredPatternsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.NotFoundIgnoredPattern)
+	fc.Result = res
+	return ec.marshalNAdminNotFoundIgnoredPattern2ᚕtrip2gᚋinternalᚋdbᚐNotFoundIgnoredPatternᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNotFoundIgnoredPatternsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNotFoundIgnoredPatternsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_id(ctx, field)
+			case "pattern":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_pattern(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminNotFoundIgnoredPattern_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNotFoundIgnoredPattern", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNotFoundPath_id(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundPath) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNotFoundPath_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNotFoundPath_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNotFoundPath",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNotFoundPath_path(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundPath) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNotFoundPath_path(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Path, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNotFoundPath_path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNotFoundPath",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNotFoundPath_totalHits(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundPath) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNotFoundPath_totalHits(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalHits, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNotFoundPath_totalHits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNotFoundPath",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNotFoundPath_lastHitAt(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundPath) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNotFoundPath_lastHitAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastHitAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNotFoundPath_lastHitAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNotFoundPath",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNotFoundPathsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminNotFoundPathsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNotFoundPathsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminNotFoundPathsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.NotFoundPath)
+	fc.Result = res
+	return ec.marshalNAdminNotFoundPath2ᚕtrip2gᚋinternalᚋdbᚐNotFoundPathᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNotFoundPathsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNotFoundPathsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminNotFoundPath_id(ctx, field)
+			case "path":
+				return ec.fieldContext_AdminNotFoundPath_path(ctx, field)
+			case "totalHits":
+				return ec.fieldContext_AdminNotFoundPath_totalHits(ctx, field)
+			case "lastHitAt":
+				return ec.fieldContext_AdminNotFoundPath_lastHitAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNotFoundPath", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminOffer_id(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminOffer_id(ctx, field)
 	if err != nil {
@@ -6210,6 +6802,102 @@ func (ec *executionContext) fieldContext_AdminQuery_allRedirects(_ context.Conte
 				return ec.fieldContext_AdminRedirectsConnection_nodes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminRedirectsConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allNotFoundPaths(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allNotFoundPaths(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllNotFoundPaths(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminNotFoundPathsConnection)
+	fc.Result = res
+	return ec.marshalNAdminNotFoundPathsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNotFoundPathsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allNotFoundPaths(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminNotFoundPathsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNotFoundPathsConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allNotFoundIgnoredPatterns(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allNotFoundIgnoredPatterns(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllNotFoundIgnoredPatterns(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminNotFoundIgnoredPatternsConnection)
+	fc.Result = res
+	return ec.marshalNAdminNotFoundIgnoredPatternsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNotFoundIgnoredPatternsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allNotFoundIgnoredPatterns(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminNotFoundIgnoredPatternsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNotFoundIgnoredPatternsConnection", field.Name)
 		},
 	}
 	return fc, nil
@@ -11093,6 +11781,10 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allPurchases(ctx, field)
 			case "allRedirects":
 				return ec.fieldContext_AdminQuery_allRedirects(ctx, field)
+			case "allNotFoundPaths":
+				return ec.fieldContext_AdminQuery_allNotFoundPaths(ctx, field)
+			case "allNotFoundIgnoredPatterns":
+				return ec.fieldContext_AdminQuery_allNotFoundIgnoredPatterns(ctx, field)
 			case "apiKeyLogs":
 				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "subgraph":
@@ -17378,6 +18070,285 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 	return out
 }
 
+var adminNotFoundIgnoredPatternImplementors = []string{"AdminNotFoundIgnoredPattern"}
+
+func (ec *executionContext) _AdminNotFoundIgnoredPattern(ctx context.Context, sel ast.SelectionSet, obj *db.NotFoundIgnoredPattern) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNotFoundIgnoredPatternImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNotFoundIgnoredPattern")
+		case "id":
+			out.Values[i] = ec._AdminNotFoundIgnoredPattern_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "pattern":
+			out.Values[i] = ec._AdminNotFoundIgnoredPattern_pattern(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminNotFoundIgnoredPattern_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminNotFoundIgnoredPattern_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminNotFoundIgnoredPatternsConnectionImplementors = []string{"AdminNotFoundIgnoredPatternsConnection"}
+
+func (ec *executionContext) _AdminNotFoundIgnoredPatternsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminNotFoundIgnoredPatternsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNotFoundIgnoredPatternsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNotFoundIgnoredPatternsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminNotFoundIgnoredPatternsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminNotFoundPathImplementors = []string{"AdminNotFoundPath"}
+
+func (ec *executionContext) _AdminNotFoundPath(ctx context.Context, sel ast.SelectionSet, obj *db.NotFoundPath) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNotFoundPathImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNotFoundPath")
+		case "id":
+			out.Values[i] = ec._AdminNotFoundPath_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "path":
+			out.Values[i] = ec._AdminNotFoundPath_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalHits":
+			out.Values[i] = ec._AdminNotFoundPath_totalHits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastHitAt":
+			out.Values[i] = ec._AdminNotFoundPath_lastHitAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminNotFoundPathsConnectionImplementors = []string{"AdminNotFoundPathsConnection"}
+
+func (ec *executionContext) _AdminNotFoundPathsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminNotFoundPathsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNotFoundPathsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNotFoundPathsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminNotFoundPathsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminOfferImplementors = []string{"AdminOffer"}
 
 func (ec *executionContext) _AdminOffer(ctx context.Context, sel ast.SelectionSet, obj *db.Offer) graphql.Marshaler {
@@ -18357,6 +19328,78 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_allRedirects(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allNotFoundPaths":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allNotFoundPaths(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allNotFoundIgnoredPatterns":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allNotFoundIgnoredPatterns(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -22778,6 +23821,130 @@ func (ec *executionContext) marshalNAdminMutation2ᚖtrip2gᚋinternalᚋmodel�
 		return graphql.Null
 	}
 	return ec._AdminMutation(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminNotFoundIgnoredPattern2trip2gᚋinternalᚋdbᚐNotFoundIgnoredPattern(ctx context.Context, sel ast.SelectionSet, v db.NotFoundIgnoredPattern) graphql.Marshaler {
+	return ec._AdminNotFoundIgnoredPattern(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNotFoundIgnoredPattern2ᚕtrip2gᚋinternalᚋdbᚐNotFoundIgnoredPatternᚄ(ctx context.Context, sel ast.SelectionSet, v []db.NotFoundIgnoredPattern) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminNotFoundIgnoredPattern2trip2gᚋinternalᚋdbᚐNotFoundIgnoredPattern(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminNotFoundIgnoredPatternsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNotFoundIgnoredPatternsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminNotFoundIgnoredPatternsConnection) graphql.Marshaler {
+	return ec._AdminNotFoundIgnoredPatternsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNotFoundIgnoredPatternsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNotFoundIgnoredPatternsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminNotFoundIgnoredPatternsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminNotFoundIgnoredPatternsConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminNotFoundPath2trip2gᚋinternalᚋdbᚐNotFoundPath(ctx context.Context, sel ast.SelectionSet, v db.NotFoundPath) graphql.Marshaler {
+	return ec._AdminNotFoundPath(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNotFoundPath2ᚕtrip2gᚋinternalᚋdbᚐNotFoundPathᚄ(ctx context.Context, sel ast.SelectionSet, v []db.NotFoundPath) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminNotFoundPath2trip2gᚋinternalᚋdbᚐNotFoundPath(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminNotFoundPathsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminNotFoundPathsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminNotFoundPathsConnection) graphql.Marshaler {
+	return ec._AdminNotFoundPathsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNotFoundPathsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminNotFoundPathsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminNotFoundPathsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminNotFoundPathsConnection(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNAdminOffer2trip2gᚋinternalᚋdbᚐOffer(ctx context.Context, sel ast.SelectionSet, v db.Offer) graphql.Marshaler {

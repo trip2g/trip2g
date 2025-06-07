@@ -115,6 +115,14 @@ type AdminLatestNoteViewsConnection struct {
 	Nodes []model.NoteView `json:"nodes"`
 }
 
+type AdminNotFoundIgnoredPatternsConnection struct {
+	Nodes []db.NotFoundIgnoredPattern `json:"nodes"`
+}
+
+type AdminNotFoundPathsConnection struct {
+	Nodes []db.NotFoundPath `json:"nodes"`
+}
+
 type AdminOffersConnection struct {
 	Nodes []db.Offer `json:"nodes"`
 }
