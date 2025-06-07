@@ -91,7 +91,7 @@ type Env interface {
 	ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error)
 
 	LatestNoteViews() *model.NoteViews
-	AllNotePaths(ctx context.Context) ([]db.NotePath, error)
+	AllVisibleNotePaths(ctx context.Context) ([]db.NotePath, error)
 	NoteGraphPositionByPathID(ctx context.Context, id int64) (db.NoteGraphPositionByPathIDRow, error)
 
 	IDHash(entity string, id int64) string

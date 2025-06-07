@@ -376,6 +376,46 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 	return items, nil
 }
 
+const allVisibleNotePaths = `-- name: AllVisibleNotePaths :many
+select id, value, value_hash, latest_content_hash, created_at, version_count, graph_position_x, graph_position_y, hidden_by, hidden_at from note_paths
+ where hidden_by is null
+ order by id
+`
+
+func (q *Queries) AllVisibleNotePaths(ctx context.Context) ([]NotePath, error) {
+	rows, err := q.db.QueryContext(ctx, allVisibleNotePaths)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NotePath
+	for rows.Next() {
+		var i NotePath
+		if err := rows.Scan(
+			&i.ID,
+			&i.Value,
+			&i.ValueHash,
+			&i.LatestContentHash,
+			&i.CreatedAt,
+			&i.VersionCount,
+			&i.GraphPositionX,
+			&i.GraphPositionY,
+			&i.HiddenBy,
+			&i.HiddenAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const apiKeyByValue = `-- name: ApiKeyByValue :one
 select id, value, created_at, created_by, disabled_at, disabled_by, description from api_keys where value = ? and disabled_at is null limit 1
 `

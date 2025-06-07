@@ -18,6 +18,11 @@ values (?, ?, ?);
 -- name: AllNotePaths :many
 select * from note_paths order by id;
 
+-- name: AllVisibleNotePaths :many
+select * from note_paths
+ where hidden_by is null
+ order by id;
+
 -- name: AllNoteVersions :many
 select * from note_versions order by path_id, version;
 

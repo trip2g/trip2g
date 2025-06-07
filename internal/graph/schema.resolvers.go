@@ -679,7 +679,7 @@ func (r *queryResolver) NotePaths(ctx context.Context) ([]db.NotePath, error) {
 		return nil, err
 	}
 
-	return r.env(ctx).AllNotePaths(ctx)
+	return r.env(ctx).AllVisibleNotePaths(ctx)
 }
 
 // Admin is the resolver for the admin field.
