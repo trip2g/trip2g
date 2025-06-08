@@ -48,6 +48,10 @@ html, body {
   @apply flex-1;
 }
 
+.noteview__description {
+  @apply mb-8;
+}
+
 .noteview__main-title {
   @apply text-2xl font-bold mb-16 md:text-3xl;
 }

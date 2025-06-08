@@ -475,40 +475,56 @@ func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError)
 //line view.qtpl:127
 	qw422016.N().S(`
 
+    `)
+//line view.qtpl:129
+	if resp.Note.Description != nil {
+//line view.qtpl:129
+		qw422016.N().S(`
+    <p class="noteview__description">`)
+//line view.qtpl:130
+		qw422016.N().S(*resp.Note.Description)
+//line view.qtpl:130
+		qw422016.N().S(`</p>
+    `)
+//line view.qtpl:131
+	}
+//line view.qtpl:131
+	qw422016.N().S(`
+
     <div mol_view_root="$trip2g_user_paywall" data-subgraphs="`)
-//line view.qtpl:129
+//line view.qtpl:133
 	qw422016.E().S(resp.NoteSubgraphsJSON())
-//line view.qtpl:129
+//line view.qtpl:133
 	qw422016.N().S(`"></div>
   </div>
 </div>
 
 `)
-//line view.qtpl:133
+//line view.qtpl:137
 }
 
-//line view.qtpl:133
+//line view.qtpl:137
 func WritePayWall(qq422016 qtio422016.Writer, resp *Response, err *PaywallError) {
-//line view.qtpl:133
+//line view.qtpl:137
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.qtpl:133
+//line view.qtpl:137
 	StreamPayWall(qw422016, resp, err)
-//line view.qtpl:133
+//line view.qtpl:137
 	qt422016.ReleaseWriter(qw422016)
-//line view.qtpl:133
+//line view.qtpl:137
 }
 
-//line view.qtpl:133
+//line view.qtpl:137
 func PayWall(resp *Response, err *PaywallError) string {
-//line view.qtpl:133
+//line view.qtpl:137
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.qtpl:133
+//line view.qtpl:137
 	WritePayWall(qb422016, resp, err)
-//line view.qtpl:133
+//line view.qtpl:137
 	qs422016 := string(qb422016.B)
-//line view.qtpl:133
+//line view.qtpl:137
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.qtpl:133
+//line view.qtpl:137
 	return qs422016
-//line view.qtpl:133
+//line view.qtpl:137
 }
