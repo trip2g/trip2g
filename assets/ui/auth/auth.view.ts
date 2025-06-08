@@ -1,11 +1,11 @@
 namespace $.$$ {
 	export class $trip2g_auth extends $.$trip2g_auth {
-		me(reset?: null) {
-			return $trip2g_auth_viewer.current(reset)
+		me( reset?: null ) {
+			return $trip2g_auth_viewer.current( reset )
 		}
 
 		reload_me() {
-			this.me(null);
+			this.me( null )
 		}
 
 		me_user_email(): string {
@@ -30,50 +30,56 @@ namespace $.$$ {
 				}
 			`)
 
-			if (res.data.__typename === 'ErrorPayload') {
-				throw new Error(res.data.message)
+			if( res.data.__typename === 'ErrorPayload' ) {
+				throw new Error( res.data.message )
 			}
 
-			if (res.data.__typename === 'SignOutPayload') {
-				this.me(null)
+			if( res.data.__typename === 'SignOutPayload' ) {
+				this.me( null )
 				return
 			}
 
-			throw new Error('Unknown error')
+			throw new Error( 'Unknown error' )
 		}
 
 		@$mol_mem
-		override entered_email(next?: string): string {
-			this.$.$mol_state_arg.value('email', next || null)
+		override entered_email( next?: string ): string {
+			this.$.$mol_state_arg.value( 'email', next || null )
 
-			return next || this.$.$mol_state_arg.value('email') || ''
+			return next || this.$.$mol_state_arg.value( 'email' ) || ''
 		}
 
 		sub() {
 			const viewer = this.me()
-			if (viewer.user) {
-				return [this.AppView()]
+			if( viewer.user ) {
+				return [ this.AppView() ]
 			}
 
-			if (this.entered_email()) {
-				return [this.CodeForm()]
+			if( this.entered_email() ) {
+				return [ this.CodeForm() ]
 			}
 
-			return [this.EmailForm()]
+			return [ this.EmailForm() ]
 		}
 	}
 
 	export class $trip2g_auth_email_form extends $.$trip2g_auth_email_form {
 		@$mol_mem
-		request_error(next?: string): string {
+		request_error( next?: string ): string {
 			return next ?? ''
+		}
+
+		@$mol_mem
+		override email( next?: string ): string {
+			const defaultValue = this.$.$trip2g_settings.dev_value( 'hello@example.com' )
+			return next || defaultValue
 		}
 
 		email_bid() {
 			return this.request_error() || ''
 		}
 
-		static mutate(email: string) {
+		static mutate( email: string ) {
 			return $trip2g_graphql_request(
 				/* GraphQL */ `
 					mutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {
@@ -96,30 +102,36 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = this.$.$trip2g_auth_email_form.mutate(this.email())
+			const res = this.$.$trip2g_auth_email_form.mutate( this.email() )
 
-			if (res.data.__typename === 'ErrorPayload') {
-				this.request_error(res.data.message)
+			if( res.data.__typename === 'ErrorPayload' ) {
+				this.request_error( res.data.message )
 				return
 			}
 
-			if (res.data.__typename === 'RequestEmailSignInCodePayload') {
-				if (res.data.success) {
-					console.log('set email', this.email(), 'code sent')
-					this.entered_email(this.email())
-					this.code_sent(true)
+			if( res.data.__typename === 'RequestEmailSignInCodePayload' ) {
+				if( res.data.success ) {
+					console.log( 'set email', this.email(), 'code sent' )
+					this.entered_email( this.email() )
+					this.code_sent( true )
 					return
 				}
 			}
 
-			this.request_error('Unknown error')
+			this.request_error( 'Unknown error' )
 		}
 	}
 
 	export class $trip2g_auth_code_form extends $.$trip2g_auth_code_form {
 		@$mol_mem
-		request_error(next?: string): string {
+		request_error( next?: string ): string {
 			return next ?? ''
+		}
+
+		@$mol_mem
+		override code( next?: string ): string {
+			const defaultValue = this.$.$trip2g_settings.dev_value( '111111' )
+			return next || defaultValue
 		}
 
 		code_bid() {
@@ -128,15 +140,15 @@ namespace $.$$ {
 
 		submit() {
 			const email = this.email()
-			if (!email) {
-				this.request_error('Email is required')
+			if( !email ) {
+				this.request_error( 'Email is required' )
 				return
 			}
 
-			if (!this.code_sent()) {
-				const requestRes = $trip2g_auth_email_form.mutate(email);
-				if (requestRes.data.__typename === 'ErrorPayload') {
-					this.request_error(requestRes.data.message)
+			if( !this.code_sent() ) {
+				const requestRes = $trip2g_auth_email_form.mutate( email )
+				if( requestRes.data.__typename === 'ErrorPayload' ) {
+					this.request_error( requestRes.data.message )
 					return
 				}
 			}
@@ -164,18 +176,18 @@ namespace $.$$ {
 				}
 			)
 
-			if (res.data.__typename === 'ErrorPayload') {
-				this.request_error(res.data.message)
+			if( res.data.__typename === 'ErrorPayload' ) {
+				this.request_error( res.data.message )
 				return
 			}
 
-			if (res.data.__typename === 'SignInPayload') {
-				this.$.$mol_state_arg.value('email', null)
+			if( res.data.__typename === 'SignInPayload' ) {
+				this.$.$mol_state_arg.value( 'email', null )
 				this.reload_me()
 				return
 			}
 
-			this.request_error('Unknown error')
+			this.request_error( 'Unknown error' )
 		}
 	}
 }

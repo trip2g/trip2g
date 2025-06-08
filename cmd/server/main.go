@@ -738,6 +738,10 @@ func (a *app) StorePurchaseToken(ctx context.Context, data model.PurchaseToken) 
 	return a.purchaseTokenManager.Store(req.Req, data)
 }
 
+func (a *app) IsDevMode() bool {
+	return a.config.DevMode
+}
+
 func (a *app) ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error) {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {

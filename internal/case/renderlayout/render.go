@@ -11,11 +11,13 @@ type Params struct {
 	Title   string
 	JSURLs  []string
 	CSSURLs []string
+	DevMode string
 }
 
 type Env interface {
 	UserJSURLs() []string
 	UserCSSURLs() []string
+	IsDevMode() bool
 }
 
 var ErrMissingEnv = errors.New("missing env")
@@ -24,6 +26,12 @@ func Handle(req *appreq.Request, params Params, renderContent func()) (interface
 	env, ok := req.Env.(Env)
 	if !ok {
 		return nil, ErrMissingEnv
+	}
+
+	if env.IsDevMode() {
+		params.DevMode = "true"
+	} else {
+		params.DevMode = "false"
 	}
 
 	if len(params.JSURLs) == 0 {

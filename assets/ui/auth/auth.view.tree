@@ -23,7 +23,7 @@ $trip2g_auth_email_form $mol_form
 			bid <= email_bid \
 			Content <= email_control $mol_string
 				hint \name@example.com
-				value? <=> email? \hello@example.com
+				value? <=> email? \
 	buttons /
 		<= RequestCode $mol_button_major
 			dom_name \button
@@ -42,7 +42,7 @@ $trip2g_auth_code_form $mol_form
 			bid <= code_bid \
 			Content <= code_control $mol_string
 				hint \000000
-				value? <=> code? \111111
+				value? <=> code? \
 	buttons /
 		<= Signup $mol_button_major
 			title \Enter
