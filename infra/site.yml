@@ -24,6 +24,41 @@
         group: "{{ app_user }}"
         mode: '0750'
 
+    - name: Download Litestream
+      get_url:
+        url: https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-amd64.deb
+        dest: /tmp/litestream-v0.3.13-linux-amd64.deb
+        mode: '0644'
+
+    - name: Install Litestream
+      apt:
+        deb: /tmp/litestream-v0.3.13-linux-amd64.deb
+        state: present
+
+    - name: Upload Litestream config generator script
+      copy:
+        src: generate-litestream-config.sh
+        dest: /usr/local/bin/generate-litestream-config.sh
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Deploy Litestream systemd service
+      copy:
+        src: litestream.service
+        dest: /etc/systemd/system/litestream.service
+        mode: '0644'
+      notify:
+        - Reload systemd
+        - Restart litestream
+
+    - name: Enable and start Litestream service
+      systemd:
+        name: litestream
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
     - name: Create app directory
       file:
         path: "{{ app_dir }}"
@@ -63,4 +98,9 @@
     - name: Restart service
       systemd:
         name: "{{ service_name }}"
+        state: restarted
+
+    - name: Restart litestream
+      systemd:
+        name: litestream
         state: restarted

@@ -1,0 +1,15 @@
+[Unit]
+Description=Litestream
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+ExecStartPre=/usr/local/bin/generate-litestream-config.sh
+ExecStart=/usr/bin/litestream replicate -config /etc/litestream.yml
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
