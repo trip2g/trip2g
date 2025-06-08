@@ -42,6 +42,8 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	if err != nil {
 		var paywallErr *PaywallError
 		if errors.As(err, &paywallErr) {
+			layoutParams.MetaRobots = "noindex, nofollow"
+
 			return renderlayout.Handle(req, layoutParams, func() {
 				WritePayWall(ctx, resp, paywallErr)
 			})

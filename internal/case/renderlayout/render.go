@@ -14,6 +14,7 @@ type Params struct {
 	DevMode string
 
 	MetaDescription *string
+	MetaRobots      string
 }
 
 type Env interface {
