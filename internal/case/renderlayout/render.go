@@ -12,6 +12,8 @@ type Params struct {
 	JSURLs  []string
 	CSSURLs []string
 	DevMode string
+
+	MetaDescription *string
 }
 
 type Env interface {

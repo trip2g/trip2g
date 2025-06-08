@@ -2,6 +2,7 @@
 title: "Demo"
 free: true
 sidebar: false
+description: "Home page"
 ---
 
 This is a demo.

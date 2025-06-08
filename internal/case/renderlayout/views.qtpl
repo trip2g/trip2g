@@ -8,6 +8,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 
+{% if params.MetaDescription != nil %}
+<meta name="description" content="{%s= *params.MetaDescription %}">
+{% endif %}
+
 <script>
 window.__trip2g_settings = {
   is_dev_mode: {%s= params.DevMode %}

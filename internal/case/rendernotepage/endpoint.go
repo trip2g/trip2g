@@ -36,6 +36,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	resp, err := Resolve(context.Background(), req.Env.(Env), request)
 	if resp != nil && resp.Note != nil {
 		layoutParams.Title = resp.Note.Title
+		layoutParams.MetaDescription = resp.Note.Description
 	}
 
 	if err != nil {
