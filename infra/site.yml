@@ -59,6 +59,44 @@
         state: started
         daemon_reload: yes
 
+    - name: Install UFW
+      apt:
+        name: ufw
+        state: present
+
+    - name: Configure UFW defaults
+      ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: 'incoming', policy: 'deny' }
+        - { direction: 'outgoing', policy: 'allow' }
+
+    - name: Allow SSH (port 22)
+      ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+        comment: "SSH"
+
+    - name: Allow HTTP (port 80)
+      ufw:
+        rule: allow
+        port: "80"
+        proto: tcp
+        comment: "HTTP"
+
+    - name: Allow HTTPS (port 443)
+      ufw:
+        rule: allow
+        port: "443"
+        proto: tcp
+        comment: "HTTPS"
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
     - name: Create app directory
       file:
         path: "{{ app_dir }}"
