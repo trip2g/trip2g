@@ -100,7 +100,7 @@
       {% else %}
         <div class="sidebar__menu">
           <ul>
-            <li><a href="/">Home</a></li>
+            <li><a href="/">Главная</a></li>
           </ul>
         </div>
       {% endif %}

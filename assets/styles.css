@@ -53,11 +53,11 @@ html, body {
 }
 
 .noteview__main-title {
-  @apply text-2xl font-bold mb-16 md:text-3xl;
+  @apply text-2xl font-bold mb-8 md:text-3xl;
 }
 
 .noteview__header {
-  @apply mb-8 flex;
+  @apply mb-16 flex items-end;
 }
 
 .noteview__footer {
@@ -89,7 +89,7 @@ html, body {
 }
 
 .sidebar__homepage a {
-  @apply no-underline text-xl font-bold;
+  @apply no-underline text-xl font-bold mb-4 block;
 }
 
 .sidebar__block {
@@ -117,7 +117,7 @@ html, body {
 
 .sidebar__menu li {
   @apply inline-block;
-  margin: 1rem;
+  margin: 0.5rem;
   margin-left: 0;
 }
 

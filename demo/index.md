@@ -14,6 +14,8 @@ This is a demo.
 [[Моя особая + страница]]
 [[youtube]]
 
+[[Понедельник 9 июня 2025]]
+
 And a test link:
 
 [[test]]

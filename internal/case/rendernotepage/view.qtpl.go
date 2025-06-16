@@ -398,7 +398,7 @@ func StreamSidebar(qw422016 *qt422016.Writer, resp *Response) {
 		qw422016.N().S(`
         <div class="sidebar__menu">
           <ul>
-            <li><a href="/">Home</a></li>
+            <li><a href="/">Главная</a></li>
           </ul>
         </div>
       `)
