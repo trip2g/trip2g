@@ -143,6 +143,10 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	hasAccess := len(response.Note.Subgraphs) == 0
 
+	if response.Note.Free {
+		hasAccess = true
+	}
+
 	if request.UserToken != nil && request.UserToken.Role == "admin" {
 		hasAccess = true
 	}
