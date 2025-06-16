@@ -200,8 +200,13 @@ func (ldr *loader) extractInLinks() error {
 			// resolve relative links
 			currentParts := strings.Split(p.Permalink, "/")
 
+			tmpNote := model.NoteView{}
+
 			for i := len(currentParts) - 1; i >= 0; i-- {
-				targetPermalink := strings.Join(currentParts[:i], "/") + target
+				tmpNote.Path = strings.Join(currentParts[:i], "/") + target
+				tmpNote.PreparePermalink()
+
+				targetPermalink := tmpNote.Permalink
 
 				targetNote := ldr.nvs.GetByPath(targetPermalink)
 				if targetNote != nil {
@@ -230,7 +235,6 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	doc := ldr.md.Parser().Parse(text.NewReader(src.Content), parser.WithContext(context))
 	pp := model.NoteView{
 		Path:      src.Path,
-		Permalink: "/" + src.Path[:len(src.Path)-len(".md")],
 		Content:   src.Content,
 		InLinks:   make(map[string]struct{}),
 		Subgraphs: make(map[string]*model.NoteSubgraph),
@@ -239,6 +243,7 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		AssetReplaces: src.Assets,
 	}
 
+	pp.PreparePermalink()
 	pp.SetAst(doc)
 
 	pp.RawMeta = meta.Get(context)

@@ -5,7 +5,10 @@ import (
 	"html/template"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strings"
+	"unicode"
 
 	"github.com/yuin/goldmark/ast"
 )
@@ -32,7 +35,7 @@ type NoteView struct {
 
 	DeadLinks     []string
 	SubgraphNames []string
-	Subgraphs     map[string]*NoteSubgraph
+	Subgraphs     map[string]*NoteSubgraph `json:"-"`
 
 	Assets map[string]struct{}
 
@@ -50,7 +53,7 @@ type NoteViews struct {
 
 	List []*NoteView
 
-	Subgraphs map[string]*NoteSubgraph
+	Subgraphs map[string]*NoteSubgraph `json:"-"`
 
 	Version string
 }
@@ -61,6 +64,53 @@ func (n *NoteView) ID() string {
 
 func (n *NoteView) Ast() ast.Node {
 	return n.ast
+}
+
+func normalizeURLPart(s string) string {
+	s = strings.ToLower(s)
+
+	var b strings.Builder
+	for _, r := range s {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+		} else {
+			b.WriteRune('_')
+		}
+	}
+
+	s = b.String()
+	reMultiUnderscore := regexp.MustCompile(`_+`)
+	s = reMultiUnderscore.ReplaceAllString(s, "_")
+	s = strings.Trim(s, "_")
+
+	return s
+}
+
+func (n *NoteView) PreparePermalink() {
+	link := n.Path
+
+	// Remove .md extension if present
+	if len(link) > 3 && link[len(link)-3:] == ".md" {
+		link = link[:len(link)-3]
+	}
+
+	// Split path into parts
+	parts := strings.Split(link, "/")
+	newParts := make([]string, 0, len(parts))
+
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+
+		// Normalize each part of the path
+		np := normalizeURLPart(part)
+		if np != "" {
+			newParts = append(newParts, np)
+		}
+	}
+
+	n.Permalink = "/" + strings.Join(newParts, "/")
 }
 
 func (n *NoteView) IsHomePage() bool {

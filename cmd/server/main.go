@@ -799,6 +799,7 @@ func (a *app) handleCors(ctx *fasthttp.RequestCtx) bool {
 
 func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 	if !a.config.DevMode {
+		fmt.Println("skipping debug API in production mode")
 		return false
 	}
 
@@ -807,7 +808,12 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 		ctx.SetContentType("application/json")
 		ctx.SetStatusCode(fasthttp.StatusOK)
 
-		data, _ := json.Marshal(a.LatestNoteViews()) //nolint:musttag // debug endpoint
+		data, err := json.Marshal(a.LatestNoteViews()) //nolint:musttag // debug endpoint
+		if err != nil {
+			a.log.Error("failed to marshal latest note views", "error", err)
+			return true
+		}
+
 		ctx.SetBody(data)
 		return true
 	}

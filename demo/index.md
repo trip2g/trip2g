@@ -11,6 +11,7 @@ This is a demo.
 [[second]]
 [[secondbrain|Second Brain Course]]
 [[mypath|My Path Course]]
+[[Моя особая + страница]]
 
 And a test link:
 
