@@ -8,6 +8,9 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
+	enclave "github.com/quailyquaily/goldmark-enclave"
+	enclavecore "github.com/quailyquaily/goldmark-enclave/core"
+
 	"github.com/yuin/goldmark"
 	meta "github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/ast"
@@ -69,6 +72,7 @@ func Load(options Options) (*model.NoteViews, error) {
 				Resolver: ldr.linkResolver,
 			},
 			extension.GFM,
+			enclave.New(&enclavecore.Config{}),
 			meta.Meta,
 		),
 		goldmark.WithParserOptions(

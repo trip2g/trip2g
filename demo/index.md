@@ -12,6 +12,7 @@ This is a demo.
 [[secondbrain|Second Brain Course]]
 [[mypath|My Path Course]]
 [[Моя особая + страница]]
+[[youtube]]
 
 And a test link:
 
