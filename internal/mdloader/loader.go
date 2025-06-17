@@ -90,6 +90,7 @@ func Load(options Options) (*model.NoteViews, error) {
 		page.VersionID = src.VersionID
 
 		ldr.nvs.Map[page.Permalink] = page
+		ldr.nvs.PathMap[page.Path] = page
 	}
 
 	err := ldr.extractInLinks()
@@ -119,8 +120,6 @@ func (ldr *loader) findAssets() error {
 			if !entering {
 				return ast.WalkContinue, nil
 			}
-
-			fmt.Printf("Processing node %s in page %s\n", n.Kind(), id)
 
 			switch n.Kind() {
 			case wikilink.Kind:
@@ -206,20 +205,26 @@ func (ldr *loader) extractInLinks() error {
 			}
 
 			target := string(link.Target)
-			if target[0] != '/' {
-				target = "/" + target
-			}
+			// if target[0] != '/' {
+			// 	target = "/" + target
+			// }
 
 			// resolve relative links
 			currentParts := strings.Split(p.Permalink, "/")
 
 			for i := len(currentParts) - 1; i >= 0; i-- {
 				targetPermalink := strings.Join(currentParts[:i], "/") + target
+				fmt.Println("Resolving link:", string(link.Target), "->", targetPermalink)
 
-				targetNote := ldr.nvs.GetByPath(targetPermalink)
-				if targetNote != nil {
-					targetNote.InLinks[p.Permalink] = struct{}{}
-					link.Target = []byte(targetNote.Permalink)
+				pp, ok := ldr.nvs.PathMap[targetPermalink]
+				if !ok {
+					pp, ok = ldr.nvs.PathMap[targetPermalink+".md"]
+				}
+
+				if ok {
+					p.ResolvedLinks[string(link.Target)] = pp.Permalink
+					pp.InLinks[p.Permalink] = struct{}{}
+					link.Target = []byte(pp.Permalink)
 					return ast.WalkContinue, nil
 				}
 			}

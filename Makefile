@@ -1,4 +1,7 @@
-build-amd64:
+test:
+	go test ./...
+
+build-amd64: test
 	GOOS=linux GOARCH=amd64 go build -o ./tmp/amd64 -ldflags="-s -w" ./cmd/server
 
 build-docker:

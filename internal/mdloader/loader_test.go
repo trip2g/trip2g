@@ -96,9 +96,9 @@ func TestPaywallLinks(t *testing.T) {
 		Content: []byte(`---
 free: true
 ---
-Hello [[hidden]]`),
+Hello [[Hidden]]`),
 	}, {
-		Path:    "hidden.md",
+		Path:    "Hidden.md",
 		Content: []byte(`Payed content`),
 	}}
 

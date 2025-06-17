@@ -33,6 +33,8 @@ type NoteView struct {
 	InLinks map[string]struct{}
 	RawMeta map[string]interface{}
 
+	ResolvedLinks map[string]string // local link to absolute link mapping
+
 	DeadLinks     []string
 	SubgraphNames []string
 	Subgraphs     map[string]*NoteSubgraph `json:"-"`
@@ -49,7 +51,9 @@ type NoteSubgraph struct {
 }
 
 type NoteViews struct {
-	Map map[string]*NoteView
+	Map map[string]*NoteView // TODO: rename to PermalinkMap
+
+	PathMap map[string]*NoteView
 
 	List []*NoteView
 
@@ -94,25 +98,23 @@ func (n *NoteView) PreparePermalink() {
 		link = link[:len(link)-3]
 	}
 
-	n.Permalink = "/" + link
-	//
-	// // Split path into parts
-	// parts := strings.Split(link, "/")
-	// newParts := make([]string, 0, len(parts))
-	//
-	// for _, part := range parts {
-	// 	if part == "" {
-	// 		continue
-	// 	}
-	//
-	// 	// Normalize each part of the path
-	// 	np := normalizeURLPart(part)
-	// 	if np != "" {
-	// 		newParts = append(newParts, np)
-	// 	}
-	// }
-	//
-	// n.Permalink = "/" + strings.Join(newParts, "/")
+	// Split path into parts
+	parts := strings.Split(link, "/")
+	newParts := make([]string, 0, len(parts))
+
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+
+		// Normalize each part of the path
+		np := normalizeURLPart(part)
+		if np != "" {
+			newParts = append(newParts, np)
+		}
+	}
+
+	n.Permalink = "/" + strings.Join(newParts, "/")
 }
 
 func (n *NoteView) IsHomePage() bool {
@@ -229,6 +231,8 @@ func (n *NoteView) ExtractTitle() string {
 func NewNoteViews() *NoteViews {
 	return &NoteViews{
 		Map: make(map[string]*NoteView),
+
+		PathMap: make(map[string]*NoteView),
 
 		Subgraphs: make(map[string]*NoteSubgraph),
 	}
