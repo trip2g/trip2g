@@ -225,9 +225,9 @@ func (a *app) createOwnerIfNotExists(ctx context.Context) error {
 	user, err := a.Queries.UserByEmail(ctx, a.config.OwnerEmail)
 	if err != nil {
 		if db.IsNoFound(err) {
-			_, insertErr := a.InsertUser(ctx, a.config.OwnerEmail)
-			if insertErr != nil {
-				return fmt.Errorf("failed to insert owner user: %w", insertErr)
+			user, err = a.InsertUser(ctx, a.config.OwnerEmail)
+			if err != nil {
+				return fmt.Errorf("failed to insert owner user: %w", err)
 			}
 		} else {
 			return fmt.Errorf("failed to check if owner exists: %w", err)
