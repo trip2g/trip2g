@@ -42,7 +42,7 @@ First. Second [[second]] [[dead]]`),
 	require.Equal(t, map[string]struct{}{"/index": {}}, pages.Map["/first"].InLinks)
 	require.Equal(t, map[string]struct{}{"/index": {}, "/first": {}}, pages.Map["/second"].InLinks)
 
-	require.Equal(t, []string{"/dead"}, pages.Map["/first"].DeadLinks)
+	require.Equal(t, []string{"dead"}, pages.Map["/first"].DeadLinks)
 }
 
 func TestRelatedLinks(t *testing.T) {
@@ -100,6 +100,61 @@ Hello [[Hidden]]`),
 	}, {
 		Path:    "Hidden.md",
 		Content: []byte(`Payed content`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	htmlSources := map[string]string{}
+
+	for path, page := range pages.Map {
+		htmlSources[path] = string(page.HTML)
+	}
+
+	cupaloy.SnapshotT(t, htmlSources)
+}
+
+func TestRussianPaywallLinks(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Hello [[Понедельник 9 июня 2025]]`),
+	}, {
+		Path:    "Понедельник 9 июня 2025.md",
+		Content: []byte(`Payed content`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	htmlSources := map[string]string{}
+
+	for path, page := range pages.Map {
+		htmlSources[path] = string(page.HTML)
+	}
+
+	cupaloy.SnapshotT(t, htmlSources)
+}
+
+func TestRenamedPaywallLinks(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path:    "Понедельник 9 июня 2025.md",
+		Content: []byte(`[[Шаблон дневной заметки|шаблона дня]]`),
+	}, {
+		Path:    "Шаблон дневной заметки.md",
+		Content: []byte(`Content...`),
 	}}
 
 	pages, err := mdloader.Load(mdloader.Options{

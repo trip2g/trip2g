@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"path/filepath"
 	"strings"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -205,26 +206,34 @@ func (ldr *loader) extractInLinks() error {
 			}
 
 			target := string(link.Target)
-			// if target[0] != '/' {
-			// 	target = "/" + target
-			// }
 
-			// resolve relative links
-			currentParts := strings.Split(p.Permalink, "/")
+			// Path: content
+			// second.md: [[nested/first]]
+			// nested/first.md: [[second]]
 
-			for i := len(currentParts) - 1; i >= 0; i-- {
-				targetPermalink := strings.Join(currentParts[:i], "/") + target
-				fmt.Println("Resolving link:", string(link.Target), "->", targetPermalink)
+			dir := filepath.Dir(p.Path)
+			if dir == "." {
+				dir = ""
+			}
 
-				pp, ok := ldr.nvs.PathMap[targetPermalink]
+			dirParts := strings.Split(dir, "/")
+
+			for i := len(dirParts); i >= 0; i-- {
+				targetParts := append([]string{}, dirParts[:i]...)
+				targetParts = append(targetParts, target)
+
+				targetPermalink := strings.Join(targetParts, "/")
+
+				pp, ok := ldr.nvs.PathMap[targetPermalink+".md"]
 				if !ok {
-					pp, ok = ldr.nvs.PathMap[targetPermalink+".md"]
+					pp, ok = ldr.nvs.PathMap[targetPermalink]
 				}
 
 				if ok {
 					p.ResolvedLinks[string(link.Target)] = pp.Permalink
 					pp.InLinks[p.Permalink] = struct{}{}
 					link.Target = []byte(pp.Permalink)
+
 					return ast.WalkContinue, nil
 				}
 			}
