@@ -120,6 +120,8 @@ func (ldr *loader) findAssets() error {
 				return ast.WalkContinue, nil
 			}
 
+			fmt.Printf("Processing node %s in page %s\n", n.Kind(), id)
+
 			switch n.Kind() {
 			case wikilink.Kind:
 
@@ -137,6 +139,13 @@ func (ldr *loader) findAssets() error {
 					if !strings.HasSuffix(url, ".md") {
 						p.Assets[string(l.Destination)] = struct{}{}
 					}
+				}
+
+			// envclare replace KindImage by their own KindEnclave node
+			case enclavecore.KindEnclave:
+				e, ok := n.(*enclavecore.Enclave)
+				if ok {
+					p.Assets[string(e.Image.Destination)] = struct{}{}
 				}
 
 			case ast.KindImage:
@@ -204,13 +213,8 @@ func (ldr *loader) extractInLinks() error {
 			// resolve relative links
 			currentParts := strings.Split(p.Permalink, "/")
 
-			tmpNote := model.NoteView{}
-
 			for i := len(currentParts) - 1; i >= 0; i-- {
-				tmpNote.Path = strings.Join(currentParts[:i], "/") + target
-				tmpNote.PreparePermalink()
-
-				targetPermalink := tmpNote.Permalink
+				targetPermalink := strings.Join(currentParts[:i], "/") + target
 
 				targetNote := ldr.nvs.GetByPath(targetPermalink)
 				if targetNote != nil {
@@ -243,6 +247,8 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		InLinks:   make(map[string]struct{}),
 		Subgraphs: make(map[string]*model.NoteSubgraph),
 		Assets:    make(map[string]struct{}),
+
+		ResolvedLinks: make(map[string]string),
 
 		AssetReplaces: src.Assets,
 	}
