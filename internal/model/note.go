@@ -94,23 +94,25 @@ func (n *NoteView) PreparePermalink() {
 		link = link[:len(link)-3]
 	}
 
-	// Split path into parts
-	parts := strings.Split(link, "/")
-	newParts := make([]string, 0, len(parts))
-
-	for _, part := range parts {
-		if part == "" {
-			continue
-		}
-
-		// Normalize each part of the path
-		np := normalizeURLPart(part)
-		if np != "" {
-			newParts = append(newParts, np)
-		}
-	}
-
-	n.Permalink = "/" + strings.Join(newParts, "/")
+	n.Permalink = "/" + link
+	//
+	// // Split path into parts
+	// parts := strings.Split(link, "/")
+	// newParts := make([]string, 0, len(parts))
+	//
+	// for _, part := range parts {
+	// 	if part == "" {
+	// 		continue
+	// 	}
+	//
+	// 	// Normalize each part of the path
+	// 	np := normalizeURLPart(part)
+	// 	if np != "" {
+	// 		newParts = append(newParts, np)
+	// 	}
+	// }
+	//
+	// n.Permalink = "/" + strings.Join(newParts, "/")
 }
 
 func (n *NoteView) IsHomePage() bool {
