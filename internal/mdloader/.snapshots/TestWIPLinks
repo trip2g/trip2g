@@ -1,0 +1,4 @@
+(map[string]string) (len=2) {
+  (string) (len=9) "/existing": (string) (len=25) "<p>This page exists.</p>\n",
+  (string) (len=6) "/index": (string) (len=184) "<p>Links: <a class=\"paywall paywall:core\" href=\"/existing\">existing</a> <a class=\"wip\" href=\"nonexistent\">nonexistent</a> <a class=\"wip\" href=\"another_missing\">another_missing</a></p>\n"
+}

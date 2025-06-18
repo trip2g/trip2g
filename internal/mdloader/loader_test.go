@@ -192,3 +192,32 @@ func TestAssets(t *testing.T) {
 		"image2.png": struct{}{},
 	}, pages.Map["/index"].Assets)
 }
+
+func TestWIPLinks(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Links: [[existing]] [[nonexistent]] [[another_missing]]`),
+	}, {
+		Path:    "existing.md",
+		Content: []byte(`This page exists.`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	htmlSources := map[string]string{}
+
+	for path, page := range pages.Map {
+		htmlSources[path] = string(page.HTML)
+	}
+
+	cupaloy.SnapshotT(t, htmlSources)
+}
