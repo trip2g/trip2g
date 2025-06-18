@@ -520,6 +520,10 @@ func (a *app) LatestNoteViews() *model.NoteViews {
 }
 
 func (a *app) LiveNoteViews() *model.NoteViews {
+	if a.config.LatestLive {
+		return a.latestNoteLoader.NoteViews()
+	}
+
 	return a.liveNoteLoader.NoteViews()
 }
 

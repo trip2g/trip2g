@@ -39,6 +39,7 @@ type Config struct {
 
 	// Application settings
 	DevMode    bool
+	LatestLive bool // use the latest release as live version
 	AdminJSURL string
 	LogLevel   string
 
@@ -166,6 +167,7 @@ func (c *Config) defineFlags() {
 	flag.StringVar(&c.AdminJSURL, "admin-js-url", c.AdminJSURL, "Admin JS URL")
 	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Log level")
 	flag.BoolVar(&c.DevMode, "dev", c.DevMode, "Development mode")
+	flag.BoolVar(&c.LatestLive, "latest-live", c.LatestLive, "Use latest release as live version")
 
 	// MinIO storage flags
 	flag.StringVar(&c.Storage.Endpoint, "minio-endpoint", c.Storage.Endpoint, "MinIO endpoint")

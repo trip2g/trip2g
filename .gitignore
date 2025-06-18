@@ -1,10 +1,11 @@
 node_modules
 tmp
 server
-data.sqlite3
-data.sqlite3-journal
-data.sqlite3-shm
-data.sqlite3-wal
+data*.sqlite3
+data*.sqlite3-journal
+data*.sqlite3-shm
+data*.sqlite3-wal
+demo2
 *.fasthttp.gz
 .vscode
 *easyjson-bootstrap*
