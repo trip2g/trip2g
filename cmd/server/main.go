@@ -812,6 +812,7 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 	}
 
 	path := string(ctx.Path())
+
 	if strings.HasPrefix(path, "/debug/nvs/latest") {
 		ctx.SetContentType("application/json")
 		ctx.SetStatusCode(fasthttp.StatusOK)
@@ -823,6 +824,28 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 		}
 
 		ctx.SetBody(data)
+		return true
+	}
+
+	if strings.HasPrefix(path, "/debug/demoai") {
+		ctx.SetContentType("application/json")
+		ctx.SetStatusCode(fasthttp.StatusOK)
+
+		res, err := resolveAI(string(ctx.Request.Body()))
+		if err != nil {
+			a.log.Error("failed to resolve AI data", "error", err)
+			ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+			ctx.SetBodyString("500 Internal Server Error")
+			return true
+		}
+
+		raw, err := json.Marshal(res)
+		if err != nil {
+			a.log.Error("failed to marshal demo AI data", "error", err)
+			return true
+		}
+
+		ctx.SetBody(raw)
 		return true
 	}
 

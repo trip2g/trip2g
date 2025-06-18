@@ -16,6 +16,8 @@ This is a demo.
 
 [[Понедельник 9 июня 2025]]
 
+[[demo]]
+
 And a test link:
 
 [[test]]
