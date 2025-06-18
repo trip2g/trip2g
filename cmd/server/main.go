@@ -278,10 +278,14 @@ func (a *app) loadAllNotes(ctx context.Context) error {
 		return fmt.Errorf("failed to load live notes: %w", err)
 	}
 
+	a.log.Info("loaded live notes", "count", len(a.liveNoteLoader.NoteViews().List))
+
 	err = a.latestNoteLoader.Load(startCtx)
 	if err != nil {
 		return fmt.Errorf("failed to load latest notes: %w", err)
 	}
+
+	a.log.Info("loaded latest notes", "count", len(a.latestNoteLoader.NoteViews().List))
 
 	return nil
 }

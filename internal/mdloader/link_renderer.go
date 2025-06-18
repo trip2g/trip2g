@@ -102,18 +102,22 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 		_, _ = w.WriteString(`<a`)
 
 		note := r.nvs.GetByPath(string(dest))
-		if note != nil && !note.Free {
-			subgraphClasses := ""
+		if note != nil {
+			if !note.Free {
+				subgraphClasses := ""
 
-			if len(note.Subgraphs) == 0 {
-				subgraphClasses = "paywall:core"
-			} else {
-				for _, subgraph := range note.SubgraphNames {
-					subgraphClasses += " paywall-" + subgraph
+				if len(note.Subgraphs) == 0 {
+					subgraphClasses = "paywall:core"
+				} else {
+					for _, subgraph := range note.SubgraphNames {
+						subgraphClasses += " paywall-" + subgraph
+					}
 				}
-			}
 
-			_, _ = w.WriteString(` class="paywall ` + subgraphClasses + `"`)
+				_, _ = w.WriteString(` class="paywall ` + subgraphClasses + `"`)
+			}
+		} else {
+			_, _ = w.WriteString(` class="wip"`)
 		}
 
 		_, _ = w.WriteString(` href="`)
