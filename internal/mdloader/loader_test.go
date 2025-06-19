@@ -105,6 +105,9 @@ Hello [[Hidden]]`),
 	pages, err := mdloader.Load(mdloader.Options{
 		Sources: sourceFiles,
 		Log:     &log,
+		Config: mdloader.Config{
+			AutoLowerWikilinks: true,
+		},
 	})
 	require.NoError(t, err)
 

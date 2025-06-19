@@ -100,6 +100,21 @@ func TestNormalizeWikilinks(t *testing.T) {
 			input:    "Text [[Outer [[Inner]] Link]]",
 			expected: "Text [[Outer [[Inner|outer [[inner]] Link]]",
 		},
+		{
+			name:     "should normalize mid-sentence wikilinks",
+			input:    "Добавить запись в [[Дневник сновидений]]",
+			expected: "Добавить запись в [[Дневник сновидений|дневник сновидений]]",
+		},
+		{
+			name:     "should skip existing pipe labels",
+			input:    "Посвятить [[Метод помодора|помидор]] созданию",
+			expected: "Посвятить [[Метод помодора|помидор]] созданию",
+		},
+		{
+			name:     "should normalize multi-word links",
+			input:    "Использовать [[Утренний монолог]] для практики",
+			expected: "Использовать [[Утренний монолог|утренний монолог]] для практики",
+		},
 	}
 
 	for _, tt := range tests {

@@ -1,4 +1,4 @@
 (map[string]string) (len=2) {
-  (string) (len=6) "/index": (string) (len=195) "<p>Hello <a class=\"paywall paywall:core\" href=\"/%D0%BF%D0%BE%D0%BD%D0%B5%D0%B4%D0%B5%D0%BB%D1%8C%D0%BD%D0%B8%D0%BA_9_%D0%B8%D1%8E%D0%BD%D1%8F_2025\">понедельник 9 июня 2025</a></p>\n",
+  (string) (len=6) "/index": (string) (len=195) "<p>Hello <a class=\"paywall paywall:core\" href=\"/%D0%BF%D0%BE%D0%BD%D0%B5%D0%B4%D0%B5%D0%BB%D1%8C%D0%BD%D0%B8%D0%BA_9_%D0%B8%D1%8E%D0%BD%D1%8F_2025\">Понедельник 9 июня 2025</a></p>\n",
   (string) (len=39) "/понедельник_9_июня_2025": (string) (len=21) "<p>Payed content</p>\n"
 }
