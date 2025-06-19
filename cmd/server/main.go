@@ -176,8 +176,8 @@ func main() {
 		panic(fmt.Errorf("failed to create not found tracker: %w", err))
 	}
 
-	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a))
-	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a))
+	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
+	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 
 	tokenManager.AddValidator(func(ctx context.Context, data *usertoken.Data) error {
 		ban, banErr := a.UserBanByUserID(ctx, int64(data.ID))

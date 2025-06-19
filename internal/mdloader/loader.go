@@ -38,12 +38,19 @@ type loader struct {
 	log logger.Logger
 
 	linkResolver *myLinkResolver
+
+	config Config
+}
+
+type Config struct {
+	AutoLowerWikilinks bool
 }
 
 type Options struct {
 	Sources []SourceFile
 	Log     logger.Logger
 	Version string
+	Config  Config
 }
 
 // Load transforms markdown files into pages.
@@ -51,6 +58,8 @@ func Load(options Options) (*model.NoteViews, error) {
 	ldr := &loader{
 		log: options.Log,
 		nvs: model.NewNoteViews(),
+
+		config: options.Config,
 
 		linkResolver: &myLinkResolver{
 			version: options.Version,
@@ -254,10 +263,18 @@ func (ldr *loader) extractInLinks() error {
 func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	context := parser.NewContext()
 
-	doc := ldr.md.Parser().Parse(text.NewReader(src.Content), parser.WithContext(context))
+	content := src.Content
+
+	if ldr.config.AutoLowerWikilinks {
+		// replace [[Wikilink]] with [[Wikilink|wikilink]]
+		// skip if . [[Wikilink]] has a dot before it
+		content = NormalizeWikilinks(content)
+	}
+
+	doc := ldr.md.Parser().Parse(text.NewReader(content), parser.WithContext(context))
 	pp := model.NoteView{
 		Path:      src.Path,
-		Content:   src.Content,
+		Content:   content,
 		InLinks:   make(map[string]struct{}),
 		Subgraphs: make(map[string]*model.NoteSubgraph),
 		Assets:    make(map[string]struct{}),

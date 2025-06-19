@@ -37,14 +37,16 @@ type Loader struct {
 	log logger.Logger
 
 	version string
+	config  mdloader.Config
 }
 
-func New(version string, env Env) *Loader {
+func New(version string, env Env, config mdloader.Config) *Loader {
 	return &Loader{
 		env: env,
 		log: logger.WithPrefix(env.Logger(), version+" noteloader:"),
 
 		version: version,
+		config:  config,
 	}
 }
 
@@ -92,6 +94,7 @@ func (l *Loader) Load(ctx context.Context) error {
 		Sources: sources,
 		Log:     logger.WithPrefix(l.log, "mdloader:"),
 		Version: l.version,
+		Config:  l.config,
 	}
 
 	nvs, err := mdloader.Load(options)

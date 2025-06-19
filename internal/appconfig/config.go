@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"trip2g/internal/logger"
+	"trip2g/internal/mdloader"
 	"trip2g/internal/miniostorage"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
@@ -67,6 +68,8 @@ type Config struct {
 
 	// Mail
 	MailFrom string
+
+	MDLoaderConfig mdloader.Config
 }
 
 // Default values for configuration.
@@ -210,6 +213,9 @@ func (c *Config) defineFlags() {
 
 	// Mail
 	flag.StringVar(&c.MailFrom, "mail-from", "no-reply@resend.trip2g.com", "Email address to use as sender")
+
+	// MD Loader
+	flag.BoolVar(&c.MDLoaderConfig.AutoLowerWikilinks, "md-loader-auto-lower-wikilinks", true, "Automatically lower-case wikilinks")
 }
 
 // validate checks if the configuration is valid using ozzo validation.
