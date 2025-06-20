@@ -23,6 +23,7 @@ Each step has:
 - type: "prompt" or "loop"  
 - prompt: the AI instruction (can use {{.step_name.output}} from memory)
 - iterations: (only for loop type) how many times to repeat
+- deps: array of step names that must complete before this step can run
 
 ## JSON Schema:
 
@@ -30,13 +31,14 @@ Each step has:
   {
     "name": "step_name",
     "type": "prompt",
-    "prompt": "AI instruction text"
+    "prompt": "AI instruction text",
+    "deps": []
   },
   {
-    "name": "loop_step", 
-    "type": "loop",
-    "iterations": 2,
-    "prompt": "AI instruction with {{.previous_step.output}}"
+    "name": "dependent_step", 
+    "type": "prompt",
+    "prompt": "AI instruction with {{.previous_step.output}}",
+    "deps": ["previous_step"]
   }
 ]
 
@@ -54,17 +56,20 @@ Output:
   {
     "name": "extract_topics",
     "type": "prompt",
-    "prompt": "Extract exactly 3 key topics from the text: {{.input.content}}"
+    "prompt": "Extract exactly 3 key topics from the text: {{.input.content}}",
+    "deps": []
   },
   {
     "name": "first_summary",
     "type": "prompt",
-    "prompt": "Reduce the ORIGINAL text {{.input.content}} by 50% while keeping these key topics: {{.extract_topics.output}}"
+    "prompt": "Reduce the ORIGINAL text {{.input.content}} by 50% while keeping these key topics: {{.extract_topics.output}}",
+    "deps": ["extract_topics"]
   },
   {
     "name": "second_summary", 
     "type": "prompt",
-    "prompt": "Reduce this text {{.first_summary.output}} by 50% while keeping these key topics: {{.extract_topics.output}}"
+    "prompt": "Reduce this text {{.first_summary.output}} by 50% while keeping these key topics: {{.extract_topics.output}}",
+    "deps": ["first_summary", "extract_topics"]
   }
 ]
 
@@ -73,7 +78,10 @@ Output:
 2. Reference previous step outputs with {{.step_name.output}}
 3. For loops, each iteration processes {{.input.content}} with context from {{.step_name.output}}
 4. Use descriptive step names
-5. Return ONLY the JSON array of steps, no wrapper object
+5. **IMPORTANT**: Add "deps" array for each step listing which steps must complete first
+6. If a step uses {{.step_name.output}}, add "step_name" to deps array
+7. Steps with empty deps [] can run in parallel
+8. Return ONLY the JSON array of steps, no wrapper object
 
 Convert the following pipeline description to JSON:
 `
