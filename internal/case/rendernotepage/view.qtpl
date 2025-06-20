@@ -38,6 +38,8 @@
     {% if !resp.Note.IsHomePage() %}
     <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
     {% endif %}
+    
+    {%= ReadingMeta(resp) %}
 
     <div class="noteview__markup prose prose-stone">
     {%s= string(resp.Note.HTML) %}
@@ -108,6 +110,32 @@
 
 {% endfunc %}
 
+{% func ReadingMeta(resp *Response) %}
+<div class="reading-meta">
+  {% if resp.Note.ReadingTime > 0 %}
+  <span class="reading-time">
+    <span class="reading-meta__label">Время чтения:</span>
+    {%d resp.Note.ReadingTime %} мин
+  </span>
+  {% endif %}
+  
+  {% if resp.Note.ReadingComplexity > 0 %}
+  <span class="reading-complexity">
+    <span class="reading-meta__label">Сложность:</span>
+    {%= ReadingComplexityStars(resp.Note.ReadingComplexity) %}
+  </span>
+  {% endif %}
+</div>
+{% endfunc %}
+
+{% func ReadingComplexityStars(complexity int) %}
+<span class="complexity-stars" title="{% if complexity == 1 %}Среднее чтение{% elseif complexity == 2 %}Сложное чтение{% else %}Легкое чтение{% endif %}">
+  {% for i := 0; i < complexity; i++ %}
+    <span class="star">★</span>
+  {% endfor %}
+</span>
+{% endfunc %}
+
 {% func PayWall(resp *Response, err *PaywallError) %}
 
 <div class="noteview" id="noteview-layout">
@@ -125,6 +153,8 @@
     {% if !resp.Note.IsHomePage() %}
     <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
     {% endif %}
+    
+    {%= ReadingMeta(resp) %}
 
     {% if resp.Note.Description != nil %}
     <p class="noteview__description">{%s= *resp.Note.Description %}</p>

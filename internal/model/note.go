@@ -46,6 +46,9 @@ type NoteView struct {
 	Assets map[string]struct{}
 
 	AssetReplaces map[string]string
+
+	ReadingTime       int // in minutes
+	ReadingComplexity int // 0 - easy, 1 - medium, 2 - hard
 }
 
 type NoteSubgraph struct {
@@ -172,6 +175,107 @@ func (n *NoteView) ExtractMetaData() error {
 	n.Description, err = n.extractString("description")
 	if err != nil {
 		return err
+	}
+
+	n.extractReadingTime()
+
+	err = n.extractReadingComplexity()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (n *NoteView) extractReadingTime() {
+	if len(n.Content) == 0 {
+		n.ReadingTime = 0
+		return
+	}
+
+	// Check if reading time is set in metadata
+	if readingTimeI, ok := n.RawMeta["reading_time"]; ok {
+		switch rt := readingTimeI.(type) {
+		case int:
+			n.ReadingTime = rt
+			return
+		case float64:
+			n.ReadingTime = int(rt)
+			return
+		case string:
+			// Try to parse string as number
+			if rt != "" {
+				var parsedTime int
+				if _, err := fmt.Sscanf(rt, "%d", &parsedTime); err == nil {
+					n.ReadingTime = parsedTime
+					return
+				}
+			}
+		}
+	}
+
+	// Calculate reading time based on content
+	content := string(n.Content)
+
+	// Remove markdown syntax for more accurate word count
+	content = removeMarkdownSyntax(content)
+
+	// Count words
+	wordCount := countWords(content)
+
+	// Average reading speed: 200 words per minute
+	// Round up to nearest minute
+	readingTime := (wordCount + 199) / 200
+
+	// Minimum reading time is 1 minute
+	if readingTime < 1 {
+		readingTime = 1
+	}
+
+	n.ReadingTime = readingTime
+}
+
+func (n *NoteView) extractReadingComplexity() error {
+	// Default complexity is 0 (easy)
+	n.ReadingComplexity = 0
+
+	// Check if reading complexity is set in metadata
+	complexityI, ok := n.RawMeta["complexity"]
+	if !ok {
+		// Also check for "reading_complexity" key
+		complexityI, ok = n.RawMeta["reading_complexity"]
+		if !ok {
+			return nil
+		}
+	}
+
+	switch complexity := complexityI.(type) {
+	case int:
+		if complexity >= 0 && complexity <= 2 {
+			n.ReadingComplexity = complexity
+		} else {
+			return fmt.Errorf("invalid reading complexity: %d, must be 0 (easy), 1 (medium), or 2 (hard)", complexity)
+		}
+	case float64:
+		complexityInt := int(complexity)
+		if complexityInt >= 0 && complexityInt <= 2 {
+			n.ReadingComplexity = complexityInt
+		} else {
+			return fmt.Errorf("invalid reading complexity: %f, must be 0 (easy), 1 (medium), or 2 (hard)", complexity)
+		}
+	case string:
+		switch strings.ToLower(complexity) {
+		case "easy", "0":
+			n.ReadingComplexity = 0
+		case "medium", "1":
+			n.ReadingComplexity = 1
+		case "hard", "2":
+			n.ReadingComplexity = 2
+		default:
+			return fmt.Errorf("invalid reading complexity: %s, must be 'easy', 'medium', 'hard', or 0-2", complexity)
+		}
+	default:
+		return fmt.Errorf("invalid reading complexity type: %T, must be int, float64, or string", complexity)
 	}
 
 	return nil
@@ -445,4 +549,76 @@ func (nv NoteViews) GetByPath(v string) *NoteView {
 	}
 
 	return note
+}
+
+// removeMarkdownSyntax removes common markdown syntax for more accurate word counting.
+func removeMarkdownSyntax(content string) string {
+	// Remove code blocks (```code```)
+	codeBlockRegex := regexp.MustCompile("```[\\s\\S]*?```")
+	content = codeBlockRegex.ReplaceAllString(content, " ")
+
+	// Remove inline code (`code`)
+	inlineCodeRegex := regexp.MustCompile("`[^`]*`")
+	content = inlineCodeRegex.ReplaceAllString(content, " ")
+
+	// Remove headers (# ## ###)
+	headerRegex := regexp.MustCompile(`^#{1,6}\s+`)
+	content = headerRegex.ReplaceAllString(content, "")
+
+	// Remove links but keep the text [text](url) -> text
+	linkRegex := regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
+	content = linkRegex.ReplaceAllString(content, "$1")
+
+	// Remove wikilinks but keep the text [[link|text]] -> text or [[link]] -> link
+	wikilinkRegex := regexp.MustCompile(`\[\[([^|\]]*?)(?:\|([^\]]*?))?\]\]`)
+	content = wikilinkRegex.ReplaceAllStringFunc(content, func(match string) string {
+		parts := wikilinkRegex.FindStringSubmatch(match)
+		if len(parts) > 2 && parts[2] != "" {
+			return parts[2] // Use display text if available
+		}
+		return parts[1] // Use link target
+	})
+
+	// Remove bold/italic markers (**text** *text*)
+	boldItalicRegex := regexp.MustCompile(`\*+([^*]+)\*+`)
+	content = boldItalicRegex.ReplaceAllString(content, "$1")
+
+	// Remove strikethrough (~~text~~)
+	strikethroughRegex := regexp.MustCompile(`~~([^~]+)~~`)
+	content = strikethroughRegex.ReplaceAllString(content, "$1")
+
+	// Remove HTML tags
+	htmlRegex := regexp.MustCompile(`<[^>]*>`)
+	content = htmlRegex.ReplaceAllString(content, " ")
+
+	// Remove list markers (- * + 1.)
+	listRegex := regexp.MustCompile(`^\s*[-*+]\s+|^\s*\d+\.\s+`)
+	content = listRegex.ReplaceAllString(content, "")
+
+	// Remove blockquotes (>)
+	blockquoteRegex := regexp.MustCompile(`^\s*>\s*`)
+	content = blockquoteRegex.ReplaceAllString(content, "")
+
+	return content
+}
+
+// countWords counts the number of words in the given text.
+func countWords(content string) int {
+	if content == "" {
+		return 0
+	}
+
+	// Split by whitespace and count non-empty words
+	words := strings.Fields(content)
+	wordCount := 0
+
+	for _, word := range words {
+		// Remove punctuation from start and end
+		word = strings.Trim(word, ".,!?;:\"'()[]{}/-_=+")
+		if word != "" && len(word) > 0 {
+			wordCount++
+		}
+	}
+
+	return wordCount
 }
