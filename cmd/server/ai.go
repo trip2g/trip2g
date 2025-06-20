@@ -1,5 +1,6 @@
 package main
 
+/*
 import (
 	"context"
 	"encoding/json"
@@ -24,7 +25,7 @@ A pipeline has memory that stores all step outputs. Each step can access previou
 
 Each step has:
 - name: unique identifier
-- type: "prompt" or "loop"  
+- type: "prompt" or "loop"
 - prompt: the AI instruction (can use {{.step_name.output}} from memory)
 - deps: array of step names that must complete before this step can run
 
@@ -38,7 +39,7 @@ Each step has:
     "deps": []
   },
   {
-    "name": "dependent_step", 
+    "name": "dependent_step",
     "type": "prompt",
     "prompt": "AI instruction with {{.previous_step.output}}",
     "deps": ["previous_step"]
@@ -69,7 +70,7 @@ Output:
     "deps": ["extract_topics"]
   },
   {
-    "name": "second_summary", 
+    "name": "second_summary",
     "type": "prompt",
     "prompt": "Reduce this text {{.first_summary.output}} by 50% while keeping these key topics: {{.extract_topics.output}}",
     "deps": ["first_summary", "extract_topics"]
@@ -390,3 +391,4 @@ func resolveAI(content string, offset int, log logger.Logger) ([]byte, error) {
 
 	return allResultsJSON, nil
 }
+*/

@@ -827,30 +827,6 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 		return true
 	}
 
-	if strings.HasPrefix(path, "/debug/demoai") {
-		ctx.SetContentType("application/json")
-		ctx.SetStatusCode(fasthttp.StatusOK)
-
-		// Parse offset parameter, default to 0
-		offset := 0
-		if offsetStr := string(ctx.QueryArgs().Peek("offset")); offsetStr != "" {
-			if parsedOffset, err := strconv.Atoi(offsetStr); err == nil {
-				offset = parsedOffset
-			}
-		}
-
-		raw, err := resolveAI(string(ctx.Request.Body()), offset, a.log)
-		if err != nil {
-			a.log.Error("failed to resolve AI data", "error", err)
-			ctx.SetStatusCode(fasthttp.StatusInternalServerError)
-			ctx.SetBodyString("500 Internal Server Error")
-			return true
-		}
-
-		ctx.SetBody(raw)
-		return true
-	}
-
 	return false
 }
 
