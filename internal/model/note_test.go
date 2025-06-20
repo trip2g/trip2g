@@ -270,7 +270,7 @@ Final content.`,
 				ast:     doc,
 			}
 
-			n.extractHeadings()
+			n.extractHeadingsAndGenerateIDs()
 
 			require.Equal(t, tt.expectedHeadings, n.Headings)
 		})

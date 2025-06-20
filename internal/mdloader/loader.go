@@ -85,9 +85,6 @@ func Load(options Options) (*model.NoteViews, error) {
 			enclave.New(&enclavecore.Config{}),
 			meta.Meta,
 		),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-		),
 	)
 
 	for _, src := range options.Sources {

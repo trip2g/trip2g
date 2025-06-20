@@ -15,8 +15,9 @@ import (
 )
 
 type NoteViewHeading struct {
-	Text  string `json:"text"`
-	Level int    `json:"level"`
+	Text  string
+	Level int
+	ID    string
 }
 
 type NoteView struct {
@@ -56,6 +57,8 @@ type NoteView struct {
 	ReadingComplexity int // 0 - easy, 1 - medium, 2 - hard
 
 	Headings []NoteViewHeading // extracted from AST
+
+	HeadingCount map[string]int // for id generation
 }
 
 type NoteSubgraph struct {
@@ -191,7 +194,7 @@ func (n *NoteView) ExtractMetaData() error {
 		return err
 	}
 
-	n.extractHeadings()
+	n.extractHeadingsAndGenerateIDs()
 
 	return nil
 }
@@ -290,7 +293,28 @@ func (n *NoteView) extractReadingComplexity() error {
 	return nil
 }
 
-func (n *NoteView) extractHeadings() {
+var onlyCharsRE = regexp.MustCompile(`[^a-zA-Z0-9]+`)
+
+func (n *NoteView) generateHeadingID(headingText string) string {
+	id := russkayalatinica.Translit(headingText)
+	id = onlyCharsRE.ReplaceAllString(id, "_")
+	id = strings.ToLower(id)
+	id += "_h"
+
+	if n.HeadingCount == nil {
+		n.HeadingCount = make(map[string]int)
+	}
+
+	n.HeadingCount[id]++
+
+	if n.HeadingCount[id] > 1 {
+		id = fmt.Sprintf("%s-%d", id, n.HeadingCount[id])
+	}
+
+	return id
+}
+
+func (n *NoteView) extractHeadingsAndGenerateIDs() {
 	n.Headings = nil
 
 	if n.ast == nil {
@@ -305,9 +329,20 @@ func (n *NoteView) extractHeadings() {
 		if heading, ok := node.(*ast.Heading); ok {
 			headingText := extractHeadingText(n.Content, heading)
 			if headingText != "" {
+				var id string
+
+				rawID, withID := node.AttributeString("id")
+				if withID {
+					id = string(rawID.([]byte)) //nolint:errcheck
+				} else {
+					id = n.generateHeadingID(headingText)
+					node.SetAttributeString("id", []byte(id))
+				}
+
 				n.Headings = append(n.Headings, NoteViewHeading{
 					Text:  headingText,
 					Level: heading.Level,
+					ID:    id,
 				})
 			}
 		}
