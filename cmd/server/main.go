@@ -839,7 +839,7 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 			}
 		}
 
-		raw, err := resolveAI(string(ctx.Request.Body()), offset)
+		raw, err := resolveAI(string(ctx.Request.Body()), offset, a.log)
 		if err != nil {
 			a.log.Error("failed to resolve AI data", "error", err)
 			ctx.SetStatusCode(fasthttp.StatusInternalServerError)

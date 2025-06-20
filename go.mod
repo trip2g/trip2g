@@ -8,6 +8,7 @@ require (
 	github.com/99designs/gqlgen v0.17.74
 	github.com/amacneil/dbmate/v2 v2.27.0
 	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible
+	github.com/deliveryhero/pipeline/v2 v2.2.0
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/henomis/lingoose v0.3.0
