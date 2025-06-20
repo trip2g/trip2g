@@ -62,36 +62,57 @@ func StreamBeginLayout(qw422016 *qt422016.Writer, params *Params) {
 //line views.qtpl:17
 	qw422016.N().S(`
 
+<meta property="og:title" content="`)
+//line views.qtpl:19
+	qw422016.E().S(params.Title)
+//line views.qtpl:19
+	qw422016.N().S(`">
+`)
+//line views.qtpl:20
+	if params.MetaDescription != nil {
+//line views.qtpl:20
+		qw422016.N().S(`
+<meta property="og:description" content="`)
+//line views.qtpl:21
+		qw422016.N().S(*params.MetaDescription)
+//line views.qtpl:21
+		qw422016.N().S(`">
+`)
+//line views.qtpl:22
+	}
+//line views.qtpl:22
+	qw422016.N().S(`
+
 <script>
 window.__trip2g_settings = {
   is_dev_mode: `)
-//line views.qtpl:21
+//line views.qtpl:26
 	qw422016.N().S(params.DevMode)
-//line views.qtpl:21
+//line views.qtpl:26
 	qw422016.N().S(`
 }
 </script>
 
 <title>`)
-//line views.qtpl:25
+//line views.qtpl:30
 	qw422016.E().S(params.Title)
-//line views.qtpl:25
+//line views.qtpl:30
 	qw422016.N().S(`</title>
 
 `)
-//line views.qtpl:27
+//line views.qtpl:32
 	for _, url := range params.CSSURLs {
-//line views.qtpl:27
+//line views.qtpl:32
 		qw422016.N().S(`
 <link href="`)
-//line views.qtpl:28
+//line views.qtpl:33
 		qw422016.E().S(url)
-//line views.qtpl:28
+//line views.qtpl:33
 		qw422016.N().S(`" rel="stylesheet">
 `)
-//line views.qtpl:29
+//line views.qtpl:34
 	}
-//line views.qtpl:29
+//line views.qtpl:34
 	qw422016.N().S(`
 
 </head>
@@ -101,85 +122,85 @@ window.__trip2g_settings = {
 <main class="main">
 
 `)
-//line views.qtpl:37
+//line views.qtpl:42
 }
 
-//line views.qtpl:37
+//line views.qtpl:42
 func WriteBeginLayout(qq422016 qtio422016.Writer, params *Params) {
-//line views.qtpl:37
+//line views.qtpl:42
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.qtpl:37
+//line views.qtpl:42
 	StreamBeginLayout(qw422016, params)
-//line views.qtpl:37
+//line views.qtpl:42
 	qt422016.ReleaseWriter(qw422016)
-//line views.qtpl:37
+//line views.qtpl:42
 }
 
-//line views.qtpl:37
+//line views.qtpl:42
 func BeginLayout(params *Params) string {
-//line views.qtpl:37
+//line views.qtpl:42
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.qtpl:37
+//line views.qtpl:42
 	WriteBeginLayout(qb422016, params)
-//line views.qtpl:37
+//line views.qtpl:42
 	qs422016 := string(qb422016.B)
-//line views.qtpl:37
+//line views.qtpl:42
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.qtpl:37
+//line views.qtpl:42
 	return qs422016
-//line views.qtpl:37
+//line views.qtpl:42
 }
 
-//line views.qtpl:39
+//line views.qtpl:44
 func StreamFinishLayout(qw422016 *qt422016.Writer, params *Params) {
-//line views.qtpl:39
+//line views.qtpl:44
 	qw422016.N().S(`
 
 </main>
 </div>
 
 `)
-//line views.qtpl:44
+//line views.qtpl:49
 	for _, url := range params.JSURLs {
-//line views.qtpl:44
+//line views.qtpl:49
 		qw422016.N().S(`
 <script src="`)
-//line views.qtpl:45
+//line views.qtpl:50
 		qw422016.N().S(url)
-//line views.qtpl:45
+//line views.qtpl:50
 		qw422016.N().S(`"></script>
 `)
-//line views.qtpl:46
+//line views.qtpl:51
 	}
-//line views.qtpl:46
+//line views.qtpl:51
 	qw422016.N().S(`
 
 `)
-//line views.qtpl:48
+//line views.qtpl:53
 }
 
-//line views.qtpl:48
+//line views.qtpl:53
 func WriteFinishLayout(qq422016 qtio422016.Writer, params *Params) {
-//line views.qtpl:48
+//line views.qtpl:53
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.qtpl:48
+//line views.qtpl:53
 	StreamFinishLayout(qw422016, params)
-//line views.qtpl:48
+//line views.qtpl:53
 	qt422016.ReleaseWriter(qw422016)
-//line views.qtpl:48
+//line views.qtpl:53
 }
 
-//line views.qtpl:48
+//line views.qtpl:53
 func FinishLayout(params *Params) string {
-//line views.qtpl:48
+//line views.qtpl:53
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.qtpl:48
+//line views.qtpl:53
 	WriteFinishLayout(qb422016, params)
-//line views.qtpl:48
+//line views.qtpl:53
 	qs422016 := string(qb422016.B)
-//line views.qtpl:48
+//line views.qtpl:53
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.qtpl:48
+//line views.qtpl:53
 	return qs422016
-//line views.qtpl:48
+//line views.qtpl:53
 }

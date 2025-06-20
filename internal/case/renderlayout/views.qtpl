@@ -16,6 +16,11 @@
 <meta name="robots" content="{%s= params.MetaRobots %}">
 {% endif %}
 
+<meta property="og:title" content="{%s params.Title %}">
+{% if params.MetaDescription != nil %}
+<meta property="og:description" content="{%s= *params.MetaDescription %}">
+{% endif %}
+
 <script>
 window.__trip2g_settings = {
   is_dev_mode: {%s= params.DevMode %}
