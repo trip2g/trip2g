@@ -2,208 +2,135 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/henomis/lingoose/llm/openai"
 	"github.com/henomis/lingoose/thread"
-	"github.com/henomis/lingoose/types"
 )
 
-const prompt0 = `
-# Задача: Извлечение ключевых тем
+const pipelineBuilderPrompt = `
+# JSON Pipeline Builder
 
-Проанализируй предоставленный текст и выдели ровно 3 ключевые темы, которые наиболее точно отражают его основное содержание.
+You are a JSON pipeline configuration builder. Your task is to convert natural language descriptions of AI processing pipelines into structured JSON.
 
-## Требования:
-1. Каждая тема должна быть сформулирована как краткая фраза (2-5 слов)
-2. Темы должны охватывать разные аспекты текста
-3. Избегай повторений и дублирования смысла
-4. Фокусируйся на главных идеях, а не на деталях
-5. Используй существительные и ключевые понятия из текста
+## Pipeline Structure
 
-## Формат ответа:
-Верни только список из трех пунктов без дополнительных объяснений:
+A pipeline has memory that stores all step outputs. Each step can access previous outputs using variables.
 
-1. [Первая ключевая тема]
-2. [Вторая ключевая тема]
-3. [Третья ключевая тема]
+Each step has:
+- name: unique identifier
+- type: "prompt" or "loop"  
+- prompt: the AI instruction (can use {{.step_name.output}} from memory)
+- iterations: (only for loop type) how many times to repeat
 
-Анализируй внимательно и выбирай наиболее значимые темы.
+## JSON Schema:
+
+[
+  {
+    "name": "step_name",
+    "type": "prompt",
+    "prompt": "AI instruction text"
+  },
+  {
+    "name": "loop_step", 
+    "type": "loop",
+    "iterations": 2,
+    "prompt": "AI instruction with {{.previous_step.output}}"
+  }
+]
+
+## Memory Variables:
+- {{.input.content}} - always available, the original user input text
+- {{.step_name.output}} - result from any previous step named "step_name"
+- Variables must use dot notation: {{.step_name.output}}
+
+## Example:
+
+Input: "First extract 3 key topics, then summarize the ORIGINAL text by 50%, then summarize the result by 50% again, keeping the topics"
+
+Output:
+[
+  {
+    "name": "extract_topics",
+    "type": "prompt",
+    "prompt": "Extract exactly 3 key topics from the text: {{.input.content}}"
+  },
+  {
+    "name": "first_summary",
+    "type": "prompt",
+    "prompt": "Reduce the ORIGINAL text {{.input.content}} by 50% while keeping these key topics: {{.extract_topics.output}}"
+  },
+  {
+    "name": "second_summary", 
+    "type": "prompt",
+    "prompt": "Reduce this text {{.first_summary.output}} by 50% while keeping these key topics: {{.extract_topics.output}}"
+  }
+]
+
+## Rules:
+1. Use {{.input.content}} for original text (can be used in any step)
+2. Reference previous step outputs with {{.step_name.output}}
+3. For loops, each iteration processes {{.input.content}} with context from {{.step_name.output}}
+4. Use descriptive step names
+5. Return ONLY the JSON array of steps, no wrapper object
+
+Convert the following pipeline description to JSON:
 `
 
-const prompt1 = `
-Сократи текст на половину, сохранив основные ключевые темы:
-{{.topics}}
-`
-
-const prompt2 = `
-# Задача: Анализ релевантности текста
-
-У тебя есть:
-1. Ключевые темы текста:
-{{.topics}}
-
-2. Сокращенная версия текста:
-{{.text}}
-
-## Вопросы для анализа:
-
-1. Насколько процентов (0-100%) данный текст отвечает на вопрос: "Как выглядит день автора базы?"
-   - Опиши какие аспекты дня раскрыты, а какие отсутствуют
-
-2. Дай 3-5 конкретных рекомендаций по улучшению текста, чтобы он лучше отвечал на этот вопрос
-
-## Формат ответа:
-Релевантность: [X]%
-
-Раскрытые аспекты:
-- [аспект 1]
-- [аспект 2]
-
-Отсутствующие аспекты:
-- [аспект 1]
-- [аспект 2]
-
-Рекомендации по улучшению:
-1. [конкретная рекомендация]
-2. [конкретная рекомендация]
-3. [конкретная рекомендация]
-`
-
-const prompt3 = `
-# Задача: Критический анализ и альтернативная версия
-
-Ты - опытный критик и редактор текстов. Проанализируй оригинальный текст и результат его обработки.
-
-## Исходные данные:
-
-### Оригинальный текст:
-{{.original}}
-
-### Результат анализа:
-{{.analysis}}
-
-## Твоя задача:
-
-1. Критически оцени результат анализа:
-   - Что упущено из виду?
-   - Какие выводы кажутся поверхностными?
-   - Где анализ мог бы быть глубже?
-
-2. Предложи свою альтернативную версию анализа, которая:
-   - Более точно отвечает на вопрос "Как выглядит день автора?"
-   - Выделяет неочевидные, но важные детали
-   - Дает более практичные рекомендации
-
-## Формат ответа:
-
-### Критика предыдущего анализа:
-[Укажи 3-4 конкретных недостатка]
-
-### Мой альтернативный анализ:
-
-Релевантность: [X]% (с обоснованием)
-
-Ключевые инсайты о дне автора:
-- [неочевидный, но важный аспект]
-- [скрытая рутина или паттерн]
-- [эмоциональная составляющая дня]
-
-Практические рекомендации:
-1. [очень конкретная и выполнимая рекомендация]
-2. [рекомендация с примером реализации]
-3. [рекомендация, учитывающая контекст автора]
-
-### Главный вывод:
-[Одно предложение о том, что действительно важно понять про день автора]
+// Test pipeline description
+const testPipelineDescription = `
+Создай пайплайн который:
+1. Сначала извлекает 3 ключевые темы из оригинального текста {{.input.content}}
+2. Первое сокращение: сокращает ОРИГИНАЛЬНЫЙ текст {{.input.content}} на 50%, сохраняя эти темы из шага 1
+3. Второе сокращение: сокращает результат с шага 2 еще на 50%, сохраняя темы из шага 1  
+4. После этого анализирует насколько СОКРАЩЕННЫЙ результат с шага 3 отвечает на вопрос "Как выглядит день автора?", используя также темы из шага 1
+5. В конце критик дает альтернативный анализ, сравнивая ОРИГИНАЛЬНЫЙ текст {{.input.content}} и результат анализа с шага 4
 `
 
 func resolveAI(content string, offset int) ([]byte, error) {
-	// Step 1: Extract key topics
+	// Step 1: Build pipeline JSON from description
 	myThread := thread.New().AddMessage(
 		thread.NewSystemMessage().AddContent(
-			thread.NewTextContent(prompt0),
+			thread.NewTextContent(pipelineBuilderPrompt),
 		),
 	).AddMessage(
 		thread.NewUserMessage().AddContent(
-			thread.NewTextContent(content),
+			thread.NewTextContent(testPipelineDescription),
 		),
 	)
 
 	err := openai.New().WithMaxTokens(2048).Generate(context.Background(), myThread)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to generate pipeline: %w", err)
 	}
 
 	resMsg := myThread.LastMessage()
-	topics := resMsg.Contents[0].Data.(string)
+	pipelineJSON := resMsg.Contents[0].Data.(string)
 
-	// Step 2: Apply reductions in a loop
-	currentText := content
-	reductionIterations := 2
-
-	for i := 0; i < reductionIterations; i++ {
-		myThread := thread.New().AddMessage(
-			thread.NewSystemMessage().AddContent(
-				thread.NewTextContent(prompt1).Format(types.M{"topics": topics}),
-			),
-		).AddMessage(
-			thread.NewUserMessage().AddContent(
-				thread.NewTextContent(currentText),
-			),
-		)
-
-		err = openai.New().WithMaxTokens(2048).Generate(context.Background(), myThread)
-		if err != nil {
-			panic(err)
-		}
-
-		resMsg := myThread.LastMessage()
-		currentText = resMsg.Contents[0].Data.(string)
-	}
-
-	// Step 3: Analyze relevance with topics and reduced text
-	finalThread := thread.New().AddMessage(
-		thread.NewSystemMessage().AddContent(
-			thread.NewTextContent(prompt2).Format(types.M{
-				"topics": topics,
-				"text":   currentText,
-			}),
-		),
-	).AddMessage(
-		thread.NewUserMessage().AddContent(
-			thread.NewTextContent("Проанализируй текст"),
-		),
-	)
-
-	err = openai.New().WithMaxTokens(2048).Generate(context.Background(), finalThread)
+	// Step 2: Parse and validate JSON array
+	var pipelineSteps []map[string]interface{}
+	err = json.Unmarshal([]byte(pipelineJSON), &pipelineSteps)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to parse pipeline JSON: %w", err)
 	}
 
-	finalMsg := finalThread.LastMessage()
-	analysis := finalMsg.Contents[0].Data.(string)
-
-	// Step 4: Critical review with original text and analysis
-	criticThread := thread.New().AddMessage(
-		thread.NewSystemMessage().AddContent(
-			thread.NewTextContent(prompt3).Format(types.M{
-				"original": content,
-				"analysis": analysis,
-			}),
-		),
-	).AddMessage(
-		thread.NewUserMessage().AddContent(
-			thread.NewTextContent("Дай критический анализ"),
-		),
-	)
-
-	err = openai.New().WithMaxTokens(2048).Generate(context.Background(), criticThread)
+	// Step 3: Pretty print for debug
+	prettyJSON, err := json.MarshalIndent(pipelineSteps, "", "  ")
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to format JSON: %w", err)
 	}
 
-	criticMsg := criticThread.LastMessage()
-	critique := criticMsg.Contents[0].Data.(string)
+	fmt.Println("Generated Pipeline Steps:")
+	fmt.Println(string(prettyJSON))
+	fmt.Printf("Number of steps: %d\n", len(pipelineSteps))
 
-	return []byte(critique), nil
+	// Print step details for debugging
+	for i, step := range pipelineSteps {
+		fmt.Printf("Step %d: %s (%s)\n", i+1, step["name"], step["type"])
+	}
+
+	// For now, just return the JSON
+	// Later we will add execution logic
+	return prettyJSON, nil
 }
