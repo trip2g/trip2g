@@ -215,7 +215,7 @@ func (c *Config) defineFlags() {
 	flag.StringVar(&c.MailFrom, "mail-from", "no-reply@resend.trip2g.com", "Email address to use as sender")
 
 	// MD Loader
-	flag.BoolVar(&c.MDLoaderConfig.AutoLowerWikilinks, "md-loader-auto-lower-wikilinks", true, "Automatically lower-case wikilinks")
+	flag.BoolVar(&c.MDLoaderConfig.AutoLowerWikilinks, "md-loader-auto-lower-wikilinks", false, "Automatically lower-case wikilinks")
 }
 
 // validate checks if the configuration is valid using ozzo validation.

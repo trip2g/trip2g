@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
-	"trip2g/internal/mdloader"
+	"sync"
 
 	"github.com/henomis/lingoose/llm/openai"
 	"github.com/henomis/lingoose/thread"
@@ -20,7 +21,9 @@ type AIIssue struct {
 }
 
 type AIResponse struct {
-	Issues []AIIssue `json:"issues"`
+	Issues     []AIIssue `json:"issues"`
+	TotalCount int       `json:"totalCount"`
+	PageSize   int       `json:"pageSize"`
 }
 
 type WikilinkCheckResponse struct {
@@ -29,180 +32,113 @@ type WikilinkCheckResponse struct {
 	Comment  string `json:"comment,omitempty"`
 }
 
+type WikilinkResult struct {
+	Issue *AIIssue
+	Error error
+	Index int
+}
+
 var checkWikilinkPrompt = `
-# Task: Check if Single Wikilink Needs Grammatical Correction
+You analyze a Russian text fragment with ONE wikilink and decide if it needs grammatical correction.
 
-You receive a sentence with context and ONE specific wikilink to analyze.
+Context: You receive ~10 words before the wikilink, the wikilink itself, and ~10 words after.
 
-## Context
-- Text has been pre-processed with automatic normalization: [[Link]] → [[Link|link]]  
-- You get the full sentence for context and ONE specific wikilink from that sentence
-- Focus ONLY on whether THIS wikilink has a grammatical case error
+Task: Determine if the wikilink needs a display text with correct grammatical form.
 
-## Examples of what to fix:
-1. Sentence: "Выполнить [[Зарядка|зарядка]]" → Wikilink: "[[Зарядка|зарядка]]" → Fix to: "[[Зарядка|зарядку]]" (винительный падеж)
-2. Sentence: "Думать о [[Работа|работу]]" → Wikilink: "[[Работа|работу]]" → Fix to: "[[Работа|работе]]" (предложный падеж)  
-3. Sentence: "Использовать [[Шаблон|шаблон]]" → Wikilink: "[[Шаблон|шаблон]]" → Fix to: "[[Шаблон|шаблона]]" (винительный падеж)
-4. Sentence: "Идти к [[Врач]]" → Wikilink: "[[Врач]]" → Fix to: "[[Врач|врачу]]" (дательный падеж)
+Rules:
+1. If wikilink already has | (pipe), return needs_fix: false
+2. If wikilink is grammatically correct as-is, return needs_fix: false  
+3. Only fix if the word needs different grammatical case (падеж) for the context
+4. Display text should be lowercase
+5. Keep plural/singular form unchanged
 
-## What NOT to fix:
-1. Complete phrases: [[Легче никогда не станет]]
-2. Already correct cases: Из [[Дом|дома]]
-3. Already normalized: [[Дневник сновидений|дневник сновидений]]
-4. Subject in nominative case: Когда [[Мыслетоплево|мыслетоплево]] в достатке
-5. Nominative after "это": Это [[Метод|метод]] работает
-6. Subject of sentence: [[Человек|человек]] пришел
-7. Correct plural forms: Прочитать [[Аффирмации|аффирмации]] (винительный падеж множественного числа)
-8. Plural after verbs: Делать [[Упражнения|упражнения]], писать [[Заметки|заметки]]
+Examples:
+[[Принцип Парето]] помогает фокусироваться > [[Принцип Парето]] помогает фокусироваться // need_fix: false
+[[Закон Мерфи]] предупреждает о рисках > [[Закон Мерфи]] предупреждает о рисках // need_fix: false
+[[Цикл Деминга]] совершенствует процессы > [[Цикл Деминга]] совершенствует процессы // need_fix: false
+[[Диаграмма Ганта]] визуализирует сроки > [[Диаграмма Ганта]] визуализирует сроки // need_fix: false
+[[Метод пяти почему]] раскрывает причины > [[Метод пяти почему]] раскрывает причины // need_fix: false
 
-## Specific Examples:
-- "из [[Шаблон дневной заметки|шаблон дневной заметки]]" → Fix to: "[[Шаблон дневной заметки|шаблона дневной заметки]]" (родительный падеж после "из")
-- "использовать [[Шаблон|шаблон]]" → Fix to: "[[Шаблон|шаблона]]" (винительный падеж после "использовать")
+Мы анализировали [[Кривая обучения]] команды > Мы анализировали [[Кривая обучения|кривую обучения]] команды
+Я замечаю [[Эффект Даннинга-Крюгера]] у коллег > Я замечаю [[Эффект Даннинга-Крюгера|эффект Даннинга-Крюгера]] у коллег
+План выйдет на [[Точка безубыточности]] осенью > План выйдет на [[Точка безубыточности|точку безубыточности]] осенью
+Мы получили честную [[Обратная связь]] после демо > Мы получили честную [[Обратная связь|обратную связь]] после демо
+Погрузился в [[Фокус глубокая работа]] и продолжил писать > Погрузился в [[Фокус глубокая работа|фокус глубокой работы]] и продолжил писать
 
-## Input Format
-You receive:
-- Sentence: [full sentence text]
-- Wikilink: [specific wikilink to check]
+Расставляю дела по [[Матрица Эйзенхауэра]]. > Расставляю дела по [[Матрица Эйзенхауэра|матрице Эйзенхауэра]].
+Настраиваю дыхание по [[Протокол Делланы]]. > Настраиваю дыхание по [[Протокол Делланы|протоколу Делланы]].
+Формируем персонажей через [[Карта эмпатии]]. > Формируем персонажей через [[Карта эмпатии|карту эмпатии]].
+Сократили сроки через [[Метод критической цепи]]. > Сократили сроки через [[Метод критической цепи|метод критической цепи]].
+Метрики собраны из [[Базовые метрики продукта]]. > Метрики собраны из [[Базовые метрики продукта|базовых метрик продукта]].
 
-## Output Format
-Return ONLY raw JSON without markdown formatting:
-
-If needs correction:
-{"needs_fix": true, "fix": "[[corrected wikilink]]", "comment": "объяснение на русском"}
-
-If no correction needed:
+Return ONLY JSON:
+{"needs_fix": true, "fix": "[[Original|corrected]]", "comment": "причина"}
+OR
 {"needs_fix": false}
-
-**Important:**
-- comment must be in Russian language
-- DO NOT wrap response in json md blocks  
-- Return raw JSON only
-- fix must be the COMPLETE corrected wikilink, ready for replacement
-- CHANGE the label part to correct grammatical case (шаблон → шаблона, работу → работе, etc.)
-- If the wikilink is already correct, return {"needs_fix": false}
-- NEVER return the same text as fix - if you can't determine the correct form, return {"needs_fix": false}
-- Nominative case (именительный падеж) is correct for subjects and after "когда", "если", "это"
-- PRESERVE singular/plural form - do NOT change аффирмации→аффирмацию, упражнения→упражнение
-- Focus ONLY on grammatical case (падеж), not on number (число)
 `
 
-func resolveAI(content string) (*AIResponse, error) {
-	// Split content into sentences BEFORE normalization to preserve original wikilinks
-	sentences := splitIntoSentences(content)
-
-	// Filter sentences that contain wikilinks
-	var wikilinkSentences []string
-	for _, sentence := range sentences {
-		if containsWikilinks(sentence) {
-			wikilinkSentences = append(wikilinkSentences, sentence)
-		}
-	}
-
-	// Limit to first 10 sentences for testing
-	if len(wikilinkSentences) > 10 {
-		wikilinkSentences = wikilinkSentences[:10]
-	}
-
-	var allIssues []AIIssue
-
-	// Process each sentence separately
-	for _, sentence := range wikilinkSentences {
-		issues, err := processSentence(sentence)
-		if err != nil {
-			fmt.Printf("Error processing sentence: %v\n", err)
-			continue
-		}
-		allIssues = append(allIssues, issues...)
-	}
-
-	return &AIResponse{Issues: allIssues}, nil
+type WikilinkContext struct {
+	Before   string
+	Wikilink string
+	After    string
+	Position int
 }
 
-func splitIntoSentences(content string) []string {
-	// Split by sentences (., !, ?) and paragraphs
-	sentences := []string{}
-
-	// First split by paragraphs
-	paragraphs := strings.Split(content, "\n\n")
-
-	for _, paragraph := range paragraphs {
-		paragraph = strings.TrimSpace(paragraph)
-		if paragraph == "" {
-			continue
-		}
-
-		// Split paragraph by sentence endings
-		current := ""
-		for i, char := range paragraph {
-			current += string(char)
-
-			// Check if this is a sentence ending
-			if char == '.' || char == '!' || char == '?' {
-				// Look ahead to see if next char is space or end of string
-				if i+1 >= len(paragraph) || paragraph[i+1] == ' ' || paragraph[i+1] == '\n' {
-					sentences = append(sentences, strings.TrimSpace(current))
-					current = ""
-				}
-			}
-		}
-
-		// Add remaining text if any
-		if strings.TrimSpace(current) != "" {
-			sentences = append(sentences, strings.TrimSpace(current))
-		}
-	}
-
-	return sentences
-}
-
-func containsWikilinks(text string) bool {
-	return strings.Contains(text, "[[") && strings.Contains(text, "]]")
-}
-
-func extractWikilinks(text string) []string {
+func extractWikilinksWithContext(content string, wordsBefore, wordsAfter int) []WikilinkContext {
 	re := regexp.MustCompile(`\[\[([^\]]+)\]\]`)
-	matches := re.FindAllString(text, -1)
-	return matches
-}
+	matches := re.FindAllStringIndex(content, -1)
 
-func processSentence(sentence string) ([]AIIssue, error) {
-	// Extract original wikilinks from the sentence (before normalization)
-	originalWikilinks := extractWikilinks(sentence)
+	var contexts []WikilinkContext
+	words := strings.Fields(content)
 
-	// Normalize sentence for AI processing
-	normalizedSentence := string(mdloader.NormalizeWikilinks([]byte(sentence)))
-	normalizedWikilinks := extractWikilinks(normalizedSentence)
+	for _, match := range matches {
+		start, end := match[0], match[1]
+		wikilink := content[start:end]
 
-	var issues []AIIssue
+		// Find word positions
+		currentPos := 0
+		wikilinkWordIndex := -1
 
-	// Process each wikilink (match original with normalized)
-	for i, originalWikilink := range originalWikilinks {
-		// Get corresponding normalized wikilink
-		var normalizedWikilink string
-		if i < len(normalizedWikilinks) {
-			normalizedWikilink = normalizedWikilinks[i]
-		} else {
-			normalizedWikilink = originalWikilink // fallback
+		for i, word := range words {
+			if currentPos <= start && currentPos+len(word) >= start {
+				wikilinkWordIndex = i
+				break
+			}
+			currentPos += len(word) + 1 // +1 for space
 		}
 
-		issue, err := checkWikilink(normalizedSentence, normalizedWikilink)
-		if err != nil {
-			fmt.Printf("Error checking wikilink %s: %v\n", normalizedWikilink, err)
+		if wikilinkWordIndex == -1 {
 			continue
 		}
 
-		if issue != nil {
-			// Use original wikilink as marker for replacement
-			issue.Marker = originalWikilink
-			issues = append(issues, *issue)
+		// Get context words
+		beforeStart := wikilinkWordIndex - wordsBefore
+		if beforeStart < 0 {
+			beforeStart = 0
 		}
+
+		afterEnd := wikilinkWordIndex + wordsAfter + 1
+		if afterEnd > len(words) {
+			afterEnd = len(words)
+		}
+
+		beforeWords := words[beforeStart:wikilinkWordIndex]
+		afterWords := words[wikilinkWordIndex+1 : afterEnd]
+
+		contexts = append(contexts, WikilinkContext{
+			Before:   strings.Join(beforeWords, " "),
+			Wikilink: wikilink,
+			After:    strings.Join(afterWords, " "),
+			Position: start,
+		})
 	}
 
-	return issues, nil
+	return contexts
 }
 
-func checkWikilink(sentence, wikilink string) (*AIIssue, error) {
-	prompt := fmt.Sprintf("Sentence: %s\nWikilink: %s", sentence, wikilink)
+func checkSingleWikilink(ctx WikilinkContext) (*AIIssue, error) {
+	// Build the context string
+	contextStr := fmt.Sprintf("%s %s %s", ctx.Before, ctx.Wikilink, ctx.After)
 
 	myThread := thread.New().AddMessage(
 		thread.NewSystemMessage().AddContent(
@@ -210,7 +146,7 @@ func checkWikilink(sentence, wikilink string) (*AIIssue, error) {
 		),
 	).AddMessage(
 		thread.NewUserMessage().AddContent(
-			thread.NewTextContent(prompt),
+			thread.NewTextContent(contextStr),
 		),
 	)
 
@@ -225,23 +161,106 @@ func checkWikilink(sentence, wikilink string) (*AIIssue, error) {
 	}
 
 	responseText := resMsg.Contents[0].Data.(string)
-	fmt.Printf("Response for wikilink %s: %s\n", wikilink, responseText)
 
 	var checkResp WikilinkCheckResponse
 	err = json.Unmarshal([]byte(responseText), &checkResp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal AI response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	// If no fix needed, return nil
 	if !checkResp.NeedsFix {
 		return nil, nil
 	}
 
-	// Return the issue with original wikilink as marker and AI's fix
 	return &AIIssue{
-		Marker:  wikilink,
+		Marker:  ctx.Wikilink,
 		Fix:     checkResp.Fix,
 		Comment: checkResp.Comment,
 	}, nil
+}
+
+func resolveAI(content string, offset int) ([]byte, error) {
+	// Extract wikilinks with 10 words context
+	contexts := extractWikilinksWithContext(content, 10, 10)
+	totalCount := len(contexts)
+
+	// Apply offset and limit
+	pageSize := 5
+	start := offset
+	end := offset + pageSize
+	
+	if start >= len(contexts) {
+		// Return empty result if offset is beyond available wikilinks
+		response := AIResponse{Issues: []AIIssue{}, TotalCount: totalCount, PageSize: pageSize}
+		responseJSON, err := json.Marshal(response)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal response: %w", err)
+		}
+		return responseJSON, nil
+	}
+	
+	if end > len(contexts) {
+		end = len(contexts)
+	}
+	
+	contexts = contexts[start:end]
+
+	// Process wikilinks in parallel using goroutines
+	var wg sync.WaitGroup
+	results := make(chan WikilinkResult, len(contexts))
+
+	// Launch goroutines for each wikilink
+	for i, ctx := range contexts {
+		wg.Add(1)
+		go func(index int, context WikilinkContext) {
+			defer wg.Done()
+			
+			issue, err := checkSingleWikilink(context)
+			results <- WikilinkResult{
+				Issue: issue,
+				Error: err,
+				Index: index,
+			}
+		}(i, ctx)
+	}
+
+	// Wait for all goroutines to complete
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Collect results and preserve order
+	var results_slice []WikilinkResult
+	for result := range results {
+		results_slice = append(results_slice, result)
+	}
+
+	// Sort results by original index to preserve order
+	sort.Slice(results_slice, func(i, j int) bool {
+		return results_slice[i].Index < results_slice[j].Index
+	})
+
+	// Extract issues in original order
+	var allIssues []AIIssue
+	for _, result := range results_slice {
+		if result.Error != nil {
+			fmt.Printf("Error checking wikilink at index %d: %v\n", result.Index, result.Error)
+			continue
+		}
+
+		if result.Issue != nil {
+			allIssues = append(allIssues, *result.Issue)
+		}
+	}
+
+	// Build response
+	response := AIResponse{Issues: allIssues, TotalCount: totalCount, PageSize: pageSize}
+
+	responseJSON, err := json.Marshal(response)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal response: %w", err)
+	}
+
+	return responseJSON, nil
 }

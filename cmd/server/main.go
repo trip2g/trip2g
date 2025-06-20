@@ -831,17 +831,19 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 		ctx.SetContentType("application/json")
 		ctx.SetStatusCode(fasthttp.StatusOK)
 
-		res, err := resolveAI(string(ctx.Request.Body()))
+		// Parse offset parameter, default to 0
+		offset := 0
+		if offsetStr := string(ctx.QueryArgs().Peek("offset")); offsetStr != "" {
+			if parsedOffset, err := strconv.Atoi(offsetStr); err == nil {
+				offset = parsedOffset
+			}
+		}
+
+		raw, err := resolveAI(string(ctx.Request.Body()), offset)
 		if err != nil {
 			a.log.Error("failed to resolve AI data", "error", err)
 			ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 			ctx.SetBodyString("500 Internal Server Error")
-			return true
-		}
-
-		raw, err := json.Marshal(res)
-		if err != nil {
-			a.log.Error("failed to marshal demo AI data", "error", err)
 			return true
 		}
 
