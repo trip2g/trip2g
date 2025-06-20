@@ -2,265 +2,208 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"regexp"
-	"sort"
-	"strings"
-	"sync"
 
 	"github.com/henomis/lingoose/llm/openai"
 	"github.com/henomis/lingoose/thread"
 	"github.com/henomis/lingoose/types"
 )
 
-type AIIssue struct {
-	Marker  string `json:"marker"`
-	Fix     string `json:"fix"`
-	Comment string `json:"comment"`
-}
+const prompt0 = `
+# Задача: Извлечение ключевых тем
 
-type AIResponse struct {
-	Issues     []AIIssue `json:"issues"`
-	TotalCount int       `json:"totalCount"`
-	PageSize   int       `json:"pageSize"`
-}
+Проанализируй предоставленный текст и выдели ровно 3 ключевые темы, которые наиболее точно отражают его основное содержание.
 
-type WikilinkCheckResponse struct {
-	NeedsFix bool   `json:"needs_fix"`
-	Fix      string `json:"fix,omitempty"`
-	Comment  string `json:"comment,omitempty"`
-}
+## Требования:
+1. Каждая тема должна быть сформулирована как краткая фраза (2-5 слов)
+2. Темы должны охватывать разные аспекты текста
+3. Избегай повторений и дублирования смысла
+4. Фокусируйся на главных идеях, а не на деталях
+5. Используй существительные и ключевые понятия из текста
 
-type WikilinkResult struct {
-	Issue *AIIssue
-	Error error
-	Index int
-}
+## Формат ответа:
+Верни только список из трех пунктов без дополнительных объяснений:
 
-var checkWikilinkPrompt = `
-You analyze a Russian text fragment with ONE wikilink and decide if it needs grammatical correction.
+1. [Первая ключевая тема]
+2. [Вторая ключевая тема]
+3. [Третья ключевая тема]
 
-Context: You receive ~10 words before the wikilink, the wikilink itself, and ~10 words after.
-
-Task: Determine if the wikilink needs a display text with correct grammatical form.
-
-Rules:
-1. If wikilink already has | (pipe), return needs_fix: false
-2. If wikilink is grammatically correct as-is, return needs_fix: false  
-3. Only fix if the word needs different grammatical case (падеж) for the context
-4. Display text should be lowercase
-5. Keep plural/singular form unchanged
-
-Examples:
-[[Принцип Парето]] помогает фокусироваться > [[Принцип Парето]] помогает фокусироваться // need_fix: false
-[[Закон Мерфи]] предупреждает о рисках > [[Закон Мерфи]] предупреждает о рисках // need_fix: false
-[[Цикл Деминга]] совершенствует процессы > [[Цикл Деминга]] совершенствует процессы // need_fix: false
-[[Диаграмма Ганта]] визуализирует сроки > [[Диаграмма Ганта]] визуализирует сроки // need_fix: false
-[[Метод пяти почему]] раскрывает причины > [[Метод пяти почему]] раскрывает причины // need_fix: false
-
-Мы анализировали [[Кривая обучения]] команды > Мы анализировали [[Кривая обучения|кривую обучения]] команды
-Я замечаю [[Эффект Даннинга-Крюгера]] у коллег > Я замечаю [[Эффект Даннинга-Крюгера|эффект Даннинга-Крюгера]] у коллег
-План выйдет на [[Точка безубыточности]] осенью > План выйдет на [[Точка безубыточности|точку безубыточности]] осенью
-Мы получили честную [[Обратная связь]] после демо > Мы получили честную [[Обратная связь|обратную связь]] после демо
-Погрузился в [[Фокус глубокая работа]] и продолжил писать > Погрузился в [[Фокус глубокая работа|фокус глубокой работы]] и продолжил писать
-
-Расставляю дела по [[Матрица Эйзенхауэра]]. > Расставляю дела по [[Матрица Эйзенхауэра|матрице Эйзенхауэра]].
-Настраиваю дыхание по [[Протокол Делланы]]. > Настраиваю дыхание по [[Протокол Делланы|протоколу Делланы]].
-Формируем персонажей через [[Карта эмпатии]]. > Формируем персонажей через [[Карта эмпатии|карту эмпатии]].
-Сократили сроки через [[Метод критической цепи]]. > Сократили сроки через [[Метод критической цепи|метод критической цепи]].
-Метрики собраны из [[Базовые метрики продукта]]. > Метрики собраны из [[Базовые метрики продукта|базовых метрик продукта]].
-
-Return ONLY JSON:
-{"needs_fix": true, "fix": "[[Original|corrected]]", "comment": "причина"}
-OR
-{"needs_fix": false}
+Анализируй внимательно и выбирай наиболее значимые темы.
 `
 
-type WikilinkContext struct {
-	Before   string
-	Wikilink string
-	After    string
-	Position int
-}
+const prompt1 = `
+Сократи текст на половину, сохранив основные ключевые темы:
+{{.topics}}
+`
 
-func extractWikilinksWithContext(content string, wordsBefore, wordsAfter int) []WikilinkContext {
-	re := regexp.MustCompile(`\[\[([^\]]+)\]\]`)
-	matches := re.FindAllStringIndex(content, -1)
+const prompt2 = `
+# Задача: Анализ релевантности текста
 
-	var contexts []WikilinkContext
-	words := strings.Fields(content)
+У тебя есть:
+1. Ключевые темы текста:
+{{.topics}}
 
-	for _, match := range matches {
-		start, end := match[0], match[1]
-		wikilink := content[start:end]
+2. Сокращенная версия текста:
+{{.text}}
 
-		// Find word positions
-		currentPos := 0
-		wikilinkWordIndex := -1
+## Вопросы для анализа:
 
-		for i, word := range words {
-			if currentPos <= start && currentPos+len(word) >= start {
-				wikilinkWordIndex = i
-				break
-			}
-			currentPos += len(word) + 1 // +1 for space
-		}
+1. Насколько процентов (0-100%) данный текст отвечает на вопрос: "Как выглядит день автора базы?"
+   - Опиши какие аспекты дня раскрыты, а какие отсутствуют
 
-		if wikilinkWordIndex == -1 {
-			continue
-		}
+2. Дай 3-5 конкретных рекомендаций по улучшению текста, чтобы он лучше отвечал на этот вопрос
 
-		// Get context words
-		beforeStart := wikilinkWordIndex - wordsBefore
-		if beforeStart < 0 {
-			beforeStart = 0
-		}
+## Формат ответа:
+Релевантность: [X]%
 
-		afterEnd := wikilinkWordIndex + wordsAfter + 1
-		if afterEnd > len(words) {
-			afterEnd = len(words)
-		}
+Раскрытые аспекты:
+- [аспект 1]
+- [аспект 2]
 
-		beforeWords := words[beforeStart:wikilinkWordIndex]
-		afterWords := words[wikilinkWordIndex+1 : afterEnd]
+Отсутствующие аспекты:
+- [аспект 1]
+- [аспект 2]
 
-		contexts = append(contexts, WikilinkContext{
-			Before:   strings.Join(beforeWords, " "),
-			Wikilink: wikilink,
-			After:    strings.Join(afterWords, " "),
-			Position: start,
-		})
-	}
+Рекомендации по улучшению:
+1. [конкретная рекомендация]
+2. [конкретная рекомендация]
+3. [конкретная рекомендация]
+`
 
-	return contexts
-}
+const prompt3 = `
+# Задача: Критический анализ и альтернативная версия
 
-func checkSingleWikilink(ctx WikilinkContext) (*AIIssue, error) {
-	// Build the context string
-	contextStr := fmt.Sprintf("%s %s %s", ctx.Before, ctx.Wikilink, ctx.After)
+Ты - опытный критик и редактор текстов. Проанализируй оригинальный текст и результат его обработки.
 
+## Исходные данные:
+
+### Оригинальный текст:
+{{.original}}
+
+### Результат анализа:
+{{.analysis}}
+
+## Твоя задача:
+
+1. Критически оцени результат анализа:
+   - Что упущено из виду?
+   - Какие выводы кажутся поверхностными?
+   - Где анализ мог бы быть глубже?
+
+2. Предложи свою альтернативную версию анализа, которая:
+   - Более точно отвечает на вопрос "Как выглядит день автора?"
+   - Выделяет неочевидные, но важные детали
+   - Дает более практичные рекомендации
+
+## Формат ответа:
+
+### Критика предыдущего анализа:
+[Укажи 3-4 конкретных недостатка]
+
+### Мой альтернативный анализ:
+
+Релевантность: [X]% (с обоснованием)
+
+Ключевые инсайты о дне автора:
+- [неочевидный, но важный аспект]
+- [скрытая рутина или паттерн]
+- [эмоциональная составляющая дня]
+
+Практические рекомендации:
+1. [очень конкретная и выполнимая рекомендация]
+2. [рекомендация с примером реализации]
+3. [рекомендация, учитывающая контекст автора]
+
+### Главный вывод:
+[Одно предложение о том, что действительно важно понять про день автора]
+`
+
+func resolveAI(content string, offset int) ([]byte, error) {
+	// Step 1: Extract key topics
 	myThread := thread.New().AddMessage(
 		thread.NewSystemMessage().AddContent(
-			thread.NewTextContent(checkWikilinkPrompt).Format(types.M{}),
+			thread.NewTextContent(prompt0),
 		),
 	).AddMessage(
 		thread.NewUserMessage().AddContent(
-			thread.NewTextContent(contextStr),
+			thread.NewTextContent(content),
 		),
 	)
 
-	err := openai.New().WithModel("gpt-4o-mini").WithMaxTokens(512).Generate(context.Background(), myThread)
+	err := openai.New().WithMaxTokens(2048).Generate(context.Background(), myThread)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	resMsg := myThread.LastMessage()
-	if resMsg.Contents[0].Type != thread.ContentTypeText {
-		return nil, fmt.Errorf("unexpected content type: %s", resMsg.Contents[0].Type)
-	}
+	topics := resMsg.Contents[0].Data.(string)
 
-	responseText := resMsg.Contents[0].Data.(string)
+	// Step 2: Apply reductions in a loop
+	currentText := content
+	reductionIterations := 2
 
-	var checkResp WikilinkCheckResponse
-	err = json.Unmarshal([]byte(responseText), &checkResp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
+	for i := 0; i < reductionIterations; i++ {
+		myThread := thread.New().AddMessage(
+			thread.NewSystemMessage().AddContent(
+				thread.NewTextContent(prompt1).Format(types.M{"topics": topics}),
+			),
+		).AddMessage(
+			thread.NewUserMessage().AddContent(
+				thread.NewTextContent(currentText),
+			),
+		)
 
-	if !checkResp.NeedsFix {
-		return nil, nil
-	}
-
-	return &AIIssue{
-		Marker:  ctx.Wikilink,
-		Fix:     checkResp.Fix,
-		Comment: checkResp.Comment,
-	}, nil
-}
-
-func resolveAI(content string, offset int) ([]byte, error) {
-	// Extract wikilinks with 10 words context
-	contexts := extractWikilinksWithContext(content, 10, 10)
-	totalCount := len(contexts)
-
-	// Apply offset and limit
-	pageSize := 5
-	start := offset
-	end := offset + pageSize
-	
-	if start >= len(contexts) {
-		// Return empty result if offset is beyond available wikilinks
-		response := AIResponse{Issues: []AIIssue{}, TotalCount: totalCount, PageSize: pageSize}
-		responseJSON, err := json.Marshal(response)
+		err = openai.New().WithMaxTokens(2048).Generate(context.Background(), myThread)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal response: %w", err)
-		}
-		return responseJSON, nil
-	}
-	
-	if end > len(contexts) {
-		end = len(contexts)
-	}
-	
-	contexts = contexts[start:end]
-
-	// Process wikilinks in parallel using goroutines
-	var wg sync.WaitGroup
-	results := make(chan WikilinkResult, len(contexts))
-
-	// Launch goroutines for each wikilink
-	for i, ctx := range contexts {
-		wg.Add(1)
-		go func(index int, context WikilinkContext) {
-			defer wg.Done()
-			
-			issue, err := checkSingleWikilink(context)
-			results <- WikilinkResult{
-				Issue: issue,
-				Error: err,
-				Index: index,
-			}
-		}(i, ctx)
-	}
-
-	// Wait for all goroutines to complete
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	// Collect results and preserve order
-	var results_slice []WikilinkResult
-	for result := range results {
-		results_slice = append(results_slice, result)
-	}
-
-	// Sort results by original index to preserve order
-	sort.Slice(results_slice, func(i, j int) bool {
-		return results_slice[i].Index < results_slice[j].Index
-	})
-
-	// Extract issues in original order
-	var allIssues []AIIssue
-	for _, result := range results_slice {
-		if result.Error != nil {
-			fmt.Printf("Error checking wikilink at index %d: %v\n", result.Index, result.Error)
-			continue
+			panic(err)
 		}
 
-		if result.Issue != nil {
-			allIssues = append(allIssues, *result.Issue)
-		}
+		resMsg := myThread.LastMessage()
+		currentText = resMsg.Contents[0].Data.(string)
 	}
 
-	// Build response
-	response := AIResponse{Issues: allIssues, TotalCount: totalCount, PageSize: pageSize}
+	// Step 3: Analyze relevance with topics and reduced text
+	finalThread := thread.New().AddMessage(
+		thread.NewSystemMessage().AddContent(
+			thread.NewTextContent(prompt2).Format(types.M{
+				"topics": topics,
+				"text":   currentText,
+			}),
+		),
+	).AddMessage(
+		thread.NewUserMessage().AddContent(
+			thread.NewTextContent("Проанализируй текст"),
+		),
+	)
 
-	responseJSON, err := json.Marshal(response)
+	err = openai.New().WithMaxTokens(2048).Generate(context.Background(), finalThread)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal response: %w", err)
+		panic(err)
 	}
 
-	return responseJSON, nil
+	finalMsg := finalThread.LastMessage()
+	analysis := finalMsg.Contents[0].Data.(string)
+
+	// Step 4: Critical review with original text and analysis
+	criticThread := thread.New().AddMessage(
+		thread.NewSystemMessage().AddContent(
+			thread.NewTextContent(prompt3).Format(types.M{
+				"original": content,
+				"analysis": analysis,
+			}),
+		),
+	).AddMessage(
+		thread.NewUserMessage().AddContent(
+			thread.NewTextContent("Дай критический анализ"),
+		),
+	)
+
+	err = openai.New().WithMaxTokens(2048).Generate(context.Background(), criticThread)
+	if err != nil {
+		panic(err)
+	}
+
+	criticMsg := criticThread.LastMessage()
+	critique := criticMsg.Contents[0].Data.(string)
+
+	return []byte(critique), nil
 }
