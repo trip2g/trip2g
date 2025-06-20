@@ -10,10 +10,10 @@ func TestPerparePermalink(t *testing.T) {
 	n := NoteView{Path: "/Моя заметка + другая заметка.md"}
 	n.PreparePermalink()
 
-	require.Equal(t, n.Permalink, "/моя_заметка_другая_заметка")
+	require.Equal(t, n.Permalink, "/moya_zametka_drugaya_zametka")
 
 	n.Path = "Моя особая + страница"
 	n.PreparePermalink()
 
-	require.Equal(t, n.Permalink, "/моя_особая_страница")
+	require.Equal(t, n.Permalink, "/moya_osobaya_stranica")
 }

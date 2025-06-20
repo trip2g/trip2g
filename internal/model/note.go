@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"trip2g/internal/russkayalatinica"
 	"unicode"
 
 	"github.com/yuin/goldmark/ast"
@@ -25,8 +26,11 @@ type NoteView struct {
 	ast     ast.Node // hide from JSON
 
 	Permalink string
-	Free      bool // without the paywall
-	Redirect  *string
+
+	PermalinkOriginal string
+
+	Free     bool // without the paywall
+	Redirect *string
 
 	Description *string // meta description for SEO
 
@@ -114,7 +118,8 @@ func (n *NoteView) PreparePermalink() {
 		}
 	}
 
-	n.Permalink = "/" + strings.Join(newParts, "/")
+	n.PermalinkOriginal = "/" + strings.Join(newParts, "/")
+	n.Permalink = russkayalatinica.Translit(n.PermalinkOriginal)
 }
 
 func (n *NoteView) IsHomePage() bool {

@@ -100,6 +100,7 @@ func Load(options Options) (*model.NoteViews, error) {
 		page.VersionID = src.VersionID
 
 		ldr.nvs.Map[page.Permalink] = page
+		ldr.nvs.Map[page.PermalinkOriginal] = page
 		ldr.nvs.PathMap[page.Path] = page
 	}
 
