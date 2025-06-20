@@ -14,6 +14,11 @@ import (
 	"github.com/yuin/goldmark/ast"
 )
 
+type NoteViewHeading struct {
+	Text  string `json:"text"`
+	Level int    `json:"level"`
+}
+
 type NoteView struct {
 	Path  string
 	Title string
@@ -49,6 +54,8 @@ type NoteView struct {
 
 	ReadingTime       int // in minutes
 	ReadingComplexity int // 0 - easy, 1 - medium, 2 - hard
+
+	Headings []NoteViewHeading // extracted from AST
 }
 
 type NoteSubgraph struct {
@@ -184,6 +191,8 @@ func (n *NoteView) ExtractMetaData() error {
 		return err
 	}
 
+	n.extractHeadings()
+
 	return nil
 }
 
@@ -279,6 +288,56 @@ func (n *NoteView) extractReadingComplexity() error {
 	}
 
 	return nil
+}
+
+func (n *NoteView) extractHeadings() {
+	n.Headings = nil
+
+	if n.ast == nil {
+		return
+	}
+
+	_ = ast.Walk(n.ast, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+
+		if heading, ok := node.(*ast.Heading); ok {
+			headingText := extractHeadingText(n.Content, heading)
+			if headingText != "" {
+				n.Headings = append(n.Headings, NoteViewHeading{
+					Text:  headingText,
+					Level: heading.Level,
+				})
+			}
+		}
+
+		return ast.WalkContinue, nil
+	})
+}
+
+func extractHeadingText(source []byte, heading *ast.Heading) string {
+	var text strings.Builder
+
+	for child := heading.FirstChild(); child != nil; child = child.NextSibling() {
+		extractTextFromNode(source, child, &text)
+	}
+
+	return strings.TrimSpace(text.String())
+}
+
+func extractTextFromNode(source []byte, node ast.Node, text *strings.Builder) {
+	switch n := node.(type) {
+	case *ast.Text:
+		text.Write(n.Segment.Value(source))
+	case *ast.String:
+		text.Write(n.Value)
+	default:
+		// For other node types (like links, emphasis, etc.), extract text from children
+		for child := n.FirstChild(); child != nil; child = child.NextSibling() {
+			extractTextFromNode(source, child, text)
+		}
+	}
 }
 
 func (n *NoteView) extractString(key string) (*string, error) {

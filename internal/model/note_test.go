@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/text"
 )
 
 func TestPerparePermalink(t *testing.T) {
@@ -201,6 +203,76 @@ func TestExtractReadingComplexity(t *testing.T) {
 			}
 
 			require.Equal(t, tt.expectedComp, n.ReadingComplexity)
+		})
+	}
+}
+
+func TestExtractHeadings(t *testing.T) {
+	tests := []struct {
+		name             string
+		content          string
+		expectedHeadings []NoteViewHeading
+	}{
+		{
+			name:             "no headings",
+			content:          "Just some regular text content.",
+			expectedHeadings: nil,
+		},
+		{
+			name: "single heading",
+			content: `# Main Title
+Some content here.`,
+			expectedHeadings: []NoteViewHeading{
+				{Text: "Main Title", Level: 1},
+			},
+		},
+		{
+			name: "multiple headings different levels",
+			content: `# Chapter 1
+Some intro text.
+
+## Section 1.1
+More content.
+
+### Subsection 1.1.1
+Even more content.
+
+## Section 1.2
+Final content.`,
+			expectedHeadings: []NoteViewHeading{
+				{Text: "Chapter 1", Level: 1},
+				{Text: "Section 1.1", Level: 2},
+				{Text: "Subsection 1.1.1", Level: 3},
+				{Text: "Section 1.2", Level: 2},
+			},
+		},
+		{
+			name: "headings with formatting",
+			content: `# **Bold** Heading
+## *Italic* Heading
+### [Link](http://example.com) Heading`,
+			expectedHeadings: []NoteViewHeading{
+				{Text: "Bold Heading", Level: 1},
+				{Text: "Italic Heading", Level: 2},
+				{Text: "Link Heading", Level: 3},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// We need to parse the markdown to create an AST
+			parser := goldmark.New()
+			doc := parser.Parser().Parse(text.NewReader([]byte(tt.content)))
+
+			n := &NoteView{
+				Content: []byte(tt.content),
+				ast:     doc,
+			}
+
+			n.extractHeadings()
+
+			require.Equal(t, tt.expectedHeadings, n.Headings)
 		})
 	}
 }
