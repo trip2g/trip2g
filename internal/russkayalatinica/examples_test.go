@@ -54,7 +54,7 @@ func TestExampleFiles(t *testing.T) {
 						"Context got:      %q",
 						i,
 						string(expectedContent[start:end]),
-						string(transliterated[start:end]),
+						transliterated[start:end],
 						string(expectedContent[i]),
 						string(transliterated[i]))
 					break

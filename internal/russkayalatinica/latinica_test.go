@@ -49,10 +49,10 @@ func TestSpecificSequences(t *testing.T) {
 func TestComplexSentences(t *testing.T) {
 	testCases := []string{
 		"МКС",
-		"ЮНЕСКО", 
+		"ЮНЕСКО",
 		"Петров Ю. Я.",
 		"Русская Латиница",
-		// Note: Some complex sentences may not have perfect round-trip due to 
+		// Note: Some complex sentences may not have perfect round-trip due to
 		// contextual ambiguities, but core functionality should work
 	}
 

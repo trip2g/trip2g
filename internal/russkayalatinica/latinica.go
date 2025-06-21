@@ -5,7 +5,7 @@ import (
 	"unicode"
 )
 
-// ElementType represents the type of a character in the script
+// ElementType represents the type of a character in the script.
 type ElementType int
 
 const (
@@ -15,7 +15,7 @@ const (
 	ElementTypeNonLetter
 )
 
-// ContextType represents the context for transliteration rules
+// ContextType represents the context for transliteration rules.
 type ContextType int
 
 const (
@@ -32,7 +32,7 @@ const (
 	ContextTypeHardSign // Special context for hard sign
 )
 
-// Cell represents a transliteration rule
+// Cell represents a transliteration rule.
 type Cell struct {
 	Cyrl           string
 	Latn           string
@@ -41,12 +41,19 @@ type Cell struct {
 	PostfixContext ContextType
 }
 
-// Define the mapping table based on the Swift implementation
-var ruScriptTable = buildScriptTable()
+// scriptData holds the transliteration tables.
+type scriptData struct {
+	ruScriptTable           []Cell
+	reverseTable            map[string]string
+	reverseTableInitialized bool
+}
 
-// Build reverse mapping table - will be initialized when needed
-var reverseTable map[string]string
-var reverseTableInitialized bool
+// globalScriptData holds the global instance of script data.
+//
+//nolint:gochecknoglobals // package-level transliteration tables need to be initialized once
+var globalScriptData = &scriptData{
+	ruScriptTable: buildScriptTable(),
+}
 
 func buildScriptTable() []Cell {
 	// Based on the user's official Russkaya Latinica table
@@ -157,12 +164,13 @@ func buildScriptTable() []Cell {
 
 	// Set default contexts where not specified
 	for i := range cells {
-		if cells[i].PrefixContext == ContextTypeUnset && cells[i].PostfixContext == ContextTypeUnset {
+		switch {
+		case cells[i].PrefixContext == ContextTypeUnset && cells[i].PostfixContext == ContextTypeUnset:
 			cells[i].PrefixContext = ContextTypeAny
 			cells[i].PostfixContext = ContextTypeAny
-		} else if cells[i].PrefixContext != ContextTypeUnset && cells[i].PostfixContext == ContextTypeUnset {
+		case cells[i].PrefixContext != ContextTypeUnset && cells[i].PostfixContext == ContextTypeUnset:
 			cells[i].PostfixContext = ContextTypeAny
-		} else if cells[i].PrefixContext == ContextTypeUnset && cells[i].PostfixContext != ContextTypeUnset {
+		case cells[i].PrefixContext == ContextTypeUnset && cells[i].PostfixContext != ContextTypeUnset:
 			cells[i].PrefixContext = ContextTypeAny
 		}
 	}
@@ -170,7 +178,9 @@ func buildScriptTable() []Cell {
 	return cells
 }
 
-// Create a mapping for quick lookup of element types
+// elementTypeMap creates a mapping for quick lookup of element types.
+//
+//nolint:gochecknoglobals // static lookup table for performance
 var elementTypeMap = map[rune]ElementType{
 	// Vowels
 	'а': ElementTypeVowel, 'А': ElementTypeVowel,
@@ -251,7 +261,7 @@ func getElementType(r rune) ElementType {
 	return ElementTypeOther
 }
 
-// Check if we're at a word boundary (for proper case handling)
+// isWordBoundary checks if we're at a word boundary (for proper case handling).
 func isWordBoundary(runes []rune, pos int) bool {
 	if pos == 0 || pos >= len(runes) {
 		return true
@@ -263,7 +273,7 @@ func isWordBoundary(runes []rune, pos int) bool {
 	return !prevIsLetter && currIsLetter
 }
 
-// Check if the next character is also uppercase (for handling abbreviations)
+// isFollowedByUppercase checks if the next character is also uppercase (for handling abbreviations).
 func isFollowedByUppercase(runes []rune, pos int) bool {
 	if pos+1 >= len(runes) {
 		return false
@@ -271,7 +281,7 @@ func isFollowedByUppercase(runes []rune, pos int) bool {
 	return unicode.IsUpper(runes[pos+1])
 }
 
-// Check if the previous character is also uppercase
+// isPrecededByUppercase checks if the previous character is also uppercase.
 func isPrecededByUppercase(runes []rune, pos int) bool {
 	if pos == 0 {
 		return false
@@ -279,7 +289,7 @@ func isPrecededByUppercase(runes []rune, pos int) bool {
 	return unicode.IsUpper(runes[pos-1])
 }
 
-// Apply proper case to transliterated text
+// applyProperCase applies proper case to transliterated text.
 func applyProperCase(input string, isUppercase bool, isAtWordBoundary bool, followedByUpper bool, precededByUpper bool) string {
 	if !isUppercase {
 		return input
@@ -292,13 +302,20 @@ func applyProperCase(input string, isUppercase bool, isAtWordBoundary bool, foll
 
 	// If it's a single uppercase letter at word boundary, capitalize only the first letter
 	if isAtWordBoundary && len(input) > 1 {
-		return strings.Title(strings.ToLower(input))
+		// Capitalize first letter manually to avoid deprecated strings.Title
+		lower := strings.ToLower(input)
+		if len(lower) > 0 {
+			runes := []rune(lower)
+			runes[0] = unicode.ToUpper(runes[0])
+			return string(runes)
+		}
+		return lower
 	}
 
 	return input
 }
 
-// Translit converts Cyrillic text to Latin using Russkaya Latinica
+// Translit converts Cyrillic text to Latin using Russkaya Latinica.
 func Translit(input string) string {
 	if input == "" {
 		return ""
@@ -338,11 +355,10 @@ func Translit(input string) string {
 			nextRune = runes[i+1]
 		}
 
-		for _, cell := range ruScriptTable {
+		for _, cell := range globalScriptData.ruScriptTable {
 			if cell.Cyrl == currentChar &&
 				contextMatches(cell.PrefixContext, prefixType, prevRune) &&
 				contextMatches(cell.PostfixContext, postfixType, nextRune) {
-
 				// Apply proper case handling
 				transliterated := cell.Latn
 				if unicode.IsUpper(currentRune) {
@@ -370,7 +386,7 @@ func Translit(input string) string {
 }
 
 func buildReverseTable() {
-	reverseTable = make(map[string]string)
+	globalScriptData.reverseTable = make(map[string]string)
 
 	// Build the reverse mapping from the actual rules
 	// Since we guarantee one-to-one conversion, we need to ensure
@@ -384,8 +400,8 @@ func buildReverseTable() {
 		latinLower := strings.ToLower(latinSeq)
 		cyrlLower := strings.ToLower(cyrlChar)
 
-		if _, exists := reverseTable[latinLower]; !exists {
-			reverseTable[latinLower] = cyrlLower
+		if _, exists := globalScriptData.reverseTable[latinLower]; !exists {
+			globalScriptData.reverseTable[latinLower] = cyrlLower
 		}
 	}
 
@@ -397,8 +413,8 @@ func buildReverseTable() {
 		latinLower := strings.ToLower(latinSeq)
 		cyrlLower := strings.ToLower(cyrlChar)
 
-		if _, exists := reverseTable[latinLower]; !exists {
-			reverseTable[latinLower] = cyrlLower
+		if _, exists := globalScriptData.reverseTable[latinLower]; !exists {
+			globalScriptData.reverseTable[latinLower] = cyrlLower
 		}
 	}
 
@@ -420,11 +436,11 @@ func buildReverseTable() {
 		latinLower := strings.ToLower(actualLatin)
 		cyrlLower := strings.ToLower(cyrlSeq)
 
-		if _, exists := reverseTable[latinLower]; !exists {
-			reverseTable[latinLower] = cyrlLower
+		if _, exists := globalScriptData.reverseTable[latinLower]; !exists {
+			globalScriptData.reverseTable[latinLower] = cyrlLower
 		} else if len(cyrlSeq) > 1 {
 			// For multi-character sequences, prefer them over single chars
-			reverseTable[latinLower] = cyrlLower
+			globalScriptData.reverseTable[latinLower] = cyrlLower
 		}
 
 		// Special handling: if this is "consonant + ъе", also add "yye" -> "ъе"
@@ -439,21 +455,16 @@ func buildReverseTable() {
 			suffixLatinLower := strings.ToLower(suffixLatin)
 			suffixCyrlLower := strings.ToLower(suffixCyrl)
 
-			if _, exists := reverseTable[suffixLatinLower]; !exists {
-				reverseTable[suffixLatinLower] = suffixCyrlLower
+			if _, exists := globalScriptData.reverseTable[suffixLatinLower]; !exists {
+				globalScriptData.reverseTable[suffixLatinLower] = suffixCyrlLower
 			}
 		}
 
 		// Special handling: if this is "consonant + ь", also add suffix mappings
 		if runeLen == 2 && strings.HasSuffix(cyrlSeq, "ь") {
 			// "шь" -> "shj", so we want "shj" -> "шь"
-			// This should be handled by the normal mapping, but let's ensure priority
-			if _, exists := reverseTable[latinLower]; !exists {
-				reverseTable[latinLower] = cyrlLower
-			} else {
-				// Prefer the multi-character sequence over individual characters
-				reverseTable[latinLower] = cyrlLower
-			}
+			// Always prefer the multi-character sequence over individual characters
+			globalScriptData.reverseTable[latinLower] = cyrlLower
 		}
 	}
 
@@ -461,34 +472,34 @@ func buildReverseTable() {
 	// Common е combinations should take priority over э combinations
 	forcePriorities := map[string]string{
 		"zhe":  "же",
-		"che":  "че", 
+		"che":  "че",
 		"she":  "ше",
 		"sjhe": "ще",
 		"en":   "ен", // Add this to fix "en" -> "эн" issue
 	}
 
 	for latin, cyrl := range forcePriorities {
-		if existing, exists := reverseTable[latin]; exists && existing != cyrl {
-			reverseTable[latin] = cyrl
+		if existing, exists := globalScriptData.reverseTable[latin]; exists && existing != cyrl {
+			globalScriptData.reverseTable[latin] = cyrl
 		}
 	}
 }
 
-// RevertTranslit converts Latin text back to Cyrillic
+// RevertTranslit converts Latin text back to Cyrillic.
 func RevertTranslit(input string) string {
 	if input == "" {
 		return ""
 	}
 
 	// Initialize reverse table if not done yet
-	if !reverseTableInitialized {
+	if !globalScriptData.reverseTableInitialized {
 		buildReverseTable()
-		reverseTableInitialized = true
+		globalScriptData.reverseTableInitialized = true
 	}
 
 	// Get all Latin sequences sorted by length (longest first)
 	var latinSeqs []string
-	for seq := range reverseTable {
+	for seq := range globalScriptData.reverseTable {
 		latinSeqs = append(latinSeqs, seq)
 	}
 	// Sort by length descending
@@ -515,7 +526,7 @@ func RevertTranslit(input string) string {
 
 				if substrLower == latinSeq {
 					// Found a match
-					cyrlChar := reverseTable[latinSeq]
+					cyrlChar := globalScriptData.reverseTable[latinSeq]
 
 					// Handle case preservation
 					if len(substr) > 0 && unicode.IsUpper([]rune(substr)[0]) {
