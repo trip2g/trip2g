@@ -807,7 +807,7 @@ func (a *app) handleCors(ctx *fasthttp.RequestCtx) bool {
 
 func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 	if !a.config.DevMode {
-		fmt.Println("skipping debug API in production mode")
+		// Skip debug API in production mode
 		return false
 	}
 

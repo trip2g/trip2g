@@ -19,7 +19,8 @@
       "Bash(touch:*)",
       "Bash(cp:*)",
       "Bash(go tool:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(goimports:*)"
     ],
     "deny": []
   }

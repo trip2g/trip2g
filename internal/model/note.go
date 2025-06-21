@@ -333,7 +333,7 @@ func (n *NoteView) extractHeadingsAndGenerateIDs() {
 
 				rawID, withID := node.AttributeString("id")
 				if withID {
-					id = string(rawID.([]byte)) //nolint:errcheck
+					id = string(rawID.([]byte)) //nolint:errcheck // type assertion is safe here
 				} else {
 					id = n.generateHeadingID(headingText)
 					node.SetAttributeString("id", []byte(id))

@@ -35,7 +35,7 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 		Content:       []byte("# Test Free Note Content"),
 		HTML:          "<h1>Test Free Note Content</h1>",
 		Permalink:     "/test-free-note",
-		Free:          true, // Note is free
+		Free:          true,                // Note is free
 		SubgraphNames: []string{"premium"}, // But has subgraph
 		Subgraphs: map[string]*model.NoteSubgraph{
 			"premium": {
@@ -66,12 +66,12 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		request        rendernotepage.Request
-		setupEnv       func() *EnvMock
-		wantErr        bool
-		expectedError  error
-		checkResponse  func(t *testing.T, resp *rendernotepage.Response)
+		name          string
+		request       rendernotepage.Request
+		setupEnv      func() *EnvMock
+		wantErr       bool
+		expectedError error
+		checkResponse func(t *testing.T, resp *rendernotepage.Response)
 	}{
 		{
 			name: "free note with subgraph should render for unauthenticated user",
@@ -105,8 +105,8 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 		{
 			name: "free note with subgraph should render for authenticated user without subgraph access",
 			request: rendernotepage.Request{
-				Path:    "/test-free-note",
-				Version: "",
+				Path:     "/test-free-note",
+				Version:  "",
 				Referrer: "",
 				UserToken: &usertoken.Data{
 					ID:   123,
@@ -149,8 +149,8 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 		{
 			name: "free note with subgraph should render for authenticated user with subgraph access",
 			request: rendernotepage.Request{
-				Path:    "/test-free-note",
-				Version: "",
+				Path:     "/test-free-note",
+				Version:  "",
 				Referrer: "",
 				UserToken: &usertoken.Data{
 					ID:   456,
@@ -193,8 +193,8 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 		{
 			name: "free note with subgraph should render for admin user",
 			request: rendernotepage.Request{
-				Path:    "/test-free-note",
-				Version: "",
+				Path:     "/test-free-note",
+				Version:  "",
 				Referrer: "",
 				UserToken: &usertoken.Data{
 					ID:   789,
@@ -270,7 +270,7 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 		Content:       []byte("# Test Paid Note Content"),
 		HTML:          "<h1>Test Paid Note Content</h1>",
 		Permalink:     "/test-paid-note",
-		Free:          false, // Note is NOT free
+		Free:          false,               // Note is NOT free
 		SubgraphNames: []string{"premium"}, // And has subgraph
 		Subgraphs: map[string]*model.NoteSubgraph{
 			"premium": {
@@ -330,8 +330,8 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 		{
 			name: "non-free note with subgraph should show paywall for authenticated user without subgraph access",
 			request: rendernotepage.Request{
-				Path:    "/test-paid-note",
-				Version: "",
+				Path:     "/test-paid-note",
+				Version:  "",
 				Referrer: "",
 				UserToken: &usertoken.Data{
 					ID:   123,
@@ -367,8 +367,8 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 		{
 			name: "non-free note with subgraph should render for authenticated user with subgraph access",
 			request: rendernotepage.Request{
-				Path:    "/test-paid-note",
-				Version: "",
+				Path:     "/test-paid-note",
+				Version:  "",
 				Referrer: "",
 				UserToken: &usertoken.Data{
 					ID:   456,

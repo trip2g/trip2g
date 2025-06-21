@@ -5,7 +5,7 @@ import (
 )
 
 // NormalizeWikilinks replaces [[Wikilink]] with [[Wikilink|wikilink]]
-// It skips wikilinks that start a sentence (at position 0 or after a dot)
+// It skips wikilinks that start a sentence (at position 0 or after a dot).
 func NormalizeWikilinks(content []byte) []byte {
 	// Process the content byte by byte to handle sentence start correctly
 	var result []byte

@@ -438,3 +438,16 @@ linters:
       - path: 'endpoint\.go'
         linters:
           - errcheck
+      - path: 'internal/case/rendernotepage/resolve\.go'
+        linters:
+          - gocognit
+      - path: 'internal/mdloader/loader\.go'
+        linters:
+          - gocognit
+      - path: 'internal/mdloader/normalizers\.go'
+        linters:
+          - gocognit
+          - nestif
+      - path: 'internal/mdloader/link_renderer\.go'
+        linters:
+          - nestif

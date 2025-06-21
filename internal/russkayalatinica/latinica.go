@@ -460,13 +460,13 @@ func buildReverseTable() {
 	// Force specific priorities for ambiguous cases
 	// Common е combinations should take priority over э combinations
 	forcePriorities := map[string]string{
-		"zhe": "же",
-		"che": "че", 
-		"she": "ше",
+		"zhe":  "же",
+		"che":  "че", 
+		"she":  "ше",
 		"sjhe": "ще",
-		"en": "ен", // Add this to fix "en" -> "эн" issue
+		"en":   "ен", // Add this to fix "en" -> "эн" issue
 	}
-	
+
 	for latin, cyrl := range forcePriorities {
 		if existing, exists := reverseTable[latin]; exists && existing != cyrl {
 			reverseTable[latin] = cyrl

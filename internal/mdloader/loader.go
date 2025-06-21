@@ -231,12 +231,12 @@ func (ldr *loader) extractInLinks() error {
 
 				targetPermalink := strings.Join(targetParts, "/")
 
-				pp, ok := ldr.nvs.PathMap[targetPermalink+".md"]
-				if !ok {
-					pp, ok = ldr.nvs.PathMap[targetPermalink]
+				pp, found := ldr.nvs.PathMap[targetPermalink+".md"]
+				if !found {
+					pp, found = ldr.nvs.PathMap[targetPermalink]
 				}
 
-				if ok {
+				if found {
 					p.ResolvedLinks[string(link.Target)] = pp.Permalink
 					pp.InLinks[p.Permalink] = struct{}{}
 					link.Target = []byte(pp.Permalink)
