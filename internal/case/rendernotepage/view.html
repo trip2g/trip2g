@@ -35,31 +35,40 @@
       {% endfor %}
     </style>
 
-    {% if !resp.Note.IsHomePage() %}
-    <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
-    {% endif %}
-    
-    {%= ReadingMeta(resp) %}
+    <div class="noteview__content-header">
+      {% if !resp.Note.IsHomePage() %}
+      <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
+      {% endif %}
 
-    <div class="noteview__markup prose prose-stone">
-    {%s= string(resp.Note.HTML) %}
+      {%= ReadingMeta(resp) %}
     </div>
 
-    {% if len(resp.Note.InLinks) > 0 %}
-    <div class="noteview__footer">
-      <h2 class="sidebar__block-title">Связанные страницы:</h2>
+    <div class="noteview__container">
+      <div class="noteview__left-column">
+        <div class="noteview__markup prose prose-stone">
+        {%s= string(resp.Note.HTML) %}
+        </div>
 
-      <div class="sidebar__block-content">
-        {% for k := range resp.Note.InLinks %}
-          {% if inNote := resp.Notes.GetByPath(k); inNote != nil %}
-            <div class="sidebar__block-link">
-              <a href="{%s resp.Notes.ResolveURL(inNote) %}">{%s inNote.Title %}</a>
-            </div>
-          {% endif %}
-        {% endfor %}
+        {% if len(resp.Note.InLinks) > 0 %}
+        <div class="noteview__footer">
+          <h2 class="sidebar__block-title">Связанные страницы:</h2>
+
+          <div class="sidebar__block-content">
+            {% for k := range resp.Note.InLinks %}
+              {% if inNote := resp.Notes.GetByPath(k); inNote != nil %}
+                <div class="sidebar__block-link">
+                  <a href="{%s resp.Notes.ResolveURL(inNote) %}">{%s inNote.Title %}</a>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      <div class="noteview__sidebar hidden lg:block">
+        {%= TableOfContents(resp) %}
       </div>
     </div>
-    {% endif %}
 
   </div>
 
@@ -118,7 +127,7 @@
     {%d resp.Note.ReadingTime %} мин
   </span>
   {% endif %}
-  
+
   {% if resp.Note.ReadingComplexity > 0 %}
   <span class="reading-complexity">
     <span class="reading-meta__label">Сложность:</span>
@@ -153,7 +162,7 @@
     {% if !resp.Note.IsHomePage() %}
     <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
     {% endif %}
-    
+
     {%= ReadingMeta(resp) %}
 
     {% if resp.Note.Description != nil %}
@@ -162,6 +171,19 @@
 
     <div mol_view_root="$trip2g_user_paywall" data-subgraphs="{%s resp.NoteSubgraphsJSON() %}"></div>
   </div>
+</div>
+
+{% endfunc %}
+
+{% func TableOfContents(resp *Response) %}
+
+<div class="noteview__toc toc" id="noteview-toc" id="noteview-toc">
+  <h2 class="toc__title">Содержание</h2>
+  {% for _, item := range resp.Note.Headings %}
+    <div class="toc__item toc__item--level{%d= item.Level %}">
+      <a href="#{%s= item.ID %}" class="toc__link">{%s= item.Text %}</a>
+    </div>
+  {% endfor %}
 </div>
 
 {% endfunc %}

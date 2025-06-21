@@ -106,7 +106,7 @@ html, body {
 }
 
 .noteview__header {
-  @apply mb-16 flex items-end;
+  @apply mb-16 mb-4 flex items-end;
 }
 
 .noteview__footer {
@@ -119,10 +119,6 @@ html, body {
 
 .noteview__header-container--sticky {
   @apply fixed top-0 left-0 right-0;
-}
-
-.noteview__markup {
-  @apply mt-8;
 }
 
 /* Sidebar components */
@@ -173,4 +169,50 @@ html, body {
 /* Paywall */
 .paywall__title {
   @apply text-2xl font-bold;
+}
+
+.noteview__content-header {
+  @apply mb-8;
+}
+
+.noteview__container {
+  display: flex;
+}
+
+.noteview__sidebar {
+  flex: 1;
+  @apply pl-32;
+}
+
+.toc {
+}
+
+.toc__title {
+  @apply text-lg font-bold mb-4 text-secondary;
+}
+
+.toc__item {
+  @apply mb-4 text-sm text-secondary;
+}
+
+.toc__item--level1 {
+}
+
+.toc__item--level2 {
+  @apply pl-2;
+}
+
+.toc__item--level3 {
+  @apply pl-4;
+}
+
+.toc__item--level4 {
+  @apply pl-6;
+}
+
+.toc__item--level5 {
+  @apply pl-8;
+}
+
+.toc__item--level6 {
 }

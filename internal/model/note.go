@@ -20,6 +20,8 @@ type NoteViewHeading struct {
 	ID    string
 }
 
+type NoteViewHeadings []NoteViewHeading
+
 type NoteView struct {
 	Path  string
 	Title string
@@ -56,7 +58,7 @@ type NoteView struct {
 	ReadingTime       int // in minutes
 	ReadingComplexity int // 0 - easy, 1 - medium, 2 - hard
 
-	Headings []NoteViewHeading // extracted from AST
+	Headings NoteViewHeadings // extracted from AST
 
 	HeadingCount map[string]int // for id generation
 }
@@ -349,6 +351,46 @@ func (n *NoteView) extractHeadingsAndGenerateIDs() {
 
 		return ast.WalkContinue, nil
 	})
+
+	n.Headings.Normalize()
+}
+
+func (nv NoteViewHeadings) Normalize() {
+	if len(nv) == 0 {
+		return
+	}
+
+	// Collect all unique levels that exist
+	existingLevels := make(map[int]bool)
+	for _, heading := range nv {
+		existingLevels[heading.Level] = true
+	}
+
+	// Create sorted slice of existing levels
+	var levels []int
+	for level := range existingLevels {
+		levels = append(levels, level)
+	}
+
+	// Sort levels in ascending order
+	for i := 0; i < len(levels); i++ {
+		for j := i + 1; j < len(levels); j++ {
+			if levels[j] < levels[i] {
+				levels[i], levels[j] = levels[j], levels[i]
+			}
+		}
+	}
+
+	// Create mapping from old level to new level
+	levelMapping := make(map[int]int)
+	for i, oldLevel := range levels {
+		levelMapping[oldLevel] = i + 1 // Start from 1
+	}
+
+	// Apply the mapping to all headings
+	for i := range nv {
+		nv[i].Level = levelMapping[nv[i].Level]
+	}
 }
 
 func extractHeadingText(source []byte, heading *ast.Heading) string {

@@ -211,7 +211,7 @@ func TestExtractHeadings(t *testing.T) {
 	tests := []struct {
 		name             string
 		content          string
-		expectedHeadings []NoteViewHeading
+		expectedHeadings NoteViewHeadings
 	}{
 		{
 			name:             "no headings",
@@ -222,8 +222,8 @@ func TestExtractHeadings(t *testing.T) {
 			name: "single heading",
 			content: `# Main Title
 Some content here.`,
-			expectedHeadings: []NoteViewHeading{
-				{Text: "Main Title", Level: 1},
+			expectedHeadings: NoteViewHeadings{
+				{Text: "Main Title", Level: 1, ID: "main_title_h"},
 			},
 		},
 		{
@@ -239,11 +239,11 @@ Even more content.
 
 ## Section 1.2
 Final content.`,
-			expectedHeadings: []NoteViewHeading{
-				{Text: "Chapter 1", Level: 1},
-				{Text: "Section 1.1", Level: 2},
-				{Text: "Subsection 1.1.1", Level: 3},
-				{Text: "Section 1.2", Level: 2},
+			expectedHeadings: NoteViewHeadings{
+				{Text: "Chapter 1", Level: 1, ID: "chapter_1_h"},
+				{Text: "Section 1.1", Level: 2, ID: "section_1_1_h"},
+				{Text: "Subsection 1.1.1", Level: 3, ID: "subsection_1_1_1_h"},
+				{Text: "Section 1.2", Level: 2, ID: "section_1_2_h"},
 			},
 		},
 		{
@@ -251,10 +251,21 @@ Final content.`,
 			content: `# **Bold** Heading
 ## *Italic* Heading
 ### [Link](http://example.com) Heading`,
-			expectedHeadings: []NoteViewHeading{
-				{Text: "Bold Heading", Level: 1},
-				{Text: "Italic Heading", Level: 2},
-				{Text: "Link Heading", Level: 3},
+			expectedHeadings: NoteViewHeadings{
+				{Text: "Bold Heading", Level: 1, ID: "bold_heading_h"},
+				{Text: "Italic Heading", Level: 2, ID: "italic_heading_h"},
+				{Text: "Link Heading", Level: 3, ID: "link_heading_h"},
+			},
+		},
+		{
+			name: "headings with gaps get normalized",
+			content: `## Second Level
+#### Fourth Level
+###### Sixth Level`,
+			expectedHeadings: NoteViewHeadings{
+				{Text: "Second Level", Level: 1, ID: "second_level_h"},
+				{Text: "Fourth Level", Level: 2, ID: "fourth_level_h"},
+				{Text: "Sixth Level", Level: 3, ID: "sixth_level_h"},
 			},
 		},
 	}
@@ -273,6 +284,84 @@ Final content.`,
 			n.extractHeadingsAndGenerateIDs()
 
 			require.Equal(t, tt.expectedHeadings, n.Headings)
+		})
+	}
+}
+
+func TestNoteViewHeadings_Normalize(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    NoteViewHeadings
+		expected NoteViewHeadings
+	}{
+		{
+			name:     "empty headings",
+			input:    NoteViewHeadings{},
+			expected: NoteViewHeadings{},
+		},
+		{
+			name: "already normalized levels 1,2,3",
+			input: NoteViewHeadings{
+				{Text: "H1", Level: 1, ID: "h1"},
+				{Text: "H2", Level: 2, ID: "h2"},
+				{Text: "H3", Level: 3, ID: "h3"},
+			},
+			expected: NoteViewHeadings{
+				{Text: "H1", Level: 1, ID: "h1"},
+				{Text: "H2", Level: 2, ID: "h2"},
+				{Text: "H3", Level: 3, ID: "h3"},
+			},
+		},
+		{
+			name: "only level 2 becomes level 1",
+			input: NoteViewHeadings{
+				{Text: "H2a", Level: 2, ID: "h2a"},
+				{Text: "H2b", Level: 2, ID: "h2b"},
+			},
+			expected: NoteViewHeadings{
+				{Text: "H2a", Level: 1, ID: "h2a"},
+				{Text: "H2b", Level: 1, ID: "h2b"},
+			},
+		},
+		{
+			name: "levels 2 and 6 become 1 and 2",
+			input: NoteViewHeadings{
+				{Text: "H2", Level: 2, ID: "h2"},
+				{Text: "H6a", Level: 6, ID: "h6a"},
+				{Text: "H6b", Level: 6, ID: "h6b"},
+			},
+			expected: NoteViewHeadings{
+				{Text: "H2", Level: 1, ID: "h2"},
+				{Text: "H6a", Level: 2, ID: "h6a"},
+				{Text: "H6b", Level: 2, ID: "h6b"},
+			},
+		},
+		{
+			name: "levels 1,3,5 become 1,2,3",
+			input: NoteViewHeadings{
+				{Text: "H1", Level: 1, ID: "h1"},
+				{Text: "H3", Level: 3, ID: "h3"},
+				{Text: "H5", Level: 5, ID: "h5"},
+				{Text: "H3b", Level: 3, ID: "h3b"},
+			},
+			expected: NoteViewHeadings{
+				{Text: "H1", Level: 1, ID: "h1"},
+				{Text: "H3", Level: 2, ID: "h3"},
+				{Text: "H5", Level: 3, ID: "h5"},
+				{Text: "H3b", Level: 2, ID: "h3b"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Make a copy since Normalize modifies in place
+			input := make(NoteViewHeadings, len(tt.input))
+			copy(input, tt.input)
+
+			input.Normalize()
+
+			require.Equal(t, tt.expected, input)
 		})
 	}
 }

@@ -451,3 +451,15 @@ linters:
       - path: 'internal/mdloader/link_renderer\.go'
         linters:
           - nestif
+      - path: 'internal/russkayalatinica/latinica\.go'
+        linters:
+          - gocognit  # Complex transliteration algorithm
+          - nestif    # Complex nested conditions for transliteration
+      - path: 'internal/russkayalatinica/examples_test\.go'
+        linters:
+          - gocognit  # Complex test validation logic
+          - nestif    # Complex nested test conditions
+          - intrange  # Classic for loops are clearer in test benchmarks
+      - path: 'internal/russkayalatinica/latinica_test\.go'
+        linters:
+          - intrange  # Classic for loops are clearer in test benchmarks

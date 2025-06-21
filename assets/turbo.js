@@ -150,4 +150,25 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.body.addEventListener("mouseenter", prefetchOnEvent, true);
   document.body.addEventListener("touchstart", prefetchOnEvent, { passive: true, capture: true });
+
+  const toc = document.getElementById("noteview-toc");
+  if (toc) {
+    toc.addEventListener("click", function (e) {
+      if (e.target.tagName !== "A" || !e.target.className.includes("toc__link")) {
+        console.log('skip', e.target.tagName, e.target.className)
+        return
+      }
+
+      e.preventDefault()
+      e.stopPropagation()
+
+      const id = e.target.getAttribute('href').substring(1) // remove leading '#'
+      $mol_state_arg.value('anchor', id)
+
+      const target = document.getElementById(id)
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth" });
+      }
+    })
+  }
 });
