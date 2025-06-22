@@ -572,6 +572,10 @@ func (nv *NoteViews) ExtractNoteList() {
 
 	keys := make([]string, 0, len(nv.Map))
 
+	// the Map can contains different paths for same note,
+	// so we need to extract unique notes by ids.
+	ids := make(map[int64]struct{})
+
 	for k := range nv.Map {
 		keys = append(keys, k)
 	}
@@ -579,6 +583,13 @@ func (nv *NoteViews) ExtractNoteList() {
 	sort.Strings(keys)
 
 	for _, k := range keys {
+		_, ok := ids[nv.Map[k].PathID]
+		if ok {
+			continue
+		}
+
+		ids[nv.Map[k].PathID] = struct{}{}
+
 		nv.List = append(nv.List, nv.Map[k])
 	}
 }
