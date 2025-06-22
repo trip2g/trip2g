@@ -176,14 +176,15 @@
 {% endfunc %}
 
 {% func TableOfContents(resp *Response) %}
-
+{% code toc := resp.Note.TOC() %}
+{% if len(toc) > 0 %}
 <div class="noteview__toc toc" id="noteview-toc" id="noteview-toc">
   <h2 class="toc__title">Содержание</h2>
-  {% for _, item := range resp.Note.Headings %}
+  {% for _, item := range toc %}
     <div class="toc__item toc__item--level{%d= item.Level %}">
       <a href="#{%s= item.ID %}" class="toc__link">{%s= item.Text %}</a>
     </div>
   {% endfor %}
 </div>
-
+{% endif %}
 {% endfunc %}

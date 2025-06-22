@@ -694,62 +694,76 @@ func PayWall(resp *Response, err *PaywallError) string {
 func StreamTableOfContents(qw422016 *qt422016.Writer, resp *Response) {
 //line view.html:178
 	qw422016.N().S(`
+`)
+//line view.html:179
+	toc := resp.Note.TOC()
 
+//line view.html:179
+	qw422016.N().S(`
+`)
+//line view.html:180
+	if len(toc) > 0 {
+//line view.html:180
+		qw422016.N().S(`
 <div class="noteview__toc toc" id="noteview-toc" id="noteview-toc">
   <h2 class="toc__title">Содержание</h2>
   `)
-//line view.html:182
-	for _, item := range resp.Note.Headings {
-//line view.html:182
-		qw422016.N().S(`
+//line view.html:183
+		for _, item := range toc {
+//line view.html:183
+			qw422016.N().S(`
     <div class="toc__item toc__item--level`)
-//line view.html:183
-		qw422016.N().D(item.Level)
-//line view.html:183
-		qw422016.N().S(`">
+//line view.html:184
+			qw422016.N().D(item.Level)
+//line view.html:184
+			qw422016.N().S(`">
       <a href="#`)
-//line view.html:184
-		qw422016.N().S(item.ID)
-//line view.html:184
-		qw422016.N().S(`" class="toc__link">`)
-//line view.html:184
-		qw422016.N().S(item.Text)
-//line view.html:184
-		qw422016.N().S(`</a>
+//line view.html:185
+			qw422016.N().S(item.ID)
+//line view.html:185
+			qw422016.N().S(`" class="toc__link">`)
+//line view.html:185
+			qw422016.N().S(item.Text)
+//line view.html:185
+			qw422016.N().S(`</a>
     </div>
   `)
-//line view.html:186
-	}
-//line view.html:186
-	qw422016.N().S(`
+//line view.html:187
+		}
+//line view.html:187
+		qw422016.N().S(`
 </div>
-
 `)
 //line view.html:189
+	}
+//line view.html:189
+	qw422016.N().S(`
+`)
+//line view.html:190
 }
 
-//line view.html:189
+//line view.html:190
 func WriteTableOfContents(qq422016 qtio422016.Writer, resp *Response) {
-//line view.html:189
+//line view.html:190
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.html:189
+//line view.html:190
 	StreamTableOfContents(qw422016, resp)
-//line view.html:189
+//line view.html:190
 	qt422016.ReleaseWriter(qw422016)
-//line view.html:189
+//line view.html:190
 }
 
-//line view.html:189
+//line view.html:190
 func TableOfContents(resp *Response) string {
-//line view.html:189
+//line view.html:190
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.html:189
+//line view.html:190
 	WriteTableOfContents(qb422016, resp)
-//line view.html:189
+//line view.html:190
 	qs422016 := string(qb422016.B)
-//line view.html:189
+//line view.html:190
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.html:189
+//line view.html:190
 	return qs422016
-//line view.html:189
+//line view.html:190
 }

@@ -14,6 +14,13 @@ import (
 	"github.com/yuin/goldmark/ast"
 )
 
+// TOC display constants.
+const (
+	TOCDisplayAuto = iota
+	TOCDisplayShow
+	TOCDisplayHide
+)
+
 type NoteViewHeading struct {
 	Text  string
 	Level int
@@ -61,6 +68,8 @@ type NoteView struct {
 	Headings NoteViewHeadings // extracted from AST
 
 	HeadingCount map[string]int // for id generation
+
+	TOCDisplay int // TOCDisplayAuto, TOCDisplayShow, TOCDisplayHide - from meta
 }
 
 type NoteSubgraph struct {
@@ -151,6 +160,26 @@ func (n *NoteView) SetAst(node ast.Node) {
 	n.ast = node
 }
 
+// TOC returns the table of contents headings based on the TOCDisplay setting.
+func (n *NoteView) TOC() NoteViewHeadings {
+	switch n.TOCDisplay {
+	case TOCDisplayHide:
+		return NoteViewHeadings{}
+	case TOCDisplayShow:
+		return n.Headings
+	case TOCDisplayAuto:
+		// Auto mode: show TOC if:
+		// - There are 5 or more headings, OR
+		// - Reading time is 2 minutes or more
+		if len(n.Headings) >= 5 || n.ReadingTime >= 2 {
+			return n.Headings
+		}
+		return NoteViewHeadings{}
+	default:
+		return NoteViewHeadings{}
+	}
+}
+
 func (n *NoteView) ExtractSubgraphs() error {
 	subgraphs := make(map[string]struct{})
 
@@ -197,6 +226,8 @@ func (n *NoteView) ExtractMetaData() error {
 	}
 
 	n.extractHeadingsAndGenerateIDs()
+
+	n.extractTOCDisplay()
 
 	return nil
 }
@@ -293,6 +324,35 @@ func (n *NoteView) extractReadingComplexity() error {
 	}
 
 	return nil
+}
+
+func (n *NoteView) extractTOCDisplay() {
+	// Default to auto
+	n.TOCDisplay = TOCDisplayAuto
+
+	// Check if toc is set in metadata
+	tocI, ok := n.RawMeta["toc"]
+	if !ok {
+		return
+	}
+
+	switch toc := tocI.(type) {
+	case string:
+		switch strings.ToLower(toc) {
+		case "auto":
+			n.TOCDisplay = TOCDisplayAuto
+		case "show", "true", "yes":
+			n.TOCDisplay = TOCDisplayShow
+		case "hide", "false", "no":
+			n.TOCDisplay = TOCDisplayHide
+		}
+	case bool:
+		if toc {
+			n.TOCDisplay = TOCDisplayShow
+		} else {
+			n.TOCDisplay = TOCDisplayHide
+		}
+	}
 }
 
 var onlyCharsRE = regexp.MustCompile(`[^a-zA-Z0-9]+`)

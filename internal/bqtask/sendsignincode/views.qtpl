@@ -1,4 +1,4 @@
-{% func PlainView(task Task) %}
+{% func PlainView(task Params) %}
 Hello!
 
 Your sign in code: {%s= task.Code %}
