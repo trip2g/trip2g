@@ -35,6 +35,11 @@ html, body {
   @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
 }
 
+/* Enable smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
 /* Reading meta information */
 .reading-meta {
   @apply flex items-center gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400;
@@ -185,6 +190,19 @@ html, body {
 }
 
 .toc {
+  transition: all 0.1s ease-out;
+}
+
+.toc--sticky-top {
+  @apply sticky top-8;
+}
+
+.toc--sticky-bottom {
+  @apply sticky bottom-8;
+}
+
+.toc--normal {
+  position: relative;
 }
 
 .toc__title {
@@ -192,27 +210,39 @@ html, body {
 }
 
 .toc__item {
-  @apply mb-4 text-sm text-secondary;
+  @apply mb-2 text-sm;
+}
+
+.toc__link {
+  @apply text-gray-600 dark:text-gray-400 no-underline transition-colors duration-200;
+  @apply hover:text-gray-900 dark:hover:text-gray-100;
+  @apply border-l-2 border-transparent pl-3 -ml-[2px] block;
+}
+
+.toc__link.active {
+  @apply text-gray-900 dark:text-gray-100 font-medium;
+  @apply border-l-2 border-blue-500 dark:border-blue-400;
 }
 
 .toc__item--level1 {
 }
 
 .toc__item--level2 {
-  @apply pl-2;
-}
-
-.toc__item--level3 {
   @apply pl-4;
 }
 
-.toc__item--level4 {
-  @apply pl-6;
-}
-
-.toc__item--level5 {
+.toc__item--level3 {
   @apply pl-8;
 }
 
+.toc__item--level4 {
+  @apply pl-12;
+}
+
+.toc__item--level5 {
+  @apply pl-16;
+}
+
 .toc__item--level6 {
+  @apply pl-20;
 }

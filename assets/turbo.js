@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
+  // turbo
   var contentSelector = "#all-content";
   var prefetchCache = {};
   var PREFETCH_TTL = 60 * 1000;
@@ -95,6 +96,11 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   document.body.addEventListener("click", function (e) {
+    // toc links should not be handled here
+    if (e.target.tagName === "A" && e.target.classList.contains("toc__link")) {
+      return; // handled separately
+    }
+
     var link = e.target.closest ? e.target.closest("a") : null;
     if (!link || link.target === "_blank" || link.hasAttribute("download") || link.href.indexOf("mailto:") === 0) return;
 
@@ -151,24 +157,22 @@ document.addEventListener("DOMContentLoaded", function () {
   document.body.addEventListener("mouseenter", prefetchOnEvent, true);
   document.body.addEventListener("touchstart", prefetchOnEvent, { passive: true, capture: true });
 
-  const toc = document.getElementById("noteview-toc");
-  if (toc) {
-    toc.addEventListener("click", function (e) {
-      if (e.target.tagName !== "A" || !e.target.className.includes("toc__link")) {
-        console.log('skip', e.target.tagName, e.target.className)
-        return
-      }
+  // toc
+  document.addEventListener("click", function (e) {
+    if (e.target.tagName !== "A" || !e.target.className.includes("toc__link")) {
+      return;
+    }
 
-      e.preventDefault()
-      e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
 
-      const id = e.target.getAttribute('href').substring(1) // remove leading '#'
-      $mol_state_arg.value('anchor', id)
+    const id = e.target.getAttribute('href').substring(1); // remove leading '#'
 
-      const target = document.getElementById(id)
-      if (target) {
-        target.scrollIntoView({ behavior: "smooth" });
-      }
-    })
-  }
+    $mol_state_arg.value('anchor', id);
+
+    const target = document.getElementById(id);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth" });
+    }
+  });
 });

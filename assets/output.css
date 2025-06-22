@@ -10,6 +10,7 @@
     --color-amber-400: oklch(82.8% 0.189 84.429);
     --color-blue-400: oklch(70.7% 0.165 254.624);
     --color-blue-500: oklch(62.3% 0.214 259.815);
+    --color-gray-100: oklch(96.7% 0.003 264.542);
     --color-gray-300: oklch(87.2% 0.01 258.338);
     --color-gray-400: oklch(70.7% 0.022 261.325);
     --color-gray-500: oklch(55.1% 0.027 264.364);
@@ -32,6 +33,8 @@
     --text-3xl--line-height: calc(2.25 / 1.875);
     --font-weight-medium: 500;
     --font-weight-bold: 700;
+    --default-transition-duration: 150ms;
+    --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
   }
@@ -1615,6 +1618,9 @@ html, body {
     color: var(--color-white);
   }
 }
+html {
+  scroll-behavior: smooth;
+}
 .reading-meta {
   margin-bottom: calc(var(--spacing) * 4);
   display: flex;
@@ -1810,6 +1816,20 @@ html, body {
   flex: 1;
   padding-left: calc(var(--spacing) * 32);
 }
+.toc {
+  transition: all 0.1s ease-out;
+}
+.toc--sticky-top {
+  position: sticky;
+  top: calc(var(--spacing) * 8);
+}
+.toc--sticky-bottom {
+  position: sticky;
+  bottom: calc(var(--spacing) * 8);
+}
+.toc--normal {
+  position: relative;
+}
 .toc__title {
   margin-bottom: calc(var(--spacing) * 4);
   font-size: var(--text-lg);
@@ -1819,22 +1839,68 @@ html, body {
   color: var(--color-secondary);
 }
 .toc__item {
-  margin-bottom: calc(var(--spacing) * 4);
+  margin-bottom: calc(var(--spacing) * 2);
   font-size: var(--text-sm);
   line-height: var(--tw-leading, var(--text-sm--line-height));
-  color: var(--color-secondary);
+}
+.toc__link {
+  color: var(--color-gray-600);
+  text-decoration-line: none;
+  transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+  transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+  transition-duration: var(--tw-duration, var(--default-transition-duration));
+  --tw-duration: 200ms;
+  transition-duration: 200ms;
+  &:where(.dark, .dark *) {
+    color: var(--color-gray-400);
+  }
+  &:hover {
+    @media (hover: hover) {
+      color: var(--color-gray-900);
+    }
+  }
+  &:where(.dark, .dark *) {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-gray-100);
+      }
+    }
+  }
+  margin-left: calc(2px * -1);
+  display: block;
+  border-left-style: var(--tw-border-style);
+  border-left-width: 2px;
+  border-color: transparent;
+  padding-left: calc(var(--spacing) * 3);
+}
+.toc__link.active {
+  --tw-font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
+  &:where(.dark, .dark *) {
+    color: var(--color-gray-100);
+  }
+  border-left-style: var(--tw-border-style);
+  border-left-width: 2px;
+  border-color: var(--color-blue-500);
+  &:where(.dark, .dark *) {
+    border-color: var(--color-blue-400);
+  }
 }
 .toc__item--level2 {
-  padding-left: calc(var(--spacing) * 2);
-}
-.toc__item--level3 {
   padding-left: calc(var(--spacing) * 4);
 }
+.toc__item--level3 {
+  padding-left: calc(var(--spacing) * 8);
+}
 .toc__item--level4 {
-  padding-left: calc(var(--spacing) * 6);
+  padding-left: calc(var(--spacing) * 12);
 }
 .toc__item--level5 {
-  padding-left: calc(var(--spacing) * 8);
+  padding-left: calc(var(--spacing) * 16);
+}
+.toc__item--level6 {
+  padding-left: calc(var(--spacing) * 20);
 }
 @layer base {
   :where(:root),:root:has(input.theme-controller[value=light]:checked),[data-theme=light] {
@@ -2210,6 +2276,10 @@ html, body {
   syntax: "*";
   inherits: false;
 }
+@property --tw-duration {
+  syntax: "*";
+  inherits: false;
+}
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
     *, ::before, ::after, ::backdrop {
@@ -2248,6 +2318,7 @@ html, body {
       --tw-drop-shadow-size: initial;
       --tw-font-weight: initial;
       --tw-leading: initial;
+      --tw-duration: initial;
     }
   }
 }
