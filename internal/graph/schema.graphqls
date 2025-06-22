@@ -296,10 +296,29 @@ type NotePath @goModel(model: "trip2g/internal/model.NotePath"){
   latestContentHash: String!
 }
 
+input NoteInput {
+  path: String!
+  referer: String!
+}
+
+type NoteTocItem {
+  id: String!
+  title: String!
+  level: Int!
+}
+
+type PublicNote {
+  title: String!
+  html: String!
+
+  toc: [NoteTocItem!]!
+}
+
 type Query {
   viewer: Viewer!
   notePaths: [NotePath!]!
   admin: AdminQuery!
+  note(input: NoteInput!): PublicNote
 }
 
 type FieldMessage {

@@ -374,6 +374,23 @@ func (MakeReleaseLivePayload) IsMakeReleaseLiveOrErrorPayload() {}
 type Mutation struct {
 }
 
+type NoteInput struct {
+	Path    string `json:"path"`
+	Referer string `json:"referer"`
+}
+
+type NoteTocItem struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Level int32  `json:"level"`
+}
+
+type PublicNote struct {
+	Title string        `json:"title"`
+	HTML  string        `json:"html"`
+	Toc   []NoteTocItem `json:"toc"`
+}
+
 type PushNoteInput struct {
 	Path    string `json:"path"`
 	Content string `json:"content"`

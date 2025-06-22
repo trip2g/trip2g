@@ -13,6 +13,7 @@ namespace $.$$ {
 			return {
 				paywall: this.Paywall(),
 				space: this.Space(),
+				reader: this.Reader(),
 			}
 		}
 

@@ -26,6 +26,7 @@ import (
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
@@ -106,6 +107,7 @@ type Env interface {
 	signout.Env
 	createpaymentlink.Env
 	pushnotes.Env
+	rendernotepage.Env
 	uploadnoteasset.Env
 	checkapikey.Env
 

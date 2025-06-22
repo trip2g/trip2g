@@ -272,6 +272,7 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	doc := ldr.md.Parser().Parse(text.NewReader(content), parser.WithContext(context))
 	pp := model.NoteView{
 		Path:      src.Path,
+		PathID:    src.PathID,
 		Content:   content,
 		InLinks:   make(map[string]struct{}),
 		Subgraphs: make(map[string]*model.NoteSubgraph),
