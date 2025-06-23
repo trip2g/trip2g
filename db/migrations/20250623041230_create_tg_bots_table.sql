@@ -1,7 +1,8 @@
 -- migrate:up
 
 create table tg_bots (
-  token text not null primary key,
+  id integer not null primary key autoincrement,
+  token text not null unique,
   enabled boolean not null default true,
   name text,
   description text not null default '',

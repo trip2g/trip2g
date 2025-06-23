@@ -216,13 +216,31 @@ CREATE TABLE not_found_ignored_patterns (
   created_by integer not null references admins(user_id) on delete restrict
 );
 CREATE TABLE tg_bots (
-  token text not null primary key,
+  id integer not null primary key autoincrement,
+  token text not null unique,
   enabled boolean not null default true,
   name text,
   description text not null default '',
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete restrict
 );
+CREATE TABLE tg_user_states (
+  chat_id int not null primary key,
+  bot_id int not null references tg_bots(id) on delete restrict,
+  user_id int references users(id) on delete restrict,
+  created_at datetime not null default current_timestamp,
+  updated_at datetime not null default current_timestamp,
+  state text not null
+);
+CREATE TABLE tg_user_profiles (
+  chat_id int not null,
+  created_at datetime not null default current_timestamp,
+  first_name text,
+  last_name text,
+  username text
+);
+CREATE INDEX tg_user_profiles_chat_id_idx on tg_user_profiles(chat_id);
+CREATE UNIQUE INDEX tg_user_profiles_first_last_username_idx on tg_user_profiles(first_name, last_name, username);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -254,4 +272,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250604130924'),
   ('20250605090619'),
   ('20250606084510'),
-  ('20250623041230');
+  ('20250623041230'),
+  ('20250623063206');
