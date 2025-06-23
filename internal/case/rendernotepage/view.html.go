@@ -464,7 +464,7 @@ func StreamReadingMeta(qw422016 *qt422016.Writer, resp *Response) {
 <div class="reading-meta">
   `)
 //line view.html:124
-	if resp.Note.ReadingTime > 0 {
+	if resp.Note.ReadingTime >= 2 {
 //line view.html:124
 		qw422016.N().S(`
   <span class="reading-time">

@@ -121,7 +121,7 @@
 
 {% func ReadingMeta(resp *Response) %}
 <div class="reading-meta">
-  {% if resp.Note.ReadingTime > 0 %}
+  {% if resp.Note.ReadingTime >= 2 %}
   <span class="reading-time">
     <span class="reading-meta__label">Время чтения:</span>
     {%d resp.Note.ReadingTime %} мин
