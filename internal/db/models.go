@@ -231,11 +231,13 @@ type TgBot struct {
 }
 
 type TgUserProfile struct {
-	ChatID    int64          `json:"chat_id"`
-	CreatedAt time.Time      `json:"created_at"`
-	FirstName sql.NullString `json:"first_name"`
-	LastName  sql.NullString `json:"last_name"`
-	Username  sql.NullString `json:"username"`
+	Sha256Hash string         `json:"sha256_hash"`
+	ChatID     int64          `json:"chat_id"`
+	BotID      int64          `json:"bot_id"`
+	CreatedAt  time.Time      `json:"created_at"`
+	FirstName  sql.NullString `json:"first_name"`
+	LastName   sql.NullString `json:"last_name"`
+	Username   sql.NullString `json:"username"`
 }
 
 type TgUserState struct {
@@ -244,7 +246,8 @@ type TgUserState struct {
 	UserID    sql.NullInt64 `json:"user_id"`
 	CreatedAt time.Time     `json:"created_at"`
 	UpdatedAt time.Time     `json:"updated_at"`
-	State     string        `json:"state"`
+	Value     string        `json:"value"`
+	Data      string        `json:"data"`
 }
 
 type User struct {

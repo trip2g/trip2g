@@ -637,6 +637,22 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 	return i, err
 }
 
+const getTgUserProfile = `-- name: GetTgUserProfile :one
+select chat_id from tg_user_profiles where chat_id = ? and bot_id = ?
+`
+
+type GetTgUserProfileParams struct {
+	ChatID int64 `json:"chat_id"`
+	BotID  int64 `json:"bot_id"`
+}
+
+func (q *Queries) GetTgUserProfile(ctx context.Context, arg GetTgUserProfileParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getTgUserProfile, arg.ChatID, arg.BotID)
+	var chat_id int64
+	err := row.Scan(&chat_id)
+	return chat_id, err
+}
+
 const hideNotePath = `-- name: HideNotePath :exec
 update note_paths
    set hidden_by = ?
@@ -1050,23 +1066,27 @@ func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
 }
 
 const insertTgUserProfile = `-- name: InsertTgUserProfile :exec
-insert or ignore into tg_user_profiles (chat_id, first_name, last_name, username)
-values (?, ?, ?, ?)
+insert into tg_user_profiles (chat_id, bot_id, first_name, last_name, username, sha256_hash)
+values (?, ?, ?, ?, ?, ?)
 `
 
 type InsertTgUserProfileParams struct {
-	ChatID    int64          `json:"chat_id"`
-	FirstName sql.NullString `json:"first_name"`
-	LastName  sql.NullString `json:"last_name"`
-	Username  sql.NullString `json:"username"`
+	ChatID     int64          `json:"chat_id"`
+	BotID      int64          `json:"bot_id"`
+	FirstName  sql.NullString `json:"first_name"`
+	LastName   sql.NullString `json:"last_name"`
+	Username   sql.NullString `json:"username"`
+	Sha256Hash string         `json:"sha256_hash"`
 }
 
 func (q *Queries) InsertTgUserProfile(ctx context.Context, arg InsertTgUserProfileParams) error {
 	_, err := q.db.ExecContext(ctx, insertTgUserProfile,
 		arg.ChatID,
+		arg.BotID,
 		arg.FirstName,
 		arg.LastName,
 		arg.Username,
+		arg.Sha256Hash,
 	)
 	return err
 }
@@ -2538,6 +2558,32 @@ type UpsertNoteVersionAssetParams struct {
 
 func (q *Queries) UpsertNoteVersionAsset(ctx context.Context, arg UpsertNoteVersionAssetParams) error {
 	_, err := q.db.ExecContext(ctx, upsertNoteVersionAsset, arg.AssetID, arg.VersionID, arg.Path)
+	return err
+}
+
+const upsertTgUserState = `-- name: UpsertTgUserState :exec
+insert into tg_user_states (chat_id, bot_id, value, data)
+values (?, ?, ?, ?)
+on conflict(chat_id) do update set
+  value = excluded.value,
+  data = excluded.data,
+  updated_at = current_timestamp
+`
+
+type UpsertTgUserStateParams struct {
+	ChatID int64  `json:"chat_id"`
+	BotID  int64  `json:"bot_id"`
+	Value  string `json:"value"`
+	Data   string `json:"data"`
+}
+
+func (q *Queries) UpsertTgUserState(ctx context.Context, arg UpsertTgUserStateParams) error {
+	_, err := q.db.ExecContext(ctx, upsertTgUserState,
+		arg.ChatID,
+		arg.BotID,
+		arg.Value,
+		arg.Data,
+	)
 	return err
 }
 

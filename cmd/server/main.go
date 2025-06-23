@@ -277,6 +277,11 @@ func (a *app) SendMail(ctx context.Context, data model.Mail) error {
 	return nil
 }
 
+func (a *app) CalculateSha256(s string) string {
+	hash := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(hash[:])
+}
+
 func (a *app) loadAllNotes(ctx context.Context) error {
 	startCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
