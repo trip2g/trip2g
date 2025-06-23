@@ -1049,6 +1049,28 @@ func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
 	return err
 }
 
+const insertTgUserProfile = `-- name: InsertTgUserProfile :exec
+insert or ignore into tg_user_profiles (chat_id, first_name, last_name, username)
+values (?, ?, ?, ?)
+`
+
+type InsertTgUserProfileParams struct {
+	ChatID    int64          `json:"chat_id"`
+	FirstName sql.NullString `json:"first_name"`
+	LastName  sql.NullString `json:"last_name"`
+	Username  sql.NullString `json:"username"`
+}
+
+func (q *Queries) InsertTgUserProfile(ctx context.Context, arg InsertTgUserProfileParams) error {
+	_, err := q.db.ExecContext(ctx, insertTgUserProfile,
+		arg.ChatID,
+		arg.FirstName,
+		arg.LastName,
+		arg.Username,
+	)
+	return err
+}
+
 const insertUser = `-- name: InsertUser :one
 insert into users (email) values (lower(?))
 returning id, email, created_at, last_signin_code_sent_at, note_view_count
@@ -1848,7 +1870,7 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const listEnabledTgBots = `-- name: ListEnabledTgBots :many
-select token, enabled, name, description, created_at, created_by from tg_bots where enabled = true
+select id, token, enabled, name, description, created_at, created_by from tg_bots where enabled = true
 `
 
 func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
@@ -1861,6 +1883,7 @@ func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
 	for rows.Next() {
 		var i TgBot
 		if err := rows.Scan(
+			&i.ID,
 			&i.Token,
 			&i.Enabled,
 			&i.Name,

@@ -544,3 +544,7 @@ select * from tg_bots where enabled = true;
 
 -- name: UpdateTgBotName :exec
 update tg_bots set name = ? where token = ?;
+
+-- name: InsertTgUserProfile :exec
+insert or ignore into tg_user_profiles (chat_id, first_name, last_name, username)
+values (?, ?, ?, ?);

@@ -221,12 +221,30 @@ type Subgraph struct {
 }
 
 type TgBot struct {
+	ID          int64          `json:"id"`
 	Token       string         `json:"token"`
 	Enabled     bool           `json:"enabled"`
 	Name        sql.NullString `json:"name"`
 	Description string         `json:"description"`
 	CreatedAt   time.Time      `json:"created_at"`
 	CreatedBy   int64          `json:"created_by"`
+}
+
+type TgUserProfile struct {
+	ChatID    int64          `json:"chat_id"`
+	CreatedAt time.Time      `json:"created_at"`
+	FirstName sql.NullString `json:"first_name"`
+	LastName  sql.NullString `json:"last_name"`
+	Username  sql.NullString `json:"username"`
+}
+
+type TgUserState struct {
+	ChatID    int64         `json:"chat_id"`
+	BotID     int64         `json:"bot_id"`
+	UserID    sql.NullInt64 `json:"user_id"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+	State     string        `json:"state"`
 }
 
 type User struct {

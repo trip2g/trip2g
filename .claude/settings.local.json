@@ -20,7 +20,8 @@
       "Bash(cp:*)",
       "Bash(go tool:*)",
       "Bash(git checkout:*)",
-      "Bash(goimports:*)"
+      "Bash(goimports:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": []
   }
