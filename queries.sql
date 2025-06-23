@@ -545,17 +545,23 @@ select * from tg_bots where enabled = true;
 -- name: UpdateTgBotName :exec
 update tg_bots set name = ? where token = ?;
 
--- name: GetTgUserProfile :one
-select chat_id from tg_user_profiles where chat_id = ? and bot_id = ?;
-
 -- name: InsertTgUserProfile :exec
 insert into tg_user_profiles (chat_id, bot_id, first_name, last_name, username, sha256_hash)
-values (?, ?, ?, ?, ?, ?);
+values (?, ?, ?, ?, ?, ?)
+on conflict(sha256_hash) do nothing;
 
 -- name: UpsertTgUserState :exec
-insert into tg_user_states (chat_id, bot_id, value, data)
-values (?, ?, ?, ?)
-on conflict(chat_id) do update set
+insert into tg_user_states (chat_id, bot_id, value, data, update_count)
+values (?, ?, ?, ?, ?)
+on conflict(chat_id, bot_id) do update set
   value = excluded.value,
   data = excluded.data,
+  update_count = excluded.update_count + 1,
   updated_at = current_timestamp;
+
+-- name: TgUserStateByBotIDAndChatID :one
+select *
+  from tg_user_states
+ where bot_id = ?
+   and chat_id = ?
+ limit 1;

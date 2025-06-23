@@ -1,13 +1,15 @@
 -- migrate:up
 
 create table tg_user_states (
-  chat_id int not null primary key,
+  chat_id int not null,
   bot_id int not null references tg_bots(id) on delete restrict,
   user_id int references users(id) on delete restrict,
   created_at datetime not null default current_timestamp,
   updated_at datetime not null default current_timestamp,
+  update_count int not null default 0,
   value text not null default 'pending',
-  data text not null
+  data text not null,
+  primary key (chat_id, bot_id)
 );
 
 create table tg_user_profiles (

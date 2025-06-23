@@ -6,15 +6,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"trip2g/internal/db"
+	"trip2g/internal/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Env interface {
+	TgUserStateByBotIDAndChatID(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error)
 	InsertTgUserProfile(ctx context.Context, arg db.InsertTgUserProfileParams) error
 	UpsertTgUserState(ctx context.Context, arg db.UpsertTgUserStateParams) error
 	SendMessage(userID int64, text string) (tgbotapi.Message, error)
 	CalculateSha256(s string) string
+	LatestNoteViews() *model.NoteViews // TODO: read LiveNoteViews for production users
 	BotID() int64
 }
 
@@ -25,6 +28,8 @@ type UserState struct {
 	UserStateData
 	ChatID int64
 	Value  string
+
+	UpdateCount int64
 }
 
 func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
@@ -56,18 +61,47 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 		return fmt.Errorf("failed to send message: %w", err)
 	}
 
-	userState := UserState{
-		UserStateData: UserStateData{},
-		ChatID:        update.Message.Chat.ID,
-		Value:         "pending",
+	userState, err := getUserState(ctx, env, update.Message.Chat.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get user state: %w", err)
 	}
 
-	err = updateUserState(ctx, env, userState)
+	err = updateUserState(ctx, env, *userState)
 	if err != nil {
 		return fmt.Errorf("failed to update user state: %w", err)
 	}
 
 	return nil
+}
+
+func getUserState(ctx context.Context, env Env, chatID int64) (*UserState, error) {
+	params := db.TgUserStateByBotIDAndChatIDParams{
+		BotID:  env.BotID(),
+		ChatID: chatID,
+	}
+
+	userState := UserState{
+		ChatID: chatID,
+		Value:  "pending", // Default value if no state found
+	}
+
+	row, err := env.TgUserStateByBotIDAndChatID(ctx, params)
+	if err != nil {
+		if db.IsNoFound(err) {
+			return &userState, nil
+		}
+
+		return nil, fmt.Errorf("failed to get user state: %w", err)
+	}
+
+	userState.Value = row.Value
+
+	err = json.Unmarshal([]byte(row.Data), &userState.UserStateData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal user state data: %w", err)
+	}
+
+	return &userState, nil
 }
 
 func updateUserState(ctx context.Context, env Env, state UserState) error {
@@ -81,6 +115,8 @@ func updateUserState(ctx context.Context, env Env, state UserState) error {
 		BotID:  env.BotID(),
 		Value:  state.Value,
 		Data:   string(data),
+
+		UpdateCount: state.UpdateCount + 1,
 	}
 
 	err = env.UpsertTgUserState(ctx, upsertParams)

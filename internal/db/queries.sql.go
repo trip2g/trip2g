@@ -637,22 +637,6 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 	return i, err
 }
 
-const getTgUserProfile = `-- name: GetTgUserProfile :one
-select chat_id from tg_user_profiles where chat_id = ? and bot_id = ?
-`
-
-type GetTgUserProfileParams struct {
-	ChatID int64 `json:"chat_id"`
-	BotID  int64 `json:"bot_id"`
-}
-
-func (q *Queries) GetTgUserProfile(ctx context.Context, arg GetTgUserProfileParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getTgUserProfile, arg.ChatID, arg.BotID)
-	var chat_id int64
-	err := row.Scan(&chat_id)
-	return chat_id, err
-}
-
 const hideNotePath = `-- name: HideNotePath :exec
 update note_paths
    set hidden_by = ?
@@ -1068,6 +1052,7 @@ func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
 const insertTgUserProfile = `-- name: InsertTgUserProfile :exec
 insert into tg_user_profiles (chat_id, bot_id, first_name, last_name, username, sha256_hash)
 values (?, ?, ?, ?, ?, ?)
+on conflict(sha256_hash) do nothing
 `
 
 type InsertTgUserProfileParams struct {
@@ -2268,6 +2253,35 @@ func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, er
 	return i, err
 }
 
+const tgUserStateByBotIDAndChatID = `-- name: TgUserStateByBotIDAndChatID :one
+select chat_id, bot_id, user_id, created_at, updated_at, value, data, update_count
+  from tg_user_states
+ where bot_id = ?
+   and chat_id = ?
+ limit 1
+`
+
+type TgUserStateByBotIDAndChatIDParams struct {
+	BotID  int64 `json:"bot_id"`
+	ChatID int64 `json:"chat_id"`
+}
+
+func (q *Queries) TgUserStateByBotIDAndChatID(ctx context.Context, arg TgUserStateByBotIDAndChatIDParams) (TgUserState, error) {
+	row := q.db.QueryRowContext(ctx, tgUserStateByBotIDAndChatID, arg.BotID, arg.ChatID)
+	var i TgUserState
+	err := row.Scan(
+		&i.ChatID,
+		&i.BotID,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Value,
+		&i.Data,
+		&i.UpdateCount,
+	)
+	return i, err
+}
+
 const unbanUser = `-- name: UnbanUser :exec
 delete from user_bans where user_id = ?
 `
@@ -2562,19 +2576,21 @@ func (q *Queries) UpsertNoteVersionAsset(ctx context.Context, arg UpsertNoteVers
 }
 
 const upsertTgUserState = `-- name: UpsertTgUserState :exec
-insert into tg_user_states (chat_id, bot_id, value, data)
-values (?, ?, ?, ?)
-on conflict(chat_id) do update set
+insert into tg_user_states (chat_id, bot_id, value, data, update_count)
+values (?, ?, ?, ?, ?)
+on conflict(chat_id, bot_id) do update set
   value = excluded.value,
   data = excluded.data,
+  update_count = excluded.update_count + 1,
   updated_at = current_timestamp
 `
 
 type UpsertTgUserStateParams struct {
-	ChatID int64  `json:"chat_id"`
-	BotID  int64  `json:"bot_id"`
-	Value  string `json:"value"`
-	Data   string `json:"data"`
+	ChatID      int64  `json:"chat_id"`
+	BotID       int64  `json:"bot_id"`
+	Value       string `json:"value"`
+	Data        string `json:"data"`
+	UpdateCount int64  `json:"update_count"`
 }
 
 func (q *Queries) UpsertTgUserState(ctx context.Context, arg UpsertTgUserStateParams) error {
@@ -2583,6 +2599,7 @@ func (q *Queries) UpsertTgUserState(ctx context.Context, arg UpsertTgUserStatePa
 		arg.BotID,
 		arg.Value,
 		arg.Data,
+		arg.UpdateCount,
 	)
 	return err
 }

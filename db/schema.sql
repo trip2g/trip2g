@@ -225,13 +225,14 @@ CREATE TABLE tg_bots (
   created_by integer not null references admins(user_id) on delete restrict
 );
 CREATE TABLE tg_user_states (
-  chat_id int not null primary key,
+  chat_id int not null,
   bot_id int not null references tg_bots(id) on delete restrict,
   user_id int references users(id) on delete restrict,
   created_at datetime not null default current_timestamp,
   updated_at datetime not null default current_timestamp,
   value text not null default 'pending',
-  data text not null
+  data text not null, update_count int not null default 0,
+  primary key (chat_id, bot_id)
 );
 CREATE TABLE tg_user_profiles (
   sha256_hash text primary key,

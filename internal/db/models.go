@@ -241,13 +241,14 @@ type TgUserProfile struct {
 }
 
 type TgUserState struct {
-	ChatID    int64         `json:"chat_id"`
-	BotID     int64         `json:"bot_id"`
-	UserID    sql.NullInt64 `json:"user_id"`
-	CreatedAt time.Time     `json:"created_at"`
-	UpdatedAt time.Time     `json:"updated_at"`
-	Value     string        `json:"value"`
-	Data      string        `json:"data"`
+	ChatID      int64         `json:"chat_id"`
+	BotID       int64         `json:"bot_id"`
+	UserID      sql.NullInt64 `json:"user_id"`
+	CreatedAt   time.Time     `json:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
+	Value       string        `json:"value"`
+	Data        string        `json:"data"`
+	UpdateCount int64         `json:"update_count"`
 }
 
 type User struct {
