@@ -1847,6 +1847,40 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const listEnabledTgBots = `-- name: ListEnabledTgBots :many
+select token, enabled, name, description, created_at, created_by from tg_bots where enabled = true
+`
+
+func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
+	rows, err := q.db.QueryContext(ctx, listEnabledTgBots)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBot
+	for rows.Next() {
+		var i TgBot
+		if err := rows.Scan(
+			&i.Token,
+			&i.Enabled,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSubgraphIDsByOfferID = `-- name: ListSubgraphIDsByOfferID :many
 select subgraph_id
   from offer_subgraphs
@@ -2372,6 +2406,20 @@ func (q *Queries) UpdateRedirect(ctx context.Context, arg UpdateRedirectParams) 
 		&i.Target,
 	)
 	return i, err
+}
+
+const updateTgBotName = `-- name: UpdateTgBotName :exec
+update tg_bots set name = ? where token = ?
+`
+
+type UpdateTgBotNameParams struct {
+	Name  sql.NullString `json:"name"`
+	Token string         `json:"token"`
+}
+
+func (q *Queries) UpdateTgBotName(ctx context.Context, arg UpdateTgBotNameParams) error {
+	_, err := q.db.ExecContext(ctx, updateTgBotName, arg.Name, arg.Token)
+	return err
 }
 
 const updateUserSubgraphAccess = `-- name: UpdateUserSubgraphAccess :one

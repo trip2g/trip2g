@@ -214,6 +214,14 @@ func main() {
 		}
 	})
 
+	go func() {
+		runErr := a.RunTgBots(ctx)
+		if runErr != nil {
+			log.Error("failed to run Telegram bots", "error", runErr)
+			return
+		}
+	}()
+
 	a.startServer()
 }
 

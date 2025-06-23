@@ -9,6 +9,7 @@ require (
 	github.com/amacneil/dbmate/v2 v2.27.0
 	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
+	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/kr/pretty v0.3.1
 	github.com/lib/pq v1.10.9

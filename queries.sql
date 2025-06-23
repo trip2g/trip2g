@@ -538,3 +538,9 @@ update not_found_paths
 set total_hits = 1, last_hit_at = datetime('now')
 where id = ?
 returning *;
+
+-- name: ListEnabledTgBots :many
+select * from tg_bots where enabled = true;
+
+-- name: UpdateTgBotName :exec
+update tg_bots set name = ? where token = ?;

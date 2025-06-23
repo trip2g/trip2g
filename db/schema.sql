@@ -150,6 +150,14 @@ CREATE TABLE api_key_logs (
   action_id integer not null references api_key_log_actions(id) on delete restrict,
   ip_id integer not null references api_key_log_ips(id) on delete restrict
 );
+CREATE VIEW active_offers as
+select *
+ from offers
+ where (starts_at < datetime('now') or starts_at is null)
+   and (ends_at > datetime('now') or ends_at is null)
+   and price_usd > 0
+ order by price_usd desc
+/* active_offers(id,public_id,created_at,lifetime,price_usd,starts_at,ends_at) */;
 CREATE TABLE releases (
   id integer primary key autoincrement,
   created_at datetime not null default current_timestamp,
@@ -207,6 +215,14 @@ CREATE TABLE not_found_ignored_patterns (
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete restrict
 );
+CREATE TABLE tg_bots (
+  token text not null primary key,
+  enabled boolean not null default true,
+  name text,
+  description text not null default '',
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -230,10 +246,12 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250515071316'),
   ('20250524091058'),
   ('20250525034319'),
+  ('20250528112143'),
   ('20250528125918'),
   ('20250531040526'),
   ('20250531113101'),
   ('20250602143243'),
   ('20250604130924'),
   ('20250605090619'),
-  ('20250606084510');
+  ('20250606084510'),
+  ('20250623041230');
