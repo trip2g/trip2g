@@ -15,10 +15,11 @@ type Env interface {
 	TgUserStateByBotIDAndChatID(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error)
 	InsertTgUserProfile(ctx context.Context, arg db.InsertTgUserProfileParams) error
 	UpsertTgUserState(ctx context.Context, arg db.UpsertTgUserStateParams) error
-	SendMessage(userID int64, text string) (tgbotapi.Message, error)
 	CalculateSha256(s string) string
 	LatestNoteViews() *model.NoteViews // TODO: read LiveNoteViews for production users
 	BotID() int64
+	Send(msg tgbotapi.Chattable) (tgbotapi.Message, error)
+	Request(c tgbotapi.Chattable) (*tgbotapi.APIResponse, error)
 }
 
 type UserStateData struct {
@@ -56,19 +57,93 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 		}
 	}
 
-	_, err := env.SendMessage(update.Message.Chat.ID, "Hello, World!")
-	if err != nil {
-		return fmt.Errorf("failed to send message: %w", err)
+	var chatID int64
+
+	if update.CallbackQuery != nil {
+		chatID = update.CallbackQuery.Message.Chat.ID
+	} else if update.Message != nil {
+		chatID = update.Message.Chat.ID
 	}
 
-	userState, err := getUserState(ctx, env, update.Message.Chat.ID)
+	userState, err := getUserState(ctx, env, chatID)
 	if err != nil {
 		return fmt.Errorf("failed to get user state: %w", err)
+	}
+
+	if update.CallbackQuery != nil {
+		return handleCallbackQuery(ctx, env, update, userState)
+	}
+
+	if update.Message != nil && update.Message.IsCommand() {
+		return handleCommands(ctx, env, update, userState)
 	}
 
 	err = updateUserState(ctx, env, *userState)
 	if err != nil {
 		return fmt.Errorf("failed to update user state: %w", err)
+	}
+
+	return nil
+}
+
+func handleCallbackQuery(ctx context.Context, env Env, update tgbotapi.Update, userState *UserState) error {
+	switch update.CallbackQuery.Data {
+	case "start_mbti":
+		callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
+
+		_, err := env.Request(callback)
+		if err != nil {
+			return fmt.Errorf("failed to send callback: %w", err)
+		}
+
+		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Starting MBTI test...")
+
+		_, err = env.Send(msg)
+		if err != nil {
+			return fmt.Errorf("failed to send message: %w", err)
+		}
+
+	default:
+		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Unknown action")
+
+		_, err := env.Send(msg)
+		if err != nil {
+			return fmt.Errorf("failed to send message: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func handleCommands(ctx context.Context, env Env, update tgbotapi.Update, userState *UserState) error {
+	switch update.Message.Command() {
+	case "start":
+		return sendStartMenu(ctx, env, update)
+
+	default:
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Unknown command")
+
+		_, err := env.Send(msg)
+		if err != nil {
+			return fmt.Errorf("failed to send message: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func sendStartMenu(ctx context.Context, env Env, update tgbotapi.Update) error {
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Welcome to Trip2G!")
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Начать тест", "start_mbti"),
+			tgbotapi.NewInlineKeyboardButtonData("Подробнее", "more_details"),
+		),
+	)
+
+	_, err := env.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send start menu: %w", err)
 	}
 
 	return nil
