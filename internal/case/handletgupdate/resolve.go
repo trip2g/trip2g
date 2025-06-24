@@ -22,6 +22,7 @@ type Env interface {
 	InsertTgUserProfile(ctx context.Context, arg db.InsertTgUserProfileParams) error
 	UpsertTgUserState(ctx context.Context, arg db.UpsertTgUserStateParams) error
 	CalculateSha256(s string) string
+	PublicURL() string
 	LatestNoteViews() *model.NoteViews // TODO: read LiveNoteViews for production users
 	Logger() logger.Logger
 	BotID() int64
@@ -483,8 +484,16 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 
 	text := fmt.Sprintf("Все вопросы теста пройдены!\n\nВаш тип личности: %s\n\n%sСпасибо за участие!", mbtiResult.Name, categoryBars.String())
 
+	url := fmt.Sprintf("%s/mbti/%s", req.env.PublicURL(), strings.ToLower(mbtiResult.Name[:4]))
+
 	msg := tgbotapi.NewMessage(req.chatID, text)
-	// Add answer buttons here if needed
+	
+	webApp := tgbotapi.WebApp{URL: url}
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonWebApp("📊 Подробнее о типе", webApp),
+		),
+	)
 
 	_, err = req.env.Send(msg)
 	if err != nil {
