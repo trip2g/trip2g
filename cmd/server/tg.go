@@ -32,9 +32,9 @@ func (be *botEnv) BotID() int64 {
 }
 
 func (a *app) RunTgBots(ctx context.Context) error {
-	bots, err := a.ListEnabledTgBots(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to list enabled tg bots: %w", err)
+	bots, queryErr := a.ListEnabledTgBots(ctx)
+	if queryErr != nil {
+		return fmt.Errorf("failed to list enabled tg bots: %w", queryErr)
 	}
 
 	var waitGroup sync.WaitGroup

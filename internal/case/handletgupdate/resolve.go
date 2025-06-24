@@ -231,7 +231,7 @@ func (req *request) handleMBTIAnswer(ctx context.Context, actionParts []string) 
 	return req.sendNextQuestion(ctx)
 }
 
-func (req *request) sendStartMenu(ctx context.Context) error {
+func (req *request) sendStartMenu(_ context.Context) error {
 	msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, "Welcome to Trip2G!")
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -342,8 +342,6 @@ func (req *request) UserState(ctx context.Context) (*UserState, error) {
 	userState.Value = row.Value
 	userState.UpdateCount = row.UpdateCount
 
-	fmt.Printf("\n\n%+v\n\n", row)
-
 	err = json.Unmarshal([]byte(row.Data), &userState.UserStateData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal user state data: %w", err)
@@ -407,9 +405,7 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 	}
 
 	if len(questions) == 0 {
-		msg := tgbotapi.NewMessage(req.chatID, "К сожалению, вопросы теста не найдены.")
-		_, err := req.env.Send(msg)
-		return err
+		return req.SendMessage("К сожалению, вопросы теста не найдены.")
 	}
 
 	state, exists := req.userState.QuizStates["mbti"]
@@ -459,12 +455,12 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 	for _, category := range []string{"IE", "SN", "TF", "PJ", "AR"} {
 		percentage := mbtiResult.Categories[category]
 		names := categoryNames[category]
-		
+
 		// Determine which trait is dominant and flip if needed
 		var leftName, rightName string
 		var leftLetter, rightLetter string
 		var displayPercentage float32
-		
+
 		if percentage < 0.5 {
 			// First letter is dominant
 			leftName = names[0]
@@ -480,7 +476,7 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 			rightLetter = string(category[0])
 			displayPercentage = percentage
 		}
-		
+
 		bar := generateHorizontalBar(displayPercentage, leftLetter)
 		categoryBars.WriteString(fmt.Sprintf("%s (%s) > %s (%s)\n%s\n\n", leftName, leftLetter, rightName, rightLetter, bar))
 	}
@@ -600,21 +596,21 @@ func generateHorizontalBar(percentage float32, letter string) string {
 	// Create a horizontal bar with 20 characters
 	barLength := 20
 	filled := int(percentage * float32(barLength))
-	
+
 	var bar strings.Builder
-	
+
 	// Add the bar
-	for i := 0; i < barLength; i++ {
+	for i := range barLength {
 		if i < filled {
 			bar.WriteString("█")
 		} else {
 			bar.WriteString("░")
 		}
 	}
-	
+
 	// Add percentage and letter
 	bar.WriteString(fmt.Sprintf(" %.0f%% (%s)", percentage*100, letter))
-	
+
 	return bar.String()
 }
 
