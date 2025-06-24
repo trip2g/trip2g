@@ -35,11 +35,17 @@ type Question struct {
 	Category string
 }
 
+type QuizState struct {
+	Answers map[int]int `json:"answers"`
+}
+
 type UserStateData struct {
+	QuizStates map[string]QuizState `json:"quiz_states"`
 }
 
 type UserState struct {
-	UserStateData
+	*UserStateData
+
 	ChatID int64
 	Value  string
 
@@ -96,6 +102,13 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 		return fmt.Errorf("failed to get user state: %w", err)
 	}
 
+	defer func() {
+		updateErr := req.updateUserState(ctx)
+		if err != nil {
+			env.Logger().Error("failed to update user state", "error", updateErr)
+		}
+	}()
+
 	if update.CallbackQuery != nil {
 		return req.handleCallbackQuery(ctx)
 	}
@@ -104,21 +117,26 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 		return req.handleCommands(ctx)
 	}
 
-	_, err = req.Questions(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get questions: %w", err)
-	}
+	return nil
+}
 
-	err = req.updateUserState(ctx)
+func (req *request) SendMessage(text string) error {
+	msg := tgbotapi.NewMessage(req.chatID, text)
+
+	_, err := req.env.Send(msg)
 	if err != nil {
-		return fmt.Errorf("failed to update user state: %w", err)
+		return fmt.Errorf("failed to send message: %w", err)
 	}
 
 	return nil
 }
 
 func (req *request) handleCallbackQuery(ctx context.Context) error {
-	switch req.update.CallbackQuery.Data {
+	log := req.env.Logger()
+
+	actionParts := strings.SplitN(req.update.CallbackQuery.Data, ":", 3)
+
+	switch actionParts[0] {
 	case "start_mbti":
 		callback := tgbotapi.NewCallback(req.update.CallbackQuery.ID, req.update.CallbackQuery.Data)
 
@@ -129,14 +147,12 @@ func (req *request) handleCallbackQuery(ctx context.Context) error {
 
 		return req.sendNextQuestion(ctx)
 
-		// msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Starting MBTI test...")
-		//
-		// _, err = env.Send(msg)
-		// if err != nil {
-		// 	return fmt.Errorf("failed to send message: %w", err)
-		// }
+	case "mbti_answer":
+		return req.handleMBTIAnswer(ctx, actionParts)
 
 	default:
+		log.Warn("unknown action", "action", req.update.CallbackQuery.Data)
+
 		msg := tgbotapi.NewMessage(req.update.CallbackQuery.Message.Chat.ID, "Unknown action")
 
 		_, err := req.env.Send(msg)
@@ -163,6 +179,46 @@ func (req *request) handleCommands(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (req *request) handleMBTIAnswer(ctx context.Context, actionParts []string) error {
+	if len(actionParts) < 3 {
+		return req.SendMessage("Invalid action format")
+	}
+
+	callbackMsg := req.update.CallbackQuery.Message
+
+	// prepare params
+	id, err := strconv.Atoi(actionParts[1])
+	if err != nil {
+		return fmt.Errorf("failed to parse question ID: %w", err)
+	}
+
+	answerValue, err := strconv.Atoi(actionParts[2])
+	if err != nil {
+		return fmt.Errorf("failed to parse answer value: %w", err)
+	}
+
+	// remove the callback buttons
+	editMsg := tgbotapi.NewEditMessageReplyMarkup(callbackMsg.Chat.ID, callbackMsg.MessageID, tgbotapi.NewInlineKeyboardMarkup())
+	editMsg.ReplyMarkup = generateMBTIAnswerKeyboard(id, answerValue+3)
+
+	_, err = req.env.Request(editMsg)
+	if err != nil {
+		return fmt.Errorf("failed to edit message: %w", err)
+	}
+
+	// process the answer
+	state := req.userState.QuizStates["mbti"]
+	req.userState.UserStateData.QuizStates["mbti"] = state
+
+	if state.Answers == nil {
+		state.Answers = make(map[int]int)
+	}
+
+	state.Answers[id] = answerValue
+
+	return req.sendNextQuestion(ctx)
 }
 
 func (req *request) sendStartMenu(ctx context.Context) error {
@@ -270,10 +326,16 @@ func (req *request) UserState(ctx context.Context) (*UserState, error) {
 	}
 
 	userState.Value = row.Value
+	userState.UpdateCount = row.UpdateCount
 
 	err = json.Unmarshal([]byte(row.Data), &userState.UserStateData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal user state data: %w", err)
+	}
+
+	// normalize QuizStates
+	if userState.QuizStates == nil {
+		userState.QuizStates = make(map[string]QuizState)
 	}
 
 	return &userState, nil
@@ -302,6 +364,32 @@ func (req *request) updateUserState(ctx context.Context) error {
 	return nil
 }
 
+func generateMBTIAnswerKeyboard(questionID int, answerIdx int) *tgbotapi.InlineKeyboardMarkup {
+	mbtiAnswers := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("😡", "-3"),
+			tgbotapi.NewInlineKeyboardButtonData("😠", "-2"),
+			tgbotapi.NewInlineKeyboardButtonData("😕", "-1"),
+			tgbotapi.NewInlineKeyboardButtonData("😐", "0"),
+			tgbotapi.NewInlineKeyboardButtonData("🙂", "1"),
+			tgbotapi.NewInlineKeyboardButtonData("😊", "2"),
+			tgbotapi.NewInlineKeyboardButtonData("😄", "3"),
+		),
+	)
+
+	for i, button := range mbtiAnswers.InlineKeyboard[0] {
+		v := fmt.Sprintf("mbti_answer:%d:%s", questionID, *button.CallbackData)
+		mbtiAnswers.InlineKeyboard[0][i].CallbackData = &v
+
+		if i == answerIdx {
+			fmt.Println("Setting answer button", i, "to checked")
+			mbtiAnswers.InlineKeyboard[0][i].Text = "✅"
+		}
+	}
+
+	return &mbtiAnswers
+}
+
 func (req *request) sendNextQuestion(ctx context.Context) error {
 	questions, err := req.Questions(ctx)
 	if err != nil {
@@ -314,9 +402,32 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 		return err
 	}
 
-	// For now, send the first question as an example
-	question := questions[0]
-	text := fmt.Sprintf("Вопрос 1/%d:\n\n%s", len(questions), question.Text)
+	state := req.userState.UserStateData.QuizStates["mbti"]
+	log := req.env.Logger()
+
+	log.Debug("current mbti state", "chat_id", req.chatID, "state", state)
+
+	for _, question := range questions {
+		_, ok := state.Answers[question.ID]
+		if ok {
+			log.Debug("skipping question", "question_id", question.ID, "question_text", question.Text)
+			continue
+		}
+
+		text := fmt.Sprintf("Вопрос %d/%d:\n\n%s", len(state.Answers)+1, len(questions), question.Text)
+
+		msg := tgbotapi.NewMessage(req.chatID, text)
+		msg.ReplyMarkup = generateMBTIAnswerKeyboard(question.ID, -1)
+
+		_, err = req.env.Send(msg)
+		if err != nil {
+			return fmt.Errorf("failed to send question: %w", err)
+		}
+
+		return nil
+	}
+
+	text := "Все вопросы теста пройдены. Спасибо за участие!"
 
 	msg := tgbotapi.NewMessage(req.chatID, text)
 	// Add answer buttons here if needed
