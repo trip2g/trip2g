@@ -35,6 +35,11 @@ type Question struct {
 	Category string
 }
 
+type MBTIResult struct {
+	Name       string             `json:"name"`
+	Categories map[string]float32 `json:"categories"`
+}
+
 type QuizState struct {
 	Answers map[int]int `json:"answers"`
 }
@@ -441,7 +446,46 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 
 	mbtiResult := calculateMBTI(questions, state.Answers)
 
-	text := fmt.Sprintf("Все вопросы теста пройдены!\n\nВаш тип личности: %s\n\nСпасибо за участие!", mbtiResult)
+	// Create horizontal bars for categories
+	var categoryBars strings.Builder
+	categoryNames := map[string][2]string{
+		"IE": {"Интроверсия", "Экстраверсия"},
+		"SN": {"Сенсорика", "Интуиция"},
+		"TF": {"Мышление", "Чувства"},
+		"PJ": {"Восприятие", "Суждение"},
+		"AR": {"Турбулентность", "Уверенность"},
+	}
+
+	for _, category := range []string{"IE", "SN", "TF", "PJ", "AR"} {
+		percentage := mbtiResult.Categories[category]
+		names := categoryNames[category]
+		
+		// Determine which trait is dominant and flip if needed
+		var leftName, rightName string
+		var leftLetter, rightLetter string
+		var displayPercentage float32
+		
+		if percentage < 0.5 {
+			// First letter is dominant
+			leftName = names[0]
+			rightName = names[1]
+			leftLetter = string(category[0])
+			rightLetter = string(category[1])
+			displayPercentage = 1 - percentage
+		} else {
+			// Second letter is dominant
+			leftName = names[1]
+			rightName = names[0]
+			leftLetter = string(category[1])
+			rightLetter = string(category[0])
+			displayPercentage = percentage
+		}
+		
+		bar := generateHorizontalBar(displayPercentage, leftLetter)
+		categoryBars.WriteString(fmt.Sprintf("%s (%s) > %s (%s)\n%s\n\n", leftName, leftLetter, rightName, rightLetter, bar))
+	}
+
+	text := fmt.Sprintf("Все вопросы теста пройдены!\n\nВаш тип личности: %s\n\n%sСпасибо за участие!", mbtiResult.Name, categoryBars.String())
 
 	msg := tgbotapi.NewMessage(req.chatID, text)
 	// Add answer buttons here if needed
@@ -454,18 +498,19 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 	return nil
 }
 
-func calculateMBTI(questions []Question, answers map[int]int) string {
+func calculateMBTI(questions []Question, answers map[int]int) MBTIResult {
 	// Map questions by ID for quick lookup
 	questionMap := make(map[int]Question)
 	for _, q := range questions {
 		questionMap[q.ID] = q
 	}
 
-	// Standard MBTI categories in order
-	standardCategories := []string{"IE", "SN", "TF", "PJ", "AR", "BG"}
+	// Standard MBTI categories in order (removed BG)
+	standardCategories := []string{"IE", "SN", "TF", "PJ", "AR"}
 
-	// Calculate sums for each category
+	// Calculate sums and counts for each category
 	categorySums := make(map[string]int)
+	categoryCounts := make(map[string]int)
 
 	for questionID, answer := range answers {
 		question, exists := questionMap[questionID]
@@ -475,11 +520,16 @@ func calculateMBTI(questions []Question, answers map[int]int) string {
 
 		category := question.Category
 
+		// Skip BG category
+		if category == "BG" || category == "GB" {
+			continue
+		}
+
 		// Normalize category and calculate answer value
 		var normalizedCategory string
 		var answerValue int
 
-		// Check if category is in standard form (IE, SN, TF, PJ, AR, BG)
+		// Check if category is in standard form (IE, SN, TF, PJ, AR)
 		isStandard := false
 		for _, std := range standardCategories {
 			if category == std {
@@ -497,16 +547,30 @@ func calculateMBTI(questions []Question, answers map[int]int) string {
 		}
 
 		categorySums[normalizedCategory] += answerValue
+		categoryCounts[normalizedCategory]++
 	}
 
-	// Build result string
-	var result strings.Builder
+	// Calculate percentages and build result
+	categoryPercentages := make(map[string]float32)
+	var resultName strings.Builder
 
-	for _, category := range standardCategories {
-		sum, exists := categorySums[category]
-		if !exists {
-			continue
+	for idx, category := range standardCategories {
+		sum := categorySums[category]
+		count := categoryCounts[category]
+
+		// Calculate percentage for the second letter (positive direction)
+		var percentage float32
+		if count > 0 {
+			// Normalize sum to range 0-1
+			// sum ranges from -3*count to +3*count
+			maxPossible := float32(3 * count)
+			normalized := (float32(sum) + maxPossible) / (2 * maxPossible)
+			percentage = normalized
+		} else {
+			percentage = 0.5 // Default to middle if no data
 		}
+
+		categoryPercentages[category] = percentage
 
 		// Choose letter based on sum
 		var letter string
@@ -518,10 +582,40 @@ func calculateMBTI(questions []Question, answers map[int]int) string {
 			letter = string(category[0])
 		}
 
-		result.WriteString(letter)
+		if idx == 4 {
+			resultName.WriteString("-")
+		}
+
+		resultName.WriteString(letter)
 	}
 
-	return result.String()
+	return MBTIResult{
+		Name:       resultName.String(),
+		Categories: categoryPercentages,
+	}
+}
+
+func generateHorizontalBar(percentage float32, letter string) string {
+	// percentage is now always between 0.5 and 1.0
+	// Create a horizontal bar with 20 characters
+	barLength := 20
+	filled := int(percentage * float32(barLength))
+	
+	var bar strings.Builder
+	
+	// Add the bar
+	for i := 0; i < barLength; i++ {
+		if i < filled {
+			bar.WriteString("█")
+		} else {
+			bar.WriteString("░")
+		}
+	}
+	
+	// Add percentage and letter
+	bar.WriteString(fmt.Sprintf(" %.0f%% (%s)", percentage*100, letter))
+	
+	return bar.String()
 }
 
 func reverseString(s string) string {

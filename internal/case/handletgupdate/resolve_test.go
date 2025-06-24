@@ -25,5 +25,14 @@ func TestCalculateMBTI(t *testing.T) {
 	require.NoError(t, err)
 
 	res := calculateMBTI(questions, testAnswers)
-	require.Equal(t, "INTPA", res)
+	require.Equal(t, "INTP-A", res.Name)
+	
+	// Verify that we have all 5 categories
+	require.Len(t, res.Categories, 5)
+	
+	// Verify percentages are between 0 and 1
+	for category, percentage := range res.Categories {
+		require.GreaterOrEqual(t, percentage, float32(0.0), "Category %s percentage should be >= 0", category)
+		require.LessOrEqual(t, percentage, float32(1.0), "Category %s percentage should be <= 1", category)
+	}
 }
