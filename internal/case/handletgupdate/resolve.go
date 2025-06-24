@@ -403,14 +403,10 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 	}
 
 	state := req.userState.UserStateData.QuizStates["mbti"]
-	log := req.env.Logger()
-
-	log.Debug("current mbti state", "chat_id", req.chatID, "state", state)
 
 	for _, question := range questions {
 		_, ok := state.Answers[question.ID]
 		if ok {
-			log.Debug("skipping question", "question_id", question.ID, "question_text", question.Text)
 			continue
 		}
 
@@ -427,7 +423,9 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 		return nil
 	}
 
-	text := "Все вопросы теста пройдены. Спасибо за участие!"
+	mbtiResult := calculateMBTI(questions, state.Answers)
+
+	text := fmt.Sprintf("Все вопросы теста пройдены!\n\nВаш тип личности: %s\n\nСпасибо за участие!", mbtiResult)
 
 	msg := tgbotapi.NewMessage(req.chatID, text)
 	// Add answer buttons here if needed
@@ -438,6 +436,84 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func calculateMBTI(questions []Question, answers map[int]int) string {
+	// Map questions by ID for quick lookup
+	questionMap := make(map[int]Question)
+	for _, q := range questions {
+		questionMap[q.ID] = q
+	}
+
+	// Standard MBTI categories in order
+	standardCategories := []string{"IE", "SN", "TF", "PJ", "AR", "BG"}
+
+	// Calculate sums for each category
+	categorySums := make(map[string]int)
+
+	for questionID, answer := range answers {
+		question, exists := questionMap[questionID]
+		if !exists {
+			continue
+		}
+
+		category := question.Category
+
+		// Normalize category and calculate answer value
+		var normalizedCategory string
+		var answerValue int
+
+		// Check if category is in standard form (IE, SN, TF, PJ, AR, BG)
+		isStandard := false
+		for _, std := range standardCategories {
+			if category == std {
+				isStandard = true
+				normalizedCategory = category
+				answerValue = -answer // Negative for standard categories
+				break
+			}
+		}
+
+		if !isStandard {
+			// Reverse the category (e.g., "EI" -> "IE")
+			normalizedCategory = reverseString(category)
+			answerValue = answer // Positive for reversed categories
+		}
+
+		categorySums[normalizedCategory] += answerValue
+	}
+
+	// Build result string
+	var result strings.Builder
+
+	for _, category := range standardCategories {
+		sum, exists := categorySums[category]
+		if !exists {
+			continue
+		}
+
+		// Choose letter based on sum
+		var letter string
+		if sum >= 0 {
+			// Take second letter (index 1)
+			letter = string(category[1])
+		} else {
+			// Take first letter (index 0)
+			letter = string(category[0])
+		}
+
+		result.WriteString(letter)
+	}
+
+	return result.String()
+}
+
+func reverseString(s string) string {
+	runes := []rune(s)
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	return string(runes)
 }
 
 func toNullString(s string) sql.NullString {
