@@ -487,11 +487,9 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 	url := fmt.Sprintf("%s/mbti/%s", req.env.PublicURL(), strings.ToLower(mbtiResult.Name[:4]))
 
 	msg := tgbotapi.NewMessage(req.chatID, text)
-	
-	webApp := tgbotapi.WebApp{URL: url}
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonWebApp("📊 Подробнее о типе", webApp),
+			tgbotapi.NewInlineKeyboardButtonURL("📊 Подробнее о типе", url),
 		),
 	)
 
