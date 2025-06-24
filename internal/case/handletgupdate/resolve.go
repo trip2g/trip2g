@@ -1,11 +1,17 @@
 package handletgupdate
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -17,9 +23,16 @@ type Env interface {
 	UpsertTgUserState(ctx context.Context, arg db.UpsertTgUserStateParams) error
 	CalculateSha256(s string) string
 	LatestNoteViews() *model.NoteViews // TODO: read LiveNoteViews for production users
+	Logger() logger.Logger
 	BotID() int64
 	Send(msg tgbotapi.Chattable) (tgbotapi.Message, error)
 	Request(c tgbotapi.Chattable) (*tgbotapi.APIResponse, error)
+}
+
+type Question struct {
+	ID       int
+	Text     string
+	Category string
 }
 
 type UserStateData struct {
@@ -77,6 +90,8 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 	if update.Message != nil && update.Message.IsCommand() {
 		return handleCommands(ctx, env, update, userState)
 	}
+
+	getQuestiens(ctx, env)
 
 	err = updateUserState(ctx, env, *userState)
 	if err != nil {
@@ -147,6 +162,63 @@ func sendStartMenu(ctx context.Context, env Env, update tgbotapi.Update) error {
 	}
 
 	return nil
+}
+
+func getQuestiens(ctx context.Context, env Env) ([]Question, error) {
+	notes := env.LatestNoteViews()
+
+	re := regexp.MustCompile(`_mbti/(\d+)\.md$`)
+
+	var res []Question
+
+	for _, note := range notes.List {
+		m := re.FindStringSubmatch(note.Path)
+		if len(m) < 2 {
+			continue
+		}
+
+		id, err := strconv.Atoi(m[1])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse question ID from path %s: %w", note.Path, err)
+		}
+
+		categoryI, ok := note.RawMeta["category"]
+		if !ok {
+			return nil, fmt.Errorf("category not found in note %s", note.Path)
+		}
+
+		category, ok := categoryI.(string)
+		if !ok {
+			return nil, fmt.Errorf("category is not a string in note %s. %T", note.Path, categoryI)
+		}
+
+		question := Question{
+			ID:       id,
+			Text:     trimYAMLFrontMatter(string(note.Content)),
+			Category: category,
+		}
+
+		res = append(res, question)
+	}
+
+	slices.SortFunc(res, func(a, b Question) int {
+		return cmp.Compare(a.ID, b.ID)
+	})
+
+	return res, nil
+}
+
+func trimYAMLFrontMatter(content string) string {
+	if !strings.HasPrefix(content, "---") {
+		return content
+	}
+
+	parts := strings.SplitN(content, "---", 3)
+	if len(parts) < 3 {
+		return content
+	}
+
+	return strings.TrimSpace(parts[2])
 }
 
 func getUserState(ctx context.Context, env Env, chatID int64) (*UserState, error) {
