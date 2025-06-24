@@ -46,6 +46,14 @@ type UserState struct {
 	UpdateCount int64
 }
 
+type request struct {
+	chatID    int64
+	update    tgbotapi.Update
+	userState *UserState
+	env       Env
+	questions []Question
+}
+
 func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 	// Update user profile if we have a message with user info
 	if update.Message != nil && update.Message.From != nil {
@@ -70,30 +78,38 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 		}
 	}
 
-	var chatID int64
+	var err error
 
-	if update.CallbackQuery != nil {
-		chatID = update.CallbackQuery.Message.Chat.ID
-	} else if update.Message != nil {
-		chatID = update.Message.Chat.ID
+	req := request{
+		env:    env,
+		update: update,
 	}
 
-	userState, err := getUserState(ctx, env, chatID)
+	if update.CallbackQuery != nil {
+		req.chatID = update.CallbackQuery.Message.Chat.ID
+	} else if update.Message != nil {
+		req.chatID = update.Message.Chat.ID
+	}
+
+	req.userState, err = req.UserState(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get user state: %w", err)
 	}
 
 	if update.CallbackQuery != nil {
-		return handleCallbackQuery(ctx, env, update, userState)
+		return req.handleCallbackQuery(ctx)
 	}
 
 	if update.Message != nil && update.Message.IsCommand() {
-		return handleCommands(ctx, env, update, userState)
+		return req.handleCommands(ctx)
 	}
 
-	getQuestiens(ctx, env)
+	_, err = req.Questions(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get questions: %w", err)
+	}
 
-	err = updateUserState(ctx, env, *userState)
+	err = req.updateUserState(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to update user state: %w", err)
 	}
@@ -101,27 +117,29 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 	return nil
 }
 
-func handleCallbackQuery(ctx context.Context, env Env, update tgbotapi.Update, userState *UserState) error {
-	switch update.CallbackQuery.Data {
+func (req *request) handleCallbackQuery(ctx context.Context) error {
+	switch req.update.CallbackQuery.Data {
 	case "start_mbti":
-		callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
+		callback := tgbotapi.NewCallback(req.update.CallbackQuery.ID, req.update.CallbackQuery.Data)
 
-		_, err := env.Request(callback)
+		_, err := req.env.Request(callback)
 		if err != nil {
 			return fmt.Errorf("failed to send callback: %w", err)
 		}
 
-		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Starting MBTI test...")
+		return req.sendNextQuestion(ctx)
 
-		_, err = env.Send(msg)
-		if err != nil {
-			return fmt.Errorf("failed to send message: %w", err)
-		}
+		// msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Starting MBTI test...")
+		//
+		// _, err = env.Send(msg)
+		// if err != nil {
+		// 	return fmt.Errorf("failed to send message: %w", err)
+		// }
 
 	default:
-		msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "Unknown action")
+		msg := tgbotapi.NewMessage(req.update.CallbackQuery.Message.Chat.ID, "Unknown action")
 
-		_, err := env.Send(msg)
+		_, err := req.env.Send(msg)
 		if err != nil {
 			return fmt.Errorf("failed to send message: %w", err)
 		}
@@ -130,15 +148,15 @@ func handleCallbackQuery(ctx context.Context, env Env, update tgbotapi.Update, u
 	return nil
 }
 
-func handleCommands(ctx context.Context, env Env, update tgbotapi.Update, userState *UserState) error {
-	switch update.Message.Command() {
+func (req *request) handleCommands(ctx context.Context) error {
+	switch req.update.Message.Command() {
 	case "start":
-		return sendStartMenu(ctx, env, update)
+		return req.sendStartMenu(ctx)
 
 	default:
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Unknown command")
+		msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, "Unknown command")
 
-		_, err := env.Send(msg)
+		_, err := req.env.Send(msg)
 		if err != nil {
 			return fmt.Errorf("failed to send message: %w", err)
 		}
@@ -147,8 +165,8 @@ func handleCommands(ctx context.Context, env Env, update tgbotapi.Update, userSt
 	return nil
 }
 
-func sendStartMenu(ctx context.Context, env Env, update tgbotapi.Update) error {
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Welcome to Trip2G!")
+func (req *request) sendStartMenu(ctx context.Context) error {
+	msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, "Welcome to Trip2G!")
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Начать тест", "start_mbti"),
@@ -156,7 +174,7 @@ func sendStartMenu(ctx context.Context, env Env, update tgbotapi.Update) error {
 		),
 	)
 
-	_, err := env.Send(msg)
+	_, err := req.env.Send(msg)
 	if err != nil {
 		return fmt.Errorf("failed to send start menu: %w", err)
 	}
@@ -164,8 +182,12 @@ func sendStartMenu(ctx context.Context, env Env, update tgbotapi.Update) error {
 	return nil
 }
 
-func getQuestiens(ctx context.Context, env Env) ([]Question, error) {
-	notes := env.LatestNoteViews()
+func (req *request) Questions(ctx context.Context) ([]Question, error) {
+	if req.questions != nil {
+		return req.questions, nil
+	}
+
+	notes := req.env.LatestNoteViews()
 
 	re := regexp.MustCompile(`_mbti/(\d+)\.md$`)
 
@@ -205,6 +227,8 @@ func getQuestiens(ctx context.Context, env Env) ([]Question, error) {
 		return cmp.Compare(a.ID, b.ID)
 	})
 
+	req.questions = res
+
 	return res, nil
 }
 
@@ -221,18 +245,22 @@ func trimYAMLFrontMatter(content string) string {
 	return strings.TrimSpace(parts[2])
 }
 
-func getUserState(ctx context.Context, env Env, chatID int64) (*UserState, error) {
+func (req *request) UserState(ctx context.Context) (*UserState, error) {
+	if req.userState != nil {
+		return req.userState, nil
+	}
+
 	params := db.TgUserStateByBotIDAndChatIDParams{
-		BotID:  env.BotID(),
-		ChatID: chatID,
+		BotID:  req.env.BotID(),
+		ChatID: req.chatID,
 	}
 
 	userState := UserState{
-		ChatID: chatID,
+		ChatID: req.chatID,
 		Value:  "pending", // Default value if no state found
 	}
 
-	row, err := env.TgUserStateByBotIDAndChatID(ctx, params)
+	row, err := req.env.TgUserStateByBotIDAndChatID(ctx, params)
 	if err != nil {
 		if db.IsNoFound(err) {
 			return &userState, nil
@@ -251,24 +279,51 @@ func getUserState(ctx context.Context, env Env, chatID int64) (*UserState, error
 	return &userState, nil
 }
 
-func updateUserState(ctx context.Context, env Env, state UserState) error {
-	data, err := json.Marshal(state.UserStateData)
+func (req *request) updateUserState(ctx context.Context) error {
+	data, err := json.Marshal(req.userState.UserStateData)
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 
 	upsertParams := db.UpsertTgUserStateParams{
-		ChatID: state.ChatID,
-		BotID:  env.BotID(),
-		Value:  state.Value,
+		ChatID: req.userState.ChatID,
+		BotID:  req.env.BotID(),
+		Value:  req.userState.Value,
 		Data:   string(data),
 
-		UpdateCount: state.UpdateCount + 1,
+		UpdateCount: req.userState.UpdateCount + 1,
 	}
 
-	err = env.UpsertTgUserState(ctx, upsertParams)
+	err = req.env.UpsertTgUserState(ctx, upsertParams)
 	if err != nil {
 		return fmt.Errorf("failed to upsert user state: %w", err)
+	}
+
+	return nil
+}
+
+func (req *request) sendNextQuestion(ctx context.Context) error {
+	questions, err := req.Questions(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get questions: %w", err)
+	}
+
+	if len(questions) == 0 {
+		msg := tgbotapi.NewMessage(req.chatID, "К сожалению, вопросы теста не найдены.")
+		_, err := req.env.Send(msg)
+		return err
+	}
+
+	// For now, send the first question as an example
+	question := questions[0]
+	text := fmt.Sprintf("Вопрос 1/%d:\n\n%s", len(questions), question.Text)
+
+	msg := tgbotapi.NewMessage(req.chatID, text)
+	// Add answer buttons here if needed
+
+	_, err = req.env.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send question: %w", err)
 	}
 
 	return nil
