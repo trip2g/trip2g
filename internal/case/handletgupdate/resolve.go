@@ -209,14 +209,19 @@ func (req *request) handleMBTIAnswer(ctx context.Context, actionParts []string) 
 	}
 
 	// process the answer
-	state := req.userState.QuizStates["mbti"]
-	req.userState.UserStateData.QuizStates["mbti"] = state
+	state, exists := req.userState.QuizStates["mbti"]
+	if !exists {
+		return fmt.Errorf("quiz state not found for user %d", req.chatID)
+	}
 
 	if state.Answers == nil {
 		state.Answers = make(map[int]int)
 	}
 
 	state.Answers[id] = answerValue
+
+	// Update the map with the modified state
+	req.userState.QuizStates["mbti"] = state
 
 	return req.sendNextQuestion(ctx)
 }
@@ -312,6 +317,10 @@ func (req *request) UserState(ctx context.Context) (*UserState, error) {
 	}
 
 	userState := UserState{
+		UserStateData: &UserStateData{
+			QuizStates: map[string]QuizState{},
+		},
+
 		ChatID: req.chatID,
 		Value:  "pending", // Default value if no state found
 	}
@@ -328,14 +337,11 @@ func (req *request) UserState(ctx context.Context) (*UserState, error) {
 	userState.Value = row.Value
 	userState.UpdateCount = row.UpdateCount
 
+	fmt.Printf("\n\n%+v\n\n", row)
+
 	err = json.Unmarshal([]byte(row.Data), &userState.UserStateData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal user state data: %w", err)
-	}
-
-	// normalize QuizStates
-	if userState.QuizStates == nil {
-		userState.QuizStates = make(map[string]QuizState)
 	}
 
 	return &userState, nil
@@ -382,7 +388,6 @@ func generateMBTIAnswerKeyboard(questionID int, answerIdx int) *tgbotapi.InlineK
 		mbtiAnswers.InlineKeyboard[0][i].CallbackData = &v
 
 		if i == answerIdx {
-			fmt.Println("Setting answer button", i, "to checked")
 			mbtiAnswers.InlineKeyboard[0][i].Text = "✅"
 		}
 	}
@@ -402,7 +407,18 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 		return err
 	}
 
-	state := req.userState.UserStateData.QuizStates["mbti"]
+	state, exists := req.userState.QuizStates["mbti"]
+	if !exists {
+		state = QuizState{
+			Answers: make(map[int]int),
+		}
+		req.userState.QuizStates["mbti"] = state
+	}
+
+	if state.Answers == nil {
+		state.Answers = make(map[int]int)
+		req.userState.QuizStates["mbti"] = state
+	}
 
 	for _, question := range questions {
 		_, ok := state.Answers[question.ID]
