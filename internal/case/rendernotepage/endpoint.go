@@ -31,7 +31,9 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	ctx.SetContentType("text/html; charset=utf-8")
 	ctx.SetStatusCode(http.StatusOK)
 
-	layoutParams := renderlayout.Params{}
+	layoutParams := renderlayout.Params{
+		Client: string(req.Req.QueryArgs().Peek("client")),
+	}
 
 	resp, err := Resolve(context.Background(), req.Env.(Env), request)
 	if resp != nil && resp.Note != nil {

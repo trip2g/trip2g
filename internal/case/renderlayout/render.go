@@ -5,7 +5,7 @@ import (
 	"trip2g/internal/appreq"
 )
 
-//go:generate go tool github.com/valyala/quicktemplate/qtc -dir=.
+//go:generate go tool github.com/valyala/quicktemplate/qtc -dir=. -ext=html
 
 type Params struct {
 	Title   string
@@ -15,6 +15,8 @@ type Params struct {
 
 	MetaDescription *string
 	MetaRobots      string
+
+	Client string
 }
 
 type Env interface {
@@ -47,9 +49,17 @@ func Handle(req *appreq.Request, params Params, renderContent func()) (interface
 
 	req.Req.SetContentType("text/html; charset=utf-8")
 
-	WriteBeginLayout(req.Req, &params)
-	renderContent()
-	WriteFinishLayout(req.Req, &params)
+	switch params.Client {
+	case "tg":
+		WriteBeginTGLayout(req.Req, &params)
+		renderContent()
+		WriteFinishTGLayout(req.Req, &params)
+
+	default:
+		WriteBeginLayout(req.Req, &params)
+		renderContent()
+		WriteFinishLayout(req.Req, &params)
+	}
 
 	return nil, nil
 }

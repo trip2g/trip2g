@@ -51,3 +51,25 @@ window.__trip2g_settings = {
 {% endfor %}
 
 {% endfunc %}
+
+{% func BeginTGLayout(params *Params) %}
+
+<!DOCTYPE html>
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+{% for _, url := range params.CSSURLs %}
+<link href="{%s url %}" rel="stylesheet">
+{% endfor %}
+
+<script src="https://telegram.org/js/telegram-web-app.js?57"></script>
+</head>
+
+{% endfunc %}
+
+{% func FinishTGLayout(params *Params) %}
+{% endfunc %}
