@@ -489,7 +489,7 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 	msg := tgbotapi.NewMessage(req.chatID, text)
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("📊 Подробнее о типе", url),
+			tgbotapi.NewInlineKeyboardButtonWebApp("Подробнее о типе", tgbotapi.WebAppInfo{URL: url}),
 		),
 	)
 
