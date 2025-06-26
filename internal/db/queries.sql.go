@@ -637,6 +637,24 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 	return i, err
 }
 
+const getTgChatMember = `-- name: GetTgChatMember :one
+select user_id, chat_id, created_at
+from tg_chat_members
+where user_id = ? and chat_id = ?
+`
+
+type GetTgChatMemberParams struct {
+	UserID sql.NullInt64 `json:"user_id"`
+	ChatID sql.NullInt64 `json:"chat_id"`
+}
+
+func (q *Queries) GetTgChatMember(ctx context.Context, arg GetTgChatMemberParams) (TgChatMember, error) {
+	row := q.db.QueryRowContext(ctx, getTgChatMember, arg.UserID, arg.ChatID)
+	var i TgChatMember
+	err := row.Scan(&i.UserID, &i.ChatID, &i.CreatedAt)
+	return i, err
+}
+
 const hideNotePath = `-- name: HideNotePath :exec
 update note_paths
    set hidden_by = ?
@@ -1046,6 +1064,22 @@ on conflict(name) do nothing
 
 func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
 	_, err := q.db.ExecContext(ctx, insertSubgraph, name)
+	return err
+}
+
+const insertTgChatMember = `-- name: InsertTgChatMember :exec
+insert into tg_chat_members (user_id, chat_id)
+values (?, ?)
+on conflict(user_id, chat_id) do nothing
+`
+
+type InsertTgChatMemberParams struct {
+	UserID sql.NullInt64 `json:"user_id"`
+	ChatID sql.NullInt64 `json:"chat_id"`
+}
+
+func (q *Queries) InsertTgChatMember(ctx context.Context, arg InsertTgChatMemberParams) error {
+	_, err := q.db.ExecContext(ctx, insertTgChatMember, arg.UserID, arg.ChatID)
 	return err
 }
 
@@ -2195,6 +2229,21 @@ func (q *Queries) ReleaseByID(ctx context.Context, id int64) (Release, error) {
 		&i.IsLive,
 	)
 	return i, err
+}
+
+const removeTgChatMember = `-- name: RemoveTgChatMember :exec
+delete from tg_chat_members
+where user_id = ? and chat_id = ?
+`
+
+type RemoveTgChatMemberParams struct {
+	UserID sql.NullInt64 `json:"user_id"`
+	ChatID sql.NullInt64 `json:"chat_id"`
+}
+
+func (q *Queries) RemoveTgChatMember(ctx context.Context, arg RemoveTgChatMemberParams) error {
+	_, err := q.db.ExecContext(ctx, removeTgChatMember, arg.UserID, arg.ChatID)
+	return err
 }
 
 const resetNotFoundPathTotalHits = `-- name: ResetNotFoundPathTotalHits :one

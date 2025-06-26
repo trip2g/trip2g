@@ -17,12 +17,23 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+const (
+	statusMember        = "member"
+	statusAdministrator = "administrator"
+	statusCreator       = "creator"
+	statusLeft          = "left"
+	statusKicked        = "kicked"
+)
+
 type Env interface {
 	TgUserStateByBotIDAndChatID(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error)
 	InsertTgUserProfile(ctx context.Context, arg db.InsertTgUserProfileParams) error
 	UpsertTgUserState(ctx context.Context, arg db.UpsertTgUserStateParams) error
 	UpsertTgBotChat(ctx context.Context, arg db.UpsertTgBotChatParams) error
 	MarkTgBotChatRemoved(ctx context.Context, id int64) error
+	InsertTgChatMember(ctx context.Context, arg db.InsertTgChatMemberParams) error
+	RemoveTgChatMember(ctx context.Context, arg db.RemoveTgChatMemberParams) error
+	GetTgChatMember(ctx context.Context, arg db.GetTgChatMemberParams) (db.TgChatMember, error)
 	CalculateSha256(s string) string
 	PublicURL() string
 	LatestNoteViews() *model.NoteViews // TODO: read LiveNoteViews for production users
@@ -122,6 +133,11 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 		return req.handleMyChatMember(ctx)
 	}
 
+	// Handle users joining/leaving chats
+	if update.ChatMember != nil {
+		return req.handleChatMember(ctx)
+	}
+
 	if update.CallbackQuery != nil {
 		return req.handleCallbackQuery(ctx)
 	}
@@ -136,16 +152,16 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 func (req *request) handleMyChatMember(ctx context.Context) error {
 	log := req.env.Logger()
 	chatMember := req.update.MyChatMember
-	
+
 	// Only track channels, groups, and supergroups
 	chat := chatMember.Chat
 	if chat.Type != "channel" && chat.Type != "group" && chat.Type != "supergroup" {
 		return nil
 	}
-	
+
 	newStatus := chatMember.NewChatMember.Status
 	oldStatus := chatMember.OldChatMember.Status
-	
+
 	log.Info("bot chat member status changed",
 		"chat_id", chat.ID,
 		"chat_type", chat.Type,
@@ -153,11 +169,11 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 		"old_status", oldStatus,
 		"new_status", newStatus,
 	)
-	
+
 	// Bot was added to the chat
-	if (newStatus == "member" || newStatus == "administrator") && 
-	   (oldStatus == "left" || oldStatus == "kicked") {
-		
+	if (newStatus == statusMember || newStatus == statusAdministrator) &&
+		(oldStatus == statusLeft || oldStatus == statusKicked) {
+
 		err := req.env.UpsertTgBotChat(ctx, db.UpsertTgBotChatParams{
 			ID:        chat.ID,
 			ChatType:  chat.Type,
@@ -167,23 +183,80 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 			log.Error("failed to upsert bot chat", "error", err, "chat_id", chat.ID)
 			return fmt.Errorf("failed to upsert bot chat: %w", err)
 		}
-		
+
 		log.Info("bot added to chat", "chat_id", chat.ID, "chat_title", chat.Title)
 	}
-	
+
 	// Bot was removed from the chat
-	if (newStatus == "left" || newStatus == "kicked") && 
-	   (oldStatus == "member" || oldStatus == "administrator") {
-		
+	if (newStatus == statusLeft || newStatus == statusKicked) &&
+		(oldStatus == statusMember || oldStatus == statusAdministrator) {
+
 		err := req.env.MarkTgBotChatRemoved(ctx, chat.ID)
 		if err != nil {
 			log.Error("failed to mark bot chat as removed", "error", err, "chat_id", chat.ID)
 			return fmt.Errorf("failed to mark bot chat as removed: %w", err)
 		}
-		
+
 		log.Info("bot removed from chat", "chat_id", chat.ID, "chat_title", chat.Title)
 	}
-	
+
+	return nil
+}
+
+func (req *request) handleChatMember(ctx context.Context) error {
+	log := req.env.Logger()
+	chatMember := req.update.ChatMember
+
+	// Only track channels, groups, and supergroups
+	chat := chatMember.Chat
+	if chat.Type != "channel" && chat.Type != "group" && chat.Type != "supergroup" {
+		return nil
+	}
+
+	userID := chatMember.NewChatMember.User.ID
+	chatID := chat.ID
+	newStatus := chatMember.NewChatMember.Status
+	oldStatus := chatMember.OldChatMember.Status
+
+	log.Info("user chat member status changed",
+		"user_id", userID,
+		"chat_id", chatID,
+		"chat_type", chat.Type,
+		"chat_title", chat.Title,
+		"old_status", oldStatus,
+		"new_status", newStatus,
+	)
+
+	// User joined the chat
+	if (newStatus == statusMember || newStatus == statusAdministrator || newStatus == statusCreator) &&
+		(oldStatus == statusLeft || oldStatus == statusKicked || oldStatus == "") {
+
+		err := req.env.InsertTgChatMember(ctx, db.InsertTgChatMemberParams{
+			UserID: sql.NullInt64{Int64: userID, Valid: true},
+			ChatID: sql.NullInt64{Int64: chatID, Valid: true},
+		})
+		if err != nil {
+			log.Error("failed to insert chat member", "error", err, "user_id", userID, "chat_id", chatID)
+		} else {
+			log.Info("user joined chat", "user_id", userID, "chat_id", chatID, "chat_title", chat.Title)
+		}
+	}
+
+	// User left the chat
+	if (newStatus == statusLeft || newStatus == statusKicked) &&
+		(oldStatus == statusMember || oldStatus == statusAdministrator || oldStatus == statusCreator) {
+
+		err := req.env.RemoveTgChatMember(ctx, db.RemoveTgChatMemberParams{
+			UserID: sql.NullInt64{Int64: userID, Valid: true},
+			ChatID: sql.NullInt64{Int64: chatID, Valid: true},
+		})
+		if err != nil {
+			log.Error("failed to remove chat member", "error", err, "user_id", userID, "chat_id", chatID)
+		} else {
+			log.Info("user left chat", "user_id", userID, "chat_id", chatID, "chat_title", chat.Title)
+		}
+	}
+
 	return nil
 }
 
@@ -234,6 +307,10 @@ func (req *request) handleCallbackQuery(ctx context.Context) error {
 func (req *request) handleCommands(ctx context.Context) error {
 	switch req.update.Message.Command() {
 	case "start":
+		args := req.update.Message.CommandArguments()
+		if strings.HasPrefix(args, "group_") {
+			return req.handleGroupAccess(ctx, args)
+		}
 		return req.sendStartMenu(ctx)
 
 	default:
@@ -692,4 +769,27 @@ func reverseString(s string) string {
 
 func toNullString(s string) sql.NullString {
 	return sql.NullString{String: s, Valid: s != ""}
+}
+
+func (req *request) handleGroupAccess(ctx context.Context, args string) error {
+	groupIDStr := strings.TrimPrefix(args, "group_")
+	groupID, err := strconv.ParseInt(groupIDStr, 10, 64)
+	if err != nil {
+		return req.SendMessage("Invalid group ID format")
+	}
+
+	userID := req.update.Message.From.ID
+
+	params := db.InsertTgChatMemberParams{
+		UserID: sql.NullInt64{Int64: userID, Valid: true},
+		ChatID: sql.NullInt64{Int64: groupID, Valid: true},
+	}
+
+	err = req.env.InsertTgChatMember(ctx, params)
+	if err != nil {
+		req.env.Logger().Error(fmt.Sprintf("Failed to insert chat member: %v", err))
+		return req.SendMessage("Error adding you to group access. Please try again later.")
+	}
+
+	return req.SendMessage(fmt.Sprintf("✅ Access granted! You now have access to premium content from group %d.", groupID))
 }

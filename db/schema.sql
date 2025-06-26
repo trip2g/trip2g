@@ -251,6 +251,12 @@ CREATE TABLE tg_bot_chats (
   added_at datetime not null default current_timestamp,
   removed_at datetime null
 );
+CREATE TABLE tg_chat_members (
+  user_id int, -- tg id
+  chat_id int,
+  created_at datetime not null default current_timestamp,
+  primary key (user_id, chat_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -284,4 +290,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250606084510'),
   ('20250623041230'),
   ('20250623063206'),
-  ('20250626035523');
+  ('20250626035523'),
+  ('20250626041424');

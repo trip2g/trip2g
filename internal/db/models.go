@@ -238,6 +238,12 @@ type TgBotChat struct {
 	RemovedAt interface{} `json:"removed_at"`
 }
 
+type TgChatMember struct {
+	UserID    sql.NullInt64 `json:"user_id"`
+	ChatID    sql.NullInt64 `json:"chat_id"`
+	CreatedAt time.Time     `json:"created_at"`
+}
+
 type TgUserProfile struct {
 	Sha256Hash string         `json:"sha256_hash"`
 	ChatID     int64          `json:"chat_id"`

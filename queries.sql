@@ -578,3 +578,17 @@ on conflict(id) do update set
 update tg_bot_chats
 set removed_at = current_timestamp
 where id = ?;
+
+-- name: InsertTgChatMember :exec
+insert into tg_chat_members (user_id, chat_id)
+values (?, ?)
+on conflict(user_id, chat_id) do nothing;
+
+-- name: RemoveTgChatMember :exec
+delete from tg_chat_members
+where user_id = ? and chat_id = ?;
+
+-- name: GetTgChatMember :one
+select user_id, chat_id, created_at
+from tg_chat_members
+where user_id = ? and chat_id = ?;
