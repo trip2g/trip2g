@@ -376,6 +376,110 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 	return items, nil
 }
 
+const allTgBotChats = `-- name: AllTgBotChats :many
+select id, chat_type, chat_title, added_at, removed_at from tg_bot_chats
+where (?1 = true or removed_at is null)
+order by added_at desc
+`
+
+func (q *Queries) AllTgBotChats(ctx context.Context, includeRemoved interface{}) ([]TgBotChat, error) {
+	rows, err := q.db.QueryContext(ctx, allTgBotChats, includeRemoved)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBotChat
+	for rows.Next() {
+		var i TgBotChat
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChatType,
+			&i.ChatTitle,
+			&i.AddedAt,
+			&i.RemovedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allTgBots = `-- name: AllTgBots :many
+select id, token, enabled, name, description, created_at, created_by from tg_bots
+order by created_at desc
+`
+
+func (q *Queries) AllTgBots(ctx context.Context) ([]TgBot, error) {
+	rows, err := q.db.QueryContext(ctx, allTgBots)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBot
+	for rows.Next() {
+		var i TgBot
+		if err := rows.Scan(
+			&i.ID,
+			&i.Token,
+			&i.Enabled,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allTgChatSubgraphAccesses = `-- name: AllTgChatSubgraphAccesses :many
+select id, chat_id, subgraph_id, created_at from tg_chat_subgraph_accesses
+order by created_at desc
+`
+
+func (q *Queries) AllTgChatSubgraphAccesses(ctx context.Context) ([]TgChatSubgraphAccess, error) {
+	rows, err := q.db.QueryContext(ctx, allTgChatSubgraphAccesses)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgChatSubgraphAccess
+	for rows.Next() {
+		var i TgChatSubgraphAccess
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChatID,
+			&i.SubgraphID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allVisibleNotePaths = `-- name: AllVisibleNotePaths :many
 select id, value, value_hash, latest_content_hash, created_at, version_count, graph_position_x, graph_position_y, hidden_by, hidden_at from note_paths
  where hidden_by is null
@@ -610,6 +714,16 @@ func (q *Queries) DeleteSignInCodesByUserID(ctx context.Context, userID int64) e
 	return err
 }
 
+const deleteTgChatSubgraphAccess = `-- name: DeleteTgChatSubgraphAccess :exec
+delete from tg_chat_subgraph_accesses
+where id = ?
+`
+
+func (q *Queries) DeleteTgChatSubgraphAccess(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTgChatSubgraphAccess, id)
+	return err
+}
+
 const disableApiKey = `-- name: DisableApiKey :one
 update api_keys
   set disabled_by = ?, disabled_at = datetime('now')
@@ -637,6 +751,44 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 	return i, err
 }
 
+const getTgBot = `-- name: GetTgBot :one
+select id, token, enabled, name, description, created_at, created_by from tg_bots
+where id = ?
+`
+
+func (q *Queries) GetTgBot(ctx context.Context, id int64) (TgBot, error) {
+	row := q.db.QueryRowContext(ctx, getTgBot, id)
+	var i TgBot
+	err := row.Scan(
+		&i.ID,
+		&i.Token,
+		&i.Enabled,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
+const getTgBotChat = `-- name: GetTgBotChat :one
+select id, chat_type, chat_title, added_at, removed_at from tg_bot_chats
+where id = ?
+`
+
+func (q *Queries) GetTgBotChat(ctx context.Context, id int64) (TgBotChat, error) {
+	row := q.db.QueryRowContext(ctx, getTgBotChat, id)
+	var i TgBotChat
+	err := row.Scan(
+		&i.ID,
+		&i.ChatType,
+		&i.ChatTitle,
+		&i.AddedAt,
+		&i.RemovedAt,
+	)
+	return i, err
+}
+
 const getTgChatMember = `-- name: GetTgChatMember :one
 select user_id, chat_id, created_at
 from tg_chat_members
@@ -652,6 +804,43 @@ func (q *Queries) GetTgChatMember(ctx context.Context, arg GetTgChatMemberParams
 	row := q.db.QueryRowContext(ctx, getTgChatMember, arg.UserID, arg.ChatID)
 	var i TgChatMember
 	err := row.Scan(&i.UserID, &i.ChatID, &i.CreatedAt)
+	return i, err
+}
+
+const getTgChatSubgraphAccess = `-- name: GetTgChatSubgraphAccess :one
+select id, chat_id, subgraph_id, created_at from tg_chat_subgraph_accesses
+where id = ?
+`
+
+func (q *Queries) GetTgChatSubgraphAccess(ctx context.Context, id int64) (TgChatSubgraphAccess, error) {
+	row := q.db.QueryRowContext(ctx, getTgChatSubgraphAccess, id)
+	var i TgChatSubgraphAccess
+	err := row.Scan(
+		&i.ID,
+		&i.ChatID,
+		&i.SubgraphID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getTgUserProfile = `-- name: GetTgUserProfile :one
+select sha256_hash, chat_id, bot_id, created_at, first_name, last_name, username from tg_user_profiles
+where sha256_hash = ?
+`
+
+func (q *Queries) GetTgUserProfile(ctx context.Context, sha256Hash string) (TgUserProfile, error) {
+	row := q.db.QueryRowContext(ctx, getTgUserProfile, sha256Hash)
+	var i TgUserProfile
+	err := row.Scan(
+		&i.Sha256Hash,
+		&i.ChatID,
+		&i.BotID,
+		&i.CreatedAt,
+		&i.FirstName,
+		&i.LastName,
+		&i.Username,
+	)
 	return i, err
 }
 
@@ -1067,6 +1256,39 @@ func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
 	return err
 }
 
+const insertTgBot = `-- name: InsertTgBot :one
+insert into tg_bots (token, name, description, created_by)
+values (?, ?, ?, ?)
+returning id, token, enabled, name, description, created_at, created_by
+`
+
+type InsertTgBotParams struct {
+	Token       string         `json:"token"`
+	Name        sql.NullString `json:"name"`
+	Description string         `json:"description"`
+	CreatedBy   int64          `json:"created_by"`
+}
+
+func (q *Queries) InsertTgBot(ctx context.Context, arg InsertTgBotParams) (TgBot, error) {
+	row := q.db.QueryRowContext(ctx, insertTgBot,
+		arg.Token,
+		arg.Name,
+		arg.Description,
+		arg.CreatedBy,
+	)
+	var i TgBot
+	err := row.Scan(
+		&i.ID,
+		&i.Token,
+		&i.Enabled,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
 const insertTgChatMember = `-- name: InsertTgChatMember :exec
 insert into tg_chat_members (user_id, chat_id)
 values (?, ?)
@@ -1081,6 +1303,29 @@ type InsertTgChatMemberParams struct {
 func (q *Queries) InsertTgChatMember(ctx context.Context, arg InsertTgChatMemberParams) error {
 	_, err := q.db.ExecContext(ctx, insertTgChatMember, arg.UserID, arg.ChatID)
 	return err
+}
+
+const insertTgChatSubgraphAccess = `-- name: InsertTgChatSubgraphAccess :one
+insert into tg_chat_subgraph_accesses (chat_id, subgraph_id)
+values (?, ?)
+returning id, chat_id, subgraph_id, created_at
+`
+
+type InsertTgChatSubgraphAccessParams struct {
+	ChatID     int64 `json:"chat_id"`
+	SubgraphID int64 `json:"subgraph_id"`
+}
+
+func (q *Queries) InsertTgChatSubgraphAccess(ctx context.Context, arg InsertTgChatSubgraphAccessParams) (TgChatSubgraphAccess, error) {
+	row := q.db.QueryRowContext(ctx, insertTgChatSubgraphAccess, arg.ChatID, arg.SubgraphID)
+	var i TgChatSubgraphAccess
+	err := row.Scan(
+		&i.ID,
+		&i.ChatID,
+		&i.SubgraphID,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const insertTgUserProfile = `-- name: InsertTgUserProfile :exec
@@ -2313,6 +2558,205 @@ func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, er
 	return i, err
 }
 
+const tgBotChatsByBotID = `-- name: TgBotChatsByBotID :many
+select id, chat_type, chat_title, added_at, removed_at from tg_bot_chats
+where id in (
+  select distinct chat_id from tg_user_states where bot_id = ?
+)
+  and (?2 = true or removed_at is null)
+order by added_at desc
+`
+
+type TgBotChatsByBotIDParams struct {
+	BotID          int64       `json:"bot_id"`
+	IncludeRemoved interface{} `json:"include_removed"`
+}
+
+func (q *Queries) TgBotChatsByBotID(ctx context.Context, arg TgBotChatsByBotIDParams) ([]TgBotChat, error) {
+	rows, err := q.db.QueryContext(ctx, tgBotChatsByBotID, arg.BotID, arg.IncludeRemoved)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBotChat
+	for rows.Next() {
+		var i TgBotChat
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChatType,
+			&i.ChatTitle,
+			&i.AddedAt,
+			&i.RemovedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const tgBotChatsByBotIDCount = `-- name: TgBotChatsByBotIDCount :one
+select count(*) from tg_bot_chats
+where id in (
+  select distinct chat_id from tg_user_states where bot_id = ?
+)
+  and (?2 = true or removed_at is null)
+`
+
+type TgBotChatsByBotIDCountParams struct {
+	BotID          int64       `json:"bot_id"`
+	IncludeRemoved interface{} `json:"include_removed"`
+}
+
+func (q *Queries) TgBotChatsByBotIDCount(ctx context.Context, arg TgBotChatsByBotIDCountParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, tgBotChatsByBotIDCount, arg.BotID, arg.IncludeRemoved)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const tgChatMembersByChatID = `-- name: TgChatMembersByChatID :many
+select m.user_id, m.chat_id, m.created_at, p.sha256_hash, p.chat_id, p.bot_id, p.created_at, p.first_name, p.last_name, p.username
+from tg_chat_members m
+left join tg_user_profiles p on p.chat_id = m.user_id
+where m.chat_id = ?
+order by m.created_at desc
+`
+
+type TgChatMembersByChatIDRow struct {
+	UserID      sql.NullInt64  `json:"user_id"`
+	ChatID      sql.NullInt64  `json:"chat_id"`
+	CreatedAt   time.Time      `json:"created_at"`
+	Sha256Hash  sql.NullString `json:"sha256_hash"`
+	ChatID_2    sql.NullInt64  `json:"chat_id_2"`
+	BotID       sql.NullInt64  `json:"bot_id"`
+	CreatedAt_2 sql.NullTime   `json:"created_at_2"`
+	FirstName   sql.NullString `json:"first_name"`
+	LastName    sql.NullString `json:"last_name"`
+	Username    sql.NullString `json:"username"`
+}
+
+func (q *Queries) TgChatMembersByChatID(ctx context.Context, chatID sql.NullInt64) ([]TgChatMembersByChatIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, tgChatMembersByChatID, chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgChatMembersByChatIDRow
+	for rows.Next() {
+		var i TgChatMembersByChatIDRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.ChatID,
+			&i.CreatedAt,
+			&i.Sha256Hash,
+			&i.ChatID_2,
+			&i.BotID,
+			&i.CreatedAt_2,
+			&i.FirstName,
+			&i.LastName,
+			&i.Username,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const tgChatMembersByChatIDCount = `-- name: TgChatMembersByChatIDCount :one
+select count(*)
+from tg_chat_members
+where chat_id = ?
+`
+
+func (q *Queries) TgChatMembersByChatIDCount(ctx context.Context, chatID sql.NullInt64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, tgChatMembersByChatIDCount, chatID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const tgChatSubgraphAccessesByChatID = `-- name: TgChatSubgraphAccessesByChatID :many
+select id, chat_id, subgraph_id, created_at from tg_chat_subgraph_accesses
+where chat_id = ?
+order by created_at desc
+`
+
+func (q *Queries) TgChatSubgraphAccessesByChatID(ctx context.Context, chatID int64) ([]TgChatSubgraphAccess, error) {
+	rows, err := q.db.QueryContext(ctx, tgChatSubgraphAccessesByChatID, chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgChatSubgraphAccess
+	for rows.Next() {
+		var i TgChatSubgraphAccess
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChatID,
+			&i.SubgraphID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const tgChatSubgraphAccessesBySubgraphID = `-- name: TgChatSubgraphAccessesBySubgraphID :many
+select id, chat_id, subgraph_id, created_at from tg_chat_subgraph_accesses
+where subgraph_id = ?
+order by created_at desc
+`
+
+func (q *Queries) TgChatSubgraphAccessesBySubgraphID(ctx context.Context, subgraphID int64) ([]TgChatSubgraphAccess, error) {
+	rows, err := q.db.QueryContext(ctx, tgChatSubgraphAccessesBySubgraphID, subgraphID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgChatSubgraphAccess
+	for rows.Next() {
+		var i TgChatSubgraphAccess
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChatID,
+			&i.SubgraphID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const tgUserStateByBotIDAndChatID = `-- name: TgUserStateByBotIDAndChatID :one
 select chat_id, bot_id, user_id, created_at, updated_at, value, data, update_count
   from tg_user_states
@@ -2521,6 +2965,35 @@ func (q *Queries) UpdateRedirect(ctx context.Context, arg UpdateRedirectParams) 
 		&i.IgnoreCase,
 		&i.IsRegex,
 		&i.Target,
+	)
+	return i, err
+}
+
+const updateTgBot = `-- name: UpdateTgBot :one
+update tg_bots
+set description = coalesce(?2, description),
+    enabled = coalesce(?3, enabled)
+where id = ?
+returning id, token, enabled, name, description, created_at, created_by
+`
+
+type UpdateTgBotParams struct {
+	Description sql.NullString `json:"description"`
+	Enabled     sql.NullBool   `json:"enabled"`
+	ID          int64          `json:"id"`
+}
+
+func (q *Queries) UpdateTgBot(ctx context.Context, arg UpdateTgBotParams) (TgBot, error) {
+	row := q.db.QueryRowContext(ctx, updateTgBot, arg.Description, arg.Enabled, arg.ID)
+	var i TgBot
+	err := row.Scan(
+		&i.ID,
+		&i.Token,
+		&i.Enabled,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
 	)
 	return i, err
 }

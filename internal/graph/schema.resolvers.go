@@ -9,20 +9,24 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
+	"trip2g/internal/case/admin/addtgchatsubgraphaccess"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
 	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
+	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
+	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
@@ -30,6 +34,7 @@ import (
 	"trip2g/internal/case/admin/updateoffer"
 	"trip2g/internal/case/admin/updateredirect"
 	"trip2g/internal/case/admin/updatesubgraph"
+	"trip2g/internal/case/admin/updatetgbot"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createpaymentlink"
@@ -212,6 +217,26 @@ func (r *adminMutationResolver) UpdateNoteGraphPositions(ctx context.Context, ob
 	return updatenotegraphpositions.Resolve(ctx, r.env(ctx), input)
 }
 
+// CreateTgBot is the resolver for the createTgBot field.
+func (r *adminMutationResolver) CreateTgBot(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateTgBotInput) (model.CreateTgBotOrErrorPayload, error) {
+	return createtgbot.Resolve(ctx, r.env(ctx), input)
+}
+
+// UpdateTgBot is the resolver for the updateTgBot field.
+func (r *adminMutationResolver) UpdateTgBot(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateTgBotInput) (model.UpdateTgBotOrErrorPayload, error) {
+	return updatetgbot.Resolve(ctx, r.env(ctx), input)
+}
+
+// AddTgChatSubgraphAccess is the resolver for the addTgChatSubgraphAccess field.
+func (r *adminMutationResolver) AddTgChatSubgraphAccess(ctx context.Context, obj *appmodel.AdminMutation, input model.AddTgChatSubgraphAccessInput) (model.AddTgChatSubgraphAccessOrErrorPayload, error) {
+	return addtgchatsubgraphaccess.Resolve(ctx, r.env(ctx), input)
+}
+
+// RemoveTgChatSubgraphAccess is the resolver for the removeTgChatSubgraphAccess field.
+func (r *adminMutationResolver) RemoveTgChatSubgraphAccess(ctx context.Context, obj *appmodel.AdminMutation, input model.RemoveTgChatSubgraphAccessInput) (model.RemoveTgChatSubgraphAccessOrErrorPayload, error) {
+	return removetgchatsubgraphaccess.Resolve(ctx, r.env(ctx), input)
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminNotFoundIgnoredPatternResolver) CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -365,6 +390,26 @@ func (r *adminQueryResolver) AllNotFoundIgnoredPatterns(ctx context.Context, obj
 	return &model.AdminNotFoundIgnoredPatternsConnection{}, nil
 }
 
+// AllTgBots is the resolver for the allTgBots field.
+func (r *adminQueryResolver) AllTgBots(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminTgBotsConnection, error) {
+	return &model.AdminTgBotsConnection{}, nil
+}
+
+// TgBotChats is the resolver for the tgBotChats field.
+func (r *adminQueryResolver) TgBotChats(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminTgBotChatsFilterInput) (*model.AdminTgBotChatsConnection, error) {
+	return &model.AdminTgBotChatsConnection{}, nil
+}
+
+// TgChatSubgraphAccesses is the resolver for the tgChatSubgraphAccesses field.
+func (r *adminQueryResolver) TgChatSubgraphAccesses(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminTgChatSubgraphAccessesFilterInput) (*model.AdminTgChatSubgraphAccessesConnection, error) {
+	return &model.AdminTgChatSubgraphAccessesConnection{}, nil
+}
+
+// TgChatMembers is the resolver for the tgChatMembers field.
+func (r *adminQueryResolver) TgChatMembers(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminTgChatMembersFilterInput) (*model.AdminTgChatMembersConnection, error) {
+	return &model.AdminTgChatMembersConnection{}, nil
+}
+
 // APIKeyLogs is the resolver for the apiKeyLogs field.
 func (r *adminQueryResolver) APIKeyLogs(ctx context.Context, obj *appmodel.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error) {
 	return &model.AdminAPIKeyLogsConnection{APIKeyID: filter.APIKeyID}, nil
@@ -400,6 +445,11 @@ func (r *adminQueryResolver) Purchase(ctx context.Context, obj *appmodel.AdminQu
 // Redirect is the resolver for the redirect field.
 func (r *adminQueryResolver) Redirect(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.Redirect, error) {
 	return resolveOne[db.Redirect](ctx, id, r.env(ctx).RedirectByID)
+}
+
+// TgBot is the resolver for the tgBot field.
+func (r *adminQueryResolver) TgBot(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.TgBot, error) {
+	return resolveOne[db.TgBot](ctx, id, r.env(ctx).GetTgBot)
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -444,6 +494,145 @@ func (r *adminSubgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*s
 // Nodes is the resolver for the nodes field.
 func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error) {
 	return r.env(ctx).ListAllSubgraphs(ctx)
+}
+
+// Name is the resolver for the name field.
+func (r *adminTgBotResolver) Name(ctx context.Context, obj *db.TgBot) (*string, error) {
+	if obj.Name.Valid {
+		return &obj.Name.String, nil
+	}
+	return nil, nil
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminTgBotResolver) CreatedBy(ctx context.Context, obj *db.TgBot) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// ChatType is the resolver for the chatType field.
+func (r *adminTgBotChatResolver) ChatType(ctx context.Context, obj *db.TgBotChat) (string, error) {
+	if obj.ChatType == nil {
+		return "", nil
+	}
+	if s, ok := obj.ChatType.(string); ok {
+		return s, nil
+	}
+	return fmt.Sprintf("%v", obj.ChatType), nil
+}
+
+// ChatTitle is the resolver for the chatTitle field.
+func (r *adminTgBotChatResolver) ChatTitle(ctx context.Context, obj *db.TgBotChat) (string, error) {
+	if obj.ChatTitle == nil {
+		return "", nil
+	}
+	if s, ok := obj.ChatTitle.(string); ok {
+		return s, nil
+	}
+	return fmt.Sprintf("%v", obj.ChatTitle), nil
+}
+
+// RemovedAt is the resolver for the removedAt field.
+func (r *adminTgBotChatResolver) RemovedAt(ctx context.Context, obj *db.TgBotChat) (*time.Time, error) {
+	if obj.RemovedAt == nil {
+		return nil, nil
+	}
+	switch v := obj.RemovedAt.(type) {
+	case time.Time:
+		return &v, nil
+	case *time.Time:
+		return v, nil
+	default:
+		return nil, nil
+	}
+}
+
+// MemberCount is the resolver for the memberCount field.
+func (r *adminTgBotChatResolver) MemberCount(ctx context.Context, obj *db.TgBotChat) (int32, error) {
+	count, err := r.env(ctx).TgChatMembersByChatIDCount(ctx, sql.NullInt64{Int64: obj.ID, Valid: true})
+	if err != nil {
+		return 0, err
+	}
+	if count > math.MaxInt32 {
+		return math.MaxInt32, nil
+	}
+	return int32(count), nil //nolint:gosec // count is bounded by MaxInt32
+}
+
+// SubgraphAccesses is the resolver for the subgraphAccesses field.
+func (r *adminTgBotChatResolver) SubgraphAccesses(ctx context.Context, obj *db.TgBotChat) ([]db.TgChatSubgraphAccess, error) {
+	return r.env(ctx).TgChatSubgraphAccessesByChatID(ctx, obj.ID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminTgBotChatsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTgBotChatsConnection) ([]db.TgBotChat, error) {
+	// TODO: Implement filtering logic based on obj.Filter if needed
+	return r.env(ctx).AllTgBotChats(ctx, false)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminTgBotsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTgBotsConnection) ([]db.TgBot, error) {
+	return r.env(ctx).AllTgBots(ctx)
+}
+
+// UserID is the resolver for the userId field.
+func (r *adminTgChatMemberResolver) UserID(ctx context.Context, obj *db.TgChatMember) (int64, error) {
+	return obj.UserID.Int64, nil
+}
+
+// ChatID is the resolver for the chatId field.
+func (r *adminTgChatMemberResolver) ChatID(ctx context.Context, obj *db.TgChatMember) (int64, error) {
+	return obj.ChatID.Int64, nil
+}
+
+// Profile is the resolver for the profile field.
+func (r *adminTgChatMemberResolver) Profile(ctx context.Context, obj *db.TgChatMember) (*db.TgUserProfile, error) {
+	// TODO: Implement proper profile lookup
+	return nil, nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminTgChatMembersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTgChatMembersConnection) ([]db.TgChatMember, error) {
+	// TODO: Implement - need to convert TgChatMembersByChatIDRow to TgChatMember
+	return []db.TgChatMember{}, nil
+}
+
+// Chat is the resolver for the chat field.
+func (r *adminTgChatSubgraphAccessResolver) Chat(ctx context.Context, obj *db.TgChatSubgraphAccess) (*db.TgBotChat, error) {
+	return resolveOne[db.TgBotChat](ctx, obj.ChatID, r.env(ctx).GetTgBotChat)
+}
+
+// Subgraph is the resolver for the subgraph field.
+func (r *adminTgChatSubgraphAccessResolver) Subgraph(ctx context.Context, obj *db.TgChatSubgraphAccess) (*db.Subgraph, error) {
+	return resolveOne[db.Subgraph](ctx, obj.SubgraphID, r.env(ctx).SubgraphByID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminTgChatSubgraphAccessesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTgChatSubgraphAccessesConnection) ([]db.TgChatSubgraphAccess, error) {
+	return r.env(ctx).AllTgChatSubgraphAccesses(ctx)
+}
+
+// FirstName is the resolver for the firstName field.
+func (r *adminTgUserProfileResolver) FirstName(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
+	if obj.FirstName.Valid {
+		return &obj.FirstName.String, nil
+	}
+	return nil, nil
+}
+
+// LastName is the resolver for the lastName field.
+func (r *adminTgUserProfileResolver) LastName(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
+	if obj.LastName.Valid {
+		return &obj.LastName.String, nil
+	}
+	return nil, nil
+}
+
+// Username is the resolver for the username field.
+func (r *adminTgUserProfileResolver) Username(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
+	if obj.Username.Valid {
+		return &obj.Username.String, nil
+	}
+	return nil, nil
 }
 
 // Ban is the resolver for the ban field.
@@ -976,6 +1165,47 @@ func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
 	return &adminSubgraphsConnectionResolver{r}
 }
 
+// AdminTgBot returns AdminTgBotResolver implementation.
+func (r *Resolver) AdminTgBot() AdminTgBotResolver { return &adminTgBotResolver{r} }
+
+// AdminTgBotChat returns AdminTgBotChatResolver implementation.
+func (r *Resolver) AdminTgBotChat() AdminTgBotChatResolver { return &adminTgBotChatResolver{r} }
+
+// AdminTgBotChatsConnection returns AdminTgBotChatsConnectionResolver implementation.
+func (r *Resolver) AdminTgBotChatsConnection() AdminTgBotChatsConnectionResolver {
+	return &adminTgBotChatsConnectionResolver{r}
+}
+
+// AdminTgBotsConnection returns AdminTgBotsConnectionResolver implementation.
+func (r *Resolver) AdminTgBotsConnection() AdminTgBotsConnectionResolver {
+	return &adminTgBotsConnectionResolver{r}
+}
+
+// AdminTgChatMember returns AdminTgChatMemberResolver implementation.
+func (r *Resolver) AdminTgChatMember() AdminTgChatMemberResolver {
+	return &adminTgChatMemberResolver{r}
+}
+
+// AdminTgChatMembersConnection returns AdminTgChatMembersConnectionResolver implementation.
+func (r *Resolver) AdminTgChatMembersConnection() AdminTgChatMembersConnectionResolver {
+	return &adminTgChatMembersConnectionResolver{r}
+}
+
+// AdminTgChatSubgraphAccess returns AdminTgChatSubgraphAccessResolver implementation.
+func (r *Resolver) AdminTgChatSubgraphAccess() AdminTgChatSubgraphAccessResolver {
+	return &adminTgChatSubgraphAccessResolver{r}
+}
+
+// AdminTgChatSubgraphAccessesConnection returns AdminTgChatSubgraphAccessesConnectionResolver implementation.
+func (r *Resolver) AdminTgChatSubgraphAccessesConnection() AdminTgChatSubgraphAccessesConnectionResolver {
+	return &adminTgChatSubgraphAccessesConnectionResolver{r}
+}
+
+// AdminTgUserProfile returns AdminTgUserProfileResolver implementation.
+func (r *Resolver) AdminTgUserProfile() AdminTgUserProfileResolver {
+	return &adminTgUserProfileResolver{r}
+}
+
 // AdminUser returns AdminUserResolver implementation.
 func (r *Resolver) AdminUser() AdminUserResolver { return &adminUserResolver{r} }
 
@@ -1069,6 +1299,15 @@ type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }
 type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
+type adminTgBotResolver struct{ *Resolver }
+type adminTgBotChatResolver struct{ *Resolver }
+type adminTgBotChatsConnectionResolver struct{ *Resolver }
+type adminTgBotsConnectionResolver struct{ *Resolver }
+type adminTgChatMemberResolver struct{ *Resolver }
+type adminTgChatMembersConnectionResolver struct{ *Resolver }
+type adminTgChatSubgraphAccessResolver struct{ *Resolver }
+type adminTgChatSubgraphAccessesConnectionResolver struct{ *Resolver }
+type adminTgUserProfileResolver struct{ *Resolver }
 type adminUserResolver struct{ *Resolver }
 type adminUserBansConnectionResolver struct{ *Resolver }
 type adminUserSubgraphAccessResolver struct{ *Resolver }

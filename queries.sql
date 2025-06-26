@@ -592,3 +592,90 @@ where user_id = ? and chat_id = ?;
 select user_id, chat_id, created_at
 from tg_chat_members
 where user_id = ? and chat_id = ?;
+
+-- name: AllTgBots :many
+select * from tg_bots
+order by created_at desc;
+
+-- name: GetTgBot :one
+select * from tg_bots
+where id = ?;
+
+-- name: InsertTgBot :one
+insert into tg_bots (token, name, description, created_by)
+values (?, ?, ?, ?)
+returning *;
+
+-- name: UpdateTgBot :one
+update tg_bots
+set description = coalesce(sqlc.narg(description), description),
+    enabled = coalesce(sqlc.narg(enabled), enabled)
+where id = ?
+returning *;
+
+-- name: TgBotChatsByBotID :many
+select * from tg_bot_chats
+where id in (
+  select distinct chat_id from tg_user_states where bot_id = ?
+)
+  and (sqlc.arg(include_removed) = true or removed_at is null)
+order by added_at desc;
+
+-- name: TgBotChatsByBotIDCount :one
+select count(*) from tg_bot_chats
+where id in (
+  select distinct chat_id from tg_user_states where bot_id = ?
+)
+  and (sqlc.arg(include_removed) = true or removed_at is null);
+
+-- name: AllTgBotChats :many
+select * from tg_bot_chats
+where (sqlc.arg(include_removed) = true or removed_at is null)
+order by added_at desc;
+
+-- name: TgChatMembersByChatID :many
+select m.*, p.*
+from tg_chat_members m
+left join tg_user_profiles p on p.chat_id = m.user_id
+where m.chat_id = ?
+order by m.created_at desc;
+
+-- name: TgChatMembersByChatIDCount :one
+select count(*)
+from tg_chat_members
+where chat_id = ?;
+
+-- name: TgChatSubgraphAccessesByChatID :many
+select * from tg_chat_subgraph_accesses
+where chat_id = ?
+order by created_at desc;
+
+-- name: TgChatSubgraphAccessesBySubgraphID :many
+select * from tg_chat_subgraph_accesses
+where subgraph_id = ?
+order by created_at desc;
+
+-- name: AllTgChatSubgraphAccesses :many
+select * from tg_chat_subgraph_accesses
+order by created_at desc;
+
+-- name: GetTgChatSubgraphAccess :one
+select * from tg_chat_subgraph_accesses
+where id = ?;
+
+-- name: InsertTgChatSubgraphAccess :one
+insert into tg_chat_subgraph_accesses (chat_id, subgraph_id)
+values (?, ?)
+returning *;
+
+-- name: DeleteTgChatSubgraphAccess :exec
+delete from tg_chat_subgraph_accesses
+where id = ?;
+
+-- name: GetTgBotChat :one
+select * from tg_bot_chats
+where id = ?;
+
+-- name: GetTgUserProfile :one
+select * from tg_user_profiles
+where sha256_hash = ?;

@@ -244,6 +244,13 @@ type TgChatMember struct {
 	CreatedAt time.Time     `json:"created_at"`
 }
 
+type TgChatSubgraphAccess struct {
+	ID         int64     `json:"id"`
+	ChatID     int64     `json:"chat_id"`
+	SubgraphID int64     `json:"subgraph_id"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 type TgUserProfile struct {
 	Sha256Hash string         `json:"sha256_hash"`
 	ChatID     int64          `json:"chat_id"`

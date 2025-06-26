@@ -14,6 +14,10 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+type AddTgChatSubgraphAccessOrErrorPayload interface {
+	IsAddTgChatSubgraphAccessOrErrorPayload()
+}
+
 type BanUserOrErrorPayload interface {
 	IsBanUserOrErrorPayload()
 }
@@ -42,6 +46,10 @@ type CreateReleaseOrErrorPayload interface {
 	IsCreateReleaseOrErrorPayload()
 }
 
+type CreateTgBotOrErrorPayload interface {
+	IsCreateTgBotOrErrorPayload()
+}
+
 type DeleteNotFoundIgnoredPatternOrErrorPayload interface {
 	IsDeleteNotFoundIgnoredPatternOrErrorPayload()
 }
@@ -64,6 +72,10 @@ type MakeReleaseLiveOrErrorPayload interface {
 
 type PushNotesOrErrorPayload interface {
 	IsPushNotesOrErrorPayload()
+}
+
+type RemoveTgChatSubgraphAccessOrErrorPayload interface {
+	IsRemoveTgChatSubgraphAccessOrErrorPayload()
 }
 
 type RequestEmailSignInCodeOrErrorPayload interface {
@@ -106,6 +118,10 @@ type UpdateSubgraphOrErrorPayload interface {
 	IsUpdateSubgraphOrErrorPayload()
 }
 
+type UpdateTgBotOrErrorPayload interface {
+	IsUpdateTgBotOrErrorPayload()
+}
+
 type UpdateUserSubgraphAccessOrErrorPayload interface {
 	IsUpdateUserSubgraphAccessOrErrorPayload()
 }
@@ -113,6 +129,17 @@ type UpdateUserSubgraphAccessOrErrorPayload interface {
 type UploadNoteAssetOrErrorPayload interface {
 	IsUploadNoteAssetOrErrorPayload()
 }
+
+type AddTgChatSubgraphAccessInput struct {
+	ChatID     int64 `json:"chatId"`
+	SubgraphID int64 `json:"subgraphId"`
+}
+
+type AddTgChatSubgraphAccessPayload struct {
+	ChatSubgraphAccess *db.TgChatSubgraphAccess `json:"chatSubgraphAccess"`
+}
+
+func (AddTgChatSubgraphAccessPayload) IsAddTgChatSubgraphAccessOrErrorPayload() {}
 
 type AdminAdminsConnection struct {
 	Nodes []db.Admin `json:"nodes"`
@@ -157,6 +184,36 @@ type AdminReleasesConnection struct {
 
 type AdminSubgraphsConnection struct {
 	Nodes []db.Subgraph `json:"nodes"`
+}
+
+type AdminTgBotChatsConnection struct {
+	Nodes []db.TgBotChat `json:"nodes"`
+}
+
+type AdminTgBotChatsFilterInput struct {
+	BotID          *int64 `json:"botId,omitempty"`
+	IncludeRemoved *bool  `json:"includeRemoved,omitempty"`
+}
+
+type AdminTgBotsConnection struct {
+	Nodes []db.TgBot `json:"nodes"`
+}
+
+type AdminTgChatMembersConnection struct {
+	Nodes []db.TgChatMember `json:"nodes"`
+}
+
+type AdminTgChatMembersFilterInput struct {
+	ChatID int64 `json:"chatId"`
+}
+
+type AdminTgChatSubgraphAccessesConnection struct {
+	Nodes []db.TgChatSubgraphAccess `json:"nodes"`
+}
+
+type AdminTgChatSubgraphAccessesFilterInput struct {
+	ChatID     *int64 `json:"chatId,omitempty"`
+	SubgraphID *int64 `json:"subgraphId,omitempty"`
 }
 
 type AdminUserBansConnection struct {
@@ -260,6 +317,18 @@ type CreateReleasePayload struct {
 
 func (CreateReleasePayload) IsCreateReleaseOrErrorPayload() {}
 
+type CreateTgBotInput struct {
+	Token       string  `json:"token"`
+	Name        *string `json:"name,omitempty"`
+	Description string  `json:"description"`
+}
+
+type CreateTgBotPayload struct {
+	TgBot *db.TgBot `json:"tgBot"`
+}
+
+func (CreateTgBotPayload) IsCreateTgBotOrErrorPayload() {}
+
 type DeleteNotFoundIgnoredPatternInput struct {
 	ID int64 `json:"id"`
 }
@@ -345,6 +414,14 @@ func (ErrorPayload) IsUpdateNotFoundIgnoredPatternOrErrorPayload() {}
 
 func (ErrorPayload) IsDeleteNotFoundIgnoredPatternOrErrorPayload() {}
 
+func (ErrorPayload) IsCreateTgBotOrErrorPayload() {}
+
+func (ErrorPayload) IsUpdateTgBotOrErrorPayload() {}
+
+func (ErrorPayload) IsAddTgChatSubgraphAccessOrErrorPayload() {}
+
+func (ErrorPayload) IsRemoveTgChatSubgraphAccessOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -414,6 +491,16 @@ type PushedNoteAsset struct {
 
 type Query struct {
 }
+
+type RemoveTgChatSubgraphAccessInput struct {
+	ID int64 `json:"id"`
+}
+
+type RemoveTgChatSubgraphAccessPayload struct {
+	DeletedID int64 `json:"deletedId"`
+}
+
+func (RemoveTgChatSubgraphAccessPayload) IsRemoveTgChatSubgraphAccessOrErrorPayload() {}
 
 type RequestEmailSignInCodeInput struct {
 	Email string `json:"email"`
@@ -527,6 +614,18 @@ type UpdateSubgraphPayload struct {
 }
 
 func (UpdateSubgraphPayload) IsUpdateSubgraphOrErrorPayload() {}
+
+type UpdateTgBotInput struct {
+	ID          int64   `json:"id"`
+	Description *string `json:"description,omitempty"`
+	Enabled     *bool   `json:"enabled,omitempty"`
+}
+
+type UpdateTgBotPayload struct {
+	TgBot *db.TgBot `json:"tgBot"`
+}
+
+func (UpdateTgBotPayload) IsUpdateTgBotOrErrorPayload() {}
 
 type UpdateUserSubgraphAccessPayload struct {
 	UserSubgraphAccess *db.UserSubgraphAccess `json:"userSubgraphAccess"`

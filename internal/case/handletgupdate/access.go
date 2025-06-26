@@ -64,7 +64,6 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 	// Bot was added to the chat
 	if (newStatus == statusMember || newStatus == statusAdministrator) &&
 		(oldStatus == statusLeft || oldStatus == statusKicked) {
-
 		err := req.env.UpsertTgBotChat(ctx, db.UpsertTgBotChatParams{
 			ID:        chat.ID,
 			ChatType:  chat.Type,
@@ -81,7 +80,6 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 	// Bot was removed from the chat
 	if (newStatus == statusLeft || newStatus == statusKicked) &&
 		(oldStatus == statusMember || oldStatus == statusAdministrator) {
-
 		err := req.env.MarkTgBotChatRemoved(ctx, chat.ID)
 		if err != nil {
 			log.Error("failed to mark bot chat as removed", "error", err, "chat_id", chat.ID)
@@ -94,7 +92,7 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 	return nil
 }
 
-func (req *request) handleChatMember(ctx context.Context) error {
+func (req *request) handleChatMember(ctx context.Context) error { //nolint:unparam // always returns nil for now
 	log := req.env.Logger()
 	chatMember := req.update.ChatMember
 
@@ -121,7 +119,6 @@ func (req *request) handleChatMember(ctx context.Context) error {
 	// User joined the chat
 	if (newStatus == statusMember || newStatus == statusAdministrator || newStatus == statusCreator) &&
 		(oldStatus == statusLeft || oldStatus == statusKicked || oldStatus == "") {
-
 		err := req.env.InsertTgChatMember(ctx, db.InsertTgChatMemberParams{
 			UserID: sql.NullInt64{Int64: userID, Valid: true},
 			ChatID: sql.NullInt64{Int64: chatID, Valid: true},
@@ -136,7 +133,6 @@ func (req *request) handleChatMember(ctx context.Context) error {
 	// User left the chat
 	if (newStatus == statusLeft || newStatus == statusKicked) &&
 		(oldStatus == statusMember || oldStatus == statusAdministrator || oldStatus == statusCreator) {
-
 		err := req.env.RemoveTgChatMember(ctx, db.RemoveTgChatMemberParams{
 			UserID: sql.NullInt64{Int64: userID, Valid: true},
 			ChatID: sql.NullInt64{Int64: chatID, Valid: true},

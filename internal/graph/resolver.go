@@ -3,17 +3,21 @@ package graph
 import (
 	"context"
 	"database/sql"
+
 	"trip2g/internal/appreq"
+	"trip2g/internal/case/admin/addtgchatsubgraphaccess"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
 	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
+	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
+	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
@@ -21,6 +25,7 @@ import (
 	"trip2g/internal/case/admin/updateoffer"
 	"trip2g/internal/case/admin/updateredirect"
 	"trip2g/internal/case/admin/updatesubgraph"
+	"trip2g/internal/case/admin/updatetgbot"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createpaymentlink"
@@ -130,4 +135,22 @@ type Env interface {
 	updatenotfoundignoredpattern.Env
 	deletenotfoundignoredpattern.Env
 	resetnotfoundpath.Env
+	createtgbot.Env
+	updatetgbot.Env
+	addtgchatsubgraphaccess.Env
+	removetgchatsubgraphaccess.Env
+
+	// Telegram bot queries
+	AllTgBots(ctx context.Context) ([]db.TgBot, error)
+	GetTgBot(ctx context.Context, id int64) (db.TgBot, error)
+	GetTgBotChat(ctx context.Context, id int64) (db.TgBotChat, error)
+	TgBotChatsByBotID(ctx context.Context, arg db.TgBotChatsByBotIDParams) ([]db.TgBotChat, error)
+	AllTgBotChats(ctx context.Context, includeRemoved interface{}) ([]db.TgBotChat, error)
+	TgChatMembersByChatID(ctx context.Context, chatID sql.NullInt64) ([]db.TgChatMembersByChatIDRow, error)
+	TgChatMembersByChatIDCount(ctx context.Context, chatID sql.NullInt64) (int64, error)
+	TgChatSubgraphAccessesByChatID(ctx context.Context, chatID int64) ([]db.TgChatSubgraphAccess, error)
+	TgChatSubgraphAccessesBySubgraphID(ctx context.Context, subgraphID int64) ([]db.TgChatSubgraphAccess, error)
+	AllTgChatSubgraphAccesses(ctx context.Context) ([]db.TgChatSubgraphAccess, error)
+	GetTgChatSubgraphAccess(ctx context.Context, id int64) (db.TgChatSubgraphAccess, error)
+	GetTgUserProfile(ctx context.Context, sha256Hash string) (db.TgUserProfile, error)
 }

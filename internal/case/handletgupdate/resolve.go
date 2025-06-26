@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"trip2g/internal/db"
@@ -193,14 +194,18 @@ func (req *request) UserState(ctx context.Context) (*UserState, error) {
 	})
 	if err != nil {
 		// If not found, create a new one
-		return &UserState{
-			UserStateData: &UserStateData{
-				QuizStates: make(map[string]QuizState),
-			},
-			ChatID:      req.chatID,
-			Value:       "",
-			UpdateCount: 0,
-		}, nil
+		if errors.Is(err, sql.ErrNoRows) {
+			req.userState = &UserState{
+				UserStateData: &UserStateData{
+					QuizStates: make(map[string]QuizState),
+				},
+				ChatID:      req.chatID,
+				Value:       "",
+				UpdateCount: 0,
+			}
+			return req.userState, nil
+		}
+		return nil, fmt.Errorf("failed to get user state: %w", err)
 	}
 
 	var userStateData UserStateData

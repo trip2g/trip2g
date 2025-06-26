@@ -257,6 +257,12 @@ CREATE TABLE tg_chat_members (
   created_at datetime not null default current_timestamp,
   primary key (user_id, chat_id)
 );
+CREATE TABLE tg_chat_subgraph_accesses (
+  id integer primary key autoincrement,
+  chat_id integer not null references tg_bot_chats(id) on delete cascade,
+  subgraph_id integer not null references subgraphs(id) on delete restrict,
+  created_at datetime not null default current_timestamp
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -291,4 +297,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250623041230'),
   ('20250623063206'),
   ('20250626035523'),
-  ('20250626041424');
+  ('20250626041424'),
+  ('20250626054021'),
+  ('20250626100000');

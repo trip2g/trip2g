@@ -233,6 +233,82 @@ type AdminNotFoundIgnoredPatternsConnection {
   nodes: [AdminNotFoundIgnoredPattern!]! @goField(forceResolver: true)
 }
 
+type AdminTgBot @goModel(model: "trip2g/internal/db.TgBot") {
+  id: Int64!
+  token: String!
+  enabled: Boolean!
+  name: String
+  description: String!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+}
+
+type AdminTgBotChat @goModel(model: "trip2g/internal/db.TgBotChat") {
+  id: Int64!
+  chatType: String!
+  chatTitle: String!
+  addedAt: Time!
+  removedAt: Time
+  memberCount: Int! @goField(forceResolver: true)
+  subgraphAccesses: [AdminTgChatSubgraphAccess!]! @goField(forceResolver: true)
+}
+
+type AdminTgChatMember @goModel(model: "trip2g/internal/db.TgChatMember") {
+  userId: Int64!
+  chatId: Int64!
+  createdAt: Time!
+  profile: AdminTgUserProfile @goField(forceResolver: true)
+}
+
+type AdminTgUserProfile @goModel(model: "trip2g/internal/db.TgUserProfile") {
+  sha256Hash: String!
+  chatId: Int64!
+  botId: Int64!
+  createdAt: Time!
+  firstName: String
+  lastName: String
+  username: String
+}
+
+type AdminTgChatSubgraphAccess @goModel(model: "trip2g/internal/db.TgChatSubgraphAccess") {
+  id: Int64!
+  chatId: Int64!
+  subgraphId: Int64!
+  createdAt: Time!
+  chat: AdminTgBotChat! @goField(forceResolver: true)
+  subgraph: AdminSubgraph! @goField(forceResolver: true)
+}
+
+type AdminTgBotsConnection {
+  nodes: [AdminTgBot!]! @goField(forceResolver: true)
+}
+
+type AdminTgBotChatsConnection {
+  nodes: [AdminTgBotChat!]! @goField(forceResolver: true)
+}
+
+type AdminTgChatSubgraphAccessesConnection {
+  nodes: [AdminTgChatSubgraphAccess!]! @goField(forceResolver: true)
+}
+
+type AdminTgChatMembersConnection {
+  nodes: [AdminTgChatMember!]! @goField(forceResolver: true)
+}
+
+input AdminTgBotChatsFilterInput {
+  botId: Int64
+  includeRemoved: Boolean # defaults to false
+}
+
+input AdminTgChatMembersFilterInput {
+  chatId: Int64!
+}
+
+input AdminTgChatSubgraphAccessesFilterInput {
+  chatId: Int64
+  subgraphId: Int64
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -248,6 +324,11 @@ type AdminQuery {
   allNotFoundPaths: AdminNotFoundPathsConnection!
   allNotFoundIgnoredPatterns: AdminNotFoundIgnoredPatternsConnection!
 
+  allTgBots: AdminTgBotsConnection!
+  tgBotChats(filter: AdminTgBotChatsFilterInput!): AdminTgBotChatsConnection!
+  tgChatSubgraphAccesses(filter: AdminTgChatSubgraphAccessesFilterInput!): AdminTgChatSubgraphAccessesConnection!
+  tgChatMembers(filter: AdminTgChatMembersFilterInput!): AdminTgChatMembersConnection!
+
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
 
   subgraph(id: Int64!): AdminSubgraph
@@ -256,6 +337,7 @@ type AdminQuery {
   offer(id: Int64!): AdminOffer
   purchase(id: String!): AdminPurchase
   redirect(id: Int64!): AdminRedirect
+  tgBot(id: Int64!): AdminTgBot
 }
 
 enum Role {
@@ -754,6 +836,67 @@ type DeleteNotFoundIgnoredPatternPayload {
 
 union DeleteNotFoundIgnoredPatternOrErrorPayload = DeleteNotFoundIgnoredPatternPayload | ErrorPayload
 
+#
+# createTgBot
+#
+
+input CreateTgBotInput {
+  token: String!
+  name: String
+  description: String!
+}
+
+type CreateTgBotPayload {
+  tgBot: AdminTgBot!
+}
+
+union CreateTgBotOrErrorPayload = CreateTgBotPayload | ErrorPayload
+
+#
+# updateTgBot
+#
+
+input UpdateTgBotInput {
+  id: Int64!
+  description: String
+  enabled: Boolean
+}
+
+type UpdateTgBotPayload {
+  tgBot: AdminTgBot!
+}
+
+union UpdateTgBotOrErrorPayload = UpdateTgBotPayload | ErrorPayload
+
+#
+# addTgChatSubgraphAccess
+#
+
+input AddTgChatSubgraphAccessInput {
+  chatId: Int64!
+  subgraphId: Int64!
+}
+
+type AddTgChatSubgraphAccessPayload {
+  chatSubgraphAccess: AdminTgChatSubgraphAccess!
+}
+
+union AddTgChatSubgraphAccessOrErrorPayload = AddTgChatSubgraphAccessPayload | ErrorPayload
+
+#
+# removeTgChatSubgraphAccess
+#
+
+input RemoveTgChatSubgraphAccessInput {
+  id: Int64!
+}
+
+type RemoveTgChatSubgraphAccessPayload {
+  deletedId: Int64!
+}
+
+union RemoveTgChatSubgraphAccessOrErrorPayload = RemoveTgChatSubgraphAccessPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
@@ -780,4 +923,10 @@ type AdminMutation {
   makeReleaseLive(input: MakeReleaseLiveInput!): MakeReleaseLiveOrErrorPayload!
 
   updateNoteGraphPositions(input: UpdateNoteGraphPositionsInput!): UpdateNoteGraphPositionsOrErrorPayload!
+
+  # Telegram bot mutations
+  createTgBot(input: CreateTgBotInput!): CreateTgBotOrErrorPayload!
+  updateTgBot(input: UpdateTgBotInput!): UpdateTgBotOrErrorPayload!
+  addTgChatSubgraphAccess(input: AddTgChatSubgraphAccessInput!): AddTgChatSubgraphAccessOrErrorPayload!
+  removeTgChatSubgraphAccess(input: RemoveTgChatSubgraphAccessInput!): RemoveTgChatSubgraphAccessOrErrorPayload!
 }

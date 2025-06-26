@@ -65,6 +65,15 @@ type ResolverRoot interface {
 	AdminReleasesConnection() AdminReleasesConnectionResolver
 	AdminSubgraph() AdminSubgraphResolver
 	AdminSubgraphsConnection() AdminSubgraphsConnectionResolver
+	AdminTgBot() AdminTgBotResolver
+	AdminTgBotChat() AdminTgBotChatResolver
+	AdminTgBotChatsConnection() AdminTgBotChatsConnectionResolver
+	AdminTgBotsConnection() AdminTgBotsConnectionResolver
+	AdminTgChatMember() AdminTgChatMemberResolver
+	AdminTgChatMembersConnection() AdminTgChatMembersConnectionResolver
+	AdminTgChatSubgraphAccess() AdminTgChatSubgraphAccessResolver
+	AdminTgChatSubgraphAccessesConnection() AdminTgChatSubgraphAccessesConnectionResolver
+	AdminTgUserProfile() AdminTgUserProfileResolver
 	AdminUser() AdminUserResolver
 	AdminUserBansConnection() AdminUserBansConnectionResolver
 	AdminUserSubgraphAccess() AdminUserSubgraphAccessResolver
@@ -91,6 +100,10 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AddTgChatSubgraphAccessPayload struct {
+		ChatSubgraphAccess func(childComplexity int) int
+	}
+
 	Admin struct {
 		GrantedAt func(childComplexity int) int
 		GrantedBy func(childComplexity int) int
@@ -130,16 +143,19 @@ type ComplexityRoot struct {
 	}
 
 	AdminMutation struct {
+		AddTgChatSubgraphAccess      func(childComplexity int, input model.AddTgChatSubgraphAccessInput) int
 		BanUser                      func(childComplexity int, input model.BanUserInput) int
 		CreateAPIKey                 func(childComplexity int, input model.CreateAPIKeyInput) int
 		CreateNotFoundIgnoredPattern func(childComplexity int, input model.CreateNotFoundIgnoredPatternInput) int
 		CreateOffer                  func(childComplexity int, input model.CreateOfferInput) int
 		CreateRedirect               func(childComplexity int, input model.CreateRedirectInput) int
 		CreateRelease                func(childComplexity int, input model.CreateReleaseInput) int
+		CreateTgBot                  func(childComplexity int, input model.CreateTgBotInput) int
 		DeleteNotFoundIgnoredPattern func(childComplexity int, input model.DeleteNotFoundIgnoredPatternInput) int
 		DeleteRedirect               func(childComplexity int, input model.DeleteRedirectInput) int
 		DisableAPIKey                func(childComplexity int, input model.DisableAPIKeyInput) int
 		MakeReleaseLive              func(childComplexity int, input model.MakeReleaseLiveInput) int
+		RemoveTgChatSubgraphAccess   func(childComplexity int, input model.RemoveTgChatSubgraphAccessInput) int
 		ResetNotFoundPath            func(childComplexity int, input model.ResetNotFoundPathInput) int
 		UnbanUser                    func(childComplexity int, input model.UnbanUserInput) int
 		UpdateNotFoundIgnoredPattern func(childComplexity int, input model.UpdateNotFoundIgnoredPatternInput) int
@@ -147,6 +163,7 @@ type ComplexityRoot struct {
 		UpdateOffer                  func(childComplexity int, input model.UpdateOfferInput) int
 		UpdateRedirect               func(childComplexity int, input model.UpdateRedirectInput) int
 		UpdateSubgraph               func(childComplexity int, input updatesubgraph.Request) int
+		UpdateTgBot                  func(childComplexity int, input model.UpdateTgBotInput) int
 		UpdateUserSubgraphAccess     func(childComplexity int, input updateusersubgraphaccess.Request) int
 	}
 
@@ -217,6 +234,7 @@ type ComplexityRoot struct {
 		AllRedirects               func(childComplexity int) int
 		AllReleases                func(childComplexity int) int
 		AllSubgraphs               func(childComplexity int) int
+		AllTgBots                  func(childComplexity int) int
 		AllUserSubgraphAccesses    func(childComplexity int) int
 		AllUserUserBans            func(childComplexity int) int
 		AllUsers                   func(childComplexity int) int
@@ -225,6 +243,10 @@ type ComplexityRoot struct {
 		Purchase                   func(childComplexity int, id string) int
 		Redirect                   func(childComplexity int, id int64) int
 		Subgraph                   func(childComplexity int, id int64) int
+		TgBot                      func(childComplexity int, id int64) int
+		TgBotChats                 func(childComplexity int, filter model.AdminTgBotChatsFilterInput) int
+		TgChatMembers              func(childComplexity int, filter model.AdminTgChatMembersFilterInput) int
+		TgChatSubgraphAccesses     func(childComplexity int, filter model.AdminTgChatSubgraphAccessesFilterInput) int
 		UserSubgraphAccess         func(childComplexity int, id int64) int
 	}
 
@@ -265,6 +287,68 @@ type ComplexityRoot struct {
 
 	AdminSubgraphsConnection struct {
 		Nodes func(childComplexity int) int
+	}
+
+	AdminTgBot struct {
+		CreatedAt   func(childComplexity int) int
+		CreatedBy   func(childComplexity int) int
+		Description func(childComplexity int) int
+		Enabled     func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Token       func(childComplexity int) int
+	}
+
+	AdminTgBotChat struct {
+		AddedAt          func(childComplexity int) int
+		ChatTitle        func(childComplexity int) int
+		ChatType         func(childComplexity int) int
+		ID               func(childComplexity int) int
+		MemberCount      func(childComplexity int) int
+		RemovedAt        func(childComplexity int) int
+		SubgraphAccesses func(childComplexity int) int
+	}
+
+	AdminTgBotChatsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminTgBotsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminTgChatMember struct {
+		ChatID    func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		Profile   func(childComplexity int) int
+		UserID    func(childComplexity int) int
+	}
+
+	AdminTgChatMembersConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminTgChatSubgraphAccess struct {
+		Chat       func(childComplexity int) int
+		ChatID     func(childComplexity int) int
+		CreatedAt  func(childComplexity int) int
+		ID         func(childComplexity int) int
+		Subgraph   func(childComplexity int) int
+		SubgraphID func(childComplexity int) int
+	}
+
+	AdminTgChatSubgraphAccessesConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminTgUserProfile struct {
+		BotID      func(childComplexity int) int
+		ChatID     func(childComplexity int) int
+		CreatedAt  func(childComplexity int) int
+		FirstName  func(childComplexity int) int
+		LastName   func(childComplexity int) int
+		Sha256Hash func(childComplexity int) int
+		Username   func(childComplexity int) int
 	}
 
 	AdminUser struct {
@@ -325,6 +409,10 @@ type ComplexityRoot struct {
 
 	CreateReleasePayload struct {
 		Release func(childComplexity int) int
+	}
+
+	CreateTgBotPayload struct {
+		TgBot func(childComplexity int) int
 	}
 
 	DeleteNotFoundIgnoredPatternPayload struct {
@@ -435,6 +523,10 @@ type ComplexityRoot struct {
 		Viewer    func(childComplexity int) int
 	}
 
+	RemoveTgChatSubgraphAccessPayload struct {
+		DeletedID func(childComplexity int) int
+	}
+
 	RequestEmailSignInCodePayload struct {
 		Success func(childComplexity int) int
 	}
@@ -482,6 +574,10 @@ type ComplexityRoot struct {
 
 	UpdateSubgraphPayload struct {
 		Subgraph func(childComplexity int) int
+	}
+
+	UpdateTgBotPayload struct {
+		TgBot func(childComplexity int) int
 	}
 
 	UpdateUserSubgraphAccessPayload struct {
@@ -568,6 +664,10 @@ type AdminMutationResolver interface {
 	CreateRelease(ctx context.Context, obj *model1.AdminMutation, input model.CreateReleaseInput) (model.CreateReleaseOrErrorPayload, error)
 	MakeReleaseLive(ctx context.Context, obj *model1.AdminMutation, input model.MakeReleaseLiveInput) (model.MakeReleaseLiveOrErrorPayload, error)
 	UpdateNoteGraphPositions(ctx context.Context, obj *model1.AdminMutation, input model.UpdateNoteGraphPositionsInput) (model.UpdateNoteGraphPositionsOrErrorPayload, error)
+	CreateTgBot(ctx context.Context, obj *model1.AdminMutation, input model.CreateTgBotInput) (model.CreateTgBotOrErrorPayload, error)
+	UpdateTgBot(ctx context.Context, obj *model1.AdminMutation, input model.UpdateTgBotInput) (model.UpdateTgBotOrErrorPayload, error)
+	AddTgChatSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input model.AddTgChatSubgraphAccessInput) (model.AddTgChatSubgraphAccessOrErrorPayload, error)
+	RemoveTgChatSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input model.RemoveTgChatSubgraphAccessInput) (model.RemoveTgChatSubgraphAccessOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -613,6 +713,10 @@ type AdminQueryResolver interface {
 	AllRedirects(ctx context.Context, obj *model1.AdminQuery) (*model.AdminRedirectsConnection, error)
 	AllNotFoundPaths(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNotFoundPathsConnection, error)
 	AllNotFoundIgnoredPatterns(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNotFoundIgnoredPatternsConnection, error)
+	AllTgBots(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTgBotsConnection, error)
+	TgBotChats(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgBotChatsFilterInput) (*model.AdminTgBotChatsConnection, error)
+	TgChatSubgraphAccesses(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgChatSubgraphAccessesFilterInput) (*model.AdminTgChatSubgraphAccessesConnection, error)
+	TgChatMembers(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgChatMembersFilterInput) (*model.AdminTgChatMembersConnection, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
@@ -620,6 +724,7 @@ type AdminQueryResolver interface {
 	Offer(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Offer, error)
 	Purchase(ctx context.Context, obj *model1.AdminQuery, id string) (*db.Purchase, error)
 	Redirect(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Redirect, error)
+	TgBot(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.TgBot, error)
 }
 type AdminRedirectResolver interface {
 	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
@@ -641,6 +746,46 @@ type AdminSubgraphResolver interface {
 }
 type AdminSubgraphsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error)
+}
+type AdminTgBotResolver interface {
+	Name(ctx context.Context, obj *db.TgBot) (*string, error)
+
+	CreatedBy(ctx context.Context, obj *db.TgBot) (*db.User, error)
+}
+type AdminTgBotChatResolver interface {
+	ChatType(ctx context.Context, obj *db.TgBotChat) (string, error)
+	ChatTitle(ctx context.Context, obj *db.TgBotChat) (string, error)
+
+	RemovedAt(ctx context.Context, obj *db.TgBotChat) (*time.Time, error)
+	MemberCount(ctx context.Context, obj *db.TgBotChat) (int32, error)
+	SubgraphAccesses(ctx context.Context, obj *db.TgBotChat) ([]db.TgChatSubgraphAccess, error)
+}
+type AdminTgBotChatsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminTgBotChatsConnection) ([]db.TgBotChat, error)
+}
+type AdminTgBotsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminTgBotsConnection) ([]db.TgBot, error)
+}
+type AdminTgChatMemberResolver interface {
+	UserID(ctx context.Context, obj *db.TgChatMember) (int64, error)
+	ChatID(ctx context.Context, obj *db.TgChatMember) (int64, error)
+
+	Profile(ctx context.Context, obj *db.TgChatMember) (*db.TgUserProfile, error)
+}
+type AdminTgChatMembersConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminTgChatMembersConnection) ([]db.TgChatMember, error)
+}
+type AdminTgChatSubgraphAccessResolver interface {
+	Chat(ctx context.Context, obj *db.TgChatSubgraphAccess) (*db.TgBotChat, error)
+	Subgraph(ctx context.Context, obj *db.TgChatSubgraphAccess) (*db.Subgraph, error)
+}
+type AdminTgChatSubgraphAccessesConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminTgChatSubgraphAccessesConnection) ([]db.TgChatSubgraphAccess, error)
+}
+type AdminTgUserProfileResolver interface {
+	FirstName(ctx context.Context, obj *db.TgUserProfile) (*string, error)
+	LastName(ctx context.Context, obj *db.TgUserProfile) (*string, error)
+	Username(ctx context.Context, obj *db.TgUserProfile) (*string, error)
 }
 type AdminUserResolver interface {
 	Ban(ctx context.Context, obj *db.User) (*db.UserBan, error)
@@ -750,6 +895,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AddTgChatSubgraphAccessPayload.chatSubgraphAccess":
+		if e.complexity.AddTgChatSubgraphAccessPayload.ChatSubgraphAccess == nil {
+			break
+		}
+
+		return e.complexity.AddTgChatSubgraphAccessPayload.ChatSubgraphAccess(childComplexity), true
 
 	case "Admin.grantedAt":
 		if e.complexity.Admin.GrantedAt == nil {
@@ -870,6 +1022,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminLatestNoteViewsConnection.Nodes(childComplexity), true
 
+	case "AdminMutation.addTgChatSubgraphAccess":
+		if e.complexity.AdminMutation.AddTgChatSubgraphAccess == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_addTgChatSubgraphAccess_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.AddTgChatSubgraphAccess(childComplexity, args["input"].(model.AddTgChatSubgraphAccessInput)), true
+
 	case "AdminMutation.banUser":
 		if e.complexity.AdminMutation.BanUser == nil {
 			break
@@ -942,6 +1106,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.CreateRelease(childComplexity, args["input"].(model.CreateReleaseInput)), true
 
+	case "AdminMutation.createTgBot":
+		if e.complexity.AdminMutation.CreateTgBot == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_createTgBot_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.CreateTgBot(childComplexity, args["input"].(model.CreateTgBotInput)), true
+
 	case "AdminMutation.deleteNotFoundIgnoredPattern":
 		if e.complexity.AdminMutation.DeleteNotFoundIgnoredPattern == nil {
 			break
@@ -989,6 +1165,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.MakeReleaseLive(childComplexity, args["input"].(model.MakeReleaseLiveInput)), true
+
+	case "AdminMutation.removeTgChatSubgraphAccess":
+		if e.complexity.AdminMutation.RemoveTgChatSubgraphAccess == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_removeTgChatSubgraphAccess_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.RemoveTgChatSubgraphAccess(childComplexity, args["input"].(model.RemoveTgChatSubgraphAccessInput)), true
 
 	case "AdminMutation.resetNotFoundPath":
 		if e.complexity.AdminMutation.ResetNotFoundPath == nil {
@@ -1073,6 +1261,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.UpdateSubgraph(childComplexity, args["input"].(updatesubgraph.Request)), true
+
+	case "AdminMutation.updateTgBot":
+		if e.complexity.AdminMutation.UpdateTgBot == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_updateTgBot_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.UpdateTgBot(childComplexity, args["input"].(model.UpdateTgBotInput)), true
 
 	case "AdminMutation.updateUserSubgraphAccess":
 		if e.complexity.AdminMutation.UpdateUserSubgraphAccess == nil {
@@ -1385,6 +1585,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminQuery.AllSubgraphs(childComplexity), true
 
+	case "AdminQuery.allTgBots":
+		if e.complexity.AdminQuery.AllTgBots == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllTgBots(childComplexity), true
+
 	case "AdminQuery.allUserSubgraphAccesses":
 		if e.complexity.AdminQuery.AllUserSubgraphAccesses == nil {
 			break
@@ -1465,6 +1672,54 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.Subgraph(childComplexity, args["id"].(int64)), true
+
+	case "AdminQuery.tgBot":
+		if e.complexity.AdminQuery.TgBot == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_tgBot_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.TgBot(childComplexity, args["id"].(int64)), true
+
+	case "AdminQuery.tgBotChats":
+		if e.complexity.AdminQuery.TgBotChats == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_tgBotChats_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.TgBotChats(childComplexity, args["filter"].(model.AdminTgBotChatsFilterInput)), true
+
+	case "AdminQuery.tgChatMembers":
+		if e.complexity.AdminQuery.TgChatMembers == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_tgChatMembers_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.TgChatMembers(childComplexity, args["filter"].(model.AdminTgChatMembersFilterInput)), true
+
+	case "AdminQuery.tgChatSubgraphAccesses":
+		if e.complexity.AdminQuery.TgChatSubgraphAccesses == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_tgChatSubgraphAccesses_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.TgChatSubgraphAccesses(childComplexity, args["filter"].(model.AdminTgChatSubgraphAccessesFilterInput)), true
 
 	case "AdminQuery.userSubgraphAccess":
 		if e.complexity.AdminQuery.UserSubgraphAccess == nil {
@@ -1624,6 +1879,251 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminSubgraphsConnection.Nodes(childComplexity), true
+
+	case "AdminTgBot.createdAt":
+		if e.complexity.AdminTgBot.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBot.CreatedAt(childComplexity), true
+
+	case "AdminTgBot.createdBy":
+		if e.complexity.AdminTgBot.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBot.CreatedBy(childComplexity), true
+
+	case "AdminTgBot.description":
+		if e.complexity.AdminTgBot.Description == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBot.Description(childComplexity), true
+
+	case "AdminTgBot.enabled":
+		if e.complexity.AdminTgBot.Enabled == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBot.Enabled(childComplexity), true
+
+	case "AdminTgBot.id":
+		if e.complexity.AdminTgBot.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBot.ID(childComplexity), true
+
+	case "AdminTgBot.name":
+		if e.complexity.AdminTgBot.Name == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBot.Name(childComplexity), true
+
+	case "AdminTgBot.token":
+		if e.complexity.AdminTgBot.Token == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBot.Token(childComplexity), true
+
+	case "AdminTgBotChat.addedAt":
+		if e.complexity.AdminTgBotChat.AddedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBotChat.AddedAt(childComplexity), true
+
+	case "AdminTgBotChat.chatTitle":
+		if e.complexity.AdminTgBotChat.ChatTitle == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBotChat.ChatTitle(childComplexity), true
+
+	case "AdminTgBotChat.chatType":
+		if e.complexity.AdminTgBotChat.ChatType == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBotChat.ChatType(childComplexity), true
+
+	case "AdminTgBotChat.id":
+		if e.complexity.AdminTgBotChat.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBotChat.ID(childComplexity), true
+
+	case "AdminTgBotChat.memberCount":
+		if e.complexity.AdminTgBotChat.MemberCount == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBotChat.MemberCount(childComplexity), true
+
+	case "AdminTgBotChat.removedAt":
+		if e.complexity.AdminTgBotChat.RemovedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBotChat.RemovedAt(childComplexity), true
+
+	case "AdminTgBotChat.subgraphAccesses":
+		if e.complexity.AdminTgBotChat.SubgraphAccesses == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBotChat.SubgraphAccesses(childComplexity), true
+
+	case "AdminTgBotChatsConnection.nodes":
+		if e.complexity.AdminTgBotChatsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBotChatsConnection.Nodes(childComplexity), true
+
+	case "AdminTgBotsConnection.nodes":
+		if e.complexity.AdminTgBotsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBotsConnection.Nodes(childComplexity), true
+
+	case "AdminTgChatMember.chatId":
+		if e.complexity.AdminTgChatMember.ChatID == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatMember.ChatID(childComplexity), true
+
+	case "AdminTgChatMember.createdAt":
+		if e.complexity.AdminTgChatMember.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatMember.CreatedAt(childComplexity), true
+
+	case "AdminTgChatMember.profile":
+		if e.complexity.AdminTgChatMember.Profile == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatMember.Profile(childComplexity), true
+
+	case "AdminTgChatMember.userId":
+		if e.complexity.AdminTgChatMember.UserID == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatMember.UserID(childComplexity), true
+
+	case "AdminTgChatMembersConnection.nodes":
+		if e.complexity.AdminTgChatMembersConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatMembersConnection.Nodes(childComplexity), true
+
+	case "AdminTgChatSubgraphAccess.chat":
+		if e.complexity.AdminTgChatSubgraphAccess.Chat == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatSubgraphAccess.Chat(childComplexity), true
+
+	case "AdminTgChatSubgraphAccess.chatId":
+		if e.complexity.AdminTgChatSubgraphAccess.ChatID == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatSubgraphAccess.ChatID(childComplexity), true
+
+	case "AdminTgChatSubgraphAccess.createdAt":
+		if e.complexity.AdminTgChatSubgraphAccess.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatSubgraphAccess.CreatedAt(childComplexity), true
+
+	case "AdminTgChatSubgraphAccess.id":
+		if e.complexity.AdminTgChatSubgraphAccess.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatSubgraphAccess.ID(childComplexity), true
+
+	case "AdminTgChatSubgraphAccess.subgraph":
+		if e.complexity.AdminTgChatSubgraphAccess.Subgraph == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatSubgraphAccess.Subgraph(childComplexity), true
+
+	case "AdminTgChatSubgraphAccess.subgraphId":
+		if e.complexity.AdminTgChatSubgraphAccess.SubgraphID == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatSubgraphAccess.SubgraphID(childComplexity), true
+
+	case "AdminTgChatSubgraphAccessesConnection.nodes":
+		if e.complexity.AdminTgChatSubgraphAccessesConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminTgChatSubgraphAccessesConnection.Nodes(childComplexity), true
+
+	case "AdminTgUserProfile.botId":
+		if e.complexity.AdminTgUserProfile.BotID == nil {
+			break
+		}
+
+		return e.complexity.AdminTgUserProfile.BotID(childComplexity), true
+
+	case "AdminTgUserProfile.chatId":
+		if e.complexity.AdminTgUserProfile.ChatID == nil {
+			break
+		}
+
+		return e.complexity.AdminTgUserProfile.ChatID(childComplexity), true
+
+	case "AdminTgUserProfile.createdAt":
+		if e.complexity.AdminTgUserProfile.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminTgUserProfile.CreatedAt(childComplexity), true
+
+	case "AdminTgUserProfile.firstName":
+		if e.complexity.AdminTgUserProfile.FirstName == nil {
+			break
+		}
+
+		return e.complexity.AdminTgUserProfile.FirstName(childComplexity), true
+
+	case "AdminTgUserProfile.lastName":
+		if e.complexity.AdminTgUserProfile.LastName == nil {
+			break
+		}
+
+		return e.complexity.AdminTgUserProfile.LastName(childComplexity), true
+
+	case "AdminTgUserProfile.sha256Hash":
+		if e.complexity.AdminTgUserProfile.Sha256Hash == nil {
+			break
+		}
+
+		return e.complexity.AdminTgUserProfile.Sha256Hash(childComplexity), true
+
+	case "AdminTgUserProfile.username":
+		if e.complexity.AdminTgUserProfile.Username == nil {
+			break
+		}
+
+		return e.complexity.AdminTgUserProfile.Username(childComplexity), true
 
 	case "AdminUser.ban":
 		if e.complexity.AdminUser.Ban == nil {
@@ -1792,6 +2292,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CreateReleasePayload.Release(childComplexity), true
+
+	case "CreateTgBotPayload.tgBot":
+		if e.complexity.CreateTgBotPayload.TgBot == nil {
+			break
+		}
+
+		return e.complexity.CreateTgBotPayload.TgBot(childComplexity), true
 
 	case "DeleteNotFoundIgnoredPatternPayload.deletedId":
 		if e.complexity.DeleteNotFoundIgnoredPatternPayload.DeletedID == nil {
@@ -2206,6 +2713,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Viewer(childComplexity), true
 
+	case "RemoveTgChatSubgraphAccessPayload.deletedId":
+		if e.complexity.RemoveTgChatSubgraphAccessPayload.DeletedID == nil {
+			break
+		}
+
+		return e.complexity.RemoveTgChatSubgraphAccessPayload.DeletedID(childComplexity), true
+
 	case "RequestEmailSignInCodePayload.success":
 		if e.complexity.RequestEmailSignInCodePayload.Success == nil {
 			break
@@ -2317,6 +2831,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UpdateSubgraphPayload.Subgraph(childComplexity), true
+
+	case "UpdateTgBotPayload.tgBot":
+		if e.complexity.UpdateTgBotPayload.TgBot == nil {
+			break
+		}
+
+		return e.complexity.UpdateTgBotPayload.TgBot(childComplexity), true
 
 	case "UpdateUserSubgraphAccessPayload.userSubgraphAccess":
 		if e.complexity.UpdateUserSubgraphAccessPayload.UserSubgraphAccess == nil {
@@ -2471,6 +2992,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputAddTgChatSubgraphAccessInput,
+		ec.unmarshalInputAdminTgBotChatsFilterInput,
+		ec.unmarshalInputAdminTgChatMembersFilterInput,
+		ec.unmarshalInputAdminTgChatSubgraphAccessesFilterInput,
 		ec.unmarshalInputApiKeyLogsFilterInput,
 		ec.unmarshalInputBanUserInput,
 		ec.unmarshalInputCreateApiKeyInput,
@@ -2479,6 +3004,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreatePaymentLinkInput,
 		ec.unmarshalInputCreateRedirectInput,
 		ec.unmarshalInputCreateReleaseInput,
+		ec.unmarshalInputCreateTgBotInput,
 		ec.unmarshalInputDeleteNotFoundIgnoredPatternInput,
 		ec.unmarshalInputDeleteRedirectInput,
 		ec.unmarshalInputDisableApiKeyInput,
@@ -2487,6 +3013,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNoteInput,
 		ec.unmarshalInputPushNoteInput,
 		ec.unmarshalInputPushNotesInput,
+		ec.unmarshalInputRemoveTgChatSubgraphAccessInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
 		ec.unmarshalInputSignInByEmailInput,
@@ -2497,6 +3024,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateOfferInput,
 		ec.unmarshalInputUpdateRedirectInput,
 		ec.unmarshalInputUpdateSubgraphInput,
+		ec.unmarshalInputUpdateTgBotInput,
 		ec.unmarshalInputUpdateUserSubgraphAccessInput,
 		ec.unmarshalInputUploadNoteAssetInput,
 	)
@@ -2614,6 +3142,29 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_AdminMutation_addTgChatSubgraphAccess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_addTgChatSubgraphAccess_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_addTgChatSubgraphAccess_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.AddTgChatSubgraphAccessInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNAddTgChatSubgraphAccessInput2trip2gᚋinternalᚋgraphᚋmodelᚐAddTgChatSubgraphAccessInput(ctx, tmp)
+	}
+
+	var zeroVal model.AddTgChatSubgraphAccessInput
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_AdminMutation_banUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -2753,6 +3304,29 @@ func (ec *executionContext) field_AdminMutation_createRelease_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_createTgBot_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_createTgBot_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_createTgBot_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateTgBotInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateTgBotInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateTgBotInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateTgBotInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_deleteNotFoundIgnoredPattern_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2842,6 +3416,29 @@ func (ec *executionContext) field_AdminMutation_makeReleaseLive_argsInput(
 	}
 
 	var zeroVal model.MakeReleaseLiveInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_removeTgChatSubgraphAccess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_removeTgChatSubgraphAccess_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_removeTgChatSubgraphAccess_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.RemoveTgChatSubgraphAccessInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRemoveTgChatSubgraphAccessInput2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveTgChatSubgraphAccessInput(ctx, tmp)
+	}
+
+	var zeroVal model.RemoveTgChatSubgraphAccessInput
 	return zeroVal, nil
 }
 
@@ -3006,6 +3603,29 @@ func (ec *executionContext) field_AdminMutation_updateSubgraph_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_updateTgBot_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_updateTgBot_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_updateTgBot_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateTgBotInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateTgBotInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateTgBotInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateTgBotInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_updateUserSubgraphAccess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3164,6 +3784,98 @@ func (ec *executionContext) field_AdminQuery_subgraph_argsID(
 	}
 
 	var zeroVal int64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_tgBotChats_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_tgBotChats_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_tgBotChats_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.AdminTgBotChatsFilterInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalNAdminTgBotChatsFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTgBotChatsFilterInput(ctx, tmp)
+	}
+
+	var zeroVal model.AdminTgBotChatsFilterInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_tgBot_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_tgBot_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_tgBot_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int64, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNInt642int64(ctx, tmp)
+	}
+
+	var zeroVal int64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_tgChatMembers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_tgChatMembers_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_tgChatMembers_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.AdminTgChatMembersFilterInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalNAdminTgChatMembersFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTgChatMembersFilterInput(ctx, tmp)
+	}
+
+	var zeroVal model.AdminTgChatMembersFilterInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_tgChatSubgraphAccesses_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_tgChatSubgraphAccesses_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_tgChatSubgraphAccesses_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.AdminTgChatSubgraphAccessesFilterInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalNAdminTgChatSubgraphAccessesFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTgChatSubgraphAccessesFilterInput(ctx, tmp)
+	}
+
+	var zeroVal model.AdminTgChatSubgraphAccessesFilterInput
 	return zeroVal, nil
 }
 
@@ -3496,6 +4208,64 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AddTgChatSubgraphAccessPayload_chatSubgraphAccess(ctx context.Context, field graphql.CollectedField, obj *model.AddTgChatSubgraphAccessPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AddTgChatSubgraphAccessPayload_chatSubgraphAccess(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ChatSubgraphAccess, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.TgChatSubgraphAccess)
+	fc.Result = res
+	return ec.marshalNAdminTgChatSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐTgChatSubgraphAccess(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AddTgChatSubgraphAccessPayload_chatSubgraphAccess(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AddTgChatSubgraphAccessPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_id(ctx, field)
+			case "chatId":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_chatId(ctx, field)
+			case "subgraphId":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_subgraphId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_createdAt(ctx, field)
+			case "chat":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_chat(ctx, field)
+			case "subgraph":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_subgraph(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgChatSubgraphAccess", field.Name)
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _Admin_id(ctx context.Context, field graphql.CollectedField, obj *db.Admin) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Admin_id(ctx, field)
@@ -5320,6 +6090,226 @@ func (ec *executionContext) fieldContext_AdminMutation_updateNoteGraphPositions(
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_updateNoteGraphPositions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_createTgBot(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_createTgBot(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().CreateTgBot(rctx, obj, fc.Args["input"].(model.CreateTgBotInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CreateTgBotOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNCreateTgBotOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateTgBotOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createTgBot(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateTgBotOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createTgBot_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_updateTgBot(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_updateTgBot(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().UpdateTgBot(rctx, obj, fc.Args["input"].(model.UpdateTgBotInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.UpdateTgBotOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNUpdateTgBotOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateTgBotOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_updateTgBot(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UpdateTgBotOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_updateTgBot_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_addTgChatSubgraphAccess(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_addTgChatSubgraphAccess(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().AddTgChatSubgraphAccess(rctx, obj, fc.Args["input"].(model.AddTgChatSubgraphAccessInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.AddTgChatSubgraphAccessOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNAddTgChatSubgraphAccessOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐAddTgChatSubgraphAccessOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_addTgChatSubgraphAccess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type AddTgChatSubgraphAccessOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_addTgChatSubgraphAccess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_removeTgChatSubgraphAccess(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_removeTgChatSubgraphAccess(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().RemoveTgChatSubgraphAccess(rctx, obj, fc.Args["input"].(model.RemoveTgChatSubgraphAccessInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.RemoveTgChatSubgraphAccessOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNRemoveTgChatSubgraphAccessOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveTgChatSubgraphAccessOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_removeTgChatSubgraphAccess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RemoveTgChatSubgraphAccessOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_removeTgChatSubgraphAccess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7411,6 +8401,231 @@ func (ec *executionContext) fieldContext_AdminQuery_allNotFoundIgnoredPatterns(_
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_allTgBots(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allTgBots(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllTgBots(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminTgBotsConnection)
+	fc.Result = res
+	return ec.marshalNAdminTgBotsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTgBotsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allTgBots(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminTgBotsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgBotsConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_tgBotChats(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_tgBotChats(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().TgBotChats(rctx, obj, fc.Args["filter"].(model.AdminTgBotChatsFilterInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminTgBotChatsConnection)
+	fc.Result = res
+	return ec.marshalNAdminTgBotChatsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTgBotChatsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_tgBotChats(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminTgBotChatsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgBotChatsConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_tgBotChats_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_tgChatSubgraphAccesses(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_tgChatSubgraphAccesses(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().TgChatSubgraphAccesses(rctx, obj, fc.Args["filter"].(model.AdminTgChatSubgraphAccessesFilterInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminTgChatSubgraphAccessesConnection)
+	fc.Result = res
+	return ec.marshalNAdminTgChatSubgraphAccessesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTgChatSubgraphAccessesConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_tgChatSubgraphAccesses(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminTgChatSubgraphAccessesConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgChatSubgraphAccessesConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_tgChatSubgraphAccesses_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_tgChatMembers(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_tgChatMembers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().TgChatMembers(rctx, obj, fc.Args["filter"].(model.AdminTgChatMembersFilterInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminTgChatMembersConnection)
+	fc.Result = res
+	return ec.marshalNAdminTgChatMembersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTgChatMembersConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_tgChatMembers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminTgChatMembersConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgChatMembersConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_tgChatMembers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_apiKeyLogs(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 	if err != nil {
@@ -7888,6 +9103,74 @@ func (ec *executionContext) fieldContext_AdminQuery_redirect(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_redirect_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_tgBot(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_tgBot(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().TgBot(rctx, obj, fc.Args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.TgBot)
+	fc.Result = res
+	return ec.marshalOAdminTgBot2ᚖtrip2gᚋinternalᚋdbᚐTgBot(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_tgBot(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTgBot_id(ctx, field)
+			case "token":
+				return ec.fieldContext_AdminTgBot_token(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminTgBot_enabled(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminTgBot_name(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminTgBot_description(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTgBot_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminTgBot_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgBot", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_tgBot_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8894,6 +10177,1650 @@ func (ec *executionContext) fieldContext_AdminSubgraphsConnection_nodes(_ contex
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminSubgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBot_id(ctx context.Context, field graphql.CollectedField, obj *db.TgBot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBot_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBot_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBot_token(ctx context.Context, field graphql.CollectedField, obj *db.TgBot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBot_token(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBot_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBot_enabled(ctx context.Context, field graphql.CollectedField, obj *db.TgBot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBot_enabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Enabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBot_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBot_name(ctx context.Context, field graphql.CollectedField, obj *db.TgBot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBot_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgBot().Name(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBot_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBot",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBot_description(ctx context.Context, field graphql.CollectedField, obj *db.TgBot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBot_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBot_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBot_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.TgBot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBot_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBot_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBot_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.TgBot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBot_createdBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgBot().CreatedBy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBot_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBot",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBotChat_id(ctx context.Context, field graphql.CollectedField, obj *db.TgBotChat) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBotChat_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBotChat_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBotChat",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBotChat_chatType(ctx context.Context, field graphql.CollectedField, obj *db.TgBotChat) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBotChat_chatType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgBotChat().ChatType(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBotChat_chatType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBotChat",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBotChat_chatTitle(ctx context.Context, field graphql.CollectedField, obj *db.TgBotChat) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBotChat_chatTitle(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgBotChat().ChatTitle(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBotChat_chatTitle(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBotChat",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBotChat_addedAt(ctx context.Context, field graphql.CollectedField, obj *db.TgBotChat) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBotChat_addedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AddedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBotChat_addedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBotChat",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBotChat_removedAt(ctx context.Context, field graphql.CollectedField, obj *db.TgBotChat) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBotChat_removedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgBotChat().RemovedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBotChat_removedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBotChat",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBotChat_memberCount(ctx context.Context, field graphql.CollectedField, obj *db.TgBotChat) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBotChat_memberCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgBotChat().MemberCount(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBotChat_memberCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBotChat",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBotChat_subgraphAccesses(ctx context.Context, field graphql.CollectedField, obj *db.TgBotChat) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBotChat_subgraphAccesses(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgBotChat().SubgraphAccesses(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.TgChatSubgraphAccess)
+	fc.Result = res
+	return ec.marshalNAdminTgChatSubgraphAccess2ᚕtrip2gᚋinternalᚋdbᚐTgChatSubgraphAccessᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBotChat_subgraphAccesses(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBotChat",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_id(ctx, field)
+			case "chatId":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_chatId(ctx, field)
+			case "subgraphId":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_subgraphId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_createdAt(ctx, field)
+			case "chat":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_chat(ctx, field)
+			case "subgraph":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_subgraph(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgChatSubgraphAccess", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBotChatsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminTgBotChatsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBotChatsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgBotChatsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.TgBotChat)
+	fc.Result = res
+	return ec.marshalNAdminTgBotChat2ᚕtrip2gᚋinternalᚋdbᚐTgBotChatᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBotChatsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBotChatsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTgBotChat_id(ctx, field)
+			case "chatType":
+				return ec.fieldContext_AdminTgBotChat_chatType(ctx, field)
+			case "chatTitle":
+				return ec.fieldContext_AdminTgBotChat_chatTitle(ctx, field)
+			case "addedAt":
+				return ec.fieldContext_AdminTgBotChat_addedAt(ctx, field)
+			case "removedAt":
+				return ec.fieldContext_AdminTgBotChat_removedAt(ctx, field)
+			case "memberCount":
+				return ec.fieldContext_AdminTgBotChat_memberCount(ctx, field)
+			case "subgraphAccesses":
+				return ec.fieldContext_AdminTgBotChat_subgraphAccesses(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgBotChat", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgBotsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminTgBotsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBotsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgBotsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.TgBot)
+	fc.Result = res
+	return ec.marshalNAdminTgBot2ᚕtrip2gᚋinternalᚋdbᚐTgBotᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBotsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBotsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTgBot_id(ctx, field)
+			case "token":
+				return ec.fieldContext_AdminTgBot_token(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminTgBot_enabled(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminTgBot_name(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminTgBot_description(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTgBot_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminTgBot_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgBot", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatMember_userId(ctx context.Context, field graphql.CollectedField, obj *db.TgChatMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatMember_userId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgChatMember().UserID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatMember_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatMember",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatMember_chatId(ctx context.Context, field graphql.CollectedField, obj *db.TgChatMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatMember_chatId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgChatMember().ChatID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatMember_chatId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatMember",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatMember_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.TgChatMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatMember_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatMember_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatMember_profile(ctx context.Context, field graphql.CollectedField, obj *db.TgChatMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatMember_profile(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgChatMember().Profile(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.TgUserProfile)
+	fc.Result = res
+	return ec.marshalOAdminTgUserProfile2ᚖtrip2gᚋinternalᚋdbᚐTgUserProfile(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatMember_profile(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatMember",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "sha256Hash":
+				return ec.fieldContext_AdminTgUserProfile_sha256Hash(ctx, field)
+			case "chatId":
+				return ec.fieldContext_AdminTgUserProfile_chatId(ctx, field)
+			case "botId":
+				return ec.fieldContext_AdminTgUserProfile_botId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTgUserProfile_createdAt(ctx, field)
+			case "firstName":
+				return ec.fieldContext_AdminTgUserProfile_firstName(ctx, field)
+			case "lastName":
+				return ec.fieldContext_AdminTgUserProfile_lastName(ctx, field)
+			case "username":
+				return ec.fieldContext_AdminTgUserProfile_username(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgUserProfile", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatMembersConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminTgChatMembersConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatMembersConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgChatMembersConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.TgChatMember)
+	fc.Result = res
+	return ec.marshalNAdminTgChatMember2ᚕtrip2gᚋinternalᚋdbᚐTgChatMemberᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatMembersConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatMembersConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "userId":
+				return ec.fieldContext_AdminTgChatMember_userId(ctx, field)
+			case "chatId":
+				return ec.fieldContext_AdminTgChatMember_chatId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTgChatMember_createdAt(ctx, field)
+			case "profile":
+				return ec.fieldContext_AdminTgChatMember_profile(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgChatMember", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatSubgraphAccess_id(ctx context.Context, field graphql.CollectedField, obj *db.TgChatSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatSubgraphAccess_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatSubgraphAccess_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatSubgraphAccess",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatSubgraphAccess_chatId(ctx context.Context, field graphql.CollectedField, obj *db.TgChatSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatSubgraphAccess_chatId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ChatID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatSubgraphAccess_chatId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatSubgraphAccess",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatSubgraphAccess_subgraphId(ctx context.Context, field graphql.CollectedField, obj *db.TgChatSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatSubgraphAccess_subgraphId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SubgraphID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatSubgraphAccess_subgraphId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatSubgraphAccess",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatSubgraphAccess_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.TgChatSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatSubgraphAccess_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatSubgraphAccess_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatSubgraphAccess",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatSubgraphAccess_chat(ctx context.Context, field graphql.CollectedField, obj *db.TgChatSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatSubgraphAccess_chat(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgChatSubgraphAccess().Chat(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.TgBotChat)
+	fc.Result = res
+	return ec.marshalNAdminTgBotChat2ᚖtrip2gᚋinternalᚋdbᚐTgBotChat(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatSubgraphAccess_chat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatSubgraphAccess",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTgBotChat_id(ctx, field)
+			case "chatType":
+				return ec.fieldContext_AdminTgBotChat_chatType(ctx, field)
+			case "chatTitle":
+				return ec.fieldContext_AdminTgBotChat_chatTitle(ctx, field)
+			case "addedAt":
+				return ec.fieldContext_AdminTgBotChat_addedAt(ctx, field)
+			case "removedAt":
+				return ec.fieldContext_AdminTgBotChat_removedAt(ctx, field)
+			case "memberCount":
+				return ec.fieldContext_AdminTgBotChat_memberCount(ctx, field)
+			case "subgraphAccesses":
+				return ec.fieldContext_AdminTgBotChat_subgraphAccesses(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgBotChat", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatSubgraphAccess_subgraph(ctx context.Context, field graphql.CollectedField, obj *db.TgChatSubgraphAccess) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatSubgraphAccess_subgraph(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgChatSubgraphAccess().Subgraph(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Subgraph)
+	fc.Result = res
+	return ec.marshalNAdminSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgraph(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatSubgraphAccess_subgraph(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatSubgraphAccess",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminSubgraph_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminSubgraph_name(ctx, field)
+			case "color":
+				return ec.fieldContext_AdminSubgraph_color(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminSubgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgChatSubgraphAccessesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminTgChatSubgraphAccessesConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgChatSubgraphAccessesConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgChatSubgraphAccessesConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.TgChatSubgraphAccess)
+	fc.Result = res
+	return ec.marshalNAdminTgChatSubgraphAccess2ᚕtrip2gᚋinternalᚋdbᚐTgChatSubgraphAccessᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgChatSubgraphAccessesConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgChatSubgraphAccessesConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_id(ctx, field)
+			case "chatId":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_chatId(ctx, field)
+			case "subgraphId":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_subgraphId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_createdAt(ctx, field)
+			case "chat":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_chat(ctx, field)
+			case "subgraph":
+				return ec.fieldContext_AdminTgChatSubgraphAccess_subgraph(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgChatSubgraphAccess", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgUserProfile_sha256Hash(ctx context.Context, field graphql.CollectedField, obj *db.TgUserProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgUserProfile_sha256Hash(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sha256Hash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgUserProfile_sha256Hash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgUserProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgUserProfile_chatId(ctx context.Context, field graphql.CollectedField, obj *db.TgUserProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgUserProfile_chatId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ChatID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgUserProfile_chatId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgUserProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgUserProfile_botId(ctx context.Context, field graphql.CollectedField, obj *db.TgUserProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgUserProfile_botId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BotID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgUserProfile_botId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgUserProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgUserProfile_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.TgUserProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgUserProfile_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgUserProfile_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgUserProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgUserProfile_firstName(ctx context.Context, field graphql.CollectedField, obj *db.TgUserProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgUserProfile_firstName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgUserProfile().FirstName(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgUserProfile_firstName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgUserProfile",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgUserProfile_lastName(ctx context.Context, field graphql.CollectedField, obj *db.TgUserProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgUserProfile_lastName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgUserProfile().LastName(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgUserProfile_lastName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgUserProfile",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTgUserProfile_username(ctx context.Context, field graphql.CollectedField, obj *db.TgUserProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgUserProfile_username(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTgUserProfile().Username(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgUserProfile_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgUserProfile",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -10102,6 +13029,66 @@ func (ec *executionContext) fieldContext_CreateReleasePayload_release(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateTgBotPayload_tgBot(ctx context.Context, field graphql.CollectedField, obj *model.CreateTgBotPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreateTgBotPayload_tgBot(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TgBot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.TgBot)
+	fc.Result = res
+	return ec.marshalNAdminTgBot2ᚖtrip2gᚋinternalᚋdbᚐTgBot(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreateTgBotPayload_tgBot(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateTgBotPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTgBot_id(ctx, field)
+			case "token":
+				return ec.fieldContext_AdminTgBot_token(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminTgBot_enabled(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminTgBot_name(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminTgBot_description(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTgBot_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminTgBot_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgBot", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _DeleteNotFoundIgnoredPatternPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteNotFoundIgnoredPatternPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_DeleteNotFoundIgnoredPatternPayload_deletedId(ctx, field)
 	if err != nil {
@@ -10983,6 +13970,14 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_makeReleaseLive(ctx, field)
 			case "updateNoteGraphPositions":
 				return ec.fieldContext_AdminMutation_updateNoteGraphPositions(ctx, field)
+			case "createTgBot":
+				return ec.fieldContext_AdminMutation_createTgBot(ctx, field)
+			case "updateTgBot":
+				return ec.fieldContext_AdminMutation_updateTgBot(ctx, field)
+			case "addTgChatSubgraphAccess":
+				return ec.fieldContext_AdminMutation_addTgChatSubgraphAccess(ctx, field)
+			case "removeTgChatSubgraphAccess":
+				return ec.fieldContext_AdminMutation_removeTgChatSubgraphAccess(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -12671,6 +15666,14 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allNotFoundPaths(ctx, field)
 			case "allNotFoundIgnoredPatterns":
 				return ec.fieldContext_AdminQuery_allNotFoundIgnoredPatterns(ctx, field)
+			case "allTgBots":
+				return ec.fieldContext_AdminQuery_allTgBots(ctx, field)
+			case "tgBotChats":
+				return ec.fieldContext_AdminQuery_tgBotChats(ctx, field)
+			case "tgChatSubgraphAccesses":
+				return ec.fieldContext_AdminQuery_tgChatSubgraphAccesses(ctx, field)
+			case "tgChatMembers":
+				return ec.fieldContext_AdminQuery_tgChatMembers(ctx, field)
 			case "apiKeyLogs":
 				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "subgraph":
@@ -12685,6 +15688,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_purchase(ctx, field)
 			case "redirect":
 				return ec.fieldContext_AdminQuery_redirect(ctx, field)
+			case "tgBot":
+				return ec.fieldContext_AdminQuery_tgBot(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -12878,6 +15883,50 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RemoveTgChatSubgraphAccessPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.RemoveTgChatSubgraphAccessPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RemoveTgChatSubgraphAccessPayload_deletedId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeletedID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RemoveTgChatSubgraphAccessPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RemoveTgChatSubgraphAccessPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
 		},
 	}
 	return fc, nil
@@ -13718,6 +16767,66 @@ func (ec *executionContext) fieldContext_UpdateSubgraphPayload_subgraph(_ contex
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminSubgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateTgBotPayload_tgBot(ctx context.Context, field graphql.CollectedField, obj *model.UpdateTgBotPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpdateTgBotPayload_tgBot(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TgBot, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.TgBot)
+	fc.Result = res
+	return ec.marshalNAdminTgBot2ᚖtrip2gᚋinternalᚋdbᚐTgBot(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpdateTgBotPayload_tgBot(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateTgBotPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTgBot_id(ctx, field)
+			case "token":
+				return ec.fieldContext_AdminTgBot_token(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminTgBot_enabled(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminTgBot_name(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminTgBot_description(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTgBot_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminTgBot_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgBot", field.Name)
 		},
 	}
 	return fc, nil
@@ -16626,6 +19735,135 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAddTgChatSubgraphAccessInput(ctx context.Context, obj any) (model.AddTgChatSubgraphAccessInput, error) {
+	var it model.AddTgChatSubgraphAccessInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"chatId", "subgraphId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "chatId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("chatId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChatID = data
+		case "subgraphId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubgraphID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAdminTgBotChatsFilterInput(ctx context.Context, obj any) (model.AdminTgBotChatsFilterInput, error) {
+	var it model.AdminTgBotChatsFilterInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"botId", "includeRemoved"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "botId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("botId"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BotID = data
+		case "includeRemoved":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeRemoved"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludeRemoved = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAdminTgChatMembersFilterInput(ctx context.Context, obj any) (model.AdminTgChatMembersFilterInput, error) {
+	var it model.AdminTgChatMembersFilterInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"chatId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "chatId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("chatId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChatID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAdminTgChatSubgraphAccessesFilterInput(ctx context.Context, obj any) (model.AdminTgChatSubgraphAccessesFilterInput, error) {
+	var it model.AdminTgChatSubgraphAccessesFilterInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"chatId", "subgraphId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "chatId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("chatId"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChatID = data
+		case "subgraphId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphId"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubgraphID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputApiKeyLogsFilterInput(ctx context.Context, obj any) (model.APIKeyLogsFilterInput, error) {
 	var it model.APIKeyLogsFilterInput
 	asMap := map[string]any{}
@@ -16926,6 +20164,47 @@ func (ec *executionContext) unmarshalInputCreateReleaseInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateTgBotInput(ctx context.Context, obj any) (model.CreateTgBotInput, error) {
+	var it model.CreateTgBotInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"token", "name", "description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "token":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Token = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDeleteNotFoundIgnoredPatternInput(ctx context.Context, obj any) (model.DeleteNotFoundIgnoredPatternInput, error) {
 	var it model.DeleteNotFoundIgnoredPatternInput
 	asMap := map[string]any{}
@@ -17150,6 +20429,33 @@ func (ec *executionContext) unmarshalInputPushNotesInput(ctx context.Context, ob
 				return it, err
 			}
 			it.Updates = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRemoveTgChatSubgraphAccessInput(ctx context.Context, obj any) (model.RemoveTgChatSubgraphAccessInput, error) {
+	var it model.RemoveTgChatSubgraphAccessInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
 		}
 	}
 
@@ -17524,6 +20830,47 @@ func (ec *executionContext) unmarshalInputUpdateSubgraphInput(ctx context.Contex
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateTgBotInput(ctx context.Context, obj any) (model.UpdateTgBotInput, error) {
+	var it model.UpdateTgBotInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "description", "enabled"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateUserSubgraphAccessInput(ctx context.Context, obj any) (updateusersubgraphaccess.Request, error) {
 	var it updateusersubgraphaccess.Request
 	asMap := map[string]any{}
@@ -17623,6 +20970,29 @@ func (ec *executionContext) unmarshalInputUploadNoteAssetInput(ctx context.Conte
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
+
+func (ec *executionContext) _AddTgChatSubgraphAccessOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.AddTgChatSubgraphAccessOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.AddTgChatSubgraphAccessPayload:
+		return ec._AddTgChatSubgraphAccessPayload(ctx, sel, &obj)
+	case *model.AddTgChatSubgraphAccessPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AddTgChatSubgraphAccessPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
 
 func (ec *executionContext) _BanUserOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.BanUserOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
@@ -17785,6 +21155,29 @@ func (ec *executionContext) _CreateReleaseOrErrorPayload(ctx context.Context, se
 	}
 }
 
+func (ec *executionContext) _CreateTgBotOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateTgBotOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateTgBotPayload:
+		return ec._CreateTgBotPayload(ctx, sel, &obj)
+	case *model.CreateTgBotPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateTgBotPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _DeleteNotFoundIgnoredPatternOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteNotFoundIgnoredPatternOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -17911,6 +21304,29 @@ func (ec *executionContext) _PushNotesOrErrorPayload(ctx context.Context, sel as
 			return graphql.Null
 		}
 		return ec._PushNotesPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _RemoveTgChatSubgraphAccessOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RemoveTgChatSubgraphAccessOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RemoveTgChatSubgraphAccessPayload:
+		return ec._RemoveTgChatSubgraphAccessPayload(ctx, sel, &obj)
+	case *model.RemoveTgChatSubgraphAccessPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RemoveTgChatSubgraphAccessPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -18153,6 +21569,29 @@ func (ec *executionContext) _UpdateSubgraphOrErrorPayload(ctx context.Context, s
 	}
 }
 
+func (ec *executionContext) _UpdateTgBotOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateTgBotOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UpdateTgBotPayload:
+		return ec._UpdateTgBotPayload(ctx, sel, &obj)
+	case *model.UpdateTgBotPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateTgBotPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _UpdateUserSubgraphAccessOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateUserSubgraphAccessOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -18202,6 +21641,45 @@ func (ec *executionContext) _UploadNoteAssetOrErrorPayload(ctx context.Context, 
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var addTgChatSubgraphAccessPayloadImplementors = []string{"AddTgChatSubgraphAccessPayload", "AddTgChatSubgraphAccessOrErrorPayload"}
+
+func (ec *executionContext) _AddTgChatSubgraphAccessPayload(ctx context.Context, sel ast.SelectionSet, obj *model.AddTgChatSubgraphAccessPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, addTgChatSubgraphAccessPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AddTgChatSubgraphAccessPayload")
+		case "chatSubgraphAccess":
+			out.Values[i] = ec._AddTgChatSubgraphAccessPayload_chatSubgraphAccess(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
 
 var adminImplementors = []string{"Admin"}
 
@@ -19460,6 +22938,150 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_updateNoteGraphPositions(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createTgBot":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createTgBot(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "updateTgBot":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_updateTgBot(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "addTgChatSubgraphAccess":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_addTgChatSubgraphAccess(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "removeTgChatSubgraphAccess":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_removeTgChatSubgraphAccess(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -20865,6 +24487,150 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allTgBots":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allTgBots(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "tgBotChats":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_tgBotChats(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "tgChatSubgraphAccesses":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_tgChatSubgraphAccesses(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "tgChatMembers":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_tgChatMembers(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "apiKeyLogs":
 			field := field
 
@@ -21076,6 +24842,39 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_redirect(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "tgBot":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_tgBot(ctx, field, obj)
 				return res
 			}
 
@@ -21624,6 +25423,1058 @@ func (ec *executionContext) _AdminSubgraphsConnection(ctx context.Context, sel a
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTgBotImplementors = []string{"AdminTgBot"}
+
+func (ec *executionContext) _AdminTgBot(ctx context.Context, sel ast.SelectionSet, obj *db.TgBot) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTgBotImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTgBot")
+		case "id":
+			out.Values[i] = ec._AdminTgBot_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "token":
+			out.Values[i] = ec._AdminTgBot_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "enabled":
+			out.Values[i] = ec._AdminTgBot_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgBot_name(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "description":
+			out.Values[i] = ec._AdminTgBot_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminTgBot_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgBot_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTgBotChatImplementors = []string{"AdminTgBotChat"}
+
+func (ec *executionContext) _AdminTgBotChat(ctx context.Context, sel ast.SelectionSet, obj *db.TgBotChat) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTgBotChatImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTgBotChat")
+		case "id":
+			out.Values[i] = ec._AdminTgBotChat_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "chatType":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgBotChat_chatType(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "chatTitle":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgBotChat_chatTitle(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "addedAt":
+			out.Values[i] = ec._AdminTgBotChat_addedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "removedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgBotChat_removedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "memberCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgBotChat_memberCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "subgraphAccesses":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgBotChat_subgraphAccesses(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTgBotChatsConnectionImplementors = []string{"AdminTgBotChatsConnection"}
+
+func (ec *executionContext) _AdminTgBotChatsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminTgBotChatsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTgBotChatsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTgBotChatsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgBotChatsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTgBotsConnectionImplementors = []string{"AdminTgBotsConnection"}
+
+func (ec *executionContext) _AdminTgBotsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminTgBotsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTgBotsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTgBotsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgBotsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTgChatMemberImplementors = []string{"AdminTgChatMember"}
+
+func (ec *executionContext) _AdminTgChatMember(ctx context.Context, sel ast.SelectionSet, obj *db.TgChatMember) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTgChatMemberImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTgChatMember")
+		case "userId":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgChatMember_userId(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "chatId":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgChatMember_chatId(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._AdminTgChatMember_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "profile":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgChatMember_profile(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTgChatMembersConnectionImplementors = []string{"AdminTgChatMembersConnection"}
+
+func (ec *executionContext) _AdminTgChatMembersConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminTgChatMembersConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTgChatMembersConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTgChatMembersConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgChatMembersConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTgChatSubgraphAccessImplementors = []string{"AdminTgChatSubgraphAccess"}
+
+func (ec *executionContext) _AdminTgChatSubgraphAccess(ctx context.Context, sel ast.SelectionSet, obj *db.TgChatSubgraphAccess) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTgChatSubgraphAccessImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTgChatSubgraphAccess")
+		case "id":
+			out.Values[i] = ec._AdminTgChatSubgraphAccess_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "chatId":
+			out.Values[i] = ec._AdminTgChatSubgraphAccess_chatId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "subgraphId":
+			out.Values[i] = ec._AdminTgChatSubgraphAccess_subgraphId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminTgChatSubgraphAccess_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "chat":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgChatSubgraphAccess_chat(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "subgraph":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgChatSubgraphAccess_subgraph(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTgChatSubgraphAccessesConnectionImplementors = []string{"AdminTgChatSubgraphAccessesConnection"}
+
+func (ec *executionContext) _AdminTgChatSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminTgChatSubgraphAccessesConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTgChatSubgraphAccessesConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTgChatSubgraphAccessesConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgChatSubgraphAccessesConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTgUserProfileImplementors = []string{"AdminTgUserProfile"}
+
+func (ec *executionContext) _AdminTgUserProfile(ctx context.Context, sel ast.SelectionSet, obj *db.TgUserProfile) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTgUserProfileImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTgUserProfile")
+		case "sha256Hash":
+			out.Values[i] = ec._AdminTgUserProfile_sha256Hash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "chatId":
+			out.Values[i] = ec._AdminTgUserProfile_chatId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "botId":
+			out.Values[i] = ec._AdminTgUserProfile_botId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminTgUserProfile_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "firstName":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgUserProfile_firstName(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "lastName":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgUserProfile_lastName(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "username":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTgUserProfile_username(ctx, field, obj)
 				return res
 			}
 
@@ -22437,6 +27288,45 @@ func (ec *executionContext) _CreateReleasePayload(ctx context.Context, sel ast.S
 	return out
 }
 
+var createTgBotPayloadImplementors = []string{"CreateTgBotPayload", "CreateTgBotOrErrorPayload"}
+
+func (ec *executionContext) _CreateTgBotPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateTgBotPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createTgBotPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateTgBotPayload")
+		case "tgBot":
+			out.Values[i] = ec._CreateTgBotPayload_tgBot(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var deleteNotFoundIgnoredPatternPayloadImplementors = []string{"DeleteNotFoundIgnoredPatternPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload"}
 
 func (ec *executionContext) _DeleteNotFoundIgnoredPatternPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteNotFoundIgnoredPatternPayload) graphql.Marshaler {
@@ -22554,7 +27444,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -23759,6 +28649,45 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
+var removeTgChatSubgraphAccessPayloadImplementors = []string{"RemoveTgChatSubgraphAccessPayload", "RemoveTgChatSubgraphAccessOrErrorPayload"}
+
+func (ec *executionContext) _RemoveTgChatSubgraphAccessPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RemoveTgChatSubgraphAccessPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, removeTgChatSubgraphAccessPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RemoveTgChatSubgraphAccessPayload")
+		case "deletedId":
+			out.Values[i] = ec._RemoveTgChatSubgraphAccessPayload_deletedId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var requestEmailSignInCodePayloadImplementors = []string{"RequestEmailSignInCodePayload", "RequestEmailSignInCodeOrErrorPayload"}
 
 func (ec *executionContext) _RequestEmailSignInCodePayload(ctx context.Context, sel ast.SelectionSet, obj *model.RequestEmailSignInCodePayload) graphql.Marshaler {
@@ -24311,6 +29240,45 @@ func (ec *executionContext) _UpdateSubgraphPayload(ctx context.Context, sel ast.
 			out.Values[i] = graphql.MarshalString("UpdateSubgraphPayload")
 		case "subgraph":
 			out.Values[i] = ec._UpdateSubgraphPayload_subgraph(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var updateTgBotPayloadImplementors = []string{"UpdateTgBotPayload", "UpdateTgBotOrErrorPayload"}
+
+func (ec *executionContext) _UpdateTgBotPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateTgBotPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateTgBotPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateTgBotPayload")
+		case "tgBot":
+			out.Values[i] = ec._UpdateTgBotPayload_tgBot(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -25311,6 +30279,21 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAddTgChatSubgraphAccessInput2trip2gᚋinternalᚋgraphᚋmodelᚐAddTgChatSubgraphAccessInput(ctx context.Context, v any) (model.AddTgChatSubgraphAccessInput, error) {
+	res, err := ec.unmarshalInputAddTgChatSubgraphAccessInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAddTgChatSubgraphAccessOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐAddTgChatSubgraphAccessOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.AddTgChatSubgraphAccessOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AddTgChatSubgraphAccessOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdmin2trip2gᚋinternalᚋdbᚐAdmin(ctx context.Context, sel ast.SelectionSet, v db.Admin) graphql.Marshaler {
 	return ec._Admin(ctx, sel, &v)
 }
@@ -26043,6 +31026,299 @@ func (ec *executionContext) marshalNAdminSubgraphsConnection2ᚖtrip2gᚋinterna
 	return ec._AdminSubgraphsConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminTgBot2trip2gᚋinternalᚋdbᚐTgBot(ctx context.Context, sel ast.SelectionSet, v db.TgBot) graphql.Marshaler {
+	return ec._AdminTgBot(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminTgBot2ᚕtrip2gᚋinternalᚋdbᚐTgBotᚄ(ctx context.Context, sel ast.SelectionSet, v []db.TgBot) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminTgBot2trip2gᚋinternalᚋdbᚐTgBot(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminTgBot2ᚖtrip2gᚋinternalᚋdbᚐTgBot(ctx context.Context, sel ast.SelectionSet, v *db.TgBot) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminTgBot(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminTgBotChat2trip2gᚋinternalᚋdbᚐTgBotChat(ctx context.Context, sel ast.SelectionSet, v db.TgBotChat) graphql.Marshaler {
+	return ec._AdminTgBotChat(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminTgBotChat2ᚕtrip2gᚋinternalᚋdbᚐTgBotChatᚄ(ctx context.Context, sel ast.SelectionSet, v []db.TgBotChat) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminTgBotChat2trip2gᚋinternalᚋdbᚐTgBotChat(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminTgBotChat2ᚖtrip2gᚋinternalᚋdbᚐTgBotChat(ctx context.Context, sel ast.SelectionSet, v *db.TgBotChat) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminTgBotChat(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminTgBotChatsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTgBotChatsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminTgBotChatsConnection) graphql.Marshaler {
+	return ec._AdminTgBotChatsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminTgBotChatsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTgBotChatsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminTgBotChatsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminTgBotChatsConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAdminTgBotChatsFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTgBotChatsFilterInput(ctx context.Context, v any) (model.AdminTgBotChatsFilterInput, error) {
+	res, err := ec.unmarshalInputAdminTgBotChatsFilterInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAdminTgBotsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTgBotsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminTgBotsConnection) graphql.Marshaler {
+	return ec._AdminTgBotsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminTgBotsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTgBotsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminTgBotsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminTgBotsConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminTgChatMember2trip2gᚋinternalᚋdbᚐTgChatMember(ctx context.Context, sel ast.SelectionSet, v db.TgChatMember) graphql.Marshaler {
+	return ec._AdminTgChatMember(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminTgChatMember2ᚕtrip2gᚋinternalᚋdbᚐTgChatMemberᚄ(ctx context.Context, sel ast.SelectionSet, v []db.TgChatMember) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminTgChatMember2trip2gᚋinternalᚋdbᚐTgChatMember(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminTgChatMembersConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTgChatMembersConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminTgChatMembersConnection) graphql.Marshaler {
+	return ec._AdminTgChatMembersConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminTgChatMembersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTgChatMembersConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminTgChatMembersConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminTgChatMembersConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAdminTgChatMembersFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTgChatMembersFilterInput(ctx context.Context, v any) (model.AdminTgChatMembersFilterInput, error) {
+	res, err := ec.unmarshalInputAdminTgChatMembersFilterInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAdminTgChatSubgraphAccess2trip2gᚋinternalᚋdbᚐTgChatSubgraphAccess(ctx context.Context, sel ast.SelectionSet, v db.TgChatSubgraphAccess) graphql.Marshaler {
+	return ec._AdminTgChatSubgraphAccess(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminTgChatSubgraphAccess2ᚕtrip2gᚋinternalᚋdbᚐTgChatSubgraphAccessᚄ(ctx context.Context, sel ast.SelectionSet, v []db.TgChatSubgraphAccess) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminTgChatSubgraphAccess2trip2gᚋinternalᚋdbᚐTgChatSubgraphAccess(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminTgChatSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐTgChatSubgraphAccess(ctx context.Context, sel ast.SelectionSet, v *db.TgChatSubgraphAccess) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminTgChatSubgraphAccess(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminTgChatSubgraphAccessesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTgChatSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminTgChatSubgraphAccessesConnection) graphql.Marshaler {
+	return ec._AdminTgChatSubgraphAccessesConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminTgChatSubgraphAccessesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTgChatSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminTgChatSubgraphAccessesConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminTgChatSubgraphAccessesConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAdminTgChatSubgraphAccessesFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTgChatSubgraphAccessesFilterInput(ctx context.Context, v any) (model.AdminTgChatSubgraphAccessesFilterInput, error) {
+	res, err := ec.unmarshalInputAdminTgChatSubgraphAccessesFilterInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNAdminUser2trip2gᚋinternalᚋdbᚐUser(ctx context.Context, sel ast.SelectionSet, v db.User) graphql.Marshaler {
 	return ec._AdminUser(ctx, sel, &v)
 }
@@ -26315,6 +31591,21 @@ func (ec *executionContext) marshalNCreateReleaseOrErrorPayload2trip2gᚋinterna
 		return graphql.Null
 	}
 	return ec._CreateReleaseOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateTgBotInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateTgBotInput(ctx context.Context, v any) (model.CreateTgBotInput, error) {
+	res, err := ec.unmarshalInputCreateTgBotInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateTgBotOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateTgBotOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateTgBotOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateTgBotOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDeleteNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteNotFoundIgnoredPatternInput(ctx context.Context, v any) (model.DeleteNotFoundIgnoredPatternInput, error) {
@@ -26926,6 +32217,21 @@ func (ec *executionContext) marshalNPushedNoteAsset2ᚕtrip2gᚋinternalᚋgraph
 	return ret
 }
 
+func (ec *executionContext) unmarshalNRemoveTgChatSubgraphAccessInput2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveTgChatSubgraphAccessInput(ctx context.Context, v any) (model.RemoveTgChatSubgraphAccessInput, error) {
+	res, err := ec.unmarshalInputRemoveTgChatSubgraphAccessInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRemoveTgChatSubgraphAccessOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveTgChatSubgraphAccessOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RemoveTgChatSubgraphAccessOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RemoveTgChatSubgraphAccessOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeInput(ctx context.Context, v any) (model.RequestEmailSignInCodeInput, error) {
 	res, err := ec.unmarshalInputRequestEmailSignInCodeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -27219,6 +32525,21 @@ func (ec *executionContext) marshalNUpdateSubgraphOrErrorPayload2trip2gᚋintern
 		return graphql.Null
 	}
 	return ec._UpdateSubgraphOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateTgBotInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateTgBotInput(ctx context.Context, v any) (model.UpdateTgBotInput, error) {
+	res, err := ec.unmarshalInputUpdateTgBotInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateTgBotOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateTgBotOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateTgBotOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateTgBotOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateUserSubgraphAccessInput2trip2gᚋinternalᚋcaseᚋadminᚋupdateusersubgraphaccessᚐRequest(ctx context.Context, v any) (updateusersubgraphaccess.Request, error) {
@@ -27673,6 +32994,20 @@ func (ec *executionContext) marshalOAdminSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSu
 		return graphql.Null
 	}
 	return ec._AdminSubgraph(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminTgBot2ᚖtrip2gᚋinternalᚋdbᚐTgBot(ctx context.Context, sel ast.SelectionSet, v *db.TgBot) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminTgBot(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminTgUserProfile2ᚖtrip2gᚋinternalᚋdbᚐTgUserProfile(ctx context.Context, sel ast.SelectionSet, v *db.TgUserProfile) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminTgUserProfile(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx context.Context, sel ast.SelectionSet, v *db.User) graphql.Marshaler {
