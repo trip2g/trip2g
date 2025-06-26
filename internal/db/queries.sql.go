@@ -3120,7 +3120,7 @@ values (?, ?, ?, ?, ?)
 on conflict(chat_id, bot_id) do update set
   value = excluded.value,
   data = excluded.data,
-  update_count = excluded.update_count + 1,
+  update_count = excluded.update_count,
   updated_at = current_timestamp
 `
 

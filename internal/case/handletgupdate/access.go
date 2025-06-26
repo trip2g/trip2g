@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"trip2g/internal/db"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 const (
@@ -37,7 +39,22 @@ func (req *request) handleGroupAccess(ctx context.Context, args string) error {
 		return req.SendMessage("Error adding you to group access. Please try again later.")
 	}
 
-	return req.SendMessage(fmt.Sprintf("✅ Access granted! You now have access to premium content from group %d.", groupID))
+	text := fmt.Sprintf("✅ Access granted! You now have access to premium content from group %d.", groupID)
+	url := "https://trip2g.com" // TODO: generate proper auth URL
+
+	msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, text)
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("Получить доступ", url),
+		),
+	)
+
+	_, err = req.env.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send message: %w", err)
+	}
+
+	return nil
 }
 
 func (req *request) handleMyChatMember(ctx context.Context) error {

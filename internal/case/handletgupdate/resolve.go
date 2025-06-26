@@ -60,6 +60,8 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 		hash := env.CalculateSha256(fmt.Sprintf("%s%s%s", user.FirstName, user.LastName, user.UserName))
 
 		err := env.InsertTgUserProfile(ctx, db.InsertTgUserProfileParams{
+			ChatID:     update.Message.Chat.ID,
+			BotID:      env.BotID(),
 			Sha256Hash: hash,
 			FirstName:  toNullString(user.FirstName),
 			LastName:   toNullString(user.LastName),
@@ -200,7 +202,7 @@ func (req *request) UserState(ctx context.Context) (*UserState, error) {
 					QuizStates: make(map[string]QuizState),
 				},
 				ChatID:      req.chatID,
-				Value:       "",
+				Value:       "pending",
 				UpdateCount: 0,
 			}
 			return req.userState, nil
@@ -209,7 +211,7 @@ func (req *request) UserState(ctx context.Context) (*UserState, error) {
 	}
 
 	var userStateData UserStateData
-	err = json.Unmarshal([]byte(data.Value), &userStateData)
+	err = json.Unmarshal([]byte(data.Data), &userStateData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal user state: %w", err)
 	}
@@ -239,7 +241,8 @@ func (req *request) updateUserState(ctx context.Context) error {
 	err = req.env.UpsertTgUserState(ctx, db.UpsertTgUserStateParams{
 		BotID:       req.env.BotID(),
 		ChatID:      req.userState.ChatID,
-		Value:       string(data),
+		Value:       req.userState.Value,
+		Data:        string(data),
 		UpdateCount: req.userState.UpdateCount + 1,
 	})
 	if err != nil {
