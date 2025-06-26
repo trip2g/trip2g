@@ -565,3 +565,16 @@ select *
  where bot_id = ?
    and chat_id = ?
  limit 1;
+
+-- name: UpsertTgBotChat :exec
+insert into tg_bot_chats (id, chat_type, chat_title)
+values (?, ?, ?)
+on conflict(id) do update set
+  chat_type = excluded.chat_type,
+  chat_title = excluded.chat_title,
+  removed_at = null;
+
+-- name: MarkTgBotChatRemoved :exec
+update tg_bot_chats
+set removed_at = current_timestamp
+where id = ?;

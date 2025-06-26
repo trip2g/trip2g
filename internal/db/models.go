@@ -230,6 +230,14 @@ type TgBot struct {
 	CreatedBy   int64          `json:"created_by"`
 }
 
+type TgBotChat struct {
+	ID        int64       `json:"id"`
+	ChatType  interface{} `json:"chat_type"`
+	ChatTitle interface{} `json:"chat_title"`
+	AddedAt   time.Time   `json:"added_at"`
+	RemovedAt interface{} `json:"removed_at"`
+}
+
 type TgUserProfile struct {
 	Sha256Hash string         `json:"sha256_hash"`
 	ChatID     int64          `json:"chat_id"`

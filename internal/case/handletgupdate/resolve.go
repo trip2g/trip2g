@@ -21,6 +21,8 @@ type Env interface {
 	TgUserStateByBotIDAndChatID(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error)
 	InsertTgUserProfile(ctx context.Context, arg db.InsertTgUserProfileParams) error
 	UpsertTgUserState(ctx context.Context, arg db.UpsertTgUserStateParams) error
+	UpsertTgBotChat(ctx context.Context, arg db.UpsertTgBotChatParams) error
+	MarkTgBotChatRemoved(ctx context.Context, id int64) error
 	CalculateSha256(s string) string
 	PublicURL() string
 	LatestNoteViews() *model.NoteViews // TODO: read LiveNoteViews for production users
@@ -115,6 +117,11 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 		}
 	}()
 
+	// Handle bot being added/removed from chats
+	if update.MyChatMember != nil {
+		return req.handleMyChatMember(ctx)
+	}
+
 	if update.CallbackQuery != nil {
 		return req.handleCallbackQuery(ctx)
 	}
@@ -123,6 +130,60 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 		return req.handleCommands(ctx)
 	}
 
+	return nil
+}
+
+func (req *request) handleMyChatMember(ctx context.Context) error {
+	log := req.env.Logger()
+	chatMember := req.update.MyChatMember
+	
+	// Only track channels, groups, and supergroups
+	chat := chatMember.Chat
+	if chat.Type != "channel" && chat.Type != "group" && chat.Type != "supergroup" {
+		return nil
+	}
+	
+	newStatus := chatMember.NewChatMember.Status
+	oldStatus := chatMember.OldChatMember.Status
+	
+	log.Info("bot chat member status changed",
+		"chat_id", chat.ID,
+		"chat_type", chat.Type,
+		"chat_title", chat.Title,
+		"old_status", oldStatus,
+		"new_status", newStatus,
+	)
+	
+	// Bot was added to the chat
+	if (newStatus == "member" || newStatus == "administrator") && 
+	   (oldStatus == "left" || oldStatus == "kicked") {
+		
+		err := req.env.UpsertTgBotChat(ctx, db.UpsertTgBotChatParams{
+			ID:        chat.ID,
+			ChatType:  chat.Type,
+			ChatTitle: chat.Title,
+		})
+		if err != nil {
+			log.Error("failed to upsert bot chat", "error", err, "chat_id", chat.ID)
+			return fmt.Errorf("failed to upsert bot chat: %w", err)
+		}
+		
+		log.Info("bot added to chat", "chat_id", chat.ID, "chat_title", chat.Title)
+	}
+	
+	// Bot was removed from the chat
+	if (newStatus == "left" || newStatus == "kicked") && 
+	   (oldStatus == "member" || oldStatus == "administrator") {
+		
+		err := req.env.MarkTgBotChatRemoved(ctx, chat.ID)
+		if err != nil {
+			log.Error("failed to mark bot chat as removed", "error", err, "chat_id", chat.ID)
+			return fmt.Errorf("failed to mark bot chat as removed: %w", err)
+		}
+		
+		log.Info("bot removed from chat", "chat_id", chat.ID, "chat_title", chat.Title)
+	}
+	
 	return nil
 }
 

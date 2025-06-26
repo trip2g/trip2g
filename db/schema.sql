@@ -244,6 +244,13 @@ CREATE TABLE tg_user_profiles (
   username text
 );
 CREATE INDEX tg_user_profiles_chat_id_idx on tg_user_profiles(chat_id);
+CREATE TABLE tg_bot_chats (
+  id int primary key,
+  chat_type string not null, -- channel, group, supergroup
+  chat_title string not null,
+  added_at datetime not null default current_timestamp,
+  removed_at datetime null
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -276,4 +283,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250605090619'),
   ('20250606084510'),
   ('20250623041230'),
-  ('20250623063206');
+  ('20250623063206'),
+  ('20250626035523');

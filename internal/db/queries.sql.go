@@ -1975,6 +1975,17 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 	return items, nil
 }
 
+const markTgBotChatRemoved = `-- name: MarkTgBotChatRemoved :exec
+update tg_bot_chats
+set removed_at = current_timestamp
+where id = ?
+`
+
+func (q *Queries) MarkTgBotChatRemoved(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, markTgBotChatRemoved, id)
+	return err
+}
+
 const notFoundIgnoredPatternByID = `-- name: NotFoundIgnoredPatternByID :one
 select id, pattern, created_at, created_by from not_found_ignored_patterns where id = ?
 `
@@ -2572,6 +2583,26 @@ type UpsertNoteVersionAssetParams struct {
 
 func (q *Queries) UpsertNoteVersionAsset(ctx context.Context, arg UpsertNoteVersionAssetParams) error {
 	_, err := q.db.ExecContext(ctx, upsertNoteVersionAsset, arg.AssetID, arg.VersionID, arg.Path)
+	return err
+}
+
+const upsertTgBotChat = `-- name: UpsertTgBotChat :exec
+insert into tg_bot_chats (id, chat_type, chat_title)
+values (?, ?, ?)
+on conflict(id) do update set
+  chat_type = excluded.chat_type,
+  chat_title = excluded.chat_title,
+  removed_at = null
+`
+
+type UpsertTgBotChatParams struct {
+	ID        int64       `json:"id"`
+	ChatType  interface{} `json:"chat_type"`
+	ChatTitle interface{} `json:"chat_title"`
+}
+
+func (q *Queries) UpsertTgBotChat(ctx context.Context, arg UpsertTgBotChatParams) error {
+	_, err := q.db.ExecContext(ctx, upsertTgBotChat, arg.ID, arg.ChatType, arg.ChatTitle)
 	return err
 }
 
