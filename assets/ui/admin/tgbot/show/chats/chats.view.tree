@@ -1,0 +1,30 @@
+$trip2g_admin_tgbot_show_chats $mol_view
+	bot_id 0
+	sub /
+		<= Rows $mol_list
+			item_width_min* 200
+			item_height_min* 96
+			rows <= data_rows /$mol_view
+				<= Row*0 $mol_row
+					sub <= row_content* /
+						<= Id_labeler* $mol_labeler
+							title \ID
+							Content <= Id* $trip2g_admin_cell
+								content <= row_id_string*? \
+						<= ChatType_labeler* $mol_labeler
+							title \Type
+							Content <= ChatType* $trip2g_admin_cell
+								content <= row_chat_type*? \
+						<= ChatTitle_labeler* $mol_labeler
+							title \Title
+							Content <= ChatTitle* $trip2g_admin_cell
+								content <= row_chat_title*? \
+						<= MemberCount_labeler* $mol_labeler
+							title \Members
+							Content <= MemberCount* $trip2g_admin_cell
+								content <= row_member_count*? \
+						<= Subgraphs_labeler* $mol_labeler
+							title \Subgraphs
+							Content <= Subgraphs* $trip2g_admin_cell
+								content <= row_subgraph_accesses*? \
+

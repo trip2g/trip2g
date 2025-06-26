@@ -8,4 +8,5 @@ $trip2g_admin_tgbot_show $mol_page
 	UpdateForm $trip2g_admin_tgbot_update
 		tgbot_id <= tgbot_id
 	body /
-		\TODO
+		<= Chats $trip2g_admin_tgbot_show_chats
+			bot_id <= tgbot_id
