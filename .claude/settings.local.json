@@ -24,5 +24,6 @@
       "Bash(sqlite3:*)"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": false
 }

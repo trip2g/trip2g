@@ -412,7 +412,7 @@ func (q *Queries) AllTgBotChats(ctx context.Context, includeRemoved interface{})
 }
 
 const allTgBots = `-- name: AllTgBots :many
-select id, token, enabled, name, description, created_at, created_by from tg_bots
+select id, token, enabled, description, created_at, created_by, name from tg_bots
 order by created_at desc
 `
 
@@ -429,10 +429,10 @@ func (q *Queries) AllTgBots(ctx context.Context) ([]TgBot, error) {
 			&i.ID,
 			&i.Token,
 			&i.Enabled,
-			&i.Name,
 			&i.Description,
 			&i.CreatedAt,
 			&i.CreatedBy,
+			&i.Name,
 		); err != nil {
 			return nil, err
 		}
@@ -752,7 +752,7 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 }
 
 const getTgBot = `-- name: GetTgBot :one
-select id, token, enabled, name, description, created_at, created_by from tg_bots
+select id, token, enabled, description, created_at, created_by, name from tg_bots
 where id = ?
 `
 
@@ -763,10 +763,10 @@ func (q *Queries) GetTgBot(ctx context.Context, id int64) (TgBot, error) {
 		&i.ID,
 		&i.Token,
 		&i.Enabled,
-		&i.Name,
 		&i.Description,
 		&i.CreatedAt,
 		&i.CreatedBy,
+		&i.Name,
 	)
 	return i, err
 }
@@ -1259,14 +1259,14 @@ func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
 const insertTgBot = `-- name: InsertTgBot :one
 insert into tg_bots (token, name, description, created_by)
 values (?, ?, ?, ?)
-returning id, token, enabled, name, description, created_at, created_by
+returning id, token, enabled, description, created_at, created_by, name
 `
 
 type InsertTgBotParams struct {
-	Token       string         `json:"token"`
-	Name        sql.NullString `json:"name"`
-	Description string         `json:"description"`
-	CreatedBy   int64          `json:"created_by"`
+	Token       string `json:"token"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	CreatedBy   int64  `json:"created_by"`
 }
 
 func (q *Queries) InsertTgBot(ctx context.Context, arg InsertTgBotParams) (TgBot, error) {
@@ -1281,10 +1281,10 @@ func (q *Queries) InsertTgBot(ctx context.Context, arg InsertTgBotParams) (TgBot
 		&i.ID,
 		&i.Token,
 		&i.Enabled,
-		&i.Name,
 		&i.Description,
 		&i.CreatedAt,
 		&i.CreatedBy,
+		&i.Name,
 	)
 	return i, err
 }
@@ -2154,7 +2154,7 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const listEnabledTgBots = `-- name: ListEnabledTgBots :many
-select id, token, enabled, name, description, created_at, created_by from tg_bots where enabled = true
+select id, token, enabled, description, created_at, created_by, name from tg_bots where enabled = true
 `
 
 func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
@@ -2170,10 +2170,10 @@ func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
 			&i.ID,
 			&i.Token,
 			&i.Enabled,
-			&i.Name,
 			&i.Description,
 			&i.CreatedAt,
 			&i.CreatedBy,
+			&i.Name,
 		); err != nil {
 			return nil, err
 		}
@@ -2971,10 +2971,10 @@ func (q *Queries) UpdateRedirect(ctx context.Context, arg UpdateRedirectParams) 
 
 const updateTgBot = `-- name: UpdateTgBot :one
 update tg_bots
-set description = coalesce(?2, description),
-    enabled = coalesce(?3, enabled)
-where id = ?
-returning id, token, enabled, name, description, created_at, created_by
+set description = coalesce(?1, description),
+    enabled = coalesce(?2, enabled)
+where id = ?3
+returning id, token, enabled, description, created_at, created_by, name
 `
 
 type UpdateTgBotParams struct {
@@ -2990,26 +2990,12 @@ func (q *Queries) UpdateTgBot(ctx context.Context, arg UpdateTgBotParams) (TgBot
 		&i.ID,
 		&i.Token,
 		&i.Enabled,
-		&i.Name,
 		&i.Description,
 		&i.CreatedAt,
 		&i.CreatedBy,
+		&i.Name,
 	)
 	return i, err
-}
-
-const updateTgBotName = `-- name: UpdateTgBotName :exec
-update tg_bots set name = ? where token = ?
-`
-
-type UpdateTgBotNameParams struct {
-	Name  sql.NullString `json:"name"`
-	Token string         `json:"token"`
-}
-
-func (q *Queries) UpdateTgBotName(ctx context.Context, arg UpdateTgBotNameParams) error {
-	_, err := q.db.ExecContext(ctx, updateTgBotName, arg.Name, arg.Token)
-	return err
 }
 
 const updateUserSubgraphAccess = `-- name: UpdateUserSubgraphAccess :one

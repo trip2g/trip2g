@@ -221,13 +221,13 @@ type Subgraph struct {
 }
 
 type TgBot struct {
-	ID          int64          `json:"id"`
-	Token       string         `json:"token"`
-	Enabled     bool           `json:"enabled"`
-	Name        sql.NullString `json:"name"`
-	Description string         `json:"description"`
-	CreatedAt   time.Time      `json:"created_at"`
-	CreatedBy   int64          `json:"created_by"`
+	ID          int64     `json:"id"`
+	Token       string    `json:"token"`
+	Enabled     bool      `json:"enabled"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+	CreatedBy   int64     `json:"created_by"`
+	Name        string    `json:"name"`
 }
 
 type TgBotChat struct {

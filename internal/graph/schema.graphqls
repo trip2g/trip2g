@@ -235,9 +235,8 @@ type AdminNotFoundIgnoredPatternsConnection {
 
 type AdminTgBot @goModel(model: "trip2g/internal/db.TgBot") {
   id: Int64!
-  token: String!
   enabled: Boolean!
-  name: String
+  name: String!
   description: String!
   createdAt: Time!
   createdBy: AdminUser! @goField(forceResolver: true)
@@ -842,7 +841,6 @@ union DeleteNotFoundIgnoredPatternOrErrorPayload = DeleteNotFoundIgnoredPatternP
 
 input CreateTgBotInput {
   token: String!
-  name: String
   description: String!
 }
 

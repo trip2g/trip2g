@@ -542,8 +542,6 @@ returning *;
 -- name: ListEnabledTgBots :many
 select * from tg_bots where enabled = true;
 
--- name: UpdateTgBotName :exec
-update tg_bots set name = ? where token = ?;
 
 -- name: InsertTgUserProfile :exec
 insert into tg_user_profiles (chat_id, bot_id, first_name, last_name, username, sha256_hash)
@@ -610,7 +608,7 @@ returning *;
 update tg_bots
 set description = coalesce(sqlc.narg(description), description),
     enabled = coalesce(sqlc.narg(enabled), enabled)
-where id = ?
+where id = sqlc.arg(id)
 returning *;
 
 -- name: TgBotChatsByBotID :many

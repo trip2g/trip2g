@@ -2,7 +2,6 @@ package createtgbot
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"trip2g/internal/db"
@@ -10,6 +9,7 @@ import (
 	"trip2g/internal/usertoken"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Env interface {
@@ -37,10 +37,22 @@ func Resolve(ctx context.Context, env Env, input model.CreateTgBotInput) (model.
 		return &model.ErrorPayload{Message: "Invalid bot token format"}, nil
 	}
 
+	// Validate token with real Telegram API and get bot info
+	botAPI, err := tgbotapi.NewBotAPI(input.Token)
+	if err != nil {
+		return &model.ErrorPayload{Message: "Invalid bot token or API error"}, nil //nolint:nilerr // error is handled by returning ErrorPayload
+	}
+
+	// Get bot name from API
+	botName := botAPI.Self.UserName
+	if botName == "" {
+		return &model.ErrorPayload{Message: "Could not retrieve bot username from Telegram API"}, nil
+	}
+
 	// Create the bot
 	bot, err := env.InsertTgBot(ctx, db.InsertTgBotParams{
 		Token:       input.Token,
-		Name:        nullableString(input.Name),
+		Name:        botName,
 		Description: input.Description,
 		CreatedBy:   int64(token.ID),
 	})
@@ -60,11 +72,4 @@ func containsColon(s string) bool {
 		}
 	}
 	return false
-}
-
-func nullableString(s *string) sql.NullString {
-	if s == nil {
-		return sql.NullString{}
-	}
-	return sql.NullString{String: *s, Valid: true}
 }

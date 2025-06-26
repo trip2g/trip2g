@@ -18,17 +18,30 @@ $trip2g_admin_app $mol_book2_catalog
 			close_icon <= Spread_close
 		userbans <= ListUserBans $trip2g_admin_list_userbans
 		user_subgraph_accesses <= ListUsersSubgraphAccesses $trip2g_admin_list_usersubgraphaccesses
+			menu_tools / <= Spread_close
 		subgraphs <= ListSubgraphs $trip2g_admin_list_subgraphs
+			menu_tools / <= Spread_close
 		noteviews <= ListNoteviews $trip2g_admin_list_noteviews
+			menu_tools / <= Spread_close
 		apikeys <= ListApiKeys $trip2g_admin_apikey_catalog
+			menu_tools / <= Spread_close
 		releases <= ListReleases $trip2g_admin_release_catalog
+			menu_tools / <= Spread_close
 		offers <= ListOffers $trip2g_admin_offer_catalog
+			menu_tools / <= Spread_close
 		purchases <= ListPurchases $trip2g_admin_purchase_catalog
+			menu_tools / <= Spread_close
 		note_graph <= NoteGraph $trip2g_admin_noteview_graph
 		admins <= Admins $trip2g_admin_admin_catalog
+			menu_tools / <= Spread_close
 		redirects <= ListRedirects $trip2g_admin_redirect_catalog
+			menu_tools / <= Spread_close
 		notfoundpaths <= ListNotFoundPaths $trip2g_admin_notfoundpath_catalog
+			menu_tools / <= Spread_close
 		notfoundpatterns <= ListNotFoundPatterns $trip2g_admin_notfoundpattern_catalog
+			menu_tools / <= Spread_close
+		tgbots <= ListTgBots $trip2g_admin_tgbot_catalog
+			menu_tools / <= Spread_close
 
 $trip2g_admin_cell $mol_view
 	content \No Content

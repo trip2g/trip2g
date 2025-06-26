@@ -1,0 +1,29 @@
+$trip2g_admin_tgbot_create $mol_page
+	title \Create TG Bot
+	TgBotView $mol_view
+		sub /
+			<= TgBotName_labeler $mol_labeler
+				title \Name
+				Content <= TgBotName $trip2g_admin_cell
+					content <= tgbot_name? \
+	body /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Token_field $mol_form_field
+					name \Token
+					bid <= token_bid \
+					Content <= token_control $mol_string
+						value? <=> token? \
+				<= Description_field $mol_form_field
+					name \Description
+					bid <= description_bid \
+					Content <= description_control $mol_textarea
+						value? <=> description? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

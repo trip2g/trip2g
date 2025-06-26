@@ -318,9 +318,8 @@ type CreateReleasePayload struct {
 func (CreateReleasePayload) IsCreateReleaseOrErrorPayload() {}
 
 type CreateTgBotInput struct {
-	Token       string  `json:"token"`
-	Name        *string `json:"name,omitempty"`
-	Description string  `json:"description"`
+	Token       string `json:"token"`
+	Description string `json:"description"`
 }
 
 type CreateTgBotPayload struct {

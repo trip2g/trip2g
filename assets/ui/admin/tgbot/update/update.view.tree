@@ -1,0 +1,27 @@
+$trip2g_admin_tgbot_update $mol_view
+	tgbot_id 0
+	sub /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Name_labeler $mol_labeler
+					title \Name
+					Content <= Name $trip2g_admin_cell
+						content <= tgbot_name \
+				<= Description_field $mol_form_field
+					name \Description
+					bid <= description_bid \
+					Content <= description_control $mol_textarea
+						value? <=> description? \
+				<= Enabled_field $mol_form_field
+					name \Enabled
+					bid <= enabled_bid \
+					Content <= enabled_control $mol_check_box
+						checked? <=> enabled? false
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

@@ -296,7 +296,6 @@ type ComplexityRoot struct {
 		Enabled     func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Name        func(childComplexity int) int
-		Token       func(childComplexity int) int
 	}
 
 	AdminTgBotChat struct {
@@ -748,7 +747,7 @@ type AdminSubgraphsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error)
 }
 type AdminTgBotResolver interface {
-	Name(ctx context.Context, obj *db.TgBot) (*string, error)
+	Name(ctx context.Context, obj *db.TgBot) (string, error)
 
 	CreatedBy(ctx context.Context, obj *db.TgBot) (*db.User, error)
 }
@@ -1921,13 +1920,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminTgBot.Name(childComplexity), true
-
-	case "AdminTgBot.token":
-		if e.complexity.AdminTgBot.Token == nil {
-			break
-		}
-
-		return e.complexity.AdminTgBot.Token(childComplexity), true
 
 	case "AdminTgBotChat.addedAt":
 		if e.complexity.AdminTgBotChat.AddedAt == nil {
@@ -9147,8 +9139,6 @@ func (ec *executionContext) fieldContext_AdminQuery_tgBot(ctx context.Context, f
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_AdminTgBot_id(ctx, field)
-			case "token":
-				return ec.fieldContext_AdminTgBot_token(ctx, field)
 			case "enabled":
 				return ec.fieldContext_AdminTgBot_enabled(ctx, field)
 			case "name":
@@ -10226,50 +10216,6 @@ func (ec *executionContext) fieldContext_AdminTgBot_id(_ context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminTgBot_token(ctx context.Context, field graphql.CollectedField, obj *db.TgBot) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminTgBot_token(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Token, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_AdminTgBot_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminTgBot",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _AdminTgBot_enabled(ctx context.Context, field graphql.CollectedField, obj *db.TgBot) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminTgBot_enabled(ctx, field)
 	if err != nil {
@@ -10335,11 +10281,14 @@ func (ec *executionContext) _AdminTgBot_name(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminTgBot_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -10917,8 +10866,6 @@ func (ec *executionContext) fieldContext_AdminTgBotsConnection_nodes(_ context.C
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_AdminTgBot_id(ctx, field)
-			case "token":
-				return ec.fieldContext_AdminTgBot_token(ctx, field)
 			case "enabled":
 				return ec.fieldContext_AdminTgBot_enabled(ctx, field)
 			case "name":
@@ -13070,8 +13017,6 @@ func (ec *executionContext) fieldContext_CreateTgBotPayload_tgBot(_ context.Cont
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_AdminTgBot_id(ctx, field)
-			case "token":
-				return ec.fieldContext_AdminTgBot_token(ctx, field)
 			case "enabled":
 				return ec.fieldContext_AdminTgBot_enabled(ctx, field)
 			case "name":
@@ -16813,8 +16758,6 @@ func (ec *executionContext) fieldContext_UpdateTgBotPayload_tgBot(_ context.Cont
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_AdminTgBot_id(ctx, field)
-			case "token":
-				return ec.fieldContext_AdminTgBot_token(ctx, field)
 			case "enabled":
 				return ec.fieldContext_AdminTgBot_enabled(ctx, field)
 			case "name":
@@ -20171,7 +20114,7 @@ func (ec *executionContext) unmarshalInputCreateTgBotInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"token", "name", "description"}
+	fieldsInOrder := [...]string{"token", "description"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -20185,13 +20128,6 @@ func (ec *executionContext) unmarshalInputCreateTgBotInput(ctx context.Context, 
 				return it, err
 			}
 			it.Token = data
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
 		case "description":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -25485,11 +25421,6 @@ func (ec *executionContext) _AdminTgBot(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "token":
-			out.Values[i] = ec._AdminTgBot_token(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
 		case "enabled":
 			out.Values[i] = ec._AdminTgBot_enabled(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -25498,13 +25429,16 @@ func (ec *executionContext) _AdminTgBot(ctx context.Context, sel ast.SelectionSe
 		case "name":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._AdminTgBot_name(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 

@@ -497,11 +497,8 @@ func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model
 }
 
 // Name is the resolver for the name field.
-func (r *adminTgBotResolver) Name(ctx context.Context, obj *db.TgBot) (*string, error) {
-	if obj.Name.Valid {
-		return &obj.Name.String, nil
-	}
-	return nil, nil
+func (r *adminTgBotResolver) Name(ctx context.Context, obj *db.TgBot) (string, error) {
+	return obj.Name, nil
 }
 
 // CreatedBy is the resolver for the createdBy field.

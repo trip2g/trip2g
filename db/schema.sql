@@ -219,11 +219,10 @@ CREATE TABLE tg_bots (
   id integer not null primary key autoincrement,
   token text not null unique,
   enabled boolean not null default true,
-  name text,
   description text not null default '',
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete restrict
-);
+, name text not null default '');
 CREATE TABLE tg_user_states (
   chat_id int not null,
   bot_id int not null references tg_bots(id) on delete restrict,
@@ -299,4 +298,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250626035523'),
   ('20250626041424'),
   ('20250626054021'),
-  ('20250626100000');
+  ('20250626100000'),
+  ('20250626120000');
