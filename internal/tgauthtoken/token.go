@@ -35,7 +35,7 @@ func NewManager(secret []byte) *Manager {
 
 func (m *Manager) NewToken(data model.TgAuthToken) (string, error) {
 	now := time.Now()
-	exp := now.Add(24 * time.Hour) // TODO: change to 30 minutes
+	exp := now.Add(5 * time.Minute)
 
 	claims := fullData{
 		TgAuthToken: data,

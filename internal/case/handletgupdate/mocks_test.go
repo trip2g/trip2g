@@ -28,6 +28,9 @@ var _ Env = &EnvMock{}
 //			CalculateSha256Func: func(s string) string {
 //				panic("mock out the CalculateSha256 method")
 //			},
+//			GenerateTgAuthURLFunc: func(ctx context.Context, path string, data model.TgAuthToken) (string, error) {
+//				panic("mock out the GenerateTgAuthURL method")
+//			},
 //			InsertTgChatMemberFunc: func(ctx context.Context, arg db.InsertTgChatMemberParams) error {
 //				panic("mock out the InsertTgChatMember method")
 //			},
@@ -77,6 +80,9 @@ type EnvMock struct {
 	// CalculateSha256Func mocks the CalculateSha256 method.
 	CalculateSha256Func func(s string) string
 
+	// GenerateTgAuthURLFunc mocks the GenerateTgAuthURL method.
+	GenerateTgAuthURLFunc func(ctx context.Context, path string, data model.TgAuthToken) (string, error)
+
 	// InsertTgChatMemberFunc mocks the InsertTgChatMember method.
 	InsertTgChatMemberFunc func(ctx context.Context, arg db.InsertTgChatMemberParams) error
 
@@ -122,6 +128,15 @@ type EnvMock struct {
 		CalculateSha256 []struct {
 			// S is the s argument value.
 			S string
+		}
+		// GenerateTgAuthURL holds details about calls to the GenerateTgAuthURL method.
+		GenerateTgAuthURL []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Path is the path argument value.
+			Path string
+			// Data is the data argument value.
+			Data model.TgAuthToken
 		}
 		// InsertTgChatMember holds details about calls to the InsertTgChatMember method.
 		InsertTgChatMember []struct {
@@ -194,6 +209,7 @@ type EnvMock struct {
 	}
 	lockBotID                       sync.RWMutex
 	lockCalculateSha256             sync.RWMutex
+	lockGenerateTgAuthURL           sync.RWMutex
 	lockInsertTgChatMember          sync.RWMutex
 	lockInsertTgUserProfile         sync.RWMutex
 	lockLatestNoteViews             sync.RWMutex
@@ -264,6 +280,46 @@ func (mock *EnvMock) CalculateSha256Calls() []struct {
 	mock.lockCalculateSha256.RLock()
 	calls = mock.calls.CalculateSha256
 	mock.lockCalculateSha256.RUnlock()
+	return calls
+}
+
+// GenerateTgAuthURL calls GenerateTgAuthURLFunc.
+func (mock *EnvMock) GenerateTgAuthURL(ctx context.Context, path string, data model.TgAuthToken) (string, error) {
+	if mock.GenerateTgAuthURLFunc == nil {
+		panic("EnvMock.GenerateTgAuthURLFunc: method is nil but Env.GenerateTgAuthURL was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Path string
+		Data model.TgAuthToken
+	}{
+		Ctx:  ctx,
+		Path: path,
+		Data: data,
+	}
+	mock.lockGenerateTgAuthURL.Lock()
+	mock.calls.GenerateTgAuthURL = append(mock.calls.GenerateTgAuthURL, callInfo)
+	mock.lockGenerateTgAuthURL.Unlock()
+	return mock.GenerateTgAuthURLFunc(ctx, path, data)
+}
+
+// GenerateTgAuthURLCalls gets all the calls that were made to GenerateTgAuthURL.
+// Check the length with:
+//
+//	len(mockedEnv.GenerateTgAuthURLCalls())
+func (mock *EnvMock) GenerateTgAuthURLCalls() []struct {
+	Ctx  context.Context
+	Path string
+	Data model.TgAuthToken
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Path string
+		Data model.TgAuthToken
+	}
+	mock.lockGenerateTgAuthURL.RLock()
+	calls = mock.calls.GenerateTgAuthURL
+	mock.lockGenerateTgAuthURL.RUnlock()
 	return calls
 }
 

@@ -88,6 +88,11 @@ func TestResolve(t *testing.T) {
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
 				}
+
+				// GenerateTgAuthURL for group access
+				env.GenerateTgAuthURLFunc = func(ctx context.Context, path string, data model.TgAuthToken) (string, error) {
+					return "https://example.com/auth?token=test", nil
+				}
 			},
 			wantErr: false,
 		},

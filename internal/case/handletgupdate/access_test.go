@@ -6,6 +6,7 @@ import (
 	"testing"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
+	"trip2g/internal/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/stretchr/testify/require"
@@ -45,6 +46,12 @@ func TestHandleGroupAccess(t *testing.T) {
 					require.True(t, arg.UserID.Valid)
 					require.True(t, arg.ChatID.Valid)
 					return nil
+				}
+				env.BotIDFunc = func() int64 {
+					return 987654321
+				}
+				env.GenerateTgAuthURLFunc = func(ctx context.Context, path string, data model.TgAuthToken) (string, error) {
+					return "https://example.com/auth?token=test", nil
 				}
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
@@ -92,6 +99,12 @@ func TestHandleGroupAccess(t *testing.T) {
 				}
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+				env.BotIDFunc = func() int64 {
+					return 987654321
+				}
+				env.GenerateTgAuthURLFunc = func(ctx context.Context, path string, data model.TgAuthToken) (string, error) {
+					return "https://example.com/auth?token=test", nil
 				}
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
