@@ -16,7 +16,7 @@ type Env interface {
 	TgUserProfileByChatIDAndBotID(ctx context.Context, arg db.TgUserProfileByChatIDAndBotIDParams) (db.TgUserProfile, error)
 	InsertUserWithTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
 	UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
-	ParseTgAuthToken(_ context.Context, token string) (*model.TgAuthToken, error)
+	ParseTgAuthToken(ctx context.Context, token string) (*model.TgAuthToken, error)
 }
 
 var ErrProfileNotFound = errors.New("profile not found")
@@ -49,9 +49,9 @@ func Resolve(ctx context.Context, env Env, rawToken string) error {
 			if err != nil {
 				return fmt.Errorf("failed to insert user with TG user ID: %w", err)
 			}
+		} else {
+			return fmt.Errorf("failed to get user by TG user ID: %w", err)
 		}
-
-		return fmt.Errorf("failed to get user by TG user ID: %w", err)
 	}
 
 	_, err = env.SetupUserToken(ctx, user.ID)

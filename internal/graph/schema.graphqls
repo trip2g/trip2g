@@ -43,7 +43,7 @@ type UserSubgraphAccess {
 }
 
 type User {
-  email: String!
+  email: String
   subgraphAccesses: [UserSubgraphAccess!]!
 }
 

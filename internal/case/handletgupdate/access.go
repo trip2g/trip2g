@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"trip2g/internal/db"
+	"trip2g/internal/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -40,12 +41,21 @@ func (req *request) handleGroupAccess(ctx context.Context, args string) error {
 	}
 
 	text := fmt.Sprintf("✅ Access granted! You now have access to premium content from group %d.", groupID)
-	url := "https://trip2g.com" // TODO: generate proper auth URL
+
+	tokenData := model.TgAuthToken{
+		ChatID: userID,
+		BotID:  req.env.BotID(),
+	}
+
+	authURL, err := req.env.GenerateTgAuthURL(ctx, "/", tokenData)
+	if err != nil {
+		return fmt.Errorf("failed to generate auth URL: %w", err)
+	}
 
 	msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, text)
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("Получить доступ", url),
+			tgbotapi.NewInlineKeyboardButtonURL("Получить доступ", authURL),
 		),
 	)
 

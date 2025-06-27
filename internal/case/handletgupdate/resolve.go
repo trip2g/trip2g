@@ -29,6 +29,8 @@ type Env interface {
 	BotID() int64
 	Send(msg tgbotapi.Chattable) (tgbotapi.Message, error)
 	Request(c tgbotapi.Chattable) (*tgbotapi.APIResponse, error)
+
+	GenerateTgAuthURL(ctx context.Context, path string, data model.TgAuthToken) (string, error)
 }
 
 type UserStateData struct {

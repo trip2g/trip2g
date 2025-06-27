@@ -496,11 +496,6 @@ func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model
 	return r.env(ctx).ListAllSubgraphs(ctx)
 }
 
-// Name is the resolver for the name field.
-func (r *adminTgBotResolver) Name(ctx context.Context, obj *db.TgBot) (string, error) {
-	return obj.Name, nil
-}
-
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminTgBotResolver) CreatedBy(ctx context.Context, obj *db.TgBot) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -630,6 +625,11 @@ func (r *adminTgUserProfileResolver) Username(ctx context.Context, obj *db.TgUse
 		return &obj.Username.String, nil
 	}
 	return nil, nil
+}
+
+// Email is the resolver for the email field.
+func (r *adminUserResolver) Email(ctx context.Context, obj *db.User) (string, error) {
+	panic(fmt.Errorf("not implemented: Email - email"))
 }
 
 // Ban is the resolver for the ban field.
@@ -958,6 +958,11 @@ func (r *updateNoteGraphPositionsPayloadResolver) UpdatedNoteViews(ctx context.C
 		}
 	}
 	return noteViews, nil
+}
+
+// Email is the resolver for the email field.
+func (r *userResolver) Email(ctx context.Context, obj *db.User) (*string, error) {
+	panic(fmt.Errorf("not implemented: Email - email"))
 }
 
 // SubgraphAccesses is the resolver for the subgraphAccesses field.
@@ -1325,3 +1330,15 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *adminTgBotResolver) Name(ctx context.Context, obj *db.TgBot) (string, error) {
+	return obj.Name, nil
+}
+*/

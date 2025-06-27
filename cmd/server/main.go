@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -40,6 +41,7 @@ import (
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/redirectmanager"
 	"trip2g/internal/router"
+	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/userbans"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
@@ -82,6 +84,7 @@ type app struct {
 	redirectManager *redirectmanager.Manager
 
 	hotAuthTokenManager *hotauthtoken.Manager
+	tgAuthTokenManager  *tgauthtoken.Manager
 
 	config *appconfig.Config
 
@@ -140,6 +143,8 @@ func main() {
 	// 	config.SMTPHost,
 	// )
 
+	jwtSecret := []byte("secret")
+
 	a := &app{
 		Queries: queries,
 
@@ -153,7 +158,8 @@ func main() {
 			EnvMap: make(map[*app]*sql.Tx),
 		},
 
-		hotAuthTokenManager: hotauthtoken.NewManager([]byte("secret")),
+		hotAuthTokenManager: hotauthtoken.NewManager(jwtSecret),
+		tgAuthTokenManager:  tgauthtoken.NewManager(jwtSecret),
 
 		purchaseTokenManager: purchasetoken.NewManager("trip2g_purchase_token", []byte("secret")),
 
@@ -281,11 +287,6 @@ func (a *app) SendMail(ctx context.Context, data model.Mail) error {
 func (a *app) CalculateSha256(s string) string {
 	hash := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(hash[:])
-}
-
-func (a *app) ParseTgAuthToken(ctx context.Context, token string) (*model.TgAuthToken, error) {
-	// TODO: implement proper Telegram auth token parsing
-	return &model.TgAuthToken{ChatID: 0, BotID: 0}, nil
 }
 
 func (a *app) loadAllNotes(ctx context.Context) error {
@@ -514,6 +515,31 @@ func (a *app) GenerateHotAuthToken(_ context.Context, data model.HotAuthToken) (
 
 func (a *app) ParseHotAuthToken(_ context.Context, token string) (*model.HotAuthToken, error) {
 	return a.hotAuthTokenManager.ParseToken(token)
+}
+
+func (a *app) GenerateTgAuthURL(_ context.Context, path string, data model.TgAuthToken) (string, error) {
+	rawToken, err := a.tgAuthTokenManager.NewToken(data)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate Telegram auth token: %w", err)
+	}
+
+	u, err := url.Parse(a.PublicURL())
+	if err != nil {
+		return "", fmt.Errorf("failed to parse public URL: %w", err)
+	}
+
+	u.Path = path
+
+	query := u.Query()
+	query.Set(signinbytgauthtoken.QueryParam, rawToken)
+
+	u.RawQuery = query.Encode()
+
+	return u.String(), nil
+}
+
+func (a *app) ParseTgAuthToken(ctx context.Context, token string) (*model.TgAuthToken, error) {
+	return a.tgAuthTokenManager.ParseToken(token)
 }
 
 func (a *app) CreateNowpaymentsInvoice(params nowpayments.CreateInvoiceParams) (*nowpayments.CreateInvoiceResponse, error) {

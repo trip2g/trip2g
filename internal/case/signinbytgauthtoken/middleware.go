@@ -7,10 +7,10 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-const queryParam = "tg_auth_token"
+const QueryParam = "tg_auth_token"
 
 func Process(ctx *fasthttp.RequestCtx, env Env) bool {
-	token := string(ctx.QueryArgs().Peek(queryParam))
+	token := string(ctx.QueryArgs().Peek(QueryParam))
 	if token == "" {
 		return false
 	}
@@ -29,7 +29,7 @@ func Process(ctx *fasthttp.RequestCtx, env Env) bool {
 	}
 
 	query := parsedURL.Query()
-	query.Del(queryParam)
+	query.Del(QueryParam)
 	parsedURL.RawQuery = query.Encode()
 
 	ctx.Redirect(parsedURL.String(), http.StatusFound)
