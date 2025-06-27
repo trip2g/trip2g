@@ -26,6 +26,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/case/signinbypurchasetoken"
+	"trip2g/internal/case/signinbytgauthtoken"
 	"trip2g/internal/db"
 	"trip2g/internal/graph"
 	"trip2g/internal/hotauthtoken"
@@ -912,6 +913,10 @@ func (a *app) startServer() {
 			}
 
 			if a.handlePurchaseTokens(ctx) {
+				return
+			}
+
+			if signinbytgauthtoken.Process(ctx, a) {
 				return
 			}
 

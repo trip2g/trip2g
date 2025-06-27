@@ -60,8 +60,13 @@ where rn = 1;
 -- name: UserByEmail :one
 select * from users where email = lower(?);
 
--- name: InsertUser :one
+-- name: InsertUserWithEmail :one
 insert into users (email) values (lower(?))
+returning *;
+
+-- name: InsertUserWithTGUserID :one
+insert into users (tg_user_id)
+values (?)
 returning *;
 
 -- name: UserByID :one

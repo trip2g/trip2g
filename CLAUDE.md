@@ -89,6 +89,27 @@ Do not add co-author comments or generated signatures unless specifically reques
 - Return `union ${Mutation}OrErrorPayload = ${Mutation}Payload | ErrorPayload`
 - Use Env interface pattern for testability
 
+### SQL Style Guide
+- **Keywords**: Use lowercase for all SQL keywords (`select`, `from`, `where`, `create table`, etc.)
+- **Table/Column names**: Use lowercase with underscores
+- **Indentation**: Use consistent indentation for readability
+- **Example**:
+  ```sql
+  -- Good
+  create table users (
+      id integer primary key,
+      email text not null,
+      created_at datetime not null default (datetime('now'))
+  );
+  
+  -- Bad
+  CREATE TABLE Users (
+      ID INTEGER PRIMARY KEY,
+      Email TEXT NOT NULL,
+      CreatedAt DATETIME NOT NULL DEFAULT (DATETIME('now'))
+  );
+  ```
+
 ## Adding New Features
 
 ### Adding SQL Queries and Database Methods
@@ -187,6 +208,12 @@ When you need new database operations:
 - **Pattern**: Table-driven tests with mock setup functions
 - **Mocks**: Generate with `//go:generate moq -out mocks_test.go . Env`
 - **Error handling**: Always use two-line pattern in tests
+
+**IMPORTANT - Refactoring Policy:**
+- **Before refactoring**: Always ensure the code has comprehensive tests
+- **If no tests exist**: Propose writing tests first before any refactoring
+- **Test coverage**: Tests should cover main functionality, error cases, and edge cases
+- **Refactoring safety**: Never refactor code without proper test coverage
 
 ## Mol framework
 

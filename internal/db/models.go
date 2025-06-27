@@ -273,11 +273,12 @@ type TgUserState struct {
 }
 
 type User struct {
-	ID                   int64         `json:"id"`
-	Email                string        `json:"email"`
-	CreatedAt            time.Time     `json:"created_at"`
-	LastSigninCodeSentAt sql.NullTime  `json:"last_signin_code_sent_at"`
-	NoteViewCount        sql.NullInt64 `json:"note_view_count"`
+	ID                   int64          `json:"id"`
+	Email                sql.NullString `json:"email"`
+	CreatedAt            time.Time      `json:"created_at"`
+	LastSigninCodeSentAt sql.NullTime   `json:"last_signin_code_sent_at"`
+	NoteViewCount        sql.NullInt64  `json:"note_view_count"`
+	TgUserID             sql.NullInt64  `json:"tg_user_id"`
 }
 
 type UserBan struct {

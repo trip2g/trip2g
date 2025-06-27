@@ -7,12 +7,6 @@ CREATE TABLE note_paths (
   created_at datetime not null default current_timestamp,
   version_count integer not null default 0
 , graph_position_x real, graph_position_y real, hidden_by integer references admins(user_id) on delete restrict, hidden_at datetime);
-CREATE TABLE users (
-  id integer primary key,
-  email text not null unique,
-  created_at datetime not null default current_timestamp,
-  last_signin_code_sent_at datetime
-, note_view_count integer default 0);
 CREATE TABLE admins (
   user_id int primary key references users(id) on delete cascade,
   granted_at datetime not null default current_timestamp,
@@ -262,6 +256,15 @@ CREATE TABLE tg_chat_subgraph_accesses (
   subgraph_id integer not null references subgraphs(id) on delete restrict,
   created_at datetime not null default current_timestamp
 );
+CREATE TABLE IF NOT EXISTS "users" (
+    id integer primary key,
+    email text unique, -- Made nullable but still unique
+    created_at datetime not null default current_timestamp,
+    last_signin_code_sent_at datetime,
+    note_view_count integer default 0,
+    tg_user_id integer unique -- Also unique - one account per Telegram user
+    -- Note: No FK constraint because tg_user_profiles.chat_id is not unique
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -299,4 +302,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250626041424'),
   ('20250626054021'),
   ('20250626100000'),
-  ('20250626120000');
+  ('20250626120000'),
+  ('20250627040815');

@@ -1355,24 +1355,6 @@ func (q *Queries) InsertTgUserProfile(ctx context.Context, arg InsertTgUserProfi
 	return err
 }
 
-const insertUser = `-- name: InsertUser :one
-insert into users (email) values (lower(?))
-returning id, email, created_at, last_signin_code_sent_at, note_view_count
-`
-
-func (q *Queries) InsertUser(ctx context.Context, lower string) (User, error) {
-	row := q.db.QueryRowContext(ctx, insertUser, lower)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.CreatedAt,
-		&i.LastSigninCodeSentAt,
-		&i.NoteViewCount,
-	)
-	return i, err
-}
-
 const insertUserNoteView = `-- name: InsertUserNoteView :exec
 insert into user_note_views (user_id, version_id, referer_version_id) values (?, ?, ?)
 `
@@ -1386,6 +1368,45 @@ type InsertUserNoteViewParams struct {
 func (q *Queries) InsertUserNoteView(ctx context.Context, arg InsertUserNoteViewParams) error {
 	_, err := q.db.ExecContext(ctx, insertUserNoteView, arg.UserID, arg.VersionID, arg.RefererVersionID)
 	return err
+}
+
+const insertUserWithEmail = `-- name: InsertUserWithEmail :one
+insert into users (email) values (lower(?))
+returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id
+`
+
+func (q *Queries) InsertUserWithEmail(ctx context.Context, lower string) (User, error) {
+	row := q.db.QueryRowContext(ctx, insertUserWithEmail, lower)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+		&i.NoteViewCount,
+		&i.TgUserID,
+	)
+	return i, err
+}
+
+const insertUserWithTGUserID = `-- name: InsertUserWithTGUserID :one
+insert into users (tg_user_id)
+values (?)
+returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id
+`
+
+func (q *Queries) InsertUserWithTGUserID(ctx context.Context, tgUserID sql.NullInt64) (User, error) {
+	row := q.db.QueryRowContext(ctx, insertUserWithTGUserID, tgUserID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+		&i.NoteViewCount,
+		&i.TgUserID,
+	)
+	return i, err
 }
 
 const listAPIKeyLogsByAPIKeyID = `-- name: ListAPIKeyLogsByAPIKeyID :many
@@ -2121,7 +2142,7 @@ func (q *Queries) ListAllUserSubgraphAccesses(ctx context.Context) ([]UserSubgra
 }
 
 const listAllUsers = `-- name: ListAllUsers :many
-select id, email, created_at, last_signin_code_sent_at, note_view_count from users order by created_at desc
+select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id from users order by created_at desc
 `
 
 func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
@@ -2139,6 +2160,7 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.CreatedAt,
 			&i.LastSigninCodeSentAt,
 			&i.NoteViewCount,
+			&i.TgUserID,
 		); err != nil {
 			return nil, err
 		}
@@ -3163,7 +3185,7 @@ func (q *Queries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUserNot
 }
 
 const userByEmail = `-- name: UserByEmail :one
-select id, email, created_at, last_signin_code_sent_at, note_view_count from users where email = lower(?)
+select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id from users where email = lower(?)
 `
 
 func (q *Queries) UserByEmail(ctx context.Context, lower string) (User, error) {
@@ -3175,12 +3197,13 @@ func (q *Queries) UserByEmail(ctx context.Context, lower string) (User, error) {
 		&i.CreatedAt,
 		&i.LastSigninCodeSentAt,
 		&i.NoteViewCount,
+		&i.TgUserID,
 	)
 	return i, err
 }
 
 const userByID = `-- name: UserByID :one
-select id, email, created_at, last_signin_code_sent_at, note_view_count from users where id = ?
+select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id from users where id = ?
 `
 
 func (q *Queries) UserByID(ctx context.Context, id int64) (User, error) {
@@ -3192,6 +3215,7 @@ func (q *Queries) UserByID(ctx context.Context, id int64) (User, error) {
 		&i.CreatedAt,
 		&i.LastSigninCodeSentAt,
 		&i.NoteViewCount,
+		&i.TgUserID,
 	)
 	return i, err
 }
@@ -3228,8 +3252,8 @@ select user_id
 `
 
 type VerifySignInCodeParams struct {
-	Email string `json:"email"`
-	Code  string `json:"code"`
+	Email sql.NullString `json:"email"`
+	Code  string         `json:"code"`
 }
 
 func (q *Queries) VerifySignInCode(ctx context.Context, arg VerifySignInCodeParams) (int64, error) {

@@ -11,7 +11,7 @@ import (
 )
 
 type Data struct {
-	ID   int    `json:"i"`
+	ID   int    `json:"i,omitzero"`
 	Role string `json:"r"`
 }
 
