@@ -1639,6 +1639,41 @@ func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64)
 	return items, nil
 }
 
+const listActiveTgChatSubgraphNamesByUserID = `-- name: ListActiveTgChatSubgraphNamesByUserID :many
+select distinct s.name
+  from users u
+  join tg_chat_members m on u.tg_user_id = m.user_id
+  join tg_bot_chats bc on bc.id = m.chat_id
+  join tg_chat_subgraph_accesses a on a.chat_id = bc.id
+  join subgraphs s on s.id = a.subgraph_id
+ where u.id = ?
+   and bc.removed_at is null
+ order by s.name
+`
+
+func (q *Queries) ListActiveTgChatSubgraphNamesByUserID(ctx context.Context, id int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveTgChatSubgraphNamesByUserID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listActiveUserSubgraphAccessesByUserID = `-- name: ListActiveUserSubgraphAccessesByUserID :many
 select a.id, a.user_id, a.subgraph_id, a.created_at, a.expires_at, a.revoke_id, a.purchase_id
   from user_subgraph_accesses a

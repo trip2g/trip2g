@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -20,10 +21,11 @@ type Env interface {
 	Logger() logger.Logger
 	LatestNoteViews() *model.NoteViews
 	LiveNoteViews() *model.NoteViews
-	ListActiveSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
 	UpsertUserNoteDailyView(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
 	IncreaseUserNoteViewCount(ctx context.Context, userID int64) error
+
+	listactiveusersubgraphs.Env
 }
 
 type Request struct {
@@ -130,7 +132,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 		var err error
 
-		response.UserSubgraphs, err = env.ListActiveSubgraphNamesByUserID(ctx, userID)
+		response.UserSubgraphs, err = listactiveusersubgraphs.Resolve(ctx, env, userID)
 		if err != nil {
 			return &response, err
 		}

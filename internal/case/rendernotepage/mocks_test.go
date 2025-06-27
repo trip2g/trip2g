@@ -34,6 +34,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 //				panic("mock out the ListActiveSubgraphNamesByUserID method")
 //			},
+//			ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, id int64) ([]string, error) {
+//				panic("mock out the ListActiveTgChatSubgraphNamesByUserID method")
+//			},
 //			LiveNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LiveNoteViews method")
 //			},
@@ -61,6 +64,9 @@ type EnvMock struct {
 
 	// ListActiveSubgraphNamesByUserIDFunc mocks the ListActiveSubgraphNamesByUserID method.
 	ListActiveSubgraphNamesByUserIDFunc func(ctx context.Context, userID int64) ([]string, error)
+
+	// ListActiveTgChatSubgraphNamesByUserIDFunc mocks the ListActiveTgChatSubgraphNamesByUserID method.
+	ListActiveTgChatSubgraphNamesByUserIDFunc func(ctx context.Context, id int64) ([]string, error)
 
 	// LiveNoteViewsFunc mocks the LiveNoteViews method.
 	LiveNoteViewsFunc func() *model.NoteViews
@@ -97,6 +103,13 @@ type EnvMock struct {
 			// UserID is the userID argument value.
 			UserID int64
 		}
+		// ListActiveTgChatSubgraphNamesByUserID holds details about calls to the ListActiveTgChatSubgraphNamesByUserID method.
+		ListActiveTgChatSubgraphNamesByUserID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
+		}
 		// LiveNoteViews holds details about calls to the LiveNoteViews method.
 		LiveNoteViews []struct {
 		}
@@ -111,13 +124,14 @@ type EnvMock struct {
 			Params db.UpsertUserNoteDailyViewParams
 		}
 	}
-	lockIncreaseUserNoteViewCount       sync.RWMutex
-	lockInsertUserNoteView              sync.RWMutex
-	lockLatestNoteViews                 sync.RWMutex
-	lockListActiveSubgraphNamesByUserID sync.RWMutex
-	lockLiveNoteViews                   sync.RWMutex
-	lockLogger                          sync.RWMutex
-	lockUpsertUserNoteDailyView         sync.RWMutex
+	lockIncreaseUserNoteViewCount             sync.RWMutex
+	lockInsertUserNoteView                    sync.RWMutex
+	lockLatestNoteViews                       sync.RWMutex
+	lockListActiveSubgraphNamesByUserID       sync.RWMutex
+	lockListActiveTgChatSubgraphNamesByUserID sync.RWMutex
+	lockLiveNoteViews                         sync.RWMutex
+	lockLogger                                sync.RWMutex
+	lockUpsertUserNoteDailyView               sync.RWMutex
 }
 
 // IncreaseUserNoteViewCount calls IncreaseUserNoteViewCountFunc.
@@ -252,6 +266,42 @@ func (mock *EnvMock) ListActiveSubgraphNamesByUserIDCalls() []struct {
 	mock.lockListActiveSubgraphNamesByUserID.RLock()
 	calls = mock.calls.ListActiveSubgraphNamesByUserID
 	mock.lockListActiveSubgraphNamesByUserID.RUnlock()
+	return calls
+}
+
+// ListActiveTgChatSubgraphNamesByUserID calls ListActiveTgChatSubgraphNamesByUserIDFunc.
+func (mock *EnvMock) ListActiveTgChatSubgraphNamesByUserID(ctx context.Context, id int64) ([]string, error) {
+	if mock.ListActiveTgChatSubgraphNamesByUserIDFunc == nil {
+		panic("EnvMock.ListActiveTgChatSubgraphNamesByUserIDFunc: method is nil but Env.ListActiveTgChatSubgraphNamesByUserID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockListActiveTgChatSubgraphNamesByUserID.Lock()
+	mock.calls.ListActiveTgChatSubgraphNamesByUserID = append(mock.calls.ListActiveTgChatSubgraphNamesByUserID, callInfo)
+	mock.lockListActiveTgChatSubgraphNamesByUserID.Unlock()
+	return mock.ListActiveTgChatSubgraphNamesByUserIDFunc(ctx, id)
+}
+
+// ListActiveTgChatSubgraphNamesByUserIDCalls gets all the calls that were made to ListActiveTgChatSubgraphNamesByUserID.
+// Check the length with:
+//
+//	len(mockedEnv.ListActiveTgChatSubgraphNamesByUserIDCalls())
+func (mock *EnvMock) ListActiveTgChatSubgraphNamesByUserIDCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockListActiveTgChatSubgraphNamesByUserID.RLock()
+	calls = mock.calls.ListActiveTgChatSubgraphNamesByUserID
+	mock.lockListActiveTgChatSubgraphNamesByUserID.RUnlock()
 	return calls
 }
 

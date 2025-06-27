@@ -112,6 +112,17 @@ select distinct s.name
    and revoke_id is null
  order by 1;
 
+-- name: ListActiveTgChatSubgraphNamesByUserID :many
+select distinct s.name
+  from users u
+  join tg_chat_members m on u.tg_user_id = m.user_id
+  join tg_bot_chats bc on bc.id = m.chat_id
+  join tg_chat_subgraph_accesses a on a.chat_id = bc.id
+  join subgraphs s on s.id = a.subgraph_id
+ where u.id = ?
+   and bc.removed_at is null
+ order by s.name;
+
 -- name: InsertSubgraph :exec
 insert into subgraphs (name)
 values (?)

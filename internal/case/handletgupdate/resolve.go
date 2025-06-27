@@ -174,6 +174,9 @@ func (req *request) handleCommands(ctx context.Context) error {
 		}
 		return req.sendStartMenu(ctx)
 
+	case "content":
+		return req.sendContentMenu(ctx)
+
 	default:
 		msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, "Unknown command")
 

@@ -125,6 +125,10 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 						// User has no subgraph access
 						return []string{}, nil
 					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						// User has no Telegram chat subgraph access
+						return []string{}, nil
+					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil
 					},
@@ -168,6 +172,10 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						// User has premium subgraph access
 						return []string{"premium"}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						// User has no Telegram chat subgraph access
+						return []string{}, nil
 					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil
@@ -214,6 +222,10 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						// Admin might not have explicit subgraph access
+						return []string{}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						// Admin has no Telegram chat subgraph access
 						return []string{}, nil
 					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
@@ -350,6 +362,10 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 						// User has no subgraph access
 						return []string{}, nil
 					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						// User has no Telegram chat subgraph access
+						return []string{}, nil
+					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil
 					},
@@ -386,6 +402,10 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						// User has premium subgraph access
 						return []string{"premium"}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						// User has no Telegram chat subgraph access
+						return []string{}, nil
 					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil

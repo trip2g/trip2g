@@ -173,3 +173,9 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 
 	return nil
 }
+
+func (req *request) sendContentMenu(ctx context.Context) error {
+	// generate list of active subgraphs
+
+	return nil
+}
