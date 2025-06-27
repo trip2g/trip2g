@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"net/url"
 	"testing"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
@@ -254,4 +255,60 @@ func TestErrProfileNotFound(t *testing.T) {
 	err := ErrProfileNotFound
 	require.ErrorIs(t, err, ErrProfileNotFound)
 	require.Equal(t, "profile not found", err.Error())
+}
+
+func TestIsValidRedirectURL(t *testing.T) {
+	trustedDomains := []string{"example.com", "localhost:8081", "api.example.com"}
+
+	tests := []struct {
+		name     string
+		url      string
+		expected bool
+	}{
+		{
+			name:     "relative path - should be allowed",
+			url:      "/dashboard",
+			expected: true,
+		},
+		{
+			name:     "trusted domain exact match",
+			url:      "https://example.com/path",
+			expected: true,
+		},
+		{
+			name:     "trusted domain with port",
+			url:      "http://localhost:8081/admin",
+			expected: true,
+		},
+		{
+			name:     "trusted subdomain",
+			url:      "https://api.example.com/v1",
+			expected: true,
+		},
+		{
+			name:     "untrusted domain - should be blocked",
+			url:      "https://malicious.com/phish",
+			expected: false,
+		},
+		{
+			name:     "subdomain of trusted domain - should be blocked",
+			url:      "https://sub.example.com/path",
+			expected: false,
+		},
+		{
+			name:     "similar domain - should be blocked",
+			url:      "https://example.com.evil.com/path",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			u, err := url.Parse(tt.url)
+			require.NoError(t, err)
+
+			result := isValidRedirectURL(u, trustedDomains)
+			require.Equal(t, tt.expected, result)
+		})
+	}
 }

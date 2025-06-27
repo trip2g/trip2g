@@ -37,6 +37,9 @@ var _ Env = &EnvMock{}
 //			TgUserProfileByChatIDAndBotIDFunc: func(ctx context.Context, arg db.TgUserProfileByChatIDAndBotIDParams) (db.TgUserProfile, error) {
 //				panic("mock out the TgUserProfileByChatIDAndBotID method")
 //			},
+//			TrustedDomainsFunc: func() []string {
+//				panic("mock out the TrustedDomains method")
+//			},
 //			UserByTgUserIDFunc: func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
 //				panic("mock out the UserByTgUserID method")
 //			},
@@ -61,6 +64,9 @@ type EnvMock struct {
 
 	// TgUserProfileByChatIDAndBotIDFunc mocks the TgUserProfileByChatIDAndBotID method.
 	TgUserProfileByChatIDAndBotIDFunc func(ctx context.Context, arg db.TgUserProfileByChatIDAndBotIDParams) (db.TgUserProfile, error)
+
+	// TrustedDomainsFunc mocks the TrustedDomains method.
+	TrustedDomainsFunc func() []string
 
 	// UserByTgUserIDFunc mocks the UserByTgUserID method.
 	UserByTgUserIDFunc func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
@@ -98,6 +104,9 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.TgUserProfileByChatIDAndBotIDParams
 		}
+		// TrustedDomains holds details about calls to the TrustedDomains method.
+		TrustedDomains []struct {
+		}
 		// UserByTgUserID holds details about calls to the UserByTgUserID method.
 		UserByTgUserID []struct {
 			// Ctx is the ctx argument value.
@@ -111,6 +120,7 @@ type EnvMock struct {
 	lockParseTgAuthToken              sync.RWMutex
 	lockSetupUserToken                sync.RWMutex
 	lockTgUserProfileByChatIDAndBotID sync.RWMutex
+	lockTrustedDomains                sync.RWMutex
 	lockUserByTgUserID                sync.RWMutex
 }
 
@@ -282,6 +292,33 @@ func (mock *EnvMock) TgUserProfileByChatIDAndBotIDCalls() []struct {
 	mock.lockTgUserProfileByChatIDAndBotID.RLock()
 	calls = mock.calls.TgUserProfileByChatIDAndBotID
 	mock.lockTgUserProfileByChatIDAndBotID.RUnlock()
+	return calls
+}
+
+// TrustedDomains calls TrustedDomainsFunc.
+func (mock *EnvMock) TrustedDomains() []string {
+	if mock.TrustedDomainsFunc == nil {
+		panic("EnvMock.TrustedDomainsFunc: method is nil but Env.TrustedDomains was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockTrustedDomains.Lock()
+	mock.calls.TrustedDomains = append(mock.calls.TrustedDomains, callInfo)
+	mock.lockTrustedDomains.Unlock()
+	return mock.TrustedDomainsFunc()
+}
+
+// TrustedDomainsCalls gets all the calls that were made to TrustedDomains.
+// Check the length with:
+//
+//	len(mockedEnv.TrustedDomainsCalls())
+func (mock *EnvMock) TrustedDomainsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockTrustedDomains.RLock()
+	calls = mock.calls.TrustedDomains
+	mock.lockTrustedDomains.RUnlock()
 	return calls
 }
 

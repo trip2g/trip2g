@@ -701,6 +701,24 @@ func (a *app) PublicURL() string {
 	return a.config.PublicURL
 }
 
+func (a *app) TrustedDomains() []string {
+	domains := []string{}
+
+	// Always add the public URL domain
+	if publicURL := a.config.PublicURL; publicURL != "" {
+		if u, err := url.Parse(publicURL); err == nil && u.Host != "" {
+			domains = append(domains, u.Host)
+		}
+	}
+
+	// In dev mode, also add localhost:8081
+	if a.config.DevMode {
+		domains = append(domains, "localhost:8081")
+	}
+
+	return domains
+}
+
 func (a *app) NowpaymentsIPNSecret() string {
 	return a.config.NowpaymentsIPNKey
 }

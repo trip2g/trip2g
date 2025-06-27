@@ -17,6 +17,7 @@ type Env interface {
 	InsertUserWithTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
 	UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
 	ParseTgAuthToken(ctx context.Context, token string) (*model.TgAuthToken, error)
+	TrustedDomains() []string
 }
 
 var ErrProfileNotFound = errors.New("profile not found")

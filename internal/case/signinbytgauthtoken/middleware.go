@@ -28,6 +28,13 @@ func Process(ctx *fasthttp.RequestCtx, env Env) bool {
 		return true
 	}
 
+	// Validate redirect URL against trusted domains
+	if !isValidRedirectURL(parsedURL, env.TrustedDomains()) {
+		env.Logger().Warn("attempted redirect to untrusted domain", "host", parsedURL.Host)
+		ctx.SetStatusCode(http.StatusBadRequest)
+		return true
+	}
+
 	query := parsedURL.Query()
 	query.Del(QueryParam)
 	parsedURL.RawQuery = query.Encode()
@@ -35,4 +42,20 @@ func Process(ctx *fasthttp.RequestCtx, env Env) bool {
 	ctx.Redirect(parsedURL.String(), http.StatusFound)
 
 	return true
+}
+
+func isValidRedirectURL(redirectURL *url.URL, trustedDomains []string) bool {
+	// Allow relative paths (no host specified)
+	if redirectURL.Host == "" {
+		return true
+	}
+
+	// Check if host matches any trusted domain
+	for _, domain := range trustedDomains {
+		if redirectURL.Host == domain {
+			return true
+		}
+	}
+
+	return false
 }
