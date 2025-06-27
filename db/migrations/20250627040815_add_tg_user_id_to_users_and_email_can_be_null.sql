@@ -4,7 +4,7 @@
 
 create table users_new (
     id integer primary key,
-    email text unique, -- Made nullable but still unique
+    email text unique, -- nullable but unique for linked accounts
     created_at datetime not null default current_timestamp,
     last_signin_code_sent_at datetime,
     note_view_count integer default 0,

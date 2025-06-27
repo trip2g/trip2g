@@ -14,12 +14,12 @@ type Env interface {
 }
 
 func Resolve(ctx context.Context, env Env, rawToken string) error {
-	token, err := env.ParseTgAuthToken(ctx, rawToken)
+	_, err := env.ParseTgAuthToken(ctx, rawToken)
 	if err != nil {
 		return fmt.Errorf("failed to parse token: %w", err)
 	}
 
-	// make user if need
+	// TODO: make user if needed
 
 	_, err = env.SetupUserToken(ctx, 0)
 	if err != nil {

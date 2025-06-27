@@ -47,7 +47,7 @@ func TestResolve(t *testing.T) {
 				UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 					return db.User{
 						ID:    123,
-						Email: "user@example.com",
+						Email: sql.NullString{String: "user@example.com", Valid: true},
 					}, nil
 				},
 				SetupUserTokenFunc: func(ctx context.Context, userID int64) (string, error) {
@@ -126,7 +126,7 @@ func TestResolve(t *testing.T) {
 				UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 					return db.User{
 						ID:    456,
-						Email: "user@example.com",
+						Email: sql.NullString{String: "user@example.com", Valid: true},
 					}, nil
 				},
 				SetupUserTokenFunc: func(ctx context.Context, userID int64) (string, error) {

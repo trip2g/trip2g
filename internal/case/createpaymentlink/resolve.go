@@ -51,7 +51,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 
-		input.Email = &user.Email
+		if user.Email.Valid {
+			input.Email = &user.Email.String
+		}
 
 		isAuthenticated = true
 	} else {

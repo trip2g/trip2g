@@ -234,7 +234,7 @@ func (a *app) createOwnerIfNotExists(ctx context.Context) error {
 	user, err := a.Queries.UserByEmail(ctx, a.config.OwnerEmail)
 	if err != nil {
 		if db.IsNoFound(err) {
-			user, err = a.InsertUser(ctx, a.config.OwnerEmail)
+			user, err = a.InsertUserWithEmail(ctx, a.config.OwnerEmail)
 			if err != nil {
 				return fmt.Errorf("failed to insert owner user: %w", err)
 			}
@@ -281,6 +281,11 @@ func (a *app) SendMail(ctx context.Context, data model.Mail) error {
 func (a *app) CalculateSha256(s string) string {
 	hash := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(hash[:])
+}
+
+func (a *app) ParseTgAuthToken(ctx context.Context, token string) (*model.TgAuthToken, error) {
+	// TODO: implement proper Telegram auth token parsing
+	return &model.TgAuthToken{UserID: 0}, nil
 }
 
 func (a *app) loadAllNotes(ctx context.Context) error {

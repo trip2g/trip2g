@@ -41,7 +41,7 @@ func Resolve(ctx context.Context, env Env, req gmodel.SignInByEmailInput) (gmode
 	}
 
 	codeParams := db.VerifySignInCodeParams{
-		Email: req.Email,
+		Email: sql.NullString{String: req.Email, Valid: true},
 		Code:  req.Code,
 	}
 

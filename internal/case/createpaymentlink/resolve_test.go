@@ -59,7 +59,7 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    123,
-						Email: "user@example.com",
+						Email: sql.NullString{String: "user@example.com", Valid: true},
 					}, nil
 				},
 				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
@@ -221,7 +221,7 @@ func TestResolve(t *testing.T) {
 				UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 					return db.User{
 						ID:    999,
-						Email: "existing@example.com",
+						Email: sql.NullString{String: "existing@example.com", Valid: true},
 					}, nil // user exists
 				},
 			},
@@ -249,7 +249,7 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    123,
-						Email: "user@example.com",
+						Email: sql.NullString{String: "user@example.com", Valid: true},
 					}, nil
 				},
 				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
@@ -279,7 +279,7 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    123,
-						Email: "user@example.com",
+						Email: sql.NullString{String: "user@example.com", Valid: true},
 					}, nil
 				},
 				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
@@ -355,7 +355,7 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    123,
-						Email: "user@example.com",
+						Email: sql.NullString{String: "user@example.com", Valid: true},
 					}, nil
 				},
 				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
@@ -397,7 +397,7 @@ func TestResolve(t *testing.T) {
 					return &usertoken.Data{ID: 1}, nil
 				},
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
-					return db.User{ID: 1, Email: "test@example.com"}, nil
+					return db.User{ID: 1, Email: sql.NullString{String: "test@example.com", Valid: true}}, nil
 				},
 				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
 					return db.Offer{
