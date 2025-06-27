@@ -15,10 +15,13 @@ err = ...
 if err != nil {
 ```
 
-**IMPORTANT**: You must run `make lint` at the end of editing Golang code to ensure:
-- Code compiles without errors
-- All linting rules pass
-- Generated code is up to date
+**IMPORTANT**: After making changes to Go code:
+1. Run tests for affected packages: `go test ./internal/case/packagename -v`
+2. Run all tests to ensure nothing is broken: `go test ./...`
+3. Run `make lint` to ensure:
+   - Code compiles without errors
+   - All linting rules pass
+   - Generated code is up to date
 
 ## Commit Guidelines
 

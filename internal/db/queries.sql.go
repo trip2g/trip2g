@@ -1639,6 +1639,40 @@ func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64)
 	return items, nil
 }
 
+const listActiveTgChatSubgraphNamesByChatID = `-- name: ListActiveTgChatSubgraphNamesByChatID :many
+select distinct s.name
+  from tg_bot_chats bc
+  join tg_chat_members m on bc.id = m.chat_id
+  join tg_chat_subgraph_accesses a on a.chat_id = bc.id
+  join subgraphs s on s.id = a.subgraph_id
+ where m.user_id = ?
+   and bc.removed_at is null
+ order by s.name
+`
+
+func (q *Queries) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, userID sql.NullInt64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveTgChatSubgraphNamesByChatID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listActiveTgChatSubgraphNamesByUserID = `-- name: ListActiveTgChatSubgraphNamesByUserID :many
 select distinct s.name
   from users u

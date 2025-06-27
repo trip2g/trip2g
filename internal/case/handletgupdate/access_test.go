@@ -3,6 +3,8 @@ package handletgupdate
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"testing"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -37,6 +39,10 @@ func TestHandleGroupAccess(t *testing.T) {
 				},
 			},
 			setup: func(env *EnvMock) {
+				env.GetChatMemberStatusFunc = func(ctx context.Context, chatID, userID int64) (string, error) {
+					// Mock successful group membership check
+					return "member", nil
+				}
 				env.InsertTgChatMemberFunc = func(ctx context.Context, arg db.InsertTgChatMemberParams) error {
 					// Verify correct parameters
 					expectedUserID := int64(7828312136)
@@ -94,6 +100,10 @@ func TestHandleGroupAccess(t *testing.T) {
 				},
 			},
 			setup: func(env *EnvMock) {
+				env.GetChatMemberStatusFunc = func(ctx context.Context, chatID, userID int64) (string, error) {
+					// Mock successful group membership check
+					return "member", nil
+				}
 				env.InsertTgChatMemberFunc = func(ctx context.Context, arg db.InsertTgChatMemberParams) error {
 					return sql.ErrConnDone // Database error
 				}
@@ -111,6 +121,60 @@ func TestHandleGroupAccess(t *testing.T) {
 				}
 			},
 			wantErr: false, // Error is logged but function returns SendMessage result
+		},
+		{
+			name: "user not member of group",
+			args: "group_-1002529281698",
+			update: tgbotapi.Update{
+				Message: &tgbotapi.Message{
+					From: &tgbotapi.User{
+						ID: 7828312136,
+					},
+					Chat: &tgbotapi.Chat{
+						ID: 7828312136,
+					},
+				},
+			},
+			setup: func(env *EnvMock) {
+				env.GetChatMemberStatusFunc = func(ctx context.Context, chatID, userID int64) (string, error) {
+					// Mock user not being a member
+					return "", errors.New("telegram API error: Bad Request: user not found")
+				}
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
+					return tgbotapi.Message{}, nil
+				}
+			},
+			wantErr: false, // Function returns SendMessage result, not the verification error
+		},
+		{
+			name: "user has invalid status (left)",
+			args: "group_-1002529281698",
+			update: tgbotapi.Update{
+				Message: &tgbotapi.Message{
+					From: &tgbotapi.User{
+						ID: 7828312136,
+					},
+					Chat: &tgbotapi.Chat{
+						ID: 7828312136,
+					},
+				},
+			},
+			setup: func(env *EnvMock) {
+				env.GetChatMemberStatusFunc = func(ctx context.Context, chatID, userID int64) (string, error) {
+					// Mock user with "left" status
+					return "left", nil
+				}
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
+					return tgbotapi.Message{}, nil
+				}
+			},
+			wantErr: false, // Function returns SendMessage result, not the verification error
 		},
 	}
 
@@ -136,7 +200,7 @@ func TestHandleGroupAccess(t *testing.T) {
 			}
 
 			// Verify expected calls
-			if tt.args != "group_invalid" {
+			if tt.args != "group_invalid" && tt.name != "user not member of group" && tt.name != "user has invalid status (left)" {
 				require.Len(t, env.InsertTgChatMemberCalls(), 1)
 			}
 			require.Len(t, env.SendCalls(), 1)
@@ -294,6 +358,20 @@ func TestHandleChatMember(t *testing.T) {
 				},
 			},
 			setup: func(env *EnvMock) {
+				env.RequestFunc = func(c tgbotapi.Chattable) (*tgbotapi.APIResponse, error) {
+					// Mock successful group membership check
+					chatMember := tgbotapi.ChatMember{
+						Status: "member",
+						User: &tgbotapi.User{
+							ID: 7828312136,
+						},
+					}
+					memberJSON, _ := json.Marshal(chatMember)
+					return &tgbotapi.APIResponse{
+						Ok:     true,
+						Result: memberJSON,
+					}, nil
+				}
 				env.InsertTgChatMemberFunc = func(ctx context.Context, arg db.InsertTgChatMemberParams) error {
 					require.Equal(t, int64(7828312136), arg.UserID.Int64)
 					require.Equal(t, int64(-1002529281698), arg.ChatID.Int64)

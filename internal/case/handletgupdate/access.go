@@ -29,6 +29,30 @@ func (req *request) handleGroupAccess(ctx context.Context, args string) error {
 
 	userID := req.update.Message.From.ID
 
+	// First, verify that the user is actually a member of the group
+	memberStatus, err := req.env.GetChatMemberStatus(ctx, groupID, userID)
+	if err != nil {
+		req.env.Logger().Error("Failed to check group membership", "error", err, "user_id", userID, "group_id", groupID)
+		return req.SendMessage("❌ Unable to verify group membership. Please try again later.")
+	}
+
+	// Check if user has valid membership status
+	// TODO: use map
+	validStatuses := []string{statusMember, statusAdministrator, statusCreator}
+	isValidMember := false
+	for _, status := range validStatuses {
+		if memberStatus == status {
+			isValidMember = true
+			break
+		}
+	}
+
+	if !isValidMember {
+		req.env.Logger().Info("User does not have valid membership status", "user_id", userID, "group_id", groupID, "status", memberStatus)
+		return req.SendMessage("❌ You must be an active member of this group to get access. Please join the group and try again.")
+	}
+
+	// User is verified as a member, now grant access
 	params := db.InsertTgChatMemberParams{
 		UserID: sql.NullInt64{Int64: userID, Valid: true},
 		ChatID: sql.NullInt64{Int64: groupID, Valid: true},
@@ -36,35 +60,11 @@ func (req *request) handleGroupAccess(ctx context.Context, args string) error {
 
 	err = req.env.InsertTgChatMember(ctx, params)
 	if err != nil {
-		req.env.Logger().Error(fmt.Sprintf("Failed to insert chat member: %v", err))
-		return req.SendMessage("Error adding you to group access. Please try again later.")
+		req.env.Logger().Error("Failed to insert chat member", "error", err, "user_id", userID, "group_id", groupID)
+		return req.SendMessage("❌ Error granting access. Please try again later.")
 	}
 
-	text := fmt.Sprintf("✅ Access granted! You now have access to premium content from group %d.", groupID)
-
-	tokenData := model.TgAuthToken{
-		ChatID: userID,
-		BotID:  req.env.BotID(),
-	}
-
-	authURL, err := req.env.GenerateTgAuthURL(ctx, "/", tokenData)
-	if err != nil {
-		return fmt.Errorf("failed to generate auth URL: %w", err)
-	}
-
-	msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, text)
-	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("Получить доступ", authURL),
-		),
-	)
-
-	_, err = req.env.Send(msg)
-	if err != nil {
-		return fmt.Errorf("failed to send message: %w", err)
-	}
-
-	return nil
+	return req.sendContentMenu(ctx)
 }
 
 func (req *request) handleMyChatMember(ctx context.Context) error {
@@ -175,7 +175,46 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 }
 
 func (req *request) sendContentMenu(ctx context.Context) error {
-	// generate list of active subgraphs
+	sqlID := sql.NullInt64{Valid: true, Int64: req.update.Message.Chat.ID}
+
+	subgraphs, err := req.env.ListActiveTgChatSubgraphNamesByChatID(ctx, sqlID)
+	if err != nil {
+		return fmt.Errorf("failed to list active subgraphs: %w", err)
+	}
+
+	noteViews := req.env.LatestNoteViews()
+
+	text := "📚 Доступные материалы:\n\n"
+	var keyboard [][]tgbotapi.InlineKeyboardButton
+
+	tokenData := model.TgAuthToken{
+		ChatID: req.update.Message.Chat.ID,
+		BotID:  req.env.BotID(),
+	}
+
+	for _, name := range subgraphs {
+		_, ok := noteViews.Subgraphs[name]
+		if ok {
+			authURL, authErr := req.env.GenerateTgAuthURL(ctx, "/", tokenData)
+			if authErr != nil {
+				return fmt.Errorf("failed to generate auth URL: %w for %s", authErr, name)
+			}
+
+			keyboard = append(keyboard, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL(name, authURL),
+			))
+		}
+	}
+
+	msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, text)
+	if len(keyboard) > 0 {
+		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(keyboard...)
+	}
+
+	_, err = req.env.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send message: %w", err)
+	}
 
 	return nil
 }

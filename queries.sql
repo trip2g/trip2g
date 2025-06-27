@@ -123,6 +123,16 @@ select distinct s.name
    and bc.removed_at is null
  order by s.name;
 
+-- name: ListActiveTgChatSubgraphNamesByChatID :many
+select distinct s.name
+  from tg_bot_chats bc
+  join tg_chat_members m on bc.id = m.chat_id
+  join tg_chat_subgraph_accesses a on a.chat_id = bc.id
+  join subgraphs s on s.id = a.subgraph_id
+ where m.user_id = ?
+   and bc.removed_at is null
+ order by s.name;
+
 -- name: InsertSubgraph :exec
 insert into subgraphs (name)
 values (?)

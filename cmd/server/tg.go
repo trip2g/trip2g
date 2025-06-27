@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"trip2g/internal/case/handletgupdate"
@@ -27,6 +28,32 @@ func (be *botEnv) Request(msg tgbotapi.Chattable) (*tgbotapi.APIResponse, error)
 
 func (be *botEnv) BotID() int64 {
 	return be.id
+}
+
+func (be *botEnv) GetChatMemberStatus(ctx context.Context, chatID, userID int64) (string, error) {
+	getChatMemberConfig := tgbotapi.GetChatMemberConfig{
+		ChatConfigWithUser: tgbotapi.ChatConfigWithUser{
+			ChatID: chatID,
+			UserID: userID,
+		},
+	}
+
+	resp, err := be.Request(getChatMemberConfig)
+	if err != nil {
+		return "", fmt.Errorf("failed to request chat member info: %w", err)
+	}
+
+	if !resp.Ok {
+		return "", fmt.Errorf("telegram API error: %s", resp.Description)
+	}
+
+	var chatMember tgbotapi.ChatMember
+	err = json.Unmarshal(resp.Result, &chatMember)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal chat member response: %w", err)
+	}
+
+	return chatMember.Status, nil
 }
 
 func (a *app) RunTgBots(ctx context.Context) error {

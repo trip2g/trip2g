@@ -31,6 +31,9 @@ var _ Env = &EnvMock{}
 //			GenerateTgAuthURLFunc: func(ctx context.Context, path string, data model.TgAuthToken) (string, error) {
 //				panic("mock out the GenerateTgAuthURL method")
 //			},
+//			GetChatMemberStatusFunc: func(ctx context.Context, chatID int64, userID int64) (string, error) {
+//				panic("mock out the GetChatMemberStatus method")
+//			},
 //			InsertTgChatMemberFunc: func(ctx context.Context, arg db.InsertTgChatMemberParams) error {
 //				panic("mock out the InsertTgChatMember method")
 //			},
@@ -39,6 +42,12 @@ var _ Env = &EnvMock{}
 //			},
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
+//			},
+//			ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+//				panic("mock out the ListActiveSubgraphNamesByUserID method")
+//			},
+//			ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, id int64) ([]string, error) {
+//				panic("mock out the ListActiveTgChatSubgraphNamesByUserID method")
 //			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
@@ -83,6 +92,9 @@ type EnvMock struct {
 	// GenerateTgAuthURLFunc mocks the GenerateTgAuthURL method.
 	GenerateTgAuthURLFunc func(ctx context.Context, path string, data model.TgAuthToken) (string, error)
 
+	// GetChatMemberStatusFunc mocks the GetChatMemberStatus method.
+	GetChatMemberStatusFunc func(ctx context.Context, chatID int64, userID int64) (string, error)
+
 	// InsertTgChatMemberFunc mocks the InsertTgChatMember method.
 	InsertTgChatMemberFunc func(ctx context.Context, arg db.InsertTgChatMemberParams) error
 
@@ -91,6 +103,12 @@ type EnvMock struct {
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
+
+	// ListActiveSubgraphNamesByUserIDFunc mocks the ListActiveSubgraphNamesByUserID method.
+	ListActiveSubgraphNamesByUserIDFunc func(ctx context.Context, userID int64) ([]string, error)
+
+	// ListActiveTgChatSubgraphNamesByUserIDFunc mocks the ListActiveTgChatSubgraphNamesByUserID method.
+	ListActiveTgChatSubgraphNamesByUserIDFunc func(ctx context.Context, id int64) ([]string, error)
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -138,6 +156,15 @@ type EnvMock struct {
 			// Data is the data argument value.
 			Data model.TgAuthToken
 		}
+		// GetChatMemberStatus holds details about calls to the GetChatMemberStatus method.
+		GetChatMemberStatus []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ChatID is the chatID argument value.
+			ChatID int64
+			// UserID is the userID argument value.
+			UserID int64
+		}
 		// InsertTgChatMember holds details about calls to the InsertTgChatMember method.
 		InsertTgChatMember []struct {
 			// Ctx is the ctx argument value.
@@ -154,6 +181,20 @@ type EnvMock struct {
 		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
+		}
+		// ListActiveSubgraphNamesByUserID holds details about calls to the ListActiveSubgraphNamesByUserID method.
+		ListActiveSubgraphNamesByUserID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID int64
+		}
+		// ListActiveTgChatSubgraphNamesByUserID holds details about calls to the ListActiveTgChatSubgraphNamesByUserID method.
+		ListActiveTgChatSubgraphNamesByUserID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
 		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
@@ -207,21 +248,24 @@ type EnvMock struct {
 			Arg db.UpsertTgUserStateParams
 		}
 	}
-	lockBotID                       sync.RWMutex
-	lockCalculateSha256             sync.RWMutex
-	lockGenerateTgAuthURL           sync.RWMutex
-	lockInsertTgChatMember          sync.RWMutex
-	lockInsertTgUserProfile         sync.RWMutex
-	lockLatestNoteViews             sync.RWMutex
-	lockLogger                      sync.RWMutex
-	lockMarkTgBotChatRemoved        sync.RWMutex
-	lockPublicURL                   sync.RWMutex
-	lockRemoveTgChatMember          sync.RWMutex
-	lockRequest                     sync.RWMutex
-	lockSend                        sync.RWMutex
-	lockTgUserStateByBotIDAndChatID sync.RWMutex
-	lockUpsertTgBotChat             sync.RWMutex
-	lockUpsertTgUserState           sync.RWMutex
+	lockBotID                                 sync.RWMutex
+	lockCalculateSha256                       sync.RWMutex
+	lockGenerateTgAuthURL                     sync.RWMutex
+	lockGetChatMemberStatus                   sync.RWMutex
+	lockInsertTgChatMember                    sync.RWMutex
+	lockInsertTgUserProfile                   sync.RWMutex
+	lockLatestNoteViews                       sync.RWMutex
+	lockListActiveSubgraphNamesByUserID       sync.RWMutex
+	lockListActiveTgChatSubgraphNamesByUserID sync.RWMutex
+	lockLogger                                sync.RWMutex
+	lockMarkTgBotChatRemoved                  sync.RWMutex
+	lockPublicURL                             sync.RWMutex
+	lockRemoveTgChatMember                    sync.RWMutex
+	lockRequest                               sync.RWMutex
+	lockSend                                  sync.RWMutex
+	lockTgUserStateByBotIDAndChatID           sync.RWMutex
+	lockUpsertTgBotChat                       sync.RWMutex
+	lockUpsertTgUserState                     sync.RWMutex
 }
 
 // BotID calls BotIDFunc.
@@ -323,6 +367,46 @@ func (mock *EnvMock) GenerateTgAuthURLCalls() []struct {
 	return calls
 }
 
+// GetChatMemberStatus calls GetChatMemberStatusFunc.
+func (mock *EnvMock) GetChatMemberStatus(ctx context.Context, chatID int64, userID int64) (string, error) {
+	if mock.GetChatMemberStatusFunc == nil {
+		panic("EnvMock.GetChatMemberStatusFunc: method is nil but Env.GetChatMemberStatus was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		ChatID int64
+		UserID int64
+	}{
+		Ctx:    ctx,
+		ChatID: chatID,
+		UserID: userID,
+	}
+	mock.lockGetChatMemberStatus.Lock()
+	mock.calls.GetChatMemberStatus = append(mock.calls.GetChatMemberStatus, callInfo)
+	mock.lockGetChatMemberStatus.Unlock()
+	return mock.GetChatMemberStatusFunc(ctx, chatID, userID)
+}
+
+// GetChatMemberStatusCalls gets all the calls that were made to GetChatMemberStatus.
+// Check the length with:
+//
+//	len(mockedEnv.GetChatMemberStatusCalls())
+func (mock *EnvMock) GetChatMemberStatusCalls() []struct {
+	Ctx    context.Context
+	ChatID int64
+	UserID int64
+} {
+	var calls []struct {
+		Ctx    context.Context
+		ChatID int64
+		UserID int64
+	}
+	mock.lockGetChatMemberStatus.RLock()
+	calls = mock.calls.GetChatMemberStatus
+	mock.lockGetChatMemberStatus.RUnlock()
+	return calls
+}
+
 // InsertTgChatMember calls InsertTgChatMemberFunc.
 func (mock *EnvMock) InsertTgChatMember(ctx context.Context, arg db.InsertTgChatMemberParams) error {
 	if mock.InsertTgChatMemberFunc == nil {
@@ -419,6 +503,78 @@ func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 	mock.lockLatestNoteViews.RLock()
 	calls = mock.calls.LatestNoteViews
 	mock.lockLatestNoteViews.RUnlock()
+	return calls
+}
+
+// ListActiveSubgraphNamesByUserID calls ListActiveSubgraphNamesByUserIDFunc.
+func (mock *EnvMock) ListActiveSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error) {
+	if mock.ListActiveSubgraphNamesByUserIDFunc == nil {
+		panic("EnvMock.ListActiveSubgraphNamesByUserIDFunc: method is nil but Env.ListActiveSubgraphNamesByUserID was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID int64
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockListActiveSubgraphNamesByUserID.Lock()
+	mock.calls.ListActiveSubgraphNamesByUserID = append(mock.calls.ListActiveSubgraphNamesByUserID, callInfo)
+	mock.lockListActiveSubgraphNamesByUserID.Unlock()
+	return mock.ListActiveSubgraphNamesByUserIDFunc(ctx, userID)
+}
+
+// ListActiveSubgraphNamesByUserIDCalls gets all the calls that were made to ListActiveSubgraphNamesByUserID.
+// Check the length with:
+//
+//	len(mockedEnv.ListActiveSubgraphNamesByUserIDCalls())
+func (mock *EnvMock) ListActiveSubgraphNamesByUserIDCalls() []struct {
+	Ctx    context.Context
+	UserID int64
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID int64
+	}
+	mock.lockListActiveSubgraphNamesByUserID.RLock()
+	calls = mock.calls.ListActiveSubgraphNamesByUserID
+	mock.lockListActiveSubgraphNamesByUserID.RUnlock()
+	return calls
+}
+
+// ListActiveTgChatSubgraphNamesByUserID calls ListActiveTgChatSubgraphNamesByUserIDFunc.
+func (mock *EnvMock) ListActiveTgChatSubgraphNamesByUserID(ctx context.Context, id int64) ([]string, error) {
+	if mock.ListActiveTgChatSubgraphNamesByUserIDFunc == nil {
+		panic("EnvMock.ListActiveTgChatSubgraphNamesByUserIDFunc: method is nil but Env.ListActiveTgChatSubgraphNamesByUserID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockListActiveTgChatSubgraphNamesByUserID.Lock()
+	mock.calls.ListActiveTgChatSubgraphNamesByUserID = append(mock.calls.ListActiveTgChatSubgraphNamesByUserID, callInfo)
+	mock.lockListActiveTgChatSubgraphNamesByUserID.Unlock()
+	return mock.ListActiveTgChatSubgraphNamesByUserIDFunc(ctx, id)
+}
+
+// ListActiveTgChatSubgraphNamesByUserIDCalls gets all the calls that were made to ListActiveTgChatSubgraphNamesByUserID.
+// Check the length with:
+//
+//	len(mockedEnv.ListActiveTgChatSubgraphNamesByUserIDCalls())
+func (mock *EnvMock) ListActiveTgChatSubgraphNamesByUserIDCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockListActiveTgChatSubgraphNamesByUserID.RLock()
+	calls = mock.calls.ListActiveTgChatSubgraphNamesByUserID
+	mock.lockListActiveTgChatSubgraphNamesByUserID.RUnlock()
 	return calls
 }
 

@@ -93,6 +93,12 @@ func TestResolve(t *testing.T) {
 				env.GenerateTgAuthURLFunc = func(ctx context.Context, path string, data model.TgAuthToken) (string, error) {
 					return "https://example.com/auth?token=test", nil
 				}
+
+				// GetChatMemberStatus for group membership verification
+				env.GetChatMemberStatusFunc = func(ctx context.Context, chatID int64, userID int64) (string, error) {
+					// Mock successful group membership check
+					return "member", nil
+				}
 			},
 			wantErr: false,
 		},
