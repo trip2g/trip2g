@@ -13,7 +13,7 @@ import (
 )
 
 type Env interface {
-	GetTgBotChat(ctx context.Context, id int64) (db.TgBotChat, error)
+	TgBotChat(ctx context.Context, id int64) (db.TgBotChat, error)
 	SubgraphByID(ctx context.Context, id int64) (db.Subgraph, error)
 	InsertTgChatSubgraphAccess(ctx context.Context, arg db.InsertTgChatSubgraphAccessParams) (db.TgChatSubgraphAccess, error)
 }
@@ -29,7 +29,7 @@ func Resolve(ctx context.Context, env Env, input model.AddTgChatSubgraphAccessIn
 	}
 
 	// Check if chat exists
-	_, err = env.GetTgBotChat(ctx, input.ChatID)
+	_, err = env.TgBotChat(ctx, input.ChatID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return &model.ErrorPayload{Message: "Chat not found"}, nil

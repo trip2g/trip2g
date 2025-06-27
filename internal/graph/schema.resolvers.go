@@ -449,7 +449,7 @@ func (r *adminQueryResolver) Redirect(ctx context.Context, obj *appmodel.AdminQu
 
 // TgBot is the resolver for the tgBot field.
 func (r *adminQueryResolver) TgBot(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.TgBot, error) {
-	return resolveOne[db.TgBot](ctx, id, r.env(ctx).GetTgBot)
+	return resolveOne[db.TgBot](ctx, id, r.env(ctx).TgBot)
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -595,7 +595,7 @@ func (r *adminTgChatMembersConnectionResolver) Nodes(ctx context.Context, obj *m
 
 // Chat is the resolver for the chat field.
 func (r *adminTgChatSubgraphAccessResolver) Chat(ctx context.Context, obj *db.TgChatSubgraphAccess) (*db.TgBotChat, error) {
-	return resolveOne[db.TgBotChat](ctx, obj.ChatID, r.env(ctx).GetTgBotChat)
+	return resolveOne[db.TgBotChat](ctx, obj.ChatID, r.env(ctx).TgBotChat)
 }
 
 // Subgraph is the resolver for the subgraph field.

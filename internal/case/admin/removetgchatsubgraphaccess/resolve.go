@@ -13,7 +13,7 @@ import (
 )
 
 type Env interface {
-	GetTgChatSubgraphAccess(ctx context.Context, id int64) (db.TgChatSubgraphAccess, error)
+	TgChatSubgraphAccess(ctx context.Context, id int64) (db.TgChatSubgraphAccess, error)
 	DeleteTgChatSubgraphAccess(ctx context.Context, id int64) error
 }
 
@@ -27,7 +27,7 @@ func Resolve(ctx context.Context, env Env, input model.RemoveTgChatSubgraphAcces
 	}
 
 	// Check if access exists
-	_, err = env.GetTgChatSubgraphAccess(ctx, input.ID)
+	_, err = env.TgChatSubgraphAccess(ctx, input.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return &model.ErrorPayload{Message: "Chat subgraph access not found"}, nil

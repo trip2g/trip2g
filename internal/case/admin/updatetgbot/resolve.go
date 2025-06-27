@@ -13,7 +13,7 @@ import (
 )
 
 type Env interface {
-	GetTgBot(ctx context.Context, id int64) (db.TgBot, error)
+	TgBot(ctx context.Context, id int64) (db.TgBot, error)
 	UpdateTgBot(ctx context.Context, arg db.UpdateTgBotParams) (db.TgBot, error)
 }
 
@@ -27,7 +27,7 @@ func Resolve(ctx context.Context, env Env, input model.UpdateTgBotInput) (model.
 	}
 
 	// Check if bot exists
-	_, err = env.GetTgBot(ctx, input.ID)
+	_, err = env.TgBot(ctx, input.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return &model.ErrorPayload{Message: "Bot not found"}, nil

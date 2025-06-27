@@ -142,8 +142,8 @@ type Env interface {
 
 	// Telegram bot queries
 	AllTgBots(ctx context.Context) ([]db.TgBot, error)
-	GetTgBot(ctx context.Context, id int64) (db.TgBot, error)
-	GetTgBotChat(ctx context.Context, id int64) (db.TgBotChat, error)
+	TgBot(ctx context.Context, id int64) (db.TgBot, error)
+	TgBotChat(ctx context.Context, id int64) (db.TgBotChat, error)
 	TgBotChatsByBotID(ctx context.Context, arg db.TgBotChatsByBotIDParams) ([]db.TgBotChat, error)
 	AllTgBotChats(ctx context.Context, includeRemoved interface{}) ([]db.TgBotChat, error)
 	TgChatMembersByChatID(ctx context.Context, chatID sql.NullInt64) ([]db.TgChatMembersByChatIDRow, error)
@@ -151,6 +151,5 @@ type Env interface {
 	TgChatSubgraphAccessesByChatID(ctx context.Context, chatID int64) ([]db.TgChatSubgraphAccess, error)
 	TgChatSubgraphAccessesBySubgraphID(ctx context.Context, subgraphID int64) ([]db.TgChatSubgraphAccess, error)
 	AllTgChatSubgraphAccesses(ctx context.Context) ([]db.TgChatSubgraphAccess, error)
-	GetTgChatSubgraphAccess(ctx context.Context, id int64) (db.TgChatSubgraphAccess, error)
-	GetTgUserProfile(ctx context.Context, sha256Hash string) (db.TgUserProfile, error)
+	TgChatSubgraphAccess(ctx context.Context, id int64) (db.TgChatSubgraphAccess, error)
 }

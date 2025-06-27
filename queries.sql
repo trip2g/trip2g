@@ -64,7 +64,7 @@ select * from users where email = lower(?);
 insert into users (email) values (lower(?))
 returning *;
 
--- name: InsertUserWithTGUserID :one
+-- name: InsertUserWithTgUserID :one
 insert into users (tg_user_id)
 values (?)
 returning *;
@@ -591,7 +591,7 @@ on conflict(user_id, chat_id) do nothing;
 delete from tg_chat_members
 where user_id = ? and chat_id = ?;
 
--- name: GetTgChatMember :one
+-- name: TgChatMemberByUserIDAndChatID :one
 select user_id, chat_id, created_at
 from tg_chat_members
 where user_id = ? and chat_id = ?;
@@ -600,7 +600,7 @@ where user_id = ? and chat_id = ?;
 select * from tg_bots
 order by created_at desc;
 
--- name: GetTgBot :one
+-- name: TgBot :one
 select * from tg_bots
 where id = ?;
 
@@ -662,7 +662,7 @@ order by created_at desc;
 select * from tg_chat_subgraph_accesses
 order by created_at desc;
 
--- name: GetTgChatSubgraphAccess :one
+-- name: TgChatSubgraphAccess :one
 select * from tg_chat_subgraph_accesses
 where id = ?;
 
@@ -675,10 +675,22 @@ returning *;
 delete from tg_chat_subgraph_accesses
 where id = ?;
 
--- name: GetTgBotChat :one
+-- name: TgBotChat :one
 select * from tg_bot_chats
 where id = ?;
 
--- name: GetTgUserProfile :one
+-- name: TgUserProfileBySha256Hash :one
 select * from tg_user_profiles
 where sha256_hash = ?;
+
+-- name: TgUserProfileByChatIDAndBotID :one
+select *
+  from tg_user_profiles
+ where chat_id = ? and bot_id = ?
+limit 1;
+
+-- name: UserByTgUserID :one
+select *
+  from users
+ where tg_user_id = ?
+limit 1;

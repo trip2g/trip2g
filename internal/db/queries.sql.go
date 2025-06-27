@@ -751,99 +751,6 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 	return i, err
 }
 
-const getTgBot = `-- name: GetTgBot :one
-select id, token, enabled, description, created_at, created_by, name from tg_bots
-where id = ?
-`
-
-func (q *Queries) GetTgBot(ctx context.Context, id int64) (TgBot, error) {
-	row := q.db.QueryRowContext(ctx, getTgBot, id)
-	var i TgBot
-	err := row.Scan(
-		&i.ID,
-		&i.Token,
-		&i.Enabled,
-		&i.Description,
-		&i.CreatedAt,
-		&i.CreatedBy,
-		&i.Name,
-	)
-	return i, err
-}
-
-const getTgBotChat = `-- name: GetTgBotChat :one
-select id, chat_type, chat_title, added_at, removed_at from tg_bot_chats
-where id = ?
-`
-
-func (q *Queries) GetTgBotChat(ctx context.Context, id int64) (TgBotChat, error) {
-	row := q.db.QueryRowContext(ctx, getTgBotChat, id)
-	var i TgBotChat
-	err := row.Scan(
-		&i.ID,
-		&i.ChatType,
-		&i.ChatTitle,
-		&i.AddedAt,
-		&i.RemovedAt,
-	)
-	return i, err
-}
-
-const getTgChatMember = `-- name: GetTgChatMember :one
-select user_id, chat_id, created_at
-from tg_chat_members
-where user_id = ? and chat_id = ?
-`
-
-type GetTgChatMemberParams struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	ChatID sql.NullInt64 `json:"chat_id"`
-}
-
-func (q *Queries) GetTgChatMember(ctx context.Context, arg GetTgChatMemberParams) (TgChatMember, error) {
-	row := q.db.QueryRowContext(ctx, getTgChatMember, arg.UserID, arg.ChatID)
-	var i TgChatMember
-	err := row.Scan(&i.UserID, &i.ChatID, &i.CreatedAt)
-	return i, err
-}
-
-const getTgChatSubgraphAccess = `-- name: GetTgChatSubgraphAccess :one
-select id, chat_id, subgraph_id, created_at from tg_chat_subgraph_accesses
-where id = ?
-`
-
-func (q *Queries) GetTgChatSubgraphAccess(ctx context.Context, id int64) (TgChatSubgraphAccess, error) {
-	row := q.db.QueryRowContext(ctx, getTgChatSubgraphAccess, id)
-	var i TgChatSubgraphAccess
-	err := row.Scan(
-		&i.ID,
-		&i.ChatID,
-		&i.SubgraphID,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const getTgUserProfile = `-- name: GetTgUserProfile :one
-select sha256_hash, chat_id, bot_id, created_at, first_name, last_name, username from tg_user_profiles
-where sha256_hash = ?
-`
-
-func (q *Queries) GetTgUserProfile(ctx context.Context, sha256Hash string) (TgUserProfile, error) {
-	row := q.db.QueryRowContext(ctx, getTgUserProfile, sha256Hash)
-	var i TgUserProfile
-	err := row.Scan(
-		&i.Sha256Hash,
-		&i.ChatID,
-		&i.BotID,
-		&i.CreatedAt,
-		&i.FirstName,
-		&i.LastName,
-		&i.Username,
-	)
-	return i, err
-}
-
 const hideNotePath = `-- name: HideNotePath :exec
 update note_paths
    set hidden_by = ?
@@ -1389,14 +1296,14 @@ func (q *Queries) InsertUserWithEmail(ctx context.Context, lower string) (User, 
 	return i, err
 }
 
-const insertUserWithTGUserID = `-- name: InsertUserWithTGUserID :one
+const insertUserWithTgUserID = `-- name: InsertUserWithTgUserID :one
 insert into users (tg_user_id)
 values (?)
 returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id
 `
 
-func (q *Queries) InsertUserWithTGUserID(ctx context.Context, tgUserID sql.NullInt64) (User, error) {
-	row := q.db.QueryRowContext(ctx, insertUserWithTGUserID, tgUserID)
+func (q *Queries) InsertUserWithTgUserID(ctx context.Context, tgUserID sql.NullInt64) (User, error) {
+	row := q.db.QueryRowContext(ctx, insertUserWithTgUserID, tgUserID)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -2580,6 +2487,44 @@ func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, er
 	return i, err
 }
 
+const tgBot = `-- name: TgBot :one
+select id, token, enabled, description, created_at, created_by, name from tg_bots
+where id = ?
+`
+
+func (q *Queries) TgBot(ctx context.Context, id int64) (TgBot, error) {
+	row := q.db.QueryRowContext(ctx, tgBot, id)
+	var i TgBot
+	err := row.Scan(
+		&i.ID,
+		&i.Token,
+		&i.Enabled,
+		&i.Description,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Name,
+	)
+	return i, err
+}
+
+const tgBotChat = `-- name: TgBotChat :one
+select id, chat_type, chat_title, added_at, removed_at from tg_bot_chats
+where id = ?
+`
+
+func (q *Queries) TgBotChat(ctx context.Context, id int64) (TgBotChat, error) {
+	row := q.db.QueryRowContext(ctx, tgBotChat, id)
+	var i TgBotChat
+	err := row.Scan(
+		&i.ID,
+		&i.ChatType,
+		&i.ChatTitle,
+		&i.AddedAt,
+		&i.RemovedAt,
+	)
+	return i, err
+}
+
 const tgBotChatsByBotID = `-- name: TgBotChatsByBotID :many
 select id, chat_type, chat_title, added_at, removed_at from tg_bot_chats
 where id in (
@@ -2641,6 +2586,24 @@ func (q *Queries) TgBotChatsByBotIDCount(ctx context.Context, arg TgBotChatsByBo
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const tgChatMemberByUserIDAndChatID = `-- name: TgChatMemberByUserIDAndChatID :one
+select user_id, chat_id, created_at
+from tg_chat_members
+where user_id = ? and chat_id = ?
+`
+
+type TgChatMemberByUserIDAndChatIDParams struct {
+	UserID sql.NullInt64 `json:"user_id"`
+	ChatID sql.NullInt64 `json:"chat_id"`
+}
+
+func (q *Queries) TgChatMemberByUserIDAndChatID(ctx context.Context, arg TgChatMemberByUserIDAndChatIDParams) (TgChatMember, error) {
+	row := q.db.QueryRowContext(ctx, tgChatMemberByUserIDAndChatID, arg.UserID, arg.ChatID)
+	var i TgChatMember
+	err := row.Scan(&i.UserID, &i.ChatID, &i.CreatedAt)
+	return i, err
 }
 
 const tgChatMembersByChatID = `-- name: TgChatMembersByChatID :many
@@ -2711,6 +2674,23 @@ func (q *Queries) TgChatMembersByChatIDCount(ctx context.Context, chatID sql.Nul
 	return count, err
 }
 
+const tgChatSubgraphAccess = `-- name: TgChatSubgraphAccess :one
+select id, chat_id, subgraph_id, created_at from tg_chat_subgraph_accesses
+where id = ?
+`
+
+func (q *Queries) TgChatSubgraphAccess(ctx context.Context, id int64) (TgChatSubgraphAccess, error) {
+	row := q.db.QueryRowContext(ctx, tgChatSubgraphAccess, id)
+	var i TgChatSubgraphAccess
+	err := row.Scan(
+		&i.ID,
+		&i.ChatID,
+		&i.SubgraphID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const tgChatSubgraphAccessesByChatID = `-- name: TgChatSubgraphAccessesByChatID :many
 select id, chat_id, subgraph_id, created_at from tg_chat_subgraph_accesses
 where chat_id = ?
@@ -2777,6 +2757,53 @@ func (q *Queries) TgChatSubgraphAccessesBySubgraphID(ctx context.Context, subgra
 		return nil, err
 	}
 	return items, nil
+}
+
+const tgUserProfileByChatIDAndBotID = `-- name: TgUserProfileByChatIDAndBotID :one
+select sha256_hash, chat_id, bot_id, created_at, first_name, last_name, username
+  from tg_user_profiles
+ where chat_id = ? and bot_id = ?
+limit 1
+`
+
+type TgUserProfileByChatIDAndBotIDParams struct {
+	ChatID int64 `json:"chat_id"`
+	BotID  int64 `json:"bot_id"`
+}
+
+func (q *Queries) TgUserProfileByChatIDAndBotID(ctx context.Context, arg TgUserProfileByChatIDAndBotIDParams) (TgUserProfile, error) {
+	row := q.db.QueryRowContext(ctx, tgUserProfileByChatIDAndBotID, arg.ChatID, arg.BotID)
+	var i TgUserProfile
+	err := row.Scan(
+		&i.Sha256Hash,
+		&i.ChatID,
+		&i.BotID,
+		&i.CreatedAt,
+		&i.FirstName,
+		&i.LastName,
+		&i.Username,
+	)
+	return i, err
+}
+
+const tgUserProfileBySha256Hash = `-- name: TgUserProfileBySha256Hash :one
+select sha256_hash, chat_id, bot_id, created_at, first_name, last_name, username from tg_user_profiles
+where sha256_hash = ?
+`
+
+func (q *Queries) TgUserProfileBySha256Hash(ctx context.Context, sha256Hash string) (TgUserProfile, error) {
+	row := q.db.QueryRowContext(ctx, tgUserProfileBySha256Hash, sha256Hash)
+	var i TgUserProfile
+	err := row.Scan(
+		&i.Sha256Hash,
+		&i.ChatID,
+		&i.BotID,
+		&i.CreatedAt,
+		&i.FirstName,
+		&i.LastName,
+		&i.Username,
+	)
+	return i, err
 }
 
 const tgUserStateByBotIDAndChatID = `-- name: TgUserStateByBotIDAndChatID :one
@@ -3208,6 +3235,27 @@ select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user
 
 func (q *Queries) UserByID(ctx context.Context, id int64) (User, error) {
 	row := q.db.QueryRowContext(ctx, userByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+		&i.NoteViewCount,
+		&i.TgUserID,
+	)
+	return i, err
+}
+
+const userByTgUserID = `-- name: UserByTgUserID :one
+select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id
+  from users
+ where tg_user_id = ?
+limit 1
+`
+
+func (q *Queries) UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (User, error) {
+	row := q.db.QueryRowContext(ctx, userByTgUserID, tgUserID)
 	var i User
 	err := row.Scan(
 		&i.ID,

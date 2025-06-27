@@ -1,5 +1,6 @@
 package model
 
 type TgAuthToken struct {
-	UserID int64 `json:"i"`
+	ChatID int64 `json:"c"`
+	BotID  int64 `json:"b"`
 }

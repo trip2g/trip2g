@@ -285,7 +285,7 @@ func (a *app) CalculateSha256(s string) string {
 
 func (a *app) ParseTgAuthToken(ctx context.Context, token string) (*model.TgAuthToken, error) {
 	// TODO: implement proper Telegram auth token parsing
-	return &model.TgAuthToken{UserID: 0}, nil
+	return &model.TgAuthToken{ChatID: 0, BotID: 0}, nil
 }
 
 func (a *app) loadAllNotes(ctx context.Context) error {
