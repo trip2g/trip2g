@@ -22,7 +22,6 @@ type Env interface {
 	MarkTgBotChatRemoved(ctx context.Context, id int64) error
 	InsertTgChatMember(ctx context.Context, arg db.InsertTgChatMemberParams) error
 	RemoveTgChatMember(ctx context.Context, arg db.RemoveTgChatMemberParams) error
-	GetTgChatMember(ctx context.Context, arg db.GetTgChatMemberParams) (db.TgChatMember, error)
 	CalculateSha256(s string) string
 	PublicURL() string
 	LatestNoteViews() *model.NoteViews // TODO: read LiveNoteViews for production users

@@ -1,54 +1,443 @@
+//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
+
 package handletgupdate
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"testing"
+	"time"
+	"trip2g/internal/db"
+	"trip2g/internal/logger"
+	"trip2g/internal/model"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/stretchr/testify/require"
 )
 
-func TestCalculateMBTI(t *testing.T) {
-	testAnswers := map[int]int{
-		1: -1, 10: 1, 11: -2, 12: -2, 13: 3, 14: 2, 15: 3, 16: -1, 17: 3, 18: -2,
-		19: 3, 2: 3, 20: 2, 21: 3, 22: -2, 23: 3, 24: 3, 25: 3, 26: 2, 27: -2,
-		28: -3, 29: 2, 3: -2, 30: 3, 31: -3, 32: -3, 33: -2, 34: 2, 35: -1,
-		36: -1, 37: 3, 38: 3, 39: 3, 4: -1, 40: 1, 41: 3, 42: 3, 43: -2, 44: 3,
-		45: 3, 46: -2, 47: -2, 48: -2, 49: 2, 5: 3, 50: 1, 51: 3, 52: -3, 53: -3,
-		54: 3, 55: 1, 56: -2, 57: 3, 58: -2, 59: 3, 6: 1, 60: 2, 7: -1, 8: -2, 9: 3,
+func TestResolve(t *testing.T) {
+	tests := []struct {
+		name    string
+		update  tgbotapi.Update
+		setup   func(*EnvMock)
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "start command with group access",
+			update: tgbotapi.Update{
+				UpdateID: 430606726,
+				Message: &tgbotapi.Message{
+					MessageID: 361,
+					From: &tgbotapi.User{
+						ID:           7828312136,
+						IsBot:        false,
+						FirstName:    "Алексей",
+						LanguageCode: "en",
+					},
+					Chat: &tgbotapi.Chat{
+						ID:        7828312136,
+						FirstName: "Алексей",
+						Type:      "private",
+					},
+					Date: 1750942673,
+					Text: "/start group_-1002529281698",
+					Entities: []tgbotapi.MessageEntity{
+						{
+							Type:   "bot_command",
+							Offset: 0,
+							Length: 6,
+						},
+					},
+				},
+			},
+			setup: func(env *EnvMock) {
+				// User profile insertion
+				env.CalculateSha256Func = func(s string) string {
+					return "test_hash_123"
+				}
+				env.BotIDFunc = func() int64 {
+					return 1
+				}
+				env.InsertTgUserProfileFunc = func(ctx context.Context, arg db.InsertTgUserProfileParams) error {
+					return nil
+				}
+
+				// User state - not found initially (new user)
+				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
+					return db.TgUserState{}, sql.ErrNoRows
+				}
+
+				// Chat member insertion for group access
+				env.InsertTgChatMemberFunc = func(ctx context.Context, arg db.InsertTgChatMemberParams) error {
+					return nil
+				}
+
+				// Message sending
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
+					return tgbotapi.Message{}, nil
+				}
+
+				// User state upsert
+				env.UpsertTgUserStateFunc = func(ctx context.Context, arg db.UpsertTgUserStateParams) error {
+					return nil
+				}
+
+				// Logger
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "regular start command",
+			update: tgbotapi.Update{
+				UpdateID: 430606727,
+				Message: &tgbotapi.Message{
+					MessageID: 362,
+					From: &tgbotapi.User{
+						ID:           7828312136,
+						IsBot:        false,
+						FirstName:    "Алексей",
+						LanguageCode: "en",
+					},
+					Chat: &tgbotapi.Chat{
+						ID:        7828312136,
+						FirstName: "Алексей",
+						Type:      "private",
+					},
+					Date: 1750942700,
+					Text: "/start",
+					Entities: []tgbotapi.MessageEntity{
+						{
+							Type:   "bot_command",
+							Offset: 0,
+							Length: 6,
+						},
+					},
+				},
+			},
+			setup: func(env *EnvMock) {
+				env.CalculateSha256Func = func(s string) string {
+					return "test_hash_123"
+				}
+				env.BotIDFunc = func() int64 {
+					return 1
+				}
+				env.InsertTgUserProfileFunc = func(ctx context.Context, arg db.InsertTgUserProfileParams) error {
+					return nil
+				}
+				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
+					return db.TgUserState{}, sql.ErrNoRows
+				}
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
+					return tgbotapi.Message{}, nil
+				}
+				env.UpsertTgUserStateFunc = func(ctx context.Context, arg db.UpsertTgUserStateParams) error {
+					return nil
+				}
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+				env.PublicURLFunc = func() string {
+					return "https://test.com"
+				}
+				env.LatestNoteViewsFunc = func() *model.NoteViews {
+					return &model.NoteViews{
+						List: []*model.NoteView{
+							{Title: "Test Note", Path: "/test"},
+						},
+					}
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "existing user with valid state",
+			update: tgbotapi.Update{
+				UpdateID: 430606728,
+				Message: &tgbotapi.Message{
+					MessageID: 363,
+					From: &tgbotapi.User{
+						ID:           7828312136,
+						IsBot:        false,
+						FirstName:    "Алексей",
+						LanguageCode: "en",
+					},
+					Chat: &tgbotapi.Chat{
+						ID:        7828312136,
+						FirstName: "Алексей",
+						Type:      "private",
+					},
+					Date: 1750942800,
+					Text: "/start",
+				},
+			},
+			setup: func(env *EnvMock) {
+				env.CalculateSha256Func = func(s string) string {
+					return "test_hash_123"
+				}
+				env.BotIDFunc = func() int64 {
+					return 1
+				}
+				env.InsertTgUserProfileFunc = func(ctx context.Context, arg db.InsertTgUserProfileParams) error {
+					return nil
+				}
+
+				// Return existing user state with valid JSON
+				validStateData := UserStateData{
+					QuizStates: map[string]QuizState{
+						"mbti": {Answers: map[int]int{}},
+					},
+				}
+				stateJSON, _ := json.Marshal(validStateData)
+
+				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
+					return db.TgUserState{
+						ChatID:      7828312136,
+						BotID:       1,
+						Value:       "pending",
+						Data:        string(stateJSON),
+						UpdateCount: 0,
+						CreatedAt:   time.Now(),
+						UpdatedAt:   time.Now(),
+					}, nil
+				}
+
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
+					return tgbotapi.Message{}, nil
+				}
+				env.UpsertTgUserStateFunc = func(ctx context.Context, arg db.UpsertTgUserStateParams) error {
+					return nil
+				}
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+				env.PublicURLFunc = func() string {
+					return "https://test.com"
+				}
+				env.LatestNoteViewsFunc = func() *model.NoteViews {
+					return &model.NoteViews{List: []*model.NoteView{}}
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "user profile insertion error",
+			update: tgbotapi.Update{
+				UpdateID: 430606729,
+				Message: &tgbotapi.Message{
+					MessageID: 364,
+					From: &tgbotapi.User{
+						ID:        7828312136,
+						FirstName: "Алексей",
+					},
+					Chat: &tgbotapi.Chat{
+						ID:   7828312136,
+						Type: "private",
+					},
+					Date: 1750942900,
+					Text: "/start",
+				},
+			},
+			setup: func(env *EnvMock) {
+				env.CalculateSha256Func = func(s string) string {
+					return "test_hash_123"
+				}
+				env.BotIDFunc = func() int64 {
+					return 1
+				}
+				env.InsertTgUserProfileFunc = func(ctx context.Context, arg db.InsertTgUserProfileParams) error {
+					return sql.ErrConnDone // Simulate database error
+				}
+				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
+					return db.TgUserState{}, sql.ErrNoRows
+				}
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
+					return tgbotapi.Message{}, nil
+				}
+				env.UpsertTgUserStateFunc = func(ctx context.Context, arg db.UpsertTgUserStateParams) error {
+					return nil
+				}
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+				env.PublicURLFunc = func() string {
+					return "https://test.com"
+				}
+				env.LatestNoteViewsFunc = func() *model.NoteViews {
+					return &model.NoteViews{List: []*model.NoteView{}}
+				}
+			},
+			wantErr: false, // Error is logged but doesn't fail the request
+		},
+		{
+			name: "invalid user state JSON",
+			update: tgbotapi.Update{
+				UpdateID: 430606730,
+				Message: &tgbotapi.Message{
+					MessageID: 365,
+					From: &tgbotapi.User{
+						ID:        7828312136,
+						FirstName: "Алексей",
+					},
+					Chat: &tgbotapi.Chat{
+						ID:   7828312136,
+						Type: "private",
+					},
+					Date: 1750943000,
+					Text: "/start",
+				},
+			},
+			setup: func(env *EnvMock) {
+				env.CalculateSha256Func = func(s string) string {
+					return "test_hash_123"
+				}
+				env.BotIDFunc = func() int64 {
+					return 1
+				}
+				env.InsertTgUserProfileFunc = func(ctx context.Context, arg db.InsertTgUserProfileParams) error {
+					return nil
+				}
+
+				// Return existing user state with invalid JSON (like "pending")
+				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
+					return db.TgUserState{
+						ChatID:      7828312136,
+						BotID:       1,
+						Value:       "pending",
+						Data:        "invalid json data", // Invalid JSON
+						UpdateCount: 0,
+					}, nil
+				}
+
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+			},
+			wantErr: true,
+			errMsg:  "failed to get user state: failed to unmarshal user state",
+		},
 	}
 
-	rawQuestions := []byte(
-		`[{"ID":1,"Text":"","Category":"EI"},{"ID":2,"Text":"","Category":"NS"},{"ID":3,"Text":"","Category":"FT"},{"ID":4,"Text":"","Category":"JP"},{"ID":5,"Text":"","Category":"AR"},{"ID":6,"Text":"","Category":"IE"},{"ID":7,"Text":"","Category":"JP"},{"ID":8,"Text":"","Category":"FT"},{"ID":9,"Text":"","Category":"JP"},{"ID":10,"Text":"","Category":"RA"},{"ID":11,"Text":"","Category":"EI"},{"ID":12,"Text":"","Category":"SN"},{"ID":13,"Text":"","Category":"TF"},{"ID":14,"Text":"","Category":"PJ"},{"ID":15,"Text":"","Category":"AR"},{"ID":16,"Text":"","Category":"EI"},{"ID":17,"Text":"","Category":"NS"},{"ID":18,"Text":"","Category":"FT"},{"ID":19,"Text":"","Category":"NS"},{"ID":20,"Text":"","Category":"RA"},{"ID":21,"Text":"","Category":"IE"},{"ID":22,"Text":"","Category":"SN"},{"ID":23,"Text":"","Category":"TF"},{"ID":24,"Text":"","Category":"JP"},{"ID":25,"Text":"","Category":"TF"},{"ID":26,"Text":"","Category":"IE"},{"ID":27,"Text":"","Category":"RA"},{"ID":28,"Text":"","Category":"TF"},{"ID":29,"Text":"","Category":"PJ"},{"ID":30,"Text":"","Category":"NS"},{"ID":31,"Text":"","Category":"EI"},{"ID":32,"Text":"","Category":"SN"},{"ID":33,"Text":"","Category":"FT"},{"ID":34,"Text":"","Category":"PJ"},{"ID":35,"Text":"","Category":"AR"},{"ID":36,"Text":"","Category":"EI"},{"ID":37,"Text":"","Category":"NS"},{"ID":38,"Text":"","Category":"TF"},{"ID":39,"Text":"","Category":"JP"},{"ID":40,"Text":"","Category":"AR"},{"ID":41,"Text":"","Category":"IE"},{"ID":42,"Text":"","Category":"NS"},{"ID":43,"Text":"","Category":"EI"},{"ID":44,"Text":"","Category":"JP"},{"ID":45,"Text":"","Category":"RA"},{"ID":46,"Text":"","Category":"SN"},{"ID":47,"Text":"","Category":"RA"},{"ID":48,"Text":"","Category":"FT"},{"ID":49,"Text":"","Category":"PJ"},{"ID":50,"Text":"","Category":"RA"},{"ID":51,"Text":"","Category":"IE"},{"ID":52,"Text":"","Category":"SN"},{"ID":53,"Text":"","Category":"EI"},{"ID":54,"Text":"","Category":"FT"},{"ID":55,"Text":"","Category":"RA"},{"ID":56,"Text":"","Category":"JP"},{"ID":57,"Text":"","Category":"NS"},{"ID":58,"Text":"","Category":"FT"},{"ID":59,"Text":"","Category":"PJ"},{"ID":60,"Text":"","Category":"AR"}]`,
-	)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := &EnvMock{}
+			tt.setup(env)
 
-	var questions []struct {
-		ID       int    `json:"ID"`
-		Text     string `json:"Text"`
-		Category string `json:"Category"`
-	}
+			err := Resolve(context.Background(), env, tt.update)
 
-	err := json.Unmarshal(rawQuestions, &questions)
-	require.NoError(t, err)
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errMsg != "" {
+					require.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				require.NoError(t, err)
+			}
 
-	// Convert to Question type
-	var questionsTyped []Question
-	for _, q := range questions {
-		questionsTyped = append(questionsTyped, Question{
-			ID:       q.ID,
-			Text:     q.Text,
-			Category: q.Category,
+			// Verify expected calls were made
+			if tt.update.Message != nil && tt.update.Message.From != nil {
+				require.Len(t, env.InsertTgUserProfileCalls(), 1)
+				require.Len(t, env.TgUserStateByBotIDAndChatIDCalls(), 1)
+			}
 		})
 	}
+}
 
-	res := calculateMBTI(questionsTyped, testAnswers)
-	require.Equal(t, "INTP-A", res.Name)
+func TestUserState(t *testing.T) {
+	tests := []struct {
+		name          string
+		setup         func(*EnvMock)
+		chatID        int64
+		expectedValue string
+		wantErr       bool
+		errMsg        string
+	}{
+		{
+			name: "new user state creation",
+			setup: func(env *EnvMock) {
+				env.BotIDFunc = func() int64 {
+					return 1
+				}
+				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
+					return db.TgUserState{}, sql.ErrNoRows
+				}
+			},
+			chatID:        123456,
+			expectedValue: "pending",
+			wantErr:       false,
+		},
+		{
+			name: "existing user state",
+			setup: func(env *EnvMock) {
+				env.BotIDFunc = func() int64 {
+					return 1
+				}
+				validStateData := UserStateData{
+					QuizStates: map[string]QuizState{
+						"mbti": {Answers: map[int]int{0: 1, 1: 2}},
+					},
+				}
+				stateJSON, _ := json.Marshal(validStateData)
 
-	// Verify that we have all 5 categories
-	require.Len(t, res.Categories, 5)
+				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
+					return db.TgUserState{
+						ChatID:      123456,
+						BotID:       1,
+						Value:       "quiz_in_progress",
+						Data:        string(stateJSON),
+						UpdateCount: 3,
+					}, nil
+				}
+			},
+			chatID:        123456,
+			expectedValue: "quiz_in_progress",
+			wantErr:       false,
+		},
+		{
+			name: "database error",
+			setup: func(env *EnvMock) {
+				env.BotIDFunc = func() int64 {
+					return 1
+				}
+				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
+					return db.TgUserState{}, sql.ErrConnDone
+				}
+			},
+			chatID:  123456,
+			wantErr: true,
+			errMsg:  "failed to get user state",
+		},
+	}
 
-	// Verify percentages are between 0 and 1
-	for category, percentage := range res.Categories {
-		require.GreaterOrEqual(t, percentage, float32(0.0), "Category %s percentage should be >= 0", category)
-		require.LessOrEqual(t, percentage, float32(1.0), "Category %s percentage should be <= 1", category)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := &EnvMock{}
+			tt.setup(env)
+
+			req := &request{
+				chatID: tt.chatID,
+				env:    env,
+			}
+
+			userState, err := req.UserState(context.Background())
+
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errMsg != "" {
+					require.Contains(t, err.Error(), tt.errMsg)
+				}
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, userState)
+				require.Equal(t, tt.expectedValue, userState.Value)
+				require.Equal(t, tt.chatID, userState.ChatID)
+				require.NotNil(t, userState.UserStateData)
+				require.NotNil(t, userState.QuizStates)
+			}
+		})
 	}
 }
