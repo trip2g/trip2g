@@ -56,7 +56,7 @@ type Admin {
 
 type AdminUser @goModel(model: "trip2g/internal/db.User") {
   id: Int64!
-  email: String!
+  email: String
   createdAt: Time!
   ban: UserBan @goField(forceResolver: true)
 }

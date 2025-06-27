@@ -785,7 +785,7 @@ type AdminTgUserProfileResolver interface {
 	Username(ctx context.Context, obj *db.TgUserProfile) (*string, error)
 }
 type AdminUserResolver interface {
-	Email(ctx context.Context, obj *db.User) (string, error)
+	Email(ctx context.Context, obj *db.User) (*string, error)
 
 	Ban(ctx context.Context, obj *db.User) (*db.UserBan, error)
 }
@@ -11839,14 +11839,11 @@ func (ec *executionContext) _AdminUser_email(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminUser_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -26441,16 +26438,13 @@ func (ec *executionContext) _AdminUser(ctx context.Context, sel ast.SelectionSet
 		case "email":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._AdminUser_email(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 

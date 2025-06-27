@@ -628,8 +628,8 @@ func (r *adminTgUserProfileResolver) Username(ctx context.Context, obj *db.TgUse
 }
 
 // Email is the resolver for the email field.
-func (r *adminUserResolver) Email(ctx context.Context, obj *db.User) (string, error) {
-	panic(fmt.Errorf("not implemented: Email - email"))
+func (r *adminUserResolver) Email(ctx context.Context, obj *db.User) (*string, error) {
+	return db.ToStringPtr(obj.Email), nil
 }
 
 // Ban is the resolver for the ban field.
@@ -962,7 +962,7 @@ func (r *updateNoteGraphPositionsPayloadResolver) UpdatedNoteViews(ctx context.C
 
 // Email is the resolver for the email field.
 func (r *userResolver) Email(ctx context.Context, obj *db.User) (*string, error) {
-	panic(fmt.Errorf("not implemented: Email - email"))
+	return db.ToStringPtr(obj.Email), nil
 }
 
 // SubgraphAccesses is the resolver for the subgraphAccesses field.
@@ -1330,15 +1330,3 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *adminTgBotResolver) Name(ctx context.Context, obj *db.TgBot) (string, error) {
-	return obj.Name, nil
-}
-*/
