@@ -96,6 +96,20 @@ func (req *request) Questions(ctx context.Context) ([]Question, error) {
 	return res, nil
 }
 
+func (req *request) QuestionMap(ctx context.Context) (map[int]Question, error) {
+	questions, err := req.Questions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	questionMap := make(map[int]Question, len(questions))
+	for _, q := range questions {
+		questionMap[q.ID] = q
+	}
+
+	return questionMap, nil
+}
+
 func (req *request) handleMBTIAnswer(ctx context.Context, actionParts []string) error {
 	if len(actionParts) < 3 {
 		return req.SendMessage("Invalid action format")
@@ -128,6 +142,16 @@ func (req *request) handleMBTIAnswer(ctx context.Context, actionParts []string) 
 	// Ensure Answers map is initialized
 	if state.Answers == nil {
 		state.Answers = make(map[int]int)
+	}
+
+	// Validate that the question exists
+	questionMap, err := req.QuestionMap(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load questions: %w", err)
+	}
+
+	if _, questionExists := questionMap[id]; !questionExists {
+		return req.SendMessage("❌ Invalid question. Please try again.")
 	}
 
 	// Store the answer

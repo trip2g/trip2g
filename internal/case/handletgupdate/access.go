@@ -206,10 +206,12 @@ func (req *request) sendContentMenu(ctx context.Context) error {
 		}
 	}
 
-	msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, text)
-	if len(keyboard) > 0 {
-		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(keyboard...)
+	if len(subgraphs) == 0 {
+		return nil // silently return if no subgraphs are available
 	}
+
+	msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, text)
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(keyboard...)
 
 	_, err = req.env.Send(msg)
 	if err != nil {

@@ -99,6 +99,18 @@ func TestResolve(t *testing.T) {
 					// Mock successful group membership check
 					return "member", nil
 				}
+
+				// ListActiveTgChatSubgraphNamesByChatID for content menu
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+					return []string{"test-subgraph"}, nil
+				}
+				env.LatestNoteViewsFunc = func() *model.NoteViews {
+					return &model.NoteViews{
+						Subgraphs: map[string]*model.NoteSubgraph{
+							"test-subgraph": {},
+						},
+					}
+				}
 			},
 			wantErr: false,
 		},

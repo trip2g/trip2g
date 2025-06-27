@@ -62,6 +62,16 @@ func TestHandleGroupAccess(t *testing.T) {
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
 				}
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+					return []string{"test-subgraph"}, nil
+				}
+				env.LatestNoteViewsFunc = func() *model.NoteViews {
+					return &model.NoteViews{
+						Subgraphs: map[string]*model.NoteSubgraph{
+							"test-subgraph": {},
+						},
+					}
+				}
 			},
 			wantErr: false,
 		},
@@ -82,6 +92,16 @@ func TestHandleGroupAccess(t *testing.T) {
 				// SendMessage should be called for error message
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
+				}
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+					return []string{"test-subgraph"}, nil
+				}
+				env.LatestNoteViewsFunc = func() *model.NoteViews {
+					return &model.NoteViews{
+						Subgraphs: map[string]*model.NoteSubgraph{
+							"test-subgraph": {},
+						},
+					}
 				}
 			},
 			wantErr: false, // Function returns error from SendMessage, not parsing error
@@ -119,6 +139,16 @@ func TestHandleGroupAccess(t *testing.T) {
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
 				}
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+					return []string{"test-subgraph"}, nil
+				}
+				env.LatestNoteViewsFunc = func() *model.NoteViews {
+					return &model.NoteViews{
+						Subgraphs: map[string]*model.NoteSubgraph{
+							"test-subgraph": {},
+						},
+					}
+				}
 			},
 			wantErr: false, // Error is logged but function returns SendMessage result
 		},
@@ -146,6 +176,16 @@ func TestHandleGroupAccess(t *testing.T) {
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
 				}
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+					return []string{"test-subgraph"}, nil
+				}
+				env.LatestNoteViewsFunc = func() *model.NoteViews {
+					return &model.NoteViews{
+						Subgraphs: map[string]*model.NoteSubgraph{
+							"test-subgraph": {},
+						},
+					}
+				}
 			},
 			wantErr: false, // Function returns SendMessage result, not the verification error
 		},
@@ -172,6 +212,16 @@ func TestHandleGroupAccess(t *testing.T) {
 				}
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
+				}
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+					return []string{"test-subgraph"}, nil
+				}
+				env.LatestNoteViewsFunc = func() *model.NoteViews {
+					return &model.NoteViews{
+						Subgraphs: map[string]*model.NoteSubgraph{
+							"test-subgraph": {},
+						},
+					}
 				}
 			},
 			wantErr: false, // Function returns SendMessage result, not the verification error

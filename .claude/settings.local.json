@@ -22,7 +22,9 @@
       "Bash(git checkout:*)",
       "Bash(goimports:*)",
       "Bash(sqlite3:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(go fmt:*)",
+      "Bash(go fmt:*)"
     ],
     "deny": []
   },
