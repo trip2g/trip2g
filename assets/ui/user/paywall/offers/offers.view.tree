@@ -2,9 +2,11 @@ $trip2g_user_paywall_offers $mol_view
 	subgraphs /string
 	offers *
 	current_email? \
+	Empty $mol_view
 	List $trip2g_user_paywall_offers_list
 		offers <= offers
 		buy* <=> buy_item* null
+		waitlist <= waitlist null any
 	EnterEmail $trip2g_user_paywall_offers_enter_email
 		handle_email? <=> buy_by_email? null
 	EmailExists $mol_view
@@ -46,7 +48,9 @@ $trip2g_user_paywall_offers_enter_email $mol_form
 $trip2g_user_paywall_offers_list $mol_view
 	offers *
 	buy* null
+	waitlist null any
 	Empty $trip2g_user_paywall_conversationprompt
+		waitlist <= waitlist
 	Item* $mol_view
 		sub /
 			<= Description* $mol_view

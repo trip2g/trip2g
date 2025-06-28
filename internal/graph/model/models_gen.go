@@ -130,6 +130,16 @@ type UploadNoteAssetOrErrorPayload interface {
 	IsUploadNoteAssetOrErrorPayload()
 }
 
+type ViewerOffers interface {
+	IsViewerOffers()
+}
+
+type ActiveOffers struct {
+	Nodes []db.Offer `json:"nodes"`
+}
+
+func (ActiveOffers) IsViewerOffers() {}
+
 type AddTgChatSubgraphAccessInput struct {
 	ChatID     int64 `json:"chatId"`
 	SubgraphID int64 `json:"subgraphId"`
@@ -538,6 +548,13 @@ type SignOutPayload struct {
 }
 
 func (SignOutPayload) IsSignOutOrErrorPayload() {}
+
+type SubgraphWaitlist struct {
+	TgBotURL     *string `json:"tgBotUrl,omitempty"`
+	EmailAllowed bool    `json:"emailAllowed"`
+}
+
+func (SubgraphWaitlist) IsViewerOffers() {}
 
 type UnbanUserInput struct {
 	UserID int64 `json:"userId"`

@@ -63,7 +63,7 @@ namespace $.$$ {
 		}
 
 		row_user_email(id: any): string {
-			return this.row(id).user.email
+			return this.row(id).user.email || '-'
 		}
 
 		row_user_uri(id: any): string {

@@ -52,7 +52,7 @@ namespace $.$$ {
 		}
 
 		pattern_created_by(): string {
-			return this.data().createdBy.email
+			return this.data().createdBy.email || '-'
 		}
 
 		delete() {

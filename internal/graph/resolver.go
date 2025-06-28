@@ -76,6 +76,7 @@ type Env interface {
 	ListAllRedirects(ctx context.Context) ([]db.Redirect, error)
 	ListAllNotFoundIgnoredPatterns(ctx context.Context) ([]db.NotFoundIgnoredPattern, error)
 	ListAllNotFoundPaths(ctx context.Context) ([]db.NotFoundPath, error)
+	ListEnabledTgBots(ctx context.Context) ([]db.TgBot, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)

@@ -345,11 +345,22 @@ enum Role {
   ADMIN
 }
 
+type ActiveOffers {
+  nodes: [Offer!]!
+}
+
+type SubgraphWaitlist {
+  tgBotUrl: String
+  emailAllowed: Boolean!
+}
+
+union ViewerOffers = ActiveOffers | SubgraphWaitlist
+
 type Viewer {
   id: ID!
   role: Role!
   user: User
-  offers(subgraphs: [String!]): [Offer!]!
+  offers(subgraphs: [String!]): ViewerOffers
   activePurchases: [Purchase!]!
 }
 

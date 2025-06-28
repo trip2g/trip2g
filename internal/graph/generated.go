@@ -100,6 +100,10 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	ActiveOffers struct {
+		Nodes func(childComplexity int) int
+	}
+
 	AddTgChatSubgraphAccessPayload struct {
 		ChatSubgraphAccess func(childComplexity int) int
 	}
@@ -549,6 +553,11 @@ type ComplexityRoot struct {
 		Offers   func(childComplexity int) int
 	}
 
+	SubgraphWaitlist struct {
+		EmailAllowed func(childComplexity int) int
+		TgBotURL     func(childComplexity int) int
+	}
+
 	UnbanUserPayload struct {
 		User   func(childComplexity int) int
 		UserID func(childComplexity int) int
@@ -873,7 +882,7 @@ type UserSubgraphAccessResolver interface {
 type ViewerResolver interface {
 	Role(ctx context.Context, obj *model1.Viewer) (model.Role, error)
 	User(ctx context.Context, obj *model1.Viewer) (*db.User, error)
-	Offers(ctx context.Context, obj *model1.Viewer, subgraphs []string) ([]db.Offer, error)
+	Offers(ctx context.Context, obj *model1.Viewer, subgraphs []string) (model.ViewerOffers, error)
 	ActivePurchases(ctx context.Context, obj *model1.Viewer) ([]db.Purchase, error)
 }
 
@@ -895,6 +904,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "ActiveOffers.nodes":
+		if e.complexity.ActiveOffers.Nodes == nil {
+			break
+		}
+
+		return e.complexity.ActiveOffers.Nodes(childComplexity), true
 
 	case "AddTgChatSubgraphAccessPayload.chatSubgraphAccess":
 		if e.complexity.AddTgChatSubgraphAccessPayload.ChatSubgraphAccess == nil {
@@ -2769,6 +2785,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Subgraph.Offers(childComplexity), true
 
+	case "SubgraphWaitlist.emailAllowed":
+		if e.complexity.SubgraphWaitlist.EmailAllowed == nil {
+			break
+		}
+
+		return e.complexity.SubgraphWaitlist.EmailAllowed(childComplexity), true
+
+	case "SubgraphWaitlist.tgBotUrl":
+		if e.complexity.SubgraphWaitlist.TgBotURL == nil {
+			break
+		}
+
+		return e.complexity.SubgraphWaitlist.TgBotURL(childComplexity), true
+
 	case "UnbanUserPayload.user":
 		if e.complexity.UnbanUserPayload.User == nil {
 			break
@@ -4201,6 +4231,58 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _ActiveOffers_nodes(ctx context.Context, field graphql.CollectedField, obj *model.ActiveOffers) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ActiveOffers_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Nodes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.Offer)
+	fc.Result = res
+	return ec.marshalNOffer2ᚕtrip2gᚋinternalᚋdbᚐOfferᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ActiveOffers_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ActiveOffers",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Offer_id(ctx, field)
+			case "priceUSD":
+				return ec.fieldContext_Offer_priceUSD(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_Offer_subgraphs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Offer", field.Name)
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _AddTgChatSubgraphAccessPayload_chatSubgraphAccess(ctx context.Context, field graphql.CollectedField, obj *model.AddTgChatSubgraphAccessPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AddTgChatSubgraphAccessPayload_chatSubgraphAccess(ctx, field)
@@ -16269,6 +16351,91 @@ func (ec *executionContext) fieldContext_Subgraph_homePath(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _SubgraphWaitlist_tgBotUrl(ctx context.Context, field graphql.CollectedField, obj *model.SubgraphWaitlist) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubgraphWaitlist_tgBotUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TgBotURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubgraphWaitlist_tgBotUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubgraphWaitlist",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SubgraphWaitlist_emailAllowed(ctx context.Context, field graphql.CollectedField, obj *model.SubgraphWaitlist) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubgraphWaitlist_emailAllowed(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EmailAllowed, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SubgraphWaitlist_emailAllowed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SubgraphWaitlist",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UnbanUserPayload_userId(ctx context.Context, field graphql.CollectedField, obj *model.UnbanUserPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UnbanUserPayload_userId(ctx, field)
 	if err != nil {
@@ -17628,14 +17795,11 @@ func (ec *executionContext) _Viewer_offers(ctx context.Context, field graphql.Co
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.([]db.Offer)
+	res := resTmp.(model.ViewerOffers)
 	fc.Result = res
-	return ec.marshalNOffer2ᚕtrip2gᚋinternalᚋdbᚐOfferᚄ(ctx, field.Selections, res)
+	return ec.marshalOViewerOffers2trip2gᚋinternalᚋgraphᚋmodelᚐViewerOffers(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Viewer_offers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -17645,15 +17809,7 @@ func (ec *executionContext) fieldContext_Viewer_offers(ctx context.Context, fiel
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Offer_id(ctx, field)
-			case "priceUSD":
-				return ec.fieldContext_Offer_priceUSD(ctx, field)
-			case "subgraphs":
-				return ec.fieldContext_Offer_subgraphs(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Offer", field.Name)
+			return nil, errors.New("field of type ViewerOffers does not have child fields")
 		},
 	}
 	defer func() {
@@ -21569,9 +21725,71 @@ func (ec *executionContext) _UploadNoteAssetOrErrorPayload(ctx context.Context, 
 	}
 }
 
+func (ec *executionContext) _ViewerOffers(ctx context.Context, sel ast.SelectionSet, obj model.ViewerOffers) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SubgraphWaitlist:
+		return ec._SubgraphWaitlist(ctx, sel, &obj)
+	case *model.SubgraphWaitlist:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SubgraphWaitlist(ctx, sel, obj)
+	case model.ActiveOffers:
+		return ec._ActiveOffers(ctx, sel, &obj)
+	case *model.ActiveOffers:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ActiveOffers(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var activeOffersImplementors = []string{"ActiveOffers", "ViewerOffers"}
+
+func (ec *executionContext) _ActiveOffers(ctx context.Context, sel ast.SelectionSet, obj *model.ActiveOffers) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, activeOffersImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ActiveOffers")
+		case "nodes":
+			out.Values[i] = ec._ActiveOffers_nodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
 
 var addTgChatSubgraphAccessPayloadImplementors = []string{"AddTgChatSubgraphAccessPayload", "AddTgChatSubgraphAccessOrErrorPayload"}
 
@@ -28886,6 +29104,47 @@ func (ec *executionContext) _Subgraph(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var subgraphWaitlistImplementors = []string{"SubgraphWaitlist", "ViewerOffers"}
+
+func (ec *executionContext) _SubgraphWaitlist(ctx context.Context, sel ast.SelectionSet, obj *model.SubgraphWaitlist) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subgraphWaitlistImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SubgraphWaitlist")
+		case "tgBotUrl":
+			out.Values[i] = ec._SubgraphWaitlist_tgBotUrl(ctx, field, obj)
+		case "emailAllowed":
+			out.Values[i] = ec._SubgraphWaitlist_emailAllowed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var unbanUserPayloadImplementors = []string{"UnbanUserPayload", "UnbanUserOrErrorPayload"}
 
 func (ec *executionContext) _UnbanUserPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UnbanUserPayload) graphql.Marshaler {
@@ -29806,16 +30065,13 @@ func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, o
 		case "offers":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._Viewer_offers(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 
@@ -33196,6 +33452,13 @@ func (ec *executionContext) marshalOVector22ᚖtrip2gᚋinternalᚋgraphᚋmodel
 		return graphql.Null
 	}
 	return ec._Vector2(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOViewerOffers2trip2gᚋinternalᚋgraphᚋmodelᚐViewerOffers(ctx context.Context, sel ast.SelectionSet, v model.ViewerOffers) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ViewerOffers(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

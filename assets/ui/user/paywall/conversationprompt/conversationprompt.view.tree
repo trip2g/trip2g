@@ -1,2 +1,13 @@
 $trip2g_user_paywall_conversationprompt $mol_view
-	sub / \Drop your email
+	waitlist null any
+	TelegramButton $mol_link
+		title \Bot
+		uri <= tg_bot_url \
+	EmailForm $mol_view
+		sub / \TODO
+	sub /
+		<= Title $mol_view
+			sub / \Пока нет активных предложений, поэтому доступ купить нельзя.
+		<= Message $mol_view
+			sub /
+				\Хотите узнать, когда появятся? Подпишитесь на лист ожидания в Telegram боте или оставьте e-mail.

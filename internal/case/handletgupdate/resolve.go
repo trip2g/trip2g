@@ -226,6 +226,9 @@ func (req *request) handleCommands(ctx context.Context) error {
 		if strings.HasPrefix(args, "group_") {
 			return req.handleGroupAccess(ctx, args)
 		}
+		if strings.HasPrefix(args, "wl:") {
+			return req.handleWaitlistRequest(ctx, args)
+		}
 		return req.sendStartMenu(ctx)
 
 	case "content":
@@ -312,4 +315,8 @@ func (req *request) updateUserState(ctx context.Context) error {
 
 func toNullString(s string) sql.NullString {
 	return sql.NullString{String: s, Valid: s != ""}
+}
+
+func (req *request) handleWaitlistRequest(ctx context.Context, args string) error {
+	return req.SendMessage("Thank you for your interest! Please wait while we process your request.")
 }

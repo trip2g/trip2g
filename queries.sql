@@ -568,7 +568,6 @@ returning *;
 -- name: ListEnabledTgBots :many
 select * from tg_bots where enabled = true;
 
-
 -- name: InsertTgUserProfile :exec
 insert into tg_user_profiles (chat_id, bot_id, first_name, last_name, username, sha256_hash)
 values (?, ?, ?, ?, ?, ?)

@@ -7,6 +7,7 @@ package graph
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"math"
@@ -1054,12 +1055,37 @@ func (r *viewerResolver) User(ctx context.Context, obj *appmodel.Viewer) (*db.Us
 }
 
 // Offers is the resolver for the offers field.
-func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, subgraphs []string) ([]db.Offer, error) {
+func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, subgraphs []string) (model.ViewerOffers, error) {
 	if len(subgraphs) == 0 {
 		return nil, nil
 	}
 
-	return r.env(ctx).ListActiveOffersBySubgraphNames(ctx, subgraphs)
+	offers, err := r.env(ctx).ListActiveOffersBySubgraphNames(ctx, subgraphs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(offers) > 0 {
+		return &model.ActiveOffers{Nodes: offers}, nil
+	}
+
+	wl := model.SubgraphWaitlist{
+		EmailAllowed: true,
+	}
+
+	bots, err := r.env(ctx).ListEnabledTgBots(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(bots) > 0 {
+		ids := base64.URLEncoding.EncodeToString([]byte(strings.Join(subgraphs, "||")))
+		botURL := fmt.Sprintf("https://t.me/%s?start=wl:%s", bots[0].Name, ids)
+
+		wl.TgBotURL = &botURL
+	}
+
+	return &wl, nil
 }
 
 // ActivePurchases is the resolver for the activePurchases field.

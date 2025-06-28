@@ -58,7 +58,7 @@ namespace $.$$ {
 		}
 
 		override row_created_by( id: any ): string {
-			return this.row( id ).createdBy.email
+			return this.row( id ).createdBy.email || '-'
 		}
 	}
 }

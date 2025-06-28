@@ -20,6 +20,11 @@ export type Scalars = {
   Upload: { input: any; output: any; }
 };
 
+export type ActiveOffers = {
+  __typename?: 'ActiveOffers';
+  nodes: Array<Offer>;
+};
+
 export type AddTgChatSubgraphAccessInput = {
   chatId: Scalars['Int64']['input'];
   subgraphId: Scalars['Int64']['input'];
@@ -493,7 +498,7 @@ export type AdminUser = {
   __typename?: 'AdminUser';
   ban?: Maybe<UserBan>;
   createdAt: Scalars['Time']['output'];
-  email: Scalars['String']['output'];
+  email?: Maybe<Scalars['String']['output']>;
   id: Scalars['Int64']['output'];
 };
 
@@ -908,6 +913,12 @@ export type Subgraph = {
   offers: Array<Offer>;
 };
 
+export type SubgraphWaitlist = {
+  __typename?: 'SubgraphWaitlist';
+  emailAllowed: Scalars['Boolean']['output'];
+  tgBotUrl?: Maybe<Scalars['String']['output']>;
+};
+
 export type UnbanUserInput = {
   userId: Scalars['Int64']['input'];
 };
@@ -1036,7 +1047,7 @@ export type UploadNoteAssetPayload = {
 
 export type User = {
   __typename?: 'User';
-  email: Scalars['String']['output'];
+  email?: Maybe<Scalars['String']['output']>;
   subgraphAccesses: Array<UserSubgraphAccess>;
 };
 
@@ -1067,7 +1078,7 @@ export type Viewer = {
   __typename?: 'Viewer';
   activePurchases: Array<Purchase>;
   id: Scalars['ID']['output'];
-  offers: Array<Offer>;
+  offers?: Maybe<ViewerOffers>;
   role: Role;
   user?: Maybe<User>;
 };
@@ -1077,10 +1088,12 @@ export type ViewerOffersArgs = {
   subgraphs?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
+export type ViewerOffers = ActiveOffers | SubgraphWaitlist;
+
 export type AdminsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allAdmins: { __typename?: 'AdminAdminsConnection', nodes: Array<{ __typename?: 'Admin', id: any, grantedAt: any, user: { __typename?: 'AdminUser', email: string } }> } } };
+export type AdminsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allAdmins: { __typename?: 'AdminAdminsConnection', nodes: Array<{ __typename?: 'Admin', id: any, grantedAt: any, user: { __typename?: 'AdminUser', email?: string | null } }> } } };
 
 export type DisableApiKeyMutationVariables = Exact<{
   input: DisableApiKeyInput;
@@ -1092,7 +1105,7 @@ export type DisableApiKeyMutation = { __typename?: 'Mutation', admin: { __typena
 export type AdminListApiKeysQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminListApiKeysQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allApiKeys: { __typename?: 'AdminApiKeysConnection', nodes: Array<{ __typename?: 'AdminApiKey', id: any, createdAt: any, description: string, disabledAt?: any | null, createdBy: { __typename?: 'AdminUser', id: any, email: string }, disabledBy?: { __typename?: 'AdminUser', id: any, email: string } | null }> } } };
+export type AdminListApiKeysQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allApiKeys: { __typename?: 'AdminApiKeysConnection', nodes: Array<{ __typename?: 'AdminApiKey', id: any, createdAt: any, description: string, disabledAt?: any | null, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null }, disabledBy?: { __typename?: 'AdminUser', id: any, email?: string | null } | null }> } } };
 
 export type AdminCreateApiKeyMutationVariables = Exact<{
   input: CreateApiKeyInput;
@@ -1128,17 +1141,17 @@ export type AdminListSubgraphsQuery = { __typename?: 'Query', admin: { __typenam
 export type AdminListUserBansQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminListUserBansQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allUserUserBans: { __typename?: 'AdminUserBansConnection', nodes: Array<{ __typename?: 'UserBan', createdAt: any, reason: string, id: any, user: { __typename: 'AdminUser', email: string }, bannedBy?: { __typename?: 'Admin', user: { __typename?: 'AdminUser', email: string } } | null }> } } };
+export type AdminListUserBansQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allUserUserBans: { __typename?: 'AdminUserBansConnection', nodes: Array<{ __typename?: 'UserBan', createdAt: any, reason: string, id: any, user: { __typename: 'AdminUser', email?: string | null }, bannedBy?: { __typename?: 'Admin', user: { __typename?: 'AdminUser', email?: string | null } } | null }> } } };
 
 export type AdminListUsersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminListUsersQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allUsers: { __typename?: 'AdminUsersConnection', nodes: Array<{ __typename?: 'AdminUser', id: any, email: string, createdAt: any, ban?: { __typename?: 'UserBan', reason: string } | null }> } } };
+export type AdminListUsersQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allUsers: { __typename?: 'AdminUsersConnection', nodes: Array<{ __typename?: 'AdminUser', id: any, email?: string | null, createdAt: any, ban?: { __typename?: 'UserBan', reason: string } | null }> } } };
 
 export type AdminListUserSubgraphAccessesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminListUserSubgraphAccessesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename?: 'AdminUserSubgraphAccessesConnection', nodes: Array<{ __typename: 'AdminUserSubgraphAccess', id: any, createdAt: any, expiresAt?: any | null, subgraph: { __typename?: 'AdminSubgraph', name: string }, user: { __typename?: 'AdminUser', id: any, email: string } }> } } };
+export type AdminListUserSubgraphAccessesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename?: 'AdminUserSubgraphAccessesConnection', nodes: Array<{ __typename: 'AdminUserSubgraphAccess', id: any, createdAt: any, expiresAt?: any | null, subgraph: { __typename?: 'AdminSubgraph', name: string }, user: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
 
 export type AdminGraphQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1184,7 +1197,7 @@ export type AdminDeleteNotFoundIgnoredPatternMutation = { __typename?: 'Mutation
 export type AdminNotFoundIgnoredPatternsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminNotFoundIgnoredPatternsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allNotFoundIgnoredPatterns: { __typename?: 'AdminNotFoundIgnoredPatternsConnection', nodes: Array<{ __typename?: 'AdminNotFoundIgnoredPattern', id: any, pattern: string, createdAt: any, createdBy: { __typename?: 'AdminUser', id: any, email: string } }> } } };
+export type AdminNotFoundIgnoredPatternsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allNotFoundIgnoredPatterns: { __typename?: 'AdminNotFoundIgnoredPatternsConnection', nodes: Array<{ __typename?: 'AdminNotFoundIgnoredPattern', id: any, pattern: string, createdAt: any, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
 
 export type AdminCreateNotFoundIgnoredPatternMutationMutationVariables = Exact<{
   input: CreateNotFoundIgnoredPatternInput;
@@ -1196,7 +1209,7 @@ export type AdminCreateNotFoundIgnoredPatternMutationMutation = { __typename?: '
 export type AdminShowNotFoundIgnoredPatternQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminShowNotFoundIgnoredPatternQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allNotFoundIgnoredPatterns: { __typename?: 'AdminNotFoundIgnoredPatternsConnection', nodes: Array<{ __typename?: 'AdminNotFoundIgnoredPattern', id: any, pattern: string, createdAt: any, createdBy: { __typename?: 'AdminUser', id: any, email: string } }> } } };
+export type AdminShowNotFoundIgnoredPatternQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allNotFoundIgnoredPatterns: { __typename?: 'AdminNotFoundIgnoredPatternsConnection', nodes: Array<{ __typename?: 'AdminNotFoundIgnoredPattern', id: any, pattern: string, createdAt: any, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
 
 export type AdminDeleteNotFoundIgnoredPatternMutationMutationVariables = Exact<{
   input: DeleteNotFoundIgnoredPatternInput;
@@ -1246,7 +1259,7 @@ export type AdminPurchasesQuery = { __typename?: 'Query', admin: { __typename?: 
 export type AdminRedirectsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminRedirectsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allRedirects: { __typename?: 'AdminRedirectsConnection', nodes: Array<{ __typename?: 'AdminRedirect', id: any, createdAt: any, pattern: string, ignoreCase: boolean, isRegex: boolean, target: string, createdBy: { __typename?: 'AdminUser', id: any, email: string } }> } } };
+export type AdminRedirectsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allRedirects: { __typename?: 'AdminRedirectsConnection', nodes: Array<{ __typename?: 'AdminRedirect', id: any, createdAt: any, pattern: string, ignoreCase: boolean, isRegex: boolean, target: string, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
 
 export type AdminCreateRedirectMutationMutationVariables = Exact<{
   input: CreateRedirectInput;
@@ -1260,7 +1273,7 @@ export type AdminShowRedirectQueryVariables = Exact<{
 }>;
 
 
-export type AdminShowRedirectQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', redirect?: { __typename?: 'AdminRedirect', id: any, createdAt: any, pattern: string, ignoreCase: boolean, isRegex: boolean, target: string, createdBy: { __typename?: 'AdminUser', id: any, email: string } } | null } };
+export type AdminShowRedirectQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', redirect?: { __typename?: 'AdminRedirect', id: any, createdAt: any, pattern: string, ignoreCase: boolean, isRegex: boolean, target: string, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } } | null } };
 
 export type AdminDeleteRedirectMutationMutationVariables = Exact<{
   input: DeleteRedirectInput;
@@ -1286,7 +1299,7 @@ export type AdminMakeReleaseLiveMutation = { __typename?: 'Mutation', admin: { _
 export type AdminReleasesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminReleasesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allReleases: { __typename?: 'AdminReleasesConnection', nodes: Array<{ __typename?: 'AdminRelease', id: any, createdAt: any, title: string, isLive: boolean, createdBy: { __typename?: 'AdminUser', email: string } }> } } };
+export type AdminReleasesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allReleases: { __typename?: 'AdminReleasesConnection', nodes: Array<{ __typename?: 'AdminRelease', id: any, createdAt: any, title: string, isLive: boolean, createdBy: { __typename?: 'AdminUser', email?: string | null } }> } } };
 
 export type AdminCreateReleaseMutationVariables = Exact<{
   input: CreateReleaseInput;
@@ -1350,7 +1363,7 @@ export type AdminSelectSubgraphQuery = { __typename?: 'Query', admin: { __typena
 export type AdminTgBotsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AdminTgBotsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allTgBots: { __typename?: 'AdminTgBotsConnection', nodes: Array<{ __typename?: 'AdminTgBot', id: any, name: string, description: string, enabled: boolean, createdAt: any, createdBy: { __typename?: 'AdminUser', email: string } }> } } };
+export type AdminTgBotsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allTgBots: { __typename?: 'AdminTgBotsConnection', nodes: Array<{ __typename?: 'AdminTgBot', id: any, name: string, description: string, enabled: boolean, createdAt: any, createdBy: { __typename?: 'AdminUser', email?: string | null } }> } } };
 
 export type AdminCreateTgBotMutationMutationVariables = Exact<{
   input: CreateTgBotInput;
@@ -1371,7 +1384,7 @@ export type AdminShowTgBotQueryVariables = Exact<{
 }>;
 
 
-export type AdminShowTgBotQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', tgBot?: { __typename?: 'AdminTgBot', id: any, name: string, description: string, enabled: boolean, createdAt: any, createdBy: { __typename?: 'AdminUser', email: string } } | null } };
+export type AdminShowTgBotQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', tgBot?: { __typename?: 'AdminTgBot', id: any, name: string, description: string, enabled: boolean, createdAt: any, createdBy: { __typename?: 'AdminUser', email?: string | null } } | null } };
 
 export type AdminUpdateTgBotMutationMutationVariables = Exact<{
   input: UpdateTgBotInput;
@@ -1402,7 +1415,7 @@ export type SignInByEmailMutation = { __typename?: 'Mutation', data: { __typenam
 export type ViewerQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ViewerQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', id: string, role: Role, user?: { __typename?: 'User', email: string } | null } };
+export type ViewerQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', id: string, role: Role, user?: { __typename?: 'User', email?: string | null } | null } };
 
 export type ReaderQueryQueryVariables = Exact<{
   input: NoteInput;
@@ -1421,7 +1434,7 @@ export type PaywallQueryQueryVariables = Exact<{
 }>;
 
 
-export type PaywallQueryQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', offers: Array<{ __typename?: 'Offer', id: string, priceUSD: number, subgraphs: Array<{ __typename?: 'Subgraph', name: string }> }> } };
+export type PaywallQueryQuery = { __typename?: 'Query', viewer: { __typename?: 'Viewer', offers?: { __typename?: 'ActiveOffers', nodes: Array<{ __typename?: 'Offer', id: string, priceUSD: number, subgraphs: Array<{ __typename?: 'Subgraph', name: string }> }> } | { __typename?: 'SubgraphWaitlist', tgBotUrl?: string | null, emailAllowed: boolean } | null } };
 
 export type CreatePaymentLinkMutationVariables = Exact<{
   input: CreatePaymentLinkInput;
@@ -1545,7 +1558,7 @@ export function $trip2g_graphql_request(query: '\n\t\t\t\tquery ReaderQuery($inp
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery PaywallActivePurchaseQuery {\n\t\t\t\t\tviewer {\n\t\t\t\t\t\tactivePurchases {\n\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\tstatus\n\t\t\t\t\t\t\tsuccessful\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): PaywallActivePurchaseQueryQuery
 
-export function $trip2g_graphql_request(query: '\n\t\t\t\tquery PaywallQuery($subgraphs: [String!]!) {\n\t\t\t\t\tviewer {\n\t\t\t\t\t\toffers(subgraphs: $subgraphs) {\n\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\tpriceUSD\n\t\t\t\t\t\t\tsubgraphs {\n\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t\n\t\t\t\t}\n\t\t\t', variables: PaywallQueryQueryVariables): PaywallQueryQuery
+export function $trip2g_graphql_request(query: '\n\t\t\t\tquery PaywallQuery($subgraphs: [String!]!) {\n\t\t\t\t\tviewer {\n\t\t\t\t\t\toffers(subgraphs: $subgraphs) {\n\t\t\t\t\t\t\t... on ActiveOffers {\n\t\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\tpriceUSD\n\t\t\t\t\t\t\t\t\tsubgraphs {\n\t\t\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t... on SubgraphWaitlist {\n\t\t\t\t\t\t\t\ttgBotUrl\n\t\t\t\t\t\t\t\temailAllowed\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t\n\t\t\t\t}\n\t\t\t', variables: PaywallQueryQueryVariables): PaywallQueryQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tmutation CreatePaymentLink($input: CreatePaymentLinkInput!) {\n\t\t\t\t\tdata: createPaymentLink(input: $input) {\n\t\t\t\t\t\t... on CreatePaymentLinkPayload {\n\t\t\t\t\t\t\tredirectUrl\n\t\t\t\t\t\t}\n\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\t', variables: CreatePaymentLinkMutationVariables): CreatePaymentLinkMutation
 
@@ -1557,7 +1570,7 @@ export function $trip2g_graphql_subscription(query: any, variables?: any) { retu
 
 
 
-export const $trip2g_graphql_persist_queries = {"Admins":"7b9f99a6b0b785b43488198eb4dec442d88e4abda7c516677a0611d76878d904","DisableApiKey":"a5852655edeb09cf7db15b0a196cc53cc005b3f8ef7fe7d7d3cdc032087b8b6b","AdminListApiKeys":"1baa27852f59c95f35fe5f35635ad6a617fca6312411bd6cae7cd377d681a52d","AdminCreateApiKey":"c9c10cfb6fa133ac380870427e9b9cdebbc1e9e9b92e6a6313c97f52b537d66f","AdminApiKeyShowQuery":"2f8b56fce14a35ac51fd315e919a352048a118b036a0368f2a66a85c7156c24b","AdminUnbanUser":"9512bb945535dd9ef2fe1dacc60073ce01fc8d8f3e93fec6583ab2dc455d1309","AdminListNoteViews":"08631c2621fdb1e1265d238476428a5a108673be31c9fa3823233984adaee8ea","AdminListSubgraphs":"4e45ae80a24576cab70fdbb4790a0a7acbde1171823623ed8d7a00e495b596cd","AdminListUserBans":"69e1b4b4cb152647fa3474d44d1fccc7e5bfdc9bfa95d60b9726d4e52c94b3b4","AdminListUsers":"6f4fcb27423e59a080c8c0ba8cc8b69628bf9f961bdfbce5c62bf60c19db4075","AdminListUserSubgraphAccesses":"79ca5aafd82b91a579c3ea6232fa7a32773f2b74846785a00e0f0deee9854eca","AdminGraph":"39e949dd3c2f89603f0d09f5e348c2f46ee78f28d2412ff6efa9279ab68e457b","AdminUpdateNoteGraphPositions":"79055eb93ba30f15dc82d77bdce102ad7d30a32b24e57ebf3339507d9fc66fee","AdminSelectNoteView":"d158e0da61a2cbad548f8ada69595f5f5534f15275a06ef95b969d89a7edb3ad","AdminResetNotFoundPath":"1f10e8c2c12124d4932f5545eccbe0a2dede0dbb988cf0871f847d8d4e067d1a","AdminNotFoundPaths":"5cf3ec8aa2cf4d233d95d80889f90bd4d8cca6d0f4ea18f149dfbc1ff4fd3281","AdminShowNotFoundPath":"8ebf2f3ec53e223c367e1f99010372c46035e12533946751b5a63abf9bea4fd5","AdminDeleteNotFoundIgnoredPattern":"920a973936047b6abbe9e08334afc4334d661edda95a0bea16925a22524ad6a8","AdminNotFoundIgnoredPatterns":"429f371229ee3f9f65a6bd832b98d12ac2672d4b621c560399c89d30d0f605f0","AdminCreateNotFoundIgnoredPatternMutation":"9748b51ba96309a4b5b2905313c2fc9a8e75f7cdbb0b67a1b4c29884d23ec8c0","AdminShowNotFoundIgnoredPattern":"d2f0732335182b898725504e1f9b01cb043034a550686d13e0c1e5c6ab863344","AdminDeleteNotFoundIgnoredPatternMutation":"55537b7c7f93d3c0b32751d112c5545ca2b45c93261aa804fa154997e9ad2f8e","AdminUpdateNotFoundIgnoredPatternMutation":"f4e434af1218ee8662ed41a5ddee1043ea4fd46858cce1b9d03b87456a5d26be","AdminOffers":"b2fc36437eb7fc9ce54ed7fe52c5d6357eb56c1a2a739e52ed5a355499a817ce","AdminCreateOfferMutation":"54bfc14494b6645090140ee5379fef55991e303aa9bd6df0a022bb6b7285297f","AdminShowOffer":"644549579b7660594fa585b864956004f5a0ff8117877656f5089df760c1d79d","AdminUpdateOfferMutation":"bad9b0a25d99a5b3c45ca5116f543b11b7911d1c8e086ff532efd53f29908ca6","AdminPurchases":"47a76a00baca079d6e46244a8ba7bf75daf8063fdf530c5a8d46a876fdc00900","AdminRedirects":"2a97bb424ba31abc5de22378e2989fc7c0c4b383de50be424f6f849e831e9311","AdminCreateRedirectMutation":"fb48605b011a659f8c8764b08da9bdadd90cbd5e6bbdf74b1b03d25a58fca89c","AdminShowRedirect":"300e47bb2bb87540db90e9c808e2ddf209f84219236abc6796417bf8bba3fbc0","AdminDeleteRedirectMutation":"b0d9e5d6b48166fd7422947a0b43bf3a93827fb5da666ac04449209b8a8a660c","AdminUpdateRedirectMutation":"70ce4af2a2b9bf672e94cf16d78952c56827591f6c0efb64e1c8e359050da36d","AdminMakeReleaseLive":"d0a1f7de2a4ea212ad0f7b80fd591943f26ca638c29e46acb604f47828db4204","AdminReleases":"a8954143d0ddc89b0a4d8ea0dfc63f3514e085d616d1089f8a0099adc9576993","AdminCreateRelease":"8fa0c84f61a4546c22ab6ccdafb6b18367eaae11e64dd35afeabdcaa9f19ee20","AdminBanUser":"b7eaca2436a0420749fd9818239ddaaf03cf39d13fb051af54e1ddfc16b0a376","AdminNoteView":"71287b914ef21187cc102872ffec82d7d3dbe8f1c7583391227f3829c627cc0d","AdminShowSubgraph":"e55ded2d39f46e61be846d0eaa24e9434a4cbc400e4d93fbde65dadeb14dd559","UpdateSubgraph":"a1ed76b00109cb6eac864a2c57d63d956d4c34676eb519e8d0a33abcd8c8945b","AdminUserSubgraphAccess":"a624b706534097050759fc343d7335c36f60b7fd8cb7eac35979d2c2e0b166da","AdminUpdateUserSubgraphAccess":"1f5c1a927c82b86a3d0e0313744fe51f023ed479f955e6846225bff4ab75a91d","AdminSelectSubgraphList":"bb432284d1aa05d873a33069ba3848e54368d1f8f98ee05fd948722f9a53f92d","AdminSelectSubgraph":"a801d4b303ea060e27e22011e2d7cc74c9a17a95e0877622e55e4012640c11a7","AdminTgBots":"06d210ef2397927fc72a502eb3b74feb72e597821fe1c34225a805aaf3a29d9f","AdminCreateTgBotMutation":"9748fa61fe26e6ae99458cf44e989e723783cd2fc15f15b24cd6fd93270949fa","AdminTgBotChats":"52468c7a5cd249d08825d0e83728126dc7de041808c61b4b8360c92df61ae389","AdminShowTgBot":"b19db79f571bd11a7ef34fcf55468b5475f00de5ee50426eb09ee71c866af16b","AdminUpdateTgBotMutation":"b52a6b067bf30fd17261a67bc90b1c1805f256483df958579a150b76daddad6b","SignOut":"8e1a898d776a103a20b7dbdfbeb8196fce0175ffe38fa7af9da2848cefdadedf","RequestEmailSignInCode":"cc5a33407c1a3cca08dbcba6847a88298eec84b10f18449244cf13e458449ef9","SignInByEmail":"5678d2ca29b77529e0b9942845dcea2c941c6b5a234863dc86ac2ffaad668614","Viewer":"11c2c89ff045bd18461fa0409d26dcf4acbb063202aa8e74615fcd74d21db756","ReaderQuery":"f7df3b23f1ff47bad46b39d5f1ba0a80a412d236b845497288dd593b3c13d8f6","PaywallActivePurchaseQuery":"49eef6eeabb08d2251039c9b3ca67cade0c7af866c29300712400aa44d34d15b","PaywallQuery":"600ed11b093fa49a35a066487efd179edb8593e273565d02b13c87bb04cb49d7","CreatePaymentLink":"3c4ea8c746c573dc9a48a303c13f2b6f7ac3ccad23045f8e989105ea0df98b7a","UserSubscriptions":"1e67f2ab803afe77d6859c2130b2fede9f9edce8c9d841e14ce552c3ecf40115"}
+export const $trip2g_graphql_persist_queries = {"Admins":"7b9f99a6b0b785b43488198eb4dec442d88e4abda7c516677a0611d76878d904","DisableApiKey":"a5852655edeb09cf7db15b0a196cc53cc005b3f8ef7fe7d7d3cdc032087b8b6b","AdminListApiKeys":"1baa27852f59c95f35fe5f35635ad6a617fca6312411bd6cae7cd377d681a52d","AdminCreateApiKey":"c9c10cfb6fa133ac380870427e9b9cdebbc1e9e9b92e6a6313c97f52b537d66f","AdminApiKeyShowQuery":"2f8b56fce14a35ac51fd315e919a352048a118b036a0368f2a66a85c7156c24b","AdminUnbanUser":"9512bb945535dd9ef2fe1dacc60073ce01fc8d8f3e93fec6583ab2dc455d1309","AdminListNoteViews":"08631c2621fdb1e1265d238476428a5a108673be31c9fa3823233984adaee8ea","AdminListSubgraphs":"4e45ae80a24576cab70fdbb4790a0a7acbde1171823623ed8d7a00e495b596cd","AdminListUserBans":"69e1b4b4cb152647fa3474d44d1fccc7e5bfdc9bfa95d60b9726d4e52c94b3b4","AdminListUsers":"6f4fcb27423e59a080c8c0ba8cc8b69628bf9f961bdfbce5c62bf60c19db4075","AdminListUserSubgraphAccesses":"79ca5aafd82b91a579c3ea6232fa7a32773f2b74846785a00e0f0deee9854eca","AdminGraph":"39e949dd3c2f89603f0d09f5e348c2f46ee78f28d2412ff6efa9279ab68e457b","AdminUpdateNoteGraphPositions":"79055eb93ba30f15dc82d77bdce102ad7d30a32b24e57ebf3339507d9fc66fee","AdminSelectNoteView":"d158e0da61a2cbad548f8ada69595f5f5534f15275a06ef95b969d89a7edb3ad","AdminResetNotFoundPath":"1f10e8c2c12124d4932f5545eccbe0a2dede0dbb988cf0871f847d8d4e067d1a","AdminNotFoundPaths":"5cf3ec8aa2cf4d233d95d80889f90bd4d8cca6d0f4ea18f149dfbc1ff4fd3281","AdminShowNotFoundPath":"8ebf2f3ec53e223c367e1f99010372c46035e12533946751b5a63abf9bea4fd5","AdminDeleteNotFoundIgnoredPattern":"920a973936047b6abbe9e08334afc4334d661edda95a0bea16925a22524ad6a8","AdminNotFoundIgnoredPatterns":"429f371229ee3f9f65a6bd832b98d12ac2672d4b621c560399c89d30d0f605f0","AdminCreateNotFoundIgnoredPatternMutation":"9748b51ba96309a4b5b2905313c2fc9a8e75f7cdbb0b67a1b4c29884d23ec8c0","AdminShowNotFoundIgnoredPattern":"d2f0732335182b898725504e1f9b01cb043034a550686d13e0c1e5c6ab863344","AdminDeleteNotFoundIgnoredPatternMutation":"55537b7c7f93d3c0b32751d112c5545ca2b45c93261aa804fa154997e9ad2f8e","AdminUpdateNotFoundIgnoredPatternMutation":"f4e434af1218ee8662ed41a5ddee1043ea4fd46858cce1b9d03b87456a5d26be","AdminOffers":"b2fc36437eb7fc9ce54ed7fe52c5d6357eb56c1a2a739e52ed5a355499a817ce","AdminCreateOfferMutation":"54bfc14494b6645090140ee5379fef55991e303aa9bd6df0a022bb6b7285297f","AdminShowOffer":"644549579b7660594fa585b864956004f5a0ff8117877656f5089df760c1d79d","AdminUpdateOfferMutation":"bad9b0a25d99a5b3c45ca5116f543b11b7911d1c8e086ff532efd53f29908ca6","AdminPurchases":"47a76a00baca079d6e46244a8ba7bf75daf8063fdf530c5a8d46a876fdc00900","AdminRedirects":"2a97bb424ba31abc5de22378e2989fc7c0c4b383de50be424f6f849e831e9311","AdminCreateRedirectMutation":"fb48605b011a659f8c8764b08da9bdadd90cbd5e6bbdf74b1b03d25a58fca89c","AdminShowRedirect":"300e47bb2bb87540db90e9c808e2ddf209f84219236abc6796417bf8bba3fbc0","AdminDeleteRedirectMutation":"b0d9e5d6b48166fd7422947a0b43bf3a93827fb5da666ac04449209b8a8a660c","AdminUpdateRedirectMutation":"70ce4af2a2b9bf672e94cf16d78952c56827591f6c0efb64e1c8e359050da36d","AdminMakeReleaseLive":"d0a1f7de2a4ea212ad0f7b80fd591943f26ca638c29e46acb604f47828db4204","AdminReleases":"a8954143d0ddc89b0a4d8ea0dfc63f3514e085d616d1089f8a0099adc9576993","AdminCreateRelease":"8fa0c84f61a4546c22ab6ccdafb6b18367eaae11e64dd35afeabdcaa9f19ee20","AdminBanUser":"b7eaca2436a0420749fd9818239ddaaf03cf39d13fb051af54e1ddfc16b0a376","AdminNoteView":"71287b914ef21187cc102872ffec82d7d3dbe8f1c7583391227f3829c627cc0d","AdminShowSubgraph":"e55ded2d39f46e61be846d0eaa24e9434a4cbc400e4d93fbde65dadeb14dd559","UpdateSubgraph":"a1ed76b00109cb6eac864a2c57d63d956d4c34676eb519e8d0a33abcd8c8945b","AdminUserSubgraphAccess":"a624b706534097050759fc343d7335c36f60b7fd8cb7eac35979d2c2e0b166da","AdminUpdateUserSubgraphAccess":"1f5c1a927c82b86a3d0e0313744fe51f023ed479f955e6846225bff4ab75a91d","AdminSelectSubgraphList":"bb432284d1aa05d873a33069ba3848e54368d1f8f98ee05fd948722f9a53f92d","AdminSelectSubgraph":"a801d4b303ea060e27e22011e2d7cc74c9a17a95e0877622e55e4012640c11a7","AdminTgBots":"06d210ef2397927fc72a502eb3b74feb72e597821fe1c34225a805aaf3a29d9f","AdminCreateTgBotMutation":"9748fa61fe26e6ae99458cf44e989e723783cd2fc15f15b24cd6fd93270949fa","AdminTgBotChats":"52468c7a5cd249d08825d0e83728126dc7de041808c61b4b8360c92df61ae389","AdminShowTgBot":"b19db79f571bd11a7ef34fcf55468b5475f00de5ee50426eb09ee71c866af16b","AdminUpdateTgBotMutation":"b52a6b067bf30fd17261a67bc90b1c1805f256483df958579a150b76daddad6b","SignOut":"8e1a898d776a103a20b7dbdfbeb8196fce0175ffe38fa7af9da2848cefdadedf","RequestEmailSignInCode":"cc5a33407c1a3cca08dbcba6847a88298eec84b10f18449244cf13e458449ef9","SignInByEmail":"5678d2ca29b77529e0b9942845dcea2c941c6b5a234863dc86ac2ffaad668614","Viewer":"11c2c89ff045bd18461fa0409d26dcf4acbb063202aa8e74615fcd74d21db756","ReaderQuery":"f7df3b23f1ff47bad46b39d5f1ba0a80a412d236b845497288dd593b3c13d8f6","PaywallActivePurchaseQuery":"49eef6eeabb08d2251039c9b3ca67cade0c7af866c29300712400aa44d34d15b","PaywallQuery":"c52bcc7ff8f5f1f1d7d64e011dbcff7ef2efdbdeb939f8b6289f788ff4ca4c10","CreatePaymentLink":"3c4ea8c746c573dc9a48a303c13f2b6f7ac3ccad23045f8e989105ea0df98b7a","UserSubscriptions":"1e67f2ab803afe77d6859c2130b2fede9f9edce8c9d841e14ce552c3ecf40115"}
 
 export const $trip2g_graphql_payment_type = PaymentType;
 

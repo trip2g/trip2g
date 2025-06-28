@@ -56,7 +56,7 @@ namespace $.$$ {
 		}
 
 		row_email(id: any): string {
-			return this.row(id).email
+			return this.row(id).email || '-'
 		}
 	}
 }
