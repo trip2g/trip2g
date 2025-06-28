@@ -55,6 +55,4 @@ $trip2g_user_paywall_offers_list $mol_view
 			<= BuyButton* $mol_button_major
 				title \Купить
 				click?event <=> buy*
-	sub /
-		<= Items $mol_list
-			rows <= list_items /$mol_view
+	sub <= list_items /$mol_view

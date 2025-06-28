@@ -1,4 +1,4 @@
-namespace $$ {
+namespace $.$$ {
 	// disable the title patching
 	$mol_view.prototype.autorun = function() {
 		try {
