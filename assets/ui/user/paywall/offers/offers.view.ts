@@ -179,6 +179,10 @@ namespace $.$$ {
 		}
 
 		override list_items(): readonly $mol_view[] {
+			if (this.offers().size() === 0) {
+				return [this.Empty()]
+			}
+
 			return this.offers().map((key: any) => this.Item(key))
 		}
 

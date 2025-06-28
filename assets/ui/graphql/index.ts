@@ -150,6 +150,7 @@ namespace $ {
 
 		return {
 			keys: () => map.keys(),
+			size: () => map.size,
 			get: (key: string) => {
 				const val = map.get(key)
 				if (!val) {
