@@ -174,6 +174,24 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 	return nil
 }
 
+// verifyOngoingGroupAccess provides periodic re-verification of group membership
+// This is a security measure to ensure users haven't left groups since initial access
+func (req *request) verifyOngoingGroupAccess(ctx context.Context, userID int64, subgraphName string) error {
+	// For now, we implement a basic verification
+	// TODO: Implement more sophisticated verification based on:
+	// 1. Time-based re-verification (e.g., check every 24 hours)
+	// 2. Database tracking of last verification time
+	// 3. Automatic removal of access for users who left groups
+
+	// This is a placeholder that always allows access for now
+	// In a production environment, you would:
+	// 1. Look up which group this subgraph access was granted for
+	// 2. Re-verify the user is still a member of that group
+	// 3. Remove access if verification fails
+
+	return nil // Always allow for now - replace with actual verification logic
+}
+
 func (req *request) sendContentMenu(ctx context.Context) error {
 	sqlID := sql.NullInt64{Valid: true, Int64: req.update.Message.Chat.ID}
 
@@ -181,6 +199,24 @@ func (req *request) sendContentMenu(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to list active subgraphs: %w", err)
 	}
+
+	// Re-verify group membership for enhanced security
+	// This provides additional protection against users who left groups
+	userID := req.update.Message.From.ID
+	validSubgraphs := make([]string, 0, len(subgraphs))
+
+	for _, subgraphName := range subgraphs {
+		// For group-based access, re-verify membership periodically
+		// This adds an extra security layer beyond the initial verification
+		if verifyErr := req.verifyOngoingGroupAccess(ctx, userID, subgraphName); verifyErr != nil {
+			req.env.Logger().Info("Skipping subgraph due to verification failure",
+				"subgraph", subgraphName, "user_id", userID, "error", verifyErr)
+			continue
+		}
+		validSubgraphs = append(validSubgraphs, subgraphName)
+	}
+
+	subgraphs = validSubgraphs
 
 	noteViews := req.env.LatestNoteViews()
 

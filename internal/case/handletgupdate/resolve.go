@@ -7,11 +7,17 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
+
+var (
+	// Global rate limiter: 10 requests per minute per user
+	globalRateLimiter = NewRateLimiter(10, time.Minute)
 )
 
 type Env interface {
@@ -57,6 +63,28 @@ type request struct {
 }
 
 func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
+	// Rate limiting check
+	var userID int64
+	if update.Message != nil && update.Message.From != nil {
+		userID = update.Message.From.ID
+	} else if update.CallbackQuery != nil && update.CallbackQuery.From != nil {
+		userID = update.CallbackQuery.From.ID
+	} else if update.MyChatMember != nil {
+		userID = update.MyChatMember.From.ID
+	} else if update.ChatMember != nil && update.ChatMember.From.ID != 0 {
+		userID = update.ChatMember.From.ID
+	}
+
+	if userID != 0 && !globalRateLimiter.Allow(userID) {
+		env.Logger().Error("Rate limit exceeded", "user_id", userID)
+		// Try to send rate limit message if possible
+		if update.Message != nil {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "⏰ Too many requests. Please wait before trying again.")
+			_, _ = env.Send(msg) // Ignore errors for rate limit messages
+		}
+		return nil // Don't return error to avoid processing issues
+	}
+
 	// Update user profile if we have a message with user info
 	if update.Message != nil && update.Message.From != nil {
 		user := update.Message.From
@@ -141,10 +169,34 @@ func (req *request) SendMessage(text string) error {
 	return nil
 }
 
+func (req *request) SendCallbackMessage(text string) error {
+	// Send callback response to close the loading state
+	callback := tgbotapi.NewCallbackWithAlert(req.update.CallbackQuery.ID, text)
+
+	_, err := req.env.Request(callback)
+	if err != nil {
+		return fmt.Errorf("failed to send callback message: %w", err)
+	}
+
+	return nil
+}
+
 func (req *request) handleCallbackQuery(ctx context.Context) error {
 	log := req.env.Logger()
 
-	actionParts := strings.SplitN(req.update.CallbackQuery.Data, ":", 3)
+	// Validate callback data
+	callbackData := req.update.CallbackQuery.Data
+	if callbackData == "" {
+		log.Error("Empty callback data received")
+		return req.SendCallbackMessage("❌ Invalid request. Please try again.")
+	}
+
+	if len(callbackData) > 1000 {
+		log.Error("Callback data too long", "length", len(callbackData))
+		return req.SendCallbackMessage("❌ Request too large. Please try again.")
+	}
+
+	actionParts := strings.SplitN(callbackData, ":", 3)
 
 	switch actionParts[0] {
 	case "start_mbti":
