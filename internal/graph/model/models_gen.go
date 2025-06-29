@@ -26,6 +26,10 @@ type CreateAPIKeyOrErrorPayload interface {
 	IsCreateAPIKeyOrErrorPayload()
 }
 
+type CreateEmailWaitListRequestOrErrorPayload interface {
+	IsCreateEmailWaitListRequestOrErrorPayload()
+}
+
 type CreateNotFoundIgnoredPatternOrErrorPayload interface {
 	IsCreateNotFoundIgnoredPatternOrErrorPayload()
 }
@@ -265,6 +269,17 @@ type CreateAPIKeyPayload struct {
 
 func (CreateAPIKeyPayload) IsCreateAPIKeyOrErrorPayload() {}
 
+type CreateEmailWaitListRequestInput struct {
+	Email  string `json:"email"`
+	PathID int64  `json:"pathId"`
+}
+
+type CreateEmailWaitListRequestPayload struct {
+	Success bool `json:"success"`
+}
+
+func (CreateEmailWaitListRequestPayload) IsCreateEmailWaitListRequestOrErrorPayload() {}
+
 type CreateNotFoundIgnoredPatternInput struct {
 	Pattern string `json:"pattern"`
 }
@@ -386,6 +401,8 @@ func (ErrorPayload) IsPushNotesOrErrorPayload() {}
 func (ErrorPayload) IsUploadNoteAssetOrErrorPayload() {}
 
 func (ErrorPayload) IsHideNotesOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateEmailWaitListRequestOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
@@ -549,12 +566,12 @@ type SignOutPayload struct {
 
 func (SignOutPayload) IsSignOutOrErrorPayload() {}
 
-type SubgraphWaitlist struct {
+type SubgraphWaitList struct {
 	TgBotURL     *string `json:"tgBotUrl,omitempty"`
 	EmailAllowed bool    `json:"emailAllowed"`
 }
 
-func (SubgraphWaitlist) IsViewerOffers() {}
+func (SubgraphWaitList) IsViewerOffers() {}
 
 type UnbanUserInput struct {
 	UserID int64 `json:"userId"`
@@ -667,6 +684,10 @@ func (UploadNoteAssetPayload) IsUploadNoteAssetOrErrorPayload() {}
 type Vector2 struct {
 	X float64 `json:"x"`
 	Y float64 `json:"y"`
+}
+
+type ViewerOffersFilter struct {
+	PageID *int64 `json:"pageId,omitempty"`
 }
 
 type PaymentType string

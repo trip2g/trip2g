@@ -1316,6 +1316,38 @@ func (q *Queries) InsertUserWithTgUserID(ctx context.Context, tgUserID sql.NullI
 	return i, err
 }
 
+const insertWaitListEmailRequest = `-- name: InsertWaitListEmailRequest :exec
+insert into wait_list_email_requests (email, note_path_id, ip)
+values (?, ?, ?)
+`
+
+type InsertWaitListEmailRequestParams struct {
+	Email      string         `json:"email"`
+	NotePathID int64          `json:"note_path_id"`
+	Ip         sql.NullString `json:"ip"`
+}
+
+func (q *Queries) InsertWaitListEmailRequest(ctx context.Context, arg InsertWaitListEmailRequestParams) error {
+	_, err := q.db.ExecContext(ctx, insertWaitListEmailRequest, arg.Email, arg.NotePathID, arg.Ip)
+	return err
+}
+
+const insertWaitListTgBotRequest = `-- name: InsertWaitListTgBotRequest :exec
+insert into wait_list_tg_bot_requests (bot_id, chat_id, note_path_id)
+values (?, ?, ?)
+`
+
+type InsertWaitListTgBotRequestParams struct {
+	BotID      int64 `json:"bot_id"`
+	ChatID     int64 `json:"chat_id"`
+	NotePathID int64 `json:"note_path_id"`
+}
+
+func (q *Queries) InsertWaitListTgBotRequest(ctx context.Context, arg InsertWaitListTgBotRequestParams) error {
+	_, err := q.db.ExecContext(ctx, insertWaitListTgBotRequest, arg.BotID, arg.ChatID, arg.NotePathID)
+	return err
+}
+
 const listAPIKeyLogsByAPIKeyID = `-- name: ListAPIKeyLogsByAPIKeyID :many
 select l.created_at, a.name as action_name, i.value as ip
   from api_key_logs l

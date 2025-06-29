@@ -714,3 +714,11 @@ select *
   from users
  where tg_user_id = ?
 limit 1;
+
+-- name: InsertWaitListEmailRequest :exec
+insert into wait_list_email_requests (email, note_path_id, ip)
+values (?, ?, ?);
+
+-- name: InsertWaitListTgBotRequest :exec
+insert into wait_list_tg_bot_requests (bot_id, chat_id, note_path_id)
+values (?, ?, ?);

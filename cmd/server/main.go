@@ -851,6 +851,15 @@ func (a *app) TrackNotFound(path string, ip string) {
 func (a *app) NotifyPuchaseUpdated(email string) {
 }
 
+func (a *app) RequestIP(ctx context.Context) string {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		return ""
+	}
+
+	return string(req.Req.RemoteIP())
+}
+
 func (a *app) handleCors(ctx *fasthttp.RequestCtx) bool {
 	origin := string(ctx.Request.Header.Peek("Origin"))
 	if origin == "http://localhost:9081" || origin == "app://obsidian.md" {
@@ -1037,6 +1046,10 @@ func (a *app) startServer() {
 		return
 	}
 
+	a.startACMEServer(s)
+}
+
+func (a *app) startACMEServer(s *fasthttp.Server) {
 	allowedDomains := make(map[string]struct{}, len(a.config.AcmeDomains))
 
 	for _, domain := range a.config.AcmeDomains {

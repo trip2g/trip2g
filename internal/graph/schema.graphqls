@@ -349,18 +349,22 @@ type ActiveOffers {
   nodes: [Offer!]!
 }
 
-type SubgraphWaitlist {
+type SubgraphWaitList {
   tgBotUrl: String
   emailAllowed: Boolean!
 }
 
-union ViewerOffers = ActiveOffers | SubgraphWaitlist
+union ViewerOffers = ActiveOffers | SubgraphWaitList
+
+input ViewerOffersFilter {
+  pageId: Int64
+}
 
 type Viewer {
   id: ID!
   role: Role!
   user: User
-  offers(subgraphs: [String!]): ViewerOffers
+  offers(filter: ViewerOffersFilter!): ViewerOffers
   activePurchases: [Purchase!]!
 }
 
@@ -548,11 +552,28 @@ type HideNotesPayload {
 
 union HideNotesOrErrorPayload = HideNotesPayload | ErrorPayload
 
+#
+# createEmailWaitListRequest
+#
+
+input CreateEmailWaitListRequestInput {
+  email: String!
+  pathId: Int64!
+}
+
+type CreateEmailWaitListRequestPayload {
+  success: Boolean!
+}
+
+union CreateEmailWaitListRequestOrErrorPayload = CreateEmailWaitListRequestPayload | ErrorPayload
+
 type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
   signOut: SignOutOrErrorPayload!
   createPaymentLink(input: CreatePaymentLinkInput!): CreatePaymentLinkOrErrorPayload!
+
+  createEmailWaitListRequest(input: CreateEmailWaitListRequestInput!): CreateEmailWaitListRequestOrErrorPayload!
 
   pushNotes(input: PushNotesInput!): PushNotesOrErrorPayload!
   hideNotes(input: HideNotesInput!): HideNotesOrErrorPayload!

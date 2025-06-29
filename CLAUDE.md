@@ -152,10 +152,80 @@ When you need new database operations:
 
 3. **Implement Business Logic**:
    - Create directory: `internal/case/${mutationname}/` (for user mutations) or `internal/case/admin/${mutationname}/` (for admin mutations)
-   - Create `resolve.go` with:
+   - Create `resolve.go` following this pattern:
      ```go
-     func Resolve(ctx context.Context, env Env, input model.${Mutation}Input) (model.${Mutation}OrErrorPayload, error)
+     package ${mutationname}
+
+     import (
+         "context"
+         "database/sql"
+         "fmt"
+
+         ozzo "github.com/go-ozzo/ozzo-validation/v4"
+         validation "github.com/go-ozzo/ozzo-validation/v4"
+         "github.com/go-ozzo/ozzo-validation/v4/is"
+
+         "trip2g/internal/db"
+         "trip2g/internal/graph/model"
+     )
+
+     type Env interface {
+         // Required database methods
+         InsertSomething(ctx context.Context, arg db.InsertSomethingParams) error
+         // Other methods as needed
+     }
+
+     // Type aliases for cleaner code
+     type Input = model.${Mutation}Input
+     type Payload = model.${Mutation}OrErrorPayload
+
+     // validateRequest validates input and returns ErrorPayload if invalid
+     func validateRequest(r *Input) *model.ErrorPayload {
+         return model.NewOzzoError(ozzo.ValidateStruct(r,
+             ozzo.Field(&r.Field1, validation.Required),
+             ozzo.Field(&r.Email, validation.Required, is.Email),
+             // Add all validation rules
+         ))
+     }
+
+     func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+         // Always validate input first
+         errPayload := validateRequest(&input)
+         if errPayload != nil {
+             return errPayload, nil  // User-visible errors go in ErrorPayload
+         }
+
+         // Define params as separate variable for cleaner code
+         params := db.InsertSomethingParams{
+             Field1: input.Field1,
+             Field2: sql.NullString{String: input.Field2, Valid: input.Field2 != ""},
+             // Map all fields
+         }
+
+         // Execute database operation
+         err := env.InsertSomething(ctx, params)
+         if err != nil {
+             // System errors are returned as error (will show generic message to user)
+             return nil, fmt.Errorf("failed to insert something: %w", err)
+         }
+
+         // Define payload as separate variable
+         payload := model.${Mutation}Payload{
+             Success: true,
+             // Add other return fields
+         }
+
+         return &payload, nil
+     }
      ```
+
+   **Important patterns:**
+   - Use type aliases (`Input`, `Payload`) for cleaner code
+   - Create `validateRequest` function that returns `*model.ErrorPayload`
+   - User-visible validation errors return `ErrorPayload` with `nil` error
+   - System/internal errors return `nil` payload with wrapped error
+   - Define params and payload as separate variables before use
+   - Return `&payload, nil` for successful responses
 
 4. **Define Env Interface** in the case:
    ```go

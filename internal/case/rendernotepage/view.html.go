@@ -652,118 +652,127 @@ func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError)
 //line view.html:170
 	qw422016.N().S(`
 
-    <div mol_view_root="$trip2g_user_paywall" data-subgraphs="`)
-//line view.html:172
+    <div
+      id="paywall"
+      mol_view_root="$trip2g_user_paywall"
+      data-subgraphs="`)
+//line view.html:175
 	qw422016.E().S(resp.NoteSubgraphsJSON())
-//line view.html:172
-	qw422016.N().S(`"></div>
+//line view.html:175
+	qw422016.N().S(`"
+      data-path-id="`)
+//line view.html:176
+	qw422016.N().DL(resp.Note.PathID)
+//line view.html:176
+	qw422016.N().S(`"
+    ></div>
   </div>
 </div>
 
 `)
-//line view.html:176
+//line view.html:181
 }
 
-//line view.html:176
+//line view.html:181
 func WritePayWall(qq422016 qtio422016.Writer, resp *Response, err *PaywallError) {
-//line view.html:176
+//line view.html:181
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.html:176
+//line view.html:181
 	StreamPayWall(qw422016, resp, err)
-//line view.html:176
+//line view.html:181
 	qt422016.ReleaseWriter(qw422016)
-//line view.html:176
+//line view.html:181
 }
 
-//line view.html:176
+//line view.html:181
 func PayWall(resp *Response, err *PaywallError) string {
-//line view.html:176
+//line view.html:181
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.html:176
+//line view.html:181
 	WritePayWall(qb422016, resp, err)
-//line view.html:176
+//line view.html:181
 	qs422016 := string(qb422016.B)
-//line view.html:176
+//line view.html:181
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.html:176
+//line view.html:181
 	return qs422016
-//line view.html:176
+//line view.html:181
 }
 
-//line view.html:178
+//line view.html:183
 func StreamTableOfContents(qw422016 *qt422016.Writer, resp *Response) {
-//line view.html:178
+//line view.html:183
 	qw422016.N().S(`
 `)
-//line view.html:179
+//line view.html:184
 	toc := resp.Note.TOC()
 
-//line view.html:179
+//line view.html:184
 	qw422016.N().S(`
 `)
-//line view.html:180
+//line view.html:185
 	if len(toc) > 0 {
-//line view.html:180
+//line view.html:185
 		qw422016.N().S(`
 <div class="noteview__toc toc" id="noteview-toc" id="noteview-toc">
   <h2 class="toc__title">Содержание</h2>
   `)
-//line view.html:183
+//line view.html:188
 		for _, item := range toc {
-//line view.html:183
+//line view.html:188
 			qw422016.N().S(`
     <div class="toc__item toc__item--level`)
-//line view.html:184
+//line view.html:189
 			qw422016.N().D(item.Level)
-//line view.html:184
+//line view.html:189
 			qw422016.N().S(`">
       <a href="#`)
-//line view.html:185
+//line view.html:190
 			qw422016.N().S(item.ID)
-//line view.html:185
+//line view.html:190
 			qw422016.N().S(`" class="toc__link">`)
-//line view.html:185
+//line view.html:190
 			qw422016.N().S(item.Text)
-//line view.html:185
+//line view.html:190
 			qw422016.N().S(`</a>
     </div>
   `)
-//line view.html:187
+//line view.html:192
 		}
-//line view.html:187
+//line view.html:192
 		qw422016.N().S(`
 </div>
 `)
-//line view.html:189
+//line view.html:194
 	}
-//line view.html:189
+//line view.html:194
 	qw422016.N().S(`
 `)
-//line view.html:190
+//line view.html:195
 }
 
-//line view.html:190
+//line view.html:195
 func WriteTableOfContents(qq422016 qtio422016.Writer, resp *Response) {
-//line view.html:190
+//line view.html:195
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.html:190
+//line view.html:195
 	StreamTableOfContents(qw422016, resp)
-//line view.html:190
+//line view.html:195
 	qt422016.ReleaseWriter(qw422016)
-//line view.html:190
+//line view.html:195
 }
 
-//line view.html:190
+//line view.html:195
 func TableOfContents(resp *Response) string {
-//line view.html:190
+//line view.html:195
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.html:190
+//line view.html:195
 	WriteTableOfContents(qb422016, resp)
-//line view.html:190
+//line view.html:195
 	qs422016 := string(qb422016.B)
-//line view.html:190
+//line view.html:195
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.html:190
+//line view.html:195
 	return qs422016
-//line view.html:190
+//line view.html:195
 }

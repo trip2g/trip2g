@@ -28,6 +28,7 @@ import (
 	"trip2g/internal/case/admin/updatetgbot"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
+	"trip2g/internal/case/createemailwaitlistrequest"
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/pushnotes"
@@ -112,6 +113,7 @@ type Env interface {
 	signinbyemail.Env
 	signout.Env
 	createpaymentlink.Env
+	createemailwaitlistrequest.Env
 	pushnotes.Env
 	rendernotepage.Env
 	uploadnoteasset.Env

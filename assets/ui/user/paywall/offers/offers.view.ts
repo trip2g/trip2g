@@ -1,10 +1,10 @@
 namespace $.$$ {
-	const request = ( subgraphs: string[] ) => {
+	const request = ( page_id: number ) => {
 		const res = $trip2g_graphql_request(
 			`
-				query PaywallQuery($subgraphs: [String!]!) {
+				query PaywallQuery($filter: ViewerOffersFilter!) {
 					viewer {
-						offers(subgraphs: $subgraphs) {
+						offers(filter: $filter) {
 							... on ActiveOffers {
 								nodes {
 									id
@@ -14,7 +14,7 @@ namespace $.$$ {
 									}
 								}
 							}
-							... on SubgraphWaitlist {
+							... on SubgraphWaitList {
 								tgBotUrl
 								emailAllowed
 							}
@@ -24,19 +24,35 @@ namespace $.$$ {
 				}
 			`,
 			{
-				subgraphs,
+				filter: {
+					pageId: page_id,
+				}
 			}
 		)
 
 		return res.viewer.offers
 	}
 
-	export type $trip2g_user_paywall_offers_whitelist = Extract<ReturnType<typeof request>, { __typename?: 'SubgraphWaitlist' }>
+	export type $trip2g_user_paywall_offers_whitelist = Extract<ReturnType<typeof request>, { __typename?: 'SubgraphWaitList' }>
 
 	export class $trip2g_user_paywall_offers extends $.$trip2g_user_paywall_offers {
+		page_id(): number {
+			const el = document.getElementById('paywall')
+			if ( el ) {
+				return el.dataset.pageId ? parseInt( el.dataset.pageId, 10 ) : 0
+			}
+
+			const page_id = this.$.$mol_state_arg.value( 'page_id' )
+			if( page_id ) {
+				return parseInt( page_id, 10 )
+			}
+
+			throw new Error( 'Page ID not found' )
+		}
+
 		@$mol_mem
 		data() {
-			return request( this.subgraphs() as string[] )
+			return request( this.page_id() )
 		}
 
 		@$mol_mem
@@ -51,7 +67,7 @@ namespace $.$$ {
 
 		waitlist() {
 			const data = this.data()
-			if( data?.__typename === 'SubgraphWaitlist' ) {
+			if( data?.__typename === 'SubgraphWaitList' ) {
 				return data
 			}
 

@@ -464,3 +464,117 @@ func TestUserState(t *testing.T) {
 		})
 	}
 }
+
+
+func TestHandleWaitListRequest(t *testing.T) {
+	tests := []struct {
+		name        string
+		update      tgbotapi.Update
+		setupEnv    func(*EnvMock)
+		wantErr     bool
+		wantMessage string
+	}{
+		{
+			name: "successful wait list request",
+			update: tgbotapi.Update{
+				Message: &tgbotapi.Message{
+					MessageID: 1,
+					From: &tgbotapi.User{
+						ID:        123456789,
+						FirstName: "Test",
+						UserName:  "testuser",
+					},
+					Chat: &tgbotapi.Chat{
+						ID:   123456789,
+						Type: "private",
+					},
+					Date: 1750942700,
+					Text: "/start wl_42",
+					Entities: []tgbotapi.MessageEntity{
+						{
+							Type:   "bot_command",
+							Offset: 0,
+							Length: 6,
+						},
+					},
+				},
+			},
+			setupEnv: func(env *EnvMock) {
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+				env.BotIDFunc = func() int64 {
+					return 1
+				}
+				env.InsertWaitListTgBotRequestFunc = func(ctx context.Context, arg db.InsertWaitListTgBotRequestParams) error {
+					require.Equal(t, int64(1), arg.BotID)
+					require.Equal(t, int64(123456789), arg.ChatID)
+					require.Equal(t, int64(42), arg.NotePathID)
+					return nil
+				}
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
+					return tgbotapi.Message{}, nil
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid path ID format",
+			update: tgbotapi.Update{
+				Message: &tgbotapi.Message{
+					MessageID: 1,
+					From: &tgbotapi.User{
+						ID:        123456789,
+						FirstName: "Test",
+						UserName:  "testuser",
+					},
+					Chat: &tgbotapi.Chat{
+						ID:   123456789,
+						Type: "private",
+					},
+					Date: 1750942700,
+					Text: "/start wl_invalid",
+					Entities: []tgbotapi.MessageEntity{
+						{
+							Type:   "bot_command",
+							Offset: 0,
+							Length: 6,
+						},
+					},
+				},
+			},
+			setupEnv: func(env *EnvMock) {
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
+					return tgbotapi.Message{}, nil
+				}
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := &EnvMock{}
+			if tt.setupEnv != nil {
+				tt.setupEnv(env)
+			}
+
+			req := &request{
+				chatID: tt.update.Message.Chat.ID,
+				update: tt.update,
+				env:    env,
+			}
+
+			err := req.handleWaitListRequest(context.Background(), tt.update.Message.CommandArguments())
+
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

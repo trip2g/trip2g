@@ -265,6 +265,19 @@ CREATE TABLE IF NOT EXISTS "users" (
     tg_user_id integer unique -- Also unique - one account per Telegram user
     -- Note: No FK constraint because tg_user_profiles.chat_id is not unique
 );
+CREATE TABLE wait_list_email_requests (
+  email text primary key,
+  created_at datetime not null default current_timestamp,
+  note_path_id int not null references note_paths(id) on delete restrict,
+  ip text
+);
+CREATE TABLE wait_list_tg_bot_requests (
+  bot_id int not null references tg_bots(id) on delete restrict,
+  chat_id int not null,
+  created_at datetime not null default current_timestamp,
+  note_path_id int not null references note_paths(id) on delete restrict,
+  primary key (bot_id, chat_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -303,4 +316,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250626054021'),
   ('20250626100000'),
   ('20250626120000'),
-  ('20250627040815');
+  ('20250627040815'),
+  ('20250628111216');

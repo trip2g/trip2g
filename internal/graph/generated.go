@@ -393,6 +393,10 @@ type ComplexityRoot struct {
 		Value  func(childComplexity int) int
 	}
 
+	CreateEmailWaitListRequestPayload struct {
+		Success func(childComplexity int) int
+	}
+
 	CreateNotFoundIgnoredPatternPayload struct {
 		NotFoundIgnoredPattern func(childComplexity int) int
 	}
@@ -449,14 +453,15 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		Admin                  func(childComplexity int) int
-		CreatePaymentLink      func(childComplexity int, input model.CreatePaymentLinkInput) int
-		HideNotes              func(childComplexity int, input model.HideNotesInput) int
-		PushNotes              func(childComplexity int, input model.PushNotesInput) int
-		RequestEmailSignInCode func(childComplexity int, input model.RequestEmailSignInCodeInput) int
-		SignInByEmail          func(childComplexity int, input model.SignInByEmailInput) int
-		SignOut                func(childComplexity int) int
-		UploadNoteAsset        func(childComplexity int, input model.UploadNoteAssetInput) int
+		Admin                      func(childComplexity int) int
+		CreateEmailWaitListRequest func(childComplexity int, input model.CreateEmailWaitListRequestInput) int
+		CreatePaymentLink          func(childComplexity int, input model.CreatePaymentLinkInput) int
+		HideNotes                  func(childComplexity int, input model.HideNotesInput) int
+		PushNotes                  func(childComplexity int, input model.PushNotesInput) int
+		RequestEmailSignInCode     func(childComplexity int, input model.RequestEmailSignInCodeInput) int
+		SignInByEmail              func(childComplexity int, input model.SignInByEmailInput) int
+		SignOut                    func(childComplexity int) int
+		UploadNoteAsset            func(childComplexity int, input model.UploadNoteAssetInput) int
 	}
 
 	NotePath struct {
@@ -553,7 +558,7 @@ type ComplexityRoot struct {
 		Offers   func(childComplexity int) int
 	}
 
-	SubgraphWaitlist struct {
+	SubgraphWaitList struct {
 		EmailAllowed func(childComplexity int) int
 		TgBotURL     func(childComplexity int) int
 	}
@@ -624,7 +629,7 @@ type ComplexityRoot struct {
 	Viewer struct {
 		ActivePurchases func(childComplexity int) int
 		ID              func(childComplexity int) int
-		Offers          func(childComplexity int, subgraphs []string) int
+		Offers          func(childComplexity int, filter model.ViewerOffersFilter) int
 		Role            func(childComplexity int) int
 		User            func(childComplexity int) int
 	}
@@ -823,6 +828,7 @@ type MutationResolver interface {
 	SignInByEmail(ctx context.Context, input model.SignInByEmailInput) (model.SignInOrErrorPayload, error)
 	SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error)
 	CreatePaymentLink(ctx context.Context, input model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error)
+	CreateEmailWaitListRequest(ctx context.Context, input model.CreateEmailWaitListRequestInput) (model.CreateEmailWaitListRequestOrErrorPayload, error)
 	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
 	HideNotes(ctx context.Context, input model.HideNotesInput) (model.HideNotesOrErrorPayload, error)
 	UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error)
@@ -882,7 +888,7 @@ type UserSubgraphAccessResolver interface {
 type ViewerResolver interface {
 	Role(ctx context.Context, obj *model1.Viewer) (model.Role, error)
 	User(ctx context.Context, obj *model1.Viewer) (*db.User, error)
-	Offers(ctx context.Context, obj *model1.Viewer, subgraphs []string) (model.ViewerOffers, error)
+	Offers(ctx context.Context, obj *model1.Viewer, filter model.ViewerOffersFilter) (model.ViewerOffers, error)
 	ActivePurchases(ctx context.Context, obj *model1.Viewer) ([]db.Purchase, error)
 }
 
@@ -2260,6 +2266,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.CreateApiKeyPayload.Value(childComplexity), true
 
+	case "CreateEmailWaitListRequestPayload.success":
+		if e.complexity.CreateEmailWaitListRequestPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.CreateEmailWaitListRequestPayload.Success(childComplexity), true
+
 	case "CreateNotFoundIgnoredPatternPayload.notFoundIgnoredPattern":
 		if e.complexity.CreateNotFoundIgnoredPatternPayload.NotFoundIgnoredPattern == nil {
 			break
@@ -2378,6 +2391,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.Admin(childComplexity), true
+
+	case "Mutation.createEmailWaitListRequest":
+		if e.complexity.Mutation.CreateEmailWaitListRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createEmailWaitListRequest_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateEmailWaitListRequest(childComplexity, args["input"].(model.CreateEmailWaitListRequestInput)), true
 
 	case "Mutation.createPaymentLink":
 		if e.complexity.Mutation.CreatePaymentLink == nil {
@@ -2785,19 +2810,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Subgraph.Offers(childComplexity), true
 
-	case "SubgraphWaitlist.emailAllowed":
-		if e.complexity.SubgraphWaitlist.EmailAllowed == nil {
+	case "SubgraphWaitList.emailAllowed":
+		if e.complexity.SubgraphWaitList.EmailAllowed == nil {
 			break
 		}
 
-		return e.complexity.SubgraphWaitlist.EmailAllowed(childComplexity), true
+		return e.complexity.SubgraphWaitList.EmailAllowed(childComplexity), true
 
-	case "SubgraphWaitlist.tgBotUrl":
-		if e.complexity.SubgraphWaitlist.TgBotURL == nil {
+	case "SubgraphWaitList.tgBotUrl":
+		if e.complexity.SubgraphWaitList.TgBotURL == nil {
 			break
 		}
 
-		return e.complexity.SubgraphWaitlist.TgBotURL(childComplexity), true
+		return e.complexity.SubgraphWaitList.TgBotURL(childComplexity), true
 
 	case "UnbanUserPayload.user":
 		if e.complexity.UnbanUserPayload.User == nil {
@@ -2991,7 +3016,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Viewer.Offers(childComplexity, args["subgraphs"].([]string)), true
+		return e.complexity.Viewer.Offers(childComplexity, args["filter"].(model.ViewerOffersFilter)), true
 
 	case "Viewer.role":
 		if e.complexity.Viewer.Role == nil {
@@ -3022,6 +3047,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApiKeyLogsFilterInput,
 		ec.unmarshalInputBanUserInput,
 		ec.unmarshalInputCreateApiKeyInput,
+		ec.unmarshalInputCreateEmailWaitListRequestInput,
 		ec.unmarshalInputCreateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputCreateOfferInput,
 		ec.unmarshalInputCreatePaymentLinkInput,
@@ -3050,6 +3076,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateTgBotInput,
 		ec.unmarshalInputUpdateUserSubgraphAccessInput,
 		ec.unmarshalInputUploadNoteAssetInput,
+		ec.unmarshalInputViewerOffersFilter,
 	)
 	first := true
 
@@ -3925,6 +3952,29 @@ func (ec *executionContext) field_AdminQuery_userSubgraphAccess_argsID(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_createEmailWaitListRequest_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_createEmailWaitListRequest_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_createEmailWaitListRequest_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateEmailWaitListRequestInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateEmailWaitListRequestInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateEmailWaitListRequestInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateEmailWaitListRequestInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_createPaymentLink_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4112,23 +4162,23 @@ func (ec *executionContext) field_Query_note_argsInput(
 func (ec *executionContext) field_Viewer_offers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Viewer_offers_argsSubgraphs(ctx, rawArgs)
+	arg0, err := ec.field_Viewer_offers_argsFilter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["subgraphs"] = arg0
+	args["filter"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Viewer_offers_argsSubgraphs(
+func (ec *executionContext) field_Viewer_offers_argsFilter(
 	ctx context.Context,
 	rawArgs map[string]any,
-) ([]string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphs"))
-	if tmp, ok := rawArgs["subgraphs"]; ok {
-		return ec.unmarshalOString2ᚕstringᚄ(ctx, tmp)
+) (model.ViewerOffersFilter, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalNViewerOffersFilter2trip2gᚋinternalᚋgraphᚋmodelᚐViewerOffersFilter(ctx, tmp)
 	}
 
-	var zeroVal []string
+	var zeroVal model.ViewerOffersFilter
 	return zeroVal, nil
 }
 
@@ -12733,6 +12783,50 @@ func (ec *executionContext) fieldContext_CreateApiKeyPayload_apiKey(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateEmailWaitListRequestPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.CreateEmailWaitListRequestPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreateEmailWaitListRequestPayload_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreateEmailWaitListRequestPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateEmailWaitListRequestPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreateNotFoundIgnoredPatternPayload_notFoundIgnoredPattern(ctx context.Context, field graphql.CollectedField, obj *model.CreateNotFoundIgnoredPatternPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_CreateNotFoundIgnoredPatternPayload_notFoundIgnoredPattern(ctx, field)
 	if err != nil {
@@ -13749,6 +13843,61 @@ func (ec *executionContext) fieldContext_Mutation_createPaymentLink(ctx context.
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createPaymentLink_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createEmailWaitListRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createEmailWaitListRequest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateEmailWaitListRequest(rctx, fc.Args["input"].(model.CreateEmailWaitListRequestInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CreateEmailWaitListRequestOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNCreateEmailWaitListRequestOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateEmailWaitListRequestOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createEmailWaitListRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateEmailWaitListRequestOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createEmailWaitListRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -16351,8 +16500,8 @@ func (ec *executionContext) fieldContext_Subgraph_homePath(_ context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _SubgraphWaitlist_tgBotUrl(ctx context.Context, field graphql.CollectedField, obj *model.SubgraphWaitlist) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubgraphWaitlist_tgBotUrl(ctx, field)
+func (ec *executionContext) _SubgraphWaitList_tgBotUrl(ctx context.Context, field graphql.CollectedField, obj *model.SubgraphWaitList) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubgraphWaitList_tgBotUrl(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -16379,9 +16528,9 @@ func (ec *executionContext) _SubgraphWaitlist_tgBotUrl(ctx context.Context, fiel
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SubgraphWaitlist_tgBotUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SubgraphWaitList_tgBotUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "SubgraphWaitlist",
+		Object:     "SubgraphWaitList",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -16392,8 +16541,8 @@ func (ec *executionContext) fieldContext_SubgraphWaitlist_tgBotUrl(_ context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _SubgraphWaitlist_emailAllowed(ctx context.Context, field graphql.CollectedField, obj *model.SubgraphWaitlist) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SubgraphWaitlist_emailAllowed(ctx, field)
+func (ec *executionContext) _SubgraphWaitList_emailAllowed(ctx context.Context, field graphql.CollectedField, obj *model.SubgraphWaitList) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SubgraphWaitList_emailAllowed(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -16423,9 +16572,9 @@ func (ec *executionContext) _SubgraphWaitlist_emailAllowed(ctx context.Context, 
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SubgraphWaitlist_emailAllowed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SubgraphWaitList_emailAllowed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "SubgraphWaitlist",
+		Object:     "SubgraphWaitList",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -17788,7 +17937,7 @@ func (ec *executionContext) _Viewer_offers(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Viewer().Offers(rctx, obj, fc.Args["subgraphs"].([]string))
+		return ec.resolvers.Viewer().Offers(rctx, obj, fc.Args["filter"].(model.ViewerOffersFilter))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -20046,6 +20195,40 @@ func (ec *executionContext) unmarshalInputCreateApiKeyInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateEmailWaitListRequestInput(ctx context.Context, obj any) (model.CreateEmailWaitListRequestInput, error) {
+	var it model.CreateEmailWaitListRequestInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"email", "pathId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "pathId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pathId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PathID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateNotFoundIgnoredPatternInput(ctx context.Context, obj any) (model.CreateNotFoundIgnoredPatternInput, error) {
 	var it model.CreateNotFoundIgnoredPatternInput
 	asMap := map[string]any{}
@@ -21054,6 +21237,33 @@ func (ec *executionContext) unmarshalInputUploadNoteAssetInput(ctx context.Conte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputViewerOffersFilter(ctx context.Context, obj any) (model.ViewerOffersFilter, error) {
+	var it model.ViewerOffersFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"pageId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "pageId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pageId"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PageID = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -21122,6 +21332,29 @@ func (ec *executionContext) _CreateApiKeyOrErrorPayload(ctx context.Context, sel
 			return graphql.Null
 		}
 		return ec._CreateApiKeyPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _CreateEmailWaitListRequestOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateEmailWaitListRequestOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateEmailWaitListRequestPayload:
+		return ec._CreateEmailWaitListRequestPayload(ctx, sel, &obj)
+	case *model.CreateEmailWaitListRequestPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateEmailWaitListRequestPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -21729,13 +21962,13 @@ func (ec *executionContext) _ViewerOffers(ctx context.Context, sel ast.Selection
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.SubgraphWaitlist:
-		return ec._SubgraphWaitlist(ctx, sel, &obj)
-	case *model.SubgraphWaitlist:
+	case model.SubgraphWaitList:
+		return ec._SubgraphWaitList(ctx, sel, &obj)
+	case *model.SubgraphWaitList:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._SubgraphWaitlist(ctx, sel, obj)
+		return ec._SubgraphWaitList(ctx, sel, obj)
 	case model.ActiveOffers:
 		return ec._ActiveOffers(ctx, sel, &obj)
 	case *model.ActiveOffers:
@@ -27235,6 +27468,45 @@ func (ec *executionContext) _CreateApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
+var createEmailWaitListRequestPayloadImplementors = []string{"CreateEmailWaitListRequestPayload", "CreateEmailWaitListRequestOrErrorPayload"}
+
+func (ec *executionContext) _CreateEmailWaitListRequestPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateEmailWaitListRequestPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createEmailWaitListRequestPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateEmailWaitListRequestPayload")
+		case "success":
+			out.Values[i] = ec._CreateEmailWaitListRequestPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createNotFoundIgnoredPatternPayloadImplementors = []string{"CreateNotFoundIgnoredPatternPayload", "CreateNotFoundIgnoredPatternOrErrorPayload"}
 
 func (ec *executionContext) _CreateNotFoundIgnoredPatternPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateNotFoundIgnoredPatternPayload) graphql.Marshaler {
@@ -27588,7 +27860,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -27828,6 +28100,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createPaymentLink":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createPaymentLink(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createEmailWaitListRequest":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createEmailWaitListRequest(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -29104,21 +29383,21 @@ func (ec *executionContext) _Subgraph(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
-var subgraphWaitlistImplementors = []string{"SubgraphWaitlist", "ViewerOffers"}
+var subgraphWaitListImplementors = []string{"SubgraphWaitList", "ViewerOffers"}
 
-func (ec *executionContext) _SubgraphWaitlist(ctx context.Context, sel ast.SelectionSet, obj *model.SubgraphWaitlist) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, subgraphWaitlistImplementors)
+func (ec *executionContext) _SubgraphWaitList(ctx context.Context, sel ast.SelectionSet, obj *model.SubgraphWaitList) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subgraphWaitListImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("SubgraphWaitlist")
+			out.Values[i] = graphql.MarshalString("SubgraphWaitList")
 		case "tgBotUrl":
-			out.Values[i] = ec._SubgraphWaitlist_tgBotUrl(ctx, field, obj)
+			out.Values[i] = ec._SubgraphWaitList_tgBotUrl(ctx, field, obj)
 		case "emailAllowed":
-			out.Values[i] = ec._SubgraphWaitlist_emailAllowed(ctx, field, obj)
+			out.Values[i] = ec._SubgraphWaitList_emailAllowed(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -31728,6 +32007,21 @@ func (ec *executionContext) marshalNCreateApiKeyOrErrorPayload2trip2gᚋinternal
 	return ec._CreateApiKeyOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCreateEmailWaitListRequestInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateEmailWaitListRequestInput(ctx context.Context, v any) (model.CreateEmailWaitListRequestInput, error) {
+	res, err := ec.unmarshalInputCreateEmailWaitListRequestInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateEmailWaitListRequestOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateEmailWaitListRequestOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateEmailWaitListRequestOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateEmailWaitListRequestOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateNotFoundIgnoredPatternInput(ctx context.Context, v any) (model.CreateNotFoundIgnoredPatternInput, error) {
 	res, err := ec.unmarshalInputCreateNotFoundIgnoredPatternInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -32916,6 +33210,11 @@ func (ec *executionContext) marshalNViewer2ᚖtrip2gᚋinternalᚋmodelᚐViewer
 		return graphql.Null
 	}
 	return ec._Viewer(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNViewerOffersFilter2trip2gᚋinternalᚋgraphᚋmodelᚐViewerOffersFilter(ctx context.Context, v any) (model.ViewerOffersFilter, error) {
+	res, err := ec.unmarshalInputViewerOffersFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

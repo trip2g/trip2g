@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 	"trip2g/internal/db"
@@ -39,6 +40,7 @@ type Env interface {
 
 	GenerateTgAuthURL(ctx context.Context, path string, data model.TgAuthToken) (string, error)
 	ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, id sql.NullInt64) ([]string, error)
+	InsertWaitListTgBotRequest(ctx context.Context, arg db.InsertWaitListTgBotRequestParams) error
 }
 
 type UserStateData struct {
@@ -226,8 +228,8 @@ func (req *request) handleCommands(ctx context.Context) error {
 		if strings.HasPrefix(args, "group_") {
 			return req.handleGroupAccess(ctx, args)
 		}
-		if strings.HasPrefix(args, "wl:") {
-			return req.handleWaitlistRequest(ctx, args)
+		if strings.HasPrefix(args, "wl_") {
+			return req.handleWaitListRequest(ctx, args)
 		}
 		return req.sendStartMenu(ctx)
 
@@ -317,6 +319,23 @@ func toNullString(s string) sql.NullString {
 	return sql.NullString{String: s, Valid: s != ""}
 }
 
-func (req *request) handleWaitlistRequest(ctx context.Context, args string) error {
-	return req.SendMessage("Thank you for your interest! Please wait while we process your request.")
+func (req *request) handleWaitListRequest(ctx context.Context, args string) error {
+	pathIDStr := strings.TrimPrefix(args, "wl_")
+	pathID, err := strconv.ParseInt(pathIDStr, 10, 64)
+	if err != nil {
+		req.env.Logger().Warn("invalid path ID in wait list request", "args", args, "pathID", pathIDStr, "error", err)
+		return req.SendMessage("❌ Invalid request. Please try again.")
+	}
+
+	err = req.env.InsertWaitListTgBotRequest(ctx, db.InsertWaitListTgBotRequestParams{
+		BotID:      req.env.BotID(),
+		ChatID:     req.update.Message.Chat.ID,
+		NotePathID: pathID,
+	})
+	if err != nil {
+		req.env.Logger().Error("failed to insert wait list request", "error", err, "pathID", pathID, "chatID", req.update.Message.Chat.ID)
+		return req.SendMessage("❌ Failed to process your request. Please try again later.")
+	}
+
+	return req.SendMessage("✅ Thank you for your interest! You've been added to the wait list. We'll notify you when access becomes available.")
 }

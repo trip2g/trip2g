@@ -169,7 +169,12 @@
     <p class="noteview__description">{%s= *resp.Note.Description %}</p>
     {% endif %}
 
-    <div mol_view_root="$trip2g_user_paywall" data-subgraphs="{%s resp.NoteSubgraphsJSON() %}"></div>
+    <div
+      id="paywall"
+      mol_view_root="$trip2g_user_paywall"
+      data-subgraphs="{%s resp.NoteSubgraphsJSON() %}"
+      data-path-id="{%dl resp.Note.PathID %}"
+    ></div>
   </div>
 </div>
 

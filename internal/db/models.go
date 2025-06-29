@@ -311,3 +311,17 @@ type UserSubgraphAccess struct {
 	RevokeID   sql.NullInt64 `json:"revoke_id"`
 	PurchaseID string        `json:"purchase_id"`
 }
+
+type WaitListEmailRequest struct {
+	Email      string         `json:"email"`
+	CreatedAt  time.Time      `json:"created_at"`
+	NotePathID int64          `json:"note_path_id"`
+	Ip         sql.NullString `json:"ip"`
+}
+
+type WaitListTgBotRequest struct {
+	BotID      int64     `json:"bot_id"`
+	ChatID     int64     `json:"chat_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	NotePathID int64     `json:"note_path_id"`
+}

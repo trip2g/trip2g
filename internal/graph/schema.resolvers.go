@@ -7,7 +7,6 @@ package graph
 import (
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"math"
@@ -38,6 +37,7 @@ import (
 	"trip2g/internal/case/admin/updatetgbot"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
+	"trip2g/internal/case/createemailwaitlistrequest"
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/pushnotes"
@@ -712,6 +712,11 @@ func (r *mutationResolver) CreatePaymentLink(ctx context.Context, input model.Cr
 	return createpaymentlink.Resolve(ctx, r.env(ctx), input)
 }
 
+// CreateEmailWaitListRequest is the resolver for the createEmailWaitListRequest field.
+func (r *mutationResolver) CreateEmailWaitListRequest(ctx context.Context, input model.CreateEmailWaitListRequestInput) (model.CreateEmailWaitListRequestOrErrorPayload, error) {
+	return createemailwaitlistrequest.Resolve(ctx, r.env(ctx), input)
+}
+
 // PushNotes is the resolver for the pushNotes field.
 func (r *mutationResolver) PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
 	apiKey, err := checkapikey.Resolve(ctx, r.env(ctx), "push_notes")
@@ -1055,12 +1060,17 @@ func (r *viewerResolver) User(ctx context.Context, obj *appmodel.Viewer) (*db.Us
 }
 
 // Offers is the resolver for the offers field.
-func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, subgraphs []string) (model.ViewerOffers, error) {
-	if len(subgraphs) == 0 {
+func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, filter model.ViewerOffersFilter) (model.ViewerOffers, error) {
+	if filter.PageID == nil {
 		return nil, nil
 	}
 
-	offers, err := r.env(ctx).ListActiveOffersBySubgraphNames(ctx, subgraphs)
+	note := r.env(ctx).LiveNoteViews().GetByPathID(*filter.PageID)
+	if note == nil {
+		return nil, nil
+	}
+
+	offers, err := r.env(ctx).ListActiveOffersBySubgraphNames(ctx, note.SubgraphNames)
 	if err != nil {
 		return nil, err
 	}
@@ -1069,7 +1079,7 @@ func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, subgr
 		return &model.ActiveOffers{Nodes: offers}, nil
 	}
 
-	wl := model.SubgraphWaitlist{
+	wl := model.SubgraphWaitList{
 		EmailAllowed: true,
 	}
 
@@ -1079,8 +1089,7 @@ func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, subgr
 	}
 
 	if len(bots) > 0 {
-		ids := base64.URLEncoding.EncodeToString([]byte(strings.Join(subgraphs, "||")))
-		botURL := fmt.Sprintf("https://t.me/%s?start=wl:%s", bots[0].Name, ids)
+		botURL := fmt.Sprintf("https://t.me/%s?start=wl_%d", bots[0].Name, note.PathID)
 
 		wl.TgBotURL = &botURL
 	}

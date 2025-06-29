@@ -41,6 +41,9 @@ var _ Env = &EnvMock{}
 //			InsertTgUserProfileFunc: func(ctx context.Context, arg db.InsertTgUserProfileParams) error {
 //				panic("mock out the InsertTgUserProfile method")
 //			},
+//			InsertWaitListTgBotRequestFunc: func(ctx context.Context, arg db.InsertWaitListTgBotRequestParams) error {
+//				panic("mock out the InsertWaitListTgBotRequest method")
+//			},
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
@@ -98,6 +101,9 @@ type EnvMock struct {
 
 	// InsertTgUserProfileFunc mocks the InsertTgUserProfile method.
 	InsertTgUserProfileFunc func(ctx context.Context, arg db.InsertTgUserProfileParams) error
+
+	// InsertWaitListTgBotRequestFunc mocks the InsertWaitListTgBotRequest method.
+	InsertWaitListTgBotRequestFunc func(ctx context.Context, arg db.InsertWaitListTgBotRequestParams) error
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
@@ -174,6 +180,13 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertTgUserProfileParams
 		}
+		// InsertWaitListTgBotRequest holds details about calls to the InsertWaitListTgBotRequest method.
+		InsertWaitListTgBotRequest []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.InsertWaitListTgBotRequestParams
+		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
 		}
@@ -242,6 +255,7 @@ type EnvMock struct {
 	lockGetChatMemberStatus                   sync.RWMutex
 	lockInsertTgChatMember                    sync.RWMutex
 	lockInsertTgUserProfile                   sync.RWMutex
+	lockInsertWaitListTgBotRequest            sync.RWMutex
 	lockLatestNoteViews                       sync.RWMutex
 	lockListActiveTgChatSubgraphNamesByChatID sync.RWMutex
 	lockLogger                                sync.RWMutex
@@ -463,6 +477,42 @@ func (mock *EnvMock) InsertTgUserProfileCalls() []struct {
 	mock.lockInsertTgUserProfile.RLock()
 	calls = mock.calls.InsertTgUserProfile
 	mock.lockInsertTgUserProfile.RUnlock()
+	return calls
+}
+
+// InsertWaitListTgBotRequest calls InsertWaitListTgBotRequestFunc.
+func (mock *EnvMock) InsertWaitListTgBotRequest(ctx context.Context, arg db.InsertWaitListTgBotRequestParams) error {
+	if mock.InsertWaitListTgBotRequestFunc == nil {
+		panic("EnvMock.InsertWaitListTgBotRequestFunc: method is nil but Env.InsertWaitListTgBotRequest was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.InsertWaitListTgBotRequestParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockInsertWaitListTgBotRequest.Lock()
+	mock.calls.InsertWaitListTgBotRequest = append(mock.calls.InsertWaitListTgBotRequest, callInfo)
+	mock.lockInsertWaitListTgBotRequest.Unlock()
+	return mock.InsertWaitListTgBotRequestFunc(ctx, arg)
+}
+
+// InsertWaitListTgBotRequestCalls gets all the calls that were made to InsertWaitListTgBotRequest.
+// Check the length with:
+//
+//	len(mockedEnv.InsertWaitListTgBotRequestCalls())
+func (mock *EnvMock) InsertWaitListTgBotRequestCalls() []struct {
+	Ctx context.Context
+	Arg db.InsertWaitListTgBotRequestParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.InsertWaitListTgBotRequestParams
+	}
+	mock.lockInsertWaitListTgBotRequest.RLock()
+	calls = mock.calls.InsertWaitListTgBotRequest
+	mock.lockInsertWaitListTgBotRequest.RUnlock()
 	return calls
 }
 
