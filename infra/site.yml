@@ -52,13 +52,6 @@
         - Reload systemd
         - Restart litestream
 
-    - name: Enable and start Litestream service
-      systemd:
-        name: litestream
-        enabled: yes
-        state: started
-        daemon_reload: yes
-
     - name: Install UFW
       apt:
         name: ufw
@@ -128,6 +121,13 @@
         name: "{{ service_name }}"
         enabled: yes
         state: started
+
+    - name: Enable and start Litestream service
+      systemd:
+        name: litestream
+        enabled: yes
+        state: started
+        daemon_reload: yes
 
   handlers:
     - name: Reload systemd

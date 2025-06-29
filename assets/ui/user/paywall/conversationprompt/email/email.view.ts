@@ -41,7 +41,7 @@ namespace $.$$ {
 			}
 
 			if( res?.createEmailWaitListRequest?.__typename === 'CreateEmailWaitListRequestPayload' ) {
-				this.done()
+				this.done(true)
 				return
 			}
 
