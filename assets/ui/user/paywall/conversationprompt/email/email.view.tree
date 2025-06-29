@@ -1,0 +1,21 @@
+$trip2g_user_paywall_conversationprompt_email $mol_view
+	SuccessView $mol_view
+		sub / \Спасибо, мы получили ваш e-mail и уведомим вас, когда появятся предложения.
+	sub /
+		<= Form $mol_form
+			body /
+				<= Email_field $mol_form_field
+					name \Ваш email
+					bid <= email_bid \
+					Content <= Email_control $mol_string
+						hint \hello@example.com
+						value? <=> email? \
+			submit? <=> request? null
+			submit_allowed => request_allowed
+			buttons /
+				<= Signup $mol_button_major
+					title \Подписаться
+					click? <=> request? null
+					enabled <= request_allowed
+				<= Result $mol_status
+					message <= result? \

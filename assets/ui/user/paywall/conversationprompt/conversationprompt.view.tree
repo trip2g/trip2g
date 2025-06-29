@@ -3,8 +3,7 @@ $trip2g_user_paywall_conversationprompt $mol_view
 	TelegramButton $mol_link
 		title \Bot
 		uri <= tg_bot_url \
-	EmailForm $mol_view
-		sub / \TODO
+	EmailForm $trip2g_user_paywall_conversationprompt_email
 	sub /
 		<= Title $mol_view
 			sub / \Пока нет активных предложений, поэтому доступ купить нельзя.

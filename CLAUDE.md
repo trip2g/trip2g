@@ -205,8 +205,13 @@ When you need new database operations:
          // Execute database operation
          err := env.InsertSomething(ctx, params)
          if err != nil {
-             // System errors are returned as error (will show generic message to user)
-             return nil, fmt.Errorf("failed to insert something: %w", err)
+             if db.IsUniqueViolation(err) {
+                 // Handle unique constraint violations (e.g., ignore duplicates)
+                 // Continue to success response
+             } else {
+                 // System errors are returned as error (will show generic message to user)
+                 return nil, fmt.Errorf("failed to insert something: %w", err)
+             }
          }
 
          // Define payload as separate variable
@@ -226,6 +231,7 @@ When you need new database operations:
    - System/internal errors return `nil` payload with wrapped error
    - Define params and payload as separate variables before use
    - Return `&payload, nil` for successful responses
+   - Handle unique constraint violations with `db.IsUniqueViolation(err)` to ignore duplicates
 
 4. **Define Env Interface** in the case:
    ```go

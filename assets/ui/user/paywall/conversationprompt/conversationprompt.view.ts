@@ -6,12 +6,17 @@ namespace $.$$ {
 
 		override sub() {
 			const items: $mol_view[] = [ ...super.sub() ]
+			const wl = this.waitlist()
 
-			if (this.waitlist().tgBotUrl) {
+			if (!wl) {
+				return []
+			}
+
+			if (wl.tgBotUrl) {
 				items.push(this.TelegramButton())
 			}
 
-			if (this.waitlist().emailAllowed) {
+			if (wl.emailAllowed) {
 				items.push(this.EmailForm())
 			}
 

@@ -43,7 +43,11 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	err := env.InsertWaitListEmailRequest(ctx, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to insert wait list email request: %w", err)
+		if db.IsUniqueViolation(err) {
+			// Email already exists in wait list, ignore duplicate
+		} else {
+			return nil, fmt.Errorf("failed to insert wait list email request: %w", err)
+		}
 	}
 
 	payload := model.CreateEmailWaitListRequestPayload{

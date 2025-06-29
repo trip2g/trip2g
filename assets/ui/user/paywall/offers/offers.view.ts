@@ -36,23 +36,9 @@ namespace $.$$ {
 	export type $trip2g_user_paywall_offers_whitelist = Extract<ReturnType<typeof request>, { __typename?: 'SubgraphWaitList' }>
 
 	export class $trip2g_user_paywall_offers extends $.$trip2g_user_paywall_offers {
-		page_id(): number {
-			const el = document.getElementById('paywall')
-			if ( el ) {
-				return el.dataset.pageId ? parseInt( el.dataset.pageId, 10 ) : 0
-			}
-
-			const page_id = this.$.$mol_state_arg.value( 'page_id' )
-			if( page_id ) {
-				return parseInt( page_id, 10 )
-			}
-
-			throw new Error( 'Page ID not found' )
-		}
-
 		@$mol_mem
 		data() {
-			return request( this.page_id() )
+			return request( $trip2g_user_paywall_page.id() )
 		}
 
 		@$mol_mem

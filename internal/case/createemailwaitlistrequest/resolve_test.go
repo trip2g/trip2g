@@ -3,6 +3,7 @@ package createemailwaitlistrequest
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -84,6 +85,23 @@ func TestResolve(t *testing.T) {
 				env.InsertWaitListEmailRequestFunc = func(ctx context.Context, arg db.InsertWaitListEmailRequestParams) error {
 					require.Equal(t, sql.NullString{String: "", Valid: false}, arg.Ip)
 					return nil
+				}
+			},
+			want: &model.CreateEmailWaitListRequestPayload{Success: true},
+		},
+		{
+			name: "duplicate email (unique constraint violation)",
+			input: Input{
+				Email:  "test@example.com",
+				PathID: 123,
+			},
+			setup: func(env *EnvMock) {
+				env.RequestIPFunc = func(ctx context.Context) string {
+					return "192.168.1.1"
+				}
+				env.InsertWaitListEmailRequestFunc = func(ctx context.Context, arg db.InsertWaitListEmailRequestParams) error {
+					// Simulate unique constraint violation
+					return fmt.Errorf("UNIQUE constraint failed: wait_list_email_requests.email")
 				}
 			},
 			want: &model.CreateEmailWaitListRequestPayload{Success: true},
