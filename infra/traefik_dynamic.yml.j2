@@ -1,0 +1,19 @@
+http:
+  routers:
+{% for svc in trip2g_services %}
+    {{ svc.service_name }}:
+      rule: "Host(`{{ svc.domain }}`)"
+      entryPoints:
+        - websecure
+      service: {{ svc.service_name }}
+      tls:
+        certResolver: letsencrypt
+{% endfor %}
+
+  services:
+{% for svc in trip2g_services %}
+    {{ svc.service_name }}:
+      loadBalancer:
+        servers:
+          - url: "http://{{ svc.listen_addr }}"
+{% endfor %}

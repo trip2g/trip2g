@@ -1,6 +1,7 @@
 - name: Setup
   hosts: all
   become: yes
+  tags: app
   vars:
     app_dir: /opt/trip2g
     app_user: trip2g
@@ -8,6 +9,9 @@
     service_name: trip2g
     bin_path: "{{ app_dir }}/bin/app"
     data_dir: "{{ app_dir }}/data"
+    trip2g_services:
+      - { service_name: trip2g, listen_addr: "localhost:8081", domain: "demo.trip2g.com" }
+      - { service_name: trip2g_mbti, listen_addr: "localhost:8082", domain: "mbti.trip2g.com" }
   tasks:
     - name: Create trip2g user
       user:
@@ -115,6 +119,7 @@
         src: service.j2
         dest: "/etc/systemd/system/{{ service_name }}.service"
         mode: '0644'
+      loop: "{{ trip2g_services }}"
 
     - name: Enable and start service
       systemd:
@@ -129,6 +134,14 @@
         state: started
         daemon_reload: yes
 
+    - name: Deploy traefik/dynamic.yml config
+      template:
+        src: traefik_dynamic.yml.j2
+        dest: /etc/traefik/dynamic.yml
+        owner: traefik
+        group: traefik
+        mode: '0644'
+
   handlers:
     - name: Reload systemd
       command: systemctl daemon-reload
@@ -142,3 +155,104 @@
       systemd:
         name: litestream
         state: restarted
+
+- name: Setup Treafik
+  hosts: all
+  become: yes
+  tags: traefik
+  handlers:
+  - name: Reload systemd
+    command: systemctl daemon-reload
+
+  - name: Restart traefik
+    systemd:
+      name: traefik
+      state: restarted
+  tasks:
+  - name: Ensure traefik group exists
+    group:
+      name: traefik
+      system: yes
+
+  - name: Ensure traefik user exists
+    user:
+      name: traefik
+      group: traefik
+      shell: /usr/sbin/nologin
+      system: yes
+      create_home: no
+
+  - name: Create config directories
+    file:
+      path: "{{ item }}"
+      state: directory
+      owner: traefik
+      group: traefik
+      mode: '0750'
+    loop:
+      - /etc/traefik
+      - /var/lib/traefik
+
+  - name: Download Traefik v3.4.3
+    get_url:
+      url: https://github.com/traefik/traefik/releases/download/v3.4.3/traefik_v3.4.3_linux_amd64.tar.gz
+      dest: /tmp/traefik_v3.4.3_linux_amd64.tar.gz
+      mode: '0644'
+
+  - name: Verify Traefik SHA256
+    ansible.builtin.shell: |
+      echo "be2f306b47d0070f420cbf7c081357abeb9c43ddceda68eadd171bc8ec7e7fa5  /tmp/traefik_v3.4.3_linux_amd64.tar.gz" | sha256sum -c -
+    register: sha_check
+    changed_when: false
+    failed_when: "'OK' not in sha_check.stdout"
+
+  - name: Extract Traefik binary
+    unarchive:
+      src: /tmp/traefik_v3.4.3_linux_amd64.tar.gz
+      dest: /usr/local/bin
+      remote_src: yes
+      mode: '0755'
+
+  - name: Create acme.json
+    copy:
+      dest: /etc/traefik/acme.json
+      content: ''
+      owner: traefik
+      group: traefik
+      mode: '0600'
+
+  - name: Deploy traefik.yml config
+    template:
+      src: traefik.yml.j2
+      dest: /etc/traefik/traefik.yml
+      owner: traefik
+      group: traefik
+      mode: '0644'
+    notify: Restart traefik
+
+  - name: Deploy Traefik systemd unit
+    copy:
+      dest: /etc/systemd/system/traefik.service
+      content: |
+        [Unit]
+        Description=Traefik v3
+        After=network.target
+
+        [Service]
+        User=traefik
+        Group=traefik
+        ExecStart=/usr/local/bin/traefik --configFile=/etc/traefik/traefik.yml
+        Restart=always
+        CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+        AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+        [Install]
+        WantedBy=multi-user.target
+      mode: '0644'
+    notify: Reload systemd
+
+  - name: Enable and start Traefik
+    systemd:
+      name: traefik
+      enabled: yes
+      state: started
