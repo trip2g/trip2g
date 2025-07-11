@@ -6,7 +6,6 @@
     app_dir: /opt/trip2g
     app_user: trip2g
     app_group: trip2g
-    service_name: trip2g
     bin_path: "{{ app_dir }}/bin/app"
     data_dir: "{{ app_dir }}/data"
     trip2g_services:
@@ -117,15 +116,16 @@
         - Restart service
       template:
         src: service.j2
-        dest: "/etc/systemd/system/{{ service_name }}.service"
+        dest: "/etc/systemd/system/{{ item.service_name }}.service"
         mode: '0644'
       loop: "{{ trip2g_services }}"
 
     - name: Enable and start service
       systemd:
-        name: "{{ service_name }}"
+        name: "{{ item.service_name }}"
         enabled: yes
         state: started
+      loop: "{{ trip2g_services }}"
 
     - name: Enable and start Litestream service
       systemd:
@@ -148,7 +148,12 @@
 
     - name: Restart service
       systemd:
-        name: "{{ service_name }}"
+        name: "trip2g"
+        state: restarted
+
+    - name: Restart service
+      systemd:
+        name: "trip2g_mbti"
         state: restarted
 
     - name: Restart litestream
