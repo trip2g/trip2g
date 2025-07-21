@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/url"
 	"path/filepath"
 	"sync"
 	"trip2g/internal/model"
@@ -98,10 +99,14 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 
 	img := resolveAsImage(n)
 	if !img {
+		if n.Embed {
+			return r.renderEmbed(w, n, dest)
+		}
+
 		r.hasDest.Store(n, struct{}{})
 		_, _ = w.WriteString(`<a`)
 
-		note := r.nvs.GetByPath(string(dest))
+		note := r.nvs.GetByPath(removeVersion(string(dest)))
 		if note != nil {
 			if !note.Free {
 				subgraphClasses := ""
@@ -142,6 +147,34 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 		}
 	}
 	_, _ = w.WriteString(`">`)
+	return ast.WalkSkipChildren, nil
+}
+
+// TODO: find a better way to handle this.
+func removeVersion(originalURL string) string {
+	u, err := url.Parse(originalURL)
+	if err != nil {
+		return originalURL
+	}
+
+	q := u.Query()
+	q.Del("version")
+	u.RawQuery = q.Encode()
+
+	return u.String()
+}
+
+func (r *linkRenderer) renderEmbed(w util.BufWriter, n *wikilink.Node, dest []byte) (ast.WalkStatus, error) {
+	url := removeVersion(string(dest))
+
+	note := r.nvs.GetByPath(url)
+	if note == nil {
+		// TODO: write a warning
+		return ast.WalkSkipChildren, nil
+	}
+
+	w.WriteString(string(note.HTML))
+
 	return ast.WalkSkipChildren, nil
 }
 

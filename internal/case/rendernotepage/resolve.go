@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -78,6 +79,8 @@ func (e *PaywallError) Error() string {
 	return fmt.Sprintf("paywall: %s", e.Message)
 }
 
+var systemRE = regexp.MustCompile(`\/_`)
+
 func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	var notes *model.NoteViews
 
@@ -109,6 +112,10 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	path := request.Path
 	if path == "/" {
 		path = "/index"
+	}
+
+	if systemRE.MatchString(path) {
+		return &response, ErrNotFound
 	}
 
 	note := notes.GetByPath(path)

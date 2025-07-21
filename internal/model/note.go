@@ -99,10 +99,14 @@ func (n *NoteView) Ast() ast.Node {
 }
 
 func normalizeURLPart(s string) string {
-	s = strings.ToLower(s)
+	if len(s) == 0 {
+		return ""
+	}
+
+	res := strings.ToLower(s)
 
 	var b strings.Builder
-	for _, r := range s {
+	for _, r := range res {
 		if unicode.IsLetter(r) || unicode.IsDigit(r) {
 			b.WriteRune(r)
 		} else {
@@ -110,12 +114,16 @@ func normalizeURLPart(s string) string {
 		}
 	}
 
-	s = b.String()
+	res = b.String()
 	reMultiUnderscore := regexp.MustCompile(`_+`)
-	s = reMultiUnderscore.ReplaceAllString(s, "_")
-	s = strings.Trim(s, "_")
+	res = reMultiUnderscore.ReplaceAllString(res, "_")
+	res = strings.Trim(res, "_")
 
-	return s
+	if s[0] == '_' {
+		res = "_" + res
+	}
+
+	return res
 }
 
 func (n *NoteView) PreparePermalink() {

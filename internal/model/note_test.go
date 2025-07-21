@@ -18,6 +18,11 @@ func TestPerparePermalink(t *testing.T) {
 	n.PreparePermalink()
 
 	require.Equal(t, "/moya_osobaya_stranica", n.Permalink)
+
+	n.Path = "_banner.md"
+	n.PreparePermalink()
+
+	require.Equal(t, "/_banner", n.Permalink)
 }
 
 func TestExtractReadingTime(t *testing.T) {

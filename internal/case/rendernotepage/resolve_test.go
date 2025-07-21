@@ -879,6 +879,334 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 	}
 }
 
+func TestResolve_SystemPagesBlocked(t *testing.T) {
+	// Create test notes for system pages
+	bannerNote := &model.NoteView{
+		Path:          "/_banner",
+		Title:         "Banner System Page",
+		PathID:        5,
+		VersionID:     500,
+		Content:       []byte("# System Banner"),
+		HTML:          "<h1>System Banner</h1>",
+		Permalink:     "/_banner",
+		Free:          true,
+		SubgraphNames: []string{},
+		Subgraphs:     map[string]*model.NoteSubgraph{},
+		InLinks:       map[string]struct{}{},
+		RawMeta:       map[string]interface{}{},
+		Assets:        map[string]struct{}{},
+		AssetReplaces: map[string]string{},
+	}
+
+	systemHiddenNote := &model.NoteView{
+		Path:          "/_system/hidden",
+		Title:         "Hidden System Page",
+		PathID:        6,
+		VersionID:     600,
+		Content:       []byte("# Hidden System Page"),
+		HTML:          "<h1>Hidden System Page</h1>",
+		Permalink:     "/_system/hidden",
+		Free:          true,
+		SubgraphNames: []string{},
+		Subgraphs:     map[string]*model.NoteSubgraph{},
+		InLinks:       map[string]struct{}{},
+		RawMeta:       map[string]interface{}{},
+		Assets:        map[string]struct{}{},
+		AssetReplaces: map[string]string{},
+	}
+
+	normalNote := &model.NoteView{
+		Path:          "/normal-page",
+		Title:         "Normal Page",
+		PathID:        7,
+		VersionID:     700,
+		Content:       []byte("# Normal Page"),
+		HTML:          "<h1>Normal Page</h1>",
+		Permalink:     "/normal-page",
+		Free:          true,
+		SubgraphNames: []string{},
+		Subgraphs:     map[string]*model.NoteSubgraph{},
+		InLinks:       map[string]struct{}{},
+		RawMeta:       map[string]interface{}{},
+		Assets:        map[string]struct{}{},
+		AssetReplaces: map[string]string{},
+	}
+
+	// Create NoteViews containing system and normal notes
+	noteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{
+			"/_banner":        bannerNote,
+			"/_system/hidden": systemHiddenNote,
+			"/normal-page":    normalNote,
+		},
+		List: []*model.NoteView{bannerNote, systemHiddenNote, normalNote},
+		Subgraphs: map[string]*model.NoteSubgraph{},
+		Version: "live",
+	}
+
+	tests := []struct {
+		name          string
+		request       rendernotepage.Request
+		setupEnv      func() *EnvMock
+		expectErrNF   bool // expect ErrNotFound
+		checkResponse func(t *testing.T, resp *rendernotepage.Response)
+	}{
+		{
+			name: "/_banner system page should be blocked for unauthenticated user",
+			request: rendernotepage.Request{
+				Path:      "/_banner",
+				Version:   "",
+				UserToken: nil,
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+				}
+			},
+			expectErrNF: true,
+		},
+		{
+			name: "/_banner system page should be blocked for regular user",
+			request: rendernotepage.Request{
+				Path:    "/_banner",
+				Version: "",
+				UserToken: &usertoken.Data{
+					ID:   100,
+					Role: "user",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+				}
+			},
+			expectErrNF: true,
+		},
+		{
+			name: "/_banner system page should be blocked for admin user",
+			request: rendernotepage.Request{
+				Path:    "/_banner",
+				Version: "",
+				UserToken: &usertoken.Data{
+					ID:   200,
+					Role: "admin",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+				}
+			},
+			expectErrNF: true,
+		},
+		{
+			name: "/_system/hidden nested system page should be blocked",
+			request: rendernotepage.Request{
+				Path:    "/_system/hidden",
+				Version: "",
+				UserToken: &usertoken.Data{
+					ID:   300,
+					Role: "admin",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+				}
+			},
+			expectErrNF: true,
+		},
+		{
+			name: "/_config system page should be blocked even if not in notes",
+			request: rendernotepage.Request{
+				Path:    "/_config",
+				Version: "",
+				UserToken: &usertoken.Data{
+					ID:   400,
+					Role: "admin",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+				}
+			},
+			expectErrNF: true,
+		},
+		{
+			name: "normal page /normal-page should work for unauthenticated user",
+			request: rendernotepage.Request{
+				Path:      "/normal-page",
+				Version:   "",
+				UserToken: nil,
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+				}
+			},
+			expectErrNF: false,
+			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
+				require.NotNil(t, resp)
+				require.Equal(t, "Normal Page", resp.Title)
+				require.Equal(t, "/normal-page", resp.Note.Path)
+			},
+		},
+		{
+			name: "normal page /normal-page should work for admin user",
+			request: rendernotepage.Request{
+				Path:    "/normal-page",
+				Version: "",
+				UserToken: &usertoken.Data{
+					ID:   500,
+					Role: "admin",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
+						return nil
+					},
+					UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
+						return 1, nil
+					},
+					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
+						return nil
+					},
+				}
+			},
+			expectErrNF: false,
+			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
+				require.NotNil(t, resp)
+				require.Equal(t, "Normal Page", resp.Title)
+				require.Equal(t, "/normal-page", resp.Note.Path)
+			},
+		},
+		{
+			name: "page with underscore not at start should work: /my_page",
+			request: rendernotepage.Request{
+				Path:      "/my_page",
+				Version:   "",
+				UserToken: nil,
+			},
+			setupEnv: func() *EnvMock {
+				// Add a page with underscore not at the start
+				underscoreNote := &model.NoteView{
+					Path:          "/my_page",
+					Title:         "My Page With Underscore",
+					PathID:        8,
+					VersionID:     800,
+					Content:       []byte("# My Page"),
+					HTML:          "<h1>My Page</h1>",
+					Permalink:     "/my_page",
+					Free:          true,
+					SubgraphNames: []string{},
+					Subgraphs:     map[string]*model.NoteSubgraph{},
+					InLinks:       map[string]struct{}{},
+					RawMeta:       map[string]interface{}{},
+					Assets:        map[string]struct{}{},
+					AssetReplaces: map[string]string{},
+				}
+
+				noteViewsWithUnderscore := &model.NoteViews{
+					Map: map[string]*model.NoteView{
+						"/my_page": underscoreNote,
+					},
+					List: []*model.NoteView{underscoreNote},
+					Subgraphs: map[string]*model.NoteSubgraph{},
+					Version: "live",
+				}
+
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViewsWithUnderscore
+					},
+				}
+			},
+			expectErrNF: false,
+			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
+				require.NotNil(t, resp)
+				require.Equal(t, "My Page With Underscore", resp.Title)
+				require.Equal(t, "/my_page", resp.Note.Path)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := tt.setupEnv()
+			resp, err := rendernotepage.Resolve(context.Background(), env, tt.request)
+
+			if tt.expectErrNF {
+				require.Error(t, err)
+				require.Equal(t, rendernotepage.ErrNotFound, err)
+			} else {
+				require.NoError(t, err)
+				if tt.checkResponse != nil {
+					tt.checkResponse(t, resp)
+				}
+			}
+		})
+	}
+}
+
 func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 	// Create a test note that is NOT free and has subgraphs
 	testNote := &model.NoteView{
