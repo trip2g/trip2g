@@ -1,0 +1,3 @@
+$trip2g_admin_catalog $mol_book2_catalog
+	close_icon null $mol_view
+	actions /$mol_view

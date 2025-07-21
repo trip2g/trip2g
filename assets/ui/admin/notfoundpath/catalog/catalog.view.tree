@@ -1,9 +1,7 @@
-$trip2g_admin_notfoundpath_catalog $mol_book2_catalog
+$trip2g_admin_notfoundpath_catalog $trip2g_admin_catalog
 	menu_title \Not Found Paths
 	param \id
 	Empty $mol_status
-	menu_tools /
-		<= Spread_close
 	ShowPage* $trip2g_admin_notfoundpath_show
 		notfoundpath_id <= row_id* 0
 	menu_link_content* / <= NotFoundPathItem* $mol_view

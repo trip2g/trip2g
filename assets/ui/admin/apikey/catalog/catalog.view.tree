@@ -1,10 +1,9 @@
-$trip2g_admin_apikey_catalog $mol_book2_catalog
+$trip2g_admin_apikey_catalog $trip2g_admin_catalog
 	menu_title \API Keys
-	menu_tools /
+	actions /
 		<= AddLink $mol_link
 			arg * id \add
 			title \+ Add
-		<= Spread_close
 	param \id
 	Empty $mol_status
 	Content* $trip2g_admin_apikey_show

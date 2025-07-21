@@ -1,12 +1,11 @@
-$trip2g_admin_notfoundpattern_catalog $mol_book2_catalog
+$trip2g_admin_notfoundpattern_catalog $trip2g_admin_catalog
 	menu_title \Not Found Ignored Patterns
 	param \id
 	Empty $mol_status
-	menu_tools /
+	actions /
 		<= AddLink $mol_link
 			arg * id \add
 			title \+ Add
-		<= Spread_close
 	ShowPage* $trip2g_admin_notfoundpattern_show
 		pattern_id <= row_id* 0
 	CreateForm $trip2g_admin_notfoundpattern_create

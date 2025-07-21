@@ -1,4 +1,4 @@
-$trip2g_admin_purchase_catalog $mol_book2_catalog
+$trip2g_admin_purchase_catalog $trip2g_admin_catalog
 	menu_title \Purchases
 	param \id
 	Empty $mol_status

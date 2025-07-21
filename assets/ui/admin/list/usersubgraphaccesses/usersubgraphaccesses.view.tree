@@ -1,6 +1,5 @@
-$trip2g_admin_list_usersubgraphaccesses $mol_book2_catalog
+$trip2g_admin_list_usersubgraphaccesses $trip2g_admin_catalog
 	menu_title \Subgraph accesses
-	menu_tools / <= Spread_close
 	param \access_id
 	Empty $mol_status
 	Content* $trip2g_admin_show_usersubgraphaccess
