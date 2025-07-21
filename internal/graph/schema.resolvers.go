@@ -116,6 +116,14 @@ func (r *adminLatestNoteViewsConnectionResolver) Nodes(ctx context.Context, obj 
 	keys := make([]string, 0, len(notes.Map))
 
 	for _, note := range notes.Map {
+		// Apply filter if provided
+		if obj.Filter != nil && obj.Filter.WithWarnings != nil && *obj.Filter.WithWarnings {
+			// Only include notes that have warnings
+			if len(note.Warnings) == 0 {
+				continue
+			}
+		}
+
 		keys = append(keys, note.ID())
 	}
 
@@ -342,8 +350,10 @@ func (r *adminQueryResolver) AllUserSubgraphAccesses(ctx context.Context, obj *a
 }
 
 // AllLatestNoteViews is the resolver for the allLatestNoteViews field.
-func (r *adminQueryResolver) AllLatestNoteViews(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminLatestNoteViewsConnection, error) {
-	return &model.AdminLatestNoteViewsConnection{}, nil
+func (r *adminQueryResolver) AllLatestNoteViews(ctx context.Context, obj *appmodel.AdminQuery, filter *model.AdminLatestNoteViewsFilter) (*model.AdminLatestNoteViewsConnection, error) {
+	return &model.AdminLatestNoteViewsConnection{
+		Filter: filter,
+	}, nil
 }
 
 // AllUserUserBans is the resolver for the allUserUserBans field.
@@ -773,6 +783,11 @@ func (r *noteViewResolver) HTML(ctx context.Context, obj *appmodel.NoteView) (st
 	return string(obj.HTML), nil
 }
 
+// Warnings is the resolver for the warnings field.
+func (r *noteViewResolver) Warnings(ctx context.Context, obj *appmodel.NoteView) ([]appmodel.NoteWarning, error) {
+	return obj.Warnings, nil
+}
+
 // InLinks is the resolver for the inLinks field.
 func (r *noteViewResolver) InLinks(ctx context.Context, obj *appmodel.NoteView) ([]appmodel.NoteView, error) {
 	res := []appmodel.NoteView{}
@@ -806,6 +821,22 @@ func (r *noteViewResolver) GraphPosition(ctx context.Context, obj *appmodel.Note
 	}
 
 	return &pos, nil
+}
+
+// Level is the resolver for the level field.
+func (r *noteWarningResolver) Level(ctx context.Context, obj *appmodel.NoteWarning) (model.NoteWarningLevelEnum, error) {
+	mapping := map[appmodel.NoteWarningLevel]model.NoteWarningLevelEnum{
+		appmodel.NoteWarningInfo:     model.NoteWarningLevelEnumInfo,
+		appmodel.NoteWarningWarning:  model.NoteWarningLevelEnumWarning,
+		appmodel.NoteWarningCritical: model.NoteWarningLevelEnumCritical,
+	}
+
+	level, ok := mapping[obj.Level]
+	if !ok {
+		level = model.NoteWarningLevelEnumWarning
+	}
+
+	return level, nil
 }
 
 // ID is the resolver for the id field.
@@ -1278,6 +1309,9 @@ func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 // NoteView returns NoteViewResolver implementation.
 func (r *Resolver) NoteView() NoteViewResolver { return &noteViewResolver{r} }
 
+// NoteWarning returns NoteWarningResolver implementation.
+func (r *Resolver) NoteWarning() NoteWarningResolver { return &noteWarningResolver{r} }
+
 // Offer returns OfferResolver implementation.
 func (r *Resolver) Offer() OfferResolver { return &offerResolver{r} }
 
@@ -1354,6 +1388,7 @@ type banUserPayloadResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }
+type noteWarningResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
 type purchaseResolver struct{ *Resolver }
 type pushedNoteResolver struct{ *Resolver }

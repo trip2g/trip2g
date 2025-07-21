@@ -169,7 +169,12 @@ type AdminAPIKeysConnection struct {
 }
 
 type AdminLatestNoteViewsConnection struct {
-	Nodes []model.NoteView `json:"nodes"`
+	Nodes  []model.NoteView            `json:"nodes"`
+	Filter *AdminLatestNoteViewsFilter `json:"-"`
+}
+
+type AdminLatestNoteViewsFilter struct {
+	WithWarnings *bool `json:"withWarnings,omitempty"`
 }
 
 type AdminNotFoundIgnoredPatternsConnection struct {
@@ -688,6 +693,63 @@ type Vector2 struct {
 
 type ViewerOffersFilter struct {
 	PageID *int64 `json:"pageId,omitempty"`
+}
+
+type NoteWarningLevelEnum string
+
+const (
+	NoteWarningLevelEnumInfo     NoteWarningLevelEnum = "INFO"
+	NoteWarningLevelEnumWarning  NoteWarningLevelEnum = "WARNING"
+	NoteWarningLevelEnumCritical NoteWarningLevelEnum = "CRITICAL"
+)
+
+var AllNoteWarningLevelEnum = []NoteWarningLevelEnum{
+	NoteWarningLevelEnumInfo,
+	NoteWarningLevelEnumWarning,
+	NoteWarningLevelEnumCritical,
+}
+
+func (e NoteWarningLevelEnum) IsValid() bool {
+	switch e {
+	case NoteWarningLevelEnumInfo, NoteWarningLevelEnumWarning, NoteWarningLevelEnumCritical:
+		return true
+	}
+	return false
+}
+
+func (e NoteWarningLevelEnum) String() string {
+	return string(e)
+}
+
+func (e *NoteWarningLevelEnum) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = NoteWarningLevelEnum(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid NoteWarningLevelEnum", str)
+	}
+	return nil
+}
+
+func (e NoteWarningLevelEnum) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *NoteWarningLevelEnum) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e NoteWarningLevelEnum) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type PaymentType string

@@ -83,6 +83,11 @@ type AdminUserSubgraphAccess @goModel(model: "trip2g/internal/db.UserSubgraphAcc
   subgraph: AdminSubgraph!
 }
 
+type NoteWarning {
+  level: NoteWarningLevelEnum!
+  message: String!
+}
+
 type NoteView {
   id: String!
   path: String!
@@ -94,6 +99,7 @@ type NoteView {
   pathId: Int64!
   versionId: Int64!
   subgraphNames: [String!]!
+  warnings: [NoteWarning!]! @goField(forceResolver: true)
 
   inLinks: [NoteView!]!
   graphPosition: Vector2
@@ -108,7 +114,7 @@ type AdminSubgraphsConnection {
   nodes: [AdminSubgraph!]! @goField(forceResolver: true)
 }
 
-type AdminLatestNoteViewsConnection {
+type AdminLatestNoteViewsConnection @goExtraField(name: "Filter", type: "*trip2g/internal/graph/model.AdminLatestNoteViewsFilter") {
   nodes: [NoteView!]! @goField(forceResolver: true)
 }
 
@@ -308,11 +314,21 @@ input AdminTgChatSubgraphAccessesFilterInput {
   subgraphId: Int64
 }
 
+enum NoteWarningLevelEnum {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+input AdminLatestNoteViewsFilter {
+  withWarnings: Boolean
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
   allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection!
-  allLatestNoteViews: AdminLatestNoteViewsConnection!
+  allLatestNoteViews(filter: AdminLatestNoteViewsFilter): AdminLatestNoteViewsConnection!
   allUserUserBans: AdminUserBansConnection!
   allApiKeys: AdminApiKeysConnection!
   allReleases: AdminReleasesConnection!

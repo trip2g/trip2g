@@ -172,7 +172,11 @@ func (r *linkRenderer) renderEmbed(w util.BufWriter, n *wikilink.Node, dest []by
 
 	note := r.nvs.GetByPath(url)
 	if note == nil {
-		// TODO: write a warning
+		lr, ok := r.resolver.(*myLinkResolver)
+		if ok {
+			lr.currentPage.AddWarning(model.NoteWarningInfo, "embedded note not found: %s", url)
+		}
+
 		return ast.WalkSkipChildren, nil
 	}
 

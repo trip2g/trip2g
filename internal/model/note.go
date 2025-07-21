@@ -29,6 +29,19 @@ type NoteViewHeading struct {
 
 type NoteViewHeadings []NoteViewHeading
 
+type NoteWarningLevel int
+
+const (
+	NoteWarningInfo NoteWarningLevel = iota
+	NoteWarningWarning
+	NoteWarningCritical
+)
+
+type NoteWarning struct {
+	Level   NoteWarningLevel
+	Message string
+}
+
 type NoteView struct {
 	Path  string
 	Title string
@@ -72,6 +85,8 @@ type NoteView struct {
 	TOCDisplay int // TOCDisplayAuto, TOCDisplayShow, TOCDisplayHide - from meta
 
 	EmbededClass string
+
+	Warnings []NoteWarning
 }
 
 type NoteSubgraph struct {
@@ -98,6 +113,13 @@ func (n *NoteView) ID() string {
 
 func (n *NoteView) Ast() ast.Node {
 	return n.ast
+}
+
+func (n *NoteView) AddWarning(level NoteWarningLevel, message string, args ...any) {
+	n.Warnings = append(n.Warnings, NoteWarning{
+		Level:   level,
+		Message: fmt.Sprintf(message, args...),
+	})
 }
 
 func normalizeURLPart(s string) string {
@@ -784,6 +806,20 @@ func (nv NoteViews) GetByPath(v string) *NoteView {
 	}
 
 	return note
+}
+
+func (nv *NoteViews) Warnings() map[string][]NoteWarning {
+	res := make(map[string][]NoteWarning)
+
+	for _, note := range nv.List {
+		if len(note.Warnings) == 0 {
+			continue
+		}
+
+		res[note.Permalink] = append(res[note.Permalink], note.Warnings...)
+	}
+
+	return res
 }
 
 // removeMarkdownSyntax removes common markdown syntax for more accurate word counting.
