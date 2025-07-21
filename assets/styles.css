@@ -246,3 +246,7 @@ html {
 .toc__item--level6 {
   @apply pl-20;
 }
+
+.embedded-note__alert {
+  @apply px-4 border rounded;
+}

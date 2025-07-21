@@ -22,6 +22,6 @@ And a test link:
 
 [[test]]
 
-Pushed by the new rest API and a new router and refresh! v10
+Pushed by the new rest API and a new router and refresh! v11
 
 ![[_banner]]

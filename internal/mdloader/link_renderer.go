@@ -2,6 +2,7 @@ package mdloader
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -164,6 +165,8 @@ func removeVersion(originalURL string) string {
 	return u.String()
 }
 
+var errNoHTML = errors.New("note has no HTML content")
+
 func (r *linkRenderer) renderEmbed(w util.BufWriter, n *wikilink.Node, dest []byte) (ast.WalkStatus, error) {
 	url := removeVersion(string(dest))
 
@@ -173,7 +176,19 @@ func (r *linkRenderer) renderEmbed(w util.BufWriter, n *wikilink.Node, dest []by
 		return ast.WalkSkipChildren, nil
 	}
 
+	if len(note.HTML) == 0 {
+		// mdloader will try to render it again later
+		return ast.WalkSkipChildren, errNoHTML
+	}
+
+	class := "embedded-note"
+	if note.EmbededClass != "" {
+		class += " embedded-note__" + note.EmbededClass
+	}
+
+	w.WriteString(`<div class="` + class + `">`)
 	w.WriteString(string(note.HTML))
+	w.WriteString(`</div>`)
 
 	return ast.WalkSkipChildren, nil
 }

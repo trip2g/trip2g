@@ -70,6 +70,8 @@ type NoteView struct {
 	HeadingCount map[string]int // for id generation
 
 	TOCDisplay int // TOCDisplayAuto, TOCDisplayShow, TOCDisplayHide - from meta
+
+	EmbededClass string
 }
 
 type NoteSubgraph struct {
@@ -237,7 +239,21 @@ func (n *NoteView) ExtractMetaData() error {
 
 	n.extractTOCDisplay()
 
+	n.extractEmbededClass()
+
 	return nil
+}
+
+var classRE = regexp.MustCompile(`[^a-zA-Z0-9_-]+`)
+
+func (n *NoteView) extractEmbededClass() {
+	valueI, ok := n.RawMeta["embed_class"]
+	if ok {
+		value, ok := valueI.(string)
+		if ok {
+			n.EmbededClass = classRE.ReplaceAllString(value, "_")
+		}
+	}
 }
 
 func (n *NoteView) extractReadingTime() {

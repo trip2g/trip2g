@@ -2,6 +2,7 @@ package mdloader
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"path/filepath"
@@ -174,10 +175,32 @@ func (ldr *loader) findAssets() error {
 }
 
 func (ldr *loader) generatePageHTMLs() error {
+	retryNotes := []*model.NoteView{}
+
 	for _, p := range ldr.nvs.Map {
 		err := ldr.generatePageHTML(p)
 		if err != nil {
+			if errors.Is(err, errNoHTML) {
+				retryNotes = append(retryNotes, p)
+				continue
+			}
+
 			return fmt.Errorf("failed to generate page: %w (%s)", err, p.Path)
+		}
+	}
+
+	// Retry generating pages that failed to render HTML
+	// it's possible that some pages embedded other notes that yet not processed
+	for i := 0; i < 3; i++ {
+		for _, p := range retryNotes {
+			err := ldr.generatePageHTML(p)
+			if err != nil {
+				if errors.Is(err, errNoHTML) {
+					continue
+				}
+
+				return fmt.Errorf("failed to generate page on retry: %w (%s)", err, p.Path)
+			}
 		}
 	}
 
