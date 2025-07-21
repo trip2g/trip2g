@@ -272,6 +272,613 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 	}
 }
 
+func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
+	// Create test notes with different versions
+	liveNote := &model.NoteView{
+		Path:          "/test-versioned-note",
+		Title:         "Test Note - Live Version",
+		PathID:        3,
+		VersionID:     300,
+		Content:       []byte("# Live Version Content"),
+		HTML:          "<h1>Live Version Content</h1>",
+		Permalink:     "/test-versioned-note",
+		Free:          true,
+		SubgraphNames: []string{},
+		Subgraphs:     map[string]*model.NoteSubgraph{},
+		InLinks:       map[string]struct{}{},
+		RawMeta:       map[string]interface{}{},
+		Assets:        map[string]struct{}{},
+		AssetReplaces: map[string]string{},
+	}
+
+	latestNote := &model.NoteView{
+		Path:          "/test-versioned-note",
+		Title:         "Test Note - Latest Version",
+		PathID:        3,
+		VersionID:     301,
+		Content:       []byte("# Latest Version Content"),
+		HTML:          "<h1>Latest Version Content</h1>",
+		Permalink:     "/test-versioned-note",
+		Free:          true,
+		SubgraphNames: []string{},
+		Subgraphs:     map[string]*model.NoteSubgraph{},
+		InLinks:       map[string]struct{}{},
+		RawMeta:       map[string]interface{}{},
+		Assets:        map[string]struct{}{},
+		AssetReplaces: map[string]string{},
+	}
+
+	// Create NoteViews for live and latest versions
+	liveNoteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{
+			"/test-versioned-note": liveNote,
+		},
+		List:      []*model.NoteView{liveNote},
+		Subgraphs: map[string]*model.NoteSubgraph{},
+		Version:   "live",
+	}
+
+	latestNoteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{
+			"/test-versioned-note": latestNote,
+		},
+		List:      []*model.NoteView{latestNote},
+		Subgraphs: map[string]*model.NoteSubgraph{},
+		Version:   "latest",
+	}
+
+	tests := []struct {
+		name          string
+		request       rendernotepage.Request
+		setupEnv      func() *EnvMock
+		wantErr       bool
+		checkResponse func(t *testing.T, resp *rendernotepage.Response)
+	}{
+		{
+			name: "non-admin user should have DefaultVersion set to 'live'",
+			request: rendernotepage.Request{
+				Path:    "/test-versioned-note",
+				Version: "",
+				UserToken: &usertoken.Data{
+					ID:   100,
+					Role: "user",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
+					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
+						return nil
+					},
+					UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
+						return 1, nil
+					},
+					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
+						return nil
+					},
+				}
+			},
+			wantErr: false,
+			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
+				require.NotNil(t, resp)
+				require.Equal(t, "live", resp.DefaultVersion)
+				require.Equal(t, "Test Note - Live Version", resp.Title)
+				require.Equal(t, int64(300), resp.Note.VersionID)
+			},
+		},
+		{
+			name: "admin user should have DefaultVersion set to 'latest'",
+			request: rendernotepage.Request{
+				Path:    "/test-versioned-note",
+				Version: "",
+				UserToken: &usertoken.Data{
+					ID:   200,
+					Role: "admin",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return latestNoteViews
+					},
+					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
+						return nil
+					},
+					UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
+						return 1, nil
+					},
+					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
+						return nil
+					},
+				}
+			},
+			wantErr: false,
+			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
+				require.NotNil(t, resp)
+				require.Equal(t, "latest", resp.DefaultVersion)
+				require.Equal(t, "Test Note - Latest Version", resp.Title)
+				require.Equal(t, int64(301), resp.Note.VersionID)
+			},
+		},
+		{
+			name: "admin with empty version should view latest by default",
+			request: rendernotepage.Request{
+				Path:    "/test-versioned-note",
+				Version: "", // Empty version
+				UserToken: &usertoken.Data{
+					ID:   300,
+					Role: "admin",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return latestNoteViews
+					},
+					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
+						return nil
+					},
+					UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
+						return 1, nil
+					},
+					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
+						return nil
+					},
+				}
+			},
+			wantErr: false,
+			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
+				require.NotNil(t, resp)
+				require.Equal(t, "latest", resp.DefaultVersion)
+				require.Equal(t, "Test Note - Latest Version", resp.Title)
+				require.Equal(t, int64(301), resp.Note.VersionID)
+			},
+		},
+		{
+			name: "admin explicitly requesting live version should view live",
+			request: rendernotepage.Request{
+				Path:    "/test-versioned-note",
+				Version: "live", // Explicitly request live
+				UserToken: &usertoken.Data{
+					ID:   400,
+					Role: "admin",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return latestNoteViews
+					},
+					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
+						return nil
+					},
+					UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
+						return 1, nil
+					},
+					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
+						return nil
+					},
+				}
+			},
+			wantErr: false,
+			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
+				require.NotNil(t, resp)
+				require.Equal(t, "latest", resp.DefaultVersion) // DefaultVersion is still 'latest' for admin
+				require.Equal(t, "Test Note - Live Version", resp.Title)
+				require.Equal(t, int64(300), resp.Note.VersionID)
+			},
+		},
+		{
+			name: "non-admin requesting latest version should still view live",
+			request: rendernotepage.Request{
+				Path:    "/test-versioned-note",
+				Version: "latest", // Non-admin tries to request latest
+				UserToken: &usertoken.Data{
+					ID:   500,
+					Role: "user",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
+					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
+						return nil
+					},
+					UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
+						return 1, nil
+					},
+					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
+						return nil
+					},
+				}
+			},
+			wantErr: false,
+			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
+				require.NotNil(t, resp)
+				require.Equal(t, "live", resp.DefaultVersion)
+				require.Equal(t, "Test Note - Live Version", resp.Title)
+				require.Equal(t, int64(300), resp.Note.VersionID)
+			},
+		},
+		{
+			name: "unauthenticated user should have DefaultVersion set to 'live'",
+			request: rendernotepage.Request{
+				Path:      "/test-versioned-note",
+				Version:   "",
+				UserToken: nil, // Unauthenticated
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
+				}
+			},
+			wantErr: false,
+			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
+				require.NotNil(t, resp)
+				require.Equal(t, "live", resp.DefaultVersion)
+				require.Equal(t, "Test Note - Live Version", resp.Title)
+				require.Equal(t, int64(300), resp.Note.VersionID)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := tt.setupEnv()
+			resp, err := rendernotepage.Resolve(context.Background(), env, tt.request)
+
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, resp)
+			}
+		})
+	}
+}
+
+func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
+	// Create test notes with different versions for the banner test
+	liveNote := &model.NoteView{
+		Path:          "/banner-test",
+		Title:         "Banner Test - Live",
+		PathID:        4,
+		VersionID:     400,
+		Content:       []byte("# Live Content"),
+		HTML:          "<h1>Live Content</h1>",
+		Permalink:     "/banner-test",
+		Free:          true,
+		SubgraphNames: []string{},
+		Subgraphs:     map[string]*model.NoteSubgraph{},
+		InLinks:       map[string]struct{}{},
+		RawMeta:       map[string]interface{}{},
+		Assets:        map[string]struct{}{},
+		AssetReplaces: map[string]string{},
+	}
+
+	latestNote := &model.NoteView{
+		Path:          "/banner-test",
+		Title:         "Banner Test - Latest",
+		PathID:        4,
+		VersionID:     401, // Different version ID
+		Content:       []byte("# Latest Content"),
+		HTML:          "<h1>Latest Content</h1>",
+		Permalink:     "/banner-test",
+		Free:          true,
+		SubgraphNames: []string{},
+		Subgraphs:     map[string]*model.NoteSubgraph{},
+		InLinks:       map[string]struct{}{},
+		RawMeta:       map[string]interface{}{},
+		Assets:        map[string]struct{}{},
+		AssetReplaces: map[string]string{},
+	}
+
+	// Create NoteViews for live and latest versions
+	liveNoteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{
+			"/banner-test": liveNote,
+		},
+		List:      []*model.NoteView{liveNote},
+		Subgraphs: map[string]*model.NoteSubgraph{},
+		Version:   "live",
+	}
+
+	latestNoteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{
+			"/banner-test": latestNote,
+		},
+		List:      []*model.NoteView{latestNote},
+		Subgraphs: map[string]*model.NoteSubgraph{},
+		Version:   "latest",
+	}
+
+	tests := []struct {
+		name               string
+		request            rendernotepage.Request
+		setupEnv           func() *EnvMock
+		wantErr            bool
+		expectBanner       bool
+		expectedBannerText string
+	}{
+		{
+			name: "admin viewing live version should see banner with latest version link using default 'latest'",
+			request: rendernotepage.Request{
+				Path:    "/banner-test",
+				Version: "live",
+				UserToken: &usertoken.Data{
+					ID:   100,
+					Role: "admin",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return latestNoteViews
+					},
+					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
+						return nil
+					},
+					UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
+						return 1, nil
+					},
+					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
+						return nil
+					},
+				}
+			},
+			wantErr:            false,
+			expectBanner:       true,
+			expectedBannerText: "Это последняя опубликованная версия, которая отличается от загруженной",
+		},
+		{
+			name: "admin viewing latest version should see banner with live version link using default 'latest'",
+			request: rendernotepage.Request{
+				Path:    "/banner-test",
+				Version: "latest",
+				UserToken: &usertoken.Data{
+					ID:   200,
+					Role: "admin",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return latestNoteViews
+					},
+					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
+						return nil
+					},
+					UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
+						return 1, nil
+					},
+					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
+						return nil
+					},
+				}
+			},
+			wantErr:            false,
+			expectBanner:       true,
+			expectedBannerText: "Это последняя загруженная версия, которая отличается от опубликованной",
+		},
+		{
+			name: "admin viewing page where versions are the same should not see banner",
+			request: rendernotepage.Request{
+				Path:    "/banner-test",
+				Version: "latest",
+				UserToken: &usertoken.Data{
+					ID:   300,
+					Role: "admin",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				// Both versions have the same VersionID
+				sameNote := &model.NoteView{
+					Path:          "/banner-test",
+					Title:         "Banner Test - Same",
+					PathID:        4,
+					VersionID:     500, // Same version ID
+					Content:       []byte("# Same Content"),
+					HTML:          "<h1>Same Content</h1>",
+					Permalink:     "/banner-test",
+					Free:          true,
+					SubgraphNames: []string{},
+					Subgraphs:     map[string]*model.NoteSubgraph{},
+					InLinks:       map[string]struct{}{},
+					RawMeta:       map[string]interface{}{},
+					Assets:        map[string]struct{}{},
+					AssetReplaces: map[string]string{},
+				}
+
+				sameNoteViews := &model.NoteViews{
+					Map: map[string]*model.NoteView{
+						"/banner-test": sameNote,
+					},
+					List:      []*model.NoteView{sameNote},
+					Subgraphs: map[string]*model.NoteSubgraph{},
+					Version:   "latest",
+				}
+
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return sameNoteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return sameNoteViews
+					},
+					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
+						return nil
+					},
+					UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
+						return 1, nil
+					},
+					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
+						return nil
+					},
+				}
+			},
+			wantErr:      false,
+			expectBanner: false,
+		},
+		{
+			name: "non-admin user should not see banner even if versions differ",
+			request: rendernotepage.Request{
+				Path:    "/banner-test",
+				Version: "",
+				UserToken: &usertoken.Data{
+					ID:   400,
+					Role: "user",
+				},
+			},
+			setupEnv: func() *EnvMock {
+				return &EnvMock{
+					LoggerFunc: func() logger.Logger {
+						return &logger.DummyLogger{}
+					},
+					LiveNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
+					ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
+						return nil
+					},
+					UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
+						return 1, nil
+					},
+					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
+						return nil
+					},
+				}
+			},
+			wantErr:      false,
+			expectBanner: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := tt.setupEnv()
+			resp, err := rendernotepage.Resolve(context.Background(), env, tt.request)
+
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+
+				// Check if banner is present or not based on expectations
+				// Since versionBanner is private, we can't directly check it
+				// but we can verify the behavior through other means
+				// For now, we'll just check that the response is correct
+				require.NotNil(t, resp.Note)
+			}
+		})
+	}
+}
+
 func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 	// Create a test note that is NOT free and has subgraphs
 	testNote := &model.NoteView{

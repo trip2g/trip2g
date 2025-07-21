@@ -55,6 +55,8 @@ type Response struct {
 	Time      int
 
 	versionBanner *VersionBanner
+
+	DefaultVersion string
 }
 
 func (r *Response) NoteSubgraphsJSON() string {
@@ -79,9 +81,24 @@ func (e *PaywallError) Error() string {
 func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	var notes *model.NoteViews
 
+	response := Response{
+		DefaultVersion: "live",
+	}
+
 	// only admins can access the latest version
 	isAdmin := request.UserToken.IsAdmin()
-	isLatest := request.Version == "latest" && isAdmin
+	isLatest := request.Version == "latest"
+
+	if isAdmin {
+		response.DefaultVersion = "latest"
+
+		// admins view the latest version by default
+		if request.Version == "" {
+			isLatest = true
+		}
+	} else {
+		isLatest = false
+	}
 
 	if isLatest {
 		notes = env.LatestNoteViews()
@@ -93,8 +110,6 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	if path == "/" {
 		path = "/index"
 	}
-
-	response := Response{}
 
 	note := notes.GetByPath(path)
 	if note == nil {
@@ -184,7 +199,7 @@ func checkLatestBanner(env Env, response *Response, isLatest bool, path string, 
 	alternativeNote := alternativeNotes.GetByPath(path)
 	if alternativeNote != nil && alternativeNote.VersionID != note.VersionID {
 		response.versionBanner = &VersionBanner{
-			Permalink: alternativeNotes.ResolveURL(alternativeNote),
+			Permalink: alternativeNotes.ResolveURL(alternativeNote, response.DefaultVersion),
 		}
 
 		if isLatest {
