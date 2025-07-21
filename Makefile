@@ -9,7 +9,7 @@ build-docker:
 	docker save trip2g | bzip2 > ./tmp/app.tar.bz2
 
 deploy:
-	cd infra && ansible-playbook site.yml
+	cd infra && ansible-playbook --tags app site.yml
 
 build_and_deploy: build-amd64 deploy
 

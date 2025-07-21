@@ -273,7 +273,7 @@ func (req *request) sendNextQuestion(ctx context.Context) error {
 
 	text := fmt.Sprintf("Все вопросы теста пройдены!\n\nВаш тип личности: %s\n\n%sСпасибо за участие!", mbtiResult.Name, categoryBars.String())
 
-	url := fmt.Sprintf("%s/mbti/%s?client=tg", req.env.PublicURL(), strings.ToLower(mbtiResult.Name[:4]))
+	url := fmt.Sprintf("%s/mbti/%s/index?client=tg", req.env.PublicURL(), strings.ToLower(mbtiResult.Name[:4]))
 
 	msg := tgbotapi.NewMessage(req.chatID, text)
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(

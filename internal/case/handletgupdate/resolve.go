@@ -66,26 +66,26 @@ type request struct {
 
 func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 	// Rate limiting check
-	var userID int64
-	if update.Message != nil && update.Message.From != nil {
-		userID = update.Message.From.ID
-	} else if update.CallbackQuery != nil && update.CallbackQuery.From != nil {
-		userID = update.CallbackQuery.From.ID
-	} else if update.MyChatMember != nil {
-		userID = update.MyChatMember.From.ID
-	} else if update.ChatMember != nil && update.ChatMember.From.ID != 0 {
-		userID = update.ChatMember.From.ID
-	}
+	// var userID int64
+	// if update.Message != nil && update.Message.From != nil {
+	// 	userID = update.Message.From.ID
+	// } else if update.CallbackQuery != nil && update.CallbackQuery.From != nil {
+	// 	userID = update.CallbackQuery.From.ID
+	// } else if update.MyChatMember != nil {
+	// 	userID = update.MyChatMember.From.ID
+	// } else if update.ChatMember != nil && update.ChatMember.From.ID != 0 {
+	// 	userID = update.ChatMember.From.ID
+	// }
 
-	if userID != 0 && !globalRateLimiter.Allow(userID) {
-		env.Logger().Error("Rate limit exceeded", "user_id", userID)
-		// Try to send rate limit message if possible
-		if update.Message != nil {
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "⏰ Too many requests. Please wait before trying again.")
-			_, _ = env.Send(msg) // Ignore errors for rate limit messages
-		}
-		return nil // Don't return error to avoid processing issues
-	}
+	// if userID != 0 && !globalRateLimiter.Allow(userID) {
+	// 	env.Logger().Error("Rate limit exceeded", "user_id", userID)
+	// 	// Try to send rate limit message if possible
+	// 	if update.Message != nil {
+	// 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "⏰ Too many requests. Please wait before trying again.")
+	// 		_, _ = env.Send(msg) // Ignore errors for rate limit messages
+	// 	}
+	// 	return nil // Don't return error to avoid processing issues
+	// }
 
 	// Update user profile if we have a message with user info
 	if update.Message != nil && update.Message.From != nil {
