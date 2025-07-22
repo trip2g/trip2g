@@ -30,6 +30,7 @@ const (
 	ContextTypeNonOther
 	ContextTypeLetter
 	ContextTypeHardSign // Special context for hard sign
+	ContextTypeNConsonant // Special context for н consonant
 )
 
 // Cell represents a transliteration rule.
@@ -138,9 +139,12 @@ func buildScriptTable() []Cell {
 		{Cyrl: "Й", Latn: "J", ElementType: ElementTypeVowel, PrefixContext: ContextTypeNonConsonant},
 		{Cyrl: "Й", Latn: "YJ", ElementType: ElementTypeVowel, PrefixContext: ContextTypeConsonant},
 
-		// ь rules
+
+		// ь rules with specific context for н+ь+vowel
+		{Cyrl: "ь", Latn: "yh", ElementType: ElementTypeVowel, PrefixContext: ContextTypeNConsonant, PostfixContext: ContextTypeVowel},
 		{Cyrl: "ь", Latn: "j", ElementType: ElementTypeVowel, PrefixContext: ContextTypeConsonant},
 		{Cyrl: "ь", Latn: "hj", ElementType: ElementTypeVowel, PrefixContext: ContextTypeNonConsonant},
+		{Cyrl: "Ь", Latn: "YH", ElementType: ElementTypeVowel, PrefixContext: ContextTypeNConsonant, PostfixContext: ContextTypeVowel},
 		{Cyrl: "Ь", Latn: "J", ElementType: ElementTypeVowel, PrefixContext: ContextTypeConsonant},
 		{Cyrl: "Ь", Latn: "HJ", ElementType: ElementTypeVowel, PrefixContext: ContextTypeNonConsonant},
 
@@ -244,6 +248,8 @@ func contextMatches(ctx ContextType, elementType ElementType, prevRune rune) boo
 		return elementType != ElementTypeNonLetter
 	case ContextTypeHardSign:
 		return prevRune == 'ъ' || prevRune == 'Ъ'
+	case ContextTypeNConsonant:
+		return prevRune == 'н' || prevRune == 'Н'
 	}
 	return false
 }
@@ -429,6 +435,8 @@ func buildReverseTable() {
 		"йе", "сй", "дй", "ный",
 		"се", "де", "не", "те", "ре", "пе", "ле", "ме", "ке", "бе", "ве", "фе", "ге", "хе", "це", "зе",
 		"эе", "эа", "эо", "эу",
+		// Special cases for ь + vowel combinations
+		"нья", "ньа", "нье", "ньё", "нью", "ньи", "ньо", "нью", "ньы", "нья", "ньэ",
 	}
 
 	for _, cyrlSeq := range contextCases {
@@ -472,10 +480,11 @@ func buildReverseTable() {
 	// Common е combinations should take priority over э combinations
 	forcePriorities := map[string]string{
 		"zhe":  "же",
-		"che":  "че",
+		"che":  "че", 
 		"she":  "ше",
 		"sjhe": "ще",
 		"en":   "ен", // Add this to fix "en" -> "эн" issue
+		"nyh":  "нь", // Add mapping for нь when followed by vowel
 	}
 
 	for latin, cyrl := range forcePriorities {

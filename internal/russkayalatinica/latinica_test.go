@@ -30,6 +30,7 @@ func TestSpecificSequences(t *testing.T) {
 		{"шь", "shj"},
 		{"й", "j"},
 		{"сй", "syj"},
+		{"Чаньань", "Chanyhanj"},
 	}
 
 	for _, tc := range testCases {
