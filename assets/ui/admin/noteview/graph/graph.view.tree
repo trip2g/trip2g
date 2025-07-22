@@ -1,5 +1,7 @@
 $trip2g_admin_noteview_graph $mol_page
 	title \Note Graph
+	close_icon null $mol_view
+	menu_tools / <= close_icon
 	body /
 		<= Header $mol_view
 			sub / <= save_message? \

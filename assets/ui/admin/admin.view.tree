@@ -13,6 +13,7 @@ $trip2g_admin_app $trip2g_admin_catalog
 			title \hello@example.com
 		<= sign_out $mol_button_major
 			title \Sign out
+	Spread_default $trip2g_admin_dashboard
 	spreads *
 		users <= ListUsers $trip2g_admin_list_users
 			close_icon <= Spread_close

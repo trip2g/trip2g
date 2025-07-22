@@ -1,0 +1,22 @@
+$trip2g_admin_noteview_warnings $mol_view
+	sub /
+		<= Logs $mol_list
+			rows <= rows /
+				<= Row*0 $mol_row
+					minimal_height 24
+					minimal_width 600
+					sub <= row_content* /
+						<= Row_id_labeler* $mol_labeler
+							title \ID
+							Content <= Row_id* $trip2g_admin_cell
+								content <= row_id* \
+						<= Row_path_labeler* $mol_labeler
+							title \Path
+							Content <= Row_path_id* $trip2g_admin_cell
+								content <= row_path* \
+						<= Row_warnings_labeler* $mol_labeler
+							title \Warnings
+							Content <= Row_warnings* $mol_view
+								sub <= row_warnings* /
+									<= WarningRow*0 $trip2g_admin_cell
+										content <= warning_content* \
