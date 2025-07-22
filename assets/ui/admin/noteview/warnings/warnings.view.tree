@@ -1,4 +1,9 @@
 $trip2g_admin_noteview_warnings $mol_view
+	MoreButton* $mol_button_major
+		title <= warning_more_title* \More
+		click? <=> warning_more_toggle*? null
+	WarningRow* $trip2g_admin_cell
+		content <= warning_content* \
 	sub /
 		<= Logs $mol_list
 			rows <= rows /
@@ -6,10 +11,6 @@ $trip2g_admin_noteview_warnings $mol_view
 					minimal_height 24
 					minimal_width 600
 					sub <= row_content* /
-						<= Row_id_labeler* $mol_labeler
-							title \ID
-							Content <= Row_id* $trip2g_admin_cell
-								content <= row_id* \
 						<= Row_path_labeler* $mol_labeler
 							title \Path
 							Content <= Row_path_id* $trip2g_admin_cell
@@ -17,6 +18,4 @@ $trip2g_admin_noteview_warnings $mol_view
 						<= Row_warnings_labeler* $mol_labeler
 							title \Warnings
 							Content <= Row_warnings* $mol_view
-								sub <= row_warnings* /
-									<= WarningRow*0 $trip2g_admin_cell
-										content <= warning_content* \
+								sub <= row_warnings* /$mol_view

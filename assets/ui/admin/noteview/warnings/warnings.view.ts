@@ -35,20 +35,45 @@ namespace $.$$ {
 			return this.data().get( id )
 		}
 
-		override row_id( id: any ): string {
-			return this.row( id ).id
-		}
-
 		override row_path( id: any ): string {
 			return this.row( id ).path
 		}
 
+		@$mol_mem_key
+		more_opened( id: any, next?: boolean ) {
+			return next || false
+		}
+
+		override warning_more_toggle( id: any ) {
+			this.more_opened( id, !this.more_opened( id ) )
+		}
+
+		override warning_more_title( id: any ): string {
+			return this.more_opened( id ) ? 'Show less' : `Show all (${ this.row( id ).warnings.length })`
+		}
+
 		override row_warnings( id: any ) {
-			return this.row( id ).warnings.map( w => this.WarningRow( `${ w.level }: ${ w.message }` ) )
+			const { warnings } = this.row( id )
+			const limit = 2
+
+			let items: $mol_view[] = warnings.map( ( _, idx ) => this.WarningRow( `${ id }:${ idx }` ) )
+
+			if ( !this.more_opened( id ) ) {
+				items = items.slice( 0, limit )
+			}
+
+			if( warnings.length > limit ) {
+				items.push( this.MoreButton( id ) )
+			}
+
+			return items
 		}
 
 		override warning_content( id: any ): string {
-			return id
+			const [ row_id, warning_id ] = id.split( ':' )
+			const w = this.row( row_id ).warnings[ +warning_id ]
+
+			return `${ w.level }: ${ w.message }`
 		}
 	}
 }

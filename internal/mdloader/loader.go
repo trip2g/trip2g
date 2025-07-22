@@ -268,7 +268,8 @@ func (ldr *loader) extractInLinks() error {
 				}
 			}
 
-			p.DeadLinks = append(p.DeadLinks, target)
+			// p.DeadLinks = append(p.DeadLinks, target)
+			p.AddWarning(model.NoteWarningInfo, "broken link: %s", target)
 
 			return ast.WalkContinue, nil
 		})
