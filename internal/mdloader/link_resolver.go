@@ -48,7 +48,8 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 		i += copy(dest[i:], n.Fragment)
 	}
 
-	if len(r.version) > 0 && r.version != DefaultVersion {
+	// TODO: don't resolve links to assets, not only images
+	if len(r.version) > 0 && r.version != DefaultVersion && !resolveAsImage(n) {
 		// parse url and add ?version= to the end
 		u, err := url.Parse(string(dest[:i]))
 		if err != nil {
