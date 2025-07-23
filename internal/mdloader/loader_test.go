@@ -1,6 +1,7 @@
 package mdloader_test
 
 import (
+	"strings"
 	"testing"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
@@ -42,7 +43,15 @@ First. Second [[second]] [[dead]]`),
 	require.Equal(t, map[string]struct{}{"/index": {}}, pages.Map["/first"].InLinks)
 	require.Equal(t, map[string]struct{}{"/index": {}, "/first": {}}, pages.Map["/second"].InLinks)
 
-	require.Equal(t, []string{"dead"}, pages.Map["/first"].DeadLinks)
+	// Check if there's a warning about broken link
+	hasBrokenLinkWarning := false
+	for _, warning := range pages.Map["/first"].Warnings {
+		if strings.Contains(warning.Message, "broken link") && strings.Contains(warning.Message, "dead") {
+			hasBrokenLinkWarning = true
+			break
+		}
+	}
+	require.True(t, hasBrokenLinkWarning, "Expected warning about broken link to 'dead'")
 }
 
 func TestRelatedLinks(t *testing.T) {

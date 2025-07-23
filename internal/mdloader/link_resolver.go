@@ -32,8 +32,6 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 		return []byte(assetPath), nil
 	}
 
-	// fmt.Println("Resolving wikilink:", string(n.Target))
-
 	// Remove .html extension if present in the target
 	target := n.Target
 	if bytes.HasSuffix(target, []byte(_html)) {

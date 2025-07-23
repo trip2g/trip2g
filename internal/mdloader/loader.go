@@ -223,7 +223,7 @@ func (ldr *loader) generatePageHTML(p *model.NoteView) error {
 }
 
 func (ldr *loader) extractInLinks() error {
-	for _, p := range ldr.nvs.Map {
+	for _, p := range ldr.nvs.PathMap {
 		err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 			if n.Kind() != wikilink.Kind || !entering {
 				return ast.WalkContinue, nil
@@ -259,6 +259,11 @@ func (ldr *loader) extractInLinks() error {
 					pp, found = ldr.nvs.PathMap[targetPermalink]
 				}
 
+				// if p.Path == "эксперимент.md" {
+				// 	fmt.Println("targetPermalink", targetPermalink, "target", target)
+				// 	fmt.Println(ldr.nvs.PathMap)
+				// }
+
 				if found {
 					p.ResolvedLinks[string(link.Target)] = pp.Permalink
 					pp.InLinks[p.Permalink] = struct{}{}
@@ -268,8 +273,10 @@ func (ldr *loader) extractInLinks() error {
 				}
 			}
 
-			// p.DeadLinks = append(p.DeadLinks, target)
-			p.AddWarning(model.NoteWarningInfo, "broken link: %s", target)
+			if !resolveAsImage(link) {
+				// p.DeadLinks = append(p.DeadLinks, target)
+				p.AddWarning(model.NoteWarningInfo, "broken link: %s", target)
+			}
 
 			return ast.WalkContinue, nil
 		})

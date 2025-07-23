@@ -96,6 +96,8 @@ type NoteSubgraph struct {
 }
 
 type NoteViews struct {
+	// Warning: this map may contain the same note under different URLs!
+	// (For example: I spent an hour debugging a link resolution issue, and it turned out they were resolved twice.)
 	Map map[string]*NoteView // TODO: rename to PermalinkMap
 
 	PathMap map[string]*NoteView
