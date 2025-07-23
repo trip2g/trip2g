@@ -30,7 +30,9 @@ type SourceFile struct {
 	PathID    int64
 	VersionID int64
 	Content   []byte
-	Assets    map[string]string // local file path -> remote file path
+	// local file path -> remote file path
+	// empty means the file is missing
+	Assets map[string]string
 }
 
 type loader struct {
@@ -312,6 +314,13 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		ResolvedLinks: make(map[string]string),
 
 		AssetReplaces: src.Assets,
+	}
+
+	for k, v := range src.Assets {
+		if v == "" {
+			pp.AddWarning(model.NoteWarningInfo, "asset %s is missing in the storage", k)
+			// TODO: add a placeholder
+		}
 	}
 
 	pp.PreparePermalink()

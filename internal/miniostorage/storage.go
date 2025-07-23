@@ -112,6 +112,25 @@ func (a *FileStorage) OnURLExpiring(callback func()) {
 	}()
 }
 
+func (a *FileStorage) NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error) {
+	stats, err := a.minioClient.StatObject(
+		ctx,
+		a.config.Bucket,
+		a.NoteAssetPath(asset),
+		minio.StatObjectOptions{},
+	)
+
+	if err != nil {
+		if minio.ToErrorResponse(err).Code == "NoSuchKey" {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("failed to check if asset exists: %w", err)
+	}
+
+	return stats.Size > 0, nil
+}
+
 func (a *FileStorage) NoteAssetURL(ctx context.Context, asset db.NoteAsset) (string, error) {
 	presignedURL, err := a.minioClient.PresignedGetObject(
 		ctx,

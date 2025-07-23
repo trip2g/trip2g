@@ -62,17 +62,26 @@ func (q *Queries) AdminByUserID(ctx context.Context, userID int64) (Admin, error
 }
 
 const allLatestNoteAssets = `-- name: AllLatestNoteAssets :many
-with ranked_assets as (
-  select
-    v.id as version_id,
-    na.id as asset_id,
-    a.path,
-    row_number() over (
-      partition by v.id, a.path
-      order by a.created_at desc
-    ) as rn
+with latest_versions as (
+  select 
+    p.id as path_id,
+    v.id as version_id
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version
+),
+ranked_assets as (
+  select
+    lv.version_id,
+    na.id as asset_id,
+    a.path,
+    lv.path_id,
+    row_number() over (
+      partition by lv.path_id, a.path
+      order by v.version desc, a.created_at desc
+    ) as rn
+  from latest_versions lv
+  join note_paths p on lv.path_id = p.id
+  join note_versions v on p.id = v.path_id
   join note_version_assets a on v.id = a.version_id
   join note_assets na on a.asset_id = na.id
 )

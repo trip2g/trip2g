@@ -26,6 +26,7 @@ type RawAsset struct {
 type Env interface {
 	RawNotes(ctx context.Context) ([]RawNote, error)
 	RawAssets(ctx context.Context) ([]RawAsset, error)
+	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
 	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (string, error)
 	Logger() logger.Logger
 }
@@ -68,6 +69,16 @@ func (l *Loader) Load(ctx context.Context) error {
 		if !ok {
 			noteMap = make(map[string]string)
 			assetMap[asset.VersionID] = noteMap
+		}
+
+		exists, existsErr := l.env.NoteAssetExists(ctx, asset.NoteAsset)
+		if existsErr != nil {
+			return fmt.Errorf("failed to check if note asset exists: %w", existsErr)
+		}
+
+		if !exists {
+			noteMap[asset.Path] = ""
+			continue
 		}
 
 		assetURL, assetErr := l.env.NoteAssetURL(ctx, asset.NoteAsset)
