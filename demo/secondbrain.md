@@ -10,6 +10,7 @@ description: Второй мозг — это не просто хранилищ
 
 ![[secondbrain.png]]
 ![[secondbrain_missed.png]]
+![[secondbrain2.webp]]
 
 [[протокол]] • [[график]] • [[эксперимент]]
 
