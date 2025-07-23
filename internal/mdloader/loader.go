@@ -275,9 +275,13 @@ func (ldr *loader) extractInLinks() error {
 				}
 			}
 
-			if !resolveAsImage(link) {
-				// p.DeadLinks = append(p.DeadLinks, target)
-				p.AddWarning(model.NoteWarningInfo, "broken link: %s", target)
+			_, assetExists := p.AssetReplaces[target]
+			if !assetExists {
+				if resolveAsImage(link) {
+					p.AddWarning(model.NoteWarningInfo, "broken image link: %s", target)
+				} else {
+					p.AddWarning(model.NoteWarningInfo, "broken link: %s", target)
+				}
 			}
 
 			return ast.WalkContinue, nil

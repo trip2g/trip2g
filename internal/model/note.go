@@ -67,7 +67,6 @@ type NoteView struct {
 
 	ResolvedLinks map[string]string // local link to absolute link mapping
 
-	// DeadLinks     []string
 	SubgraphNames []string
 	Subgraphs     map[string]*NoteSubgraph `json:"-"`
 
