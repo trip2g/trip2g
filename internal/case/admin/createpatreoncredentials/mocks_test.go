@@ -25,6 +25,9 @@ var _ createpatreoncredentials.Env = &EnvMock{}
 //			CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentAdminUserToken method")
 //			},
+//			InsertPatreonCampaignFunc: func(ctx context.Context, arg db.InsertPatreonCampaignParams) error {
+//				panic("mock out the InsertPatreonCampaign method")
+//			},
 //			InsertPatreonCredentialsFunc: func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error) {
 //				panic("mock out the InsertPatreonCredentials method")
 //			},
@@ -41,6 +44,9 @@ type EnvMock struct {
 	// CurrentAdminUserTokenFunc mocks the CurrentAdminUserToken method.
 	CurrentAdminUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
 
+	// InsertPatreonCampaignFunc mocks the InsertPatreonCampaign method.
+	InsertPatreonCampaignFunc func(ctx context.Context, arg db.InsertPatreonCampaignParams) error
+
 	// InsertPatreonCredentialsFunc mocks the InsertPatreonCredentials method.
 	InsertPatreonCredentialsFunc func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error)
 
@@ -53,6 +59,13 @@ type EnvMock struct {
 		CurrentAdminUserToken []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
+		}
+		// InsertPatreonCampaign holds details about calls to the InsertPatreonCampaign method.
+		InsertPatreonCampaign []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.InsertPatreonCampaignParams
 		}
 		// InsertPatreonCredentials holds details about calls to the InsertPatreonCredentials method.
 		InsertPatreonCredentials []struct {
@@ -68,6 +81,7 @@ type EnvMock struct {
 		}
 	}
 	lockCurrentAdminUserToken    sync.RWMutex
+	lockInsertPatreonCampaign    sync.RWMutex
 	lockInsertPatreonCredentials sync.RWMutex
 	lockPatreonListCampaigns     sync.RWMutex
 }
@@ -101,6 +115,42 @@ func (mock *EnvMock) CurrentAdminUserTokenCalls() []struct {
 	mock.lockCurrentAdminUserToken.RLock()
 	calls = mock.calls.CurrentAdminUserToken
 	mock.lockCurrentAdminUserToken.RUnlock()
+	return calls
+}
+
+// InsertPatreonCampaign calls InsertPatreonCampaignFunc.
+func (mock *EnvMock) InsertPatreonCampaign(ctx context.Context, arg db.InsertPatreonCampaignParams) error {
+	if mock.InsertPatreonCampaignFunc == nil {
+		panic("EnvMock.InsertPatreonCampaignFunc: method is nil but Env.InsertPatreonCampaign was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.InsertPatreonCampaignParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockInsertPatreonCampaign.Lock()
+	mock.calls.InsertPatreonCampaign = append(mock.calls.InsertPatreonCampaign, callInfo)
+	mock.lockInsertPatreonCampaign.Unlock()
+	return mock.InsertPatreonCampaignFunc(ctx, arg)
+}
+
+// InsertPatreonCampaignCalls gets all the calls that were made to InsertPatreonCampaign.
+// Check the length with:
+//
+//	len(mockedEnv.InsertPatreonCampaignCalls())
+func (mock *EnvMock) InsertPatreonCampaignCalls() []struct {
+	Ctx context.Context
+	Arg db.InsertPatreonCampaignParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.InsertPatreonCampaignParams
+	}
+	mock.lockInsertPatreonCampaign.RLock()
+	calls = mock.calls.InsertPatreonCampaign
+	mock.lockInsertPatreonCampaign.RUnlock()
 	return calls
 }
 

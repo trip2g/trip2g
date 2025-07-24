@@ -14,6 +14,7 @@ import (
 
 type Env interface {
 	InsertPatreonCredentials(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error)
+	InsertPatreonCampaign(ctx context.Context, arg db.InsertPatreonCampaignParams) error
 	PatreonListCampaigns(token string) ([]patreon.Campaign, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
@@ -43,6 +44,13 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get current admin user token: %w", err)
 	}
 
+	// Fetch campaigns from Patreon before creating credentials
+	campaigns, err := env.PatreonListCampaigns(input.CreatorAccessToken)
+	if err != nil {
+		// Return Patreon API errors as user-visible errors
+		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to fetch campaigns from Patreon: %v", err)}, nil
+	}
+
 	// Define params as separate variable for cleaner code
 	params := db.InsertPatreonCredentialsParams{
 		CreatedBy:          int64(token.ID),
@@ -57,6 +65,19 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		}
 		// System errors are returned as error (will show generic message to user)
 		return nil, fmt.Errorf("failed to insert patreon credentials: %w", err)
+	}
+
+	// Save campaigns after creating credentials
+	for _, campaign := range campaigns {
+		campaignParams := db.InsertPatreonCampaignParams{
+			CredentialsID: credentials.ID,
+			CampaignID:    campaign.ID,
+		}
+
+		err = env.InsertPatreonCampaign(ctx, campaignParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to save campaign %s: %w", campaign.ID, err)
+		}
 	}
 
 	// Define payload as separate variable

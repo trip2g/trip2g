@@ -167,4 +167,5 @@ type Env interface {
 	AllActivePatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
 	AllDeletedPatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
 	RestorePatreonCredentials(ctx context.Context, id int64) (db.PatreonCredential, error)
+	InsertPatreonCampaign(ctx context.Context, arg db.InsertPatreonCampaignParams) error
 }

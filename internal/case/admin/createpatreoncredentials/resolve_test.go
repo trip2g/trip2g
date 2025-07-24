@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/case/admin/createpatreoncredentials"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/patreon"
 	"trip2g/internal/usertoken"
 
 	"github.com/kr/pretty"
@@ -40,6 +41,8 @@ func assertPayload(t *testing.T, want, got model.CreatePatreonCredentialsOrError
 
 type Env interface {
 	InsertPatreonCredentials(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error)
+	InsertPatreonCampaign(ctx context.Context, arg db.InsertPatreonCampaignParams) error
+	PatreonListCampaigns(token string) ([]patreon.Campaign, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
 
@@ -65,6 +68,12 @@ func TestResolve(t *testing.T) {
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
+				mock.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
+					return []patreon.Campaign{
+						{ID: "campaign1", Type: "campaign"},
+						{ID: "campaign2", Type: "campaign"},
+					}, nil
+				}
 				mock.InsertPatreonCredentialsFunc = func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error) {
 					return db.PatreonCredential{
 						ID:                 1,
@@ -72,6 +81,9 @@ func TestResolve(t *testing.T) {
 						CreatedBy:          1,
 						CreatorAccessToken: arg.CreatorAccessToken,
 					}, nil
+				}
+				mock.InsertPatreonCampaignFunc = func(ctx context.Context, arg db.InsertPatreonCampaignParams) error {
+					return nil
 				}
 				return mock
 			},
@@ -148,6 +160,9 @@ func TestResolve(t *testing.T) {
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
+				mock.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
+					return []patreon.Campaign{{ID: "campaign1", Type: "campaign"}}, nil
+				}
 				mock.InsertPatreonCredentialsFunc = func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error) {
 					return db.PatreonCredential{}, errors.New("UNIQUE constraint failed: patreon_credentials.creator_access_token")
 				}
@@ -155,6 +170,26 @@ func TestResolve(t *testing.T) {
 			},
 			want: &model.ErrorPayload{
 				Message: "Patreon credentials already exist",
+			},
+			wantErr: false,
+		},
+		{
+			name: "patreon API error",
+			input: model.CreatePatreonCredentialsInput{
+				CreatorAccessToken: "test-token-123456789",
+			},
+			mockFunc: func() *envMock {
+				mock := &envMock{}
+				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				}
+				mock.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
+					return nil, errors.New("invalid token")
+				}
+				return mock
+			},
+			want: &model.ErrorPayload{
+				Message: "Failed to fetch campaigns from Patreon: invalid token",
 			},
 			wantErr: false,
 		},
@@ -167,6 +202,9 @@ func TestResolve(t *testing.T) {
 				mock := &envMock{}
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
+				}
+				mock.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
+					return []patreon.Campaign{{ID: "campaign1", Type: "campaign"}}, nil
 				}
 				mock.InsertPatreonCredentialsFunc = func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error) {
 					return db.PatreonCredential{}, errors.New("database error")

@@ -1143,6 +1143,21 @@ func (q *Queries) InsertOfferSubgraph(ctx context.Context, arg InsertOfferSubgra
 	return err
 }
 
+const insertPatreonCampaign = `-- name: InsertPatreonCampaign :exec
+insert into patreon_campaigns (credentials_id, campaign_id)
+values (?, ?)
+`
+
+type InsertPatreonCampaignParams struct {
+	CredentialsID int64  `json:"credentials_id"`
+	CampaignID    string `json:"campaign_id"`
+}
+
+func (q *Queries) InsertPatreonCampaign(ctx context.Context, arg InsertPatreonCampaignParams) error {
+	_, err := q.db.ExecContext(ctx, insertPatreonCampaign, arg.CredentialsID, arg.CampaignID)
+	return err
+}
+
 const insertPatreonCredentials = `-- name: InsertPatreonCredentials :one
 insert into patreon_credentials (created_by, creator_access_token)
 values (?, ?)

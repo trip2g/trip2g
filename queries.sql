@@ -771,3 +771,7 @@ returning *;
 select *
   from patreon_credentials
  where deleted_by is null;
+
+-- name: InsertPatreonCampaign :exec
+insert into patreon_campaigns (credentials_id, campaign_id)
+values (?, ?);
