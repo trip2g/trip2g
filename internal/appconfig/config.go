@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/miniostorage"
+	"trip2g/internal/patreon"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -70,6 +71,8 @@ type Config struct {
 	MailFrom string
 
 	MDLoaderConfig mdloader.Config
+
+	PatreonConfig patreon.ClientConfig
 }
 
 // Default values for configuration.
@@ -216,6 +219,9 @@ func (c *Config) defineFlags() {
 
 	// MD Loader
 	flag.BoolVar(&c.MDLoaderConfig.AutoLowerWikilinks, "md-loader-auto-lower-wikilinks", false, "Automatically lower-case wikilinks")
+
+	// Patreon
+	flag.StringVar(&c.PatreonConfig.CreatorAccessToken, "patreon-creator-access-token", "", "Patreon creator access token")
 }
 
 // validate checks if the configuration is valid using ozzo validation.
