@@ -1,14 +1,18 @@
 package patreon
 
+import "encoding/json"
+
 //go:generate go tool github.com/mailru/easyjson/easyjson -snake_case -all -no_std_marshalers ./types.go
 
 type CampaignsResponse struct {
 	Data []Campaign `json:"data"`
+	Meta Meta       `json:"meta"`
 }
 
 type Campaign struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
+	ID         string          `json:"id"`
+	Type       string          `json:"type"`
+	Attributes json.RawMessage `json:"attributes"`
 }
 
 type WebhookRequest struct {

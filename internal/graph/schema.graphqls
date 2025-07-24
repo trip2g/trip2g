@@ -300,6 +300,20 @@ type AdminTgChatMembersConnection {
   nodes: [AdminTgChatMember!]! @goField(forceResolver: true)
 }
 
+type AdminPatreonCredentials @goModel(model: "trip2g/internal/db.PatreonCredential") {
+  id: Int64!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+  deletedAt: Time
+  deletedBy: AdminUser @goField(forceResolver: true)
+  creatorAccessToken: String! @goField(forceResolver: true)
+}
+
+type AdminPatreonCredentialsConnection {
+  nodes: [AdminPatreonCredentials!]! @goField(forceResolver: true)
+  filter: PatreonCredentialsStateEnum
+}
+
 input AdminTgBotChatsFilterInput {
   botId: Int64
   includeRemoved: Boolean # defaults to false
@@ -312,6 +326,15 @@ input AdminTgChatMembersFilterInput {
 input AdminTgChatSubgraphAccessesFilterInput {
   chatId: Int64
   subgraphId: Int64
+}
+
+enum PatreonCredentialsStateEnum {
+  ACTIVE
+  DELETED
+}
+
+input AdminPatreonCredentialsFilterInput {
+  state: PatreonCredentialsStateEnum
 }
 
 enum NoteWarningLevelEnum {
@@ -343,6 +366,8 @@ type AdminQuery {
   tgBotChats(filter: AdminTgBotChatsFilterInput!): AdminTgBotChatsConnection!
   tgChatSubgraphAccesses(filter: AdminTgChatSubgraphAccessesFilterInput!): AdminTgChatSubgraphAccessesConnection!
   tgChatMembers(filter: AdminTgChatMembersFilterInput!): AdminTgChatMembersConnection!
+
+  allPatreonCredentials(filter: AdminPatreonCredentialsFilterInput): AdminPatreonCredentialsConnection!
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
 
@@ -943,6 +968,48 @@ type RemoveTgChatSubgraphAccessPayload {
 
 union RemoveTgChatSubgraphAccessOrErrorPayload = RemoveTgChatSubgraphAccessPayload | ErrorPayload
 
+#
+# createPatreonCredentials
+#
+
+input CreatePatreonCredentialsInput {
+  creatorAccessToken: String!
+}
+
+type CreatePatreonCredentialsPayload {
+  patreonCredentials: AdminPatreonCredentials!
+}
+
+union CreatePatreonCredentialsOrErrorPayload = CreatePatreonCredentialsPayload | ErrorPayload
+
+#
+# deletePatreonCredentials
+#
+
+input DeletePatreonCredentialsInput {
+  id: Int64!
+}
+
+type DeletePatreonCredentialsPayload {
+  deletedId: Int64!
+}
+
+union DeletePatreonCredentialsOrErrorPayload = DeletePatreonCredentialsPayload | ErrorPayload
+
+#
+# restorePatreonCredentials
+#
+
+input RestorePatreonCredentialsInput {
+  id: Int64!
+}
+
+type RestorePatreonCredentialsPayload {
+  patreonCredentials: AdminPatreonCredentials!
+}
+
+union RestorePatreonCredentialsOrErrorPayload = RestorePatreonCredentialsPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
@@ -975,4 +1042,9 @@ type AdminMutation {
   updateTgBot(input: UpdateTgBotInput!): UpdateTgBotOrErrorPayload!
   addTgChatSubgraphAccess(input: AddTgChatSubgraphAccessInput!): AddTgChatSubgraphAccessOrErrorPayload!
   removeTgChatSubgraphAccess(input: RemoveTgChatSubgraphAccessInput!): RemoveTgChatSubgraphAccessOrErrorPayload!
+
+  # Patreon credentials mutations
+  createPatreonCredentials(input: CreatePatreonCredentialsInput!): CreatePatreonCredentialsOrErrorPayload!
+  deletePatreonCredentials(input: DeletePatreonCredentialsInput!): DeletePatreonCredentialsOrErrorPayload!
+  restorePatreonCredentials(input: RestorePatreonCredentialsInput!): RestorePatreonCredentialsOrErrorPayload!
 }

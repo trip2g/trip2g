@@ -19,15 +19,18 @@ import (
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
+	"trip2g/internal/case/admin/createpatreoncredentials"
 	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
+	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
+	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
@@ -246,6 +249,21 @@ func (r *adminMutationResolver) RemoveTgChatSubgraphAccess(ctx context.Context, 
 	return removetgchatsubgraphaccess.Resolve(ctx, r.env(ctx), input)
 }
 
+// CreatePatreonCredentials is the resolver for the createPatreonCredentials field.
+func (r *adminMutationResolver) CreatePatreonCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.CreatePatreonCredentialsInput) (model.CreatePatreonCredentialsOrErrorPayload, error) {
+	return createpatreoncredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeletePatreonCredentials is the resolver for the deletePatreonCredentials field.
+func (r *adminMutationResolver) DeletePatreonCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.DeletePatreonCredentialsInput) (model.DeletePatreonCredentialsOrErrorPayload, error) {
+	return deletepatreoncredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// RestorePatreonCredentials is the resolver for the restorePatreonCredentials field.
+func (r *adminMutationResolver) RestorePatreonCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.RestorePatreonCredentialsInput) (model.RestorePatreonCredentialsOrErrorPayload, error) {
+	return restorepatreoncredentials.Resolve(ctx, r.env(ctx), input)
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminNotFoundIgnoredPatternResolver) CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -303,6 +321,47 @@ func (r *adminOfferResolver) Subgraphs(ctx context.Context, obj *db.Offer) ([]db
 // Nodes is the resolver for the nodes field.
 func (r *adminOffersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminOffersConnection) ([]db.Offer, error) {
 	return r.env(ctx).ListAllOffers(ctx)
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminPatreonCredentialsResolver) CreatedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// DeletedAt is the resolver for the deletedAt field.
+func (r *adminPatreonCredentialsResolver) DeletedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error) {
+	return db.ToTimePtr(obj.DeletedAt), nil
+}
+
+// DeletedBy is the resolver for the deletedBy field.
+func (r *adminPatreonCredentialsResolver) DeletedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error) {
+	if !obj.DeletedBy.Valid {
+		return nil, nil
+	}
+	return resolveOne[db.User](ctx, obj.DeletedBy.Int64, r.env(ctx).UserByID)
+}
+
+// CreatorAccessToken is the resolver for the creatorAccessToken field.
+func (r *adminPatreonCredentialsResolver) CreatorAccessToken(ctx context.Context, obj *db.PatreonCredential) (string, error) {
+	token := obj.CreatorAccessToken
+	if len(token) < 8 {
+		return "****", nil
+	}
+	// Show first 4 and last 4 characters, mask the middle
+	return token[:4] + strings.Repeat("*", len(token)-8) + token[len(token)-4:], nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminPatreonCredentialsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminPatreonCredentialsConnection) ([]db.PatreonCredential, error) {
+	if obj.Filter != nil {
+		switch *obj.Filter {
+		case model.PatreonCredentialsStateEnumActive:
+			return r.env(ctx).AllActivePatreonCredentials(ctx)
+		case model.PatreonCredentialsStateEnumDeleted:
+			return r.env(ctx).AllDeletedPatreonCredentials(ctx)
+		}
+	}
+	return r.env(ctx).AllPatreonCredentials(ctx)
 }
 
 // Successful is the resolver for the successful field.
@@ -419,6 +478,21 @@ func (r *adminQueryResolver) TgChatSubgraphAccesses(ctx context.Context, obj *ap
 // TgChatMembers is the resolver for the tgChatMembers field.
 func (r *adminQueryResolver) TgChatMembers(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminTgChatMembersFilterInput) (*model.AdminTgChatMembersConnection, error) {
 	return &model.AdminTgChatMembersConnection{}, nil
+}
+
+// AllPatreonCredentials is the resolver for the allPatreonCredentials field.
+func (r *adminQueryResolver) AllPatreonCredentials(ctx context.Context, obj *appmodel.AdminQuery, filter *model.AdminPatreonCredentialsFilterInput) (*model.AdminPatreonCredentialsConnection, error) {
+	if filter != nil && filter.State != nil {
+		switch *filter.State {
+		case model.PatreonCredentialsStateEnumActive:
+			active := model.PatreonCredentialsStateEnumActive
+			return &model.AdminPatreonCredentialsConnection{Filter: &active}, nil
+		case model.PatreonCredentialsStateEnumDeleted:
+			deleted := model.PatreonCredentialsStateEnumDeleted
+			return &model.AdminPatreonCredentialsConnection{Filter: &deleted}, nil
+		}
+	}
+	return &model.AdminPatreonCredentialsConnection{}, nil
 }
 
 // APIKeyLogs is the resolver for the apiKeyLogs field.
@@ -1198,6 +1272,16 @@ func (r *Resolver) AdminOffersConnection() AdminOffersConnectionResolver {
 	return &adminOffersConnectionResolver{r}
 }
 
+// AdminPatreonCredentials returns AdminPatreonCredentialsResolver implementation.
+func (r *Resolver) AdminPatreonCredentials() AdminPatreonCredentialsResolver {
+	return &adminPatreonCredentialsResolver{r}
+}
+
+// AdminPatreonCredentialsConnection returns AdminPatreonCredentialsConnectionResolver implementation.
+func (r *Resolver) AdminPatreonCredentialsConnection() AdminPatreonCredentialsConnectionResolver {
+	return &adminPatreonCredentialsConnectionResolver{r}
+}
+
 // AdminPurchase returns AdminPurchaseResolver implementation.
 func (r *Resolver) AdminPurchase() AdminPurchaseResolver { return &adminPurchaseResolver{r} }
 
@@ -1361,6 +1445,8 @@ type adminNotFoundIgnoredPatternsConnectionResolver struct{ *Resolver }
 type adminNotFoundPathsConnectionResolver struct{ *Resolver }
 type adminOfferResolver struct{ *Resolver }
 type adminOffersConnectionResolver struct{ *Resolver }
+type adminPatreonCredentialsResolver struct{ *Resolver }
+type adminPatreonCredentialsConnectionResolver struct{ *Resolver }
 type adminPurchaseResolver struct{ *Resolver }
 type adminPurchasesConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }

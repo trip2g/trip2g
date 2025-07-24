@@ -38,6 +38,10 @@ type CreateOfferOrErrorPayload interface {
 	IsCreateOfferOrErrorPayload()
 }
 
+type CreatePatreonCredentialsOrErrorPayload interface {
+	IsCreatePatreonCredentialsOrErrorPayload()
+}
+
 type CreatePaymentLinkOrErrorPayload interface {
 	IsCreatePaymentLinkOrErrorPayload()
 }
@@ -56,6 +60,10 @@ type CreateTgBotOrErrorPayload interface {
 
 type DeleteNotFoundIgnoredPatternOrErrorPayload interface {
 	IsDeleteNotFoundIgnoredPatternOrErrorPayload()
+}
+
+type DeletePatreonCredentialsOrErrorPayload interface {
+	IsDeletePatreonCredentialsOrErrorPayload()
 }
 
 type DeleteRedirectOrErrorPayload interface {
@@ -88,6 +96,10 @@ type RequestEmailSignInCodeOrErrorPayload interface {
 
 type ResetNotFoundPathOrErrorPayload interface {
 	IsResetNotFoundPathOrErrorPayload()
+}
+
+type RestorePatreonCredentialsOrErrorPayload interface {
+	IsRestorePatreonCredentialsOrErrorPayload()
 }
 
 type SignInOrErrorPayload interface {
@@ -187,6 +199,15 @@ type AdminNotFoundPathsConnection struct {
 
 type AdminOffersConnection struct {
 	Nodes []db.Offer `json:"nodes"`
+}
+
+type AdminPatreonCredentialsConnection struct {
+	Nodes  []db.PatreonCredential       `json:"nodes"`
+	Filter *PatreonCredentialsStateEnum `json:"filter,omitempty"`
+}
+
+type AdminPatreonCredentialsFilterInput struct {
+	State *PatreonCredentialsStateEnum `json:"state,omitempty"`
 }
 
 type AdminPurchasesConnection struct {
@@ -309,6 +330,16 @@ type CreateOfferPayload struct {
 
 func (CreateOfferPayload) IsCreateOfferOrErrorPayload() {}
 
+type CreatePatreonCredentialsInput struct {
+	CreatorAccessToken string `json:"creatorAccessToken"`
+}
+
+type CreatePatreonCredentialsPayload struct {
+	PatreonCredentials *db.PatreonCredential `json:"patreonCredentials"`
+}
+
+func (CreatePatreonCredentialsPayload) IsCreatePatreonCredentialsOrErrorPayload() {}
+
 type CreatePaymentLinkInput struct {
 	PaymentType PaymentType `json:"paymentType"`
 	OfferID     string      `json:"offerId"`
@@ -367,6 +398,16 @@ type DeleteNotFoundIgnoredPatternPayload struct {
 }
 
 func (DeleteNotFoundIgnoredPatternPayload) IsDeleteNotFoundIgnoredPatternOrErrorPayload() {}
+
+type DeletePatreonCredentialsInput struct {
+	ID int64 `json:"id"`
+}
+
+type DeletePatreonCredentialsPayload struct {
+	DeletedID int64 `json:"deletedId"`
+}
+
+func (DeletePatreonCredentialsPayload) IsDeletePatreonCredentialsOrErrorPayload() {}
 
 type DeleteRedirectInput struct {
 	ID int64 `json:"id"`
@@ -452,6 +493,12 @@ func (ErrorPayload) IsUpdateTgBotOrErrorPayload() {}
 func (ErrorPayload) IsAddTgChatSubgraphAccessOrErrorPayload() {}
 
 func (ErrorPayload) IsRemoveTgChatSubgraphAccessOrErrorPayload() {}
+
+func (ErrorPayload) IsCreatePatreonCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsDeletePatreonCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsRestorePatreonCredentialsOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`
@@ -552,6 +599,16 @@ type ResetNotFoundPathPayload struct {
 }
 
 func (ResetNotFoundPathPayload) IsResetNotFoundPathOrErrorPayload() {}
+
+type RestorePatreonCredentialsInput struct {
+	ID int64 `json:"id"`
+}
+
+type RestorePatreonCredentialsPayload struct {
+	PatreonCredentials *db.PatreonCredential `json:"patreonCredentials"`
+}
+
+func (RestorePatreonCredentialsPayload) IsRestorePatreonCredentialsOrErrorPayload() {}
 
 type SignInByEmailInput struct {
 	Email string `json:"email"`
@@ -747,6 +804,61 @@ func (e *NoteWarningLevelEnum) UnmarshalJSON(b []byte) error {
 }
 
 func (e NoteWarningLevelEnum) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type PatreonCredentialsStateEnum string
+
+const (
+	PatreonCredentialsStateEnumActive  PatreonCredentialsStateEnum = "ACTIVE"
+	PatreonCredentialsStateEnumDeleted PatreonCredentialsStateEnum = "DELETED"
+)
+
+var AllPatreonCredentialsStateEnum = []PatreonCredentialsStateEnum{
+	PatreonCredentialsStateEnumActive,
+	PatreonCredentialsStateEnumDeleted,
+}
+
+func (e PatreonCredentialsStateEnum) IsValid() bool {
+	switch e {
+	case PatreonCredentialsStateEnumActive, PatreonCredentialsStateEnumDeleted:
+		return true
+	}
+	return false
+}
+
+func (e PatreonCredentialsStateEnum) String() string {
+	return string(e)
+}
+
+func (e *PatreonCredentialsStateEnum) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PatreonCredentialsStateEnum(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PatreonCredentialsStateEnum", str)
+	}
+	return nil
+}
+
+func (e PatreonCredentialsStateEnum) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *PatreonCredentialsStateEnum) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e PatreonCredentialsStateEnum) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

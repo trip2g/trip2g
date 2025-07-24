@@ -31,21 +31,32 @@ func main() {
 		log.Fatalf("failed to create patreon client: %v", err)
 	}
 
-	campaignID := testCampaignID(client)
+	campaignID := testListCampaigns(client)
 	testPatrons(client, campaignID)
 	testWebhookWorkflow(client, campaignID)
 
 	logPrintln("\n=== Patreon client test completed successfully! ===")
 }
 
-func testCampaignID(client *patreon.Client) string {
-	logPrintln("=== Testing CampaignID ===")
-	campaignID, err := client.CampaignID()
+func testListCampaigns(client *patreon.Client) string {
+	logPrintln("=== Testing ListCampaigns ===")
+	campaigns, err := client.ListCampaigns()
 	if err != nil {
-		log.Fatalf("failed to get campaign ID: %v", err)
+		log.Fatalf("failed to list campaigns: %v", err)
 	}
-	logPrintf("Campaign ID: %s\n", campaignID)
-	return campaignID
+	
+	if len(campaigns) == 0 {
+		log.Fatal("no campaigns found")
+	}
+	
+	logPrintf("Found %d campaigns:\n", len(campaigns))
+	for i, campaign := range campaigns {
+		logPrintf("  %d. ID: %s, Type: %s\n", i+1, campaign.ID, campaign.Type)
+		logPrintf("     Attributes: %s\n", string(campaign.Attributes))
+	}
+	
+	// Return the first campaign ID for compatibility with existing tests
+	return campaigns[0].ID
 }
 
 func testPatrons(client *patreon.Client, campaignID string) {

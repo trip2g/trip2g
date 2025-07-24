@@ -279,12 +279,17 @@ CREATE TABLE wait_list_tg_bot_requests (
   primary key (bot_id, chat_id)
 );
 CREATE TABLE patreon_credentials (
-    id serial primary key,
-    created_at datetime not null default current_timestamp,
-    created_by integer not null references admins(id) on delete restrict,
-    deleted_at datetime,
-    deleted_by integer references admins(id) on delete restrict,
-    creator_access_token text not null
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  deleted_at datetime,
+  deleted_by integer references admins(user_id) on delete restrict,
+  creator_access_token text not null
+);
+CREATE TABLE patreon_campaigns (
+  id integer primary key autoincrement,
+  credentials_id integer not null references patreon_credentials(id) on delete cascade,
+  campaign_id text not null
 );
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
@@ -326,4 +331,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250626120000'),
   ('20250627040815'),
   ('20250628111216'),
-  ('20250724085424');
+  ('20250724085424'),
+  ('20250724090433');

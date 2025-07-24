@@ -731,3 +731,43 @@ values (?, ?, ?);
 -- name: InsertWaitListTgBotRequest :exec
 insert into wait_list_tg_bot_requests (bot_id, chat_id, note_path_id)
 values (?, ?, ?);
+
+-- name: AllPatreonCredentials :many
+select * from patreon_credentials
+order by created_at desc;
+
+-- name: AllActivePatreonCredentials :many
+select * from patreon_credentials
+where deleted_at is null
+order by created_at desc;
+
+-- name: AllDeletedPatreonCredentials :many
+select * from patreon_credentials
+where deleted_at is not null
+order by created_at desc;
+
+-- name: PatreonCredentials :one
+select * from patreon_credentials
+where id = ? and deleted_at is null;
+
+-- name: InsertPatreonCredentials :one
+insert into patreon_credentials (created_by, creator_access_token)
+values (?, ?)
+returning *;
+
+-- name: SoftDeletePatreonCredentials :one
+update patreon_credentials
+set deleted_at = current_timestamp, deleted_by = ?
+where id = ? and deleted_at is null
+returning *;
+
+-- name: RestorePatreonCredentials :one
+update patreon_credentials
+set deleted_at = null, deleted_by = null
+where id = ? and deleted_at is not null
+returning *;
+
+-- name: ListActivePatreonCredentials :many
+select *
+  from patreon_credentials
+ where deleted_by is null;

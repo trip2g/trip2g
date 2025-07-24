@@ -10,15 +10,18 @@ import (
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
+	"trip2g/internal/case/admin/createpatreoncredentials"
 	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
+	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
+	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
@@ -142,6 +145,9 @@ type Env interface {
 	updatetgbot.Env
 	addtgchatsubgraphaccess.Env
 	removetgchatsubgraphaccess.Env
+	createpatreoncredentials.Env
+	deletepatreoncredentials.Env
+	restorepatreoncredentials.Env
 
 	// Telegram bot queries
 	AllTgBots(ctx context.Context) ([]db.TgBot, error)
@@ -155,4 +161,10 @@ type Env interface {
 	TgChatSubgraphAccessesBySubgraphID(ctx context.Context, subgraphID int64) ([]db.TgChatSubgraphAccess, error)
 	AllTgChatSubgraphAccesses(ctx context.Context) ([]db.TgChatSubgraphAccess, error)
 	TgChatSubgraphAccess(ctx context.Context, id int64) (db.TgChatSubgraphAccess, error)
+
+	// Patreon credentials queries
+	AllPatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
+	AllActivePatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
+	AllDeletedPatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
+	RestorePatreonCredentials(ctx context.Context, id int64) (db.PatreonCredential, error)
 }

@@ -56,6 +56,8 @@ type ResolverRoot interface {
 	AdminNotFoundPathsConnection() AdminNotFoundPathsConnectionResolver
 	AdminOffer() AdminOfferResolver
 	AdminOffersConnection() AdminOffersConnectionResolver
+	AdminPatreonCredentials() AdminPatreonCredentialsResolver
+	AdminPatreonCredentialsConnection() AdminPatreonCredentialsConnectionResolver
 	AdminPurchase() AdminPurchaseResolver
 	AdminPurchasesConnection() AdminPurchasesConnectionResolver
 	AdminQuery() AdminQueryResolver
@@ -153,15 +155,18 @@ type ComplexityRoot struct {
 		CreateAPIKey                 func(childComplexity int, input model.CreateAPIKeyInput) int
 		CreateNotFoundIgnoredPattern func(childComplexity int, input model.CreateNotFoundIgnoredPatternInput) int
 		CreateOffer                  func(childComplexity int, input model.CreateOfferInput) int
+		CreatePatreonCredentials     func(childComplexity int, input model.CreatePatreonCredentialsInput) int
 		CreateRedirect               func(childComplexity int, input model.CreateRedirectInput) int
 		CreateRelease                func(childComplexity int, input model.CreateReleaseInput) int
 		CreateTgBot                  func(childComplexity int, input model.CreateTgBotInput) int
 		DeleteNotFoundIgnoredPattern func(childComplexity int, input model.DeleteNotFoundIgnoredPatternInput) int
+		DeletePatreonCredentials     func(childComplexity int, input model.DeletePatreonCredentialsInput) int
 		DeleteRedirect               func(childComplexity int, input model.DeleteRedirectInput) int
 		DisableAPIKey                func(childComplexity int, input model.DisableAPIKeyInput) int
 		MakeReleaseLive              func(childComplexity int, input model.MakeReleaseLiveInput) int
 		RemoveTgChatSubgraphAccess   func(childComplexity int, input model.RemoveTgChatSubgraphAccessInput) int
 		ResetNotFoundPath            func(childComplexity int, input model.ResetNotFoundPathInput) int
+		RestorePatreonCredentials    func(childComplexity int, input model.RestorePatreonCredentialsInput) int
 		UnbanUser                    func(childComplexity int, input model.UnbanUserInput) int
 		UpdateNotFoundIgnoredPattern func(childComplexity int, input model.UpdateNotFoundIgnoredPatternInput) int
 		UpdateNoteGraphPositions     func(childComplexity int, input model.UpdateNoteGraphPositionsInput) int
@@ -210,6 +215,20 @@ type ComplexityRoot struct {
 		Nodes func(childComplexity int) int
 	}
 
+	AdminPatreonCredentials struct {
+		CreatedAt          func(childComplexity int) int
+		CreatedBy          func(childComplexity int) int
+		CreatorAccessToken func(childComplexity int) int
+		DeletedAt          func(childComplexity int) int
+		DeletedBy          func(childComplexity int) int
+		ID                 func(childComplexity int) int
+	}
+
+	AdminPatreonCredentialsConnection struct {
+		Filter func(childComplexity int) int
+		Nodes  func(childComplexity int) int
+	}
+
 	AdminPurchase struct {
 		CreatedAt       func(childComplexity int) int
 		Email           func(childComplexity int) int
@@ -235,6 +254,7 @@ type ComplexityRoot struct {
 		AllNotFoundIgnoredPatterns func(childComplexity int) int
 		AllNotFoundPaths           func(childComplexity int) int
 		AllOffers                  func(childComplexity int) int
+		AllPatreonCredentials      func(childComplexity int, filter *model.AdminPatreonCredentialsFilterInput) int
 		AllPurchases               func(childComplexity int) int
 		AllRedirects               func(childComplexity int) int
 		AllReleases                func(childComplexity int) int
@@ -406,6 +426,10 @@ type ComplexityRoot struct {
 		Offer func(childComplexity int) int
 	}
 
+	CreatePatreonCredentialsPayload struct {
+		PatreonCredentials func(childComplexity int) int
+	}
+
 	CreatePaymentLinkPayload struct {
 		RedirectURL func(childComplexity int) int
 		Token       func(childComplexity int) int
@@ -424,6 +448,10 @@ type ComplexityRoot struct {
 	}
 
 	DeleteNotFoundIgnoredPatternPayload struct {
+		DeletedID func(childComplexity int) int
+	}
+
+	DeletePatreonCredentialsPayload struct {
 		DeletedID func(childComplexity int) int
 	}
 
@@ -548,6 +576,10 @@ type ComplexityRoot struct {
 
 	ResetNotFoundPathPayload struct {
 		NotFoundPath func(childComplexity int) int
+	}
+
+	RestorePatreonCredentialsPayload struct {
+		PatreonCredentials func(childComplexity int) int
 	}
 
 	SignInPayload struct {
@@ -688,6 +720,9 @@ type AdminMutationResolver interface {
 	UpdateTgBot(ctx context.Context, obj *model1.AdminMutation, input model.UpdateTgBotInput) (model.UpdateTgBotOrErrorPayload, error)
 	AddTgChatSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input model.AddTgChatSubgraphAccessInput) (model.AddTgChatSubgraphAccessOrErrorPayload, error)
 	RemoveTgChatSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input model.RemoveTgChatSubgraphAccessInput) (model.RemoveTgChatSubgraphAccessOrErrorPayload, error)
+	CreatePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreatePatreonCredentialsInput) (model.CreatePatreonCredentialsOrErrorPayload, error)
+	DeletePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeletePatreonCredentialsInput) (model.DeletePatreonCredentialsOrErrorPayload, error)
+	RestorePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.RestorePatreonCredentialsInput) (model.RestorePatreonCredentialsOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -708,6 +743,15 @@ type AdminOfferResolver interface {
 }
 type AdminOffersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminOffersConnection) ([]db.Offer, error)
+}
+type AdminPatreonCredentialsResolver interface {
+	CreatedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error)
+	DeletedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error)
+	DeletedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error)
+	CreatorAccessToken(ctx context.Context, obj *db.PatreonCredential) (string, error)
+}
+type AdminPatreonCredentialsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminPatreonCredentialsConnection) ([]db.PatreonCredential, error)
 }
 type AdminPurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
@@ -737,6 +781,7 @@ type AdminQueryResolver interface {
 	TgBotChats(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgBotChatsFilterInput) (*model.AdminTgBotChatsConnection, error)
 	TgChatSubgraphAccesses(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgChatSubgraphAccessesFilterInput) (*model.AdminTgChatSubgraphAccessesConnection, error)
 	TgChatMembers(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgChatMembersFilterInput) (*model.AdminTgChatMembersConnection, error)
+	AllPatreonCredentials(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminPatreonCredentialsFilterInput) (*model.AdminPatreonCredentialsConnection, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
@@ -1115,6 +1160,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.CreateOffer(childComplexity, args["input"].(model.CreateOfferInput)), true
 
+	case "AdminMutation.createPatreonCredentials":
+		if e.complexity.AdminMutation.CreatePatreonCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_createPatreonCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.CreatePatreonCredentials(childComplexity, args["input"].(model.CreatePatreonCredentialsInput)), true
+
 	case "AdminMutation.createRedirect":
 		if e.complexity.AdminMutation.CreateRedirect == nil {
 			break
@@ -1162,6 +1219,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.DeleteNotFoundIgnoredPattern(childComplexity, args["input"].(model.DeleteNotFoundIgnoredPatternInput)), true
+
+	case "AdminMutation.deletePatreonCredentials":
+		if e.complexity.AdminMutation.DeletePatreonCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_deletePatreonCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.DeletePatreonCredentials(childComplexity, args["input"].(model.DeletePatreonCredentialsInput)), true
 
 	case "AdminMutation.deleteRedirect":
 		if e.complexity.AdminMutation.DeleteRedirect == nil {
@@ -1222,6 +1291,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.ResetNotFoundPath(childComplexity, args["input"].(model.ResetNotFoundPathInput)), true
+
+	case "AdminMutation.restorePatreonCredentials":
+		if e.complexity.AdminMutation.RestorePatreonCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_restorePatreonCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.RestorePatreonCredentials(childComplexity, args["input"].(model.RestorePatreonCredentialsInput)), true
 
 	case "AdminMutation.unbanUser":
 		if e.complexity.AdminMutation.UnbanUser == nil {
@@ -1459,6 +1540,62 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminOffersConnection.Nodes(childComplexity), true
 
+	case "AdminPatreonCredentials.createdAt":
+		if e.complexity.AdminPatreonCredentials.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCredentials.CreatedAt(childComplexity), true
+
+	case "AdminPatreonCredentials.createdBy":
+		if e.complexity.AdminPatreonCredentials.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCredentials.CreatedBy(childComplexity), true
+
+	case "AdminPatreonCredentials.creatorAccessToken":
+		if e.complexity.AdminPatreonCredentials.CreatorAccessToken == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCredentials.CreatorAccessToken(childComplexity), true
+
+	case "AdminPatreonCredentials.deletedAt":
+		if e.complexity.AdminPatreonCredentials.DeletedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCredentials.DeletedAt(childComplexity), true
+
+	case "AdminPatreonCredentials.deletedBy":
+		if e.complexity.AdminPatreonCredentials.DeletedBy == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCredentials.DeletedBy(childComplexity), true
+
+	case "AdminPatreonCredentials.id":
+		if e.complexity.AdminPatreonCredentials.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCredentials.ID(childComplexity), true
+
+	case "AdminPatreonCredentialsConnection.filter":
+		if e.complexity.AdminPatreonCredentialsConnection.Filter == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCredentialsConnection.Filter(childComplexity), true
+
+	case "AdminPatreonCredentialsConnection.nodes":
+		if e.complexity.AdminPatreonCredentialsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCredentialsConnection.Nodes(childComplexity), true
+
 	case "AdminPurchase.createdAt":
 		if e.complexity.AdminPurchase.CreatedAt == nil {
 			break
@@ -1594,6 +1731,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AllOffers(childComplexity), true
+
+	case "AdminQuery.allPatreonCredentials":
+		if e.complexity.AdminQuery.AllPatreonCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_allPatreonCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.AllPatreonCredentials(childComplexity, args["filter"].(*model.AdminPatreonCredentialsFilterInput)), true
 
 	case "AdminQuery.allPurchases":
 		if e.complexity.AdminQuery.AllPurchases == nil {
@@ -2303,6 +2452,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.CreateOfferPayload.Offer(childComplexity), true
 
+	case "CreatePatreonCredentialsPayload.patreonCredentials":
+		if e.complexity.CreatePatreonCredentialsPayload.PatreonCredentials == nil {
+			break
+		}
+
+		return e.complexity.CreatePatreonCredentialsPayload.PatreonCredentials(childComplexity), true
+
 	case "CreatePaymentLinkPayload.redirectUrl":
 		if e.complexity.CreatePaymentLinkPayload.RedirectURL == nil {
 			break
@@ -2344,6 +2500,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DeleteNotFoundIgnoredPatternPayload.DeletedID(childComplexity), true
+
+	case "DeletePatreonCredentialsPayload.deletedId":
+		if e.complexity.DeletePatreonCredentialsPayload.DeletedID == nil {
+			break
+		}
+
+		return e.complexity.DeletePatreonCredentialsPayload.DeletedID(childComplexity), true
 
 	case "DeleteRedirectPayload.id":
 		if e.complexity.DeleteRedirectPayload.ID == nil {
@@ -2805,6 +2968,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ResetNotFoundPathPayload.NotFoundPath(childComplexity), true
 
+	case "RestorePatreonCredentialsPayload.patreonCredentials":
+		if e.complexity.RestorePatreonCredentialsPayload.PatreonCredentials == nil {
+			break
+		}
+
+		return e.complexity.RestorePatreonCredentialsPayload.PatreonCredentials(childComplexity), true
+
 	case "SignInPayload.token":
 		if e.complexity.SignInPayload.Token == nil {
 			break
@@ -3079,6 +3249,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAddTgChatSubgraphAccessInput,
 		ec.unmarshalInputAdminLatestNoteViewsFilter,
+		ec.unmarshalInputAdminPatreonCredentialsFilterInput,
 		ec.unmarshalInputAdminTgBotChatsFilterInput,
 		ec.unmarshalInputAdminTgChatMembersFilterInput,
 		ec.unmarshalInputAdminTgChatSubgraphAccessesFilterInput,
@@ -3088,11 +3259,13 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateEmailWaitListRequestInput,
 		ec.unmarshalInputCreateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputCreateOfferInput,
+		ec.unmarshalInputCreatePatreonCredentialsInput,
 		ec.unmarshalInputCreatePaymentLinkInput,
 		ec.unmarshalInputCreateRedirectInput,
 		ec.unmarshalInputCreateReleaseInput,
 		ec.unmarshalInputCreateTgBotInput,
 		ec.unmarshalInputDeleteNotFoundIgnoredPatternInput,
+		ec.unmarshalInputDeletePatreonCredentialsInput,
 		ec.unmarshalInputDeleteRedirectInput,
 		ec.unmarshalInputDisableApiKeyInput,
 		ec.unmarshalInputHideNotesInput,
@@ -3103,6 +3276,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRemoveTgChatSubgraphAccessInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
+		ec.unmarshalInputRestorePatreonCredentialsInput,
 		ec.unmarshalInputSignInByEmailInput,
 		ec.unmarshalInputUnbanUserInput,
 		ec.unmarshalInputUpdateNotFoundIgnoredPatternInput,
@@ -3346,6 +3520,29 @@ func (ec *executionContext) field_AdminMutation_createOffer_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_createPatreonCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_createPatreonCredentials_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_createPatreonCredentials_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreatePatreonCredentialsInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreatePatreonCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePatreonCredentialsInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreatePatreonCredentialsInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_createRedirect_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3435,6 +3632,29 @@ func (ec *executionContext) field_AdminMutation_deleteNotFoundIgnoredPattern_arg
 	}
 
 	var zeroVal model.DeleteNotFoundIgnoredPatternInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_deletePatreonCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_deletePatreonCredentials_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_deletePatreonCredentials_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.DeletePatreonCredentialsInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNDeletePatreonCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeletePatreonCredentialsInput(ctx, tmp)
+	}
+
+	var zeroVal model.DeletePatreonCredentialsInput
 	return zeroVal, nil
 }
 
@@ -3550,6 +3770,29 @@ func (ec *executionContext) field_AdminMutation_resetNotFoundPath_argsInput(
 	}
 
 	var zeroVal model.ResetNotFoundPathInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_restorePatreonCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_restorePatreonCredentials_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_restorePatreonCredentials_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.RestorePatreonCredentialsInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRestorePatreonCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐRestorePatreonCredentialsInput(ctx, tmp)
+	}
+
+	var zeroVal model.RestorePatreonCredentialsInput
 	return zeroVal, nil
 }
 
@@ -3757,6 +4000,29 @@ func (ec *executionContext) field_AdminQuery_allLatestNoteViews_argsFilter(
 	}
 
 	var zeroVal *model.AdminLatestNoteViewsFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_allPatreonCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_allPatreonCredentials_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_allPatreonCredentials_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*model.AdminPatreonCredentialsFilterInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOAdminPatreonCredentialsFilterInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonCredentialsFilterInput(ctx, tmp)
+	}
+
+	var zeroVal *model.AdminPatreonCredentialsFilterInput
 	return zeroVal, nil
 }
 
@@ -6504,6 +6770,171 @@ func (ec *executionContext) fieldContext_AdminMutation_removeTgChatSubgraphAcces
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_createPatreonCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_createPatreonCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().CreatePatreonCredentials(rctx, obj, fc.Args["input"].(model.CreatePatreonCredentialsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CreatePatreonCredentialsOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNCreatePatreonCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePatreonCredentialsOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createPatreonCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreatePatreonCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createPatreonCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deletePatreonCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_deletePatreonCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().DeletePatreonCredentials(rctx, obj, fc.Args["input"].(model.DeletePatreonCredentialsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.DeletePatreonCredentialsOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNDeletePatreonCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeletePatreonCredentialsOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deletePatreonCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeletePatreonCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_deletePatreonCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_restorePatreonCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_restorePatreonCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().RestorePatreonCredentials(rctx, obj, fc.Args["input"].(model.RestorePatreonCredentialsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.RestorePatreonCredentialsOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNRestorePatreonCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRestorePatreonCredentialsOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_restorePatreonCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RestorePatreonCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_restorePatreonCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminNotFoundIgnoredPattern_id(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundIgnoredPattern) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminNotFoundIgnoredPattern_id(ctx, field)
 	if err != nil {
@@ -7430,6 +7861,383 @@ func (ec *executionContext) fieldContext_AdminOffersConnection_nodes(_ context.C
 				return ec.fieldContext_AdminOffer_subgraphs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminOffer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCredentials_id(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentials_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentials_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCredentials_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentials_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentials_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCredentials_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentials_createdBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonCredentials().CreatedBy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentials_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCredentials_deletedAt(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentials_deletedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonCredentials().DeletedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentials_deletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCredentials_deletedBy(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonCredentials().DeletedBy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalOAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentials_deletedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCredentials_creatorAccessToken(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonCredentials().CreatorAccessToken(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentials_creatorAccessToken(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCredentialsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminPatreonCredentialsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentialsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonCredentialsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.PatreonCredential)
+	fc.Result = res
+	return ec.marshalNAdminPatreonCredentials2ᚕtrip2gᚋinternalᚋdbᚐPatreonCredentialᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentialsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentialsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminPatreonCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminPatreonCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminPatreonCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminPatreonCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
+			case "creatorAccessToken":
+				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCredentialsConnection_filter(ctx context.Context, field graphql.CollectedField, obj *model.AdminPatreonCredentialsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentialsConnection_filter(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Filter, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.PatreonCredentialsStateEnum)
+	fc.Result = res
+	return ec.marshalOPatreonCredentialsStateEnum2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPatreonCredentialsStateEnum(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentialsConnection_filter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentialsConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type PatreonCredentialsStateEnum does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8819,6 +9627,67 @@ func (ec *executionContext) fieldContext_AdminQuery_tgChatMembers(ctx context.Co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_tgChatMembers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allPatreonCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allPatreonCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllPatreonCredentials(rctx, obj, fc.Args["filter"].(*model.AdminPatreonCredentialsFilterInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminPatreonCredentialsConnection)
+	fc.Result = res
+	return ec.marshalNAdminPatreonCredentialsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonCredentialsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allPatreonCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminPatreonCredentialsConnection_nodes(ctx, field)
+			case "filter":
+				return ec.fieldContext_AdminPatreonCredentialsConnection_filter(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentialsConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_allPatreonCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -13023,6 +13892,64 @@ func (ec *executionContext) fieldContext_CreateOfferPayload_offer(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _CreatePatreonCredentialsPayload_patreonCredentials(ctx context.Context, field graphql.CollectedField, obj *model.CreatePatreonCredentialsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreatePatreonCredentialsPayload_patreonCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PatreonCredentials, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.PatreonCredential)
+	fc.Result = res
+	return ec.marshalNAdminPatreonCredentials2ᚖtrip2gᚋinternalᚋdbᚐPatreonCredential(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreatePatreonCredentialsPayload_patreonCredentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreatePatreonCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminPatreonCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminPatreonCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminPatreonCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminPatreonCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
+			case "creatorAccessToken":
+				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreatePaymentLinkPayload_redirectUrl(ctx context.Context, field graphql.CollectedField, obj *model.CreatePaymentLinkPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_CreatePaymentLinkPayload_redirectUrl(ctx, field)
 	if err != nil {
@@ -13320,6 +14247,50 @@ func (ec *executionContext) _DeleteNotFoundIgnoredPatternPayload_deletedId(ctx c
 func (ec *executionContext) fieldContext_DeleteNotFoundIgnoredPatternPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DeleteNotFoundIgnoredPatternPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeletePatreonCredentialsPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeletePatreonCredentialsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeletePatreonCredentialsPayload_deletedId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeletedID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeletePatreonCredentialsPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeletePatreonCredentialsPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -14230,6 +15201,12 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_addTgChatSubgraphAccess(ctx, field)
 			case "removeTgChatSubgraphAccess":
 				return ec.fieldContext_AdminMutation_removeTgChatSubgraphAccess(ctx, field)
+			case "createPatreonCredentials":
+				return ec.fieldContext_AdminMutation_createPatreonCredentials(ctx, field)
+			case "deletePatreonCredentials":
+				return ec.fieldContext_AdminMutation_deletePatreonCredentials(ctx, field)
+			case "restorePatreonCredentials":
+				return ec.fieldContext_AdminMutation_restorePatreonCredentials(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -16066,6 +17043,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_tgChatSubgraphAccesses(ctx, field)
 			case "tgChatMembers":
 				return ec.fieldContext_AdminQuery_tgChatMembers(ctx, field)
+			case "allPatreonCredentials":
+				return ec.fieldContext_AdminQuery_allPatreonCredentials(ctx, field)
 			case "apiKeyLogs":
 				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "subgraph":
@@ -16417,6 +17396,64 @@ func (ec *executionContext) fieldContext_ResetNotFoundPathPayload_notFoundPath(_
 				return ec.fieldContext_AdminNotFoundPath_lastHitAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminNotFoundPath", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RestorePatreonCredentialsPayload_patreonCredentials(ctx context.Context, field graphql.CollectedField, obj *model.RestorePatreonCredentialsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RestorePatreonCredentialsPayload_patreonCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PatreonCredentials, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.PatreonCredential)
+	fc.Result = res
+	return ec.marshalNAdminPatreonCredentials2ᚖtrip2gᚋinternalᚋdbᚐPatreonCredential(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RestorePatreonCredentialsPayload_patreonCredentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RestorePatreonCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminPatreonCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminPatreonCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminPatreonCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminPatreonCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
+			case "creatorAccessToken":
+				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
 		},
 	}
 	return fc, nil
@@ -20259,6 +21296,33 @@ func (ec *executionContext) unmarshalInputAdminLatestNoteViewsFilter(ctx context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAdminPatreonCredentialsFilterInput(ctx context.Context, obj any) (model.AdminPatreonCredentialsFilterInput, error) {
+	var it model.AdminPatreonCredentialsFilterInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"state"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "state":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
+			data, err := ec.unmarshalOPatreonCredentialsStateEnum2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPatreonCredentialsStateEnum(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.State = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAdminTgBotChatsFilterInput(ctx context.Context, obj any) (model.AdminTgBotChatsFilterInput, error) {
 	var it model.AdminTgBotChatsFilterInput
 	asMap := map[string]any{}
@@ -20558,6 +21622,33 @@ func (ec *executionContext) unmarshalInputCreateOfferInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreatePatreonCredentialsInput(ctx context.Context, obj any) (model.CreatePatreonCredentialsInput, error) {
+	var it model.CreatePatreonCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"creatorAccessToken"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "creatorAccessToken":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("creatorAccessToken"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CreatorAccessToken = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreatePaymentLinkInput(ctx context.Context, obj any) (model.CreatePaymentLinkInput, error) {
 	var it model.CreatePaymentLinkInput
 	asMap := map[string]any{}
@@ -20724,6 +21815,33 @@ func (ec *executionContext) unmarshalInputCreateTgBotInput(ctx context.Context, 
 
 func (ec *executionContext) unmarshalInputDeleteNotFoundIgnoredPatternInput(ctx context.Context, obj any) (model.DeleteNotFoundIgnoredPatternInput, error) {
 	var it model.DeleteNotFoundIgnoredPatternInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeletePatreonCredentialsInput(ctx context.Context, obj any) (model.DeletePatreonCredentialsInput, error) {
+	var it model.DeletePatreonCredentialsInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -21008,6 +22126,33 @@ func (ec *executionContext) unmarshalInputRequestEmailSignInCodeInput(ctx contex
 
 func (ec *executionContext) unmarshalInputResetNotFoundPathInput(ctx context.Context, obj any) (model.ResetNotFoundPathInput, error) {
 	var it model.ResetNotFoundPathInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRestorePatreonCredentialsInput(ctx context.Context, obj any) (model.RestorePatreonCredentialsInput, error) {
+	var it model.RestorePatreonCredentialsInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -21653,6 +22798,29 @@ func (ec *executionContext) _CreateOfferOrErrorPayload(ctx context.Context, sel 
 	}
 }
 
+func (ec *executionContext) _CreatePatreonCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreatePatreonCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreatePatreonCredentialsPayload:
+		return ec._CreatePatreonCredentialsPayload(ctx, sel, &obj)
+	case *model.CreatePatreonCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreatePatreonCredentialsPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _CreatePaymentLinkOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreatePaymentLinkOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -21763,6 +22931,29 @@ func (ec *executionContext) _DeleteNotFoundIgnoredPatternOrErrorPayload(ctx cont
 			return graphql.Null
 		}
 		return ec._DeleteNotFoundIgnoredPatternPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _DeletePatreonCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeletePatreonCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DeletePatreonCredentialsPayload:
+		return ec._DeletePatreonCredentialsPayload(ctx, sel, &obj)
+	case *model.DeletePatreonCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeletePatreonCredentialsPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -21940,6 +23131,29 @@ func (ec *executionContext) _ResetNotFoundPathOrErrorPayload(ctx context.Context
 			return graphql.Null
 		}
 		return ec._ResetNotFoundPathPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _RestorePatreonCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RestorePatreonCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RestorePatreonCredentialsPayload:
+		return ec._RestorePatreonCredentialsPayload(ctx, sel, &obj)
+	case *model.RestorePatreonCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RestorePatreonCredentialsPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -23737,6 +24951,114 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createPatreonCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createPatreonCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deletePatreonCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deletePatreonCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "restorePatreonCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_restorePatreonCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -24342,6 +25664,260 @@ func (ec *executionContext) _AdminOffersConnection(ctx context.Context, sel ast.
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminPatreonCredentialsImplementors = []string{"AdminPatreonCredentials"}
+
+func (ec *executionContext) _AdminPatreonCredentials(ctx context.Context, sel ast.SelectionSet, obj *db.PatreonCredential) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminPatreonCredentialsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminPatreonCredentials")
+		case "id":
+			out.Values[i] = ec._AdminPatreonCredentials_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminPatreonCredentials_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonCredentials_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deletedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonCredentials_deletedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deletedBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonCredentials_deletedBy(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "creatorAccessToken":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonCredentials_creatorAccessToken(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminPatreonCredentialsConnectionImplementors = []string{"AdminPatreonCredentialsConnection"}
+
+func (ec *executionContext) _AdminPatreonCredentialsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminPatreonCredentialsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminPatreonCredentialsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminPatreonCredentialsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonCredentialsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "filter":
+			out.Values[i] = ec._AdminPatreonCredentialsConnection_filter(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -25234,6 +26810,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_tgChatMembers(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allPatreonCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allPatreonCredentials(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -27832,6 +29444,45 @@ func (ec *executionContext) _CreateOfferPayload(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var createPatreonCredentialsPayloadImplementors = []string{"CreatePatreonCredentialsPayload", "CreatePatreonCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _CreatePatreonCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreatePatreonCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createPatreonCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreatePatreonCredentialsPayload")
+		case "patreonCredentials":
+			out.Values[i] = ec._CreatePatreonCredentialsPayload_patreonCredentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createPaymentLinkPayloadImplementors = []string{"CreatePaymentLinkPayload", "CreatePaymentLinkOrErrorPayload"}
 
 func (ec *executionContext) _CreatePaymentLinkPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreatePaymentLinkPayload) graphql.Marshaler {
@@ -28029,6 +29680,45 @@ func (ec *executionContext) _DeleteNotFoundIgnoredPatternPayload(ctx context.Con
 	return out
 }
 
+var deletePatreonCredentialsPayloadImplementors = []string{"DeletePatreonCredentialsPayload", "DeletePatreonCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _DeletePatreonCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeletePatreonCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deletePatreonCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeletePatreonCredentialsPayload")
+		case "deletedId":
+			out.Values[i] = ec._DeletePatreonCredentialsPayload_deletedId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var deleteRedirectPayloadImplementors = []string{"DeleteRedirectPayload", "DeleteRedirectOrErrorPayload"}
 
 func (ec *executionContext) _DeleteRedirectPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteRedirectPayload) graphql.Marshaler {
@@ -28107,7 +29797,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -29521,6 +31211,45 @@ func (ec *executionContext) _ResetNotFoundPathPayload(ctx context.Context, sel a
 			out.Values[i] = graphql.MarshalString("ResetNotFoundPathPayload")
 		case "notFoundPath":
 			out.Values[i] = ec._ResetNotFoundPathPayload_notFoundPath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var restorePatreonCredentialsPayloadImplementors = []string{"RestorePatreonCredentialsPayload", "RestorePatreonCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _RestorePatreonCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RestorePatreonCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, restorePatreonCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RestorePatreonCredentialsPayload")
+		case "patreonCredentials":
+			out.Values[i] = ec._RestorePatreonCredentialsPayload_patreonCredentials(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -31581,6 +33310,78 @@ func (ec *executionContext) marshalNAdminOffersConnection2ᚖtrip2gᚋinternal�
 	return ec._AdminOffersConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminPatreonCredentials2trip2gᚋinternalᚋdbᚐPatreonCredential(ctx context.Context, sel ast.SelectionSet, v db.PatreonCredential) graphql.Marshaler {
+	return ec._AdminPatreonCredentials(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminPatreonCredentials2ᚕtrip2gᚋinternalᚋdbᚐPatreonCredentialᚄ(ctx context.Context, sel ast.SelectionSet, v []db.PatreonCredential) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminPatreonCredentials2trip2gᚋinternalᚋdbᚐPatreonCredential(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminPatreonCredentials2ᚖtrip2gᚋinternalᚋdbᚐPatreonCredential(ctx context.Context, sel ast.SelectionSet, v *db.PatreonCredential) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminPatreonCredentials(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminPatreonCredentialsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonCredentialsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminPatreonCredentialsConnection) graphql.Marshaler {
+	return ec._AdminPatreonCredentialsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminPatreonCredentialsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonCredentialsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminPatreonCredentialsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminPatreonCredentialsConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminPurchase2trip2gᚋinternalᚋdbᚐPurchase(ctx context.Context, sel ast.SelectionSet, v db.Purchase) graphql.Marshaler {
 	return ec._AdminPurchase(ctx, sel, &v)
 }
@@ -32410,6 +34211,21 @@ func (ec *executionContext) marshalNCreateOfferOrErrorPayload2trip2gᚋinternal�
 	return ec._CreateOfferOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCreatePatreonCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePatreonCredentialsInput(ctx context.Context, v any) (model.CreatePatreonCredentialsInput, error) {
+	res, err := ec.unmarshalInputCreatePatreonCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreatePatreonCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePatreonCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreatePatreonCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreatePatreonCredentialsOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreatePaymentLinkInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreatePaymentLinkInput(ctx context.Context, v any) (model.CreatePaymentLinkInput, error) {
 	res, err := ec.unmarshalInputCreatePaymentLinkInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -32483,6 +34299,21 @@ func (ec *executionContext) marshalNDeleteNotFoundIgnoredPatternOrErrorPayload2t
 		return graphql.Null
 	}
 	return ec._DeleteNotFoundIgnoredPatternOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeletePatreonCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeletePatreonCredentialsInput(ctx context.Context, v any) (model.DeletePatreonCredentialsInput, error) {
+	res, err := ec.unmarshalInputDeletePatreonCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeletePatreonCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeletePatreonCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeletePatreonCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeletePatreonCredentialsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDeleteRedirectInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteRedirectInput(ctx context.Context, v any) (model.DeleteRedirectInput, error) {
@@ -33180,6 +35011,21 @@ func (ec *executionContext) marshalNResetNotFoundPathOrErrorPayload2trip2gᚋint
 		return graphql.Null
 	}
 	return ec._ResetNotFoundPathOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRestorePatreonCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐRestorePatreonCredentialsInput(ctx context.Context, v any) (model.RestorePatreonCredentialsInput, error) {
+	res, err := ec.unmarshalInputRestorePatreonCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRestorePatreonCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRestorePatreonCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RestorePatreonCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RestorePatreonCredentialsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐRole(ctx context.Context, v any) (model.Role, error) {
@@ -33908,6 +35754,14 @@ func (ec *executionContext) marshalOAdminOffer2ᚖtrip2gᚋinternalᚋdbᚐOffer
 	return ec._AdminOffer(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOAdminPatreonCredentialsFilterInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonCredentialsFilterInput(ctx context.Context, v any) (*model.AdminPatreonCredentialsFilterInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAdminPatreonCredentialsFilterInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalOAdminPurchase2ᚖtrip2gᚋinternalᚋdbᚐPurchase(ctx context.Context, sel ast.SelectionSet, v *db.Purchase) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -34075,6 +35929,22 @@ func (ec *executionContext) marshalONoteView2ᚖtrip2gᚋinternalᚋmodelᚐNote
 		return graphql.Null
 	}
 	return ec._NoteView(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOPatreonCredentialsStateEnum2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPatreonCredentialsStateEnum(ctx context.Context, v any) (*model.PatreonCredentialsStateEnum, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.PatreonCredentialsStateEnum)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOPatreonCredentialsStateEnum2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPatreonCredentialsStateEnum(ctx context.Context, sel ast.SelectionSet, v *model.PatreonCredentialsStateEnum) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalOPublicNote2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPublicNote(ctx context.Context, sel ast.SelectionSet, v *model.PublicNote) graphql.Marshaler {

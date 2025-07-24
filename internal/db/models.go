@@ -158,6 +158,21 @@ type OfferSubgraph struct {
 	SubgraphID int64 `json:"subgraph_id"`
 }
 
+type PatreonCampaign struct {
+	ID            int64  `json:"id"`
+	CredentialsID int64  `json:"credentials_id"`
+	CampaignID    string `json:"campaign_id"`
+}
+
+type PatreonCredential struct {
+	ID                 int64         `json:"id"`
+	CreatedAt          time.Time     `json:"created_at"`
+	CreatedBy          int64         `json:"created_by"`
+	DeletedAt          sql.NullTime  `json:"deleted_at"`
+	DeletedBy          sql.NullInt64 `json:"deleted_by"`
+	CreatorAccessToken string        `json:"creator_access_token"`
+}
+
 type Purchase struct {
 	ID              string        `json:"id"`
 	CreatedAt       time.Time     `json:"created_at"`

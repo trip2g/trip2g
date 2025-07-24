@@ -61,6 +61,78 @@ func (q *Queries) AdminByUserID(ctx context.Context, userID int64) (Admin, error
 	return i, err
 }
 
+const allActivePatreonCredentials = `-- name: AllActivePatreonCredentials :many
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token from patreon_credentials
+where deleted_at is null
+order by created_at desc
+`
+
+func (q *Queries) AllActivePatreonCredentials(ctx context.Context) ([]PatreonCredential, error) {
+	rows, err := q.db.QueryContext(ctx, allActivePatreonCredentials)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PatreonCredential
+	for rows.Next() {
+		var i PatreonCredential
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.DeletedAt,
+			&i.DeletedBy,
+			&i.CreatorAccessToken,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allDeletedPatreonCredentials = `-- name: AllDeletedPatreonCredentials :many
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token from patreon_credentials
+where deleted_at is not null
+order by created_at desc
+`
+
+func (q *Queries) AllDeletedPatreonCredentials(ctx context.Context) ([]PatreonCredential, error) {
+	rows, err := q.db.QueryContext(ctx, allDeletedPatreonCredentials)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PatreonCredential
+	for rows.Next() {
+		var i PatreonCredential
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.DeletedAt,
+			&i.DeletedBy,
+			&i.CreatorAccessToken,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allLatestNoteAssets = `-- name: AllLatestNoteAssets :many
 with latest_versions as (
   select 
@@ -371,6 +443,41 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 			&i.Version,
 			&i.Content,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allPatreonCredentials = `-- name: AllPatreonCredentials :many
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token from patreon_credentials
+order by created_at desc
+`
+
+func (q *Queries) AllPatreonCredentials(ctx context.Context) ([]PatreonCredential, error) {
+	rows, err := q.db.QueryContext(ctx, allPatreonCredentials)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PatreonCredential
+	for rows.Next() {
+		var i PatreonCredential
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.DeletedAt,
+			&i.DeletedBy,
+			&i.CreatorAccessToken,
 		); err != nil {
 			return nil, err
 		}
@@ -1036,6 +1143,31 @@ func (q *Queries) InsertOfferSubgraph(ctx context.Context, arg InsertOfferSubgra
 	return err
 }
 
+const insertPatreonCredentials = `-- name: InsertPatreonCredentials :one
+insert into patreon_credentials (created_by, creator_access_token)
+values (?, ?)
+returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token
+`
+
+type InsertPatreonCredentialsParams struct {
+	CreatedBy          int64  `json:"created_by"`
+	CreatorAccessToken string `json:"creator_access_token"`
+}
+
+func (q *Queries) InsertPatreonCredentials(ctx context.Context, arg InsertPatreonCredentialsParams) (PatreonCredential, error) {
+	row := q.db.QueryRowContext(ctx, insertPatreonCredentials, arg.CreatedBy, arg.CreatorAccessToken)
+	var i PatreonCredential
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DeletedAt,
+		&i.DeletedBy,
+		&i.CreatorAccessToken,
+	)
+	return i, err
+}
+
 const insertPurchase = `-- name: InsertPurchase :exec
 insert into purchases (id, email, offer_id, payment_provider, payment_data, price_usd, status)
 values (?, ?, ?, ?, ?, ?, ?)
@@ -1503,6 +1635,42 @@ func (q *Queries) ListActiveOffersBySubgraphNames(ctx context.Context, subgraphs
 			&i.PriceUsd,
 			&i.StartsAt,
 			&i.EndsAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActivePatreonCredentials = `-- name: ListActivePatreonCredentials :many
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token
+  from patreon_credentials
+ where deleted_by is null
+`
+
+func (q *Queries) ListActivePatreonCredentials(ctx context.Context) ([]PatreonCredential, error) {
+	rows, err := q.db.QueryContext(ctx, listActivePatreonCredentials)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PatreonCredential
+	for rows.Next() {
+		var i PatreonCredential
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.DeletedAt,
+			&i.DeletedBy,
+			&i.CreatorAccessToken,
 		); err != nil {
 			return nil, err
 		}
@@ -2455,6 +2623,25 @@ func (q *Queries) OfferByID(ctx context.Context, id int64) (Offer, error) {
 	return i, err
 }
 
+const patreonCredentials = `-- name: PatreonCredentials :one
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token from patreon_credentials
+where id = ? and deleted_at is null
+`
+
+func (q *Queries) PatreonCredentials(ctx context.Context, id int64) (PatreonCredential, error) {
+	row := q.db.QueryRowContext(ctx, patreonCredentials, id)
+	var i PatreonCredential
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DeletedAt,
+		&i.DeletedBy,
+		&i.CreatorAccessToken,
+	)
+	return i, err
+}
+
 const purchaseByID = `-- name: PurchaseByID :one
 select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email, price_usd from purchases where id = ?
 `
@@ -2549,6 +2736,27 @@ func (q *Queries) ResetNotFoundPathTotalHits(ctx context.Context, id int64) (Not
 	return i, err
 }
 
+const restorePatreonCredentials = `-- name: RestorePatreonCredentials :one
+update patreon_credentials
+set deleted_at = null, deleted_by = null
+where id = ? and deleted_at is not null
+returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token
+`
+
+func (q *Queries) RestorePatreonCredentials(ctx context.Context, id int64) (PatreonCredential, error) {
+	row := q.db.QueryRowContext(ctx, restorePatreonCredentials, id)
+	var i PatreonCredential
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DeletedAt,
+		&i.DeletedBy,
+		&i.CreatorAccessToken,
+	)
+	return i, err
+}
+
 const revokeUserSubgraphAccess = `-- name: RevokeUserSubgraphAccess :exec
 update user_subgraph_accesses
    set revoke_id = ?
@@ -2563,6 +2771,32 @@ type RevokeUserSubgraphAccessParams struct {
 func (q *Queries) RevokeUserSubgraphAccess(ctx context.Context, arg RevokeUserSubgraphAccessParams) error {
 	_, err := q.db.ExecContext(ctx, revokeUserSubgraphAccess, arg.RevokeID, arg.ID)
 	return err
+}
+
+const softDeletePatreonCredentials = `-- name: SoftDeletePatreonCredentials :one
+update patreon_credentials
+set deleted_at = current_timestamp, deleted_by = ?
+where id = ? and deleted_at is null
+returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token
+`
+
+type SoftDeletePatreonCredentialsParams struct {
+	DeletedBy sql.NullInt64 `json:"deleted_by"`
+	ID        int64         `json:"id"`
+}
+
+func (q *Queries) SoftDeletePatreonCredentials(ctx context.Context, arg SoftDeletePatreonCredentialsParams) (PatreonCredential, error) {
+	row := q.db.QueryRowContext(ctx, softDeletePatreonCredentials, arg.DeletedBy, arg.ID)
+	var i PatreonCredential
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DeletedAt,
+		&i.DeletedBy,
+		&i.CreatorAccessToken,
+	)
+	return i, err
 }
 
 const subgraphByID = `-- name: SubgraphByID :one

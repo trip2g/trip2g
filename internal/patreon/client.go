@@ -1,7 +1,6 @@
 package patreon
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -45,12 +44,16 @@ func NewClient(config ClientConfig) (*Client, error) {
 	return &c, nil
 }
 
-// CampaignID retrieves the first campaign ID associated with the creator's account.
-func (c *Client) CampaignID() (string, error) {
+// ListCampaigns retrieves all campaigns associated with the creator's account.
+func (c *Client) ListCampaigns() ([]Campaign, error) {
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 
-	req.SetRequestURI(baseURL + "/campaigns")
+	params := url.Values{}
+	params.Set("fields[campaign]", "created_at,creation_name,discord_server_id,google_analytics_id,has_rss,has_sent_rss_notify,image_small_url,image_url,is_charged_immediately,is_monthly,is_nsfw,main_video_embed,main_video_url,one_liner,patron_count,pay_per_name,pledge_url,published_at,rss_artwork_url,rss_feed_title,summary,thanks_embed,thanks_msg,thanks_video_url")
+
+	reqURL := fmt.Sprintf("%s/campaigns?%s", baseURL, params.Encode())
+	req.SetRequestURI(reqURL)
 	req.Header.SetMethod(fasthttp.MethodGet)
 	req.Header.Set("Authorization", "Bearer "+c.accessToken)
 
@@ -59,11 +62,11 @@ func (c *Client) CampaignID() (string, error) {
 
 	err := c.http.DoTimeout(req, resp, c.reqTimeout)
 	if err != nil {
-		return "", fmt.Errorf("failed to get campaigns: %w", err)
+		return nil, fmt.Errorf("failed to get campaigns: %w", err)
 	}
 
 	if resp.StatusCode() != fasthttp.StatusOK {
-		return "", &UnexpectedStatusCodeError{
+		return nil, &UnexpectedStatusCodeError{
 			StatusCode: resp.StatusCode(),
 			Body:       string(resp.Body()),
 		}
@@ -73,14 +76,10 @@ func (c *Client) CampaignID() (string, error) {
 
 	err = easyjson.Unmarshal(resp.Body(), &respData)
 	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	if len(respData.Data) == 0 {
-		return "", errors.New("no campaigns found")
-	}
-
-	return respData.Data[0].ID, nil
+	return respData.Data, nil
 }
 
 // CreateWebhook creates a new webhook for the campaign.

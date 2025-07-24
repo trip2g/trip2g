@@ -38,6 +38,7 @@ import (
 	"trip2g/internal/noteloader"
 	"trip2g/internal/notfoundtracker"
 	"trip2g/internal/nowpayments"
+	"trip2g/internal/patreon"
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/redirectmanager"
 	"trip2g/internal/router"
@@ -100,6 +101,8 @@ type app struct {
 
 	liveNoteLoader   *noteloader.Loader
 	latestNoteLoader *noteloader.Loader
+
+	patreonClientManager *patreon.ClientManager
 }
 
 func main() {
@@ -171,6 +174,8 @@ func main() {
 		UserBans: userbans.New(queries),
 
 		nowpaymentsClient: nowpaymentsClient,
+
+		patreonClientManager: patreon.NewClientManager(),
 	}
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)
@@ -264,6 +269,15 @@ func (a *app) createOwnerIfNotExists(ctx context.Context) error {
 	a.log.Info("owner exists", "email", a.config.OwnerEmail)
 
 	return nil
+}
+
+func (a *app) PatreonListCampaigns(token string) ([]patreon.Campaign, error) {
+	client, err := a.patreonClientManager.Get(token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Patreon client: %w", err)
+	}
+
+	return client.ListCampaigns()
 }
 
 func (a *app) SendMail(ctx context.Context, data model.Mail) error {

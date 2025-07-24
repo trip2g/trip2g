@@ -13,7 +13,7 @@ import (
 	"trip2g/internal/usertoken"
 )
 
-//go:generate moq -out mocks_test.go . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
 func TestResolve(t *testing.T) {
 	tests := []struct {

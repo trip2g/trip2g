@@ -1209,7 +1209,7 @@ func easyjson6601e8cdDecodeTrip2gInternalPatreon16(in *jlexer.Lexer, out *Campai
 				in.Delim('[')
 				if out.Data == nil {
 					if !in.IsDelim(']') {
-						out.Data = make([]Campaign, 0, 2)
+						out.Data = make([]Campaign, 0, 1)
 					} else {
 						out.Data = []Campaign{}
 					}
@@ -1224,6 +1224,8 @@ func easyjson6601e8cdDecodeTrip2gInternalPatreon16(in *jlexer.Lexer, out *Campai
 				}
 				in.Delim(']')
 			}
+		case "meta":
+			(out.Meta).UnmarshalEasyJSON(in)
 		default:
 			in.SkipRecursive()
 		}
@@ -1253,6 +1255,11 @@ func easyjson6601e8cdEncodeTrip2gInternalPatreon16(out *jwriter.Writer, in Campa
 			}
 			out.RawByte(']')
 		}
+	}
+	{
+		const prefix string = ",\"meta\":"
+		out.RawString(prefix)
+		(in.Meta).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }
@@ -1289,6 +1296,10 @@ func easyjson6601e8cdDecodeTrip2gInternalPatreon17(in *jlexer.Lexer, out *Campai
 			out.ID = string(in.String())
 		case "type":
 			out.Type = string(in.String())
+		case "attributes":
+			if data := in.Raw(); in.Ok() {
+				in.AddError((out.Attributes).UnmarshalJSON(data))
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -1312,6 +1323,11 @@ func easyjson6601e8cdEncodeTrip2gInternalPatreon17(out *jwriter.Writer, in Campa
 		const prefix string = ",\"type\":"
 		out.RawString(prefix)
 		out.String(string(in.Type))
+	}
+	{
+		const prefix string = ",\"attributes\":"
+		out.RawString(prefix)
+		out.Raw((in.Attributes).MarshalJSON())
 	}
 	out.RawByte('}')
 }
