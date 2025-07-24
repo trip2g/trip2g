@@ -101,7 +101,7 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 	img := resolveAsImage(n)
 	if !img {
 		if n.Embed {
-			return r.renderEmbed(w, n, dest)
+			return r.renderEmbed(w, dest)
 		}
 
 		r.hasDest.Store(n, struct{}{})
@@ -167,7 +167,7 @@ func removeVersion(originalURL string) string {
 
 var errNoHTML = errors.New("note has no HTML content")
 
-func (r *linkRenderer) renderEmbed(w util.BufWriter, n *wikilink.Node, dest []byte) (ast.WalkStatus, error) {
+func (r *linkRenderer) renderEmbed(w util.BufWriter, dest []byte) (ast.WalkStatus, error) {
 	url := removeVersion(string(dest))
 
 	note := r.nvs.GetByPath(url)
@@ -190,9 +190,10 @@ func (r *linkRenderer) renderEmbed(w util.BufWriter, n *wikilink.Node, dest []by
 		class += " embedded-note__" + note.EmbededClass
 	}
 
-	w.WriteString(`<div class="` + class + `">`)
-	w.WriteString(string(note.HTML))
-	w.WriteString(`</div>`)
+	_, err := w.WriteString(`<div class="` + class + `">` + string(note.HTML) + `</div>`)
+	if err != nil {
+		return ast.WalkStop, fmt.Errorf("failed to write embedded note HTML: %w", err)
+	}
 
 	return ast.WalkSkipChildren, nil
 }

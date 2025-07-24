@@ -465,7 +465,6 @@ func TestUserState(t *testing.T) {
 	}
 }
 
-
 func TestHandleWaitListRequest(t *testing.T) {
 	tests := []struct {
 		name        string

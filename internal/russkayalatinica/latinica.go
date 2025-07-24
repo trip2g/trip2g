@@ -29,7 +29,7 @@ const (
 	ContextTypeNonVowel
 	ContextTypeNonOther
 	ContextTypeLetter
-	ContextTypeHardSign // Special context for hard sign
+	ContextTypeHardSign   // Special context for hard sign
 	ContextTypeNConsonant // Special context for н consonant
 )
 
@@ -138,7 +138,6 @@ func buildScriptTable() []Cell {
 		{Cyrl: "й", Latn: "yj", ElementType: ElementTypeVowel, PrefixContext: ContextTypeConsonant},
 		{Cyrl: "Й", Latn: "J", ElementType: ElementTypeVowel, PrefixContext: ContextTypeNonConsonant},
 		{Cyrl: "Й", Latn: "YJ", ElementType: ElementTypeVowel, PrefixContext: ContextTypeConsonant},
-
 
 		// ь rules with specific context for н+ь+vowel
 		{Cyrl: "ь", Latn: "yh", ElementType: ElementTypeVowel, PrefixContext: ContextTypeNConsonant, PostfixContext: ContextTypeVowel},
@@ -480,7 +479,7 @@ func buildReverseTable() {
 	// Common е combinations should take priority over э combinations
 	forcePriorities := map[string]string{
 		"zhe":  "же",
-		"che":  "че", 
+		"che":  "че",
 		"she":  "ше",
 		"sjhe": "ще",
 		"en":   "ен", // Add this to fix "en" -> "эн" issue

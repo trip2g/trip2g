@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// RateLimiter implements a simple token bucket rate limiter
+// RateLimiter implements a simple token bucket rate limiter.
 type RateLimiter struct {
 	mu      sync.RWMutex
 	buckets map[int64]*bucket
@@ -19,9 +19,9 @@ type bucket struct {
 	lastSeen time.Time
 }
 
-// NewRateLimiter creates a new rate limiter
-// maxReqs: maximum number of requests per window
-// window: time window duration
+// NewRateLimiter creates a new rate limiter.
+// maxReqs: maximum number of requests per window.
+// window: time window duration.
 func NewRateLimiter(maxReqs int, window time.Duration) *RateLimiter {
 	rl := &RateLimiter{
 		buckets: make(map[int64]*bucket),
@@ -36,7 +36,7 @@ func NewRateLimiter(maxReqs int, window time.Duration) *RateLimiter {
 	return rl
 }
 
-// Allow checks if a request from userID should be allowed
+// Allow checks if a request from userID should be allowed.
 func (rl *RateLimiter) Allow(userID int64) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
@@ -75,7 +75,7 @@ func (rl *RateLimiter) Allow(userID int64) bool {
 	return true
 }
 
-// startCleanup removes old, unused buckets
+// startCleanup removes old, unused buckets.
 func (rl *RateLimiter) startCleanup() {
 	ticker := time.NewTicker(rl.cleanup)
 	defer ticker.Stop()

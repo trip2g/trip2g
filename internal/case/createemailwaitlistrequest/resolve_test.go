@@ -3,7 +3,7 @@ package createemailwaitlistrequest
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -101,7 +101,7 @@ func TestResolve(t *testing.T) {
 				}
 				env.InsertWaitListEmailRequestFunc = func(ctx context.Context, arg db.InsertWaitListEmailRequestParams) error {
 					// Simulate unique constraint violation
-					return fmt.Errorf("UNIQUE constraint failed: wait_list_email_requests.email")
+					return errors.New("UNIQUE constraint failed: wait_list_email_requests.email")
 				}
 			},
 			want: &model.CreateEmailWaitListRequestPayload{Success: true},

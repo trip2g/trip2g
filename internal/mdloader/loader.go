@@ -193,7 +193,7 @@ func (ldr *loader) generatePageHTMLs() error {
 
 	// Retry generating pages that failed to render HTML
 	// it's possible that some pages embedded other notes that yet not processed
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		for _, p := range retryNotes {
 			err := ldr.generatePageHTML(p)
 			if err != nil {

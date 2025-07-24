@@ -8,10 +8,6 @@ import (
 	"trip2g/internal/patreon"
 )
 
-func logPrint(a ...any) {
-	fmt.Print(a...) //nolint:forbidigo // CLI output
-}
-
 func logPrintf(format string, a ...any) {
 	fmt.Printf(format, a...) //nolint:forbidigo // CLI output
 }

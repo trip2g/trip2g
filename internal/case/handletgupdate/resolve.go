@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -16,10 +15,10 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var (
-	// Global rate limiter: 10 requests per minute per user
-	globalRateLimiter = NewRateLimiter(10, time.Minute)
-)
+// var (
+// 	// Global rate limiter: 10 requests per minute per user
+// 	globalRateLimiter = NewRateLimiter(10, time.Minute)
+// )
 
 type Env interface {
 	TgUserStateByBotIDAndChatID(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error)

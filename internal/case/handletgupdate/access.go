@@ -174,8 +174,8 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 	return nil
 }
 
-// verifyOngoingGroupAccess provides periodic re-verification of group membership
-// This is a security measure to ensure users haven't left groups since initial access
+// verifyOngoingGroupAccess provides periodic re-verification of group membership.
+// This is a security measure to ensure users haven't left groups since initial access.
 func (req *request) verifyOngoingGroupAccess(ctx context.Context, userID int64, subgraphName string) error {
 	// For now, we implement a basic verification
 	// TODO: Implement more sophisticated verification based on:

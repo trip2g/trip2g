@@ -939,9 +939,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 			"/_system/hidden": systemHiddenNote,
 			"/normal-page":    normalNote,
 		},
-		List: []*model.NoteView{bannerNote, systemHiddenNote, normalNote},
+		List:      []*model.NoteView{bannerNote, systemHiddenNote, normalNote},
 		Subgraphs: map[string]*model.NoteSubgraph{},
-		Version: "live",
+		Version:   "live",
 	}
 
 	tests := []struct {
@@ -1166,9 +1166,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					Map: map[string]*model.NoteView{
 						"/my_page": underscoreNote,
 					},
-					List: []*model.NoteView{underscoreNote},
+					List:      []*model.NoteView{underscoreNote},
 					Subgraphs: map[string]*model.NoteSubgraph{},
-					Version: "live",
+					Version:   "live",
 				}
 
 				return &EnvMock{

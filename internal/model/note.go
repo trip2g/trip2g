@@ -272,8 +272,8 @@ var classRE = regexp.MustCompile(`[^a-zA-Z0-9_-]+`)
 func (n *NoteView) extractEmbededClass() {
 	valueI, ok := n.RawMeta["embed_class"]
 	if ok {
-		value, ok := valueI.(string)
-		if ok {
+		value, isString := valueI.(string)
+		if isString {
 			n.EmbededClass = classRE.ReplaceAllString(value, "_")
 		}
 	}
@@ -634,8 +634,8 @@ func (nv *NoteViews) ExtractNoteList() {
 	sort.Strings(keys)
 
 	for _, k := range keys {
-		_, ok := ids[nv.Map[k].PathID]
-		if ok {
+		_, exists := ids[nv.Map[k].PathID]
+		if exists {
 			continue
 		}
 
