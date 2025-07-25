@@ -28,7 +28,6 @@ import (
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
-	"trip2g/internal/case/admin/refreshpatreondata"
 	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
@@ -45,6 +44,7 @@ import (
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/case/refreshpatreondata"
 	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
@@ -267,7 +267,7 @@ func (r *adminMutationResolver) RestorePatreonCredentials(ctx context.Context, o
 
 // RefreshPatreonData is the resolver for the refreshPatreonData field.
 func (r *adminMutationResolver) RefreshPatreonData(ctx context.Context, obj *appmodel.AdminMutation, input model.RefreshPatreonDataInput) (model.RefreshPatreonDataOrErrorPayload, error) {
-	return refreshpatreondata.Resolve(ctx, r.env(ctx), input.CredentialsID)
+	return refreshpatreondata.Resolve(ctx, r.env(ctx), &input.CredentialsID)
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -345,6 +345,11 @@ func (r *adminPatreonCredentialsResolver) DeletedBy(ctx context.Context, obj *db
 		return nil, nil
 	}
 	return resolveOne[db.User](ctx, obj.DeletedBy.Int64, r.env(ctx).UserByID)
+}
+
+// SyncedAt is the resolver for the syncedAt field.
+func (r *adminPatreonCredentialsResolver) SyncedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error) {
+	return db.ToTimePtr(obj.SyncedAt), nil
 }
 
 // CreatorAccessToken is the resolver for the creatorAccessToken field.
@@ -498,6 +503,11 @@ func (r *adminQueryResolver) TgChatMembers(ctx context.Context, obj *appmodel.Ad
 // AllPatreonCredentials is the resolver for the allPatreonCredentials field.
 func (r *adminQueryResolver) AllPatreonCredentials(ctx context.Context, obj *appmodel.AdminQuery, filter *model.AdminPatreonCredentialsFilterInput) (*model.AdminPatreonCredentialsConnection, error) {
 	return &model.AdminPatreonCredentialsConnection{Filter: filter}, nil
+}
+
+// PatreonCredentials is the resolver for the patreonCredentials field.
+func (r *adminQueryResolver) PatreonCredentials(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.PatreonCredential, error) {
+	return resolveOne[db.PatreonCredential](ctx, id, r.env(ctx).PatreonCredentials)
 }
 
 // APIKeyLogs is the resolver for the apiKeyLogs field.

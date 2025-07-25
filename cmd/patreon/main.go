@@ -53,6 +53,7 @@ func testListCampaigns(client *patreon.Client) string {
 	for i, campaign := range campaigns {
 		logPrintf("  %d. ID: %s, Type: %s\n", i+1, campaign.ID, campaign.Type)
 		logPrintf("     Attributes: %s\n", string(campaign.Attributes))
+		logPrintf("     Relationships: %+v\n", campaign.Relationships)
 	}
 
 	// Return the first campaign ID for compatibility with existing tests

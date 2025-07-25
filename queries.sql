@@ -798,10 +798,6 @@ on conflict(campaign_id, tier_id) do update set
   attributes = excluded.attributes,
   missed_at = null;
 
--- name: MarkMissedPatreonTiers :exec
-update patreon_tiers
-set missed_at = current_timestamp
-where campaign_id = ? and tier_id not in (select value from json_each(?));
 
 -- name: GetPatreonTiersByCampaignID :many
 select * from patreon_tiers
@@ -819,3 +815,32 @@ on conflict(patreon_id, campaign_id) do update set
 select * from patreon_members
 where campaign_id = ?
 order by id desc;
+
+-- name: UpdatePatreonCredentialsSyncedAt :exec
+update patreon_credentials
+set synced_at = current_timestamp
+where id = ?;
+
+-- name: MarkPatreonMembersAsMissed :exec
+update patreon_members
+set status = 'missed'
+where campaign_id = ?
+  and patreon_id not in (
+    select json_extract(value, '$') 
+    from json_each(?)
+  );
+
+-- name: SetPatreonMemberCurrentTier :exec
+update patreon_members
+set current_tier_id = ?
+where id = ?;
+
+-- name: GetPatreonTierByTierID :one
+select * from patreon_tiers
+where campaign_id = ? and tier_id = ?
+limit 1;
+
+-- name: GetPatreonMemberByPatreonIDAndCampaignID :one
+select * from patreon_members
+where patreon_id = ? and campaign_id = ?
+limit 1;

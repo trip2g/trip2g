@@ -62,7 +62,7 @@ func (q *Queries) AdminByUserID(ctx context.Context, userID int64) (Admin, error
 }
 
 const allActivePatreonCredentials = `-- name: AllActivePatreonCredentials :many
-select id, created_at, created_by, deleted_at, deleted_by, creator_access_token from patreon_credentials
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at from patreon_credentials
 where deleted_at is null
 order by created_at desc
 `
@@ -83,6 +83,7 @@ func (q *Queries) AllActivePatreonCredentials(ctx context.Context) ([]PatreonCre
 			&i.DeletedAt,
 			&i.DeletedBy,
 			&i.CreatorAccessToken,
+			&i.SyncedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -98,7 +99,7 @@ func (q *Queries) AllActivePatreonCredentials(ctx context.Context) ([]PatreonCre
 }
 
 const allDeletedPatreonCredentials = `-- name: AllDeletedPatreonCredentials :many
-select id, created_at, created_by, deleted_at, deleted_by, creator_access_token from patreon_credentials
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at from patreon_credentials
 where deleted_at is not null
 order by created_at desc
 `
@@ -119,6 +120,7 @@ func (q *Queries) AllDeletedPatreonCredentials(ctx context.Context) ([]PatreonCr
 			&i.DeletedAt,
 			&i.DeletedBy,
 			&i.CreatorAccessToken,
+			&i.SyncedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -458,7 +460,7 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 }
 
 const allPatreonCredentials = `-- name: AllPatreonCredentials :many
-select id, created_at, created_by, deleted_at, deleted_by, creator_access_token from patreon_credentials
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at from patreon_credentials
 order by created_at desc
 `
 
@@ -478,6 +480,7 @@ func (q *Queries) AllPatreonCredentials(ctx context.Context) ([]PatreonCredentia
 			&i.DeletedAt,
 			&i.DeletedBy,
 			&i.CreatorAccessToken,
+			&i.SyncedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -903,6 +906,31 @@ func (q *Queries) GetPatreonCampaignsByCredentialsID(ctx context.Context, creden
 	return items, nil
 }
 
+const getPatreonMemberByPatreonIDAndCampaignID = `-- name: GetPatreonMemberByPatreonIDAndCampaignID :one
+select id, patreon_id, campaign_id, current_tier_id, status, email from patreon_members
+where patreon_id = ? and campaign_id = ?
+limit 1
+`
+
+type GetPatreonMemberByPatreonIDAndCampaignIDParams struct {
+	PatreonID  string `json:"patreon_id"`
+	CampaignID int64  `json:"campaign_id"`
+}
+
+func (q *Queries) GetPatreonMemberByPatreonIDAndCampaignID(ctx context.Context, arg GetPatreonMemberByPatreonIDAndCampaignIDParams) (PatreonMember, error) {
+	row := q.db.QueryRowContext(ctx, getPatreonMemberByPatreonIDAndCampaignID, arg.PatreonID, arg.CampaignID)
+	var i PatreonMember
+	err := row.Scan(
+		&i.ID,
+		&i.PatreonID,
+		&i.CampaignID,
+		&i.CurrentTierID,
+		&i.Status,
+		&i.Email,
+	)
+	return i, err
+}
+
 const getPatreonMembersByCampaignID = `-- name: GetPatreonMembersByCampaignID :many
 select id, patreon_id, campaign_id, current_tier_id, status, email from patreon_members
 where campaign_id = ?
@@ -937,6 +965,33 @@ func (q *Queries) GetPatreonMembersByCampaignID(ctx context.Context, campaignID 
 		return nil, err
 	}
 	return items, nil
+}
+
+const getPatreonTierByTierID = `-- name: GetPatreonTierByTierID :one
+select id, campaign_id, created_at, missed_at, tier_id, title, amount_cents, attributes from patreon_tiers
+where campaign_id = ? and tier_id = ?
+limit 1
+`
+
+type GetPatreonTierByTierIDParams struct {
+	CampaignID int64  `json:"campaign_id"`
+	TierID     string `json:"tier_id"`
+}
+
+func (q *Queries) GetPatreonTierByTierID(ctx context.Context, arg GetPatreonTierByTierIDParams) (PatreonTier, error) {
+	row := q.db.QueryRowContext(ctx, getPatreonTierByTierID, arg.CampaignID, arg.TierID)
+	var i PatreonTier
+	err := row.Scan(
+		&i.ID,
+		&i.CampaignID,
+		&i.CreatedAt,
+		&i.MissedAt,
+		&i.TierID,
+		&i.Title,
+		&i.AmountCents,
+		&i.Attributes,
+	)
+	return i, err
 }
 
 const getPatreonTiersByCampaignID = `-- name: GetPatreonTiersByCampaignID :many
@@ -1272,7 +1327,7 @@ func (q *Queries) InsertPatreonCampaign(ctx context.Context, arg InsertPatreonCa
 const insertPatreonCredentials = `-- name: InsertPatreonCredentials :one
 insert into patreon_credentials (created_by, creator_access_token)
 values (?, ?)
-returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token
+returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at
 `
 
 type InsertPatreonCredentialsParams struct {
@@ -1290,6 +1345,7 @@ func (q *Queries) InsertPatreonCredentials(ctx context.Context, arg InsertPatreo
 		&i.DeletedAt,
 		&i.DeletedBy,
 		&i.CreatorAccessToken,
+		&i.SyncedAt,
 	)
 	return i, err
 }
@@ -1776,7 +1832,7 @@ func (q *Queries) ListActiveOffersBySubgraphNames(ctx context.Context, subgraphs
 }
 
 const listActivePatreonCredentials = `-- name: ListActivePatreonCredentials :many
-select id, created_at, created_by, deleted_at, deleted_by, creator_access_token
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at
   from patreon_credentials
  where deleted_by is null
 `
@@ -1797,6 +1853,7 @@ func (q *Queries) ListActivePatreonCredentials(ctx context.Context) ([]PatreonCr
 			&i.DeletedAt,
 			&i.DeletedBy,
 			&i.CreatorAccessToken,
+			&i.SyncedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -2587,14 +2644,18 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 	return items, nil
 }
 
-const markMissedPatreonTiers = `-- name: MarkMissedPatreonTiers :exec
-update patreon_tiers
-set missed_at = current_timestamp
-where campaign_id = ? and tier_id not in (select value from json_each(?))
+const markPatreonMembersAsMissed = `-- name: MarkPatreonMembersAsMissed :exec
+update patreon_members
+set status = 'missed'
+where campaign_id = ?
+  and patreon_id not in (
+    select json_extract(value, '$') 
+    from json_each(?)
+  )
 `
 
-func (q *Queries) MarkMissedPatreonTiers(ctx context.Context, campaignID int64) error {
-	_, err := q.db.ExecContext(ctx, markMissedPatreonTiers, campaignID)
+func (q *Queries) MarkPatreonMembersAsMissed(ctx context.Context, campaignID int64) error {
+	_, err := q.db.ExecContext(ctx, markPatreonMembersAsMissed, campaignID)
 	return err
 }
 
@@ -2761,7 +2822,7 @@ func (q *Queries) OfferByID(ctx context.Context, id int64) (Offer, error) {
 }
 
 const patreonCredentials = `-- name: PatreonCredentials :one
-select id, created_at, created_by, deleted_at, deleted_by, creator_access_token from patreon_credentials
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at from patreon_credentials
 where id = ? and deleted_at is null
 `
 
@@ -2775,6 +2836,7 @@ func (q *Queries) PatreonCredentials(ctx context.Context, id int64) (PatreonCred
 		&i.DeletedAt,
 		&i.DeletedBy,
 		&i.CreatorAccessToken,
+		&i.SyncedAt,
 	)
 	return i, err
 }
@@ -2877,7 +2939,7 @@ const restorePatreonCredentials = `-- name: RestorePatreonCredentials :one
 update patreon_credentials
 set deleted_at = null, deleted_by = null
 where id = ? and deleted_at is not null
-returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token
+returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at
 `
 
 func (q *Queries) RestorePatreonCredentials(ctx context.Context, id int64) (PatreonCredential, error) {
@@ -2890,6 +2952,7 @@ func (q *Queries) RestorePatreonCredentials(ctx context.Context, id int64) (Patr
 		&i.DeletedAt,
 		&i.DeletedBy,
 		&i.CreatorAccessToken,
+		&i.SyncedAt,
 	)
 	return i, err
 }
@@ -2910,11 +2973,27 @@ func (q *Queries) RevokeUserSubgraphAccess(ctx context.Context, arg RevokeUserSu
 	return err
 }
 
+const setPatreonMemberCurrentTier = `-- name: SetPatreonMemberCurrentTier :exec
+update patreon_members
+set current_tier_id = ?
+where id = ?
+`
+
+type SetPatreonMemberCurrentTierParams struct {
+	CurrentTierID sql.NullInt64 `json:"current_tier_id"`
+	ID            int64         `json:"id"`
+}
+
+func (q *Queries) SetPatreonMemberCurrentTier(ctx context.Context, arg SetPatreonMemberCurrentTierParams) error {
+	_, err := q.db.ExecContext(ctx, setPatreonMemberCurrentTier, arg.CurrentTierID, arg.ID)
+	return err
+}
+
 const softDeletePatreonCredentials = `-- name: SoftDeletePatreonCredentials :one
 update patreon_credentials
 set deleted_at = current_timestamp, deleted_by = ?
 where id = ? and deleted_at is null
-returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token
+returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at
 `
 
 type SoftDeletePatreonCredentialsParams struct {
@@ -2932,6 +3011,7 @@ func (q *Queries) SoftDeletePatreonCredentials(ctx context.Context, arg SoftDele
 		&i.DeletedAt,
 		&i.DeletedBy,
 		&i.CreatorAccessToken,
+		&i.SyncedAt,
 	)
 	return i, err
 }
@@ -3440,6 +3520,17 @@ func (q *Queries) UpdateOffer(ctx context.Context, arg UpdateOfferParams) (Offer
 		&i.EndsAt,
 	)
 	return i, err
+}
+
+const updatePatreonCredentialsSyncedAt = `-- name: UpdatePatreonCredentialsSyncedAt :exec
+update patreon_credentials
+set synced_at = current_timestamp
+where id = ?
+`
+
+func (q *Queries) UpdatePatreonCredentialsSyncedAt(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, updatePatreonCredentialsSyncedAt, id)
+	return err
 }
 
 const updatePurchaseStatus = `-- name: UpdatePurchaseStatus :exec

@@ -40,6 +40,10 @@ $trip2g_admin_patreoncredentials_catalog $trip2g_admin_catalog
 						title \Created At
 						Content <= Row_created_at* $trip2g_admin_cell
 							content <= row_created_at* \created_at
+					<= Row_synced_at_labeler* $mol_labeler
+						title \Synced At
+						Content <= Row_synced_at* $trip2g_admin_cell
+							content <= row_synced_at* \
 					<= Row_created_by_labeler* $mol_labeler
 						title \Created By
 						Content <= Row_created_by* $trip2g_admin_cell

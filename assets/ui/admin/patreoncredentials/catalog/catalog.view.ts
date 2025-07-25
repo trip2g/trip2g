@@ -25,6 +25,7 @@ namespace $.$$ {
 								state
 								creatorAccessToken
 								createdAt
+								syncedAt
 								createdBy {
 									id
 									email
@@ -81,6 +82,13 @@ namespace $.$$ {
 
 		override row_created_by( id: any ): string {
 			return this.row( id ).createdBy.email || '-'
+		}
+
+		override row_synced_at( id: any ): string {
+			const syncedAt = this.row( id ).syncedAt
+			if (!syncedAt) return 'Never'
+			const m = new $mol_time_moment( syncedAt )
+			return m.toString( 'YYYY-MM-DD HH:mm' )
 		}
 	}
 }

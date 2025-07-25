@@ -224,6 +224,7 @@ type ComplexityRoot struct {
 		DeletedBy          func(childComplexity int) int
 		ID                 func(childComplexity int) int
 		State              func(childComplexity int) int
+		SyncedAt           func(childComplexity int) int
 	}
 
 	AdminPatreonCredentialsConnection struct {
@@ -266,6 +267,7 @@ type ComplexityRoot struct {
 		AllUsers                   func(childComplexity int) int
 		NoteView                   func(childComplexity int, id string) int
 		Offer                      func(childComplexity int, id int64) int
+		PatreonCredentials         func(childComplexity int, id int64) int
 		Purchase                   func(childComplexity int, id string) int
 		Redirect                   func(childComplexity int, id int64) int
 		Subgraph                   func(childComplexity int, id int64) int
@@ -754,6 +756,7 @@ type AdminPatreonCredentialsResolver interface {
 	CreatedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error)
 	DeletedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error)
 	DeletedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error)
+	SyncedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error)
 	CreatorAccessToken(ctx context.Context, obj *db.PatreonCredential) (string, error)
 	State(ctx context.Context, obj *db.PatreonCredential) (model.PatreonCredentialsStateEnum, error)
 }
@@ -789,6 +792,7 @@ type AdminQueryResolver interface {
 	TgChatSubgraphAccesses(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgChatSubgraphAccessesFilterInput) (*model.AdminTgChatSubgraphAccessesConnection, error)
 	TgChatMembers(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgChatMembersFilterInput) (*model.AdminTgChatMembersConnection, error)
 	AllPatreonCredentials(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminPatreonCredentialsFilterInput) (*model.AdminPatreonCredentialsConnection, error)
+	PatreonCredentials(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.PatreonCredential, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
@@ -1608,6 +1612,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminPatreonCredentials.State(childComplexity), true
 
+	case "AdminPatreonCredentials.syncedAt":
+		if e.complexity.AdminPatreonCredentials.SyncedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCredentials.SyncedAt(childComplexity), true
+
 	case "AdminPatreonCredentialsConnection.nodes":
 		if e.complexity.AdminPatreonCredentialsConnection.Nodes == nil {
 			break
@@ -1842,6 +1853,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.Offer(childComplexity, args["id"].(int64)), true
+
+	case "AdminQuery.patreonCredentials":
+		if e.complexity.AdminQuery.PatreonCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_patreonCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.PatreonCredentials(childComplexity, args["id"].(int64)), true
 
 	case "AdminQuery.purchase":
 		if e.complexity.AdminQuery.Purchase == nil {
@@ -4133,6 +4156,29 @@ func (ec *executionContext) field_AdminQuery_offer_args(ctx context.Context, raw
 	return args, nil
 }
 func (ec *executionContext) field_AdminQuery_offer_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int64, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNInt642int64(ctx, tmp)
+	}
+
+	var zeroVal int64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_patreonCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_patreonCredentials_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_patreonCredentials_argsID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (int64, error) {
@@ -8205,6 +8251,47 @@ func (ec *executionContext) fieldContext_AdminPatreonCredentials_deletedBy(_ con
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminPatreonCredentials_syncedAt(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentials_syncedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonCredentials().SyncedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentials_syncedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminPatreonCredentials_creatorAccessToken(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
 	if err != nil {
@@ -8342,6 +8429,8 @@ func (ec *executionContext) fieldContext_AdminPatreonCredentialsConnection_nodes
 				return ec.fieldContext_AdminPatreonCredentials_deletedAt(ctx, field)
 			case "deletedBy":
 				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
+			case "syncedAt":
+				return ec.fieldContext_AdminPatreonCredentials_syncedAt(ctx, field)
 			case "creatorAccessToken":
 				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
 			case "state":
@@ -9796,6 +9885,76 @@ func (ec *executionContext) fieldContext_AdminQuery_allPatreonCredentials(ctx co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_allPatreonCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_patreonCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_patreonCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().PatreonCredentials(rctx, obj, fc.Args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.PatreonCredential)
+	fc.Result = res
+	return ec.marshalOAdminPatreonCredentials2ᚖtrip2gᚋinternalᚋdbᚐPatreonCredential(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_patreonCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminPatreonCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminPatreonCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminPatreonCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminPatreonCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
+			case "syncedAt":
+				return ec.fieldContext_AdminPatreonCredentials_syncedAt(ctx, field)
+			case "creatorAccessToken":
+				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminPatreonCredentials_state(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_patreonCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -14049,6 +14208,8 @@ func (ec *executionContext) fieldContext_CreatePatreonCredentialsPayload_patreon
 				return ec.fieldContext_AdminPatreonCredentials_deletedAt(ctx, field)
 			case "deletedBy":
 				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
+			case "syncedAt":
+				return ec.fieldContext_AdminPatreonCredentials_syncedAt(ctx, field)
 			case "creatorAccessToken":
 				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
 			case "state":
@@ -17157,6 +17318,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_tgChatMembers(ctx, field)
 			case "allPatreonCredentials":
 				return ec.fieldContext_AdminQuery_allPatreonCredentials(ctx, field)
+			case "patreonCredentials":
+				return ec.fieldContext_AdminQuery_patreonCredentials(ctx, field)
 			case "apiKeyLogs":
 				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "subgraph":
@@ -17606,6 +17769,8 @@ func (ec *executionContext) fieldContext_RestorePatreonCredentialsPayload_patreo
 				return ec.fieldContext_AdminPatreonCredentials_deletedAt(ctx, field)
 			case "deletedBy":
 				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
+			case "syncedAt":
+				return ec.fieldContext_AdminPatreonCredentials_syncedAt(ctx, field)
 			case "creatorAccessToken":
 				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
 			case "state":
@@ -26054,6 +26219,39 @@ func (ec *executionContext) _AdminPatreonCredentials(ctx context.Context, sel as
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "syncedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonCredentials_syncedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "creatorAccessToken":
 			field := field
 
@@ -27127,6 +27325,39 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "patreonCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_patreonCredentials(ctx, field, obj)
 				return res
 			}
 
@@ -36094,6 +36325,13 @@ func (ec *executionContext) marshalOAdminOffer2ᚖtrip2gᚋinternalᚋdbᚐOffer
 		return graphql.Null
 	}
 	return ec._AdminOffer(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminPatreonCredentials2ᚖtrip2gᚋinternalᚋdbᚐPatreonCredential(ctx context.Context, sel ast.SelectionSet, v *db.PatreonCredential) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminPatreonCredentials(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOAdminPatreonCredentialsFilterInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonCredentialsFilterInput(ctx context.Context, v any) (*model.AdminPatreonCredentialsFilterInput, error) {

@@ -19,7 +19,7 @@ import (
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
-	"trip2g/internal/case/admin/refreshpatreondata"
+	"trip2g/internal/case/refreshpatreondata"
 	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
@@ -168,4 +168,5 @@ type Env interface {
 	AllPatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
 	AllActivePatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
 	AllDeletedPatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
+	PatreonCredentials(ctx context.Context, id int64) (db.PatreonCredential, error)
 }

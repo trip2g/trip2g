@@ -306,6 +306,7 @@ type AdminPatreonCredentials @goModel(model: "trip2g/internal/db.PatreonCredenti
   createdBy: AdminUser! @goField(forceResolver: true)
   deletedAt: Time
   deletedBy: AdminUser @goField(forceResolver: true)
+  syncedAt: Time
   creatorAccessToken: String! @goField(forceResolver: true)
   state: PatreonCredentialsStateEnum!
 }
@@ -368,6 +369,7 @@ type AdminQuery {
   tgChatMembers(filter: AdminTgChatMembersFilterInput!): AdminTgChatMembersConnection!
 
   allPatreonCredentials(filter: AdminPatreonCredentialsFilterInput): AdminPatreonCredentialsConnection!
+  patreonCredentials(id: Int64!): AdminPatreonCredentials
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
 

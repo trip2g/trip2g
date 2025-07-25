@@ -174,6 +174,7 @@ type PatreonCredential struct {
 	DeletedAt          sql.NullTime  `json:"deleted_at"`
 	DeletedBy          sql.NullInt64 `json:"deleted_by"`
 	CreatorAccessToken string        `json:"creator_access_token"`
+	SyncedAt           sql.NullTime  `json:"synced_at"`
 }
 
 type PatreonMember struct {
