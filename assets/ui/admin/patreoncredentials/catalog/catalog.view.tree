@@ -22,7 +22,7 @@ $trip2g_admin_patreoncredentials_catalog $trip2g_admin_catalog
 		sub /
 			<= Rows* $mol_row
 				minimal_height 24
-				minimal_width 800
+				minimal_width 500
 				sub <= row_content* /
 					<= Row_id_labeler* $mol_labeler
 						title \ID
@@ -32,10 +32,6 @@ $trip2g_admin_patreoncredentials_catalog $trip2g_admin_catalog
 						title \State
 						Content <= Row_state* $trip2g_admin_cell
 							content <= row_state* \active
-					<= Row_token_labeler* $mol_labeler
-						title \Token
-						Content <= Row_token* $trip2g_admin_cell
-							content <= row_token* \****
 					<= Row_created_at_labeler* $mol_labeler
 						title \Created At
 						Content <= Row_created_at* $trip2g_admin_cell
@@ -44,7 +40,3 @@ $trip2g_admin_patreoncredentials_catalog $trip2g_admin_catalog
 						title \Synced At
 						Content <= Row_synced_at* $trip2g_admin_cell
 							content <= row_synced_at* \
-					<= Row_created_by_labeler* $mol_labeler
-						title \Created By
-						Content <= Row_created_by* $trip2g_admin_cell
-							content <= row_created_by* \created_by

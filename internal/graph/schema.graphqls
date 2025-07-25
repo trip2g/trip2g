@@ -309,10 +309,50 @@ type AdminPatreonCredentials @goModel(model: "trip2g/internal/db.PatreonCredenti
   syncedAt: Time
   creatorAccessToken: String! @goField(forceResolver: true)
   state: PatreonCredentialsStateEnum!
+  tiers: AdminPatreonTiersConnection!
+  members: AdminPatreonMembersConnection!
 }
 
 type AdminPatreonCredentialsConnection @goExtraField(name: "Filter", type: "*trip2g/internal/graph/model.AdminPatreonCredentialsFilterInput"){
   nodes: [AdminPatreonCredentials!]! @goField(forceResolver: true)
+}
+
+type AdminPatreonCampaign @goModel(model: "trip2g/internal/db.PatreonCampaign") {
+  id: Int64!
+  credentialsID: Int64!
+  createdAt: Time!
+  missedAt: Time
+  campaignID: String!
+  attributes: String!
+}
+
+type AdminPatreonTier @goModel(model: "trip2g/internal/db.PatreonTier") {
+  id: Int64!
+  campaignID: Int64!
+  createdAt: Time!
+  missedAt: Time
+  tierID: String!
+  title: String!
+  amountCents: Int64!
+  attributes: String!
+}
+
+type AdminPatreonMember @goModel(model: "trip2g/internal/db.PatreonMember") {
+  id: Int64!
+  patreonID: String!
+  campaignID: Int64!
+  currentTierID: Int64
+  status: String!
+  email: String!
+  currentTier: AdminPatreonTier
+}
+
+type AdminPatreonTiersConnection {
+  nodes: [AdminPatreonTier!]!
+}
+
+type AdminPatreonMembersConnection {
+  nodes: [AdminPatreonMember!]!
 }
 
 input AdminTgBotChatsFilterInput {

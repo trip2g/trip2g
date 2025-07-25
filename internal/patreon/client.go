@@ -51,7 +51,11 @@ func (c *Client) ListCampaigns() ([]Campaign, error) {
 
 	params := url.Values{}
 	params.Set("include", "tiers")
-	params.Set("fields[campaign]", "created_at,creation_name,discord_server_id,google_analytics_id,has_rss,has_sent_rss_notify,image_small_url,image_url,is_charged_immediately,is_monthly,is_nsfw,main_video_embed,main_video_url,one_liner,patron_count,pay_per_name,pledge_url,published_at,rss_artwork_url,rss_feed_title,summary,thanks_embed,thanks_msg,thanks_video_url")
+	params.Set("fields[campaign]",
+		"created_at,creation_name,discord_server_id,google_analytics_id,has_rss,has_sent_rss_notify,"+
+			"image_small_url,image_url,is_charged_immediately,is_monthly,is_nsfw,main_video_embed,"+
+			"main_video_url,one_liner,patron_count,pay_per_name,pledge_url,published_at,"+
+			"rss_artwork_url,rss_feed_title,summary,thanks_embed,thanks_msg,thanks_video_url")
 	params.Set("fields[tier]", "title,amount_cents,description,published,patron_count,created_at")
 
 	reqURL := fmt.Sprintf("%s/campaigns?%s", baseURL, params.Encode())
@@ -80,6 +84,9 @@ func (c *Client) ListCampaigns() ([]Campaign, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
+
+	// Process included data to link tiers to campaigns
+	respData.ProcessIncluded()
 
 	return respData.Data, nil
 }

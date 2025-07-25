@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	"trip2g/internal/appconfig"
 	"trip2g/internal/patreon"
@@ -49,11 +51,35 @@ func testListCampaigns(client *patreon.Client) string {
 		log.Fatal("no campaigns found")
 	}
 
+	rawCampaigns, _ := json.Marshal(campaigns)
+
+	if writeErr := os.WriteFile("./internal/case/refreshpatreondata/test_list_campaigns.json", rawCampaigns, 0600); writeErr != nil {
+		log.Printf("Failed to write test campaigns file: %v", writeErr)
+	}
+
 	logPrintf("Found %d campaigns:\n", len(campaigns))
 	for i, campaign := range campaigns {
 		logPrintf("  %d. ID: %s, Type: %s\n", i+1, campaign.ID, campaign.Type)
 		logPrintf("     Attributes: %s\n", string(campaign.Attributes))
 		logPrintf("     Relationships: %+v\n", campaign.Relationships)
+
+		// Test GetTiersWithAttributes method
+		tiers, tiersErr := campaign.GetTiersWithAttributes()
+		switch {
+		case tiersErr != nil:
+			logPrintf("     Error getting tiers: %v\n", tiersErr)
+		case len(tiers) > 0:
+			logPrintf("     Tiers (%d):\n", len(tiers))
+			for j, tier := range tiers {
+				logPrintf("       %d. ID: %v, Type: %v\n", j+1, tier["id"], tier["type"])
+				if attributes, ok := tier["attributes"].(map[string]interface{}); ok {
+					logPrintf("          Title: %v, Amount: %v cents\n",
+						attributes["title"], attributes["amount_cents"])
+				}
+			}
+		default:
+			logPrintf("     No tiers found\n")
+		}
 	}
 
 	// Return the first campaign ID for compatibility with existing tests
@@ -65,6 +91,12 @@ func testPatrons(client *patreon.Client, campaignID string) {
 	patronsResp, err := client.ListPatrons(campaignID)
 	if err != nil {
 		log.Fatalf("failed to list patrons: %v", err)
+	}
+
+	raw, _ := json.Marshal(patronsResp)
+
+	if writeErr := os.WriteFile("./internal/case/refreshpatreondata/test_list_patrons.json", raw, 0600); writeErr != nil {
+		log.Printf("Failed to write test patrons file: %v", writeErr)
 	}
 
 	logPrintf("Found %d patrons:\n", len(patronsResp.Data))

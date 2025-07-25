@@ -1,14 +1,6 @@
 namespace $.$$ {
 	export class $trip2g_admin_patreoncredentials_button_restore extends $.$trip2g_admin_patreoncredentials_button_restore {
-		@$mol_mem
-		restore_enabled() {
-			return this.credentials_id() > 0
-		}
-
 		restore( event?: Event ) {
-			event?.preventDefault()
-			event?.stopPropagation()
-
 			const res = $trip2g_graphql_request(
 				`
 					mutation AdminRestorePatreonCredentials($input: RestorePatreonCredentialsInput!) {

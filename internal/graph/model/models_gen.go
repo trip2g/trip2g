@@ -214,6 +214,14 @@ type AdminPatreonCredentialsFilterInput struct {
 	State *PatreonCredentialsStateEnum `json:"state,omitempty"`
 }
 
+type AdminPatreonMembersConnection struct {
+	Nodes []db.PatreonMember `json:"nodes"`
+}
+
+type AdminPatreonTiersConnection struct {
+	Nodes []db.PatreonTier `json:"nodes"`
+}
+
 type AdminPurchasesConnection struct {
 	Nodes []db.Purchase `json:"nodes"`
 }

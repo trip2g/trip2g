@@ -19,7 +19,6 @@ import (
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
-	"trip2g/internal/case/refreshpatreondata"
 	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
@@ -36,6 +35,7 @@ import (
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/case/refreshpatreondata"
 	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
@@ -169,4 +169,7 @@ type Env interface {
 	AllActivePatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
 	AllDeletedPatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
 	PatreonCredentials(ctx context.Context, id int64) (db.PatreonCredential, error)
+	GetPatreonCampaignsByCredentialsID(ctx context.Context, credentialsID int64) ([]db.PatreonCampaign, error)
+	GetPatreonTiersByCampaignID(ctx context.Context, campaignID int64) ([]db.PatreonTier, error)
+	GetPatreonMembersByCampaignID(ctx context.Context, campaignID int64) ([]db.PatreonMember, error)
 }

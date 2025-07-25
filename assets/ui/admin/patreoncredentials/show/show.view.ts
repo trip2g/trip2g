@@ -3,26 +3,42 @@ namespace $.$$ {
 		@$mol_mem
 		data( reset?: null ) {
 			const res = $trip2g_graphql_request( `
-				query AdminPatreonCredentials($filter: AdminPatreonCredentialsFilterInput) {
+				query AdminPatreonCredentialsById($id: Int64!) {
 					admin {
-						allPatreonCredentials(filter: $filter) {
-							nodes {
-								id
-								state
-								creatorAccessToken
-								createdAt
-								createdBy {
+						patreonCredentials(id: $id) {
+							createdAt
+							creatorAccessToken
+
+							createdBy {
+								email
+							}
+
+							tiers {
+								nodes {
 									id
+									missedAt
+									title
+									amountCents
+								}
+							}
+							
+							members {
+								nodes {
 									email
+									status
+									currentTier {
+										title
+									}
 								}
 							}
 						}
 					}
 				}
-			`)
+			`, {
+				id: this.credentials_id(),
+			})
 
-			const nodes = res.admin.allPatreonCredentials.nodes
-			return nodes.find( (node: any) => node.id === this.credentials_id() )
+			return res.admin.patreonCredentials
 		}
 
 		@$mol_mem
@@ -70,26 +86,6 @@ namespace $.$$ {
 			const data = this.data()
 			if( !data ) return '-'
 			return data.createdBy.email || '-'
-		}
-
-		delete() {
-			try {
-				this.DeleteButton().delete()
-				this.action_result( 'Credentials deleted successfully' )
-				this.data( null ) // Refresh data
-			} catch( error: any ) {
-				this.action_result( `Delete failed: ${error.message}` )
-			}
-		}
-
-		restore() {
-			try {
-				this.RestoreButton().restore()
-				this.action_result( 'Credentials restored successfully' )
-				this.data( null ) // Refresh data
-			} catch( error: any ) {
-				this.action_result( `Restore failed: ${error.message}` )
-			}
 		}
 	}
 }

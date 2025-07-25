@@ -56,8 +56,11 @@ type ResolverRoot interface {
 	AdminNotFoundPathsConnection() AdminNotFoundPathsConnectionResolver
 	AdminOffer() AdminOfferResolver
 	AdminOffersConnection() AdminOffersConnectionResolver
+	AdminPatreonCampaign() AdminPatreonCampaignResolver
 	AdminPatreonCredentials() AdminPatreonCredentialsResolver
 	AdminPatreonCredentialsConnection() AdminPatreonCredentialsConnectionResolver
+	AdminPatreonMember() AdminPatreonMemberResolver
+	AdminPatreonTier() AdminPatreonTierResolver
 	AdminPurchase() AdminPurchaseResolver
 	AdminPurchasesConnection() AdminPurchasesConnectionResolver
 	AdminQuery() AdminQueryResolver
@@ -216,6 +219,15 @@ type ComplexityRoot struct {
 		Nodes func(childComplexity int) int
 	}
 
+	AdminPatreonCampaign struct {
+		Attributes    func(childComplexity int) int
+		CampaignID    func(childComplexity int) int
+		CreatedAt     func(childComplexity int) int
+		CredentialsID func(childComplexity int) int
+		ID            func(childComplexity int) int
+		MissedAt      func(childComplexity int) int
+	}
+
 	AdminPatreonCredentials struct {
 		CreatedAt          func(childComplexity int) int
 		CreatedBy          func(childComplexity int) int
@@ -223,11 +235,42 @@ type ComplexityRoot struct {
 		DeletedAt          func(childComplexity int) int
 		DeletedBy          func(childComplexity int) int
 		ID                 func(childComplexity int) int
+		Members            func(childComplexity int) int
 		State              func(childComplexity int) int
 		SyncedAt           func(childComplexity int) int
+		Tiers              func(childComplexity int) int
 	}
 
 	AdminPatreonCredentialsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminPatreonMember struct {
+		CampaignID    func(childComplexity int) int
+		CurrentTier   func(childComplexity int) int
+		CurrentTierID func(childComplexity int) int
+		Email         func(childComplexity int) int
+		ID            func(childComplexity int) int
+		PatreonID     func(childComplexity int) int
+		Status        func(childComplexity int) int
+	}
+
+	AdminPatreonMembersConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminPatreonTier struct {
+		AmountCents func(childComplexity int) int
+		Attributes  func(childComplexity int) int
+		CampaignID  func(childComplexity int) int
+		CreatedAt   func(childComplexity int) int
+		ID          func(childComplexity int) int
+		MissedAt    func(childComplexity int) int
+		TierID      func(childComplexity int) int
+		Title       func(childComplexity int) int
+	}
+
+	AdminPatreonTiersConnection struct {
 		Nodes func(childComplexity int) int
 	}
 
@@ -752,6 +795,9 @@ type AdminOfferResolver interface {
 type AdminOffersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminOffersConnection) ([]db.Offer, error)
 }
+type AdminPatreonCampaignResolver interface {
+	MissedAt(ctx context.Context, obj *db.PatreonCampaign) (*time.Time, error)
+}
 type AdminPatreonCredentialsResolver interface {
 	CreatedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error)
 	DeletedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error)
@@ -759,9 +805,19 @@ type AdminPatreonCredentialsResolver interface {
 	SyncedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error)
 	CreatorAccessToken(ctx context.Context, obj *db.PatreonCredential) (string, error)
 	State(ctx context.Context, obj *db.PatreonCredential) (model.PatreonCredentialsStateEnum, error)
+	Tiers(ctx context.Context, obj *db.PatreonCredential) (*model.AdminPatreonTiersConnection, error)
+	Members(ctx context.Context, obj *db.PatreonCredential) (*model.AdminPatreonMembersConnection, error)
 }
 type AdminPatreonCredentialsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminPatreonCredentialsConnection) ([]db.PatreonCredential, error)
+}
+type AdminPatreonMemberResolver interface {
+	CurrentTierID(ctx context.Context, obj *db.PatreonMember) (*int64, error)
+
+	CurrentTier(ctx context.Context, obj *db.PatreonMember) (*db.PatreonTier, error)
+}
+type AdminPatreonTierResolver interface {
+	MissedAt(ctx context.Context, obj *db.PatreonTier) (*time.Time, error)
 }
 type AdminPurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
@@ -1563,6 +1619,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminOffersConnection.Nodes(childComplexity), true
 
+	case "AdminPatreonCampaign.attributes":
+		if e.complexity.AdminPatreonCampaign.Attributes == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCampaign.Attributes(childComplexity), true
+
+	case "AdminPatreonCampaign.campaignID":
+		if e.complexity.AdminPatreonCampaign.CampaignID == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCampaign.CampaignID(childComplexity), true
+
+	case "AdminPatreonCampaign.createdAt":
+		if e.complexity.AdminPatreonCampaign.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCampaign.CreatedAt(childComplexity), true
+
+	case "AdminPatreonCampaign.credentialsID":
+		if e.complexity.AdminPatreonCampaign.CredentialsID == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCampaign.CredentialsID(childComplexity), true
+
+	case "AdminPatreonCampaign.id":
+		if e.complexity.AdminPatreonCampaign.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCampaign.ID(childComplexity), true
+
+	case "AdminPatreonCampaign.missedAt":
+		if e.complexity.AdminPatreonCampaign.MissedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCampaign.MissedAt(childComplexity), true
+
 	case "AdminPatreonCredentials.createdAt":
 		if e.complexity.AdminPatreonCredentials.CreatedAt == nil {
 			break
@@ -1605,6 +1703,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminPatreonCredentials.ID(childComplexity), true
 
+	case "AdminPatreonCredentials.members":
+		if e.complexity.AdminPatreonCredentials.Members == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCredentials.Members(childComplexity), true
+
 	case "AdminPatreonCredentials.state":
 		if e.complexity.AdminPatreonCredentials.State == nil {
 			break
@@ -1619,12 +1724,138 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminPatreonCredentials.SyncedAt(childComplexity), true
 
+	case "AdminPatreonCredentials.tiers":
+		if e.complexity.AdminPatreonCredentials.Tiers == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonCredentials.Tiers(childComplexity), true
+
 	case "AdminPatreonCredentialsConnection.nodes":
 		if e.complexity.AdminPatreonCredentialsConnection.Nodes == nil {
 			break
 		}
 
 		return e.complexity.AdminPatreonCredentialsConnection.Nodes(childComplexity), true
+
+	case "AdminPatreonMember.campaignID":
+		if e.complexity.AdminPatreonMember.CampaignID == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonMember.CampaignID(childComplexity), true
+
+	case "AdminPatreonMember.currentTier":
+		if e.complexity.AdminPatreonMember.CurrentTier == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonMember.CurrentTier(childComplexity), true
+
+	case "AdminPatreonMember.currentTierID":
+		if e.complexity.AdminPatreonMember.CurrentTierID == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonMember.CurrentTierID(childComplexity), true
+
+	case "AdminPatreonMember.email":
+		if e.complexity.AdminPatreonMember.Email == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonMember.Email(childComplexity), true
+
+	case "AdminPatreonMember.id":
+		if e.complexity.AdminPatreonMember.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonMember.ID(childComplexity), true
+
+	case "AdminPatreonMember.patreonID":
+		if e.complexity.AdminPatreonMember.PatreonID == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonMember.PatreonID(childComplexity), true
+
+	case "AdminPatreonMember.status":
+		if e.complexity.AdminPatreonMember.Status == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonMember.Status(childComplexity), true
+
+	case "AdminPatreonMembersConnection.nodes":
+		if e.complexity.AdminPatreonMembersConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonMembersConnection.Nodes(childComplexity), true
+
+	case "AdminPatreonTier.amountCents":
+		if e.complexity.AdminPatreonTier.AmountCents == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonTier.AmountCents(childComplexity), true
+
+	case "AdminPatreonTier.attributes":
+		if e.complexity.AdminPatreonTier.Attributes == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonTier.Attributes(childComplexity), true
+
+	case "AdminPatreonTier.campaignID":
+		if e.complexity.AdminPatreonTier.CampaignID == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonTier.CampaignID(childComplexity), true
+
+	case "AdminPatreonTier.createdAt":
+		if e.complexity.AdminPatreonTier.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonTier.CreatedAt(childComplexity), true
+
+	case "AdminPatreonTier.id":
+		if e.complexity.AdminPatreonTier.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonTier.ID(childComplexity), true
+
+	case "AdminPatreonTier.missedAt":
+		if e.complexity.AdminPatreonTier.MissedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonTier.MissedAt(childComplexity), true
+
+	case "AdminPatreonTier.tierID":
+		if e.complexity.AdminPatreonTier.TierID == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonTier.TierID(childComplexity), true
+
+	case "AdminPatreonTier.title":
+		if e.complexity.AdminPatreonTier.Title == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonTier.Title(childComplexity), true
+
+	case "AdminPatreonTiersConnection.nodes":
+		if e.complexity.AdminPatreonTiersConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonTiersConnection.Nodes(childComplexity), true
 
 	case "AdminPurchase.createdAt":
 		if e.complexity.AdminPurchase.CreatedAt == nil {
@@ -8017,6 +8248,267 @@ func (ec *executionContext) fieldContext_AdminOffersConnection_nodes(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminPatreonCampaign_id(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCampaign) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCampaign_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCampaign_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCampaign",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCampaign_credentialsID(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCampaign) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCampaign_credentialsID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CredentialsID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCampaign_credentialsID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCampaign",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCampaign_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCampaign) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCampaign_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCampaign_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCampaign",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCampaign_missedAt(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCampaign) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCampaign_missedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonCampaign().MissedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCampaign_missedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCampaign",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCampaign_campaignID(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCampaign) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCampaign_campaignID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CampaignID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCampaign_campaignID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCampaign",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCampaign_attributes(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCampaign) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCampaign_attributes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Attributes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCampaign_attributes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCampaign",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminPatreonCredentials_id(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminPatreonCredentials_id(ctx, field)
 	if err != nil {
@@ -8380,6 +8872,102 @@ func (ec *executionContext) fieldContext_AdminPatreonCredentials_state(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminPatreonCredentials_tiers(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentials_tiers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonCredentials().Tiers(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminPatreonTiersConnection)
+	fc.Result = res
+	return ec.marshalNAdminPatreonTiersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonTiersConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentials_tiers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminPatreonTiersConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonTiersConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonCredentials_members(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonCredentials().Members(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminPatreonMembersConnection)
+	fc.Result = res
+	return ec.marshalNAdminPatreonMembersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonMembersConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentials_members(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminPatreonMembersConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonMembersConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminPatreonCredentialsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminPatreonCredentialsConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminPatreonCredentialsConnection_nodes(ctx, field)
 	if err != nil {
@@ -8435,8 +9023,803 @@ func (ec *executionContext) fieldContext_AdminPatreonCredentialsConnection_nodes
 				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
 			case "state":
 				return ec.fieldContext_AdminPatreonCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminPatreonCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonMember_id(ctx context.Context, field graphql.CollectedField, obj *db.PatreonMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonMember_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonMember_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonMember_patreonID(ctx context.Context, field graphql.CollectedField, obj *db.PatreonMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonMember_patreonID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PatreonID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonMember_patreonID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonMember_campaignID(ctx context.Context, field graphql.CollectedField, obj *db.PatreonMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonMember_campaignID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CampaignID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonMember_campaignID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonMember_currentTierID(ctx context.Context, field graphql.CollectedField, obj *db.PatreonMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonMember_currentTierID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonMember().CurrentTierID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int64)
+	fc.Result = res
+	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonMember_currentTierID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonMember",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonMember_status(ctx context.Context, field graphql.CollectedField, obj *db.PatreonMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonMember_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonMember_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonMember_email(ctx context.Context, field graphql.CollectedField, obj *db.PatreonMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonMember_email(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Email, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonMember_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonMember_currentTier(ctx context.Context, field graphql.CollectedField, obj *db.PatreonMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonMember_currentTier(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonMember().CurrentTier(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.PatreonTier)
+	fc.Result = res
+	return ec.marshalOAdminPatreonTier2ᚖtrip2gᚋinternalᚋdbᚐPatreonTier(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonMember_currentTier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonMember",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminPatreonTier_id(ctx, field)
+			case "campaignID":
+				return ec.fieldContext_AdminPatreonTier_campaignID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminPatreonTier_createdAt(ctx, field)
+			case "missedAt":
+				return ec.fieldContext_AdminPatreonTier_missedAt(ctx, field)
+			case "tierID":
+				return ec.fieldContext_AdminPatreonTier_tierID(ctx, field)
+			case "title":
+				return ec.fieldContext_AdminPatreonTier_title(ctx, field)
+			case "amountCents":
+				return ec.fieldContext_AdminPatreonTier_amountCents(ctx, field)
+			case "attributes":
+				return ec.fieldContext_AdminPatreonTier_attributes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonTier", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonMembersConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminPatreonMembersConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonMembersConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Nodes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.PatreonMember)
+	fc.Result = res
+	return ec.marshalNAdminPatreonMember2ᚕtrip2gᚋinternalᚋdbᚐPatreonMemberᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonMembersConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonMembersConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminPatreonMember_id(ctx, field)
+			case "patreonID":
+				return ec.fieldContext_AdminPatreonMember_patreonID(ctx, field)
+			case "campaignID":
+				return ec.fieldContext_AdminPatreonMember_campaignID(ctx, field)
+			case "currentTierID":
+				return ec.fieldContext_AdminPatreonMember_currentTierID(ctx, field)
+			case "status":
+				return ec.fieldContext_AdminPatreonMember_status(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminPatreonMember_email(ctx, field)
+			case "currentTier":
+				return ec.fieldContext_AdminPatreonMember_currentTier(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonMember", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonTier_id(ctx context.Context, field graphql.CollectedField, obj *db.PatreonTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonTier_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonTier_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonTier_campaignID(ctx context.Context, field graphql.CollectedField, obj *db.PatreonTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonTier_campaignID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CampaignID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonTier_campaignID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonTier_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.PatreonTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonTier_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonTier_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonTier_missedAt(ctx context.Context, field graphql.CollectedField, obj *db.PatreonTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonTier_missedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonTier().MissedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonTier_missedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonTier",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonTier_tierID(ctx context.Context, field graphql.CollectedField, obj *db.PatreonTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonTier_tierID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TierID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonTier_tierID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonTier_title(ctx context.Context, field graphql.CollectedField, obj *db.PatreonTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonTier_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonTier_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonTier_amountCents(ctx context.Context, field graphql.CollectedField, obj *db.PatreonTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonTier_amountCents(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AmountCents, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonTier_amountCents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonTier_attributes(ctx context.Context, field graphql.CollectedField, obj *db.PatreonTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonTier_attributes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Attributes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonTier_attributes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminPatreonTiersConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminPatreonTiersConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonTiersConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Nodes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.PatreonTier)
+	fc.Result = res
+	return ec.marshalNAdminPatreonTier2ᚕtrip2gᚋinternalᚋdbᚐPatreonTierᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonTiersConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonTiersConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminPatreonTier_id(ctx, field)
+			case "campaignID":
+				return ec.fieldContext_AdminPatreonTier_campaignID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminPatreonTier_createdAt(ctx, field)
+			case "missedAt":
+				return ec.fieldContext_AdminPatreonTier_missedAt(ctx, field)
+			case "tierID":
+				return ec.fieldContext_AdminPatreonTier_tierID(ctx, field)
+			case "title":
+				return ec.fieldContext_AdminPatreonTier_title(ctx, field)
+			case "amountCents":
+				return ec.fieldContext_AdminPatreonTier_amountCents(ctx, field)
+			case "attributes":
+				return ec.fieldContext_AdminPatreonTier_attributes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonTier", field.Name)
 		},
 	}
 	return fc, nil
@@ -9943,6 +11326,10 @@ func (ec *executionContext) fieldContext_AdminQuery_patreonCredentials(ctx conte
 				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
 			case "state":
 				return ec.fieldContext_AdminPatreonCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminPatreonCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
 		},
@@ -14214,6 +15601,10 @@ func (ec *executionContext) fieldContext_CreatePatreonCredentialsPayload_patreon
 				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
 			case "state":
 				return ec.fieldContext_AdminPatreonCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminPatreonCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
 		},
@@ -17775,6 +19166,10 @@ func (ec *executionContext) fieldContext_RestorePatreonCredentialsPayload_patreo
 				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
 			case "state":
 				return ec.fieldContext_AdminPatreonCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminPatreonCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
 		},
@@ -26096,6 +27491,98 @@ func (ec *executionContext) _AdminOffersConnection(ctx context.Context, sel ast.
 	return out
 }
 
+var adminPatreonCampaignImplementors = []string{"AdminPatreonCampaign"}
+
+func (ec *executionContext) _AdminPatreonCampaign(ctx context.Context, sel ast.SelectionSet, obj *db.PatreonCampaign) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminPatreonCampaignImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminPatreonCampaign")
+		case "id":
+			out.Values[i] = ec._AdminPatreonCampaign_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "credentialsID":
+			out.Values[i] = ec._AdminPatreonCampaign_credentialsID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminPatreonCampaign_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "missedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonCampaign_missedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "campaignID":
+			out.Values[i] = ec._AdminPatreonCampaign_campaignID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "attributes":
+			out.Values[i] = ec._AdminPatreonCampaign_attributes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminPatreonCredentialsImplementors = []string{"AdminPatreonCredentials"}
 
 func (ec *executionContext) _AdminPatreonCredentials(ctx context.Context, sel ast.SelectionSet, obj *db.PatreonCredential) graphql.Marshaler {
@@ -26324,6 +27811,78 @@ func (ec *executionContext) _AdminPatreonCredentials(ctx context.Context, sel as
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "tiers":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonCredentials_tiers(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "members":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonCredentials_members(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -26394,6 +27953,311 @@ func (ec *executionContext) _AdminPatreonCredentialsConnection(ctx context.Conte
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminPatreonMemberImplementors = []string{"AdminPatreonMember"}
+
+func (ec *executionContext) _AdminPatreonMember(ctx context.Context, sel ast.SelectionSet, obj *db.PatreonMember) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminPatreonMemberImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminPatreonMember")
+		case "id":
+			out.Values[i] = ec._AdminPatreonMember_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "patreonID":
+			out.Values[i] = ec._AdminPatreonMember_patreonID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "campaignID":
+			out.Values[i] = ec._AdminPatreonMember_campaignID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "currentTierID":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonMember_currentTierID(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "status":
+			out.Values[i] = ec._AdminPatreonMember_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "email":
+			out.Values[i] = ec._AdminPatreonMember_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "currentTier":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonMember_currentTier(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminPatreonMembersConnectionImplementors = []string{"AdminPatreonMembersConnection"}
+
+func (ec *executionContext) _AdminPatreonMembersConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminPatreonMembersConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminPatreonMembersConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminPatreonMembersConnection")
+		case "nodes":
+			out.Values[i] = ec._AdminPatreonMembersConnection_nodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminPatreonTierImplementors = []string{"AdminPatreonTier"}
+
+func (ec *executionContext) _AdminPatreonTier(ctx context.Context, sel ast.SelectionSet, obj *db.PatreonTier) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminPatreonTierImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminPatreonTier")
+		case "id":
+			out.Values[i] = ec._AdminPatreonTier_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "campaignID":
+			out.Values[i] = ec._AdminPatreonTier_campaignID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminPatreonTier_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "missedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonTier_missedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "tierID":
+			out.Values[i] = ec._AdminPatreonTier_tierID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "title":
+			out.Values[i] = ec._AdminPatreonTier_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "amountCents":
+			out.Values[i] = ec._AdminPatreonTier_amountCents(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "attributes":
+			out.Values[i] = ec._AdminPatreonTier_attributes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminPatreonTiersConnectionImplementors = []string{"AdminPatreonTiersConnection"}
+
+func (ec *executionContext) _AdminPatreonTiersConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminPatreonTiersConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminPatreonTiersConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminPatreonTiersConnection")
+		case "nodes":
+			out.Values[i] = ec._AdminPatreonTiersConnection_nodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -33930,6 +35794,130 @@ func (ec *executionContext) marshalNAdminPatreonCredentialsConnection2ᚖtrip2g�
 	return ec._AdminPatreonCredentialsConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminPatreonMember2trip2gᚋinternalᚋdbᚐPatreonMember(ctx context.Context, sel ast.SelectionSet, v db.PatreonMember) graphql.Marshaler {
+	return ec._AdminPatreonMember(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminPatreonMember2ᚕtrip2gᚋinternalᚋdbᚐPatreonMemberᚄ(ctx context.Context, sel ast.SelectionSet, v []db.PatreonMember) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminPatreonMember2trip2gᚋinternalᚋdbᚐPatreonMember(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminPatreonMembersConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonMembersConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminPatreonMembersConnection) graphql.Marshaler {
+	return ec._AdminPatreonMembersConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminPatreonMembersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonMembersConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminPatreonMembersConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminPatreonMembersConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminPatreonTier2trip2gᚋinternalᚋdbᚐPatreonTier(ctx context.Context, sel ast.SelectionSet, v db.PatreonTier) graphql.Marshaler {
+	return ec._AdminPatreonTier(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminPatreonTier2ᚕtrip2gᚋinternalᚋdbᚐPatreonTierᚄ(ctx context.Context, sel ast.SelectionSet, v []db.PatreonTier) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminPatreonTier2trip2gᚋinternalᚋdbᚐPatreonTier(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminPatreonTiersConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonTiersConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminPatreonTiersConnection) graphql.Marshaler {
+	return ec._AdminPatreonTiersConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminPatreonTiersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonTiersConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminPatreonTiersConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminPatreonTiersConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminPurchase2trip2gᚋinternalᚋdbᚐPurchase(ctx context.Context, sel ast.SelectionSet, v db.Purchase) graphql.Marshaler {
 	return ec._AdminPurchase(ctx, sel, &v)
 }
@@ -36340,6 +38328,13 @@ func (ec *executionContext) unmarshalOAdminPatreonCredentialsFilterInput2ᚖtrip
 	}
 	res, err := ec.unmarshalInputAdminPatreonCredentialsFilterInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOAdminPatreonTier2ᚖtrip2gᚋinternalᚋdbᚐPatreonTier(ctx context.Context, sel ast.SelectionSet, v *db.PatreonTier) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminPatreonTier(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminPurchase2ᚖtrip2gᚋinternalᚋdbᚐPurchase(ctx context.Context, sel ast.SelectionSet, v *db.Purchase) graphql.Marshaler {

@@ -1,10 +1,5 @@
 namespace $.$$ {
 	export class $trip2g_admin_patreoncredentials_button_delete extends $.$trip2g_admin_patreoncredentials_button_delete {
-		@$mol_mem
-		delete_enabled() {
-			return this.credentials_id() > 0
-		}
-
 		delete( event?: Event ) {
 			event?.preventDefault()
 			event?.stopPropagation()

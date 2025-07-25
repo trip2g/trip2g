@@ -102,7 +102,7 @@ export type AdminMutation = {
   deleteRedirect: DeleteRedirectOrErrorPayload;
   disableApiKey: DisableApiKeyOrErrorPayload;
   makeReleaseLive: MakeReleaseLiveOrErrorPayload;
-  refreshPatreonCampaigns: RefreshPatreonCampaignsOrErrorPayload;
+  refreshPatreonData: RefreshPatreonDataOrErrorPayload;
   removeTgChatSubgraphAccess: RemoveTgChatSubgraphAccessOrErrorPayload;
   resetNotFoundPath: ResetNotFoundPathOrErrorPayload;
   restorePatreonCredentials: RestorePatreonCredentialsOrErrorPayload;
@@ -187,8 +187,8 @@ export type AdminMutationMakeReleaseLiveArgs = {
 };
 
 
-export type AdminMutationRefreshPatreonCampaignsArgs = {
-  input: RefreshPatreonCampaignsInput;
+export type AdminMutationRefreshPatreonDataArgs = {
+  input: RefreshPatreonDataInput;
 };
 
 
@@ -290,6 +290,16 @@ export type AdminOffersConnection = {
   nodes: Array<AdminOffer>;
 };
 
+export type AdminPatreonCampaign = {
+  __typename?: 'AdminPatreonCampaign';
+  attributes: Scalars['String']['output'];
+  campaignID: Scalars['String']['output'];
+  createdAt: Scalars['Time']['output'];
+  credentialsID: Scalars['Int64']['output'];
+  id: Scalars['Int64']['output'];
+  missedAt?: Maybe<Scalars['Time']['output']>;
+};
+
 export type AdminPatreonCredentials = {
   __typename?: 'AdminPatreonCredentials';
   createdAt: Scalars['Time']['output'];
@@ -298,7 +308,10 @@ export type AdminPatreonCredentials = {
   deletedAt?: Maybe<Scalars['Time']['output']>;
   deletedBy?: Maybe<AdminUser>;
   id: Scalars['Int64']['output'];
+  members: AdminPatreonMembersConnection;
   state: PatreonCredentialsStateEnum;
+  syncedAt?: Maybe<Scalars['Time']['output']>;
+  tiers: AdminPatreonTiersConnection;
 };
 
 export type AdminPatreonCredentialsConnection = {
@@ -308,6 +321,39 @@ export type AdminPatreonCredentialsConnection = {
 
 export type AdminPatreonCredentialsFilterInput = {
   state?: InputMaybe<PatreonCredentialsStateEnum>;
+};
+
+export type AdminPatreonMember = {
+  __typename?: 'AdminPatreonMember';
+  campaignID: Scalars['Int64']['output'];
+  currentTier?: Maybe<AdminPatreonTier>;
+  currentTierID?: Maybe<Scalars['Int64']['output']>;
+  email: Scalars['String']['output'];
+  id: Scalars['Int64']['output'];
+  patreonID: Scalars['String']['output'];
+  status: Scalars['String']['output'];
+};
+
+export type AdminPatreonMembersConnection = {
+  __typename?: 'AdminPatreonMembersConnection';
+  nodes: Array<AdminPatreonMember>;
+};
+
+export type AdminPatreonTier = {
+  __typename?: 'AdminPatreonTier';
+  amountCents: Scalars['Int64']['output'];
+  attributes: Scalars['String']['output'];
+  campaignID: Scalars['Int64']['output'];
+  createdAt: Scalars['Time']['output'];
+  id: Scalars['Int64']['output'];
+  missedAt?: Maybe<Scalars['Time']['output']>;
+  tierID: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+};
+
+export type AdminPatreonTiersConnection = {
+  __typename?: 'AdminPatreonTiersConnection';
+  nodes: Array<AdminPatreonTier>;
 };
 
 export type AdminPurchase = {
@@ -349,6 +395,7 @@ export type AdminQuery = {
   apiKeyLogs: AdminApiKeyLogsConnection;
   noteView?: Maybe<NoteView>;
   offer?: Maybe<AdminOffer>;
+  patreonCredentials?: Maybe<AdminPatreonCredentials>;
   purchase?: Maybe<AdminPurchase>;
   redirect?: Maybe<AdminRedirect>;
   subgraph?: Maybe<AdminSubgraph>;
@@ -381,6 +428,11 @@ export type AdminQueryNoteViewArgs = {
 
 
 export type AdminQueryOfferArgs = {
+  id: Scalars['Int64']['input'];
+};
+
+
+export type AdminQueryPatreonCredentialsArgs = {
   id: Scalars['Int64']['input'];
 };
 
@@ -964,14 +1016,14 @@ export type QueryNoteArgs = {
   input: NoteInput;
 };
 
-export type RefreshPatreonCampaignsInput = {
+export type RefreshPatreonDataInput = {
   credentialsId: Scalars['Int64']['input'];
 };
 
-export type RefreshPatreonCampaignsOrErrorPayload = ErrorPayload | RefreshPatreonCampaignsPayload;
+export type RefreshPatreonDataOrErrorPayload = ErrorPayload | RefreshPatreonDataPayload;
 
-export type RefreshPatreonCampaignsPayload = {
-  __typename?: 'RefreshPatreonCampaignsPayload';
+export type RefreshPatreonDataPayload = {
+  __typename?: 'RefreshPatreonDataPayload';
   success: Scalars['Boolean']['output'];
 };
 
@@ -1420,7 +1472,7 @@ export type AdminPatreonCredentialsQueryVariables = Exact<{
 }>;
 
 
-export type AdminPatreonCredentialsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allPatreonCredentials: { __typename?: 'AdminPatreonCredentialsConnection', nodes: Array<{ __typename?: 'AdminPatreonCredentials', id: any, state: PatreonCredentialsStateEnum, creatorAccessToken: string, createdAt: any, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
+export type AdminPatreonCredentialsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allPatreonCredentials: { __typename?: 'AdminPatreonCredentialsConnection', nodes: Array<{ __typename?: 'AdminPatreonCredentials', id: any, state: PatreonCredentialsStateEnum, creatorAccessToken: string, createdAt: any, syncedAt?: any | null, createdBy: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
 
 export type AdminCreatePatreonCredsMutationVariables = Exact<{
   input: CreatePatreonCredentialsInput;
@@ -1428,6 +1480,13 @@ export type AdminCreatePatreonCredsMutationVariables = Exact<{
 
 
 export type AdminCreatePatreonCredsMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', createPatreonCredentials: { __typename?: 'CreatePatreonCredentialsPayload', patreonCredentials: { __typename?: 'AdminPatreonCredentials', id: any } } | { __typename?: 'ErrorPayload', message: string } } };
+
+export type AdminPatreonCredentialsByIdQueryVariables = Exact<{
+  id: Scalars['Int64']['input'];
+}>;
+
+
+export type AdminPatreonCredentialsByIdQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', patreonCredentials?: { __typename?: 'AdminPatreonCredentials', createdAt: any, creatorAccessToken: string, createdBy: { __typename?: 'AdminUser', email?: string | null }, tiers: { __typename?: 'AdminPatreonTiersConnection', nodes: Array<{ __typename?: 'AdminPatreonTier', id: any, missedAt?: any | null, title: string, amountCents: any }> }, members: { __typename?: 'AdminPatreonMembersConnection', nodes: Array<{ __typename?: 'AdminPatreonMember', email: string, status: string, currentTier?: { __typename?: 'AdminPatreonTier', title: string } | null }> } } | null } };
 
 export type AdminPurchasesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1693,9 +1752,11 @@ export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation AdminDelete
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation AdminRestorePatreonCredentials($input: RestorePatreonCredentialsInput!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\trestorePatreonCredentials(input: $input) {\n\t\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t... on RestorePatreonCredentialsPayload {\n\t\t\t\t\t\t\t\t\tpatreonCredentials {\n\t\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminRestorePatreonCredentialsMutationVariables): AdminRestorePatreonCredentialsMutation
 
-export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminPatreonCredentials($filter: AdminPatreonCredentialsFilterInput) {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallPatreonCredentials(filter: $filter) {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tstate\n\t\t\t\t\t\t\t\tcreatorAccessToken\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\tcreatedBy {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: AdminPatreonCredentialsQueryVariables): AdminPatreonCredentialsQuery
+export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminPatreonCredentials($filter: AdminPatreonCredentialsFilterInput) {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallPatreonCredentials(filter: $filter) {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tstate\n\t\t\t\t\t\t\t\tcreatorAccessToken\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\tsyncedAt\n\t\t\t\t\t\t\t\tcreatedBy {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: AdminPatreonCredentialsQueryVariables): AdminPatreonCredentialsQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation AdminCreatePatreonCreds($input: CreatePatreonCredentialsInput!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tcreatePatreonCredentials(input: $input) {\n\t\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t... on CreatePatreonCredentialsPayload {\n\t\t\t\t\t\t\t\t\tpatreonCredentials {\n\t\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminCreatePatreonCredsMutationVariables): AdminCreatePatreonCredsMutation
+
+export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminPatreonCredentialsById($id: Int64!) {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tpatreonCredentials(id: $id) {\n\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\tcreatorAccessToken\n\n\t\t\t\t\t\t\tcreatedBy {\n\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t}\n\n\t\t\t\t\t\t\ttiers {\n\t\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\tmissedAt\n\t\t\t\t\t\t\t\t\ttitle\n\t\t\t\t\t\t\t\t\tamountCents\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\n\t\t\t\t\t\t\tmembers {\n\t\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\t\tstatus\n\t\t\t\t\t\t\t\t\tcurrentTier {\n\t\t\t\t\t\t\t\t\t\ttitle\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: AdminPatreonCredentialsByIdQueryVariables): AdminPatreonCredentialsByIdQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminPurchases {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallPurchases {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\tpaymentProvider\n\t\t\t\t\t\t\t\tstatus\n\t\t\t\t\t\t\t\tsuccessful\n\t\t\t\t\t\t\t\tofferId\n\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminPurchasesQuery
 
@@ -1767,7 +1828,7 @@ export function $trip2g_graphql_subscription(query: any, variables?: any) { retu
 
 
 
-export const $trip2g_graphql_persist_queries = {"Admins":"7b9f99a6b0b785b43488198eb4dec442d88e4abda7c516677a0611d76878d904","DisableApiKey":"a5852655edeb09cf7db15b0a196cc53cc005b3f8ef7fe7d7d3cdc032087b8b6b","AdminListApiKeys":"1baa27852f59c95f35fe5f35635ad6a617fca6312411bd6cae7cd377d681a52d","AdminCreateApiKey":"c9c10cfb6fa133ac380870427e9b9cdebbc1e9e9b92e6a6313c97f52b537d66f","AdminApiKeyShowQuery":"2f8b56fce14a35ac51fd315e919a352048a118b036a0368f2a66a85c7156c24b","AdminUnbanUser":"9512bb945535dd9ef2fe1dacc60073ce01fc8d8f3e93fec6583ab2dc455d1309","AdminListNoteViews":"08631c2621fdb1e1265d238476428a5a108673be31c9fa3823233984adaee8ea","AdminListSubgraphs":"4e45ae80a24576cab70fdbb4790a0a7acbde1171823623ed8d7a00e495b596cd","AdminListUserBans":"69e1b4b4cb152647fa3474d44d1fccc7e5bfdc9bfa95d60b9726d4e52c94b3b4","AdminListUsers":"6f4fcb27423e59a080c8c0ba8cc8b69628bf9f961bdfbce5c62bf60c19db4075","AdminListUserSubgraphAccesses":"79ca5aafd82b91a579c3ea6232fa7a32773f2b74846785a00e0f0deee9854eca","AdminGraph":"39e949dd3c2f89603f0d09f5e348c2f46ee78f28d2412ff6efa9279ab68e457b","AdminUpdateNoteGraphPositions":"79055eb93ba30f15dc82d77bdce102ad7d30a32b24e57ebf3339507d9fc66fee","AdminSelectNoteView":"d158e0da61a2cbad548f8ada69595f5f5534f15275a06ef95b969d89a7edb3ad","AdminNoteWarnings":"e1626da4e2828f1a95a9a55f70528b7074352fe80ea42e51a74bd6c695c01d37","AdminResetNotFoundPath":"1f10e8c2c12124d4932f5545eccbe0a2dede0dbb988cf0871f847d8d4e067d1a","AdminNotFoundPaths":"5cf3ec8aa2cf4d233d95d80889f90bd4d8cca6d0f4ea18f149dfbc1ff4fd3281","AdminShowNotFoundPath":"8ebf2f3ec53e223c367e1f99010372c46035e12533946751b5a63abf9bea4fd5","AdminDeleteNotFoundIgnoredPattern":"920a973936047b6abbe9e08334afc4334d661edda95a0bea16925a22524ad6a8","AdminNotFoundIgnoredPatterns":"429f371229ee3f9f65a6bd832b98d12ac2672d4b621c560399c89d30d0f605f0","AdminCreateNotFoundIgnoredPatternMutation":"9748b51ba96309a4b5b2905313c2fc9a8e75f7cdbb0b67a1b4c29884d23ec8c0","AdminShowNotFoundIgnoredPattern":"d2f0732335182b898725504e1f9b01cb043034a550686d13e0c1e5c6ab863344","AdminDeleteNotFoundIgnoredPatternMutation":"55537b7c7f93d3c0b32751d112c5545ca2b45c93261aa804fa154997e9ad2f8e","AdminUpdateNotFoundIgnoredPatternMutation":"f4e434af1218ee8662ed41a5ddee1043ea4fd46858cce1b9d03b87456a5d26be","AdminOffers":"b2fc36437eb7fc9ce54ed7fe52c5d6357eb56c1a2a739e52ed5a355499a817ce","AdminCreateOfferMutation":"54bfc14494b6645090140ee5379fef55991e303aa9bd6df0a022bb6b7285297f","AdminShowOffer":"644549579b7660594fa585b864956004f5a0ff8117877656f5089df760c1d79d","AdminUpdateOfferMutation":"bad9b0a25d99a5b3c45ca5116f543b11b7911d1c8e086ff532efd53f29908ca6","AdminDeletePatreonCredentials":"bb4e6f8b5b685f149c4bf14ec487eaf40d521712e94e44aa0997a4c904554480","AdminRestorePatreonCredentials":"5d13761fba27efff289309ffd9a8b5db017c28f87955b985a8c9db1aa9601690","AdminPatreonCredentials":"1214a723e5da34a08ccf336e8a56c692847e05103941a8d4c8c11b6d46ec1155","AdminCreatePatreonCreds":"591e7cf39ea6e450420cba98196e4442ec0a00116f882fa7f66517b5020ec326","AdminPurchases":"47a76a00baca079d6e46244a8ba7bf75daf8063fdf530c5a8d46a876fdc00900","AdminRedirects":"2a97bb424ba31abc5de22378e2989fc7c0c4b383de50be424f6f849e831e9311","AdminCreateRedirectMutation":"fb48605b011a659f8c8764b08da9bdadd90cbd5e6bbdf74b1b03d25a58fca89c","AdminShowRedirect":"300e47bb2bb87540db90e9c808e2ddf209f84219236abc6796417bf8bba3fbc0","AdminDeleteRedirectMutation":"b0d9e5d6b48166fd7422947a0b43bf3a93827fb5da666ac04449209b8a8a660c","AdminUpdateRedirectMutation":"70ce4af2a2b9bf672e94cf16d78952c56827591f6c0efb64e1c8e359050da36d","AdminMakeReleaseLive":"d0a1f7de2a4ea212ad0f7b80fd591943f26ca638c29e46acb604f47828db4204","AdminReleases":"a8954143d0ddc89b0a4d8ea0dfc63f3514e085d616d1089f8a0099adc9576993","AdminCreateRelease":"8fa0c84f61a4546c22ab6ccdafb6b18367eaae11e64dd35afeabdcaa9f19ee20","AdminBanUser":"b7eaca2436a0420749fd9818239ddaaf03cf39d13fb051af54e1ddfc16b0a376","AdminNoteView":"71287b914ef21187cc102872ffec82d7d3dbe8f1c7583391227f3829c627cc0d","AdminShowSubgraph":"e55ded2d39f46e61be846d0eaa24e9434a4cbc400e4d93fbde65dadeb14dd559","UpdateSubgraph":"a1ed76b00109cb6eac864a2c57d63d956d4c34676eb519e8d0a33abcd8c8945b","AdminUserSubgraphAccess":"a624b706534097050759fc343d7335c36f60b7fd8cb7eac35979d2c2e0b166da","AdminUpdateUserSubgraphAccess":"1f5c1a927c82b86a3d0e0313744fe51f023ed479f955e6846225bff4ab75a91d","AdminSelectSubgraphList":"bb432284d1aa05d873a33069ba3848e54368d1f8f98ee05fd948722f9a53f92d","AdminSelectSubgraph":"a801d4b303ea060e27e22011e2d7cc74c9a17a95e0877622e55e4012640c11a7","AdminTgBots":"06d210ef2397927fc72a502eb3b74feb72e597821fe1c34225a805aaf3a29d9f","AdminCreateTgBotMutation":"9748fa61fe26e6ae99458cf44e989e723783cd2fc15f15b24cd6fd93270949fa","AdminTgBotChats":"52468c7a5cd249d08825d0e83728126dc7de041808c61b4b8360c92df61ae389","AdminShowTgBot":"b19db79f571bd11a7ef34fcf55468b5475f00de5ee50426eb09ee71c866af16b","AdminUpdateTgBotMutation":"b52a6b067bf30fd17261a67bc90b1c1805f256483df958579a150b76daddad6b","SignOut":"8e1a898d776a103a20b7dbdfbeb8196fce0175ffe38fa7af9da2848cefdadedf","RequestEmailSignInCode":"cc5a33407c1a3cca08dbcba6847a88298eec84b10f18449244cf13e458449ef9","SignInByEmail":"5678d2ca29b77529e0b9942845dcea2c941c6b5a234863dc86ac2ffaad668614","Viewer":"11c2c89ff045bd18461fa0409d26dcf4acbb063202aa8e74615fcd74d21db756","ReaderQuery":"f7df3b23f1ff47bad46b39d5f1ba0a80a412d236b845497288dd593b3c13d8f6","PaywallActivePurchaseQuery":"49eef6eeabb08d2251039c9b3ca67cade0c7af866c29300712400aa44d34d15b","CreateEmailWaitListRequestMutation":"3239c9d8b52c7fc53db7844e5a7c8c5ee4f262e374d421a695bda48072395718","PaywallQuery":"efbb99141e50ca0ffbc3d9ab51ba259b45601c696bd77ca7334dc6579f88195d","CreatePaymentLink":"3c4ea8c746c573dc9a48a303c13f2b6f7ac3ccad23045f8e989105ea0df98b7a","UserSubscriptions":"1e67f2ab803afe77d6859c2130b2fede9f9edce8c9d841e14ce552c3ecf40115"}
+export const $trip2g_graphql_persist_queries = {"Admins":"7b9f99a6b0b785b43488198eb4dec442d88e4abda7c516677a0611d76878d904","DisableApiKey":"a5852655edeb09cf7db15b0a196cc53cc005b3f8ef7fe7d7d3cdc032087b8b6b","AdminListApiKeys":"1baa27852f59c95f35fe5f35635ad6a617fca6312411bd6cae7cd377d681a52d","AdminCreateApiKey":"c9c10cfb6fa133ac380870427e9b9cdebbc1e9e9b92e6a6313c97f52b537d66f","AdminApiKeyShowQuery":"2f8b56fce14a35ac51fd315e919a352048a118b036a0368f2a66a85c7156c24b","AdminUnbanUser":"9512bb945535dd9ef2fe1dacc60073ce01fc8d8f3e93fec6583ab2dc455d1309","AdminListNoteViews":"08631c2621fdb1e1265d238476428a5a108673be31c9fa3823233984adaee8ea","AdminListSubgraphs":"4e45ae80a24576cab70fdbb4790a0a7acbde1171823623ed8d7a00e495b596cd","AdminListUserBans":"69e1b4b4cb152647fa3474d44d1fccc7e5bfdc9bfa95d60b9726d4e52c94b3b4","AdminListUsers":"6f4fcb27423e59a080c8c0ba8cc8b69628bf9f961bdfbce5c62bf60c19db4075","AdminListUserSubgraphAccesses":"79ca5aafd82b91a579c3ea6232fa7a32773f2b74846785a00e0f0deee9854eca","AdminGraph":"39e949dd3c2f89603f0d09f5e348c2f46ee78f28d2412ff6efa9279ab68e457b","AdminUpdateNoteGraphPositions":"79055eb93ba30f15dc82d77bdce102ad7d30a32b24e57ebf3339507d9fc66fee","AdminSelectNoteView":"d158e0da61a2cbad548f8ada69595f5f5534f15275a06ef95b969d89a7edb3ad","AdminNoteWarnings":"e1626da4e2828f1a95a9a55f70528b7074352fe80ea42e51a74bd6c695c01d37","AdminResetNotFoundPath":"1f10e8c2c12124d4932f5545eccbe0a2dede0dbb988cf0871f847d8d4e067d1a","AdminNotFoundPaths":"5cf3ec8aa2cf4d233d95d80889f90bd4d8cca6d0f4ea18f149dfbc1ff4fd3281","AdminShowNotFoundPath":"8ebf2f3ec53e223c367e1f99010372c46035e12533946751b5a63abf9bea4fd5","AdminDeleteNotFoundIgnoredPattern":"920a973936047b6abbe9e08334afc4334d661edda95a0bea16925a22524ad6a8","AdminNotFoundIgnoredPatterns":"429f371229ee3f9f65a6bd832b98d12ac2672d4b621c560399c89d30d0f605f0","AdminCreateNotFoundIgnoredPatternMutation":"9748b51ba96309a4b5b2905313c2fc9a8e75f7cdbb0b67a1b4c29884d23ec8c0","AdminShowNotFoundIgnoredPattern":"d2f0732335182b898725504e1f9b01cb043034a550686d13e0c1e5c6ab863344","AdminDeleteNotFoundIgnoredPatternMutation":"55537b7c7f93d3c0b32751d112c5545ca2b45c93261aa804fa154997e9ad2f8e","AdminUpdateNotFoundIgnoredPatternMutation":"f4e434af1218ee8662ed41a5ddee1043ea4fd46858cce1b9d03b87456a5d26be","AdminOffers":"b2fc36437eb7fc9ce54ed7fe52c5d6357eb56c1a2a739e52ed5a355499a817ce","AdminCreateOfferMutation":"54bfc14494b6645090140ee5379fef55991e303aa9bd6df0a022bb6b7285297f","AdminShowOffer":"644549579b7660594fa585b864956004f5a0ff8117877656f5089df760c1d79d","AdminUpdateOfferMutation":"bad9b0a25d99a5b3c45ca5116f543b11b7911d1c8e086ff532efd53f29908ca6","AdminDeletePatreonCredentials":"bb4e6f8b5b685f149c4bf14ec487eaf40d521712e94e44aa0997a4c904554480","AdminRestorePatreonCredentials":"5d13761fba27efff289309ffd9a8b5db017c28f87955b985a8c9db1aa9601690","AdminPatreonCredentials":"a4529aa3cd3083e2e27d709dc6b6fa1844d29af82b0d32c29796d920ee3c3f31","AdminCreatePatreonCreds":"591e7cf39ea6e450420cba98196e4442ec0a00116f882fa7f66517b5020ec326","AdminPatreonCredentialsById":"6b227a05fea08897b41f2727f0cc8b78cc1eefdc9b082e7517007b6c5833d932","AdminPurchases":"47a76a00baca079d6e46244a8ba7bf75daf8063fdf530c5a8d46a876fdc00900","AdminRedirects":"2a97bb424ba31abc5de22378e2989fc7c0c4b383de50be424f6f849e831e9311","AdminCreateRedirectMutation":"fb48605b011a659f8c8764b08da9bdadd90cbd5e6bbdf74b1b03d25a58fca89c","AdminShowRedirect":"300e47bb2bb87540db90e9c808e2ddf209f84219236abc6796417bf8bba3fbc0","AdminDeleteRedirectMutation":"b0d9e5d6b48166fd7422947a0b43bf3a93827fb5da666ac04449209b8a8a660c","AdminUpdateRedirectMutation":"70ce4af2a2b9bf672e94cf16d78952c56827591f6c0efb64e1c8e359050da36d","AdminMakeReleaseLive":"d0a1f7de2a4ea212ad0f7b80fd591943f26ca638c29e46acb604f47828db4204","AdminReleases":"a8954143d0ddc89b0a4d8ea0dfc63f3514e085d616d1089f8a0099adc9576993","AdminCreateRelease":"8fa0c84f61a4546c22ab6ccdafb6b18367eaae11e64dd35afeabdcaa9f19ee20","AdminBanUser":"b7eaca2436a0420749fd9818239ddaaf03cf39d13fb051af54e1ddfc16b0a376","AdminNoteView":"71287b914ef21187cc102872ffec82d7d3dbe8f1c7583391227f3829c627cc0d","AdminShowSubgraph":"e55ded2d39f46e61be846d0eaa24e9434a4cbc400e4d93fbde65dadeb14dd559","UpdateSubgraph":"a1ed76b00109cb6eac864a2c57d63d956d4c34676eb519e8d0a33abcd8c8945b","AdminUserSubgraphAccess":"a624b706534097050759fc343d7335c36f60b7fd8cb7eac35979d2c2e0b166da","AdminUpdateUserSubgraphAccess":"1f5c1a927c82b86a3d0e0313744fe51f023ed479f955e6846225bff4ab75a91d","AdminSelectSubgraphList":"bb432284d1aa05d873a33069ba3848e54368d1f8f98ee05fd948722f9a53f92d","AdminSelectSubgraph":"a801d4b303ea060e27e22011e2d7cc74c9a17a95e0877622e55e4012640c11a7","AdminTgBots":"06d210ef2397927fc72a502eb3b74feb72e597821fe1c34225a805aaf3a29d9f","AdminCreateTgBotMutation":"9748fa61fe26e6ae99458cf44e989e723783cd2fc15f15b24cd6fd93270949fa","AdminTgBotChats":"52468c7a5cd249d08825d0e83728126dc7de041808c61b4b8360c92df61ae389","AdminShowTgBot":"b19db79f571bd11a7ef34fcf55468b5475f00de5ee50426eb09ee71c866af16b","AdminUpdateTgBotMutation":"b52a6b067bf30fd17261a67bc90b1c1805f256483df958579a150b76daddad6b","SignOut":"8e1a898d776a103a20b7dbdfbeb8196fce0175ffe38fa7af9da2848cefdadedf","RequestEmailSignInCode":"cc5a33407c1a3cca08dbcba6847a88298eec84b10f18449244cf13e458449ef9","SignInByEmail":"5678d2ca29b77529e0b9942845dcea2c941c6b5a234863dc86ac2ffaad668614","Viewer":"11c2c89ff045bd18461fa0409d26dcf4acbb063202aa8e74615fcd74d21db756","ReaderQuery":"f7df3b23f1ff47bad46b39d5f1ba0a80a412d236b845497288dd593b3c13d8f6","PaywallActivePurchaseQuery":"49eef6eeabb08d2251039c9b3ca67cade0c7af866c29300712400aa44d34d15b","CreateEmailWaitListRequestMutation":"3239c9d8b52c7fc53db7844e5a7c8c5ee4f262e374d421a695bda48072395718","PaywallQuery":"efbb99141e50ca0ffbc3d9ab51ba259b45601c696bd77ca7334dc6579f88195d","CreatePaymentLink":"3c4ea8c746c573dc9a48a303c13f2b6f7ac3ccad23045f8e989105ea0df98b7a","UserSubscriptions":"1e67f2ab803afe77d6859c2130b2fede9f9edce8c9d841e14ce552c3ecf40115"}
 
 export const $trip2g_graphql_note_warning_level_enum = NoteWarningLevelEnum;
 

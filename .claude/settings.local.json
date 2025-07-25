@@ -24,7 +24,8 @@
       "Bash(sqlite3:*)",
       "Bash(ls:*)",
       "Bash(go fmt:*)",
-      "Bash(go fmt:*)"
+      "Bash(go fmt:*)",
+      "Bash(gofmt:*)"
     ],
     "deny": []
   },

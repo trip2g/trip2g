@@ -329,6 +329,14 @@ func (r *adminOffersConnectionResolver) Nodes(ctx context.Context, obj *model.Ad
 	return r.env(ctx).ListAllOffers(ctx)
 }
 
+// MissedAt is the resolver for the missedAt field.
+func (r *adminPatreonCampaignResolver) MissedAt(ctx context.Context, obj *db.PatreonCampaign) (*time.Time, error) {
+	if obj.MissedAt.Valid {
+		return &obj.MissedAt.Time, nil
+	}
+	return nil, nil
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminPatreonCredentialsResolver) CreatedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -371,6 +379,48 @@ func (r *adminPatreonCredentialsResolver) State(ctx context.Context, obj *db.Pat
 	return model.PatreonCredentialsStateEnumActive, nil
 }
 
+// Tiers is the resolver for the tiers field.
+func (r *adminPatreonCredentialsResolver) Tiers(ctx context.Context, obj *db.PatreonCredential) (*model.AdminPatreonTiersConnection, error) {
+	campaigns, err := r.env(ctx).GetPatreonCampaignsByCredentialsID(ctx, obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get campaigns: %w", err)
+	}
+
+	var allTiers []db.PatreonTier
+	for _, campaign := range campaigns {
+		campaignTiers, tierErr := r.env(ctx).GetPatreonTiersByCampaignID(ctx, campaign.ID)
+		if tierErr != nil {
+			return nil, fmt.Errorf("failed to get tiers for campaign %d: %w", campaign.ID, tierErr)
+		}
+		allTiers = append(allTiers, campaignTiers...)
+	}
+
+	return &model.AdminPatreonTiersConnection{
+		Nodes: allTiers,
+	}, nil
+}
+
+// Members is the resolver for the members field.
+func (r *adminPatreonCredentialsResolver) Members(ctx context.Context, obj *db.PatreonCredential) (*model.AdminPatreonMembersConnection, error) {
+	campaigns, err := r.env(ctx).GetPatreonCampaignsByCredentialsID(ctx, obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get campaigns: %w", err)
+	}
+
+	var allMembers []db.PatreonMember
+	for _, campaign := range campaigns {
+		campaignMembers, memberErr := r.env(ctx).GetPatreonMembersByCampaignID(ctx, campaign.ID)
+		if memberErr != nil {
+			return nil, fmt.Errorf("failed to get members for campaign %d: %w", campaign.ID, memberErr)
+		}
+		allMembers = append(allMembers, campaignMembers...)
+	}
+
+	return &model.AdminPatreonMembersConnection{
+		Nodes: allMembers,
+	}, nil
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminPatreonCredentialsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminPatreonCredentialsConnection) ([]db.PatreonCredential, error) {
 	if obj.Filter != nil && obj.Filter.State != nil {
@@ -382,6 +432,43 @@ func (r *adminPatreonCredentialsConnectionResolver) Nodes(ctx context.Context, o
 		}
 	}
 	return r.env(ctx).AllPatreonCredentials(ctx)
+}
+
+// CurrentTierID is the resolver for the currentTierID field.
+func (r *adminPatreonMemberResolver) CurrentTierID(ctx context.Context, obj *db.PatreonMember) (*int64, error) {
+	if obj.CurrentTierID.Valid {
+		return &obj.CurrentTierID.Int64, nil
+	}
+	return nil, nil
+}
+
+// CurrentTier is the resolver for the currentTier field.
+func (r *adminPatreonMemberResolver) CurrentTier(ctx context.Context, obj *db.PatreonMember) (*db.PatreonTier, error) {
+	if !obj.CurrentTierID.Valid {
+		return nil, nil
+	}
+
+	// Get all tiers for the campaign and find the one with matching ID
+	tiers, err := r.env(ctx).GetPatreonTiersByCampaignID(ctx, obj.CampaignID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tiers for campaign: %w", err)
+	}
+
+	for _, tier := range tiers {
+		if tier.ID == obj.CurrentTierID.Int64 {
+			return &tier, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// MissedAt is the resolver for the missedAt field.
+func (r *adminPatreonTierResolver) MissedAt(ctx context.Context, obj *db.PatreonTier) (*time.Time, error) {
+	if obj.MissedAt.Valid {
+		return &obj.MissedAt.Time, nil
+	}
+	return nil, nil
 }
 
 // Successful is the resolver for the successful field.
@@ -1287,6 +1374,11 @@ func (r *Resolver) AdminOffersConnection() AdminOffersConnectionResolver {
 	return &adminOffersConnectionResolver{r}
 }
 
+// AdminPatreonCampaign returns AdminPatreonCampaignResolver implementation.
+func (r *Resolver) AdminPatreonCampaign() AdminPatreonCampaignResolver {
+	return &adminPatreonCampaignResolver{r}
+}
+
 // AdminPatreonCredentials returns AdminPatreonCredentialsResolver implementation.
 func (r *Resolver) AdminPatreonCredentials() AdminPatreonCredentialsResolver {
 	return &adminPatreonCredentialsResolver{r}
@@ -1296,6 +1388,14 @@ func (r *Resolver) AdminPatreonCredentials() AdminPatreonCredentialsResolver {
 func (r *Resolver) AdminPatreonCredentialsConnection() AdminPatreonCredentialsConnectionResolver {
 	return &adminPatreonCredentialsConnectionResolver{r}
 }
+
+// AdminPatreonMember returns AdminPatreonMemberResolver implementation.
+func (r *Resolver) AdminPatreonMember() AdminPatreonMemberResolver {
+	return &adminPatreonMemberResolver{r}
+}
+
+// AdminPatreonTier returns AdminPatreonTierResolver implementation.
+func (r *Resolver) AdminPatreonTier() AdminPatreonTierResolver { return &adminPatreonTierResolver{r} }
 
 // AdminPurchase returns AdminPurchaseResolver implementation.
 func (r *Resolver) AdminPurchase() AdminPurchaseResolver { return &adminPurchaseResolver{r} }
@@ -1460,8 +1560,11 @@ type adminNotFoundIgnoredPatternsConnectionResolver struct{ *Resolver }
 type adminNotFoundPathsConnectionResolver struct{ *Resolver }
 type adminOfferResolver struct{ *Resolver }
 type adminOffersConnectionResolver struct{ *Resolver }
+type adminPatreonCampaignResolver struct{ *Resolver }
 type adminPatreonCredentialsResolver struct{ *Resolver }
 type adminPatreonCredentialsConnectionResolver struct{ *Resolver }
+type adminPatreonMemberResolver struct{ *Resolver }
+type adminPatreonTierResolver struct{ *Resolver }
 type adminPurchaseResolver struct{ *Resolver }
 type adminPurchasesConnectionResolver struct{ *Resolver }
 type adminQueryResolver struct{ *Resolver }

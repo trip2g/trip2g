@@ -1,5 +1,5 @@
 $trip2g_admin_patreoncredentials_show $mol_page
-	credentials_id? 0
+	credentials_id 0
 	title \Patreon Credentials
 	tools /
 		<= DeleteButton $trip2g_admin_patreoncredentials_button_delete
@@ -35,5 +35,3 @@ $trip2g_admin_patreoncredentials_show $mol_page
 								title \Created By
 								Content <= CreatedBy $trip2g_admin_cell
 									content <= credentials_created_by \
-		<= ActionResult $mol_status
-			message <= action_result? \
