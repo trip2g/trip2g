@@ -28,6 +28,7 @@ import (
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
+	"trip2g/internal/case/admin/refreshpatreondata"
 	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
@@ -264,6 +265,11 @@ func (r *adminMutationResolver) RestorePatreonCredentials(ctx context.Context, o
 	return restorepatreoncredentials.Resolve(ctx, r.env(ctx), input)
 }
 
+// RefreshPatreonData is the resolver for the refreshPatreonData field.
+func (r *adminMutationResolver) RefreshPatreonData(ctx context.Context, obj *appmodel.AdminMutation, input model.RefreshPatreonDataInput) (model.RefreshPatreonDataOrErrorPayload, error) {
+	return refreshpatreondata.Resolve(ctx, r.env(ctx), input.CredentialsID)
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminNotFoundIgnoredPatternResolver) CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -351,10 +357,19 @@ func (r *adminPatreonCredentialsResolver) CreatorAccessToken(ctx context.Context
 	return token[:4] + strings.Repeat("*", len(token)-8) + token[len(token)-4:], nil
 }
 
+// State is the resolver for the state field.
+func (r *adminPatreonCredentialsResolver) State(ctx context.Context, obj *db.PatreonCredential) (model.PatreonCredentialsStateEnum, error) {
+	if obj.DeletedAt.Valid {
+		return model.PatreonCredentialsStateEnumDeleted, nil
+	}
+
+	return model.PatreonCredentialsStateEnumActive, nil
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminPatreonCredentialsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminPatreonCredentialsConnection) ([]db.PatreonCredential, error) {
-	if obj.Filter != nil {
-		switch *obj.Filter {
+	if obj.Filter != nil && obj.Filter.State != nil {
+		switch *obj.Filter.State {
 		case model.PatreonCredentialsStateEnumActive:
 			return r.env(ctx).AllActivePatreonCredentials(ctx)
 		case model.PatreonCredentialsStateEnumDeleted:
@@ -482,17 +497,7 @@ func (r *adminQueryResolver) TgChatMembers(ctx context.Context, obj *appmodel.Ad
 
 // AllPatreonCredentials is the resolver for the allPatreonCredentials field.
 func (r *adminQueryResolver) AllPatreonCredentials(ctx context.Context, obj *appmodel.AdminQuery, filter *model.AdminPatreonCredentialsFilterInput) (*model.AdminPatreonCredentialsConnection, error) {
-	if filter != nil && filter.State != nil {
-		switch *filter.State {
-		case model.PatreonCredentialsStateEnumActive:
-			active := model.PatreonCredentialsStateEnumActive
-			return &model.AdminPatreonCredentialsConnection{Filter: &active}, nil
-		case model.PatreonCredentialsStateEnumDeleted:
-			deleted := model.PatreonCredentialsStateEnumDeleted
-			return &model.AdminPatreonCredentialsConnection{Filter: &deleted}, nil
-		}
-	}
-	return &model.AdminPatreonCredentialsConnection{}, nil
+	return &model.AdminPatreonCredentialsConnection{Filter: filter}, nil
 }
 
 // APIKeyLogs is the resolver for the apiKeyLogs field.

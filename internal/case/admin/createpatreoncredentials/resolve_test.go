@@ -41,7 +41,7 @@ func assertPayload(t *testing.T, want, got model.CreatePatreonCredentialsOrError
 
 type Env interface {
 	InsertPatreonCredentials(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error)
-	InsertPatreonCampaign(ctx context.Context, arg db.InsertPatreonCampaignParams) error
+	UpsertPatreonCampaign(ctx context.Context, arg db.UpsertPatreonCampaignParams) error
 	PatreonListCampaigns(token string) ([]patreon.Campaign, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
@@ -82,7 +82,7 @@ func TestResolve(t *testing.T) {
 						CreatorAccessToken: arg.CreatorAccessToken,
 					}, nil
 				}
-				mock.InsertPatreonCampaignFunc = func(ctx context.Context, arg db.InsertPatreonCampaignParams) error {
+				mock.UpsertPatreonCampaignFunc = func(ctx context.Context, arg db.UpsertPatreonCampaignParams) error {
 					return nil
 				}
 				return mock

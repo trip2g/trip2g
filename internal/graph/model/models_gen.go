@@ -86,6 +86,10 @@ type PushNotesOrErrorPayload interface {
 	IsPushNotesOrErrorPayload()
 }
 
+type RefreshPatreonDataOrErrorPayload interface {
+	IsRefreshPatreonDataOrErrorPayload()
+}
+
 type RemoveTgChatSubgraphAccessOrErrorPayload interface {
 	IsRemoveTgChatSubgraphAccessOrErrorPayload()
 }
@@ -202,8 +206,8 @@ type AdminOffersConnection struct {
 }
 
 type AdminPatreonCredentialsConnection struct {
-	Nodes  []db.PatreonCredential       `json:"nodes"`
-	Filter *PatreonCredentialsStateEnum `json:"filter,omitempty"`
+	Nodes  []db.PatreonCredential              `json:"nodes"`
+	Filter *AdminPatreonCredentialsFilterInput `json:"-"`
 }
 
 type AdminPatreonCredentialsFilterInput struct {
@@ -500,6 +504,8 @@ func (ErrorPayload) IsDeletePatreonCredentialsOrErrorPayload() {}
 
 func (ErrorPayload) IsRestorePatreonCredentialsOrErrorPayload() {}
 
+func (ErrorPayload) IsRefreshPatreonDataOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -569,6 +575,16 @@ type PushedNoteAsset struct {
 
 type Query struct {
 }
+
+type RefreshPatreonDataInput struct {
+	CredentialsID int64 `json:"credentialsId"`
+}
+
+type RefreshPatreonDataPayload struct {
+	Success bool `json:"success"`
+}
+
+func (RefreshPatreonDataPayload) IsRefreshPatreonDataOrErrorPayload() {}
 
 type RemoveTgChatSubgraphAccessInput struct {
 	ID int64 `json:"id"`

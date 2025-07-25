@@ -289,8 +289,32 @@ CREATE TABLE patreon_credentials (
 CREATE TABLE patreon_campaigns (
   id integer primary key autoincrement,
   credentials_id integer not null references patreon_credentials(id) on delete cascade,
-  campaign_id text not null
+  created_at datetime not null default current_timestamp,
+  missed_at datetime,
+  campaign_id text not null,
+  attributes text not null,
+  unique(credentials_id, campaign_id)
 );
+CREATE TABLE patreon_members (
+  id integer primary key autoincrement,
+  patreon_id text not null, -- uuid
+  campaign_id integer not null references patreon_campaigns(id) on delete cascade,
+  current_tier_id integer references patreon_tiers(id) on delete set null,
+  status text not null,
+  email text not null
+);
+CREATE TABLE patreon_tiers (
+  id integer primary key autoincrement,
+  campaign_id integer not null references patreon_campaigns(id) on delete cascade,
+  created_at datetime not null default current_timestamp,
+  missed_at datetime,
+  tier_id text not null,
+  title text not null,
+  amount_cents integer not null,
+  attributes text not null,
+  unique(campaign_id, tier_id)
+);
+CREATE UNIQUE INDEX unique_patreon_member on patreon_members(patreon_id, campaign_id);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -332,4 +356,8 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250627040815'),
   ('20250628111216'),
   ('20250724085424'),
-  ('20250724090433');
+  ('20250724090433'),
+  ('20250725033413'),
+  ('20250725034851'),
+  ('20250725200000'),
+  ('20250725201000');

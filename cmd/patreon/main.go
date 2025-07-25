@@ -44,17 +44,17 @@ func testListCampaigns(client *patreon.Client) string {
 	if err != nil {
 		log.Fatalf("failed to list campaigns: %v", err)
 	}
-	
+
 	if len(campaigns) == 0 {
 		log.Fatal("no campaigns found")
 	}
-	
+
 	logPrintf("Found %d campaigns:\n", len(campaigns))
 	for i, campaign := range campaigns {
 		logPrintf("  %d. ID: %s, Type: %s\n", i+1, campaign.ID, campaign.Type)
 		logPrintf("     Attributes: %s\n", string(campaign.Attributes))
 	}
-	
+
 	// Return the first campaign ID for compatibility with existing tests
 	return campaigns[0].ID
 }
@@ -68,9 +68,8 @@ func testPatrons(client *patreon.Client, campaignID string) {
 
 	logPrintf("Found %d patrons:\n", len(patronsResp.Data))
 	for i, patron := range patronsResp.Data {
-		logPrintf("  %d. ID: %s, Status: %s, Email: %s\n",
-			i+1, patron.ID, patron.Attributes.PatronStatus,
-			patron.Attributes.Email)
+		logPrintf("  %d. ID: %s, Attributes: %+v\n",
+			i+1, patron.ID, patron.Attributes)
 	}
 
 	if len(patronsResp.Included) > 0 {

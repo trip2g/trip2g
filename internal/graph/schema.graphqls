@@ -307,11 +307,11 @@ type AdminPatreonCredentials @goModel(model: "trip2g/internal/db.PatreonCredenti
   deletedAt: Time
   deletedBy: AdminUser @goField(forceResolver: true)
   creatorAccessToken: String! @goField(forceResolver: true)
+  state: PatreonCredentialsStateEnum!
 }
 
-type AdminPatreonCredentialsConnection {
+type AdminPatreonCredentialsConnection @goExtraField(name: "Filter", type: "*trip2g/internal/graph/model.AdminPatreonCredentialsFilterInput"){
   nodes: [AdminPatreonCredentials!]! @goField(forceResolver: true)
-  filter: PatreonCredentialsStateEnum
 }
 
 input AdminTgBotChatsFilterInput {
@@ -1010,6 +1010,20 @@ type RestorePatreonCredentialsPayload {
 
 union RestorePatreonCredentialsOrErrorPayload = RestorePatreonCredentialsPayload | ErrorPayload
 
+#
+# refreshPatreonData
+#
+
+input RefreshPatreonDataInput {
+  credentialsId: Int64!
+}
+
+type RefreshPatreonDataPayload {
+  success: Boolean!
+}
+
+union RefreshPatreonDataOrErrorPayload = RefreshPatreonDataPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
@@ -1047,4 +1061,5 @@ type AdminMutation {
   createPatreonCredentials(input: CreatePatreonCredentialsInput!): CreatePatreonCredentialsOrErrorPayload!
   deletePatreonCredentials(input: DeletePatreonCredentialsInput!): DeletePatreonCredentialsOrErrorPayload!
   restorePatreonCredentials(input: RestorePatreonCredentialsInput!): RestorePatreonCredentialsOrErrorPayload!
+  refreshPatreonData(input: RefreshPatreonDataInput!): RefreshPatreonDataOrErrorPayload!
 }

@@ -19,6 +19,7 @@ import (
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
+	"trip2g/internal/case/admin/refreshpatreondata"
 	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
@@ -147,6 +148,7 @@ type Env interface {
 	removetgchatsubgraphaccess.Env
 	createpatreoncredentials.Env
 	deletepatreoncredentials.Env
+	refreshpatreondata.Env
 	restorepatreoncredentials.Env
 
 	// Telegram bot queries
@@ -166,6 +168,4 @@ type Env interface {
 	AllPatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
 	AllActivePatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
 	AllDeletedPatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
-	RestorePatreonCredentials(ctx context.Context, id int64) (db.PatreonCredential, error)
-	InsertPatreonCampaign(ctx context.Context, arg db.InsertPatreonCampaignParams) error
 }

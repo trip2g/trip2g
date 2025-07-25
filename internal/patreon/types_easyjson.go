@@ -710,7 +710,19 @@ func easyjson6601e8cdDecodeTrip2gInternalPatreon9(in *jlexer.Lexer, out *PatronA
 		case "email":
 			out.Email = string(in.String())
 		case "patron_status":
-			out.PatronStatus = string(in.String())
+			if in.IsNull() {
+				in.Skip()
+				out.PatronStatus = nil
+			} else {
+				if out.PatronStatus == nil {
+					out.PatronStatus = new(string)
+				}
+				*out.PatronStatus = string(in.String())
+			}
+		case "next_charge_date":
+			out.NextChargeDate = string(in.String())
+		case "last_charge_date":
+			out.LastChargeDate = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -733,7 +745,21 @@ func easyjson6601e8cdEncodeTrip2gInternalPatreon9(out *jwriter.Writer, in Patron
 	{
 		const prefix string = ",\"patron_status\":"
 		out.RawString(prefix)
-		out.String(string(in.PatronStatus))
+		if in.PatronStatus == nil {
+			out.RawString("null")
+		} else {
+			out.String(string(*in.PatronStatus))
+		}
+	}
+	{
+		const prefix string = ",\"next_charge_date\":"
+		out.RawString(prefix)
+		out.String(string(in.NextChargeDate))
+	}
+	{
+		const prefix string = ",\"last_charge_date\":"
+		out.RawString(prefix)
+		out.String(string(in.LastChargeDate))
 	}
 	out.RawByte('}')
 }
@@ -1182,7 +1208,66 @@ func (v ErrorDetail) MarshalEasyJSON(w *jwriter.Writer) {
 func (v *ErrorDetail) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson6601e8cdDecodeTrip2gInternalPatreon15(l, v)
 }
-func easyjson6601e8cdDecodeTrip2gInternalPatreon16(in *jlexer.Lexer, out *CampaignsResponse) {
+func easyjson6601e8cdDecodeTrip2gInternalPatreon16(in *jlexer.Lexer, out *Data) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "id":
+			out.ID = string(in.String())
+		case "type":
+			out.Type = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson6601e8cdEncodeTrip2gInternalPatreon16(out *jwriter.Writer, in Data) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"id\":"
+		out.RawString(prefix[1:])
+		out.String(string(in.ID))
+	}
+	{
+		const prefix string = ",\"type\":"
+		out.RawString(prefix)
+		out.String(string(in.Type))
+	}
+	out.RawByte('}')
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v Data) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson6601e8cdEncodeTrip2gInternalPatreon16(w, v)
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *Data) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson6601e8cdDecodeTrip2gInternalPatreon16(l, v)
+}
+func easyjson6601e8cdDecodeTrip2gInternalPatreon17(in *jlexer.Lexer, out *CampaignsResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1236,7 +1321,7 @@ func easyjson6601e8cdDecodeTrip2gInternalPatreon16(in *jlexer.Lexer, out *Campai
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeTrip2gInternalPatreon16(out *jwriter.Writer, in CampaignsResponse) {
+func easyjson6601e8cdEncodeTrip2gInternalPatreon17(out *jwriter.Writer, in CampaignsResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1266,14 +1351,14 @@ func easyjson6601e8cdEncodeTrip2gInternalPatreon16(out *jwriter.Writer, in Campa
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v CampaignsResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeTrip2gInternalPatreon16(w, v)
+	easyjson6601e8cdEncodeTrip2gInternalPatreon17(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CampaignsResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeTrip2gInternalPatreon16(l, v)
+	easyjson6601e8cdDecodeTrip2gInternalPatreon17(l, v)
 }
-func easyjson6601e8cdDecodeTrip2gInternalPatreon17(in *jlexer.Lexer, out *Campaign) {
+func easyjson6601e8cdDecodeTrip2gInternalPatreon18(in *jlexer.Lexer, out *Campaign) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -1310,7 +1395,7 @@ func easyjson6601e8cdDecodeTrip2gInternalPatreon17(in *jlexer.Lexer, out *Campai
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeTrip2gInternalPatreon17(out *jwriter.Writer, in Campaign) {
+func easyjson6601e8cdEncodeTrip2gInternalPatreon18(out *jwriter.Writer, in Campaign) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -1334,10 +1419,10 @@ func easyjson6601e8cdEncodeTrip2gInternalPatreon17(out *jwriter.Writer, in Campa
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Campaign) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeTrip2gInternalPatreon17(w, v)
+	easyjson6601e8cdEncodeTrip2gInternalPatreon18(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Campaign) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeTrip2gInternalPatreon17(l, v)
+	easyjson6601e8cdDecodeTrip2gInternalPatreon18(l, v)
 }

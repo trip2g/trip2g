@@ -1,0 +1,5 @@
+$trip2g_admin_patreoncredentials_button_restore $mol_button_major
+	credentials_id? 0
+	title \Restore
+	enabled => restore_enabled
+	click? <=> restore? null

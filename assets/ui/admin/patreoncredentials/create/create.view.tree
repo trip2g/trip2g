@@ -1,0 +1,24 @@
+$trip2g_admin_patreoncredentials_create $mol_page
+	title \Create Patreon Credentials
+	CredentialsView $mol_view
+		sub /
+			<= CredentialsId_labeler $mol_labeler
+				title \ID
+				Content <= CredentialsId $trip2g_admin_cell
+					content <= credentials_id_string? \
+	body /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Token_field $mol_form_field
+					name \Creator Access Token
+					bid <= token_bid \
+					Content <= token_control $mol_string
+						value? <=> token? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

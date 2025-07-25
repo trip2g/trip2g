@@ -1,0 +1,39 @@
+$trip2g_admin_patreoncredentials_show $mol_page
+	credentials_id? 0
+	title \Patreon Credentials
+	tools /
+		<= DeleteButton $trip2g_admin_patreoncredentials_button_delete
+			credentials_id <= credentials_id
+			click? <=> delete? null
+		<= RestoreButton $trip2g_admin_patreoncredentials_button_restore
+			credentials_id <= credentials_id
+			click? <=> restore? null
+	body /
+		<= CredentialsDetails $mol_view
+			sub /
+				<= Details_labeler $mol_labeler
+					title \Patreon Credentials Details
+					Content <= Details $mol_view
+						sub /
+							<= Id_labeler $mol_labeler
+								title \ID
+								Content <= Id $trip2g_admin_cell
+									content <= credentials_id_string \
+							<= State_labeler $mol_labeler
+								title \State
+								Content <= State $trip2g_admin_cell
+									content <= credentials_state \
+							<= Token_labeler $mol_labeler
+								title \Creator Access Token
+								Content <= Token $trip2g_admin_cell
+									content <= credentials_token \
+							<= CreatedAt_labeler $mol_labeler
+								title \Created At
+								Content <= CreatedAt $trip2g_admin_cell
+									content <= credentials_created_at \
+							<= CreatedBy_labeler $mol_labeler
+								title \Created By
+								Content <= CreatedBy $trip2g_admin_cell
+									content <= credentials_created_by \
+		<= ActionResult $mol_status
+			message <= action_result? \

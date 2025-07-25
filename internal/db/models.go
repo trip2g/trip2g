@@ -159,9 +159,12 @@ type OfferSubgraph struct {
 }
 
 type PatreonCampaign struct {
-	ID            int64  `json:"id"`
-	CredentialsID int64  `json:"credentials_id"`
-	CampaignID    string `json:"campaign_id"`
+	ID            int64        `json:"id"`
+	CredentialsID int64        `json:"credentials_id"`
+	CreatedAt     time.Time    `json:"created_at"`
+	MissedAt      sql.NullTime `json:"missed_at"`
+	CampaignID    string       `json:"campaign_id"`
+	Attributes    string       `json:"attributes"`
 }
 
 type PatreonCredential struct {
@@ -171,6 +174,26 @@ type PatreonCredential struct {
 	DeletedAt          sql.NullTime  `json:"deleted_at"`
 	DeletedBy          sql.NullInt64 `json:"deleted_by"`
 	CreatorAccessToken string        `json:"creator_access_token"`
+}
+
+type PatreonMember struct {
+	ID            int64         `json:"id"`
+	PatreonID     string        `json:"patreon_id"`
+	CampaignID    int64         `json:"campaign_id"`
+	CurrentTierID sql.NullInt64 `json:"current_tier_id"`
+	Status        string        `json:"status"`
+	Email         string        `json:"email"`
+}
+
+type PatreonTier struct {
+	ID          int64        `json:"id"`
+	CampaignID  int64        `json:"campaign_id"`
+	CreatedAt   time.Time    `json:"created_at"`
+	MissedAt    sql.NullTime `json:"missed_at"`
+	TierID      string       `json:"tier_id"`
+	Title       string       `json:"title"`
+	AmountCents int64        `json:"amount_cents"`
+	Attributes  string       `json:"attributes"`
 }
 
 type Purchase struct {

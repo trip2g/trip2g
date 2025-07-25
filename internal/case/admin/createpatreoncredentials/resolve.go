@@ -14,7 +14,7 @@ import (
 
 type Env interface {
 	InsertPatreonCredentials(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error)
-	InsertPatreonCampaign(ctx context.Context, arg db.InsertPatreonCampaignParams) error
+	UpsertPatreonCampaign(ctx context.Context, arg db.UpsertPatreonCampaignParams) error
 	PatreonListCampaigns(token string) ([]patreon.Campaign, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
@@ -69,12 +69,15 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	// Save campaigns after creating credentials
 	for _, campaign := range campaigns {
-		campaignParams := db.InsertPatreonCampaignParams{
+		// Save campaign with attributes
+		campaignAttrs, _ := campaign.Attributes.MarshalJSON()
+		campaignParams := db.UpsertPatreonCampaignParams{
 			CredentialsID: credentials.ID,
 			CampaignID:    campaign.ID,
+			Attributes:    string(campaignAttrs),
 		}
 
-		err = env.InsertPatreonCampaign(ctx, campaignParams)
+		err = env.UpsertPatreonCampaign(ctx, campaignParams)
 		if err != nil {
 			return nil, fmt.Errorf("failed to save campaign %s: %w", campaign.ID, err)
 		}

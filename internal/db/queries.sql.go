@@ -867,6 +867,116 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 	return i, err
 }
 
+const getPatreonCampaignsByCredentialsID = `-- name: GetPatreonCampaignsByCredentialsID :many
+select id, credentials_id, created_at, missed_at, campaign_id, attributes from patreon_campaigns
+where credentials_id = ?
+order by created_at desc
+`
+
+func (q *Queries) GetPatreonCampaignsByCredentialsID(ctx context.Context, credentialsID int64) ([]PatreonCampaign, error) {
+	rows, err := q.db.QueryContext(ctx, getPatreonCampaignsByCredentialsID, credentialsID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PatreonCampaign
+	for rows.Next() {
+		var i PatreonCampaign
+		if err := rows.Scan(
+			&i.ID,
+			&i.CredentialsID,
+			&i.CreatedAt,
+			&i.MissedAt,
+			&i.CampaignID,
+			&i.Attributes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPatreonMembersByCampaignID = `-- name: GetPatreonMembersByCampaignID :many
+select id, patreon_id, campaign_id, current_tier_id, status, email from patreon_members
+where campaign_id = ?
+order by id desc
+`
+
+func (q *Queries) GetPatreonMembersByCampaignID(ctx context.Context, campaignID int64) ([]PatreonMember, error) {
+	rows, err := q.db.QueryContext(ctx, getPatreonMembersByCampaignID, campaignID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PatreonMember
+	for rows.Next() {
+		var i PatreonMember
+		if err := rows.Scan(
+			&i.ID,
+			&i.PatreonID,
+			&i.CampaignID,
+			&i.CurrentTierID,
+			&i.Status,
+			&i.Email,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPatreonTiersByCampaignID = `-- name: GetPatreonTiersByCampaignID :many
+select id, campaign_id, created_at, missed_at, tier_id, title, amount_cents, attributes from patreon_tiers
+where campaign_id = ?
+order by amount_cents desc
+`
+
+func (q *Queries) GetPatreonTiersByCampaignID(ctx context.Context, campaignID int64) ([]PatreonTier, error) {
+	rows, err := q.db.QueryContext(ctx, getPatreonTiersByCampaignID, campaignID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PatreonTier
+	for rows.Next() {
+		var i PatreonTier
+		if err := rows.Scan(
+			&i.ID,
+			&i.CampaignID,
+			&i.CreatedAt,
+			&i.MissedAt,
+			&i.TierID,
+			&i.Title,
+			&i.AmountCents,
+			&i.Attributes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const hideNotePath = `-- name: HideNotePath :exec
 update note_paths
    set hidden_by = ?
@@ -1144,17 +1254,18 @@ func (q *Queries) InsertOfferSubgraph(ctx context.Context, arg InsertOfferSubgra
 }
 
 const insertPatreonCampaign = `-- name: InsertPatreonCampaign :exec
-insert into patreon_campaigns (credentials_id, campaign_id)
-values (?, ?)
+insert into patreon_campaigns (credentials_id, campaign_id, attributes)
+values (?, ?, ?)
 `
 
 type InsertPatreonCampaignParams struct {
 	CredentialsID int64  `json:"credentials_id"`
 	CampaignID    string `json:"campaign_id"`
+	Attributes    string `json:"attributes"`
 }
 
 func (q *Queries) InsertPatreonCampaign(ctx context.Context, arg InsertPatreonCampaignParams) error {
-	_, err := q.db.ExecContext(ctx, insertPatreonCampaign, arg.CredentialsID, arg.CampaignID)
+	_, err := q.db.ExecContext(ctx, insertPatreonCampaign, arg.CredentialsID, arg.CampaignID, arg.Attributes)
 	return err
 }
 
@@ -2476,6 +2587,17 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 	return items, nil
 }
 
+const markMissedPatreonTiers = `-- name: MarkMissedPatreonTiers :exec
+update patreon_tiers
+set missed_at = current_timestamp
+where campaign_id = ? and tier_id not in (select value from json_each(?))
+`
+
+func (q *Queries) MarkMissedPatreonTiers(ctx context.Context, campaignID int64) error {
+	_, err := q.db.ExecContext(ctx, markMissedPatreonTiers, campaignID)
+	return err
+}
+
 const markTgBotChatRemoved = `-- name: MarkTgBotChatRemoved :exec
 update tg_bot_chats
 set removed_at = current_timestamp
@@ -3499,6 +3621,79 @@ type UpsertNoteVersionAssetParams struct {
 
 func (q *Queries) UpsertNoteVersionAsset(ctx context.Context, arg UpsertNoteVersionAssetParams) error {
 	_, err := q.db.ExecContext(ctx, upsertNoteVersionAsset, arg.AssetID, arg.VersionID, arg.Path)
+	return err
+}
+
+const upsertPatreonCampaign = `-- name: UpsertPatreonCampaign :exec
+insert into patreon_campaigns (credentials_id, campaign_id, attributes)
+values (?, ?, ?)
+on conflict(credentials_id, campaign_id) do update set
+  attributes = excluded.attributes,
+  missed_at = null
+`
+
+type UpsertPatreonCampaignParams struct {
+	CredentialsID int64  `json:"credentials_id"`
+	CampaignID    string `json:"campaign_id"`
+	Attributes    string `json:"attributes"`
+}
+
+func (q *Queries) UpsertPatreonCampaign(ctx context.Context, arg UpsertPatreonCampaignParams) error {
+	_, err := q.db.ExecContext(ctx, upsertPatreonCampaign, arg.CredentialsID, arg.CampaignID, arg.Attributes)
+	return err
+}
+
+const upsertPatreonMember = `-- name: UpsertPatreonMember :exec
+insert into patreon_members (patreon_id, campaign_id, status, email)
+values (?, ?, ?, ?)
+on conflict(patreon_id, campaign_id) do update set
+  status = excluded.status,
+  email = excluded.email
+`
+
+type UpsertPatreonMemberParams struct {
+	PatreonID  string `json:"patreon_id"`
+	CampaignID int64  `json:"campaign_id"`
+	Status     string `json:"status"`
+	Email      string `json:"email"`
+}
+
+func (q *Queries) UpsertPatreonMember(ctx context.Context, arg UpsertPatreonMemberParams) error {
+	_, err := q.db.ExecContext(ctx, upsertPatreonMember,
+		arg.PatreonID,
+		arg.CampaignID,
+		arg.Status,
+		arg.Email,
+	)
+	return err
+}
+
+const upsertPatreonTier = `-- name: UpsertPatreonTier :exec
+insert into patreon_tiers (campaign_id, tier_id, title, amount_cents, attributes)
+values (?, ?, ?, ?, ?)
+on conflict(campaign_id, tier_id) do update set
+  title = excluded.title,
+  amount_cents = excluded.amount_cents,
+  attributes = excluded.attributes,
+  missed_at = null
+`
+
+type UpsertPatreonTierParams struct {
+	CampaignID  int64  `json:"campaign_id"`
+	TierID      string `json:"tier_id"`
+	Title       string `json:"title"`
+	AmountCents int64  `json:"amount_cents"`
+	Attributes  string `json:"attributes"`
+}
+
+func (q *Queries) UpsertPatreonTier(ctx context.Context, arg UpsertPatreonTierParams) error {
+	_, err := q.db.ExecContext(ctx, upsertPatreonTier,
+		arg.CampaignID,
+		arg.TierID,
+		arg.Title,
+		arg.AmountCents,
+		arg.Attributes,
+	)
 	return err
 }
 

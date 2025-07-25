@@ -280,6 +280,15 @@ func (a *app) PatreonListCampaigns(token string) ([]patreon.Campaign, error) {
 	return client.ListCampaigns()
 }
 
+func (a *app) PatreonListPatrons(token string, campaignID string) (*patreon.PatronsResponse, error) {
+	client, err := a.patreonClientManager.Get(token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Patreon client: %w", err)
+	}
+
+	return client.ListPatrons(campaignID)
+}
+
 func (a *app) SendMail(ctx context.Context, data model.Mail) error {
 	client := resend.NewClient(a.config.ResendAPIKey)
 

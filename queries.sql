@@ -773,5 +773,49 @@ select *
  where deleted_by is null;
 
 -- name: InsertPatreonCampaign :exec
-insert into patreon_campaigns (credentials_id, campaign_id)
-values (?, ?);
+insert into patreon_campaigns (credentials_id, campaign_id, attributes)
+values (?, ?, ?);
+
+-- name: UpsertPatreonCampaign :exec
+insert into patreon_campaigns (credentials_id, campaign_id, attributes)
+values (?, ?, ?)
+on conflict(credentials_id, campaign_id) do update set
+  attributes = excluded.attributes,
+  missed_at = null;
+
+
+-- name: GetPatreonCampaignsByCredentialsID :many
+select * from patreon_campaigns
+where credentials_id = ?
+order by created_at desc;
+
+-- name: UpsertPatreonTier :exec
+insert into patreon_tiers (campaign_id, tier_id, title, amount_cents, attributes)
+values (?, ?, ?, ?, ?)
+on conflict(campaign_id, tier_id) do update set
+  title = excluded.title,
+  amount_cents = excluded.amount_cents,
+  attributes = excluded.attributes,
+  missed_at = null;
+
+-- name: MarkMissedPatreonTiers :exec
+update patreon_tiers
+set missed_at = current_timestamp
+where campaign_id = ? and tier_id not in (select value from json_each(?));
+
+-- name: GetPatreonTiersByCampaignID :many
+select * from patreon_tiers
+where campaign_id = ?
+order by amount_cents desc;
+
+-- name: UpsertPatreonMember :exec
+insert into patreon_members (patreon_id, campaign_id, status, email)
+values (?, ?, ?, ?)
+on conflict(patreon_id, campaign_id) do update set
+  status = excluded.status,
+  email = excluded.email;
+
+-- name: GetPatreonMembersByCampaignID :many
+select * from patreon_members
+where campaign_id = ?
+order by id desc;

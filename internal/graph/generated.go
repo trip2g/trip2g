@@ -164,6 +164,7 @@ type ComplexityRoot struct {
 		DeleteRedirect               func(childComplexity int, input model.DeleteRedirectInput) int
 		DisableAPIKey                func(childComplexity int, input model.DisableAPIKeyInput) int
 		MakeReleaseLive              func(childComplexity int, input model.MakeReleaseLiveInput) int
+		RefreshPatreonData           func(childComplexity int, input model.RefreshPatreonDataInput) int
 		RemoveTgChatSubgraphAccess   func(childComplexity int, input model.RemoveTgChatSubgraphAccessInput) int
 		ResetNotFoundPath            func(childComplexity int, input model.ResetNotFoundPathInput) int
 		RestorePatreonCredentials    func(childComplexity int, input model.RestorePatreonCredentialsInput) int
@@ -222,11 +223,11 @@ type ComplexityRoot struct {
 		DeletedAt          func(childComplexity int) int
 		DeletedBy          func(childComplexity int) int
 		ID                 func(childComplexity int) int
+		State              func(childComplexity int) int
 	}
 
 	AdminPatreonCredentialsConnection struct {
-		Filter func(childComplexity int) int
-		Nodes  func(childComplexity int) int
+		Nodes func(childComplexity int) int
 	}
 
 	AdminPurchase struct {
@@ -566,6 +567,10 @@ type ComplexityRoot struct {
 		Viewer    func(childComplexity int) int
 	}
 
+	RefreshPatreonDataPayload struct {
+		Success func(childComplexity int) int
+	}
+
 	RemoveTgChatSubgraphAccessPayload struct {
 		DeletedID func(childComplexity int) int
 	}
@@ -723,6 +728,7 @@ type AdminMutationResolver interface {
 	CreatePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreatePatreonCredentialsInput) (model.CreatePatreonCredentialsOrErrorPayload, error)
 	DeletePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeletePatreonCredentialsInput) (model.DeletePatreonCredentialsOrErrorPayload, error)
 	RestorePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.RestorePatreonCredentialsInput) (model.RestorePatreonCredentialsOrErrorPayload, error)
+	RefreshPatreonData(ctx context.Context, obj *model1.AdminMutation, input model.RefreshPatreonDataInput) (model.RefreshPatreonDataOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -749,6 +755,7 @@ type AdminPatreonCredentialsResolver interface {
 	DeletedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error)
 	DeletedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error)
 	CreatorAccessToken(ctx context.Context, obj *db.PatreonCredential) (string, error)
+	State(ctx context.Context, obj *db.PatreonCredential) (model.PatreonCredentialsStateEnum, error)
 }
 type AdminPatreonCredentialsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminPatreonCredentialsConnection) ([]db.PatreonCredential, error)
@@ -1268,6 +1275,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.MakeReleaseLive(childComplexity, args["input"].(model.MakeReleaseLiveInput)), true
 
+	case "AdminMutation.refreshPatreonData":
+		if e.complexity.AdminMutation.RefreshPatreonData == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_refreshPatreonData_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.RefreshPatreonData(childComplexity, args["input"].(model.RefreshPatreonDataInput)), true
+
 	case "AdminMutation.removeTgChatSubgraphAccess":
 		if e.complexity.AdminMutation.RemoveTgChatSubgraphAccess == nil {
 			break
@@ -1582,12 +1601,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminPatreonCredentials.ID(childComplexity), true
 
-	case "AdminPatreonCredentialsConnection.filter":
-		if e.complexity.AdminPatreonCredentialsConnection.Filter == nil {
+	case "AdminPatreonCredentials.state":
+		if e.complexity.AdminPatreonCredentials.State == nil {
 			break
 		}
 
-		return e.complexity.AdminPatreonCredentialsConnection.Filter(childComplexity), true
+		return e.complexity.AdminPatreonCredentials.State(childComplexity), true
 
 	case "AdminPatreonCredentialsConnection.nodes":
 		if e.complexity.AdminPatreonCredentialsConnection.Nodes == nil {
@@ -2947,6 +2966,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Viewer(childComplexity), true
 
+	case "RefreshPatreonDataPayload.success":
+		if e.complexity.RefreshPatreonDataPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.RefreshPatreonDataPayload.Success(childComplexity), true
+
 	case "RemoveTgChatSubgraphAccessPayload.deletedId":
 		if e.complexity.RemoveTgChatSubgraphAccessPayload.DeletedID == nil {
 			break
@@ -3273,6 +3299,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNoteInput,
 		ec.unmarshalInputPushNoteInput,
 		ec.unmarshalInputPushNotesInput,
+		ec.unmarshalInputRefreshPatreonDataInput,
 		ec.unmarshalInputRemoveTgChatSubgraphAccessInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
@@ -3724,6 +3751,29 @@ func (ec *executionContext) field_AdminMutation_makeReleaseLive_argsInput(
 	}
 
 	var zeroVal model.MakeReleaseLiveInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_refreshPatreonData_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_refreshPatreonData_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_refreshPatreonData_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.RefreshPatreonDataInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRefreshPatreonDataInput2trip2gᚋinternalᚋgraphᚋmodelᚐRefreshPatreonDataInput(ctx, tmp)
+	}
+
+	var zeroVal model.RefreshPatreonDataInput
 	return zeroVal, nil
 }
 
@@ -6935,6 +6985,61 @@ func (ec *executionContext) fieldContext_AdminMutation_restorePatreonCredentials
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_refreshPatreonData(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_refreshPatreonData(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().RefreshPatreonData(rctx, obj, fc.Args["input"].(model.RefreshPatreonDataInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.RefreshPatreonDataOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNRefreshPatreonDataOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRefreshPatreonDataOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_refreshPatreonData(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RefreshPatreonDataOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_refreshPatreonData_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminNotFoundIgnoredPattern_id(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundIgnoredPattern) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminNotFoundIgnoredPattern_id(ctx, field)
 	if err != nil {
@@ -8144,6 +8249,50 @@ func (ec *executionContext) fieldContext_AdminPatreonCredentials_creatorAccessTo
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminPatreonCredentials_state(ctx context.Context, field graphql.CollectedField, obj *db.PatreonCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonCredentials_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonCredentials().State(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.PatreonCredentialsStateEnum)
+	fc.Result = res
+	return ec.marshalNPatreonCredentialsStateEnum2trip2gᚋinternalᚋgraphᚋmodelᚐPatreonCredentialsStateEnum(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonCredentials_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type PatreonCredentialsStateEnum does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminPatreonCredentialsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminPatreonCredentialsConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminPatreonCredentialsConnection_nodes(ctx, field)
 	if err != nil {
@@ -8195,49 +8344,10 @@ func (ec *executionContext) fieldContext_AdminPatreonCredentialsConnection_nodes
 				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
 			case "creatorAccessToken":
 				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminPatreonCredentials_state(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminPatreonCredentialsConnection_filter(ctx context.Context, field graphql.CollectedField, obj *model.AdminPatreonCredentialsConnection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminPatreonCredentialsConnection_filter(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Filter, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.PatreonCredentialsStateEnum)
-	fc.Result = res
-	return ec.marshalOPatreonCredentialsStateEnum2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐPatreonCredentialsStateEnum(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_AdminPatreonCredentialsConnection_filter(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminPatreonCredentialsConnection",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type PatreonCredentialsStateEnum does not have child fields")
 		},
 	}
 	return fc, nil
@@ -9674,8 +9784,6 @@ func (ec *executionContext) fieldContext_AdminQuery_allPatreonCredentials(ctx co
 			switch field.Name {
 			case "nodes":
 				return ec.fieldContext_AdminPatreonCredentialsConnection_nodes(ctx, field)
-			case "filter":
-				return ec.fieldContext_AdminPatreonCredentialsConnection_filter(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentialsConnection", field.Name)
 		},
@@ -13943,6 +14051,8 @@ func (ec *executionContext) fieldContext_CreatePatreonCredentialsPayload_patreon
 				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
 			case "creatorAccessToken":
 				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminPatreonCredentials_state(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
 		},
@@ -15207,6 +15317,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_deletePatreonCredentials(ctx, field)
 			case "restorePatreonCredentials":
 				return ec.fieldContext_AdminMutation_restorePatreonCredentials(ctx, field)
+			case "refreshPatreonData":
+				return ec.fieldContext_AdminMutation_refreshPatreonData(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -17259,6 +17371,50 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _RefreshPatreonDataPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.RefreshPatreonDataPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RefreshPatreonDataPayload_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RefreshPatreonDataPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RefreshPatreonDataPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RemoveTgChatSubgraphAccessPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.RemoveTgChatSubgraphAccessPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_RemoveTgChatSubgraphAccessPayload_deletedId(ctx, field)
 	if err != nil {
@@ -17452,6 +17608,8 @@ func (ec *executionContext) fieldContext_RestorePatreonCredentialsPayload_patreo
 				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
 			case "creatorAccessToken":
 				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminPatreonCredentials_state(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
 		},
@@ -22070,6 +22228,33 @@ func (ec *executionContext) unmarshalInputPushNotesInput(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputRefreshPatreonDataInput(ctx context.Context, obj any) (model.RefreshPatreonDataInput, error) {
+	var it model.RefreshPatreonDataInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"credentialsId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "credentialsId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialsId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialsID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRemoveTgChatSubgraphAccessInput(ctx context.Context, obj any) (model.RemoveTgChatSubgraphAccessInput, error) {
 	var it model.RemoveTgChatSubgraphAccessInput
 	asMap := map[string]any{}
@@ -23062,6 +23247,29 @@ func (ec *executionContext) _PushNotesOrErrorPayload(ctx context.Context, sel as
 			return graphql.Null
 		}
 		return ec._PushNotesPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _RefreshPatreonDataOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RefreshPatreonDataOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RefreshPatreonDataPayload:
+		return ec._RefreshPatreonDataPayload(ctx, sel, &obj)
+	case *model.RefreshPatreonDataPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RefreshPatreonDataPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -25059,6 +25267,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "refreshPatreonData":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_refreshPatreonData(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -25846,6 +26090,42 @@ func (ec *executionContext) _AdminPatreonCredentials(ctx context.Context, sel as
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "state":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonCredentials_state(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -25916,8 +26196,6 @@ func (ec *executionContext) _AdminPatreonCredentialsConnection(ctx context.Conte
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "filter":
-			out.Values[i] = ec._AdminPatreonCredentialsConnection_filter(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -29797,7 +30075,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -31097,6 +31375,45 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var refreshPatreonDataPayloadImplementors = []string{"RefreshPatreonDataPayload", "RefreshPatreonDataOrErrorPayload"}
+
+func (ec *executionContext) _RefreshPatreonDataPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RefreshPatreonDataPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, refreshPatreonDataPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RefreshPatreonDataPayload")
+		case "success":
+			out.Values[i] = ec._RefreshPatreonDataPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -34773,6 +35090,16 @@ func (ec *executionContext) marshalNOffer2ᚕtrip2gᚋinternalᚋdbᚐOfferᚄ(c
 	return ret
 }
 
+func (ec *executionContext) unmarshalNPatreonCredentialsStateEnum2trip2gᚋinternalᚋgraphᚋmodelᚐPatreonCredentialsStateEnum(ctx context.Context, v any) (model.PatreonCredentialsStateEnum, error) {
+	var res model.PatreonCredentialsStateEnum
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNPatreonCredentialsStateEnum2trip2gᚋinternalᚋgraphᚋmodelᚐPatreonCredentialsStateEnum(ctx context.Context, sel ast.SelectionSet, v model.PatreonCredentialsStateEnum) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNPaymentType2trip2gᚋinternalᚋgraphᚋmodelᚐPaymentType(ctx context.Context, v any) (model.PaymentType, error) {
 	var res model.PaymentType
 	err := res.UnmarshalGQL(v)
@@ -34966,6 +35293,21 @@ func (ec *executionContext) marshalNPushedNoteAsset2ᚕtrip2gᚋinternalᚋgraph
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNRefreshPatreonDataInput2trip2gᚋinternalᚋgraphᚋmodelᚐRefreshPatreonDataInput(ctx context.Context, v any) (model.RefreshPatreonDataInput, error) {
+	res, err := ec.unmarshalInputRefreshPatreonDataInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRefreshPatreonDataOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRefreshPatreonDataOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RefreshPatreonDataOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RefreshPatreonDataOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNRemoveTgChatSubgraphAccessInput2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveTgChatSubgraphAccessInput(ctx context.Context, v any) (model.RemoveTgChatSubgraphAccessInput, error) {

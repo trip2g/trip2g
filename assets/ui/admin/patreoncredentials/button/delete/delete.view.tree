@@ -1,0 +1,5 @@
+$trip2g_admin_patreoncredentials_button_delete $mol_button_minor
+	credentials_id? 0
+	title \Delete
+	enabled => delete_enabled
+	click? <=> delete? null
