@@ -840,6 +840,25 @@ select * from patreon_tiers
 where campaign_id = ? and tier_id = ?
 limit 1;
 
+-- name: DeletePatreonTierSubgraphsByTierID :exec
+delete from patreon_tier_subgraphs
+where tier_id = ?;
+
+-- name: InsertPatreonTierSubgraph :exec
+insert into patreon_tier_subgraphs (tier_id, subgraph_id, created_by)
+values (?, ?, ?);
+
+-- name: PatreonTierByID :one
+select * from patreon_tiers
+where id = ?;
+
+-- name: GetSubgraphsByTierID :many
+select s.*
+from subgraphs s
+join patreon_tier_subgraphs pts on s.id = pts.subgraph_id
+where pts.tier_id = ?
+order by s.name;
+
 -- name: GetPatreonMemberByPatreonIDAndCampaignID :one
 select * from patreon_members
 where patreon_id = ? and campaign_id = ?

@@ -335,6 +335,7 @@ type AdminPatreonTier @goModel(model: "trip2g/internal/db.PatreonTier") {
   title: String!
   amountCents: Int64!
   attributes: String!
+  subgraphs: [AdminSubgraph!]!
 }
 
 type AdminPatreonMember @goModel(model: "trip2g/internal/db.PatreonMember") {
@@ -1066,6 +1067,21 @@ type RefreshPatreonDataPayload {
 
 union RefreshPatreonDataOrErrorPayload = RefreshPatreonDataPayload | ErrorPayload
 
+#
+# setPatreonTierSubgraphs
+#
+
+input SetPatreonTierSubgraphsInput {
+  tierId: Int64!
+  subgraphIds: [Int64!]!
+}
+
+type SetPatreonTierSubgraphsPayload {
+  tier: AdminPatreonTier!
+}
+
+union SetPatreonTierSubgraphsOrErrorPayload = SetPatreonTierSubgraphsPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
@@ -1104,4 +1120,5 @@ type AdminMutation {
   deletePatreonCredentials(input: DeletePatreonCredentialsInput!): DeletePatreonCredentialsOrErrorPayload!
   restorePatreonCredentials(input: RestorePatreonCredentialsInput!): RestorePatreonCredentialsOrErrorPayload!
   refreshPatreonData(input: RefreshPatreonDataInput!): RefreshPatreonDataOrErrorPayload!
+  setPatreonTierSubgraphs(input: SetPatreonTierSubgraphsInput!): SetPatreonTierSubgraphsOrErrorPayload!
 }

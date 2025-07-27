@@ -106,6 +106,10 @@ type RestorePatreonCredentialsOrErrorPayload interface {
 	IsRestorePatreonCredentialsOrErrorPayload()
 }
 
+type SetPatreonTierSubgraphsOrErrorPayload interface {
+	IsSetPatreonTierSubgraphsOrErrorPayload()
+}
+
 type SignInOrErrorPayload interface {
 	IsSignInOrErrorPayload()
 }
@@ -514,6 +518,8 @@ func (ErrorPayload) IsRestorePatreonCredentialsOrErrorPayload() {}
 
 func (ErrorPayload) IsRefreshPatreonDataOrErrorPayload() {}
 
+func (ErrorPayload) IsSetPatreonTierSubgraphsOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -633,6 +639,17 @@ type RestorePatreonCredentialsPayload struct {
 }
 
 func (RestorePatreonCredentialsPayload) IsRestorePatreonCredentialsOrErrorPayload() {}
+
+type SetPatreonTierSubgraphsInput struct {
+	TierID      int64   `json:"tierId"`
+	SubgraphIds []int64 `json:"subgraphIds"`
+}
+
+type SetPatreonTierSubgraphsPayload struct {
+	Tier *db.PatreonTier `json:"tier"`
+}
+
+func (SetPatreonTierSubgraphsPayload) IsSetPatreonTierSubgraphsOrErrorPayload() {}
 
 type SignInByEmailInput struct {
 	Email string `json:"email"`

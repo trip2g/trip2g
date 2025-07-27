@@ -315,6 +315,14 @@ CREATE TABLE patreon_tiers (
   unique(campaign_id, tier_id)
 );
 CREATE UNIQUE INDEX unique_patreon_member on patreon_members(patreon_id, campaign_id);
+CREATE TABLE patreon_tier_subgraphs (
+  tier_id integer not null references patreon_tiers(id) on delete cascade,
+  subgraph_id integer not null references subgraphs(id) on delete restrict,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+
+  primary key (tier_id, subgraph_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -361,4 +369,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250725034851'),
   ('20250725200000'),
   ('20250725201000'),
-  ('20250725202000');
+  ('20250725202000'),
+  ('20250727034504');

@@ -197,6 +197,13 @@ type PatreonTier struct {
 	Attributes  string       `json:"attributes"`
 }
 
+type PatreonTierSubgraph struct {
+	TierID     int64     `json:"tier_id"`
+	SubgraphID int64     `json:"subgraph_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	CreatedBy  int64     `json:"created_by"`
+}
+
 type Purchase struct {
 	ID              string        `json:"id"`
 	CreatedAt       time.Time     `json:"created_at"`

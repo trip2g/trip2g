@@ -814,6 +814,16 @@ func (q *Queries) DeleteOfferSubgraphs(ctx context.Context, offerID int64) error
 	return err
 }
 
+const deletePatreonTierSubgraphsByTierID = `-- name: DeletePatreonTierSubgraphsByTierID :exec
+delete from patreon_tier_subgraphs
+where tier_id = ?
+`
+
+func (q *Queries) DeletePatreonTierSubgraphsByTierID(ctx context.Context, tierID int64) error {
+	_, err := q.db.ExecContext(ctx, deletePatreonTierSubgraphsByTierID, tierID)
+	return err
+}
+
 const deleteRedirect = `-- name: DeleteRedirect :exec
 delete from redirects where id = ?
 `
@@ -1018,6 +1028,42 @@ func (q *Queries) GetPatreonTiersByCampaignID(ctx context.Context, campaignID in
 			&i.Title,
 			&i.AmountCents,
 			&i.Attributes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSubgraphsByTierID = `-- name: GetSubgraphsByTierID :many
+select s.id, s.name, s.color, s.created_at
+from subgraphs s
+join patreon_tier_subgraphs pts on s.id = pts.subgraph_id
+where pts.tier_id = ?
+order by s.name
+`
+
+func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Subgraph, error) {
+	rows, err := q.db.QueryContext(ctx, getSubgraphsByTierID, tierID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Subgraph
+	for rows.Next() {
+		var i Subgraph
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Color,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1348,6 +1394,22 @@ func (q *Queries) InsertPatreonCredentials(ctx context.Context, arg InsertPatreo
 		&i.SyncedAt,
 	)
 	return i, err
+}
+
+const insertPatreonTierSubgraph = `-- name: InsertPatreonTierSubgraph :exec
+insert into patreon_tier_subgraphs (tier_id, subgraph_id, created_by)
+values (?, ?, ?)
+`
+
+type InsertPatreonTierSubgraphParams struct {
+	TierID     int64 `json:"tier_id"`
+	SubgraphID int64 `json:"subgraph_id"`
+	CreatedBy  int64 `json:"created_by"`
+}
+
+func (q *Queries) InsertPatreonTierSubgraph(ctx context.Context, arg InsertPatreonTierSubgraphParams) error {
+	_, err := q.db.ExecContext(ctx, insertPatreonTierSubgraph, arg.TierID, arg.SubgraphID, arg.CreatedBy)
+	return err
 }
 
 const insertPurchase = `-- name: InsertPurchase :exec
@@ -2837,6 +2899,27 @@ func (q *Queries) PatreonCredentials(ctx context.Context, id int64) (PatreonCred
 		&i.DeletedBy,
 		&i.CreatorAccessToken,
 		&i.SyncedAt,
+	)
+	return i, err
+}
+
+const patreonTierByID = `-- name: PatreonTierByID :one
+select id, campaign_id, created_at, missed_at, tier_id, title, amount_cents, attributes from patreon_tiers
+where id = ?
+`
+
+func (q *Queries) PatreonTierByID(ctx context.Context, id int64) (PatreonTier, error) {
+	row := q.db.QueryRowContext(ctx, patreonTierByID, id)
+	var i PatreonTier
+	err := row.Scan(
+		&i.ID,
+		&i.CampaignID,
+		&i.CreatedAt,
+		&i.MissedAt,
+		&i.TierID,
+		&i.Title,
+		&i.AmountCents,
+		&i.Attributes,
 	)
 	return i, err
 }

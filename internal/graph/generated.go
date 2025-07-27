@@ -171,6 +171,7 @@ type ComplexityRoot struct {
 		RemoveTgChatSubgraphAccess   func(childComplexity int, input model.RemoveTgChatSubgraphAccessInput) int
 		ResetNotFoundPath            func(childComplexity int, input model.ResetNotFoundPathInput) int
 		RestorePatreonCredentials    func(childComplexity int, input model.RestorePatreonCredentialsInput) int
+		SetPatreonTierSubgraphs      func(childComplexity int, input model.SetPatreonTierSubgraphsInput) int
 		UnbanUser                    func(childComplexity int, input model.UnbanUserInput) int
 		UpdateNotFoundIgnoredPattern func(childComplexity int, input model.UpdateNotFoundIgnoredPatternInput) int
 		UpdateNoteGraphPositions     func(childComplexity int, input model.UpdateNoteGraphPositionsInput) int
@@ -266,6 +267,7 @@ type ComplexityRoot struct {
 		CreatedAt   func(childComplexity int) int
 		ID          func(childComplexity int) int
 		MissedAt    func(childComplexity int) int
+		Subgraphs   func(childComplexity int) int
 		TierID      func(childComplexity int) int
 		Title       func(childComplexity int) int
 	}
@@ -632,6 +634,10 @@ type ComplexityRoot struct {
 		PatreonCredentials func(childComplexity int) int
 	}
 
+	SetPatreonTierSubgraphsPayload struct {
+		Tier func(childComplexity int) int
+	}
+
 	SignInPayload struct {
 		Token  func(childComplexity int) int
 		Viewer func(childComplexity int) int
@@ -774,6 +780,7 @@ type AdminMutationResolver interface {
 	DeletePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeletePatreonCredentialsInput) (model.DeletePatreonCredentialsOrErrorPayload, error)
 	RestorePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.RestorePatreonCredentialsInput) (model.RestorePatreonCredentialsOrErrorPayload, error)
 	RefreshPatreonData(ctx context.Context, obj *model1.AdminMutation, input model.RefreshPatreonDataInput) (model.RefreshPatreonDataOrErrorPayload, error)
+	SetPatreonTierSubgraphs(ctx context.Context, obj *model1.AdminMutation, input model.SetPatreonTierSubgraphsInput) (model.SetPatreonTierSubgraphsOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -818,6 +825,8 @@ type AdminPatreonMemberResolver interface {
 }
 type AdminPatreonTierResolver interface {
 	MissedAt(ctx context.Context, obj *db.PatreonTier) (*time.Time, error)
+
+	Subgraphs(ctx context.Context, obj *db.PatreonTier) ([]db.Subgraph, error)
 }
 type AdminPurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
@@ -1383,6 +1392,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.RestorePatreonCredentials(childComplexity, args["input"].(model.RestorePatreonCredentialsInput)), true
 
+	case "AdminMutation.setPatreonTierSubgraphs":
+		if e.complexity.AdminMutation.SetPatreonTierSubgraphs == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_setPatreonTierSubgraphs_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.SetPatreonTierSubgraphs(childComplexity, args["input"].(model.SetPatreonTierSubgraphsInput)), true
+
 	case "AdminMutation.unbanUser":
 		if e.complexity.AdminMutation.UnbanUser == nil {
 			break
@@ -1835,6 +1856,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminPatreonTier.MissedAt(childComplexity), true
+
+	case "AdminPatreonTier.subgraphs":
+		if e.complexity.AdminPatreonTier.Subgraphs == nil {
+			break
+		}
+
+		return e.complexity.AdminPatreonTier.Subgraphs(childComplexity), true
 
 	case "AdminPatreonTier.tierID":
 		if e.complexity.AdminPatreonTier.TierID == nil {
@@ -3255,6 +3283,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.RestorePatreonCredentialsPayload.PatreonCredentials(childComplexity), true
 
+	case "SetPatreonTierSubgraphsPayload.tier":
+		if e.complexity.SetPatreonTierSubgraphsPayload.Tier == nil {
+			break
+		}
+
+		return e.complexity.SetPatreonTierSubgraphsPayload.Tier(childComplexity), true
+
 	case "SignInPayload.token":
 		if e.complexity.SignInPayload.Token == nil {
 			break
@@ -3558,6 +3593,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
 		ec.unmarshalInputRestorePatreonCredentialsInput,
+		ec.unmarshalInputSetPatreonTierSubgraphsInput,
 		ec.unmarshalInputSignInByEmailInput,
 		ec.unmarshalInputUnbanUserInput,
 		ec.unmarshalInputUpdateNotFoundIgnoredPatternInput,
@@ -4097,6 +4133,29 @@ func (ec *executionContext) field_AdminMutation_restorePatreonCredentials_argsIn
 	}
 
 	var zeroVal model.RestorePatreonCredentialsInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_setPatreonTierSubgraphs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_setPatreonTierSubgraphs_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_setPatreonTierSubgraphs_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.SetPatreonTierSubgraphsInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNSetPatreonTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetPatreonTierSubgraphsInput(ctx, tmp)
+	}
+
+	var zeroVal model.SetPatreonTierSubgraphsInput
 	return zeroVal, nil
 }
 
@@ -7317,6 +7376,61 @@ func (ec *executionContext) fieldContext_AdminMutation_refreshPatreonData(ctx co
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_setPatreonTierSubgraphs(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_setPatreonTierSubgraphs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().SetPatreonTierSubgraphs(rctx, obj, fc.Args["input"].(model.SetPatreonTierSubgraphsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SetPatreonTierSubgraphsOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNSetPatreonTierSubgraphsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetPatreonTierSubgraphsOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_setPatreonTierSubgraphs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SetPatreonTierSubgraphsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_setPatreonTierSubgraphs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminNotFoundIgnoredPattern_id(ctx context.Context, field graphql.CollectedField, obj *db.NotFoundIgnoredPattern) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminNotFoundIgnoredPattern_id(ctx, field)
 	if err != nil {
@@ -9347,6 +9461,8 @@ func (ec *executionContext) fieldContext_AdminPatreonMember_currentTier(_ contex
 				return ec.fieldContext_AdminPatreonTier_amountCents(ctx, field)
 			case "attributes":
 				return ec.fieldContext_AdminPatreonTier_attributes(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_AdminPatreonTier_subgraphs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonTier", field.Name)
 		},
@@ -9763,6 +9879,60 @@ func (ec *executionContext) fieldContext_AdminPatreonTier_attributes(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminPatreonTier_subgraphs(ctx context.Context, field graphql.CollectedField, obj *db.PatreonTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminPatreonTier_subgraphs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminPatreonTier().Subgraphs(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.Subgraph)
+	fc.Result = res
+	return ec.marshalNAdminSubgraph2ᚕtrip2gᚋinternalᚋdbᚐSubgraphᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminPatreonTier_subgraphs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminPatreonTier",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminSubgraph_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminSubgraph_name(ctx, field)
+			case "color":
+				return ec.fieldContext_AdminSubgraph_color(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminSubgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminPatreonTiersConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminPatreonTiersConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminPatreonTiersConnection_nodes(ctx, field)
 	if err != nil {
@@ -9818,6 +9988,8 @@ func (ec *executionContext) fieldContext_AdminPatreonTiersConnection_nodes(_ con
 				return ec.fieldContext_AdminPatreonTier_amountCents(ctx, field)
 			case "attributes":
 				return ec.fieldContext_AdminPatreonTier_attributes(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_AdminPatreonTier_subgraphs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonTier", field.Name)
 		},
@@ -16871,6 +17043,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_restorePatreonCredentials(ctx, field)
 			case "refreshPatreonData":
 				return ec.fieldContext_AdminMutation_refreshPatreonData(ctx, field)
+			case "setPatreonTierSubgraphs":
+				return ec.fieldContext_AdminMutation_setPatreonTierSubgraphs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -19172,6 +19346,70 @@ func (ec *executionContext) fieldContext_RestorePatreonCredentialsPayload_patreo
 				return ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetPatreonTierSubgraphsPayload_tier(ctx context.Context, field graphql.CollectedField, obj *model.SetPatreonTierSubgraphsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SetPatreonTierSubgraphsPayload_tier(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tier, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.PatreonTier)
+	fc.Result = res
+	return ec.marshalNAdminPatreonTier2ᚖtrip2gᚋinternalᚋdbᚐPatreonTier(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SetPatreonTierSubgraphsPayload_tier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetPatreonTierSubgraphsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminPatreonTier_id(ctx, field)
+			case "campaignID":
+				return ec.fieldContext_AdminPatreonTier_campaignID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminPatreonTier_createdAt(ctx, field)
+			case "missedAt":
+				return ec.fieldContext_AdminPatreonTier_missedAt(ctx, field)
+			case "tierID":
+				return ec.fieldContext_AdminPatreonTier_tierID(ctx, field)
+			case "title":
+				return ec.fieldContext_AdminPatreonTier_title(ctx, field)
+			case "amountCents":
+				return ec.fieldContext_AdminPatreonTier_amountCents(ctx, field)
+			case "attributes":
+				return ec.fieldContext_AdminPatreonTier_attributes(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_AdminPatreonTier_subgraphs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonTier", field.Name)
 		},
 	}
 	return fc, nil
@@ -23923,6 +24161,40 @@ func (ec *executionContext) unmarshalInputRestorePatreonCredentialsInput(ctx con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSetPatreonTierSubgraphsInput(ctx context.Context, obj any) (model.SetPatreonTierSubgraphsInput, error) {
+	var it model.SetPatreonTierSubgraphsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"tierId", "subgraphIds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "tierId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tierId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TierID = data
+		case "subgraphIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphIds"))
+			data, err := ec.unmarshalNInt642ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubgraphIds = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSignInByEmailInput(ctx context.Context, obj any) (model.SignInByEmailInput, error) {
 	var it model.SignInByEmailInput
 	asMap := map[string]any{}
@@ -24922,6 +25194,29 @@ func (ec *executionContext) _RestorePatreonCredentialsOrErrorPayload(ctx context
 			return graphql.Null
 		}
 		return ec._RestorePatreonCredentialsPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SetPatreonTierSubgraphsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SetPatreonTierSubgraphsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SetPatreonTierSubgraphsPayload:
+		return ec._SetPatreonTierSubgraphsPayload(ctx, sel, &obj)
+	case *model.SetPatreonTierSubgraphsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SetPatreonTierSubgraphsPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -26863,6 +27158,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "setPatreonTierSubgraphs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_setPatreonTierSubgraphs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -28219,6 +28550,42 @@ func (ec *executionContext) _AdminPatreonTier(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "subgraphs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminPatreonTier_subgraphs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -32170,7 +32537,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -33662,6 +34029,45 @@ func (ec *executionContext) _RestorePatreonCredentialsPayload(ctx context.Contex
 			out.Values[i] = graphql.MarshalString("RestorePatreonCredentialsPayload")
 		case "patreonCredentials":
 			out.Values[i] = ec._RestorePatreonCredentialsPayload_patreonCredentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var setPatreonTierSubgraphsPayloadImplementors = []string{"SetPatreonTierSubgraphsPayload", "SetPatreonTierSubgraphsOrErrorPayload"}
+
+func (ec *executionContext) _SetPatreonTierSubgraphsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SetPatreonTierSubgraphsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, setPatreonTierSubgraphsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SetPatreonTierSubgraphsPayload")
+		case "tier":
+			out.Values[i] = ec._SetPatreonTierSubgraphsPayload_tier(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -35904,6 +36310,16 @@ func (ec *executionContext) marshalNAdminPatreonTier2ᚕtrip2gᚋinternalᚋdb�
 	return ret
 }
 
+func (ec *executionContext) marshalNAdminPatreonTier2ᚖtrip2gᚋinternalᚋdbᚐPatreonTier(ctx context.Context, sel ast.SelectionSet, v *db.PatreonTier) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminPatreonTier(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminPatreonTiersConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminPatreonTiersConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminPatreonTiersConnection) graphql.Marshaler {
 	return ec._AdminPatreonTiersConnection(ctx, sel, &v)
 }
@@ -37597,6 +38013,21 @@ func (ec *executionContext) unmarshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐR
 
 func (ec *executionContext) marshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐRole(ctx context.Context, sel ast.SelectionSet, v model.Role) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) unmarshalNSetPatreonTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetPatreonTierSubgraphsInput(ctx context.Context, v any) (model.SetPatreonTierSubgraphsInput, error) {
+	res, err := ec.unmarshalInputSetPatreonTierSubgraphsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSetPatreonTierSubgraphsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetPatreonTierSubgraphsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SetPatreonTierSubgraphsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SetPatreonTierSubgraphsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSignInByEmailInput2trip2gᚋinternalᚋgraphᚋmodelᚐSignInByEmailInput(ctx context.Context, v any) (model.SignInByEmailInput, error) {

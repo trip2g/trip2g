@@ -31,6 +31,7 @@ import (
 	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
+	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
@@ -270,6 +271,11 @@ func (r *adminMutationResolver) RefreshPatreonData(ctx context.Context, obj *app
 	return refreshpatreondata.Resolve(ctx, r.env(ctx), &input.CredentialsID)
 }
 
+// SetPatreonTierSubgraphs is the resolver for the setPatreonTierSubgraphs field.
+func (r *adminMutationResolver) SetPatreonTierSubgraphs(ctx context.Context, obj *appmodel.AdminMutation, input model.SetPatreonTierSubgraphsInput) (model.SetPatreonTierSubgraphsOrErrorPayload, error) {
+	return setpatreontiersubgraphs.Resolve(ctx, r.env(ctx), input)
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminNotFoundIgnoredPatternResolver) CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -469,6 +475,11 @@ func (r *adminPatreonTierResolver) MissedAt(ctx context.Context, obj *db.Patreon
 		return &obj.MissedAt.Time, nil
 	}
 	return nil, nil
+}
+
+// Subgraphs is the resolver for the subgraphs field.
+func (r *adminPatreonTierResolver) Subgraphs(ctx context.Context, obj *db.PatreonTier) ([]db.Subgraph, error) {
+	return r.env(ctx).GetSubgraphsByTierID(ctx, obj.ID)
 }
 
 // Successful is the resolver for the successful field.

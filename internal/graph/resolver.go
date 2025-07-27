@@ -22,6 +22,7 @@ import (
 	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
+	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
@@ -150,6 +151,10 @@ type Env interface {
 	deletepatreoncredentials.Env
 	refreshpatreondata.Env
 	restorepatreoncredentials.Env
+	setpatreontiersubgraphs.Env
+
+	// Patreon tier queries
+	GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]db.Subgraph, error)
 
 	// Telegram bot queries
 	AllTgBots(ctx context.Context) ([]db.TgBot, error)

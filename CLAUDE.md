@@ -16,9 +16,10 @@ if err != nil {
 ```
 
 **IMPORTANT**: After making changes to Go code:
-1. Run tests for affected packages: `go test ./internal/case/packagename -v`
-2. Run all tests to ensure nothing is broken: `go test ./...`
-3. Run `make lint` to ensure:
+1. Format code with: `gofmt -w .` (or for specific files: `gofmt -w file.go`)
+2. Run tests for affected packages: `go test ./internal/case/packagename -v`
+3. Run all tests to ensure nothing is broken: `go test ./...`
+4. Run `make lint` to ensure:
    - Code compiles without errors
    - All linting rules pass
    - Generated code is up to date
