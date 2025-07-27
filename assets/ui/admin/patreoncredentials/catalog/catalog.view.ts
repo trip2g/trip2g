@@ -1,13 +1,15 @@
 namespace $.$$ {
+	const state = $trip2g_graphql_patreon_credentials_state_enum
+
 	export class $trip2g_admin_patreoncredentials_catalog extends $.$trip2g_admin_patreoncredentials_catalog {
 		@$mol_mem
 		filter_state() {
-			const filter = this.$.$mol_state_arg.value( 'filter' )	|| 'all'
-			switch(filter) {
+			const filter = this.$.$mol_state_arg.value( 'filter' ) || 'all'
+			switch( filter ) {
 				case 'active':
-					return 'ACTIVE'
+					return state.Active
 				case 'deleted':
-					return 'DELETED'
+					return state.Deleted
 				default:
 					return null
 			}
@@ -36,7 +38,7 @@ namespace $.$$ {
 				}
 			`, {
 				filter: filter ? { state: filter } : null
-			})
+			} )
 
 			return $trip2g_graphql_make_map( res.admin.allPatreonCredentials.nodes )
 		}
@@ -71,22 +73,14 @@ namespace $.$$ {
 			return state === 'ACTIVE' ? 'Active' : 'Deleted'
 		}
 
-		override row_token( id: any ): string {
-			return this.row( id ).creatorAccessToken
-		}
-
 		override row_created_at( id: any ): string {
 			const m = new $mol_time_moment( this.row( id ).createdAt )
 			return m.toString( 'YYYY-MM-DD' )
 		}
 
-		override row_created_by( id: any ): string {
-			return this.row( id ).createdBy.email || '-'
-		}
-
 		override row_synced_at( id: any ): string {
 			const syncedAt = this.row( id ).syncedAt
-			if (!syncedAt) return 'Never'
+			if( !syncedAt ) return 'Never'
 			const m = new $mol_time_moment( syncedAt )
 			return m.toString( 'YYYY-MM-DD HH:mm' )
 		}
