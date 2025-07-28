@@ -44,6 +44,7 @@ type Env interface {
 	UpsertPatreonCampaign(ctx context.Context, arg db.UpsertPatreonCampaignParams) error
 	PatreonListCampaigns(token string) ([]patreon.Campaign, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	StartPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64) error
 }
 
 type envMock = EnvMock
@@ -83,6 +84,9 @@ func TestResolve(t *testing.T) {
 					}, nil
 				}
 				mock.UpsertPatreonCampaignFunc = func(ctx context.Context, arg db.UpsertPatreonCampaignParams) error {
+					return nil
+				}
+				mock.StartPatreonRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
 					return nil
 				}
 				return mock
@@ -214,19 +218,57 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "start background job error",
+			input: model.CreatePatreonCredentialsInput{
+				CreatorAccessToken: "test-token-123456789",
+			},
+			mockFunc: func() *envMock {
+				mock := &envMock{}
+				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				}
+				mock.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
+					return []patreon.Campaign{{ID: "campaign1", Type: "campaign"}}, nil
+				}
+				mock.InsertPatreonCredentialsFunc = func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error) {
+					return db.PatreonCredential{
+						ID:                 1,
+						CreatedAt:          time.Now(),
+						CreatedBy:          1,
+						CreatorAccessToken: arg.CreatorAccessToken,
+					}, nil
+				}
+				mock.UpsertPatreonCampaignFunc = func(ctx context.Context, arg db.UpsertPatreonCampaignParams) error {
+					return nil
+				}
+				mock.StartPatreonRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return errors.New("failed to start background job")
+				}
+				return mock
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := createpatreoncredentials.Resolve(context.Background(), tt.mockFunc(), tt.input)
+			env := tt.mockFunc()
+			got, err := createpatreoncredentials.Resolve(context.Background(), env, tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Resolve() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			assertPayload(t, tt.want, got)
+
+			// Verify StartPatreonRefreshBackgroundJob was called for successful cases
+			if tt.name == "success" && !tt.wantErr && len(env.StartPatreonRefreshBackgroundJobCalls()) != 1 {
+				t.Errorf("Expected StartPatreonRefreshBackgroundJob to be called once, got %d calls", len(env.StartPatreonRefreshBackgroundJobCalls()))
+			}
 		})
 	}
 }

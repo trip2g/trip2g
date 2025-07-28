@@ -27,6 +27,9 @@ var _ deletepatreoncredentials.Env = &EnvMock{}
 //			SoftDeletePatreonCredentialsFunc: func(ctx context.Context, arg db.SoftDeletePatreonCredentialsParams) (db.PatreonCredential, error) {
 //				panic("mock out the SoftDeletePatreonCredentials method")
 //			},
+//			StopPatreonRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64) error {
+//				panic("mock out the StopPatreonRefreshBackgroundJob method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires deletepatreoncredentials.Env
@@ -39,6 +42,9 @@ type EnvMock struct {
 
 	// SoftDeletePatreonCredentialsFunc mocks the SoftDeletePatreonCredentials method.
 	SoftDeletePatreonCredentialsFunc func(ctx context.Context, arg db.SoftDeletePatreonCredentialsParams) (db.PatreonCredential, error)
+
+	// StopPatreonRefreshBackgroundJobFunc mocks the StopPatreonRefreshBackgroundJob method.
+	StopPatreonRefreshBackgroundJobFunc func(ctx context.Context, credentialsID int64) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -54,9 +60,17 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.SoftDeletePatreonCredentialsParams
 		}
+		// StopPatreonRefreshBackgroundJob holds details about calls to the StopPatreonRefreshBackgroundJob method.
+		StopPatreonRefreshBackgroundJob []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// CredentialsID is the credentialsID argument value.
+			CredentialsID int64
+		}
 	}
-	lockCurrentAdminUserToken        sync.RWMutex
-	lockSoftDeletePatreonCredentials sync.RWMutex
+	lockCurrentAdminUserToken           sync.RWMutex
+	lockSoftDeletePatreonCredentials    sync.RWMutex
+	lockStopPatreonRefreshBackgroundJob sync.RWMutex
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -124,5 +138,41 @@ func (mock *EnvMock) SoftDeletePatreonCredentialsCalls() []struct {
 	mock.lockSoftDeletePatreonCredentials.RLock()
 	calls = mock.calls.SoftDeletePatreonCredentials
 	mock.lockSoftDeletePatreonCredentials.RUnlock()
+	return calls
+}
+
+// StopPatreonRefreshBackgroundJob calls StopPatreonRefreshBackgroundJobFunc.
+func (mock *EnvMock) StopPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64) error {
+	if mock.StopPatreonRefreshBackgroundJobFunc == nil {
+		panic("EnvMock.StopPatreonRefreshBackgroundJobFunc: method is nil but Env.StopPatreonRefreshBackgroundJob was just called")
+	}
+	callInfo := struct {
+		Ctx           context.Context
+		CredentialsID int64
+	}{
+		Ctx:           ctx,
+		CredentialsID: credentialsID,
+	}
+	mock.lockStopPatreonRefreshBackgroundJob.Lock()
+	mock.calls.StopPatreonRefreshBackgroundJob = append(mock.calls.StopPatreonRefreshBackgroundJob, callInfo)
+	mock.lockStopPatreonRefreshBackgroundJob.Unlock()
+	return mock.StopPatreonRefreshBackgroundJobFunc(ctx, credentialsID)
+}
+
+// StopPatreonRefreshBackgroundJobCalls gets all the calls that were made to StopPatreonRefreshBackgroundJob.
+// Check the length with:
+//
+//	len(mockedEnv.StopPatreonRefreshBackgroundJobCalls())
+func (mock *EnvMock) StopPatreonRefreshBackgroundJobCalls() []struct {
+	Ctx           context.Context
+	CredentialsID int64
+} {
+	var calls []struct {
+		Ctx           context.Context
+		CredentialsID int64
+	}
+	mock.lockStopPatreonRefreshBackgroundJob.RLock()
+	calls = mock.calls.StopPatreonRefreshBackgroundJob
+	mock.lockStopPatreonRefreshBackgroundJob.RUnlock()
 	return calls
 }

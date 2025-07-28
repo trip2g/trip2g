@@ -31,6 +31,7 @@ func assertPayload(t *testing.T, want, got model.DeletePatreonCredentialsOrError
 type Env interface {
 	SoftDeletePatreonCredentials(ctx context.Context, arg db.SoftDeletePatreonCredentialsParams) (db.PatreonCredential, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	StopPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64) error
 }
 
 type envMock = EnvMock
@@ -65,6 +66,9 @@ func TestResolve(t *testing.T) {
 						DeletedBy:          sql.NullInt64{Int64: 1, Valid: true},
 						CreatorAccessToken: "test-token",
 					}, nil
+				}
+				mock.StopPatreonRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return nil
 				}
 				return mock
 			},
@@ -125,19 +129,54 @@ func TestResolve(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "stop background job error",
+			input: model.DeletePatreonCredentialsInput{
+				ID: 1,
+			},
+			mockFunc: func() *envMock {
+				mock := &envMock{}
+				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				}
+				mock.SoftDeletePatreonCredentialsFunc = func(ctx context.Context, arg db.SoftDeletePatreonCredentialsParams) (db.PatreonCredential, error) {
+					deletedAt := time.Now()
+					return db.PatreonCredential{
+						ID:                 1,
+						CreatedAt:          time.Now(),
+						CreatedBy:          1,
+						DeletedAt:          sql.NullTime{Time: deletedAt, Valid: true},
+						DeletedBy:          sql.NullInt64{Int64: 1, Valid: true},
+						CreatorAccessToken: "test-token",
+					}, nil
+				}
+				mock.StopPatreonRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return errors.New("failed to stop background job")
+				}
+				return mock
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := deletepatreoncredentials.Resolve(context.Background(), tt.mockFunc(), tt.input)
+			env := tt.mockFunc()
+			got, err := deletepatreoncredentials.Resolve(context.Background(), env, tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Resolve() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			assertPayload(t, tt.want, got)
+
+			// Verify StopPatreonRefreshBackgroundJob was called for successful cases
+			if tt.name == "success" && !tt.wantErr && len(env.StopPatreonRefreshBackgroundJobCalls()) != 1 {
+				t.Errorf("Expected StopPatreonRefreshBackgroundJob to be called once, got %d calls", len(env.StopPatreonRefreshBackgroundJobCalls()))
+			}
 		})
 	}
 }

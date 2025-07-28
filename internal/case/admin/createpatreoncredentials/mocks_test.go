@@ -31,6 +31,9 @@ var _ createpatreoncredentials.Env = &EnvMock{}
 //			PatreonListCampaignsFunc: func(token string) ([]patreon.Campaign, error) {
 //				panic("mock out the PatreonListCampaigns method")
 //			},
+//			StartPatreonRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64) error {
+//				panic("mock out the StartPatreonRefreshBackgroundJob method")
+//			},
 //			UpsertPatreonCampaignFunc: func(ctx context.Context, arg db.UpsertPatreonCampaignParams) error {
 //				panic("mock out the UpsertPatreonCampaign method")
 //			},
@@ -49,6 +52,9 @@ type EnvMock struct {
 
 	// PatreonListCampaignsFunc mocks the PatreonListCampaigns method.
 	PatreonListCampaignsFunc func(token string) ([]patreon.Campaign, error)
+
+	// StartPatreonRefreshBackgroundJobFunc mocks the StartPatreonRefreshBackgroundJob method.
+	StartPatreonRefreshBackgroundJobFunc func(ctx context.Context, credentialsID int64) error
 
 	// UpsertPatreonCampaignFunc mocks the UpsertPatreonCampaign method.
 	UpsertPatreonCampaignFunc func(ctx context.Context, arg db.UpsertPatreonCampaignParams) error
@@ -72,6 +78,13 @@ type EnvMock struct {
 			// Token is the token argument value.
 			Token string
 		}
+		// StartPatreonRefreshBackgroundJob holds details about calls to the StartPatreonRefreshBackgroundJob method.
+		StartPatreonRefreshBackgroundJob []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// CredentialsID is the credentialsID argument value.
+			CredentialsID int64
+		}
 		// UpsertPatreonCampaign holds details about calls to the UpsertPatreonCampaign method.
 		UpsertPatreonCampaign []struct {
 			// Ctx is the ctx argument value.
@@ -80,10 +93,11 @@ type EnvMock struct {
 			Arg db.UpsertPatreonCampaignParams
 		}
 	}
-	lockCurrentAdminUserToken    sync.RWMutex
-	lockInsertPatreonCredentials sync.RWMutex
-	lockPatreonListCampaigns     sync.RWMutex
-	lockUpsertPatreonCampaign    sync.RWMutex
+	lockCurrentAdminUserToken            sync.RWMutex
+	lockInsertPatreonCredentials         sync.RWMutex
+	lockPatreonListCampaigns             sync.RWMutex
+	lockStartPatreonRefreshBackgroundJob sync.RWMutex
+	lockUpsertPatreonCampaign            sync.RWMutex
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -183,6 +197,42 @@ func (mock *EnvMock) PatreonListCampaignsCalls() []struct {
 	mock.lockPatreonListCampaigns.RLock()
 	calls = mock.calls.PatreonListCampaigns
 	mock.lockPatreonListCampaigns.RUnlock()
+	return calls
+}
+
+// StartPatreonRefreshBackgroundJob calls StartPatreonRefreshBackgroundJobFunc.
+func (mock *EnvMock) StartPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64) error {
+	if mock.StartPatreonRefreshBackgroundJobFunc == nil {
+		panic("EnvMock.StartPatreonRefreshBackgroundJobFunc: method is nil but Env.StartPatreonRefreshBackgroundJob was just called")
+	}
+	callInfo := struct {
+		Ctx           context.Context
+		CredentialsID int64
+	}{
+		Ctx:           ctx,
+		CredentialsID: credentialsID,
+	}
+	mock.lockStartPatreonRefreshBackgroundJob.Lock()
+	mock.calls.StartPatreonRefreshBackgroundJob = append(mock.calls.StartPatreonRefreshBackgroundJob, callInfo)
+	mock.lockStartPatreonRefreshBackgroundJob.Unlock()
+	return mock.StartPatreonRefreshBackgroundJobFunc(ctx, credentialsID)
+}
+
+// StartPatreonRefreshBackgroundJobCalls gets all the calls that were made to StartPatreonRefreshBackgroundJob.
+// Check the length with:
+//
+//	len(mockedEnv.StartPatreonRefreshBackgroundJobCalls())
+func (mock *EnvMock) StartPatreonRefreshBackgroundJobCalls() []struct {
+	Ctx           context.Context
+	CredentialsID int64
+} {
+	var calls []struct {
+		Ctx           context.Context
+		CredentialsID int64
+	}
+	mock.lockStartPatreonRefreshBackgroundJob.RLock()
+	calls = mock.calls.StartPatreonRefreshBackgroundJob
+	mock.lockStartPatreonRefreshBackgroundJob.RUnlock()
 	return calls
 }
 
