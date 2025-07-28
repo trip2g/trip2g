@@ -4,6 +4,10 @@ namespace $.$$ {
 			event?.preventDefault()
 			event?.stopPropagation()
 
+			if (!confirm('Are you sure you want to delete these Patreon credentials?')) {
+				return
+			}
+
 			const res = $trip2g_graphql_request(
 				`
 					mutation AdminDeletePatreonCredentials($input: DeletePatreonCredentialsInput!) {
@@ -31,8 +35,6 @@ namespace $.$$ {
 			}
 
 			if( res.admin.deletePatreonCredentials.__typename === 'DeletePatreonCredentialsPayload' ) {
-				// Force refresh of data
-				this.$.$trip2g_admin_patreoncredentials_catalog.prototype.data( null )
 				return
 			}
 

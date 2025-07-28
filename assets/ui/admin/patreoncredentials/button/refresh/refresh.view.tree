@@ -1,0 +1,4 @@
+$trip2g_admin_patreoncredentials_button_refresh $mol_button_major
+	credentials_id 0
+	title <= status_title? \Refresh
+	click? <=> refresh? null

@@ -30,8 +30,6 @@ namespace $.$$ {
 			}
 
 			if( res.admin.restorePatreonCredentials.__typename === 'RestorePatreonCredentialsPayload' ) {
-				// Force refresh of data
-				this.$.$trip2g_admin_patreoncredentials_catalog.prototype.data( null )
 				return
 			}
 
