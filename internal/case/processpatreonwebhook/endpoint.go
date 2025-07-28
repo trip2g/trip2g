@@ -1,6 +1,7 @@
 package processpatreonwebhook
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"trip2g/internal/appreq"
@@ -27,13 +28,36 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
+	// Get webhook signature from header
+	signature := string(req.Req.Request.Header.Peek("X-Patreon-Signature"))
+	if signature == "" {
+		env.Logger().Error("missing X-Patreon-Signature header", "credential_id", credentialID)
+		req.Req.SetStatusCode(http.StatusBadRequest)
+		return nil, nil
+	}
+
+	// Create request struct
+	webhookRequest := Request{
+		CredentialID: credentialID,
+		Signature:    signature,
+		Body:         req.Req.PostBody(),
+	}
+
 	// Log webhook request
-	env.Logger().Info("Patreon webhook request",
+	env.Logger().Info("Patreon webhook request received",
 		"credential_id", credentialID,
-		"body", string(req.Req.PostBody()),
+		"event", string(req.Req.Request.Header.Peek("X-Patreon-Event")),
 	)
 
-	return Resolve(req.Req, req.Env.(Env), credentialID)
+	ctx := context.Background()
+	response, err := Resolve(ctx, env, webhookRequest)
+	if err != nil {
+		env.Logger().Error("webhook processing failed", "credential_id", credentialID, "error", err)
+		req.Req.SetStatusCode(http.StatusBadRequest)
+		return nil, nil
+	}
+
+	return response, nil
 }
 
 func (*Endpoint) Path() string {

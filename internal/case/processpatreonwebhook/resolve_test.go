@@ -2,7 +2,10 @@ package processpatreonwebhook_test
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/md5"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"testing"
 
@@ -12,10 +15,16 @@ import (
 	"trip2g/internal/patreon"
 
 	"github.com/stretchr/testify/require"
-	"github.com/valyala/fasthttp"
 )
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg processpatreonwebhook_test . Env
+
+// generateValidSignature creates a valid HMAC-MD5 signature for testing
+func generateValidSignature(body []byte, secret string) string {
+	h := hmac.New(md5.New, []byte(secret))
+	h.Write(body)
+	return hex.EncodeToString(h.Sum(nil))
+}
 
 type Env interface {
 	Logger() logger.Logger
@@ -35,13 +44,15 @@ type Env interface {
 
 func TestResolve_Success(t *testing.T) {
 	// Setup
-	reqCtx := &fasthttp.RequestCtx{}
 	credentialID := int64(123)
+	webhookSecret := "test_secret"
+	testBody := []byte(`{"test": "data"}`)
 
 	expectedCredentials := db.PatreonCredential{
 		ID:                 123,
 		CreatorAccessToken: "test_token",
 		CreatedBy:          1,
+		WebhookSecret:      sql.NullString{String: webhookSecret, Valid: true},
 	}
 
 	env := &EnvMock{
@@ -67,7 +78,13 @@ func TestResolve_Success(t *testing.T) {
 	}
 
 	// Execute
-	result, err := processpatreonwebhook.Resolve(reqCtx, env, credentialID)
+	validSignature := generateValidSignature(testBody, webhookSecret)
+	request := processpatreonwebhook.Request{
+		CredentialID: credentialID,
+		Signature:    validSignature,
+		Body:         testBody,
+	}
+	result, err := processpatreonwebhook.Resolve(context.Background(), env, request)
 
 	// Assert
 	require.NoError(t, err)
@@ -81,8 +98,8 @@ func TestResolve_Success(t *testing.T) {
 
 func TestResolve_CredentialsNotFound(t *testing.T) {
 	// Setup
-	reqCtx := &fasthttp.RequestCtx{}
 	credentialID := int64(999)
+	testBody := []byte(`{"test": "data"}`)
 
 	env := &EnvMock{
 		LoggerFunc: func() logger.Logger {
@@ -94,7 +111,12 @@ func TestResolve_CredentialsNotFound(t *testing.T) {
 	}
 
 	// Execute
-	result, err := processpatreonwebhook.Resolve(reqCtx, env, credentialID)
+	request := processpatreonwebhook.Request{
+		CredentialID: credentialID,
+		Signature:    "any_signature",
+		Body:         testBody,
+	}
+	result, err := processpatreonwebhook.Resolve(context.Background(), env, request)
 
 	// Assert
 	require.Error(t, err)
@@ -107,13 +129,15 @@ func TestResolve_CredentialsNotFound(t *testing.T) {
 
 func TestResolve_RefreshDataError(t *testing.T) {
 	// Setup
-	reqCtx := &fasthttp.RequestCtx{}
 	credentialID := int64(123)
+	webhookSecret := "test_secret"
+	testBody := []byte(`{"test": "data"}`)
 
 	expectedCredentials := db.PatreonCredential{
 		ID:                 123,
 		CreatorAccessToken: "test_token",
 		CreatedBy:          1,
+		WebhookSecret:      sql.NullString{String: webhookSecret, Valid: true},
 	}
 
 	env := &EnvMock{
@@ -132,7 +156,13 @@ func TestResolve_RefreshDataError(t *testing.T) {
 	}
 
 	// Execute
-	result, err := processpatreonwebhook.Resolve(reqCtx, env, credentialID)
+	validSignature := generateValidSignature(testBody, webhookSecret)
+	request := processpatreonwebhook.Request{
+		CredentialID: credentialID,
+		Signature:    validSignature,
+		Body:         testBody,
+	}
+	result, err := processpatreonwebhook.Resolve(context.Background(), env, request)
 
 	// Assert
 	require.Error(t, err)
@@ -142,8 +172,8 @@ func TestResolve_RefreshDataError(t *testing.T) {
 
 func TestResolve_DatabaseError(t *testing.T) {
 	// Setup
-	reqCtx := &fasthttp.RequestCtx{}
 	credentialID := int64(123)
+	testBody := []byte(`{"test": "data"}`)
 
 	env := &EnvMock{
 		LoggerFunc: func() logger.Logger {
@@ -155,10 +185,86 @@ func TestResolve_DatabaseError(t *testing.T) {
 	}
 
 	// Execute
-	result, err := processpatreonwebhook.Resolve(reqCtx, env, credentialID)
+	request := processpatreonwebhook.Request{
+		CredentialID: credentialID,
+		Signature:    "any_signature",
+		Body:         testBody,
+	}
+	result, err := processpatreonwebhook.Resolve(context.Background(), env, request)
 
 	// Assert
 	require.Error(t, err)
 	require.Nil(t, result)
 	require.Contains(t, err.Error(), "failed to get patreon credentials")
+}
+
+func TestResolve_InvalidSignature(t *testing.T) {
+	// Setup
+	credentialID := int64(123)
+	webhookSecret := "test_secret"
+	testBody := []byte(`{"test": "data"}`)
+
+	expectedCredentials := db.PatreonCredential{
+		ID:                 123,
+		CreatorAccessToken: "test_token",
+		CreatedBy:          1,
+		WebhookSecret:      sql.NullString{String: webhookSecret, Valid: true},
+	}
+
+	env := &EnvMock{
+		LoggerFunc: func() logger.Logger {
+			return &logger.TestLogger{}
+		},
+		PatreonCredentialsFunc: func(ctx context.Context, id int64) (db.PatreonCredential, error) {
+			return expectedCredentials, nil
+		},
+	}
+
+	// Execute with invalid signature
+	request := processpatreonwebhook.Request{
+		CredentialID: credentialID,
+		Signature:    "invalid_signature",
+		Body:         testBody,
+	}
+	result, err := processpatreonwebhook.Resolve(context.Background(), env, request)
+
+	// Assert
+	require.Error(t, err)
+	require.Nil(t, result)
+	require.Contains(t, err.Error(), "invalid webhook signature")
+}
+
+func TestResolve_MissingWebhookSecret(t *testing.T) {
+	// Setup
+	credentialID := int64(123)
+	testBody := []byte(`{"test": "data"}`)
+
+	expectedCredentials := db.PatreonCredential{
+		ID:                 123,
+		CreatorAccessToken: "test_token",
+		CreatedBy:          1,
+		WebhookSecret:      sql.NullString{Valid: false}, // No webhook secret
+	}
+
+	env := &EnvMock{
+		LoggerFunc: func() logger.Logger {
+			return &logger.TestLogger{}
+		},
+		PatreonCredentialsFunc: func(ctx context.Context, id int64) (db.PatreonCredential, error) {
+			return expectedCredentials, nil
+		},
+	}
+
+	// Execute
+	request := processpatreonwebhook.Request{
+		CredentialID: credentialID,
+		Signature:    "any_signature",
+		Body:         testBody,
+	}
+	result, err := processpatreonwebhook.Resolve(context.Background(), env, request)
+
+	// Assert
+	require.Error(t, err)
+	require.Nil(t, result)
+	require.Contains(t, err.Error(), "webhook secret not configured")
 }
