@@ -4,10 +4,6 @@ namespace $.$$ {
 			event?.preventDefault()
 			event?.stopPropagation()
 
-			if (!confirm('Are you sure you want to delete these Patreon credentials?')) {
-				return
-			}
-
 			const res = $trip2g_graphql_request(
 				`
 					mutation AdminDeletePatreonCredentials($input: DeletePatreonCredentialsInput!) {
@@ -17,7 +13,9 @@ namespace $.$$ {
 									message
 								}
 								... on DeletePatreonCredentialsPayload {
-									deletedId
+									patreonCredentials {
+										id
+									}
 								}
 							}
 						}

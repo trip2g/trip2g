@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"trip2g/internal/db"
-	"trip2g/internal/graph/model"
 	"trip2g/internal/patreon"
 )
 
@@ -341,18 +340,10 @@ func syncSingleCredential(ctx context.Context, env Env, credentialsID int64) err
 }
 
 // Resolve is the GraphQL resolver that calls sync.
-func Resolve(ctx context.Context, env Env, credentialsID *int64) (model.RefreshPatreonDataOrErrorPayload, error) {
-	var err error
-
+func Resolve(ctx context.Context, env Env, credentialsID *int64) error {
 	if credentialsID == nil {
-		err = syncAllCredentials(ctx, env)
-	} else {
-		err = syncSingleCredential(ctx, env, *credentialsID)
+		return syncAllCredentials(ctx, env)
 	}
 
-	if err != nil {
-		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to sync Patreon data: %v", err)}, nil
-	}
-
-	return &model.RefreshPatreonDataPayload{Success: true}, nil
+	return syncSingleCredential(ctx, env, *credentialsID)
 }

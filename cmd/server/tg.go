@@ -67,7 +67,7 @@ func (a *app) RunTgBots(ctx context.Context) error {
 	for _, botConfig := range bots {
 		bot, err := tgbotapi.NewBotAPI(botConfig.Token)
 		if err != nil {
-			return fmt.Errorf("failed to create bot %s: %w", bot.Self.UserName, err)
+			return fmt.Errorf("failed to create bot %+v: %w", bot.Self, err)
 		}
 
 		if a.config.DevMode {

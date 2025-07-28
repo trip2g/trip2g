@@ -12,6 +12,7 @@ import (
 type Env interface {
 	RestorePatreonCredentials(ctx context.Context, id int64) (db.PatreonCredential, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	StartPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64) error
 }
 
 // Input is an alias for RestorePatreonCredentialsInput for cleaner code.
@@ -31,6 +32,11 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	if err != nil {
 		// System errors are returned as error (will show generic message to user)
 		return nil, fmt.Errorf("failed to restore patreon credentials: %w", err)
+	}
+
+	err = env.StartPatreonRefreshBackgroundJob(ctx, credentials.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start Patreon refresh background jobs: %w", err)
 	}
 
 	// Define payload as separate variable

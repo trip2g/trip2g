@@ -85,6 +85,7 @@ type ResolverRoot interface {
 	AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver
 	AdminUsersConnection() AdminUsersConnectionResolver
 	BanUserPayload() BanUserPayloadResolver
+	DeletePatreonCredentialsPayload() DeletePatreonCredentialsPayloadResolver
 	ErrorPayload() ErrorPayloadResolver
 	Mutation() MutationResolver
 	NoteView() NoteViewResolver
@@ -500,7 +501,8 @@ type ComplexityRoot struct {
 	}
 
 	DeletePatreonCredentialsPayload struct {
-		DeletedID func(childComplexity int) int
+		DeletedID          func(childComplexity int) int
+		PatreonCredentials func(childComplexity int) int
 	}
 
 	DeleteRedirectPayload struct {
@@ -948,6 +950,9 @@ type AdminUsersConnectionResolver interface {
 }
 type BanUserPayloadResolver interface {
 	User(ctx context.Context, obj *model.BanUserPayload) (*db.User, error)
+}
+type DeletePatreonCredentialsPayloadResolver interface {
+	PatreonCredentials(ctx context.Context, obj *model.DeletePatreonCredentialsPayload) (*db.PatreonCredential, error)
 }
 type ErrorPayloadResolver interface {
 	Message(ctx context.Context, obj *model.ErrorPayload) (string, error)
@@ -2809,6 +2814,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DeletePatreonCredentialsPayload.DeletedID(childComplexity), true
+
+	case "DeletePatreonCredentialsPayload.patreonCredentials":
+		if e.complexity.DeletePatreonCredentialsPayload.PatreonCredentials == nil {
+			break
+		}
+
+		return e.complexity.DeletePatreonCredentialsPayload.PatreonCredentials(childComplexity), true
 
 	case "DeleteRedirectPayload.id":
 		if e.complexity.DeleteRedirectPayload.ID == nil {
@@ -16138,6 +16150,72 @@ func (ec *executionContext) fieldContext_DeletePatreonCredentialsPayload_deleted
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeletePatreonCredentialsPayload_patreonCredentials(ctx context.Context, field graphql.CollectedField, obj *model.DeletePatreonCredentialsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeletePatreonCredentialsPayload_patreonCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.DeletePatreonCredentialsPayload().PatreonCredentials(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.PatreonCredential)
+	fc.Result = res
+	return ec.marshalNAdminPatreonCredentials2ᚖtrip2gᚋinternalᚋdbᚐPatreonCredential(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeletePatreonCredentialsPayload_patreonCredentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeletePatreonCredentialsPayload",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminPatreonCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminPatreonCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminPatreonCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminPatreonCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
+			case "syncedAt":
+				return ec.fieldContext_AdminPatreonCredentials_syncedAt(ctx, field)
+			case "creatorAccessToken":
+				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminPatreonCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminPatreonCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
 		},
 	}
 	return fc, nil
@@ -32486,8 +32564,44 @@ func (ec *executionContext) _DeletePatreonCredentialsPayload(ctx context.Context
 		case "deletedId":
 			out.Values[i] = ec._DeletePatreonCredentialsPayload_deletedId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "patreonCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._DeletePatreonCredentialsPayload_patreonCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

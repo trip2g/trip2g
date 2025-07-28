@@ -1035,6 +1035,7 @@ input DeletePatreonCredentialsInput {
 
 type DeletePatreonCredentialsPayload {
   deletedId: Int64!
+  patreonCredentials: AdminPatreonCredentials! @goField(forceResolver: true)
 }
 
 union DeletePatreonCredentialsOrErrorPayload = DeletePatreonCredentialsPayload | ErrorPayload

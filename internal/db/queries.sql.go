@@ -2884,8 +2884,9 @@ func (q *Queries) OfferByID(ctx context.Context, id int64) (Offer, error) {
 }
 
 const patreonCredentials = `-- name: PatreonCredentials :one
-select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at from patreon_credentials
-where id = ? and deleted_at is null
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at
+  from patreon_credentials
+ where id = ?
 `
 
 func (q *Queries) PatreonCredentials(ctx context.Context, id int64) (PatreonCredential, error) {

@@ -747,8 +747,9 @@ where deleted_at is not null
 order by created_at desc;
 
 -- name: PatreonCredentials :one
-select * from patreon_credentials
-where id = ? and deleted_at is null;
+select *
+  from patreon_credentials
+ where id = ?;
 
 -- name: InsertPatreonCredentials :one
 insert into patreon_credentials (created_by, creator_access_token)

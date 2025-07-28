@@ -420,7 +420,8 @@ type DeletePatreonCredentialsInput struct {
 }
 
 type DeletePatreonCredentialsPayload struct {
-	DeletedID int64 `json:"deletedId"`
+	DeletedID          int64                 `json:"deletedId"`
+	PatreonCredentials *db.PatreonCredential `json:"patreonCredentials"`
 }
 
 func (DeletePatreonCredentialsPayload) IsDeletePatreonCredentialsOrErrorPayload() {}

@@ -39,6 +39,7 @@ import (
 	"trip2g/internal/notfoundtracker"
 	"trip2g/internal/nowpayments"
 	"trip2g/internal/patreon"
+	"trip2g/internal/patreonjobs"
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/redirectmanager"
 	"trip2g/internal/router"
@@ -68,6 +69,7 @@ type graphTransactions struct {
 type app struct {
 	*db.Queries
 	*miniostorage.FileStorage
+	*patreonjobs.PatreonJobs
 
 	graphTxs *graphTransactions
 
@@ -176,6 +178,11 @@ func main() {
 		nowpaymentsClient: nowpaymentsClient,
 
 		patreonClientManager: patreon.NewClientManager(),
+	}
+
+	a.PatreonJobs, err = patreonjobs.New(ctx, a)
+	if err != nil {
+		panic(fmt.Errorf("failed to create Patreon IO: %w", err))
 	}
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)

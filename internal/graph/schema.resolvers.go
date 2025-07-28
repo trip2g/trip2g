@@ -268,7 +268,12 @@ func (r *adminMutationResolver) RestorePatreonCredentials(ctx context.Context, o
 
 // RefreshPatreonData is the resolver for the refreshPatreonData field.
 func (r *adminMutationResolver) RefreshPatreonData(ctx context.Context, obj *appmodel.AdminMutation, input model.RefreshPatreonDataInput) (model.RefreshPatreonDataOrErrorPayload, error) {
-	return refreshpatreondata.Resolve(ctx, r.env(ctx), &input.CredentialsID)
+	err := refreshpatreondata.Resolve(ctx, r.env(ctx), &input.CredentialsID)
+	if err != nil {
+		return &model.ErrorPayload{Message: err.Error()}, nil
+	}
+
+	return &model.RefreshPatreonDataPayload{Success: true}, nil
 }
 
 // SetPatreonTierSubgraphs is the resolver for the setPatreonTierSubgraphs field.
@@ -868,6 +873,11 @@ func (r *adminUsersConnectionResolver) Nodes(ctx context.Context, obj *model.Adm
 // User is the resolver for the user field.
 func (r *banUserPayloadResolver) User(ctx context.Context, obj *model.BanUserPayload) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
+}
+
+// PatreonCredentials is the resolver for the patreonCredentials field.
+func (r *deletePatreonCredentialsPayloadResolver) PatreonCredentials(ctx context.Context, obj *model.DeletePatreonCredentialsPayload) (*db.PatreonCredential, error) {
+	return resolveOne[db.PatreonCredential](ctx, obj.DeletedID, r.env(ctx).PatreonCredentials)
 }
 
 // Message is the resolver for the message field.
@@ -1510,6 +1520,11 @@ func (r *Resolver) AdminUsersConnection() AdminUsersConnectionResolver {
 // BanUserPayload returns BanUserPayloadResolver implementation.
 func (r *Resolver) BanUserPayload() BanUserPayloadResolver { return &banUserPayloadResolver{r} }
 
+// DeletePatreonCredentialsPayload returns DeletePatreonCredentialsPayloadResolver implementation.
+func (r *Resolver) DeletePatreonCredentialsPayload() DeletePatreonCredentialsPayloadResolver {
+	return &deletePatreonCredentialsPayloadResolver{r}
+}
+
 // ErrorPayload returns ErrorPayloadResolver implementation.
 func (r *Resolver) ErrorPayload() ErrorPayloadResolver { return &errorPayloadResolver{r} }
 
@@ -1600,6 +1615,7 @@ type adminUserSubgraphAccessResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
 type banUserPayloadResolver struct{ *Resolver }
+type deletePatreonCredentialsPayloadResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }
