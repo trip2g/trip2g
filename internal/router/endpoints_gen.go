@@ -6,6 +6,7 @@ package router
 
 import (
 	processnowpaymentsipnprocessnowpaymentsipn "trip2g/internal/case/processnowpaymentsipn"
+	processpatreonwebhookprocesspatreonwebhook "trip2g/internal/case/processpatreonwebhook"
 	render404render404 "trip2g/internal/case/render404"
 	renderadminpagerenderadminpage "trip2g/internal/case/renderadminpage"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
@@ -14,6 +15,7 @@ import (
 
 var endpoints = []Endpoint{
 	&processnowpaymentsipnprocessnowpaymentsipn.Endpoint{},
+	&processpatreonwebhookprocesspatreonwebhook.Endpoint{},
 	&render404render404.Endpoint{},
 	&renderadminpagerenderadminpage.Endpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
@@ -22,6 +24,7 @@ var endpoints = []Endpoint{
 
 type RoutesEnv interface {
 	processnowpaymentsipnprocessnowpaymentsipn.Env
+	processpatreonwebhookprocesspatreonwebhook.Env
 	render404render404.Env
 	renderadminpagerenderadminpage.Env
 	rendernotepagerendernotepage.Env

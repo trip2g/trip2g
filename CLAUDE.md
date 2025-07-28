@@ -114,6 +114,68 @@ Do not add co-author comments or generated signatures unless specifically reques
   );
   ```
 
+## Router and HTTP Endpoints
+
+### Adding HTTP Endpoints
+
+To add a new HTTP endpoint (webhook handler, API endpoint, etc.):
+
+1. **Create case directory**: `mkdir -p internal/case/yourhandlername`
+
+2. **Create resolve.go** with business logic:
+   ```go
+   package yourhandlername
+   
+   type Env interface {
+       // Define required methods
+   }
+   
+   func Resolve(ctx context.Context, env Env, ...) (ReturnType, error) {
+       // Business logic here
+   }
+   ```
+
+3. **Create endpoint.go** to handle HTTP request/response:
+   ```go
+   package yourhandlername
+   
+   import (
+       "net/http"
+       "trip2g/internal/appreq"
+   )
+   
+   type Endpoint struct{}
+   
+   func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
+       env := req.Env.(Env)
+       // Extract parameters, headers, body
+       // Call Resolve
+       return Resolve(req.Req, env, ...)
+   }
+   
+   func (*Endpoint) Path() string {
+       return "/api/your/path"
+   }
+   
+   func (*Endpoint) Method() string {
+       return http.MethodPost // or http.MethodGet, etc.
+   }
+   ```
+
+4. **Generate router**: Run `go generate ./internal/router/...`
+   - This scans all `internal/case/*` directories for `Endpoint` types
+   - Updates `internal/router/endpoints_gen.go` automatically
+   - Updates `RoutesEnv` interface to include your case's `Env` interface
+
+5. **Implement Env methods** in `cmd/server/main.go` if needed
+
+### Example: Webhook Handler
+See `internal/case/processnowpaymentsipn` for a complete webhook handler example that:
+- Validates signatures
+- Parses JSON payload
+- Updates database state
+- Returns appropriate HTTP status codes
+
 ## Adding New Features
 
 ### Adding SQL Queries and Database Methods
