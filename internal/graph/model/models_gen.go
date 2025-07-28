@@ -646,7 +646,8 @@ type SetPatreonTierSubgraphsInput struct {
 }
 
 type SetPatreonTierSubgraphsPayload struct {
-	Tier *db.PatreonTier `json:"tier"`
+	Tier    *db.PatreonTier `json:"tier"`
+	Success bool            `json:"success"`
 }
 
 func (SetPatreonTierSubgraphsPayload) IsSetPatreonTierSubgraphsOrErrorPayload() {}

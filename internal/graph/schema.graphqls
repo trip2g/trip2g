@@ -1078,6 +1078,7 @@ input SetPatreonTierSubgraphsInput {
 
 type SetPatreonTierSubgraphsPayload {
   tier: AdminPatreonTier!
+  success: Boolean!
 }
 
 union SetPatreonTierSubgraphsOrErrorPayload = SetPatreonTierSubgraphsPayload | ErrorPayload

@@ -18,6 +18,10 @@ namespace $.$$ {
 									missedAt
 									title
 									amountCents
+
+									subgraphs {
+										id
+									}
 								}
 							}
 							
@@ -42,8 +46,8 @@ namespace $.$$ {
 		return res.admin.patreonCredentials
 	}
 
-	type Tier = ReturnType<typeof request>['tiers']['nodes'][0]
-	type Member = ReturnType<typeof request>['members']['nodes'][0]
+	type Tier = ReturnType<typeof request>[ 'tiers' ][ 'nodes' ][ 0 ]
+	type Member = ReturnType<typeof request>[ 'members' ][ 'nodes' ][ 0 ]
 
 	export class $trip2g_admin_patreoncredentials_show extends $.$trip2g_admin_patreoncredentials_show {
 		@$mol_mem
@@ -102,43 +106,51 @@ namespace $.$$ {
 	export class $trip2g_admin_patreoncredentials_show_tiers extends $.$trip2g_admin_patreoncredentials_show_tiers {
 		override items() {
 			const rows = this.data_rows() as Tier[]
-			return rows.map( (_, idx) => this.Row( idx ) )
+			return rows.map( ( _, idx ) => this.Row( idx ) )
 		}
 
 		@$mol_mem
 		row( id: any ): Tier {
-			return this.data_rows()[id]
+			return this.data_rows()[ id ]
 		}
 
-		row_id( id: any ) {
+		override row_id_string( id: any ) {
 			return this.row( id ).id.toString()
 		}
 
-		row_title( id: any ) {
-			return this.row( id ).title || '-'
+		override row_id( id: any ): number {
+			return this.row( id ).id
 		}
 
-		row_amount_cents( id: any ) {
+		override row_title( id: any ) {
+			return this.row( id ).title
+		}
+
+		override row_amount_cents( id: any ) {
 			return this.row( id ).amountCents.toString()
 		}
 
-		row_missed_at( id: any ) {
+		override row_missed_at( id: any ) {
 			const missedAt = this.row( id ).missedAt
 			if( !missedAt ) return '-'
 			const m = new $mol_time_moment( missedAt )
 			return m.toString( 'YYYY-MM-DD hh:mm' )
+		}
+
+		override row_subgraph_ids( id: any ) {
+			return this.row( id ).subgraphs.map( s => s.id )
 		}
 	}
 
 	export class $trip2g_admin_patreoncredentials_show_members extends $.$trip2g_admin_patreoncredentials_show_members {
 		override items() {
 			const rows = this.data_rows() as Member[]
-			return rows.map( (_, idx) => this.Row( idx ) )
+			return rows.map( ( _, idx ) => this.Row( idx ) )
 		}
 
 		@$mol_mem
 		row( id: any ): Member {
-			return this.data_rows()[id]
+			return this.data_rows()[ id ]
 		}
 
 		row_email( id: any ) {

@@ -138,7 +138,8 @@ func TestSetPatreonTierSubgraphs(t *testing.T) {
 
 			result, err := Resolve(context.Background(), env, tt.input)
 
-			if tt.expectError {
+			switch {
+			case tt.expectError:
 				// Expect an ErrorPayload to be returned
 				require.NoError(t, err)
 				require.NotNil(t, result)
@@ -146,7 +147,7 @@ func TestSetPatreonTierSubgraphs(t *testing.T) {
 				require.True(t, ok, "expected ErrorPayload")
 				// Check either Message or ByFields is populated
 				require.True(t, errorPayload.Message != "" || len(errorPayload.ByFields) > 0, "expected error details")
-			} else if tt.expectOk {
+			case tt.expectOk:
 				require.NoError(t, err)
 				require.NotNil(t, result)
 				payload, ok := result.(*model.SetPatreonTierSubgraphsPayload)
@@ -156,7 +157,7 @@ func TestSetPatreonTierSubgraphs(t *testing.T) {
 				require.True(t, ok, "expected SetPatreonTierSubgraphsPayload")
 				require.NotNil(t, payload.Tier)
 				require.Equal(t, int64(1), payload.Tier.ID)
-			} else {
+			default:
 				// System error case
 				require.Error(t, err)
 				require.Nil(t, result)

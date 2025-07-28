@@ -16,8 +16,10 @@ type Env interface {
 	PatreonTierByID(ctx context.Context, id int64) (db.PatreonTier, error)
 }
 
-// Type aliases for cleaner code.
+// Input is an alias for SetPatreonTierSubgraphsInput for cleaner code.
 type Input = model.SetPatreonTierSubgraphsInput
+
+// Payload is an alias for SetPatreonTierSubgraphsOrErrorPayload for cleaner code.
 type Payload = model.SetPatreonTierSubgraphsOrErrorPayload
 
 // validateRequest validates input and returns ErrorPayload if invalid.
@@ -67,7 +69,8 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	// Define payload as separate variable
 	payload := model.SetPatreonTierSubgraphsPayload{
-		Tier: &tier,
+		Tier:    &tier,
+		Success: true,
 	}
 
 	return &payload, nil

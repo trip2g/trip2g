@@ -635,7 +635,8 @@ type ComplexityRoot struct {
 	}
 
 	SetPatreonTierSubgraphsPayload struct {
-		Tier func(childComplexity int) int
+		Success func(childComplexity int) int
+		Tier    func(childComplexity int) int
 	}
 
 	SignInPayload struct {
@@ -3282,6 +3283,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.RestorePatreonCredentialsPayload.PatreonCredentials(childComplexity), true
+
+	case "SetPatreonTierSubgraphsPayload.success":
+		if e.complexity.SetPatreonTierSubgraphsPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.SetPatreonTierSubgraphsPayload.Success(childComplexity), true
 
 	case "SetPatreonTierSubgraphsPayload.tier":
 		if e.complexity.SetPatreonTierSubgraphsPayload.Tier == nil {
@@ -19415,6 +19423,50 @@ func (ec *executionContext) fieldContext_SetPatreonTierSubgraphsPayload_tier(_ c
 	return fc, nil
 }
 
+func (ec *executionContext) _SetPatreonTierSubgraphsPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.SetPatreonTierSubgraphsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SetPatreonTierSubgraphsPayload_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SetPatreonTierSubgraphsPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetPatreonTierSubgraphsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SignInPayload_token(ctx context.Context, field graphql.CollectedField, obj *model.SignInPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SignInPayload_token(ctx, field)
 	if err != nil {
@@ -34068,6 +34120,11 @@ func (ec *executionContext) _SetPatreonTierSubgraphsPayload(ctx context.Context,
 			out.Values[i] = graphql.MarshalString("SetPatreonTierSubgraphsPayload")
 		case "tier":
 			out.Values[i] = ec._SetPatreonTierSubgraphsPayload_tier(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "success":
+			out.Values[i] = ec._SetPatreonTierSubgraphsPayload_success(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

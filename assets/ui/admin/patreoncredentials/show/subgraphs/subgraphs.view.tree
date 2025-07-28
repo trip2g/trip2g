@@ -1,0 +1,7 @@
+$trip2g_admin_patreoncredentials_show_subgraphs $mol_view
+	tier_id 0
+	current_ids /number
+	sub /
+		<= Row*0 $mol_check_box
+			title <= item_title* \Name
+			checked? <=> item_check*? false

@@ -47,7 +47,7 @@ $trip2g_admin_patreoncredentials_show_tiers $mol_section
 				<= Id_labeler* $mol_labeler
 					title \ID
 					Content <= Id* $trip2g_admin_cell
-						content <= row_id* \
+						content <= row_id_string* \
 				<= Title_labeler* $mol_labeler
 					title \Title
 					Content <= RowTitle* $trip2g_admin_cell
@@ -60,6 +60,11 @@ $trip2g_admin_patreoncredentials_show_tiers $mol_section
 					title \Missed At
 					Content <= MissedAt* $trip2g_admin_cell
 						content <= row_missed_at* \
+				<= Subgraphs_labeler* $mol_labeler
+					title \Subgraphs
+					Content <= Subgraphs* $trip2g_admin_patreoncredentials_show_subgraphs
+						tier_id <= row_id* 0
+						current_ids <= row_subgraph_ids* /
 
 $trip2g_admin_patreoncredentials_show_members $mol_section
 	title \Members
