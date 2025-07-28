@@ -126,6 +126,16 @@ func testWebhookWorkflow(client *patreon.Client, campaignID string) {
 	} else {
 		logPrintln("\n4. Test webhook was not found, skipping deletion test")
 	}
+
+	// webhooks, err := client.ListWebhooks()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// for _, webhook := range webhooks {
+	// 	fmt.Println("Remaining webhook ID:", webhook.ID, "URI:", webhook.Attributes.URI)
+	// 	deleteTestWebhook(client, webhook.ID)
+	// }
 }
 
 func listCurrentWebhooks(client *patreon.Client) {
@@ -136,7 +146,7 @@ func listCurrentWebhooks(client *patreon.Client) {
 	}
 	logPrintf("Current webhooks: %d\n", len(webhooks))
 	for i, webhook := range webhooks {
-		logPrintf("  %d. ID: %s, URI: %s\n", i+1, webhook.ID, webhook.Attributes.URI)
+		logPrintf("  %d. ID: %s, URI: %s, Triggers: %+v\n", i+1, webhook.ID, webhook.Attributes.URI, webhook.Attributes.Triggers)
 	}
 }
 
@@ -149,13 +159,13 @@ func createTestWebhook(client *patreon.Client, campaignID string) string {
 		"members:delete",
 	}
 
-	err := client.CreateWebhook(campaignID, testWebhookURL, triggers)
+	resp, err := client.CreateWebhook(campaignID, testWebhookURL, triggers)
 	if err != nil {
 		log.Printf("failed to create test webhook: %v", err)
 		return ""
 	}
 
-	logPrintf("Test webhook created successfully\n")
+	logPrintf("Test webhook created successfully: %+v\n", resp)
 	return testWebhookURL
 }
 

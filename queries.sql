@@ -822,6 +822,16 @@ update patreon_credentials
 set synced_at = current_timestamp
 where id = ?;
 
+-- name: UpdatePatreonCredentialsWebhookSecret :exec
+update patreon_credentials
+set webhook_secret = ?
+where id = ?;
+
+-- name: ClearPatreonCredentialsWebhookSecret :exec
+update patreon_credentials
+set webhook_secret = null
+where id = ?;
+
 -- name: MarkPatreonMembersAsMissed :exec
 update patreon_members
 set status = 'missed'

@@ -168,13 +168,14 @@ type PatreonCampaign struct {
 }
 
 type PatreonCredential struct {
-	ID                 int64         `json:"id"`
-	CreatedAt          time.Time     `json:"created_at"`
-	CreatedBy          int64         `json:"created_by"`
-	DeletedAt          sql.NullTime  `json:"deleted_at"`
-	DeletedBy          sql.NullInt64 `json:"deleted_by"`
-	CreatorAccessToken string        `json:"creator_access_token"`
-	SyncedAt           sql.NullTime  `json:"synced_at"`
+	ID                 int64          `json:"id"`
+	CreatedAt          time.Time      `json:"created_at"`
+	CreatedBy          int64          `json:"created_by"`
+	DeletedAt          sql.NullTime   `json:"deleted_at"`
+	DeletedBy          sql.NullInt64  `json:"deleted_by"`
+	CreatorAccessToken string         `json:"creator_access_token"`
+	SyncedAt           sql.NullTime   `json:"synced_at"`
+	WebhookSecret      sql.NullString `json:"webhook_secret"`
 }
 
 type PatreonMember struct {

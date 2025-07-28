@@ -118,8 +118,12 @@ type WebhookData struct {
 }
 
 type WebhookAttributes struct {
-	Triggers []string `json:"triggers"`
-	URI      string   `json:"uri"`
+	Triggers                  []string `json:"triggers"`
+	URI                       string   `json:"uri"`
+	Paused                    bool     `json:"paused,omitempty"`
+	LastAttemptedAt           *string  `json:"last_attempted_at,omitempty"`
+	NumConsecutiveTimesFailed int      `json:"num_consecutive_times_failed,omitempty"`
+	Secret                    string   `json:"secret,omitempty"`
 }
 
 type WebhookRelationships struct {
@@ -129,6 +133,11 @@ type WebhookRelationships struct {
 type WebhooksResponse struct {
 	Data []Webhook `json:"data"`
 	Meta Meta      `json:"meta"`
+}
+
+type WebhookCreateResponse struct {
+	Data  Webhook `json:"data"`
+	Links Links   `json:"links"`
 }
 
 type Webhook struct {
@@ -251,7 +260,8 @@ type IncludedEntity struct {
 }
 
 type Links struct {
-	Next string `json:"next"`
+	Next string `json:"next,omitempty"`
+	Self string `json:"self,omitempty"`
 }
 
 type ErrorResponse struct {

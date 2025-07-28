@@ -92,7 +92,7 @@ func (c *Client) ListCampaigns() ([]Campaign, error) {
 }
 
 // CreateWebhook creates a new webhook for the campaign.
-func (c *Client) CreateWebhook(campaignID string, webhookURL string, triggers []string) error {
+func (c *Client) CreateWebhook(campaignID string, webhookURL string, triggers []string) (*Webhook, error) {
 	webhookData := WebhookRequest{
 		Data: WebhookData{
 			Type: "webhook",
@@ -113,7 +113,7 @@ func (c *Client) CreateWebhook(campaignID string, webhookURL string, triggers []
 
 	body, err := easyjson.Marshal(webhookData)
 	if err != nil {
-		return fmt.Errorf("failed to marshal webhook data: %w", err)
+		return nil, fmt.Errorf("failed to marshal webhook data: %w", err)
 	}
 
 	req := fasthttp.AcquireRequest()
@@ -130,21 +130,27 @@ func (c *Client) CreateWebhook(campaignID string, webhookURL string, triggers []
 
 	err = c.http.DoTimeout(req, resp, c.reqTimeout)
 	if err != nil {
-		return fmt.Errorf("failed to create webhook: %w", err)
+		return nil, fmt.Errorf("failed to create webhook: %w", err)
 	}
 
 	if resp.StatusCode() != fasthttp.StatusCreated && resp.StatusCode() != fasthttp.StatusOK {
 		var errResp ErrorResponse
 		if unmarshalErr := easyjson.Unmarshal(resp.Body(), &errResp); unmarshalErr == nil && len(errResp.Errors) > 0 {
-			return fmt.Errorf("patreon API error: %s - %s", errResp.Errors[0].Title, errResp.Errors[0].Detail)
+			return nil, fmt.Errorf("patreon API error: %s - %s", errResp.Errors[0].Title, errResp.Errors[0].Detail)
 		}
-		return &UnexpectedStatusCodeError{
+		return nil, &UnexpectedStatusCodeError{
 			StatusCode: resp.StatusCode(),
 			Body:       string(resp.Body()),
 		}
 	}
 
-	return nil
+	var respData WebhookCreateResponse
+	err = easyjson.Unmarshal(resp.Body(), &respData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal webhook response: %w", err)
+	}
+
+	return &respData.Data, nil
 }
 
 // ListWebhooks retrieves all webhooks for the authenticated user.

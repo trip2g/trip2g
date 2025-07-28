@@ -62,7 +62,7 @@ func (q *Queries) AdminByUserID(ctx context.Context, userID int64) (Admin, error
 }
 
 const allActivePatreonCredentials = `-- name: AllActivePatreonCredentials :many
-select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at from patreon_credentials
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret from patreon_credentials
 where deleted_at is null
 order by created_at desc
 `
@@ -84,6 +84,7 @@ func (q *Queries) AllActivePatreonCredentials(ctx context.Context) ([]PatreonCre
 			&i.DeletedBy,
 			&i.CreatorAccessToken,
 			&i.SyncedAt,
+			&i.WebhookSecret,
 		); err != nil {
 			return nil, err
 		}
@@ -99,7 +100,7 @@ func (q *Queries) AllActivePatreonCredentials(ctx context.Context) ([]PatreonCre
 }
 
 const allDeletedPatreonCredentials = `-- name: AllDeletedPatreonCredentials :many
-select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at from patreon_credentials
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret from patreon_credentials
 where deleted_at is not null
 order by created_at desc
 `
@@ -121,6 +122,7 @@ func (q *Queries) AllDeletedPatreonCredentials(ctx context.Context) ([]PatreonCr
 			&i.DeletedBy,
 			&i.CreatorAccessToken,
 			&i.SyncedAt,
+			&i.WebhookSecret,
 		); err != nil {
 			return nil, err
 		}
@@ -460,7 +462,7 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 }
 
 const allPatreonCredentials = `-- name: AllPatreonCredentials :many
-select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at from patreon_credentials
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret from patreon_credentials
 order by created_at desc
 `
 
@@ -481,6 +483,7 @@ func (q *Queries) AllPatreonCredentials(ctx context.Context) ([]PatreonCredentia
 			&i.DeletedBy,
 			&i.CreatorAccessToken,
 			&i.SyncedAt,
+			&i.WebhookSecret,
 		); err != nil {
 			return nil, err
 		}
@@ -680,6 +683,17 @@ update releases set is_live = (?1 = id)
 
 func (q *Queries) ChangeLiveRelease(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, changeLiveRelease, id)
+	return err
+}
+
+const clearPatreonCredentialsWebhookSecret = `-- name: ClearPatreonCredentialsWebhookSecret :exec
+update patreon_credentials
+set webhook_secret = null
+where id = ?
+`
+
+func (q *Queries) ClearPatreonCredentialsWebhookSecret(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, clearPatreonCredentialsWebhookSecret, id)
 	return err
 }
 
@@ -1373,7 +1387,7 @@ func (q *Queries) InsertPatreonCampaign(ctx context.Context, arg InsertPatreonCa
 const insertPatreonCredentials = `-- name: InsertPatreonCredentials :one
 insert into patreon_credentials (created_by, creator_access_token)
 values (?, ?)
-returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at
+returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret
 `
 
 type InsertPatreonCredentialsParams struct {
@@ -1392,6 +1406,7 @@ func (q *Queries) InsertPatreonCredentials(ctx context.Context, arg InsertPatreo
 		&i.DeletedBy,
 		&i.CreatorAccessToken,
 		&i.SyncedAt,
+		&i.WebhookSecret,
 	)
 	return i, err
 }
@@ -1894,7 +1909,7 @@ func (q *Queries) ListActiveOffersBySubgraphNames(ctx context.Context, subgraphs
 }
 
 const listActivePatreonCredentials = `-- name: ListActivePatreonCredentials :many
-select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret
   from patreon_credentials
  where deleted_by is null
 `
@@ -1916,6 +1931,7 @@ func (q *Queries) ListActivePatreonCredentials(ctx context.Context) ([]PatreonCr
 			&i.DeletedBy,
 			&i.CreatorAccessToken,
 			&i.SyncedAt,
+			&i.WebhookSecret,
 		); err != nil {
 			return nil, err
 		}
@@ -2884,7 +2900,7 @@ func (q *Queries) OfferByID(ctx context.Context, id int64) (Offer, error) {
 }
 
 const patreonCredentials = `-- name: PatreonCredentials :one
-select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at
+select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret
   from patreon_credentials
  where id = ?
 `
@@ -2900,6 +2916,7 @@ func (q *Queries) PatreonCredentials(ctx context.Context, id int64) (PatreonCred
 		&i.DeletedBy,
 		&i.CreatorAccessToken,
 		&i.SyncedAt,
+		&i.WebhookSecret,
 	)
 	return i, err
 }
@@ -3023,7 +3040,7 @@ const restorePatreonCredentials = `-- name: RestorePatreonCredentials :one
 update patreon_credentials
 set deleted_at = null, deleted_by = null
 where id = ? and deleted_at is not null
-returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at
+returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret
 `
 
 func (q *Queries) RestorePatreonCredentials(ctx context.Context, id int64) (PatreonCredential, error) {
@@ -3037,6 +3054,7 @@ func (q *Queries) RestorePatreonCredentials(ctx context.Context, id int64) (Patr
 		&i.DeletedBy,
 		&i.CreatorAccessToken,
 		&i.SyncedAt,
+		&i.WebhookSecret,
 	)
 	return i, err
 }
@@ -3077,7 +3095,7 @@ const softDeletePatreonCredentials = `-- name: SoftDeletePatreonCredentials :one
 update patreon_credentials
 set deleted_at = current_timestamp, deleted_by = ?
 where id = ? and deleted_at is null
-returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at
+returning id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret
 `
 
 type SoftDeletePatreonCredentialsParams struct {
@@ -3096,6 +3114,7 @@ func (q *Queries) SoftDeletePatreonCredentials(ctx context.Context, arg SoftDele
 		&i.DeletedBy,
 		&i.CreatorAccessToken,
 		&i.SyncedAt,
+		&i.WebhookSecret,
 	)
 	return i, err
 }
@@ -3614,6 +3633,22 @@ where id = ?
 
 func (q *Queries) UpdatePatreonCredentialsSyncedAt(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, updatePatreonCredentialsSyncedAt, id)
+	return err
+}
+
+const updatePatreonCredentialsWebhookSecret = `-- name: UpdatePatreonCredentialsWebhookSecret :exec
+update patreon_credentials
+set webhook_secret = ?
+where id = ?
+`
+
+type UpdatePatreonCredentialsWebhookSecretParams struct {
+	WebhookSecret sql.NullString `json:"webhook_secret"`
+	ID            int64          `json:"id"`
+}
+
+func (q *Queries) UpdatePatreonCredentialsWebhookSecret(ctx context.Context, arg UpdatePatreonCredentialsWebhookSecretParams) error {
+	_, err := q.db.ExecContext(ctx, updatePatreonCredentialsWebhookSecret, arg.WebhookSecret, arg.ID)
 	return err
 }
 

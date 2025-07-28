@@ -285,7 +285,7 @@ CREATE TABLE patreon_credentials (
   deleted_at datetime,
   deleted_by integer references admins(user_id) on delete restrict,
   creator_access_token text not null
-, synced_at datetime);
+, synced_at datetime, webhook_secret text);
 CREATE TABLE patreon_campaigns (
   id integer primary key autoincrement,
   credentials_id integer not null references patreon_credentials(id) on delete cascade,
@@ -370,4 +370,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250725200000'),
   ('20250725201000'),
   ('20250725202000'),
-  ('20250727034504');
+  ('20250727034504'),
+  ('20250728130332');

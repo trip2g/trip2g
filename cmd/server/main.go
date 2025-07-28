@@ -296,6 +296,63 @@ func (a *app) PatreonListPatrons(token string, campaignID string) (*patreon.Patr
 	return client.ListPatrons(campaignID)
 }
 
+func (a *app) PatreonCreateWebhook(campaignID string, webhookURL string, triggers []string) (*patreon.Webhook, error) {
+	// Use the first available credential's token for webhook operations
+	credentials, err := a.AllActivePatreonCredentials(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get active credentials: %w", err)
+	}
+
+	if len(credentials) == 0 {
+		return nil, fmt.Errorf("no active Patreon credentials found")
+	}
+
+	client, err := a.patreonClientManager.Get(credentials[0].CreatorAccessToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Patreon client: %w", err)
+	}
+
+	return client.CreateWebhook(campaignID, webhookURL, triggers)
+}
+
+func (a *app) PatreonListWebhooks() ([]patreon.Webhook, error) {
+	// Use the first available credential's token for webhook operations
+	credentials, err := a.AllActivePatreonCredentials(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get active credentials: %w", err)
+	}
+
+	if len(credentials) == 0 {
+		return nil, fmt.Errorf("no active Patreon credentials found")
+	}
+
+	client, err := a.patreonClientManager.Get(credentials[0].CreatorAccessToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Patreon client: %w", err)
+	}
+
+	return client.ListWebhooks()
+}
+
+func (a *app) PatreonDeleteWebhook(webhookID string) error {
+	// Use the first available credential's token for webhook operations
+	credentials, err := a.AllActivePatreonCredentials(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to get active credentials: %w", err)
+	}
+
+	if len(credentials) == 0 {
+		return fmt.Errorf("no active Patreon credentials found")
+	}
+
+	client, err := a.patreonClientManager.Get(credentials[0].CreatorAccessToken)
+	if err != nil {
+		return fmt.Errorf("failed to get Patreon client: %w", err)
+	}
+
+	return client.DeleteWebhook(webhookID)
+}
+
 func (a *app) SendMail(ctx context.Context, data model.Mail) error {
 	client := resend.NewClient(a.config.ResendAPIKey)
 
