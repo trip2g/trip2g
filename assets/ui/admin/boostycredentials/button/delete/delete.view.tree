@@ -1,0 +1,4 @@
+$trip2g_admin_boostycredentials_button_delete $mol_button_minor
+	credentials_id 0
+	title \Delete
+	click? <=> delete? null

@@ -1,0 +1,75 @@
+$trip2g_admin_boostycredentials_show $mol_page
+	credentials_id 0
+	title \Boosty Credentials
+	tools /
+		<= DeleteButton $trip2g_admin_boostycredentials_button_delete
+			credentials_id <= credentials_id
+		<= RestoreButton $trip2g_admin_boostycredentials_button_restore
+			credentials_id <= credentials_id
+	body /
+		<= CredentialsDetails $mol_view
+			sub /
+				<= Details_row $mol_row
+					sub /
+						<= Id_labeler $mol_labeler
+							title \ID
+							Content <= Id $trip2g_admin_cell
+								content <= credentials_id_string \
+						<= State_labeler $mol_labeler
+							title \State
+							Content <= State $trip2g_admin_cell
+								content <= credentials_state \
+						<= DeviceId_labeler $mol_labeler
+							title \Device ID
+							Content <= DeviceId $trip2g_admin_cell
+								content <= credentials_device_id \
+						<= BlogName_labeler $mol_labeler
+							title \Blog Name
+							Content <= BlogName $trip2g_admin_cell
+								content <= credentials_blog_name \
+						<= CreatedAt_labeler $mol_labeler
+							title \Created At
+							Content <= CreatedAt $trip2g_admin_cell
+								content <= credentials_created_at \
+						<= CreatedBy_labeler $mol_labeler
+							title \Created By
+							Content <= CreatedBy $trip2g_admin_cell
+								content <= credentials_created_by \
+		<= Tiers $trip2g_admin_boostycredentials_show_tiers
+			data_rows <= tiers /
+		<= Members $trip2g_admin_boostycredentials_show_members
+			data_rows <= members /
+
+$trip2g_admin_boostycredentials_show_tiers $mol_section
+	title \Tiers
+	data_rows /
+	content <= items /
+		<= Row* $mol_row
+			sub /
+				<= Id_labeler* $mol_labeler
+					title \ID
+					Content <= Id* $trip2g_admin_cell
+						content <= row_id_string* \
+				<= Title_labeler* $mol_labeler
+					title \Title
+					Content <= RowTitle* $trip2g_admin_cell
+						content <= row_title* \
+
+$trip2g_admin_boostycredentials_show_members $mol_section
+	title \Members
+	data_rows /
+	content <= items /
+		<= Row* $mol_row
+			sub /
+				<= Email_labeler* $mol_labeler
+					title \Email
+					Content <= Email* $trip2g_admin_cell
+						content <= row_email* \
+				<= Status_labeler* $mol_labeler
+					title \Status
+					Content <= Status* $trip2g_admin_cell
+						content <= row_status* \
+				<= CurrentTier_labeler* $mol_labeler
+					title \Current Tier
+					Content <= CurrentTier* $trip2g_admin_cell
+						content <= row_current_tier* \

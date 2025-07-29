@@ -1,0 +1,42 @@
+$trip2g_admin_boostycredentials_catalog $trip2g_admin_catalog
+	menu_title \Boosty Credentials
+	param \id
+	Empty $mol_status
+	actions /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+		<= FilterAll $mol_link
+			arg * filter \all
+			title \All
+		<= FilterActive $mol_link
+			arg * filter \active
+			title \Active
+		<= FilterDeleted $mol_link
+			arg * filter \deleted
+			title \Deleted
+	ShowPage* $trip2g_admin_boostycredentials_show
+		credentials_id <= row_id* 0
+	CreateForm $trip2g_admin_boostycredentials_create
+	menu_link_content* / <= CredentialsItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 500
+				sub <= row_content* /
+					<= Row_id_labeler* $mol_labeler
+						title \ID
+						Content <= Row_id* $trip2g_admin_cell
+							content <= row_id_string* \
+					<= Row_state_labeler* $mol_labeler
+						title \State
+						Content <= Row_state* $trip2g_admin_cell
+							content <= row_state* \active
+					<= Row_blog_name_labeler* $mol_labeler
+						title \Blog Name
+						Content <= Row_blog_name* $trip2g_admin_cell
+							content <= row_blog_name* \
+					<= Row_created_at_labeler* $mol_labeler
+						title \Created At
+						Content <= Row_created_at* $trip2g_admin_cell
+							content <= row_created_at* \created_at

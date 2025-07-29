@@ -1,0 +1,4 @@
+$trip2g_admin_boostycredentials_button_restore $mol_button_major
+	credentials_id 0
+	title \Restore
+	click? <=> restore? null

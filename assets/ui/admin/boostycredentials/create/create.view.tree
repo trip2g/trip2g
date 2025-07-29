@@ -1,0 +1,34 @@
+$trip2g_admin_boostycredentials_create $mol_page
+	title \Create Boosty Credentials
+	CredentialsView $mol_view
+		sub /
+			<= CredentialsId_labeler $mol_labeler
+				title \ID
+				Content <= CredentialsId $trip2g_admin_cell
+					content <= credentials_id_string? \
+	body /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= AuthData_field $mol_form_field
+					name \Auth Data
+					bid <= auth_data_bid \
+					Content <= auth_data_control $mol_string
+						value? <=> auth_data? \
+				<= DeviceId_field $mol_form_field
+					name \Device ID
+					bid <= device_id_bid \
+					Content <= device_id_control $mol_string
+						value? <=> device_id? \
+				<= BlogName_field $mol_form_field
+					name \Blog Name
+					bid <= blog_name_bid \
+					Content <= blog_name_control $mol_string
+						value? <=> blog_name? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \
