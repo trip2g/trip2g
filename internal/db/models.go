@@ -185,6 +185,7 @@ type PatreonMember struct {
 	CurrentTierID sql.NullInt64 `json:"current_tier_id"`
 	Status        string        `json:"status"`
 	Email         string        `json:"email"`
+	UserID        sql.NullInt64 `json:"user_id"`
 }
 
 type PatreonTier struct {

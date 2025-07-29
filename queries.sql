@@ -801,9 +801,10 @@ on conflict(campaign_id, tier_id) do update set
 
 
 -- name: GetPatreonTiersByCampaignID :many
-select * from patreon_tiers
-where campaign_id = ?
-order by amount_cents desc;
+select *
+  from patreon_tiers
+ where campaign_id = ?
+ order by amount_cents desc;
 
 -- name: UpsertPatreonMember :exec
 insert into patreon_members (patreon_id, campaign_id, status, email)
@@ -813,9 +814,21 @@ on conflict(patreon_id, campaign_id) do update set
   email = excluded.email;
 
 -- name: GetPatreonMembersByCampaignID :many
-select * from patreon_members
-where campaign_id = ?
-order by id desc;
+select *
+  from patreon_members
+ where campaign_id = ?
+ order by id desc;
+
+-- name: GetPatreonMemberByEmail :one
+select *
+  from patreon_members
+ where email = ?
+ limit 1;
+
+-- name: UpdatePatreonMemberUserID :exec
+update patreon_members
+   set user_id = ?
+ where id = ?;
 
 -- name: UpdatePatreonCredentialsSyncedAt :exec
 update patreon_credentials

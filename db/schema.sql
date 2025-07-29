@@ -302,7 +302,7 @@ CREATE TABLE patreon_members (
   current_tier_id integer references patreon_tiers(id) on delete set null,
   status text not null,
   email text not null
-);
+, user_id integer references users(id) on delete restrict);
 CREATE TABLE patreon_tiers (
   id integer primary key autoincrement,
   campaign_id integer not null references patreon_campaigns(id) on delete cascade,
@@ -371,4 +371,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250725201000'),
   ('20250725202000'),
   ('20250727034504'),
-  ('20250728130332');
+  ('20250728130332'),
+  ('20250729014409');

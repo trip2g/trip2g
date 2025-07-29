@@ -26,6 +26,7 @@ import (
 	"trip2g/internal/appconfig"
 	"trip2g/internal/appreq"
 	"trip2g/internal/bqtask/sendsignincode"
+	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
 	"trip2g/internal/db"
@@ -936,6 +937,18 @@ func (a *app) TrackNotFound(path string, ip string) {
 }
 
 func (a *app) NotifyPuchaseUpdated(email string) {
+}
+
+func (a *app) TryToAutoRegisterUser(ctx context.Context, email string) (*db.User, error) {
+	user, err := getpatreonuser.Resolve(ctx, a, email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check Patreon user: %w", err)
+	}
+
+	// boosty
+	// etc
+
+	return user, nil
 }
 
 func (a *app) RequestIP(ctx context.Context) string {

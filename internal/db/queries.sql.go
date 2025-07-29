@@ -930,8 +930,30 @@ func (q *Queries) GetPatreonCampaignsByCredentialsID(ctx context.Context, creden
 	return items, nil
 }
 
+const getPatreonMemberByEmail = `-- name: GetPatreonMemberByEmail :one
+select id, patreon_id, campaign_id, current_tier_id, status, email, user_id
+  from patreon_members
+ where email = ?
+ limit 1
+`
+
+func (q *Queries) GetPatreonMemberByEmail(ctx context.Context, email string) (PatreonMember, error) {
+	row := q.db.QueryRowContext(ctx, getPatreonMemberByEmail, email)
+	var i PatreonMember
+	err := row.Scan(
+		&i.ID,
+		&i.PatreonID,
+		&i.CampaignID,
+		&i.CurrentTierID,
+		&i.Status,
+		&i.Email,
+		&i.UserID,
+	)
+	return i, err
+}
+
 const getPatreonMemberByPatreonIDAndCampaignID = `-- name: GetPatreonMemberByPatreonIDAndCampaignID :one
-select id, patreon_id, campaign_id, current_tier_id, status, email from patreon_members
+select id, patreon_id, campaign_id, current_tier_id, status, email, user_id from patreon_members
 where patreon_id = ? and campaign_id = ?
 limit 1
 `
@@ -951,14 +973,16 @@ func (q *Queries) GetPatreonMemberByPatreonIDAndCampaignID(ctx context.Context, 
 		&i.CurrentTierID,
 		&i.Status,
 		&i.Email,
+		&i.UserID,
 	)
 	return i, err
 }
 
 const getPatreonMembersByCampaignID = `-- name: GetPatreonMembersByCampaignID :many
-select id, patreon_id, campaign_id, current_tier_id, status, email from patreon_members
-where campaign_id = ?
-order by id desc
+select id, patreon_id, campaign_id, current_tier_id, status, email, user_id
+  from patreon_members
+ where campaign_id = ?
+ order by id desc
 `
 
 func (q *Queries) GetPatreonMembersByCampaignID(ctx context.Context, campaignID int64) ([]PatreonMember, error) {
@@ -977,6 +1001,7 @@ func (q *Queries) GetPatreonMembersByCampaignID(ctx context.Context, campaignID 
 			&i.CurrentTierID,
 			&i.Status,
 			&i.Email,
+			&i.UserID,
 		); err != nil {
 			return nil, err
 		}
@@ -1019,9 +1044,10 @@ func (q *Queries) GetPatreonTierByTierID(ctx context.Context, arg GetPatreonTier
 }
 
 const getPatreonTiersByCampaignID = `-- name: GetPatreonTiersByCampaignID :many
-select id, campaign_id, created_at, missed_at, tier_id, title, amount_cents, attributes from patreon_tiers
-where campaign_id = ?
-order by amount_cents desc
+select id, campaign_id, created_at, missed_at, tier_id, title, amount_cents, attributes
+  from patreon_tiers
+ where campaign_id = ?
+ order by amount_cents desc
 `
 
 func (q *Queries) GetPatreonTiersByCampaignID(ctx context.Context, campaignID int64) ([]PatreonTier, error) {
@@ -3649,6 +3675,22 @@ type UpdatePatreonCredentialsWebhookSecretParams struct {
 
 func (q *Queries) UpdatePatreonCredentialsWebhookSecret(ctx context.Context, arg UpdatePatreonCredentialsWebhookSecretParams) error {
 	_, err := q.db.ExecContext(ctx, updatePatreonCredentialsWebhookSecret, arg.WebhookSecret, arg.ID)
+	return err
+}
+
+const updatePatreonMemberUserID = `-- name: UpdatePatreonMemberUserID :exec
+update patreon_members
+   set user_id = ?
+ where id = ?
+`
+
+type UpdatePatreonMemberUserIDParams struct {
+	UserID sql.NullInt64 `json:"user_id"`
+	ID     int64         `json:"id"`
+}
+
+func (q *Queries) UpdatePatreonMemberUserID(ctx context.Context, arg UpdatePatreonMemberUserIDParams) error {
+	_, err := q.db.ExecContext(ctx, updatePatreonMemberUserID, arg.UserID, arg.ID)
 	return err
 }
 

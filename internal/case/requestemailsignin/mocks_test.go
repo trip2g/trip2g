@@ -28,6 +28,9 @@ var _ Env = &EnvMock{}
 //			QueueRequestSignInEmailFunc: func(ctx context.Context, email string, code string) error {
 //				panic("mock out the QueueRequestSignInEmail method")
 //			},
+//			TryToAutoRegisterUserFunc: func(ctx context.Context, email string) (*db.User, error) {
+//				panic("mock out the TryToAutoRegisterUser method")
+//			},
 //			UserBanByUserIDFunc: func(ctx context.Context, userID int64) (*db.UserBan, error) {
 //				panic("mock out the UserBanByUserID method")
 //			},
@@ -49,6 +52,9 @@ type EnvMock struct {
 
 	// QueueRequestSignInEmailFunc mocks the QueueRequestSignInEmail method.
 	QueueRequestSignInEmailFunc func(ctx context.Context, email string, code string) error
+
+	// TryToAutoRegisterUserFunc mocks the TryToAutoRegisterUser method.
+	TryToAutoRegisterUserFunc func(ctx context.Context, email string) (*db.User, error)
 
 	// UserBanByUserIDFunc mocks the UserBanByUserID method.
 	UserBanByUserIDFunc func(ctx context.Context, userID int64) (*db.UserBan, error)
@@ -81,6 +87,13 @@ type EnvMock struct {
 			// Code is the code argument value.
 			Code string
 		}
+		// TryToAutoRegisterUser holds details about calls to the TryToAutoRegisterUser method.
+		TryToAutoRegisterUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Email is the email argument value.
+			Email string
+		}
 		// UserBanByUserID holds details about calls to the UserBanByUserID method.
 		UserBanByUserID []struct {
 			// Ctx is the ctx argument value.
@@ -99,6 +112,7 @@ type EnvMock struct {
 	lockCountActiveSignInCodes  sync.RWMutex
 	lockCreateSignInCode        sync.RWMutex
 	lockQueueRequestSignInEmail sync.RWMutex
+	lockTryToAutoRegisterUser   sync.RWMutex
 	lockUserBanByUserID         sync.RWMutex
 	lockUserByEmail             sync.RWMutex
 }
@@ -212,6 +226,42 @@ func (mock *EnvMock) QueueRequestSignInEmailCalls() []struct {
 	mock.lockQueueRequestSignInEmail.RLock()
 	calls = mock.calls.QueueRequestSignInEmail
 	mock.lockQueueRequestSignInEmail.RUnlock()
+	return calls
+}
+
+// TryToAutoRegisterUser calls TryToAutoRegisterUserFunc.
+func (mock *EnvMock) TryToAutoRegisterUser(ctx context.Context, email string) (*db.User, error) {
+	if mock.TryToAutoRegisterUserFunc == nil {
+		panic("EnvMock.TryToAutoRegisterUserFunc: method is nil but Env.TryToAutoRegisterUser was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		Email string
+	}{
+		Ctx:   ctx,
+		Email: email,
+	}
+	mock.lockTryToAutoRegisterUser.Lock()
+	mock.calls.TryToAutoRegisterUser = append(mock.calls.TryToAutoRegisterUser, callInfo)
+	mock.lockTryToAutoRegisterUser.Unlock()
+	return mock.TryToAutoRegisterUserFunc(ctx, email)
+}
+
+// TryToAutoRegisterUserCalls gets all the calls that were made to TryToAutoRegisterUser.
+// Check the length with:
+//
+//	len(mockedEnv.TryToAutoRegisterUserCalls())
+func (mock *EnvMock) TryToAutoRegisterUserCalls() []struct {
+	Ctx   context.Context
+	Email string
+} {
+	var calls []struct {
+		Ctx   context.Context
+		Email string
+	}
+	mock.lockTryToAutoRegisterUser.RLock()
+	calls = mock.calls.TryToAutoRegisterUser
+	mock.lockTryToAutoRegisterUser.RUnlock()
 	return calls
 }
 

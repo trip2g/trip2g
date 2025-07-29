@@ -2,12 +2,60 @@ package getpatreonuser
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"trip2g/internal/db"
 )
 
 type Env interface {
+	GetPatreonMemberByEmail(ctx context.Context, email string) (db.PatreonMember, error)
+	UpdatePatreonMemberUserID(ctx context.Context, args db.UpdatePatreonMemberUserIDParams) error
+
+	UserByID(ctx context.Context, id int64) (db.User, error)
+	UserByEmail(ctx context.Context, email string) (db.User, error)
+	InsertUserWithEmail(ctx context.Context, email string) (db.User, error)
 }
 
 func Resolve(ctx context.Context, env Env, email string) (*db.User, error) {
-	return nil, nil
+	member, err := env.GetPatreonMemberByEmail(ctx, email)
+	if err != nil {
+		if db.IsNoFound(err) {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("failed to get patreon member by email: %w", err)
+	}
+
+	if !member.UserID.Valid {
+		user, userErr := env.UserByEmail(ctx, email)
+		if userErr != nil {
+			if db.IsNoFound(userErr) {
+				user, userErr = env.InsertUserWithEmail(ctx, email)
+				if userErr != nil {
+					return nil, fmt.Errorf("failed to insert user with email: %w", userErr)
+				}
+			} else {
+				return nil, fmt.Errorf("failed to get user by email: %w", userErr)
+			}
+		}
+
+		updateParams := db.UpdatePatreonMemberUserIDParams{
+			ID:     member.ID,
+			UserID: sql.NullInt64{Valid: true, Int64: user.ID},
+		}
+
+		err = env.UpdatePatreonMemberUserID(ctx, updateParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update patreon member user ID: %w", err)
+		}
+
+		return &user, nil
+	}
+
+	user, err := env.UserByID(ctx, member.UserID.Int64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user by ID: %w", err)
+	}
+
+	return &user, nil
 }
