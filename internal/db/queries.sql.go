@@ -1972,6 +1972,40 @@ func (q *Queries) ListActivePatreonCredentials(ctx context.Context) ([]PatreonCr
 	return items, nil
 }
 
+const listActivePatreonSubgraphNamesByUserID = `-- name: ListActivePatreonSubgraphNamesByUserID :many
+select distinct s.name
+  from users u
+  join patreon_members pm on u.id = pm.user_id
+  join patreon_tier_subgraphs pts on pm.current_tier_id = pts.tier_id
+  join subgraphs s on pts.subgraph_id = s.id
+ where u.id = ? -- if we select by user_id, the sqlc will generate a sql.Null64 arg
+   and pm.status = 'active_patron'
+ order by s.name
+`
+
+func (q *Queries) ListActivePatreonSubgraphNamesByUserID(ctx context.Context, id int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listActivePatreonSubgraphNamesByUserID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listActivePurchasesByIDs = `-- name: ListActivePurchasesByIDs :many
 select id, created_at, payment_provider, payment_data, status, offer_id, user_id, email, price_usd from purchases
  where id in (/*SLICE:ids*/?)

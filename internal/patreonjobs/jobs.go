@@ -300,7 +300,7 @@ func (io *PatreonJobs) registerWebhookForCredentialID(ctx context.Context, crede
 	for _, webhook := range webhooks {
 		if webhook.Attributes.URI == expectedURL {
 			io.env.Logger().Info("webhook already exists for credential", "credentialID", credentialID, "webhookID", webhook.ID)
-			
+
 			// Update database with the webhook secret if it's missing
 			if !credential.WebhookSecret.Valid || credential.WebhookSecret.String == "" {
 				params := db.UpdatePatreonCredentialsWebhookSecretParams{

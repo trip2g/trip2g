@@ -334,9 +334,9 @@ When you need new database operations:
 
 7. **Write Tests** following the pattern in `internal/userbans/userbans_test.go`:
    - Create `resolve_test.go` with table-driven tests
-   - Use `//go:generate moq` for mocking
+   - Use `//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env` for mocking
    - Test success, error, and edge cases
-   - **Don't forget**: Run `go generate` if tests contain `//go:generate moq` to generate mocks
+   - **Don't forget**: Run `go generate` if tests contain `//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env` to generate mocks
 
 8. **Add Methods to Main Server** (if needed) in `cmd/server/main.go`:
    - Only if the case requires methods not available in standard `*Queries`
@@ -348,7 +348,7 @@ When you need new database operations:
 ### Testing
 - **Libraries**: `github.com/kr/pretty`, `github.com/matryer/moq`, `github.com/stretchr/testify/require`
 - **Pattern**: Table-driven tests with mock setup functions
-- **Mocks**: Generate with `//go:generate moq -out mocks_test.go . Env`
+- **Mocks**: Generate with `//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env`
 - **Error handling**: Always use two-line pattern in tests
 
 **IMPORTANT - Refactoring Policy:**

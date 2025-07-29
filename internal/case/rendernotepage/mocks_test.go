@@ -31,6 +31,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
+//			ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+//				panic("mock out the ListActivePatreonSubgraphNamesByUserID method")
+//			},
 //			ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 //				panic("mock out the ListActiveSubgraphNamesByUserID method")
 //			},
@@ -61,6 +64,9 @@ type EnvMock struct {
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
+
+	// ListActivePatreonSubgraphNamesByUserIDFunc mocks the ListActivePatreonSubgraphNamesByUserID method.
+	ListActivePatreonSubgraphNamesByUserIDFunc func(ctx context.Context, userID int64) ([]string, error)
 
 	// ListActiveSubgraphNamesByUserIDFunc mocks the ListActiveSubgraphNamesByUserID method.
 	ListActiveSubgraphNamesByUserIDFunc func(ctx context.Context, userID int64) ([]string, error)
@@ -96,6 +102,13 @@ type EnvMock struct {
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
 		}
+		// ListActivePatreonSubgraphNamesByUserID holds details about calls to the ListActivePatreonSubgraphNamesByUserID method.
+		ListActivePatreonSubgraphNamesByUserID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID int64
+		}
 		// ListActiveSubgraphNamesByUserID holds details about calls to the ListActiveSubgraphNamesByUserID method.
 		ListActiveSubgraphNamesByUserID []struct {
 			// Ctx is the ctx argument value.
@@ -124,14 +137,15 @@ type EnvMock struct {
 			Params db.UpsertUserNoteDailyViewParams
 		}
 	}
-	lockIncreaseUserNoteViewCount             sync.RWMutex
-	lockInsertUserNoteView                    sync.RWMutex
-	lockLatestNoteViews                       sync.RWMutex
-	lockListActiveSubgraphNamesByUserID       sync.RWMutex
-	lockListActiveTgChatSubgraphNamesByUserID sync.RWMutex
-	lockLiveNoteViews                         sync.RWMutex
-	lockLogger                                sync.RWMutex
-	lockUpsertUserNoteDailyView               sync.RWMutex
+	lockIncreaseUserNoteViewCount              sync.RWMutex
+	lockInsertUserNoteView                     sync.RWMutex
+	lockLatestNoteViews                        sync.RWMutex
+	lockListActivePatreonSubgraphNamesByUserID sync.RWMutex
+	lockListActiveSubgraphNamesByUserID        sync.RWMutex
+	lockListActiveTgChatSubgraphNamesByUserID  sync.RWMutex
+	lockLiveNoteViews                          sync.RWMutex
+	lockLogger                                 sync.RWMutex
+	lockUpsertUserNoteDailyView                sync.RWMutex
 }
 
 // IncreaseUserNoteViewCount calls IncreaseUserNoteViewCountFunc.
@@ -230,6 +244,42 @@ func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 	mock.lockLatestNoteViews.RLock()
 	calls = mock.calls.LatestNoteViews
 	mock.lockLatestNoteViews.RUnlock()
+	return calls
+}
+
+// ListActivePatreonSubgraphNamesByUserID calls ListActivePatreonSubgraphNamesByUserIDFunc.
+func (mock *EnvMock) ListActivePatreonSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error) {
+	if mock.ListActivePatreonSubgraphNamesByUserIDFunc == nil {
+		panic("EnvMock.ListActivePatreonSubgraphNamesByUserIDFunc: method is nil but Env.ListActivePatreonSubgraphNamesByUserID was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID int64
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockListActivePatreonSubgraphNamesByUserID.Lock()
+	mock.calls.ListActivePatreonSubgraphNamesByUserID = append(mock.calls.ListActivePatreonSubgraphNamesByUserID, callInfo)
+	mock.lockListActivePatreonSubgraphNamesByUserID.Unlock()
+	return mock.ListActivePatreonSubgraphNamesByUserIDFunc(ctx, userID)
+}
+
+// ListActivePatreonSubgraphNamesByUserIDCalls gets all the calls that were made to ListActivePatreonSubgraphNamesByUserID.
+// Check the length with:
+//
+//	len(mockedEnv.ListActivePatreonSubgraphNamesByUserIDCalls())
+func (mock *EnvMock) ListActivePatreonSubgraphNamesByUserIDCalls() []struct {
+	Ctx    context.Context
+	UserID int64
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID int64
+	}
+	mock.lockListActivePatreonSubgraphNamesByUserID.RLock()
+	calls = mock.calls.ListActivePatreonSubgraphNamesByUserID
+	mock.lockListActivePatreonSubgraphNamesByUserID.RUnlock()
 	return calls
 }
 

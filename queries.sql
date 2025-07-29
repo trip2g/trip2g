@@ -142,6 +142,16 @@ select distinct s.name
    and bc.removed_at is null
  order by s.name;
 
+-- name: ListActivePatreonSubgraphNamesByUserID :many
+select distinct s.name
+  from users u
+  join patreon_members pm on u.id = pm.user_id
+  join patreon_tier_subgraphs pts on pm.current_tier_id = pts.tier_id
+  join subgraphs s on pts.subgraph_id = s.id
+ where u.id = ? -- if we select by user_id, the sqlc will generate a sql.Null64 arg
+   and pm.status = 'active_patron'
+ order by s.name;
+
 -- name: InsertSubgraph :exec
 insert into subgraphs (name)
 values (?)

@@ -20,6 +20,8 @@ type Env interface {
 	LatestNoteViews() *model.NoteViews
 	LiveNoteViews() *model.NoteViews
 	ListActiveSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
+	ListActiveTgChatSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
+	ListActivePatreonSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
 	UpsertUserNoteDailyView(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
 	IncreaseUserNoteViewCount(ctx context.Context, userID int64) error
@@ -129,6 +131,10 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 						// User has no Telegram chat subgraph access
 						return []string{}, nil
 					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						// User has no Patreon subgraph access
+						return []string{}, nil
+					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil
 					},
@@ -175,6 +181,10 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						// User has no Telegram chat subgraph access
+						return []string{}, nil
+					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						// User has no Patreon subgraph access
 						return []string{}, nil
 					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
@@ -226,6 +236,10 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						// Admin has no Telegram chat subgraph access
+						return []string{}, nil
+					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						// Admin has no Patreon subgraph access
 						return []string{}, nil
 					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
@@ -358,6 +372,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil
 					},
@@ -402,6 +419,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 						return []string{}, nil
 					},
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
@@ -450,6 +470,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil
 					},
@@ -496,6 +519,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil
 					},
@@ -537,6 +563,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 						return []string{}, nil
 					},
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
@@ -693,6 +722,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil
 					},
@@ -733,6 +765,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 						return []string{}, nil
 					},
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
@@ -804,6 +839,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil
 					},
@@ -840,6 +878,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 						return []string{}, nil
 					},
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
@@ -1118,6 +1159,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						return []string{}, nil
+					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil
 					},
@@ -1301,6 +1345,10 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 						// User has no Telegram chat subgraph access
 						return []string{}, nil
 					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						// User has no Patreon subgraph access
+						return []string{}, nil
+					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 						return nil
 					},
@@ -1340,6 +1388,10 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					},
 					ListActiveTgChatSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						// User has no Telegram chat subgraph access
+						return []string{}, nil
+					},
+					ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+						// User has no Patreon subgraph access
 						return []string{}, nil
 					},
 					InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {

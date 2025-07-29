@@ -11,7 +11,7 @@ import (
 	"trip2g/internal/graph/model"
 )
 
-//go:generate moq -out mocks_test.go . Env
+//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
 func TestSetPatreonTierSubgraphs(t *testing.T) {
 	tests := []struct {
