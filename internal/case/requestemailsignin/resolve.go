@@ -9,6 +9,8 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 
+	"trip2g/internal/case/getpatreonuser"
+
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
@@ -19,6 +21,8 @@ type Env interface {
 	CountActiveSignInCodes(ctx context.Context, userID int64) (int64, error)
 	CreateSignInCode(ctx context.Context, userID int64) (string, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
+
+	getpatreonuser.Env
 }
 
 func NormalizeInput(input *model.RequestEmailSignInCodeInput) {
@@ -31,11 +35,9 @@ func ValidateInput(req *model.RequestEmailSignInCodeInput) *model.ErrorPayload {
 	))
 }
 
-func Resolve(
-	ctx context.Context,
-	env Env,
-	input model.RequestEmailSignInCodeInput,
-) (model.RequestEmailSignInCodeOrErrorPayload, error) {
+type Input = model.RequestEmailSignInCodeInput
+
+func Resolve(ctx context.Context, env Env, input Input) (model.RequestEmailSignInCodeOrErrorPayload, error) {
 	NormalizeInput(&input)
 
 	errPayload := ValidateInput(&input)
@@ -46,7 +48,14 @@ func Resolve(
 	user, err := env.UserByEmail(ctx, input.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return model.NewFieldError("email", "not_found"), nil
+			patreonUser, patreonErr := getpatreonuser.Resolve(ctx, env, input.Email)
+			if patreonErr != nil {
+				return nil, fmt.Errorf("failed to check Patreon user: %w", patreonErr)
+			}
+
+			if patreonUser == nil {
+				return model.NewFieldError("email", "not_found"), nil
+			}
 		}
 
 		return nil, fmt.Errorf("failed to get user by email: %w", err)
