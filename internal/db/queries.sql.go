@@ -61,6 +61,44 @@ func (q *Queries) AdminByUserID(ctx context.Context, userID int64) (Admin, error
 	return i, err
 }
 
+const allActiveBoostyCredentials = `-- name: AllActiveBoostyCredentials :many
+select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name from boosty_credentials
+where deleted_at is null
+order by created_at desc
+`
+
+func (q *Queries) AllActiveBoostyCredentials(ctx context.Context) ([]BoostyCredential, error) {
+	rows, err := q.db.QueryContext(ctx, allActiveBoostyCredentials)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []BoostyCredential
+	for rows.Next() {
+		var i BoostyCredential
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.DeletedAt,
+			&i.DeletedBy,
+			&i.AuthData,
+			&i.DeviceID,
+			&i.BlogName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allActivePatreonCredentials = `-- name: AllActivePatreonCredentials :many
 select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret from patreon_credentials
 where deleted_at is null
@@ -85,6 +123,83 @@ func (q *Queries) AllActivePatreonCredentials(ctx context.Context) ([]PatreonCre
 			&i.CreatorAccessToken,
 			&i.SyncedAt,
 			&i.WebhookSecret,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allBoostyCredentials = `-- name: AllBoostyCredentials :many
+
+select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name from boosty_credentials
+order by created_at desc
+`
+
+// Boosty credentials
+func (q *Queries) AllBoostyCredentials(ctx context.Context) ([]BoostyCredential, error) {
+	rows, err := q.db.QueryContext(ctx, allBoostyCredentials)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []BoostyCredential
+	for rows.Next() {
+		var i BoostyCredential
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.DeletedAt,
+			&i.DeletedBy,
+			&i.AuthData,
+			&i.DeviceID,
+			&i.BlogName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allDeletedBoostyCredentials = `-- name: AllDeletedBoostyCredentials :many
+select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name from boosty_credentials
+where deleted_at is not null
+order by created_at desc
+`
+
+func (q *Queries) AllDeletedBoostyCredentials(ctx context.Context) ([]BoostyCredential, error) {
+	rows, err := q.db.QueryContext(ctx, allDeletedBoostyCredentials)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []BoostyCredential
+	for rows.Next() {
+		var i BoostyCredential
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.DeletedAt,
+			&i.DeletedBy,
+			&i.AuthData,
+			&i.DeviceID,
+			&i.BlogName,
 		); err != nil {
 			return nil, err
 		}
@@ -677,6 +792,28 @@ func (q *Queries) BanUser(ctx context.Context, arg BanUserParams) error {
 	return err
 }
 
+const boostyCredentials = `-- name: BoostyCredentials :one
+select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name
+  from boosty_credentials
+ where id = ?
+`
+
+func (q *Queries) BoostyCredentials(ctx context.Context, id int64) (BoostyCredential, error) {
+	row := q.db.QueryRowContext(ctx, boostyCredentials, id)
+	var i BoostyCredential
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DeletedAt,
+		&i.DeletedBy,
+		&i.AuthData,
+		&i.DeviceID,
+		&i.BlogName,
+	)
+	return i, err
+}
+
 const changeLiveRelease = `-- name: ChangeLiveRelease :exec
 update releases set is_live = (?1 = id)
 `
@@ -894,6 +1031,81 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 	return i, err
 }
 
+const getBoostyMembers = `-- name: GetBoostyMembers :many
+
+select id, boosty_id, created_at, missed_at, email, status, data from boosty_members
+order by created_at
+`
+
+// Boosty members
+func (q *Queries) GetBoostyMembers(ctx context.Context) ([]BoostyMember, error) {
+	rows, err := q.db.QueryContext(ctx, getBoostyMembers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []BoostyMember
+	for rows.Next() {
+		var i BoostyMember
+		if err := rows.Scan(
+			&i.ID,
+			&i.BoostyID,
+			&i.CreatedAt,
+			&i.MissedAt,
+			&i.Email,
+			&i.Status,
+			&i.Data,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getBoostyTiers = `-- name: GetBoostyTiers :many
+
+select id, boosty_id, created_at, missed_at, name, data from boosty_tiers
+order by created_at
+`
+
+// Boosty tiers
+func (q *Queries) GetBoostyTiers(ctx context.Context) ([]BoostyTier, error) {
+	rows, err := q.db.QueryContext(ctx, getBoostyTiers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []BoostyTier
+	for rows.Next() {
+		var i BoostyTier
+		if err := rows.Scan(
+			&i.ID,
+			&i.BoostyID,
+			&i.CreatedAt,
+			&i.MissedAt,
+			&i.Name,
+			&i.Data,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPatreonCampaignsByCredentialsID = `-- name: GetPatreonCampaignsByCredentialsID :many
 select id, credentials_id, created_at, missed_at, campaign_id, attributes from patreon_campaigns
 where credentials_id = ?
@@ -1082,6 +1294,43 @@ func (q *Queries) GetPatreonTiersByCampaignID(ctx context.Context, campaignID in
 	return items, nil
 }
 
+const getSubgraphsByBoostyTierID = `-- name: GetSubgraphsByBoostyTierID :many
+
+select s.id, s.name, s.color, s.created_at
+from subgraphs s
+join boosty_tier_subgraphs bts on s.id = bts.subgraph_id
+where bts.tier_id = ?
+`
+
+// Boosty tier subgraphs
+func (q *Queries) GetSubgraphsByBoostyTierID(ctx context.Context, tierID int64) ([]Subgraph, error) {
+	rows, err := q.db.QueryContext(ctx, getSubgraphsByBoostyTierID, tierID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Subgraph
+	for rows.Next() {
+		var i Subgraph
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Color,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSubgraphsByTierID = `-- name: GetSubgraphsByTierID :many
 select s.id, s.name, s.color, s.created_at
 from subgraphs s
@@ -1242,6 +1491,94 @@ func (q *Queries) InsertAdmin(ctx context.Context, arg InsertAdminParams) (Admin
 	var i Admin
 	err := row.Scan(&i.UserID, &i.GrantedAt, &i.GrantedBy)
 	return i, err
+}
+
+const insertBoostyCredentials = `-- name: InsertBoostyCredentials :one
+insert into boosty_credentials (created_by, auth_data, device_id, blog_name)
+values (?, ?, ?, ?)
+returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name
+`
+
+type InsertBoostyCredentialsParams struct {
+	CreatedBy int64  `json:"created_by"`
+	AuthData  string `json:"auth_data"`
+	DeviceID  string `json:"device_id"`
+	BlogName  string `json:"blog_name"`
+}
+
+func (q *Queries) InsertBoostyCredentials(ctx context.Context, arg InsertBoostyCredentialsParams) (BoostyCredential, error) {
+	row := q.db.QueryRowContext(ctx, insertBoostyCredentials,
+		arg.CreatedBy,
+		arg.AuthData,
+		arg.DeviceID,
+		arg.BlogName,
+	)
+	var i BoostyCredential
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DeletedAt,
+		&i.DeletedBy,
+		&i.AuthData,
+		&i.DeviceID,
+		&i.BlogName,
+	)
+	return i, err
+}
+
+const insertBoostyMember = `-- name: InsertBoostyMember :exec
+insert into boosty_members (boosty_id, email, status, data)
+values (?, ?, ?, ?)
+`
+
+type InsertBoostyMemberParams struct {
+	BoostyID int64  `json:"boosty_id"`
+	Email    string `json:"email"`
+	Status   string `json:"status"`
+	Data     string `json:"data"`
+}
+
+func (q *Queries) InsertBoostyMember(ctx context.Context, arg InsertBoostyMemberParams) error {
+	_, err := q.db.ExecContext(ctx, insertBoostyMember,
+		arg.BoostyID,
+		arg.Email,
+		arg.Status,
+		arg.Data,
+	)
+	return err
+}
+
+const insertBoostyTier = `-- name: InsertBoostyTier :exec
+insert into boosty_tiers (boosty_id, name, data)
+values (?, ?, ?)
+`
+
+type InsertBoostyTierParams struct {
+	BoostyID int64  `json:"boosty_id"`
+	Name     string `json:"name"`
+	Data     string `json:"data"`
+}
+
+func (q *Queries) InsertBoostyTier(ctx context.Context, arg InsertBoostyTierParams) error {
+	_, err := q.db.ExecContext(ctx, insertBoostyTier, arg.BoostyID, arg.Name, arg.Data)
+	return err
+}
+
+const insertBoostyTierSubgraph = `-- name: InsertBoostyTierSubgraph :exec
+insert into boosty_tier_subgraphs (tier_id, subgraph_id, created_by)
+values (?, ?, ?)
+`
+
+type InsertBoostyTierSubgraphParams struct {
+	TierID     int64 `json:"tier_id"`
+	SubgraphID int64 `json:"subgraph_id"`
+	CreatedBy  int64 `json:"created_by"`
+}
+
+func (q *Queries) InsertBoostyTierSubgraph(ctx context.Context, arg InsertBoostyTierSubgraphParams) error {
+	_, err := q.db.ExecContext(ctx, insertBoostyTierSubgraph, arg.TierID, arg.SubgraphID, arg.CreatedBy)
+	return err
 }
 
 const insertNotFoundIgnoredPattern = `-- name: InsertNotFoundIgnoredPattern :one
@@ -3096,6 +3433,29 @@ func (q *Queries) ResetNotFoundPathTotalHits(ctx context.Context, id int64) (Not
 	return i, err
 }
 
+const restoreBoostyCredentials = `-- name: RestoreBoostyCredentials :one
+update boosty_credentials
+set deleted_at = null, deleted_by = null
+where id = ? and deleted_at is not null
+returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name
+`
+
+func (q *Queries) RestoreBoostyCredentials(ctx context.Context, id int64) (BoostyCredential, error) {
+	row := q.db.QueryRowContext(ctx, restoreBoostyCredentials, id)
+	var i BoostyCredential
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DeletedAt,
+		&i.DeletedBy,
+		&i.AuthData,
+		&i.DeviceID,
+		&i.BlogName,
+	)
+	return i, err
+}
+
 const restorePatreonCredentials = `-- name: RestorePatreonCredentials :one
 update patreon_credentials
 set deleted_at = null, deleted_by = null
@@ -3135,6 +3495,15 @@ func (q *Queries) RevokeUserSubgraphAccess(ctx context.Context, arg RevokeUserSu
 	return err
 }
 
+const setBoostyTierSubgraphs = `-- name: SetBoostyTierSubgraphs :exec
+delete from boosty_tier_subgraphs where tier_id = ?
+`
+
+func (q *Queries) SetBoostyTierSubgraphs(ctx context.Context, tierID int64) error {
+	_, err := q.db.ExecContext(ctx, setBoostyTierSubgraphs, tierID)
+	return err
+}
+
 const setPatreonMemberCurrentTier = `-- name: SetPatreonMemberCurrentTier :exec
 update patreon_members
 set current_tier_id = ?
@@ -3149,6 +3518,34 @@ type SetPatreonMemberCurrentTierParams struct {
 func (q *Queries) SetPatreonMemberCurrentTier(ctx context.Context, arg SetPatreonMemberCurrentTierParams) error {
 	_, err := q.db.ExecContext(ctx, setPatreonMemberCurrentTier, arg.CurrentTierID, arg.ID)
 	return err
+}
+
+const softDeleteBoostyCredentials = `-- name: SoftDeleteBoostyCredentials :one
+update boosty_credentials
+set deleted_at = current_timestamp, deleted_by = ?
+where id = ? and deleted_at is null
+returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name
+`
+
+type SoftDeleteBoostyCredentialsParams struct {
+	DeletedBy sql.NullInt64 `json:"deleted_by"`
+	ID        int64         `json:"id"`
+}
+
+func (q *Queries) SoftDeleteBoostyCredentials(ctx context.Context, arg SoftDeleteBoostyCredentialsParams) (BoostyCredential, error) {
+	row := q.db.QueryRowContext(ctx, softDeleteBoostyCredentials, arg.DeletedBy, arg.ID)
+	var i BoostyCredential
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DeletedAt,
+		&i.DeletedBy,
+		&i.AuthData,
+		&i.DeviceID,
+		&i.BlogName,
+	)
+	return i, err
 }
 
 const softDeletePatreonCredentials = `-- name: SoftDeletePatreonCredentials :one
@@ -3604,6 +4001,44 @@ func (q *Queries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminSubgra
 	return i, err
 }
 
+const updateBoostyCredentials = `-- name: UpdateBoostyCredentials :one
+update boosty_credentials
+set 
+  auth_data = coalesce(?2, auth_data),
+  device_id = coalesce(?3, device_id),
+  blog_name = coalesce(?4, blog_name)
+where id = ?
+returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name
+`
+
+type UpdateBoostyCredentialsParams struct {
+	AuthData sql.NullString `json:"auth_data"`
+	DeviceID sql.NullString `json:"device_id"`
+	BlogName sql.NullString `json:"blog_name"`
+	ID       int64          `json:"id"`
+}
+
+func (q *Queries) UpdateBoostyCredentials(ctx context.Context, arg UpdateBoostyCredentialsParams) (BoostyCredential, error) {
+	row := q.db.QueryRowContext(ctx, updateBoostyCredentials,
+		arg.AuthData,
+		arg.DeviceID,
+		arg.BlogName,
+		arg.ID,
+	)
+	var i BoostyCredential
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.DeletedAt,
+		&i.DeletedBy,
+		&i.AuthData,
+		&i.DeviceID,
+		&i.BlogName,
+	)
+	return i, err
+}
+
 const updateNotFoundIgnoredPattern = `-- name: UpdateNotFoundIgnoredPattern :one
 update not_found_ignored_patterns
 set pattern = ?
@@ -3862,6 +4297,51 @@ on conflict(value) do nothing
 
 func (q *Queries) UpsertAPIKeyLogIP(ctx context.Context, value string) error {
 	_, err := q.db.ExecContext(ctx, upsertAPIKeyLogIP, value)
+	return err
+}
+
+const upsertBoostyMember = `-- name: UpsertBoostyMember :exec
+insert into boosty_members (boosty_id, email, status, data)
+values (?, ?, ?, ?)
+on conflict(boosty_id) do update set
+  email = excluded.email,
+  status = excluded.status,
+  data = excluded.data
+`
+
+type UpsertBoostyMemberParams struct {
+	BoostyID int64  `json:"boosty_id"`
+	Email    string `json:"email"`
+	Status   string `json:"status"`
+	Data     string `json:"data"`
+}
+
+func (q *Queries) UpsertBoostyMember(ctx context.Context, arg UpsertBoostyMemberParams) error {
+	_, err := q.db.ExecContext(ctx, upsertBoostyMember,
+		arg.BoostyID,
+		arg.Email,
+		arg.Status,
+		arg.Data,
+	)
+	return err
+}
+
+const upsertBoostyTier = `-- name: UpsertBoostyTier :exec
+insert into boosty_tiers (boosty_id, name, data)
+values (?, ?, ?)
+on conflict(boosty_id) do update set
+  name = excluded.name,
+  data = excluded.data
+`
+
+type UpsertBoostyTierParams struct {
+	BoostyID int64  `json:"boosty_id"`
+	Name     string `json:"name"`
+	Data     string `json:"data"`
+}
+
+func (q *Queries) UpsertBoostyTier(ctx context.Context, arg UpsertBoostyTierParams) error {
+	_, err := q.db.ExecContext(ctx, upsertBoostyTier, arg.BoostyID, arg.Name, arg.Data)
 	return err
 }
 

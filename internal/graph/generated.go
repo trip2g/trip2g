@@ -49,6 +49,12 @@ type ResolverRoot interface {
 	AdminApiKey() AdminApiKeyResolver
 	AdminApiKeyLogsConnection() AdminApiKeyLogsConnectionResolver
 	AdminApiKeysConnection() AdminApiKeysConnectionResolver
+	AdminBoostyCredentials() AdminBoostyCredentialsResolver
+	AdminBoostyCredentialsConnection() AdminBoostyCredentialsConnectionResolver
+	AdminBoostyMember() AdminBoostyMemberResolver
+	AdminBoostyMembersConnection() AdminBoostyMembersConnectionResolver
+	AdminBoostyTier() AdminBoostyTierResolver
+	AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolver
 	AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnectionResolver
 	AdminMutation() AdminMutationResolver
 	AdminNotFoundIgnoredPattern() AdminNotFoundIgnoredPatternResolver
@@ -85,6 +91,7 @@ type ResolverRoot interface {
 	AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver
 	AdminUsersConnection() AdminUsersConnectionResolver
 	BanUserPayload() BanUserPayloadResolver
+	DeleteBoostyCredentialsPayload() DeleteBoostyCredentialsPayloadResolver
 	DeletePatreonCredentialsPayload() DeletePatreonCredentialsPayloadResolver
 	ErrorPayload() ErrorPayloadResolver
 	Mutation() MutationResolver
@@ -149,6 +156,51 @@ type ComplexityRoot struct {
 		Nodes func(childComplexity int) int
 	}
 
+	AdminBoostyCredentials struct {
+		BlogName  func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		CreatedBy func(childComplexity int) int
+		DeletedAt func(childComplexity int) int
+		DeletedBy func(childComplexity int) int
+		DeviceID  func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Members   func(childComplexity int) int
+		State     func(childComplexity int) int
+		Tiers     func(childComplexity int) int
+	}
+
+	AdminBoostyCredentialsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminBoostyMember struct {
+		BoostyID  func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		Data      func(childComplexity int) int
+		Email     func(childComplexity int) int
+		ID        func(childComplexity int) int
+		MissedAt  func(childComplexity int) int
+		Status    func(childComplexity int) int
+	}
+
+	AdminBoostyMembersConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminBoostyTier struct {
+		BoostyID  func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		Data      func(childComplexity int) int
+		ID        func(childComplexity int) int
+		MissedAt  func(childComplexity int) int
+		Name      func(childComplexity int) int
+		Subgraphs func(childComplexity int) int
+	}
+
+	AdminBoostyTiersConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
 	AdminLatestNoteViewsConnection struct {
 		Nodes func(childComplexity int) int
 	}
@@ -157,12 +209,14 @@ type ComplexityRoot struct {
 		AddTgChatSubgraphAccess      func(childComplexity int, input model.AddTgChatSubgraphAccessInput) int
 		BanUser                      func(childComplexity int, input model.BanUserInput) int
 		CreateAPIKey                 func(childComplexity int, input model.CreateAPIKeyInput) int
+		CreateBoostyCredentials      func(childComplexity int, input model.CreateBoostyCredentialsInput) int
 		CreateNotFoundIgnoredPattern func(childComplexity int, input model.CreateNotFoundIgnoredPatternInput) int
 		CreateOffer                  func(childComplexity int, input model.CreateOfferInput) int
 		CreatePatreonCredentials     func(childComplexity int, input model.CreatePatreonCredentialsInput) int
 		CreateRedirect               func(childComplexity int, input model.CreateRedirectInput) int
 		CreateRelease                func(childComplexity int, input model.CreateReleaseInput) int
 		CreateTgBot                  func(childComplexity int, input model.CreateTgBotInput) int
+		DeleteBoostyCredentials      func(childComplexity int, input model.DeleteBoostyCredentialsInput) int
 		DeleteNotFoundIgnoredPattern func(childComplexity int, input model.DeleteNotFoundIgnoredPatternInput) int
 		DeletePatreonCredentials     func(childComplexity int, input model.DeletePatreonCredentialsInput) int
 		DeleteRedirect               func(childComplexity int, input model.DeleteRedirectInput) int
@@ -171,9 +225,12 @@ type ComplexityRoot struct {
 		RefreshPatreonData           func(childComplexity int, input model.RefreshPatreonDataInput) int
 		RemoveTgChatSubgraphAccess   func(childComplexity int, input model.RemoveTgChatSubgraphAccessInput) int
 		ResetNotFoundPath            func(childComplexity int, input model.ResetNotFoundPathInput) int
+		RestoreBoostyCredentials     func(childComplexity int, input model.RestoreBoostyCredentialsInput) int
 		RestorePatreonCredentials    func(childComplexity int, input model.RestorePatreonCredentialsInput) int
+		SetBoostyTierSubgraphs       func(childComplexity int, input model.SetBoostyTierSubgraphsInput) int
 		SetPatreonTierSubgraphs      func(childComplexity int, input model.SetPatreonTierSubgraphsInput) int
 		UnbanUser                    func(childComplexity int, input model.UnbanUserInput) int
+		UpdateBoostyCredentials      func(childComplexity int, input model.UpdateBoostyCredentialsInput) int
 		UpdateNotFoundIgnoredPattern func(childComplexity int, input model.UpdateNotFoundIgnoredPatternInput) int
 		UpdateNoteGraphPositions     func(childComplexity int, input model.UpdateNoteGraphPositionsInput) int
 		UpdateOffer                  func(childComplexity int, input model.UpdateOfferInput) int
@@ -298,6 +355,7 @@ type ComplexityRoot struct {
 		APIKeyLogs                 func(childComplexity int, filter model.APIKeyLogsFilterInput) int
 		AllAPIKeys                 func(childComplexity int) int
 		AllAdmins                  func(childComplexity int) int
+		AllBoostyCredentials       func(childComplexity int, filter *model.AdminBoostyCredentialsFilterInput) int
 		AllLatestNoteViews         func(childComplexity int, filter *model.AdminLatestNoteViewsFilter) int
 		AllNotFoundIgnoredPatterns func(childComplexity int) int
 		AllNotFoundPaths           func(childComplexity int) int
@@ -311,6 +369,7 @@ type ComplexityRoot struct {
 		AllUserSubgraphAccesses    func(childComplexity int) int
 		AllUserUserBans            func(childComplexity int) int
 		AllUsers                   func(childComplexity int) int
+		BoostyCredentials          func(childComplexity int, id int64) int
 		NoteView                   func(childComplexity int, id string) int
 		Offer                      func(childComplexity int, id int64) int
 		PatreonCredentials         func(childComplexity int, id int64) int
@@ -463,6 +522,10 @@ type ComplexityRoot struct {
 		Value  func(childComplexity int) int
 	}
 
+	CreateBoostyCredentialsPayload struct {
+		BoostyCredentials func(childComplexity int) int
+	}
+
 	CreateEmailWaitListRequestPayload struct {
 		Success func(childComplexity int) int
 	}
@@ -494,6 +557,11 @@ type ComplexityRoot struct {
 
 	CreateTgBotPayload struct {
 		TgBot func(childComplexity int) int
+	}
+
+	DeleteBoostyCredentialsPayload struct {
+		BoostyCredentials func(childComplexity int) int
+		DeletedID         func(childComplexity int) int
 	}
 
 	DeleteNotFoundIgnoredPatternPayload struct {
@@ -632,8 +700,17 @@ type ComplexityRoot struct {
 		NotFoundPath func(childComplexity int) int
 	}
 
+	RestoreBoostyCredentialsPayload struct {
+		BoostyCredentials func(childComplexity int) int
+	}
+
 	RestorePatreonCredentialsPayload struct {
 		PatreonCredentials func(childComplexity int) int
+	}
+
+	SetBoostyTierSubgraphsPayload struct {
+		Success func(childComplexity int) int
+		Tier    func(childComplexity int) int
 	}
 
 	SetPatreonTierSubgraphsPayload struct {
@@ -664,6 +741,10 @@ type ComplexityRoot struct {
 	UnbanUserPayload struct {
 		User   func(childComplexity int) int
 		UserID func(childComplexity int) int
+	}
+
+	UpdateBoostyCredentialsPayload struct {
+		BoostyCredentials func(childComplexity int) int
 	}
 
 	UpdateNotFoundIgnoredPatternPayload struct {
@@ -753,6 +834,32 @@ type AdminApiKeyLogsConnectionResolver interface {
 type AdminApiKeysConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminAPIKeysConnection) ([]db.ApiKey, error)
 }
+type AdminBoostyCredentialsResolver interface {
+	CreatedBy(ctx context.Context, obj *db.BoostyCredential) (*db.User, error)
+	DeletedAt(ctx context.Context, obj *db.BoostyCredential) (*time.Time, error)
+	DeletedBy(ctx context.Context, obj *db.BoostyCredential) (*db.User, error)
+
+	State(ctx context.Context, obj *db.BoostyCredential) (model.BoostyCredentialsStateEnum, error)
+	Tiers(ctx context.Context, obj *db.BoostyCredential) (*model.AdminBoostyTiersConnection, error)
+	Members(ctx context.Context, obj *db.BoostyCredential) (*model.AdminBoostyMembersConnection, error)
+}
+type AdminBoostyCredentialsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminBoostyCredentialsConnection) ([]db.BoostyCredential, error)
+}
+type AdminBoostyMemberResolver interface {
+	MissedAt(ctx context.Context, obj *db.BoostyMember) (*time.Time, error)
+}
+type AdminBoostyMembersConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminBoostyMembersConnection) ([]db.BoostyMember, error)
+}
+type AdminBoostyTierResolver interface {
+	MissedAt(ctx context.Context, obj *db.BoostyTier) (*time.Time, error)
+
+	Subgraphs(ctx context.Context, obj *db.BoostyTier) ([]db.Subgraph, error)
+}
+type AdminBoostyTiersConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminBoostyTiersConnection) ([]db.BoostyTier, error)
+}
 type AdminLatestNoteViewsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminLatestNoteViewsConnection) ([]model1.NoteView, error)
 }
@@ -784,6 +891,11 @@ type AdminMutationResolver interface {
 	RestorePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.RestorePatreonCredentialsInput) (model.RestorePatreonCredentialsOrErrorPayload, error)
 	RefreshPatreonData(ctx context.Context, obj *model1.AdminMutation, input model.RefreshPatreonDataInput) (model.RefreshPatreonDataOrErrorPayload, error)
 	SetPatreonTierSubgraphs(ctx context.Context, obj *model1.AdminMutation, input model.SetPatreonTierSubgraphsInput) (model.SetPatreonTierSubgraphsOrErrorPayload, error)
+	CreateBoostyCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreateBoostyCredentialsInput) (model.CreateBoostyCredentialsOrErrorPayload, error)
+	DeleteBoostyCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeleteBoostyCredentialsInput) (model.DeleteBoostyCredentialsOrErrorPayload, error)
+	RestoreBoostyCredentials(ctx context.Context, obj *model1.AdminMutation, input model.RestoreBoostyCredentialsInput) (model.RestoreBoostyCredentialsOrErrorPayload, error)
+	UpdateBoostyCredentials(ctx context.Context, obj *model1.AdminMutation, input model.UpdateBoostyCredentialsInput) (model.UpdateBoostyCredentialsOrErrorPayload, error)
+	SetBoostyTierSubgraphs(ctx context.Context, obj *model1.AdminMutation, input model.SetBoostyTierSubgraphsInput) (model.SetBoostyTierSubgraphsOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -861,6 +973,8 @@ type AdminQueryResolver interface {
 	TgChatMembers(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgChatMembersFilterInput) (*model.AdminTgChatMembersConnection, error)
 	AllPatreonCredentials(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminPatreonCredentialsFilterInput) (*model.AdminPatreonCredentialsConnection, error)
 	PatreonCredentials(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.PatreonCredential, error)
+	AllBoostyCredentials(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminBoostyCredentialsFilterInput) (*model.AdminBoostyCredentialsConnection, error)
+	BoostyCredentials(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.BoostyCredential, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Subgraph, error)
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
@@ -950,6 +1064,9 @@ type AdminUsersConnectionResolver interface {
 }
 type BanUserPayloadResolver interface {
 	User(ctx context.Context, obj *model.BanUserPayload) (*db.User, error)
+}
+type DeleteBoostyCredentialsPayloadResolver interface {
+	BoostyCredentials(ctx context.Context, obj *model.DeleteBoostyCredentialsPayload) (*db.BoostyCredential, error)
 }
 type DeletePatreonCredentialsPayloadResolver interface {
 	PatreonCredentials(ctx context.Context, obj *model.DeletePatreonCredentialsPayload) (*db.PatreonCredential, error)
@@ -1175,6 +1292,195 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminApiKeysConnection.Nodes(childComplexity), true
 
+	case "AdminBoostyCredentials.blogName":
+		if e.complexity.AdminBoostyCredentials.BlogName == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyCredentials.BlogName(childComplexity), true
+
+	case "AdminBoostyCredentials.createdAt":
+		if e.complexity.AdminBoostyCredentials.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyCredentials.CreatedAt(childComplexity), true
+
+	case "AdminBoostyCredentials.createdBy":
+		if e.complexity.AdminBoostyCredentials.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyCredentials.CreatedBy(childComplexity), true
+
+	case "AdminBoostyCredentials.deletedAt":
+		if e.complexity.AdminBoostyCredentials.DeletedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyCredentials.DeletedAt(childComplexity), true
+
+	case "AdminBoostyCredentials.deletedBy":
+		if e.complexity.AdminBoostyCredentials.DeletedBy == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyCredentials.DeletedBy(childComplexity), true
+
+	case "AdminBoostyCredentials.deviceId":
+		if e.complexity.AdminBoostyCredentials.DeviceID == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyCredentials.DeviceID(childComplexity), true
+
+	case "AdminBoostyCredentials.id":
+		if e.complexity.AdminBoostyCredentials.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyCredentials.ID(childComplexity), true
+
+	case "AdminBoostyCredentials.members":
+		if e.complexity.AdminBoostyCredentials.Members == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyCredentials.Members(childComplexity), true
+
+	case "AdminBoostyCredentials.state":
+		if e.complexity.AdminBoostyCredentials.State == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyCredentials.State(childComplexity), true
+
+	case "AdminBoostyCredentials.tiers":
+		if e.complexity.AdminBoostyCredentials.Tiers == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyCredentials.Tiers(childComplexity), true
+
+	case "AdminBoostyCredentialsConnection.nodes":
+		if e.complexity.AdminBoostyCredentialsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyCredentialsConnection.Nodes(childComplexity), true
+
+	case "AdminBoostyMember.boostyId":
+		if e.complexity.AdminBoostyMember.BoostyID == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyMember.BoostyID(childComplexity), true
+
+	case "AdminBoostyMember.createdAt":
+		if e.complexity.AdminBoostyMember.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyMember.CreatedAt(childComplexity), true
+
+	case "AdminBoostyMember.data":
+		if e.complexity.AdminBoostyMember.Data == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyMember.Data(childComplexity), true
+
+	case "AdminBoostyMember.email":
+		if e.complexity.AdminBoostyMember.Email == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyMember.Email(childComplexity), true
+
+	case "AdminBoostyMember.id":
+		if e.complexity.AdminBoostyMember.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyMember.ID(childComplexity), true
+
+	case "AdminBoostyMember.missedAt":
+		if e.complexity.AdminBoostyMember.MissedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyMember.MissedAt(childComplexity), true
+
+	case "AdminBoostyMember.status":
+		if e.complexity.AdminBoostyMember.Status == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyMember.Status(childComplexity), true
+
+	case "AdminBoostyMembersConnection.nodes":
+		if e.complexity.AdminBoostyMembersConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyMembersConnection.Nodes(childComplexity), true
+
+	case "AdminBoostyTier.boostyId":
+		if e.complexity.AdminBoostyTier.BoostyID == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyTier.BoostyID(childComplexity), true
+
+	case "AdminBoostyTier.createdAt":
+		if e.complexity.AdminBoostyTier.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyTier.CreatedAt(childComplexity), true
+
+	case "AdminBoostyTier.data":
+		if e.complexity.AdminBoostyTier.Data == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyTier.Data(childComplexity), true
+
+	case "AdminBoostyTier.id":
+		if e.complexity.AdminBoostyTier.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyTier.ID(childComplexity), true
+
+	case "AdminBoostyTier.missedAt":
+		if e.complexity.AdminBoostyTier.MissedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyTier.MissedAt(childComplexity), true
+
+	case "AdminBoostyTier.name":
+		if e.complexity.AdminBoostyTier.Name == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyTier.Name(childComplexity), true
+
+	case "AdminBoostyTier.subgraphs":
+		if e.complexity.AdminBoostyTier.Subgraphs == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyTier.Subgraphs(childComplexity), true
+
+	case "AdminBoostyTiersConnection.nodes":
+		if e.complexity.AdminBoostyTiersConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminBoostyTiersConnection.Nodes(childComplexity), true
+
 	case "AdminLatestNoteViewsConnection.nodes":
 		if e.complexity.AdminLatestNoteViewsConnection.Nodes == nil {
 			break
@@ -1217,6 +1523,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.CreateAPIKey(childComplexity, args["input"].(model.CreateAPIKeyInput)), true
+
+	case "AdminMutation.createBoostyCredentials":
+		if e.complexity.AdminMutation.CreateBoostyCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_createBoostyCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.CreateBoostyCredentials(childComplexity, args["input"].(model.CreateBoostyCredentialsInput)), true
 
 	case "AdminMutation.createNotFoundIgnoredPattern":
 		if e.complexity.AdminMutation.CreateNotFoundIgnoredPattern == nil {
@@ -1289,6 +1607,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.CreateTgBot(childComplexity, args["input"].(model.CreateTgBotInput)), true
+
+	case "AdminMutation.deleteBoostyCredentials":
+		if e.complexity.AdminMutation.DeleteBoostyCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_deleteBoostyCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.DeleteBoostyCredentials(childComplexity, args["input"].(model.DeleteBoostyCredentialsInput)), true
 
 	case "AdminMutation.deleteNotFoundIgnoredPattern":
 		if e.complexity.AdminMutation.DeleteNotFoundIgnoredPattern == nil {
@@ -1386,6 +1716,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.ResetNotFoundPath(childComplexity, args["input"].(model.ResetNotFoundPathInput)), true
 
+	case "AdminMutation.restoreBoostyCredentials":
+		if e.complexity.AdminMutation.RestoreBoostyCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_restoreBoostyCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.RestoreBoostyCredentials(childComplexity, args["input"].(model.RestoreBoostyCredentialsInput)), true
+
 	case "AdminMutation.restorePatreonCredentials":
 		if e.complexity.AdminMutation.RestorePatreonCredentials == nil {
 			break
@@ -1397,6 +1739,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.RestorePatreonCredentials(childComplexity, args["input"].(model.RestorePatreonCredentialsInput)), true
+
+	case "AdminMutation.setBoostyTierSubgraphs":
+		if e.complexity.AdminMutation.SetBoostyTierSubgraphs == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_setBoostyTierSubgraphs_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.SetBoostyTierSubgraphs(childComplexity, args["input"].(model.SetBoostyTierSubgraphsInput)), true
 
 	case "AdminMutation.setPatreonTierSubgraphs":
 		if e.complexity.AdminMutation.SetPatreonTierSubgraphs == nil {
@@ -1421,6 +1775,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.UnbanUser(childComplexity, args["input"].(model.UnbanUserInput)), true
+
+	case "AdminMutation.updateBoostyCredentials":
+		if e.complexity.AdminMutation.UpdateBoostyCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_updateBoostyCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.UpdateBoostyCredentials(childComplexity, args["input"].(model.UpdateBoostyCredentialsInput)), true
 
 	case "AdminMutation.updateNotFoundIgnoredPattern":
 		if e.complexity.AdminMutation.UpdateNotFoundIgnoredPattern == nil {
@@ -1994,6 +2360,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminQuery.AllAdmins(childComplexity), true
 
+	case "AdminQuery.allBoostyCredentials":
+		if e.complexity.AdminQuery.AllBoostyCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_allBoostyCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.AllBoostyCredentials(childComplexity, args["filter"].(*model.AdminBoostyCredentialsFilterInput)), true
+
 	case "AdminQuery.allLatestNoteViews":
 		if e.complexity.AdminQuery.AllLatestNoteViews == nil {
 			break
@@ -2094,6 +2472,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AllUsers(childComplexity), true
+
+	case "AdminQuery.boostyCredentials":
+		if e.complexity.AdminQuery.BoostyCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_boostyCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.BoostyCredentials(childComplexity, args["id"].(int64)), true
 
 	case "AdminQuery.noteView":
 		if e.complexity.AdminQuery.NoteView == nil {
@@ -2738,6 +3128,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.CreateApiKeyPayload.Value(childComplexity), true
 
+	case "CreateBoostyCredentialsPayload.boostyCredentials":
+		if e.complexity.CreateBoostyCredentialsPayload.BoostyCredentials == nil {
+			break
+		}
+
+		return e.complexity.CreateBoostyCredentialsPayload.BoostyCredentials(childComplexity), true
+
 	case "CreateEmailWaitListRequestPayload.success":
 		if e.complexity.CreateEmailWaitListRequestPayload.Success == nil {
 			break
@@ -2800,6 +3197,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CreateTgBotPayload.TgBot(childComplexity), true
+
+	case "DeleteBoostyCredentialsPayload.boostyCredentials":
+		if e.complexity.DeleteBoostyCredentialsPayload.BoostyCredentials == nil {
+			break
+		}
+
+		return e.complexity.DeleteBoostyCredentialsPayload.BoostyCredentials(childComplexity), true
+
+	case "DeleteBoostyCredentialsPayload.deletedId":
+		if e.complexity.DeleteBoostyCredentialsPayload.DeletedID == nil {
+			break
+		}
+
+		return e.complexity.DeleteBoostyCredentialsPayload.DeletedID(childComplexity), true
 
 	case "DeleteNotFoundIgnoredPatternPayload.deletedId":
 		if e.complexity.DeleteNotFoundIgnoredPatternPayload.DeletedID == nil {
@@ -3289,12 +3700,33 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ResetNotFoundPathPayload.NotFoundPath(childComplexity), true
 
+	case "RestoreBoostyCredentialsPayload.boostyCredentials":
+		if e.complexity.RestoreBoostyCredentialsPayload.BoostyCredentials == nil {
+			break
+		}
+
+		return e.complexity.RestoreBoostyCredentialsPayload.BoostyCredentials(childComplexity), true
+
 	case "RestorePatreonCredentialsPayload.patreonCredentials":
 		if e.complexity.RestorePatreonCredentialsPayload.PatreonCredentials == nil {
 			break
 		}
 
 		return e.complexity.RestorePatreonCredentialsPayload.PatreonCredentials(childComplexity), true
+
+	case "SetBoostyTierSubgraphsPayload.success":
+		if e.complexity.SetBoostyTierSubgraphsPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.SetBoostyTierSubgraphsPayload.Success(childComplexity), true
+
+	case "SetBoostyTierSubgraphsPayload.tier":
+		if e.complexity.SetBoostyTierSubgraphsPayload.Tier == nil {
+			break
+		}
+
+		return e.complexity.SetBoostyTierSubgraphsPayload.Tier(childComplexity), true
 
 	case "SetPatreonTierSubgraphsPayload.success":
 		if e.complexity.SetPatreonTierSubgraphsPayload.Success == nil {
@@ -3379,6 +3811,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UnbanUserPayload.UserID(childComplexity), true
+
+	case "UpdateBoostyCredentialsPayload.boostyCredentials":
+		if e.complexity.UpdateBoostyCredentialsPayload.BoostyCredentials == nil {
+			break
+		}
+
+		return e.complexity.UpdateBoostyCredentialsPayload.BoostyCredentials(childComplexity), true
 
 	case "UpdateNotFoundIgnoredPatternPayload.notFoundIgnoredPattern":
 		if e.complexity.UpdateNotFoundIgnoredPatternPayload.NotFoundIgnoredPattern == nil {
@@ -3583,6 +4022,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAddTgChatSubgraphAccessInput,
+		ec.unmarshalInputAdminBoostyCredentialsFilterInput,
 		ec.unmarshalInputAdminLatestNoteViewsFilter,
 		ec.unmarshalInputAdminPatreonCredentialsFilterInput,
 		ec.unmarshalInputAdminTgBotChatsFilterInput,
@@ -3591,6 +4031,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputApiKeyLogsFilterInput,
 		ec.unmarshalInputBanUserInput,
 		ec.unmarshalInputCreateApiKeyInput,
+		ec.unmarshalInputCreateBoostyCredentialsInput,
 		ec.unmarshalInputCreateEmailWaitListRequestInput,
 		ec.unmarshalInputCreateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputCreateOfferInput,
@@ -3599,6 +4040,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateRedirectInput,
 		ec.unmarshalInputCreateReleaseInput,
 		ec.unmarshalInputCreateTgBotInput,
+		ec.unmarshalInputDeleteBoostyCredentialsInput,
 		ec.unmarshalInputDeleteNotFoundIgnoredPatternInput,
 		ec.unmarshalInputDeletePatreonCredentialsInput,
 		ec.unmarshalInputDeleteRedirectInput,
@@ -3612,10 +4054,13 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRemoveTgChatSubgraphAccessInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
+		ec.unmarshalInputRestoreBoostyCredentialsInput,
 		ec.unmarshalInputRestorePatreonCredentialsInput,
+		ec.unmarshalInputSetBoostyTierSubgraphsInput,
 		ec.unmarshalInputSetPatreonTierSubgraphsInput,
 		ec.unmarshalInputSignInByEmailInput,
 		ec.unmarshalInputUnbanUserInput,
+		ec.unmarshalInputUpdateBoostyCredentialsInput,
 		ec.unmarshalInputUpdateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputUpdateNoteGraphPositionInput,
 		ec.unmarshalInputUpdateNoteGraphPositionsInput,
@@ -3811,6 +4256,29 @@ func (ec *executionContext) field_AdminMutation_createApiKey_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_createBoostyCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_createBoostyCredentials_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_createBoostyCredentials_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateBoostyCredentialsInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateBoostyCredentialsInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateBoostyCredentialsInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_createNotFoundIgnoredPattern_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3946,6 +4414,29 @@ func (ec *executionContext) field_AdminMutation_createTgBot_argsInput(
 	}
 
 	var zeroVal model.CreateTgBotInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_deleteBoostyCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_deleteBoostyCredentials_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_deleteBoostyCredentials_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.DeleteBoostyCredentialsInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNDeleteBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteBoostyCredentialsInput(ctx, tmp)
+	}
+
+	var zeroVal model.DeleteBoostyCredentialsInput
 	return zeroVal, nil
 }
 
@@ -4133,6 +4624,29 @@ func (ec *executionContext) field_AdminMutation_resetNotFoundPath_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_restoreBoostyCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_restoreBoostyCredentials_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_restoreBoostyCredentials_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.RestoreBoostyCredentialsInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRestoreBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐRestoreBoostyCredentialsInput(ctx, tmp)
+	}
+
+	var zeroVal model.RestoreBoostyCredentialsInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_restorePatreonCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4153,6 +4667,29 @@ func (ec *executionContext) field_AdminMutation_restorePatreonCredentials_argsIn
 	}
 
 	var zeroVal model.RestorePatreonCredentialsInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_setBoostyTierSubgraphs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_setBoostyTierSubgraphs_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_setBoostyTierSubgraphs_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.SetBoostyTierSubgraphsInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNSetBoostyTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetBoostyTierSubgraphsInput(ctx, tmp)
+	}
+
+	var zeroVal model.SetBoostyTierSubgraphsInput
 	return zeroVal, nil
 }
 
@@ -4199,6 +4736,29 @@ func (ec *executionContext) field_AdminMutation_unbanUser_argsInput(
 	}
 
 	var zeroVal model.UnbanUserInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_updateBoostyCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_updateBoostyCredentials_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_updateBoostyCredentials_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateBoostyCredentialsInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateBoostyCredentialsInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateBoostyCredentialsInput
 	return zeroVal, nil
 }
 
@@ -4363,6 +4923,29 @@ func (ec *executionContext) field_AdminMutation_updateUserSubgraphAccess_argsInp
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminQuery_allBoostyCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_allBoostyCredentials_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_allBoostyCredentials_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*model.AdminBoostyCredentialsFilterInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOAdminBoostyCredentialsFilterInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyCredentialsFilterInput(ctx, tmp)
+	}
+
+	var zeroVal *model.AdminBoostyCredentialsFilterInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminQuery_allLatestNoteViews_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4429,6 +5012,29 @@ func (ec *executionContext) field_AdminQuery_apiKeyLogs_argsFilter(
 	}
 
 	var zeroVal model.APIKeyLogsFilterInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_boostyCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_boostyCredentials_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_boostyCredentials_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int64, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNInt642int64(ctx, tmp)
+	}
+
+	var zeroVal int64
 	return zeroVal, nil
 }
 
@@ -5887,6 +6493,1274 @@ func (ec *executionContext) fieldContext_AdminApiKeysConnection_nodes(_ context.
 				return ec.fieldContext_AdminApiKey_disabledAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminApiKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyCredentials_id(ctx context.Context, field graphql.CollectedField, obj *db.BoostyCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyCredentials_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyCredentials_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyCredentials_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.BoostyCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyCredentials_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyCredentials_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyCredentials_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.BoostyCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyCredentials_createdBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyCredentials().CreatedBy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyCredentials_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyCredentials_deletedAt(ctx context.Context, field graphql.CollectedField, obj *db.BoostyCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyCredentials_deletedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyCredentials().DeletedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyCredentials_deletedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyCredentials_deletedBy(ctx context.Context, field graphql.CollectedField, obj *db.BoostyCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyCredentials_deletedBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyCredentials().DeletedBy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalOAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyCredentials_deletedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyCredentials_deviceId(ctx context.Context, field graphql.CollectedField, obj *db.BoostyCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyCredentials_deviceId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeviceID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyCredentials_deviceId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyCredentials_blogName(ctx context.Context, field graphql.CollectedField, obj *db.BoostyCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyCredentials_blogName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BlogName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyCredentials_blogName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyCredentials_state(ctx context.Context, field graphql.CollectedField, obj *db.BoostyCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyCredentials_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyCredentials().State(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.BoostyCredentialsStateEnum)
+	fc.Result = res
+	return ec.marshalNBoostyCredentialsStateEnum2trip2gᚋinternalᚋgraphᚋmodelᚐBoostyCredentialsStateEnum(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyCredentials_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type BoostyCredentialsStateEnum does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyCredentials_tiers(ctx context.Context, field graphql.CollectedField, obj *db.BoostyCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyCredentials_tiers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyCredentials().Tiers(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminBoostyTiersConnection)
+	fc.Result = res
+	return ec.marshalNAdminBoostyTiersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyTiersConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyCredentials_tiers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminBoostyTiersConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyTiersConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyCredentials_members(ctx context.Context, field graphql.CollectedField, obj *db.BoostyCredential) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyCredentials_members(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyCredentials().Members(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminBoostyMembersConnection)
+	fc.Result = res
+	return ec.marshalNAdminBoostyMembersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyMembersConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyCredentials_members(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminBoostyMembersConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyMembersConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyCredentialsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminBoostyCredentialsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyCredentialsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyCredentialsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.BoostyCredential)
+	fc.Result = res
+	return ec.marshalNAdminBoostyCredentials2ᚕtrip2gᚋinternalᚋdbᚐBoostyCredentialᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyCredentialsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyCredentialsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBoostyCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminBoostyCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminBoostyCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminBoostyCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminBoostyCredentials_deletedBy(ctx, field)
+			case "deviceId":
+				return ec.fieldContext_AdminBoostyCredentials_deviceId(ctx, field)
+			case "blogName":
+				return ec.fieldContext_AdminBoostyCredentials_blogName(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminBoostyCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminBoostyCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminBoostyCredentials_members(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyMember_id(ctx context.Context, field graphql.CollectedField, obj *db.BoostyMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyMember_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyMember_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyMember_boostyId(ctx context.Context, field graphql.CollectedField, obj *db.BoostyMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyMember_boostyId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BoostyID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyMember_boostyId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyMember_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.BoostyMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyMember_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyMember_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyMember_missedAt(ctx context.Context, field graphql.CollectedField, obj *db.BoostyMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyMember_missedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyMember().MissedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyMember_missedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyMember",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyMember_email(ctx context.Context, field graphql.CollectedField, obj *db.BoostyMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyMember_email(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Email, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyMember_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyMember_status(ctx context.Context, field graphql.CollectedField, obj *db.BoostyMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyMember_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyMember_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyMember_data(ctx context.Context, field graphql.CollectedField, obj *db.BoostyMember) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyMember_data(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Data, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyMember_data(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyMembersConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminBoostyMembersConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyMembersConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyMembersConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.BoostyMember)
+	fc.Result = res
+	return ec.marshalNAdminBoostyMember2ᚕtrip2gᚋinternalᚋdbᚐBoostyMemberᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyMembersConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyMembersConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBoostyMember_id(ctx, field)
+			case "boostyId":
+				return ec.fieldContext_AdminBoostyMember_boostyId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminBoostyMember_createdAt(ctx, field)
+			case "missedAt":
+				return ec.fieldContext_AdminBoostyMember_missedAt(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminBoostyMember_email(ctx, field)
+			case "status":
+				return ec.fieldContext_AdminBoostyMember_status(ctx, field)
+			case "data":
+				return ec.fieldContext_AdminBoostyMember_data(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyMember", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyTier_id(ctx context.Context, field graphql.CollectedField, obj *db.BoostyTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyTier_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyTier_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyTier_boostyId(ctx context.Context, field graphql.CollectedField, obj *db.BoostyTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyTier_boostyId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BoostyID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyTier_boostyId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyTier_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.BoostyTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyTier_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyTier_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyTier_missedAt(ctx context.Context, field graphql.CollectedField, obj *db.BoostyTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyTier_missedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyTier().MissedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyTier_missedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyTier",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyTier_name(ctx context.Context, field graphql.CollectedField, obj *db.BoostyTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyTier_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyTier_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyTier_data(ctx context.Context, field graphql.CollectedField, obj *db.BoostyTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyTier_data(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Data, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyTier_data(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyTier",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyTier_subgraphs(ctx context.Context, field graphql.CollectedField, obj *db.BoostyTier) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyTier_subgraphs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyTier().Subgraphs(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.Subgraph)
+	fc.Result = res
+	return ec.marshalNAdminSubgraph2ᚕtrip2gᚋinternalᚋdbᚐSubgraphᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyTier_subgraphs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyTier",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminSubgraph_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminSubgraph_name(ctx, field)
+			case "color":
+				return ec.fieldContext_AdminSubgraph_color(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminSubgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBoostyTiersConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminBoostyTiersConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminBoostyTiersConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminBoostyTiersConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.BoostyTier)
+	fc.Result = res
+	return ec.marshalNAdminBoostyTier2ᚕtrip2gᚋinternalᚋdbᚐBoostyTierᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminBoostyTiersConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBoostyTiersConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBoostyTier_id(ctx, field)
+			case "boostyId":
+				return ec.fieldContext_AdminBoostyTier_boostyId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminBoostyTier_createdAt(ctx, field)
+			case "missedAt":
+				return ec.fieldContext_AdminBoostyTier_missedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminBoostyTier_name(ctx, field)
+			case "data":
+				return ec.fieldContext_AdminBoostyTier_data(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_AdminBoostyTier_subgraphs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyTier", field.Name)
 		},
 	}
 	return fc, nil
@@ -7445,6 +9319,281 @@ func (ec *executionContext) fieldContext_AdminMutation_setPatreonTierSubgraphs(c
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_setPatreonTierSubgraphs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_createBoostyCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_createBoostyCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().CreateBoostyCredentials(rctx, obj, fc.Args["input"].(model.CreateBoostyCredentialsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CreateBoostyCredentialsOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNCreateBoostyCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateBoostyCredentialsOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createBoostyCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateBoostyCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createBoostyCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deleteBoostyCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_deleteBoostyCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().DeleteBoostyCredentials(rctx, obj, fc.Args["input"].(model.DeleteBoostyCredentialsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.DeleteBoostyCredentialsOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNDeleteBoostyCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteBoostyCredentialsOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deleteBoostyCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeleteBoostyCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_deleteBoostyCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_restoreBoostyCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_restoreBoostyCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().RestoreBoostyCredentials(rctx, obj, fc.Args["input"].(model.RestoreBoostyCredentialsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.RestoreBoostyCredentialsOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNRestoreBoostyCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRestoreBoostyCredentialsOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_restoreBoostyCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RestoreBoostyCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_restoreBoostyCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_updateBoostyCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_updateBoostyCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().UpdateBoostyCredentials(rctx, obj, fc.Args["input"].(model.UpdateBoostyCredentialsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.UpdateBoostyCredentialsOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNUpdateBoostyCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateBoostyCredentialsOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_updateBoostyCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UpdateBoostyCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_updateBoostyCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_setBoostyTierSubgraphs(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_setBoostyTierSubgraphs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().SetBoostyTierSubgraphs(rctx, obj, fc.Args["input"].(model.SetBoostyTierSubgraphsInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SetBoostyTierSubgraphsOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNSetBoostyTierSubgraphsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetBoostyTierSubgraphsOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_setBoostyTierSubgraphs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SetBoostyTierSubgraphsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_setBoostyTierSubgraphs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -11540,6 +13689,139 @@ func (ec *executionContext) fieldContext_AdminQuery_patreonCredentials(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_allBoostyCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allBoostyCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllBoostyCredentials(rctx, obj, fc.Args["filter"].(*model.AdminBoostyCredentialsFilterInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminBoostyCredentialsConnection)
+	fc.Result = res
+	return ec.marshalNAdminBoostyCredentialsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyCredentialsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allBoostyCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminBoostyCredentialsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyCredentialsConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_allBoostyCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_boostyCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_boostyCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().BoostyCredentials(rctx, obj, fc.Args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.BoostyCredential)
+	fc.Result = res
+	return ec.marshalOAdminBoostyCredentials2ᚖtrip2gᚋinternalᚋdbᚐBoostyCredential(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_boostyCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBoostyCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminBoostyCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminBoostyCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminBoostyCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminBoostyCredentials_deletedBy(ctx, field)
+			case "deviceId":
+				return ec.fieldContext_AdminBoostyCredentials_deviceId(ctx, field)
+			case "blogName":
+				return ec.fieldContext_AdminBoostyCredentials_blogName(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminBoostyCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminBoostyCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminBoostyCredentials_members(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyCredentials", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_boostyCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_apiKeyLogs(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 	if err != nil {
@@ -15576,6 +17858,72 @@ func (ec *executionContext) fieldContext_CreateApiKeyPayload_apiKey(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateBoostyCredentialsPayload_boostyCredentials(ctx context.Context, field graphql.CollectedField, obj *model.CreateBoostyCredentialsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreateBoostyCredentialsPayload_boostyCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BoostyCredentials, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.BoostyCredential)
+	fc.Result = res
+	return ec.marshalNAdminBoostyCredentials2ᚖtrip2gᚋinternalᚋdbᚐBoostyCredential(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreateBoostyCredentialsPayload_boostyCredentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateBoostyCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBoostyCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminBoostyCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminBoostyCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminBoostyCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminBoostyCredentials_deletedBy(ctx, field)
+			case "deviceId":
+				return ec.fieldContext_AdminBoostyCredentials_deviceId(ctx, field)
+			case "blogName":
+				return ec.fieldContext_AdminBoostyCredentials_blogName(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminBoostyCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminBoostyCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminBoostyCredentials_members(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreateEmailWaitListRequestPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.CreateEmailWaitListRequestPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_CreateEmailWaitListRequestPayload_success(ctx, field)
 	if err != nil {
@@ -16062,6 +18410,116 @@ func (ec *executionContext) fieldContext_CreateTgBotPayload_tgBot(_ context.Cont
 				return ec.fieldContext_AdminTgBot_createdBy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminTgBot", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteBoostyCredentialsPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteBoostyCredentialsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteBoostyCredentialsPayload_deletedId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeletedID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeleteBoostyCredentialsPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteBoostyCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteBoostyCredentialsPayload_boostyCredentials(ctx context.Context, field graphql.CollectedField, obj *model.DeleteBoostyCredentialsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteBoostyCredentialsPayload_boostyCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.DeleteBoostyCredentialsPayload().BoostyCredentials(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.BoostyCredential)
+	fc.Result = res
+	return ec.marshalNAdminBoostyCredentials2ᚖtrip2gᚋinternalᚋdbᚐBoostyCredential(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DeleteBoostyCredentialsPayload_boostyCredentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteBoostyCredentialsPayload",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBoostyCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminBoostyCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminBoostyCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminBoostyCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminBoostyCredentials_deletedBy(ctx, field)
+			case "deviceId":
+				return ec.fieldContext_AdminBoostyCredentials_deviceId(ctx, field)
+			case "blogName":
+				return ec.fieldContext_AdminBoostyCredentials_blogName(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminBoostyCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminBoostyCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminBoostyCredentials_members(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyCredentials", field.Name)
 		},
 	}
 	return fc, nil
@@ -17131,6 +19589,16 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_refreshPatreonData(ctx, field)
 			case "setPatreonTierSubgraphs":
 				return ec.fieldContext_AdminMutation_setPatreonTierSubgraphs(ctx, field)
+			case "createBoostyCredentials":
+				return ec.fieldContext_AdminMutation_createBoostyCredentials(ctx, field)
+			case "deleteBoostyCredentials":
+				return ec.fieldContext_AdminMutation_deleteBoostyCredentials(ctx, field)
+			case "restoreBoostyCredentials":
+				return ec.fieldContext_AdminMutation_restoreBoostyCredentials(ctx, field)
+			case "updateBoostyCredentials":
+				return ec.fieldContext_AdminMutation_updateBoostyCredentials(ctx, field)
+			case "setBoostyTierSubgraphs":
+				return ec.fieldContext_AdminMutation_setBoostyTierSubgraphs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -18971,6 +21439,10 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allPatreonCredentials(ctx, field)
 			case "patreonCredentials":
 				return ec.fieldContext_AdminQuery_patreonCredentials(ctx, field)
+			case "allBoostyCredentials":
+				return ec.fieldContext_AdminQuery_allBoostyCredentials(ctx, field)
+			case "boostyCredentials":
+				return ec.fieldContext_AdminQuery_boostyCredentials(ctx, field)
 			case "apiKeyLogs":
 				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "subgraph":
@@ -19371,6 +21843,72 @@ func (ec *executionContext) fieldContext_ResetNotFoundPathPayload_notFoundPath(_
 	return fc, nil
 }
 
+func (ec *executionContext) _RestoreBoostyCredentialsPayload_boostyCredentials(ctx context.Context, field graphql.CollectedField, obj *model.RestoreBoostyCredentialsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RestoreBoostyCredentialsPayload_boostyCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BoostyCredentials, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.BoostyCredential)
+	fc.Result = res
+	return ec.marshalNAdminBoostyCredentials2ᚖtrip2gᚋinternalᚋdbᚐBoostyCredential(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RestoreBoostyCredentialsPayload_boostyCredentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RestoreBoostyCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBoostyCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminBoostyCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminBoostyCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminBoostyCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminBoostyCredentials_deletedBy(ctx, field)
+			case "deviceId":
+				return ec.fieldContext_AdminBoostyCredentials_deviceId(ctx, field)
+			case "blogName":
+				return ec.fieldContext_AdminBoostyCredentials_blogName(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminBoostyCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminBoostyCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminBoostyCredentials_members(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RestorePatreonCredentialsPayload_patreonCredentials(ctx context.Context, field graphql.CollectedField, obj *model.RestorePatreonCredentialsPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_RestorePatreonCredentialsPayload_patreonCredentials(ctx, field)
 	if err != nil {
@@ -19432,6 +21970,110 @@ func (ec *executionContext) fieldContext_RestorePatreonCredentialsPayload_patreo
 				return ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetBoostyTierSubgraphsPayload_tier(ctx context.Context, field graphql.CollectedField, obj *model.SetBoostyTierSubgraphsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SetBoostyTierSubgraphsPayload_tier(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tier, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.BoostyTier)
+	fc.Result = res
+	return ec.marshalNAdminBoostyTier2ᚖtrip2gᚋinternalᚋdbᚐBoostyTier(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SetBoostyTierSubgraphsPayload_tier(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetBoostyTierSubgraphsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBoostyTier_id(ctx, field)
+			case "boostyId":
+				return ec.fieldContext_AdminBoostyTier_boostyId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminBoostyTier_createdAt(ctx, field)
+			case "missedAt":
+				return ec.fieldContext_AdminBoostyTier_missedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminBoostyTier_name(ctx, field)
+			case "data":
+				return ec.fieldContext_AdminBoostyTier_data(ctx, field)
+			case "subgraphs":
+				return ec.fieldContext_AdminBoostyTier_subgraphs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyTier", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetBoostyTierSubgraphsPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.SetBoostyTierSubgraphsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SetBoostyTierSubgraphsPayload_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SetBoostyTierSubgraphsPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetBoostyTierSubgraphsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -20019,6 +22661,72 @@ func (ec *executionContext) fieldContext_UnbanUserPayload_user(_ context.Context
 				return ec.fieldContext_AdminUser_ban(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateBoostyCredentialsPayload_boostyCredentials(ctx context.Context, field graphql.CollectedField, obj *model.UpdateBoostyCredentialsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpdateBoostyCredentialsPayload_boostyCredentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BoostyCredentials, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.BoostyCredential)
+	fc.Result = res
+	return ec.marshalNAdminBoostyCredentials2ᚖtrip2gᚋinternalᚋdbᚐBoostyCredential(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpdateBoostyCredentialsPayload_boostyCredentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateBoostyCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBoostyCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminBoostyCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminBoostyCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminBoostyCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminBoostyCredentials_deletedBy(ctx, field)
+			case "deviceId":
+				return ec.fieldContext_AdminBoostyCredentials_deviceId(ctx, field)
+			case "blogName":
+				return ec.fieldContext_AdminBoostyCredentials_blogName(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminBoostyCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminBoostyCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminBoostyCredentials_members(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyCredentials", field.Name)
 		},
 	}
 	return fc, nil
@@ -23355,6 +26063,33 @@ func (ec *executionContext) unmarshalInputAddTgChatSubgraphAccessInput(ctx conte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAdminBoostyCredentialsFilterInput(ctx context.Context, obj any) (model.AdminBoostyCredentialsFilterInput, error) {
+	var it model.AdminBoostyCredentialsFilterInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"state"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "state":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
+			data, err := ec.unmarshalOBoostyCredentialsStateEnum2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐBoostyCredentialsStateEnum(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.State = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAdminLatestNoteViewsFilter(ctx context.Context, obj any) (model.AdminLatestNoteViewsFilter, error) {
 	var it model.AdminLatestNoteViewsFilter
 	asMap := map[string]any{}
@@ -23586,6 +26321,47 @@ func (ec *executionContext) unmarshalInputCreateApiKeyInput(ctx context.Context,
 				return it, err
 			}
 			it.Description = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateBoostyCredentialsInput(ctx context.Context, obj any) (model.CreateBoostyCredentialsInput, error) {
+	var it model.CreateBoostyCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"authData", "deviceId", "blogName"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "authData":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authData"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthData = data
+		case "deviceId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deviceId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DeviceID = data
+		case "blogName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("blogName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BlogName = data
 		}
 	}
 
@@ -23893,6 +26669,33 @@ func (ec *executionContext) unmarshalInputCreateTgBotInput(ctx context.Context, 
 				return it, err
 			}
 			it.Description = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteBoostyCredentialsInput(ctx context.Context, obj any) (model.DeleteBoostyCredentialsInput, error) {
+	var it model.DeleteBoostyCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
 		}
 	}
 
@@ -24264,6 +27067,33 @@ func (ec *executionContext) unmarshalInputResetNotFoundPathInput(ctx context.Con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputRestoreBoostyCredentialsInput(ctx context.Context, obj any) (model.RestoreBoostyCredentialsInput, error) {
+	var it model.RestoreBoostyCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRestorePatreonCredentialsInput(ctx context.Context, obj any) (model.RestorePatreonCredentialsInput, error) {
 	var it model.RestorePatreonCredentialsInput
 	asMap := map[string]any{}
@@ -24285,6 +27115,40 @@ func (ec *executionContext) unmarshalInputRestorePatreonCredentialsInput(ctx con
 				return it, err
 			}
 			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSetBoostyTierSubgraphsInput(ctx context.Context, obj any) (model.SetBoostyTierSubgraphsInput, error) {
+	var it model.SetBoostyTierSubgraphsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"tierId", "subgraphIds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "tierId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tierId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TierID = data
+		case "subgraphIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphIds"))
+			data, err := ec.unmarshalNInt642ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubgraphIds = data
 		}
 	}
 
@@ -24380,6 +27244,54 @@ func (ec *executionContext) unmarshalInputUnbanUserInput(ctx context.Context, ob
 				return it, err
 			}
 			it.UserID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateBoostyCredentialsInput(ctx context.Context, obj any) (model.UpdateBoostyCredentialsInput, error) {
+	var it model.UpdateBoostyCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "authData", "deviceId", "blogName"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "authData":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authData"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthData = data
+		case "deviceId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deviceId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DeviceID = data
+		case "blogName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("blogName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BlogName = data
 		}
 	}
 
@@ -24876,6 +27788,29 @@ func (ec *executionContext) _CreateApiKeyOrErrorPayload(ctx context.Context, sel
 	}
 }
 
+func (ec *executionContext) _CreateBoostyCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateBoostyCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateBoostyCredentialsPayload:
+		return ec._CreateBoostyCredentialsPayload(ctx, sel, &obj)
+	case *model.CreateBoostyCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateBoostyCredentialsPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _CreateEmailWaitListRequestOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateEmailWaitListRequestOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -25055,6 +27990,29 @@ func (ec *executionContext) _CreateTgBotOrErrorPayload(ctx context.Context, sel 
 			return graphql.Null
 		}
 		return ec._CreateTgBotPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _DeleteBoostyCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteBoostyCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DeleteBoostyCredentialsPayload:
+		return ec._DeleteBoostyCredentialsPayload(ctx, sel, &obj)
+	case *model.DeleteBoostyCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeleteBoostyCredentialsPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -25313,6 +28271,29 @@ func (ec *executionContext) _ResetNotFoundPathOrErrorPayload(ctx context.Context
 	}
 }
 
+func (ec *executionContext) _RestoreBoostyCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RestoreBoostyCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RestoreBoostyCredentialsPayload:
+		return ec._RestoreBoostyCredentialsPayload(ctx, sel, &obj)
+	case *model.RestoreBoostyCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RestoreBoostyCredentialsPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _RestorePatreonCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RestorePatreonCredentialsOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -25324,6 +28305,29 @@ func (ec *executionContext) _RestorePatreonCredentialsOrErrorPayload(ctx context
 			return graphql.Null
 		}
 		return ec._RestorePatreonCredentialsPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SetBoostyTierSubgraphsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SetBoostyTierSubgraphsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SetBoostyTierSubgraphsPayload:
+		return ec._SetBoostyTierSubgraphsPayload(ctx, sel, &obj)
+	case *model.SetBoostyTierSubgraphsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SetBoostyTierSubgraphsPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -25416,6 +28420,29 @@ func (ec *executionContext) _UnbanUserOrErrorPayload(ctx context.Context, sel as
 			return graphql.Null
 		}
 		return ec._UnbanUserPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _UpdateBoostyCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateBoostyCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UpdateBoostyCredentialsPayload:
+		return ec._UpdateBoostyCredentialsPayload(ctx, sel, &obj)
+	case *model.UpdateBoostyCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateBoostyCredentialsPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -26222,6 +29249,705 @@ func (ec *executionContext) _AdminApiKeysConnection(ctx context.Context, sel ast
 					}
 				}()
 				res = ec._AdminApiKeysConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminBoostyCredentialsImplementors = []string{"AdminBoostyCredentials"}
+
+func (ec *executionContext) _AdminBoostyCredentials(ctx context.Context, sel ast.SelectionSet, obj *db.BoostyCredential) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminBoostyCredentialsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminBoostyCredentials")
+		case "id":
+			out.Values[i] = ec._AdminBoostyCredentials_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminBoostyCredentials_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyCredentials_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deletedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyCredentials_deletedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deletedBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyCredentials_deletedBy(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deviceId":
+			out.Values[i] = ec._AdminBoostyCredentials_deviceId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "blogName":
+			out.Values[i] = ec._AdminBoostyCredentials_blogName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "state":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyCredentials_state(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "tiers":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyCredentials_tiers(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "members":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyCredentials_members(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminBoostyCredentialsConnectionImplementors = []string{"AdminBoostyCredentialsConnection"}
+
+func (ec *executionContext) _AdminBoostyCredentialsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminBoostyCredentialsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminBoostyCredentialsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminBoostyCredentialsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyCredentialsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminBoostyMemberImplementors = []string{"AdminBoostyMember"}
+
+func (ec *executionContext) _AdminBoostyMember(ctx context.Context, sel ast.SelectionSet, obj *db.BoostyMember) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminBoostyMemberImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminBoostyMember")
+		case "id":
+			out.Values[i] = ec._AdminBoostyMember_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "boostyId":
+			out.Values[i] = ec._AdminBoostyMember_boostyId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminBoostyMember_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "missedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyMember_missedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "email":
+			out.Values[i] = ec._AdminBoostyMember_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "status":
+			out.Values[i] = ec._AdminBoostyMember_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "data":
+			out.Values[i] = ec._AdminBoostyMember_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminBoostyMembersConnectionImplementors = []string{"AdminBoostyMembersConnection"}
+
+func (ec *executionContext) _AdminBoostyMembersConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminBoostyMembersConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminBoostyMembersConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminBoostyMembersConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyMembersConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminBoostyTierImplementors = []string{"AdminBoostyTier"}
+
+func (ec *executionContext) _AdminBoostyTier(ctx context.Context, sel ast.SelectionSet, obj *db.BoostyTier) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminBoostyTierImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminBoostyTier")
+		case "id":
+			out.Values[i] = ec._AdminBoostyTier_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "boostyId":
+			out.Values[i] = ec._AdminBoostyTier_boostyId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminBoostyTier_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "missedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyTier_missedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "name":
+			out.Values[i] = ec._AdminBoostyTier_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "data":
+			out.Values[i] = ec._AdminBoostyTier_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "subgraphs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyTier_subgraphs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminBoostyTiersConnectionImplementors = []string{"AdminBoostyTiersConnection"}
+
+func (ec *executionContext) _AdminBoostyTiersConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminBoostyTiersConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminBoostyTiersConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminBoostyTiersConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBoostyTiersConnection_nodes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -27298,6 +31024,186 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_setPatreonTierSubgraphs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createBoostyCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createBoostyCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deleteBoostyCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deleteBoostyCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "restoreBoostyCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_restoreBoostyCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "updateBoostyCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_updateBoostyCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "setBoostyTierSubgraphs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_setBoostyTierSubgraphs(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -29719,6 +33625,75 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_patreonCredentials(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allBoostyCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allBoostyCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "boostyCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_boostyCredentials(ctx, field, obj)
 				return res
 			}
 
@@ -32197,6 +36172,45 @@ func (ec *executionContext) _CreateApiKeyPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
+var createBoostyCredentialsPayloadImplementors = []string{"CreateBoostyCredentialsPayload", "CreateBoostyCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _CreateBoostyCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateBoostyCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createBoostyCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateBoostyCredentialsPayload")
+		case "boostyCredentials":
+			out.Values[i] = ec._CreateBoostyCredentialsPayload_boostyCredentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createEmailWaitListRequestPayloadImplementors = []string{"CreateEmailWaitListRequestPayload", "CreateEmailWaitListRequestOrErrorPayload"}
 
 func (ec *executionContext) _CreateEmailWaitListRequestPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateEmailWaitListRequestPayload) graphql.Marshaler {
@@ -32511,6 +36525,81 @@ func (ec *executionContext) _CreateTgBotPayload(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var deleteBoostyCredentialsPayloadImplementors = []string{"DeleteBoostyCredentialsPayload", "DeleteBoostyCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _DeleteBoostyCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteBoostyCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteBoostyCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteBoostyCredentialsPayload")
+		case "deletedId":
+			out.Values[i] = ec._DeleteBoostyCredentialsPayload_deletedId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "boostyCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._DeleteBoostyCredentialsPayload_boostyCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var deleteNotFoundIgnoredPatternPayloadImplementors = []string{"DeleteNotFoundIgnoredPatternPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload"}
 
 func (ec *executionContext) _DeleteNotFoundIgnoredPatternPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteNotFoundIgnoredPatternPayload) graphql.Marshaler {
@@ -32703,7 +36792,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -34182,6 +38271,45 @@ func (ec *executionContext) _ResetNotFoundPathPayload(ctx context.Context, sel a
 	return out
 }
 
+var restoreBoostyCredentialsPayloadImplementors = []string{"RestoreBoostyCredentialsPayload", "RestoreBoostyCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _RestoreBoostyCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RestoreBoostyCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, restoreBoostyCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RestoreBoostyCredentialsPayload")
+		case "boostyCredentials":
+			out.Values[i] = ec._RestoreBoostyCredentialsPayload_boostyCredentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var restorePatreonCredentialsPayloadImplementors = []string{"RestorePatreonCredentialsPayload", "RestorePatreonCredentialsOrErrorPayload"}
 
 func (ec *executionContext) _RestorePatreonCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RestorePatreonCredentialsPayload) graphql.Marshaler {
@@ -34195,6 +38323,50 @@ func (ec *executionContext) _RestorePatreonCredentialsPayload(ctx context.Contex
 			out.Values[i] = graphql.MarshalString("RestorePatreonCredentialsPayload")
 		case "patreonCredentials":
 			out.Values[i] = ec._RestorePatreonCredentialsPayload_patreonCredentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var setBoostyTierSubgraphsPayloadImplementors = []string{"SetBoostyTierSubgraphsPayload", "SetBoostyTierSubgraphsOrErrorPayload"}
+
+func (ec *executionContext) _SetBoostyTierSubgraphsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SetBoostyTierSubgraphsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, setBoostyTierSubgraphsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SetBoostyTierSubgraphsPayload")
+		case "tier":
+			out.Values[i] = ec._SetBoostyTierSubgraphsPayload_tier(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "success":
+			out.Values[i] = ec._SetBoostyTierSubgraphsPayload_success(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -34552,6 +38724,45 @@ func (ec *executionContext) _UnbanUserPayload(ctx context.Context, sel ast.Selec
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var updateBoostyCredentialsPayloadImplementors = []string{"UpdateBoostyCredentialsPayload", "UpdateBoostyCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _UpdateBoostyCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateBoostyCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateBoostyCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateBoostyCredentialsPayload")
+		case "boostyCredentials":
+			out.Values[i] = ec._UpdateBoostyCredentialsPayload_boostyCredentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -36055,6 +40266,212 @@ func (ec *executionContext) marshalNAdminApiKeysConnection2ᚖtrip2gᚋinternal�
 	return ec._AdminApiKeysConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminBoostyCredentials2trip2gᚋinternalᚋdbᚐBoostyCredential(ctx context.Context, sel ast.SelectionSet, v db.BoostyCredential) graphql.Marshaler {
+	return ec._AdminBoostyCredentials(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminBoostyCredentials2ᚕtrip2gᚋinternalᚋdbᚐBoostyCredentialᚄ(ctx context.Context, sel ast.SelectionSet, v []db.BoostyCredential) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminBoostyCredentials2trip2gᚋinternalᚋdbᚐBoostyCredential(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminBoostyCredentials2ᚖtrip2gᚋinternalᚋdbᚐBoostyCredential(ctx context.Context, sel ast.SelectionSet, v *db.BoostyCredential) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminBoostyCredentials(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminBoostyCredentialsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyCredentialsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminBoostyCredentialsConnection) graphql.Marshaler {
+	return ec._AdminBoostyCredentialsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminBoostyCredentialsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyCredentialsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminBoostyCredentialsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminBoostyCredentialsConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminBoostyMember2trip2gᚋinternalᚋdbᚐBoostyMember(ctx context.Context, sel ast.SelectionSet, v db.BoostyMember) graphql.Marshaler {
+	return ec._AdminBoostyMember(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminBoostyMember2ᚕtrip2gᚋinternalᚋdbᚐBoostyMemberᚄ(ctx context.Context, sel ast.SelectionSet, v []db.BoostyMember) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminBoostyMember2trip2gᚋinternalᚋdbᚐBoostyMember(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminBoostyMembersConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyMembersConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminBoostyMembersConnection) graphql.Marshaler {
+	return ec._AdminBoostyMembersConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminBoostyMembersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyMembersConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminBoostyMembersConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminBoostyMembersConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminBoostyTier2trip2gᚋinternalᚋdbᚐBoostyTier(ctx context.Context, sel ast.SelectionSet, v db.BoostyTier) graphql.Marshaler {
+	return ec._AdminBoostyTier(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminBoostyTier2ᚕtrip2gᚋinternalᚋdbᚐBoostyTierᚄ(ctx context.Context, sel ast.SelectionSet, v []db.BoostyTier) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminBoostyTier2trip2gᚋinternalᚋdbᚐBoostyTier(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminBoostyTier2ᚖtrip2gᚋinternalᚋdbᚐBoostyTier(ctx context.Context, sel ast.SelectionSet, v *db.BoostyTier) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminBoostyTier(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminBoostyTiersConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyTiersConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminBoostyTiersConnection) graphql.Marshaler {
+	return ec._AdminBoostyTiersConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminBoostyTiersConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyTiersConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminBoostyTiersConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminBoostyTiersConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminLatestNoteViewsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteViewsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminLatestNoteViewsConnection) graphql.Marshaler {
 	return ec._AdminLatestNoteViewsConnection(ctx, sel, &v)
 }
@@ -37274,6 +41691,16 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNBoostyCredentialsStateEnum2trip2gᚋinternalᚋgraphᚋmodelᚐBoostyCredentialsStateEnum(ctx context.Context, v any) (model.BoostyCredentialsStateEnum, error) {
+	var res model.BoostyCredentialsStateEnum
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNBoostyCredentialsStateEnum2trip2gᚋinternalᚋgraphᚋmodelᚐBoostyCredentialsStateEnum(ctx context.Context, sel ast.SelectionSet, v model.BoostyCredentialsStateEnum) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNCreateApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateAPIKeyInput(ctx context.Context, v any) (model.CreateAPIKeyInput, error) {
 	res, err := ec.unmarshalInputCreateApiKeyInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -37287,6 +41714,21 @@ func (ec *executionContext) marshalNCreateApiKeyOrErrorPayload2trip2gᚋinternal
 		return graphql.Null
 	}
 	return ec._CreateApiKeyOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateBoostyCredentialsInput(ctx context.Context, v any) (model.CreateBoostyCredentialsInput, error) {
+	res, err := ec.unmarshalInputCreateBoostyCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateBoostyCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateBoostyCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateBoostyCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateBoostyCredentialsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNCreateEmailWaitListRequestInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateEmailWaitListRequestInput(ctx context.Context, v any) (model.CreateEmailWaitListRequestInput, error) {
@@ -37407,6 +41849,21 @@ func (ec *executionContext) marshalNCreateTgBotOrErrorPayload2trip2gᚋinternal�
 		return graphql.Null
 	}
 	return ec._CreateTgBotOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeleteBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteBoostyCredentialsInput(ctx context.Context, v any) (model.DeleteBoostyCredentialsInput, error) {
+	res, err := ec.unmarshalInputDeleteBoostyCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteBoostyCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteBoostyCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteBoostyCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteBoostyCredentialsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDeleteNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteNotFoundIgnoredPatternInput(ctx context.Context, v any) (model.DeleteNotFoundIgnoredPatternInput, error) {
@@ -38161,6 +42618,21 @@ func (ec *executionContext) marshalNResetNotFoundPathOrErrorPayload2trip2gᚋint
 	return ec._ResetNotFoundPathOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNRestoreBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐRestoreBoostyCredentialsInput(ctx context.Context, v any) (model.RestoreBoostyCredentialsInput, error) {
+	res, err := ec.unmarshalInputRestoreBoostyCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRestoreBoostyCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRestoreBoostyCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RestoreBoostyCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RestoreBoostyCredentialsOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNRestorePatreonCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐRestorePatreonCredentialsInput(ctx context.Context, v any) (model.RestorePatreonCredentialsInput, error) {
 	res, err := ec.unmarshalInputRestorePatreonCredentialsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -38184,6 +42656,21 @@ func (ec *executionContext) unmarshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐR
 
 func (ec *executionContext) marshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐRole(ctx context.Context, sel ast.SelectionSet, v model.Role) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) unmarshalNSetBoostyTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetBoostyTierSubgraphsInput(ctx context.Context, v any) (model.SetBoostyTierSubgraphsInput, error) {
+	res, err := ec.unmarshalInputSetBoostyTierSubgraphsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSetBoostyTierSubgraphsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetBoostyTierSubgraphsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SetBoostyTierSubgraphsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SetBoostyTierSubgraphsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSetPatreonTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetPatreonTierSubgraphsInput(ctx context.Context, v any) (model.SetPatreonTierSubgraphsInput, error) {
@@ -38359,6 +42846,21 @@ func (ec *executionContext) marshalNUnbanUserOrErrorPayload2trip2gᚋinternalᚋ
 		return graphql.Null
 	}
 	return ec._UnbanUserOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateBoostyCredentialsInput(ctx context.Context, v any) (model.UpdateBoostyCredentialsInput, error) {
+	res, err := ec.unmarshalInputUpdateBoostyCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateBoostyCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateBoostyCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateBoostyCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateBoostyCredentialsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNotFoundIgnoredPatternInput(ctx context.Context, v any) (model.UpdateNotFoundIgnoredPatternInput, error) {
@@ -38902,6 +43404,21 @@ func (ec *executionContext) marshalOAdmin2ᚖtrip2gᚋinternalᚋdbᚐAdmin(ctx 
 	return ec._Admin(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOAdminBoostyCredentials2ᚖtrip2gᚋinternalᚋdbᚐBoostyCredential(ctx context.Context, sel ast.SelectionSet, v *db.BoostyCredential) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminBoostyCredentials(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOAdminBoostyCredentialsFilterInput2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBoostyCredentialsFilterInput(ctx context.Context, v any) (*model.AdminBoostyCredentialsFilterInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAdminBoostyCredentialsFilterInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOAdminLatestNoteViewsFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteViewsFilter(ctx context.Context, v any) (*model.AdminLatestNoteViewsFilter, error) {
 	if v == nil {
 		return nil, nil
@@ -39016,6 +43533,22 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOBoostyCredentialsStateEnum2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐBoostyCredentialsStateEnum(ctx context.Context, v any) (*model.BoostyCredentialsStateEnum, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.BoostyCredentialsStateEnum)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOBoostyCredentialsStateEnum2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐBoostyCredentialsStateEnum(ctx context.Context, sel ast.SelectionSet, v *model.BoostyCredentialsStateEnum) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {

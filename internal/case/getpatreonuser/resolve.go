@@ -26,35 +26,35 @@ func Resolve(ctx context.Context, env Env, email string) (*db.User, error) {
 		return nil, fmt.Errorf("failed to get patreon member by email: %w", err)
 	}
 
-	if !member.UserID.Valid {
-		user, userErr := env.UserByEmail(ctx, email)
+	if member.UserID.Valid {
+		user, userErr := env.UserByID(ctx, member.UserID.Int64)
 		if userErr != nil {
-			if db.IsNoFound(userErr) {
-				user, userErr = env.InsertUserWithEmail(ctx, email)
-				if userErr != nil {
-					return nil, fmt.Errorf("failed to insert user with email: %w", userErr)
-				}
-			} else {
-				return nil, fmt.Errorf("failed to get user by email: %w", userErr)
-			}
-		}
-
-		updateParams := db.UpdatePatreonMemberUserIDParams{
-			ID:     member.ID,
-			UserID: sql.NullInt64{Valid: true, Int64: user.ID},
-		}
-
-		err = env.UpdatePatreonMemberUserID(ctx, updateParams)
-		if err != nil {
-			return nil, fmt.Errorf("failed to update patreon member user ID: %w", err)
+			return nil, fmt.Errorf("failed to get user by ID: %w", userErr)
 		}
 
 		return &user, nil
 	}
 
-	user, err := env.UserByID(ctx, member.UserID.Int64)
+	user, userErr := env.UserByEmail(ctx, email)
+	if userErr != nil {
+		if db.IsNoFound(userErr) {
+			user, userErr = env.InsertUserWithEmail(ctx, email)
+			if userErr != nil {
+				return nil, fmt.Errorf("failed to insert user with email: %w", userErr)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to get user by email: %w", userErr)
+		}
+	}
+
+	updateParams := db.UpdatePatreonMemberUserIDParams{
+		ID:     member.ID,
+		UserID: sql.NullInt64{Valid: true, Int64: user.ID},
+	}
+
+	err = env.UpdatePatreonMemberUserID(ctx, updateParams)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user by ID: %w", err)
+		return nil, fmt.Errorf("failed to update patreon member user ID: %w", err)
 	}
 
 	return &user, nil

@@ -8,12 +8,14 @@ import (
 	"trip2g/internal/case/admin/addtgchatsubgraphaccess"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
+	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
 	"trip2g/internal/case/admin/createpatreoncredentials"
 	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/createtgbot"
+	"trip2g/internal/case/admin/deleteboostycredentials"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
@@ -21,9 +23,11 @@ import (
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
+	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
+	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
 	"trip2g/internal/case/admin/updateoffer"
@@ -153,6 +157,12 @@ type Env interface {
 	restorepatreoncredentials.Env
 	setpatreontiersubgraphs.Env
 
+	// Boosty credentials
+	createboostycredentials.Env
+	deleteboostycredentials.Env
+	restoreboostycredentials.Env
+	updateboostycredentials.Env
+
 	// Patreon tier queries
 	GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]db.Subgraph, error)
 
@@ -177,4 +187,13 @@ type Env interface {
 	GetPatreonCampaignsByCredentialsID(ctx context.Context, credentialsID int64) ([]db.PatreonCampaign, error)
 	GetPatreonTiersByCampaignID(ctx context.Context, campaignID int64) ([]db.PatreonTier, error)
 	GetPatreonMembersByCampaignID(ctx context.Context, campaignID int64) ([]db.PatreonMember, error)
+
+	// Boosty credentials queries
+	AllBoostyCredentials(ctx context.Context) ([]db.BoostyCredential, error)
+	AllActiveBoostyCredentials(ctx context.Context) ([]db.BoostyCredential, error)
+	AllDeletedBoostyCredentials(ctx context.Context) ([]db.BoostyCredential, error)
+	BoostyCredentials(ctx context.Context, id int64) (db.BoostyCredential, error)
+	GetBoostyTiers(ctx context.Context) ([]db.BoostyTier, error)
+	GetBoostyMembers(ctx context.Context) ([]db.BoostyMember, error)
+	GetSubgraphsByBoostyTierID(ctx context.Context, tierID int64) ([]db.Subgraph, error)
 }

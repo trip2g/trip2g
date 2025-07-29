@@ -855,6 +855,103 @@ update patreon_credentials
 set webhook_secret = null
 where id = ?;
 
+-- Boosty credentials
+
+-- name: AllBoostyCredentials :many
+select * from boosty_credentials
+order by created_at desc;
+
+-- name: AllActiveBoostyCredentials :many
+select * from boosty_credentials
+where deleted_at is null
+order by created_at desc;
+
+-- name: AllDeletedBoostyCredentials :many
+select * from boosty_credentials
+where deleted_at is not null
+order by created_at desc;
+
+-- name: BoostyCredentials :one
+select *
+  from boosty_credentials
+ where id = ?;
+
+-- name: InsertBoostyCredentials :one
+insert into boosty_credentials (created_by, auth_data, device_id, blog_name)
+values (?, ?, ?, ?)
+returning *;
+
+-- name: SoftDeleteBoostyCredentials :one
+update boosty_credentials
+set deleted_at = current_timestamp, deleted_by = ?
+where id = ? and deleted_at is null
+returning *;
+
+-- name: RestoreBoostyCredentials :one
+update boosty_credentials
+set deleted_at = null, deleted_by = null
+where id = ? and deleted_at is not null
+returning *;
+
+-- name: UpdateBoostyCredentials :one
+update boosty_credentials
+set 
+  auth_data = coalesce(sqlc.narg('auth_data'), auth_data),
+  device_id = coalesce(sqlc.narg('device_id'), device_id),
+  blog_name = coalesce(sqlc.narg('blog_name'), blog_name)
+where id = ?
+returning *;
+
+-- Boosty tiers
+
+-- name: GetBoostyTiers :many
+select * from boosty_tiers
+order by created_at;
+
+-- name: InsertBoostyTier :exec
+insert into boosty_tiers (boosty_id, name, data)
+values (?, ?, ?);
+
+-- name: UpsertBoostyTier :exec
+insert into boosty_tiers (boosty_id, name, data)
+values (?, ?, ?)
+on conflict(boosty_id) do update set
+  name = excluded.name,
+  data = excluded.data;
+
+-- Boosty tier subgraphs
+
+-- name: GetSubgraphsByBoostyTierID :many
+select s.*
+from subgraphs s
+join boosty_tier_subgraphs bts on s.id = bts.subgraph_id
+where bts.tier_id = ?;
+
+-- name: SetBoostyTierSubgraphs :exec
+delete from boosty_tier_subgraphs where tier_id = ?;
+
+-- name: InsertBoostyTierSubgraph :exec
+insert into boosty_tier_subgraphs (tier_id, subgraph_id, created_by)
+values (?, ?, ?);
+
+-- Boosty members
+
+-- name: GetBoostyMembers :many
+select * from boosty_members
+order by created_at;
+
+-- name: InsertBoostyMember :exec
+insert into boosty_members (boosty_id, email, status, data)
+values (?, ?, ?, ?);
+
+-- name: UpsertBoostyMember :exec
+insert into boosty_members (boosty_id, email, status, data)
+values (?, ?, ?, ?)
+on conflict(boosty_id) do update set
+  email = excluded.email,
+  status = excluded.status,
+  data = excluded.data;
+
 -- name: MarkPatreonMembersAsMissed :exec
 update patreon_members
 set status = 'missed'

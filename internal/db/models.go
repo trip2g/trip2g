@@ -85,6 +85,43 @@ type BackliteTasksCompleted struct {
 	Error             sql.NullString `json:"error"`
 }
 
+type BoostyCredential struct {
+	ID        int64         `json:"id"`
+	CreatedAt time.Time     `json:"created_at"`
+	CreatedBy int64         `json:"created_by"`
+	DeletedAt sql.NullTime  `json:"deleted_at"`
+	DeletedBy sql.NullInt64 `json:"deleted_by"`
+	AuthData  string        `json:"auth_data"`
+	DeviceID  string        `json:"device_id"`
+	BlogName  string        `json:"blog_name"`
+}
+
+type BoostyMember struct {
+	ID        int64        `json:"id"`
+	BoostyID  int64        `json:"boosty_id"`
+	CreatedAt time.Time    `json:"created_at"`
+	MissedAt  sql.NullTime `json:"missed_at"`
+	Email     string       `json:"email"`
+	Status    string       `json:"status"`
+	Data      string       `json:"data"`
+}
+
+type BoostyTier struct {
+	ID        int64        `json:"id"`
+	BoostyID  int64        `json:"boosty_id"`
+	CreatedAt time.Time    `json:"created_at"`
+	MissedAt  sql.NullTime `json:"missed_at"`
+	Name      string       `json:"name"`
+	Data      string       `json:"data"`
+}
+
+type BoostyTierSubgraph struct {
+	TierID     int64     `json:"tier_id"`
+	SubgraphID int64     `json:"subgraph_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	CreatedBy  int64     `json:"created_by"`
+}
+
 type NotFoundIgnoredPattern struct {
 	ID        int64     `json:"id"`
 	Pattern   string    `json:"pattern"`

@@ -305,7 +305,7 @@ func (a *app) PatreonCreateWebhook(campaignID string, webhookURL string, trigger
 	}
 
 	if len(credentials) == 0 {
-		return nil, fmt.Errorf("no active Patreon credentials found")
+		return nil, errors.New("no active Patreon credentials found")
 	}
 
 	client, err := a.patreonClientManager.Get(credentials[0].CreatorAccessToken)
@@ -324,7 +324,7 @@ func (a *app) PatreonListWebhooks() ([]patreon.Webhook, error) {
 	}
 
 	if len(credentials) == 0 {
-		return nil, fmt.Errorf("no active Patreon credentials found")
+		return nil, errors.New("no active Patreon credentials found")
 	}
 
 	client, err := a.patreonClientManager.Get(credentials[0].CreatorAccessToken)
@@ -343,7 +343,7 @@ func (a *app) PatreonDeleteWebhook(webhookID string) error {
 	}
 
 	if len(credentials) == 0 {
-		return fmt.Errorf("no active Patreon credentials found")
+		return errors.New("no active Patreon credentials found")
 	}
 
 	client, err := a.patreonClientManager.Get(credentials[0].CreatorAccessToken)

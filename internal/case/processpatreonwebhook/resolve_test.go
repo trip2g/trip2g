@@ -19,7 +19,7 @@ import (
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg processpatreonwebhook_test . Env
 
-// generateValidSignature creates a valid HMAC-MD5 signature for testing
+// generateValidSignature creates a valid HMAC-MD5 signature for testing.
 func generateValidSignature(body []byte, secret string) string {
 	h := hmac.New(md5.New, []byte(secret))
 	h.Write(body)

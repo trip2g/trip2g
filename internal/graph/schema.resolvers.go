@@ -17,12 +17,14 @@ import (
 	"trip2g/internal/case/admin/addtgchatsubgraphaccess"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
+	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
 	"trip2g/internal/case/admin/createpatreoncredentials"
 	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/createtgbot"
+	"trip2g/internal/case/admin/deleteboostycredentials"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
@@ -30,9 +32,11 @@ import (
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
+	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
+	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
 	"trip2g/internal/case/admin/updateoffer"
@@ -112,6 +116,80 @@ func (r *adminApiKeyLogsConnectionResolver) Nodes(ctx context.Context, obj *mode
 // Nodes is the resolver for the nodes field.
 func (r *adminApiKeysConnectionResolver) Nodes(ctx context.Context, obj *model.AdminAPIKeysConnection) ([]db.ApiKey, error) {
 	return r.env(ctx).ListAllAPIKeys(ctx)
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminBoostyCredentialsResolver) CreatedBy(ctx context.Context, obj *db.BoostyCredential) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// DeletedAt is the resolver for the deletedAt field.
+func (r *adminBoostyCredentialsResolver) DeletedAt(ctx context.Context, obj *db.BoostyCredential) (*time.Time, error) {
+	return db.ToTimePtr(obj.DeletedAt), nil
+}
+
+// DeletedBy is the resolver for the deletedBy field.
+func (r *adminBoostyCredentialsResolver) DeletedBy(ctx context.Context, obj *db.BoostyCredential) (*db.User, error) {
+	if !obj.DeletedBy.Valid {
+		return nil, nil
+	}
+	return resolveOne[db.User](ctx, obj.DeletedBy.Int64, r.env(ctx).UserByID)
+}
+
+// State is the resolver for the state field.
+func (r *adminBoostyCredentialsResolver) State(ctx context.Context, obj *db.BoostyCredential) (model.BoostyCredentialsStateEnum, error) {
+	if obj.DeletedAt.Valid {
+		return model.BoostyCredentialsStateEnumDeleted, nil
+	}
+	return model.BoostyCredentialsStateEnumActive, nil
+}
+
+// Tiers is the resolver for the tiers field.
+func (r *adminBoostyCredentialsResolver) Tiers(ctx context.Context, obj *db.BoostyCredential) (*model.AdminBoostyTiersConnection, error) {
+	return &model.AdminBoostyTiersConnection{}, nil
+}
+
+// Members is the resolver for the members field.
+func (r *adminBoostyCredentialsResolver) Members(ctx context.Context, obj *db.BoostyCredential) (*model.AdminBoostyMembersConnection, error) {
+	return &model.AdminBoostyMembersConnection{}, nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminBoostyCredentialsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminBoostyCredentialsConnection) ([]db.BoostyCredential, error) {
+	if obj.Filter != nil && obj.Filter.State != nil {
+		switch *obj.Filter.State {
+		case model.BoostyCredentialsStateEnumActive:
+			return r.env(ctx).AllActiveBoostyCredentials(ctx)
+		case model.BoostyCredentialsStateEnumDeleted:
+			return r.env(ctx).AllDeletedBoostyCredentials(ctx)
+		}
+	}
+	return r.env(ctx).AllBoostyCredentials(ctx)
+}
+
+// MissedAt is the resolver for the missedAt field.
+func (r *adminBoostyMemberResolver) MissedAt(ctx context.Context, obj *db.BoostyMember) (*time.Time, error) {
+	return db.ToTimePtr(obj.MissedAt), nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminBoostyMembersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminBoostyMembersConnection) ([]db.BoostyMember, error) {
+	return r.env(ctx).GetBoostyMembers(ctx)
+}
+
+// MissedAt is the resolver for the missedAt field.
+func (r *adminBoostyTierResolver) MissedAt(ctx context.Context, obj *db.BoostyTier) (*time.Time, error) {
+	return db.ToTimePtr(obj.MissedAt), nil
+}
+
+// Subgraphs is the resolver for the subgraphs field.
+func (r *adminBoostyTierResolver) Subgraphs(ctx context.Context, obj *db.BoostyTier) ([]db.Subgraph, error) {
+	return r.env(ctx).GetSubgraphsByBoostyTierID(ctx, obj.ID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminBoostyTiersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminBoostyTiersConnection) ([]db.BoostyTier, error) {
+	return r.env(ctx).GetBoostyTiers(ctx)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -270,7 +348,7 @@ func (r *adminMutationResolver) RestorePatreonCredentials(ctx context.Context, o
 func (r *adminMutationResolver) RefreshPatreonData(ctx context.Context, obj *appmodel.AdminMutation, input model.RefreshPatreonDataInput) (model.RefreshPatreonDataOrErrorPayload, error) {
 	err := refreshpatreondata.Resolve(ctx, r.env(ctx), &input.CredentialsID)
 	if err != nil {
-		return &model.ErrorPayload{Message: err.Error()}, nil
+		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // the error passed to the ErrorPayload
 	}
 
 	return &model.RefreshPatreonDataPayload{Success: true}, nil
@@ -279,6 +357,32 @@ func (r *adminMutationResolver) RefreshPatreonData(ctx context.Context, obj *app
 // SetPatreonTierSubgraphs is the resolver for the setPatreonTierSubgraphs field.
 func (r *adminMutationResolver) SetPatreonTierSubgraphs(ctx context.Context, obj *appmodel.AdminMutation, input model.SetPatreonTierSubgraphsInput) (model.SetPatreonTierSubgraphsOrErrorPayload, error) {
 	return setpatreontiersubgraphs.Resolve(ctx, r.env(ctx), input)
+}
+
+// CreateBoostyCredentials is the resolver for the createBoostyCredentials field.
+func (r *adminMutationResolver) CreateBoostyCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateBoostyCredentialsInput) (model.CreateBoostyCredentialsOrErrorPayload, error) {
+	return createboostycredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteBoostyCredentials is the resolver for the deleteBoostyCredentials field.
+func (r *adminMutationResolver) DeleteBoostyCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteBoostyCredentialsInput) (model.DeleteBoostyCredentialsOrErrorPayload, error) {
+	return deleteboostycredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// RestoreBoostyCredentials is the resolver for the restoreBoostyCredentials field.
+func (r *adminMutationResolver) RestoreBoostyCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.RestoreBoostyCredentialsInput) (model.RestoreBoostyCredentialsOrErrorPayload, error) {
+	return restoreboostycredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// UpdateBoostyCredentials is the resolver for the updateBoostyCredentials field.
+func (r *adminMutationResolver) UpdateBoostyCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateBoostyCredentialsInput) (model.UpdateBoostyCredentialsOrErrorPayload, error) {
+	return updateboostycredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// SetBoostyTierSubgraphs is the resolver for the setBoostyTierSubgraphs field.
+func (r *adminMutationResolver) SetBoostyTierSubgraphs(ctx context.Context, obj *appmodel.AdminMutation, input model.SetBoostyTierSubgraphsInput) (model.SetBoostyTierSubgraphsOrErrorPayload, error) {
+	// For now, return a not implemented error until we implement the setBoostyTierSubgraphs case
+	return &model.ErrorPayload{Message: "SetBoostyTierSubgraphs not implemented yet"}, nil
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -613,6 +717,16 @@ func (r *adminQueryResolver) PatreonCredentials(ctx context.Context, obj *appmod
 	return resolveOne[db.PatreonCredential](ctx, id, r.env(ctx).PatreonCredentials)
 }
 
+// AllBoostyCredentials is the resolver for the allBoostyCredentials field.
+func (r *adminQueryResolver) AllBoostyCredentials(ctx context.Context, obj *appmodel.AdminQuery, filter *model.AdminBoostyCredentialsFilterInput) (*model.AdminBoostyCredentialsConnection, error) {
+	return &model.AdminBoostyCredentialsConnection{Filter: filter}, nil
+}
+
+// BoostyCredentials is the resolver for the boostyCredentials field.
+func (r *adminQueryResolver) BoostyCredentials(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.BoostyCredential, error) {
+	return resolveOne[db.BoostyCredential](ctx, id, r.env(ctx).BoostyCredentials)
+}
+
 // APIKeyLogs is the resolver for the apiKeyLogs field.
 func (r *adminQueryResolver) APIKeyLogs(ctx context.Context, obj *appmodel.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error) {
 	return &model.AdminAPIKeyLogsConnection{APIKeyID: filter.APIKeyID}, nil
@@ -873,6 +987,11 @@ func (r *adminUsersConnectionResolver) Nodes(ctx context.Context, obj *model.Adm
 // User is the resolver for the user field.
 func (r *banUserPayloadResolver) User(ctx context.Context, obj *model.BanUserPayload) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
+}
+
+// BoostyCredentials is the resolver for the boostyCredentials field.
+func (r *deleteBoostyCredentialsPayloadResolver) BoostyCredentials(ctx context.Context, obj *model.DeleteBoostyCredentialsPayload) (*db.BoostyCredential, error) {
+	return resolveOne[db.BoostyCredential](ctx, obj.DeletedID, r.env(ctx).BoostyCredentials)
 }
 
 // PatreonCredentials is the resolver for the patreonCredentials field.
@@ -1364,6 +1483,34 @@ func (r *Resolver) AdminApiKeysConnection() AdminApiKeysConnectionResolver {
 	return &adminApiKeysConnectionResolver{r}
 }
 
+// AdminBoostyCredentials returns AdminBoostyCredentialsResolver implementation.
+func (r *Resolver) AdminBoostyCredentials() AdminBoostyCredentialsResolver {
+	return &adminBoostyCredentialsResolver{r}
+}
+
+// AdminBoostyCredentialsConnection returns AdminBoostyCredentialsConnectionResolver implementation.
+func (r *Resolver) AdminBoostyCredentialsConnection() AdminBoostyCredentialsConnectionResolver {
+	return &adminBoostyCredentialsConnectionResolver{r}
+}
+
+// AdminBoostyMember returns AdminBoostyMemberResolver implementation.
+func (r *Resolver) AdminBoostyMember() AdminBoostyMemberResolver {
+	return &adminBoostyMemberResolver{r}
+}
+
+// AdminBoostyMembersConnection returns AdminBoostyMembersConnectionResolver implementation.
+func (r *Resolver) AdminBoostyMembersConnection() AdminBoostyMembersConnectionResolver {
+	return &adminBoostyMembersConnectionResolver{r}
+}
+
+// AdminBoostyTier returns AdminBoostyTierResolver implementation.
+func (r *Resolver) AdminBoostyTier() AdminBoostyTierResolver { return &adminBoostyTierResolver{r} }
+
+// AdminBoostyTiersConnection returns AdminBoostyTiersConnectionResolver implementation.
+func (r *Resolver) AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolver {
+	return &adminBoostyTiersConnectionResolver{r}
+}
+
 // AdminLatestNoteViewsConnection returns AdminLatestNoteViewsConnectionResolver implementation.
 func (r *Resolver) AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnectionResolver {
 	return &adminLatestNoteViewsConnectionResolver{r}
@@ -1520,6 +1667,11 @@ func (r *Resolver) AdminUsersConnection() AdminUsersConnectionResolver {
 // BanUserPayload returns BanUserPayloadResolver implementation.
 func (r *Resolver) BanUserPayload() BanUserPayloadResolver { return &banUserPayloadResolver{r} }
 
+// DeleteBoostyCredentialsPayload returns DeleteBoostyCredentialsPayloadResolver implementation.
+func (r *Resolver) DeleteBoostyCredentialsPayload() DeleteBoostyCredentialsPayloadResolver {
+	return &deleteBoostyCredentialsPayloadResolver{r}
+}
+
 // DeletePatreonCredentialsPayload returns DeletePatreonCredentialsPayloadResolver implementation.
 func (r *Resolver) DeletePatreonCredentialsPayload() DeletePatreonCredentialsPayloadResolver {
 	return &deletePatreonCredentialsPayloadResolver{r}
@@ -1579,6 +1731,12 @@ type adminAdminsConnectionResolver struct{ *Resolver }
 type adminApiKeyResolver struct{ *Resolver }
 type adminApiKeyLogsConnectionResolver struct{ *Resolver }
 type adminApiKeysConnectionResolver struct{ *Resolver }
+type adminBoostyCredentialsResolver struct{ *Resolver }
+type adminBoostyCredentialsConnectionResolver struct{ *Resolver }
+type adminBoostyMemberResolver struct{ *Resolver }
+type adminBoostyMembersConnectionResolver struct{ *Resolver }
+type adminBoostyTierResolver struct{ *Resolver }
+type adminBoostyTiersConnectionResolver struct{ *Resolver }
 type adminLatestNoteViewsConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
 type adminNotFoundIgnoredPatternResolver struct{ *Resolver }
@@ -1615,6 +1773,7 @@ type adminUserSubgraphAccessResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
 type banUserPayloadResolver struct{ *Resolver }
+type deleteBoostyCredentialsPayloadResolver struct{ *Resolver }
 type deletePatreonCredentialsPayloadResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }

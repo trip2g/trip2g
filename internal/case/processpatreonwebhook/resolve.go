@@ -3,8 +3,9 @@ package processpatreonwebhook
 import (
 	"context"
 	"crypto/hmac"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec // it's okay to use MD5 here as per Patreon documentation
 	"encoding/hex"
+	"errors"
 	"fmt"
 
 	"trip2g/internal/case/refreshpatreondata"
@@ -34,7 +35,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	if err != nil {
 		if db.IsNoFound(err) {
 			env.Logger().Warn("credentials not found", "credential_id", request.CredentialID)
-			return nil, fmt.Errorf("credentials not found")
+			return nil, errors.New("credentials not found")
 		}
 		return nil, fmt.Errorf("failed to get patreon credentials: %w", err)
 	}
@@ -42,13 +43,13 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	// Check if webhook secret exists
 	if !credentials.WebhookSecret.Valid || credentials.WebhookSecret.String == "" {
 		env.Logger().Error("webhook secret not configured for credential", "credential_id", request.CredentialID)
-		return nil, fmt.Errorf("webhook secret not configured")
+		return nil, errors.New("webhook secret not configured")
 	}
 
 	// Verify webhook signature
 	if !verifyWebhookSignature(request.Body, credentials.WebhookSecret.String, request.Signature) {
 		env.Logger().Error("invalid webhook signature", "credential_id", request.CredentialID)
-		return nil, fmt.Errorf("invalid webhook signature")
+		return nil, errors.New("invalid webhook signature")
 	}
 
 	env.Logger().Info("processing patreon webhook",
@@ -66,7 +67,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 }
 
 // verifyWebhookSignature verifies the Patreon webhook signature
-// According to Patreon docs: HEX digest of the message body HMAC signed (with MD5) using webhook secret
+// According to Patreon docs: HEX digest of the message body HMAC signed (with MD5) using webhook secret.
 func verifyWebhookSignature(body []byte, secret, signature string) bool {
 	h := hmac.New(md5.New, []byte(secret))
 	h.Write(body)

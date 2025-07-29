@@ -26,6 +26,10 @@ type CreateAPIKeyOrErrorPayload interface {
 	IsCreateAPIKeyOrErrorPayload()
 }
 
+type CreateBoostyCredentialsOrErrorPayload interface {
+	IsCreateBoostyCredentialsOrErrorPayload()
+}
+
 type CreateEmailWaitListRequestOrErrorPayload interface {
 	IsCreateEmailWaitListRequestOrErrorPayload()
 }
@@ -56,6 +60,10 @@ type CreateReleaseOrErrorPayload interface {
 
 type CreateTgBotOrErrorPayload interface {
 	IsCreateTgBotOrErrorPayload()
+}
+
+type DeleteBoostyCredentialsOrErrorPayload interface {
+	IsDeleteBoostyCredentialsOrErrorPayload()
 }
 
 type DeleteNotFoundIgnoredPatternOrErrorPayload interface {
@@ -102,8 +110,16 @@ type ResetNotFoundPathOrErrorPayload interface {
 	IsResetNotFoundPathOrErrorPayload()
 }
 
+type RestoreBoostyCredentialsOrErrorPayload interface {
+	IsRestoreBoostyCredentialsOrErrorPayload()
+}
+
 type RestorePatreonCredentialsOrErrorPayload interface {
 	IsRestorePatreonCredentialsOrErrorPayload()
+}
+
+type SetBoostyTierSubgraphsOrErrorPayload interface {
+	IsSetBoostyTierSubgraphsOrErrorPayload()
 }
 
 type SetPatreonTierSubgraphsOrErrorPayload interface {
@@ -120,6 +136,10 @@ type SignOutOrErrorPayload interface {
 
 type UnbanUserOrErrorPayload interface {
 	IsUnbanUserOrErrorPayload()
+}
+
+type UpdateBoostyCredentialsOrErrorPayload interface {
+	IsUpdateBoostyCredentialsOrErrorPayload()
 }
 
 type UpdateNotFoundIgnoredPatternOrErrorPayload interface {
@@ -186,6 +206,23 @@ type AdminAPIKeyLogsConnection struct {
 
 type AdminAPIKeysConnection struct {
 	Nodes []db.ApiKey `json:"nodes"`
+}
+
+type AdminBoostyCredentialsConnection struct {
+	Nodes  []db.BoostyCredential              `json:"nodes"`
+	Filter *AdminBoostyCredentialsFilterInput `json:"-"`
+}
+
+type AdminBoostyCredentialsFilterInput struct {
+	State *BoostyCredentialsStateEnum `json:"state,omitempty"`
+}
+
+type AdminBoostyMembersConnection struct {
+	Nodes []db.BoostyMember `json:"nodes"`
+}
+
+type AdminBoostyTiersConnection struct {
+	Nodes []db.BoostyTier `json:"nodes"`
 }
 
 type AdminLatestNoteViewsConnection struct {
@@ -311,6 +348,18 @@ type CreateAPIKeyPayload struct {
 
 func (CreateAPIKeyPayload) IsCreateAPIKeyOrErrorPayload() {}
 
+type CreateBoostyCredentialsInput struct {
+	AuthData string `json:"authData"`
+	DeviceID string `json:"deviceId"`
+	BlogName string `json:"blogName"`
+}
+
+type CreateBoostyCredentialsPayload struct {
+	BoostyCredentials *db.BoostyCredential `json:"boostyCredentials"`
+}
+
+func (CreateBoostyCredentialsPayload) IsCreateBoostyCredentialsOrErrorPayload() {}
+
 type CreateEmailWaitListRequestInput struct {
 	Email  string `json:"email"`
 	PathID int64  `json:"pathId"`
@@ -404,6 +453,17 @@ type CreateTgBotPayload struct {
 }
 
 func (CreateTgBotPayload) IsCreateTgBotOrErrorPayload() {}
+
+type DeleteBoostyCredentialsInput struct {
+	ID int64 `json:"id"`
+}
+
+type DeleteBoostyCredentialsPayload struct {
+	DeletedID         int64                `json:"deletedId"`
+	BoostyCredentials *db.BoostyCredential `json:"boostyCredentials"`
+}
+
+func (DeleteBoostyCredentialsPayload) IsDeleteBoostyCredentialsOrErrorPayload() {}
 
 type DeleteNotFoundIgnoredPatternInput struct {
 	ID int64 `json:"id"`
@@ -521,6 +581,16 @@ func (ErrorPayload) IsRefreshPatreonDataOrErrorPayload() {}
 
 func (ErrorPayload) IsSetPatreonTierSubgraphsOrErrorPayload() {}
 
+func (ErrorPayload) IsCreateBoostyCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsDeleteBoostyCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsRestoreBoostyCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsUpdateBoostyCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsSetBoostyTierSubgraphsOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -631,6 +701,16 @@ type ResetNotFoundPathPayload struct {
 
 func (ResetNotFoundPathPayload) IsResetNotFoundPathOrErrorPayload() {}
 
+type RestoreBoostyCredentialsInput struct {
+	ID int64 `json:"id"`
+}
+
+type RestoreBoostyCredentialsPayload struct {
+	BoostyCredentials *db.BoostyCredential `json:"boostyCredentials"`
+}
+
+func (RestoreBoostyCredentialsPayload) IsRestoreBoostyCredentialsOrErrorPayload() {}
+
 type RestorePatreonCredentialsInput struct {
 	ID int64 `json:"id"`
 }
@@ -640,6 +720,18 @@ type RestorePatreonCredentialsPayload struct {
 }
 
 func (RestorePatreonCredentialsPayload) IsRestorePatreonCredentialsOrErrorPayload() {}
+
+type SetBoostyTierSubgraphsInput struct {
+	TierID      int64   `json:"tierId"`
+	SubgraphIds []int64 `json:"subgraphIds"`
+}
+
+type SetBoostyTierSubgraphsPayload struct {
+	Tier    *db.BoostyTier `json:"tier"`
+	Success bool           `json:"success"`
+}
+
+func (SetBoostyTierSubgraphsPayload) IsSetBoostyTierSubgraphsOrErrorPayload() {}
 
 type SetPatreonTierSubgraphsInput struct {
 	TierID      int64   `json:"tierId"`
@@ -688,6 +780,19 @@ type UnbanUserPayload struct {
 }
 
 func (UnbanUserPayload) IsUnbanUserOrErrorPayload() {}
+
+type UpdateBoostyCredentialsInput struct {
+	ID       int64   `json:"id"`
+	AuthData *string `json:"authData,omitempty"`
+	DeviceID *string `json:"deviceId,omitempty"`
+	BlogName *string `json:"blogName,omitempty"`
+}
+
+type UpdateBoostyCredentialsPayload struct {
+	BoostyCredentials *db.BoostyCredential `json:"boostyCredentials"`
+}
+
+func (UpdateBoostyCredentialsPayload) IsUpdateBoostyCredentialsOrErrorPayload() {}
 
 type UpdateNotFoundIgnoredPatternInput struct {
 	ID      int64  `json:"id"`
@@ -793,6 +898,61 @@ type Vector2 struct {
 
 type ViewerOffersFilter struct {
 	PageID *int64 `json:"pageId,omitempty"`
+}
+
+type BoostyCredentialsStateEnum string
+
+const (
+	BoostyCredentialsStateEnumActive  BoostyCredentialsStateEnum = "ACTIVE"
+	BoostyCredentialsStateEnumDeleted BoostyCredentialsStateEnum = "DELETED"
+)
+
+var AllBoostyCredentialsStateEnum = []BoostyCredentialsStateEnum{
+	BoostyCredentialsStateEnumActive,
+	BoostyCredentialsStateEnumDeleted,
+}
+
+func (e BoostyCredentialsStateEnum) IsValid() bool {
+	switch e {
+	case BoostyCredentialsStateEnumActive, BoostyCredentialsStateEnumDeleted:
+		return true
+	}
+	return false
+}
+
+func (e BoostyCredentialsStateEnum) String() string {
+	return string(e)
+}
+
+func (e *BoostyCredentialsStateEnum) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = BoostyCredentialsStateEnum(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid BoostyCredentialsStateEnum", str)
+	}
+	return nil
+}
+
+func (e BoostyCredentialsStateEnum) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *BoostyCredentialsStateEnum) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e BoostyCredentialsStateEnum) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type NoteWarningLevelEnum string

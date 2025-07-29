@@ -323,6 +323,41 @@ CREATE TABLE patreon_tier_subgraphs (
 
   primary key (tier_id, subgraph_id)
 );
+CREATE TABLE boosty_credentials (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  deleted_at datetime,
+  deleted_by integer references admins(user_id) on delete restrict,
+  auth_data text not null, -- json from the site cookie
+  device_id text not null, -- client_id from the site cookie
+  blog_name text not null -- the user page name
+);
+CREATE TABLE boosty_tiers (
+  id integer primary key autoincrement,
+  boosty_id integer not null,
+  created_at datetime not null default current_timestamp,
+  missed_at datetime,
+  name text not null,
+  data text not null
+);
+CREATE TABLE boosty_tier_subgraphs (
+  tier_id integer not null references boosty_tiers(id) on delete cascade,
+  subgraph_id integer not null references subgraphs(id) on delete restrict,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+
+  primary key (tier_id, subgraph_id)
+);
+CREATE TABLE boosty_members (
+  id integer primary key autoincrement,
+  boosty_id integer not null,
+  created_at datetime not null default current_timestamp,
+  missed_at datetime,
+  email text not null,
+  status text not null,
+  data text not null
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -372,4 +407,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250725202000'),
   ('20250727034504'),
   ('20250728130332'),
-  ('20250729014409');
+  ('20250729014409'),
+  ('20250729111321'),
+  ('20250729112136');

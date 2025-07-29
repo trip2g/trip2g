@@ -46,20 +46,20 @@ func Resolve(ctx context.Context, env Env, input Input) (model.RequestEmailSignI
 
 	user, err := env.UserByEmail(ctx, input.Email)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			autoUser, autoErr := env.TryToAutoRegisterUser(ctx, input.Email)
-			if autoErr != nil {
-				return nil, fmt.Errorf("failed to auto-register user: %w", autoErr)
-			}
-
-			if autoUser == nil {
-				return model.NewFieldError("email", "not_found"), nil
-			}
-
-			user = *autoUser
-		} else {
+		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("failed to get user by email: %w", err)
 		}
+
+		autoUser, autoErr := env.TryToAutoRegisterUser(ctx, input.Email)
+		if autoErr != nil {
+			return nil, fmt.Errorf("failed to auto-register user: %w", autoErr)
+		}
+
+		if autoUser == nil {
+			return model.NewFieldError("email", "not_found"), nil
+		}
+
+		user = *autoUser
 	}
 
 	ban, err := env.UserBanByUserID(ctx, user.ID)

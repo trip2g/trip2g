@@ -317,6 +317,51 @@ type AdminPatreonCredentialsConnection @goExtraField(name: "Filter", type: "*tri
   nodes: [AdminPatreonCredentials!]! @goField(forceResolver: true)
 }
 
+type AdminBoostyCredentials @goModel(model: "trip2g/internal/db.BoostyCredential") {
+  id: Int64!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+  deletedAt: Time
+  deletedBy: AdminUser @goField(forceResolver: true)
+  deviceId: String!
+  blogName: String!
+  state: BoostyCredentialsStateEnum!
+  tiers: AdminBoostyTiersConnection!
+  members: AdminBoostyMembersConnection!
+}
+
+type AdminBoostyCredentialsConnection @goExtraField(name: "Filter", type: "*trip2g/internal/graph/model.AdminBoostyCredentialsFilterInput"){
+  nodes: [AdminBoostyCredentials!]! @goField(forceResolver: true)
+}
+
+type AdminBoostyTier @goModel(model: "trip2g/internal/db.BoostyTier") {
+  id: Int64!
+  boostyId: Int64!
+  createdAt: Time!
+  missedAt: Time
+  name: String!
+  data: String!
+  subgraphs: [AdminSubgraph!]! @goField(forceResolver: true)
+}
+
+type AdminBoostyTiersConnection {
+  nodes: [AdminBoostyTier!]! @goField(forceResolver: true)
+}
+
+type AdminBoostyMember @goModel(model: "trip2g/internal/db.BoostyMember") {
+  id: Int64!
+  boostyId: Int64!
+  createdAt: Time!
+  missedAt: Time
+  email: String!
+  status: String!
+  data: String!
+}
+
+type AdminBoostyMembersConnection {
+  nodes: [AdminBoostyMember!]! @goField(forceResolver: true)
+}
+
 type AdminPatreonCampaign @goModel(model: "trip2g/internal/db.PatreonCampaign") {
   id: Int64!
   credentialsID: Int64!
@@ -379,6 +424,15 @@ input AdminPatreonCredentialsFilterInput {
   state: PatreonCredentialsStateEnum
 }
 
+enum BoostyCredentialsStateEnum {
+  ACTIVE
+  DELETED
+}
+
+input AdminBoostyCredentialsFilterInput {
+  state: BoostyCredentialsStateEnum
+}
+
 enum NoteWarningLevelEnum {
   INFO
   WARNING
@@ -411,6 +465,9 @@ type AdminQuery {
 
   allPatreonCredentials(filter: AdminPatreonCredentialsFilterInput): AdminPatreonCredentialsConnection!
   patreonCredentials(id: Int64!): AdminPatreonCredentials
+
+  allBoostyCredentials(filter: AdminBoostyCredentialsFilterInput): AdminBoostyCredentialsConnection!
+  boostyCredentials(id: Int64!): AdminBoostyCredentials
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
 
@@ -1084,6 +1141,84 @@ type SetPatreonTierSubgraphsPayload {
 
 union SetPatreonTierSubgraphsOrErrorPayload = SetPatreonTierSubgraphsPayload | ErrorPayload
 
+#
+# createBoostyCredentials
+#
+
+input CreateBoostyCredentialsInput {
+  authData: String!
+  deviceId: String!
+  blogName: String!
+}
+
+type CreateBoostyCredentialsPayload {
+  boostyCredentials: AdminBoostyCredentials!
+}
+
+union CreateBoostyCredentialsOrErrorPayload = CreateBoostyCredentialsPayload | ErrorPayload
+
+#
+# deleteBoostyCredentials
+#
+
+input DeleteBoostyCredentialsInput {
+  id: Int64!
+}
+
+type DeleteBoostyCredentialsPayload {
+  deletedId: Int64!
+  boostyCredentials: AdminBoostyCredentials! @goField(forceResolver: true)
+}
+
+union DeleteBoostyCredentialsOrErrorPayload = DeleteBoostyCredentialsPayload | ErrorPayload
+
+#
+# restoreBoostyCredentials
+#
+
+input RestoreBoostyCredentialsInput {
+  id: Int64!
+}
+
+type RestoreBoostyCredentialsPayload {
+  boostyCredentials: AdminBoostyCredentials!
+}
+
+union RestoreBoostyCredentialsOrErrorPayload = RestoreBoostyCredentialsPayload | ErrorPayload
+
+#
+# updateBoostyCredentials
+#
+
+input UpdateBoostyCredentialsInput {
+  id: Int64!
+  authData: String
+  deviceId: String
+  blogName: String
+}
+
+type UpdateBoostyCredentialsPayload {
+  boostyCredentials: AdminBoostyCredentials!
+}
+
+union UpdateBoostyCredentialsOrErrorPayload = UpdateBoostyCredentialsPayload | ErrorPayload
+
+#
+# setBoostyTierSubgraphs
+#
+
+input SetBoostyTierSubgraphsInput {
+  tierId: Int64!
+  subgraphIds: [Int64!]!
+}
+
+type SetBoostyTierSubgraphsPayload {
+  tier: AdminBoostyTier!
+  success: Boolean!
+}
+
+union SetBoostyTierSubgraphsOrErrorPayload = SetBoostyTierSubgraphsPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
@@ -1123,4 +1258,11 @@ type AdminMutation {
   restorePatreonCredentials(input: RestorePatreonCredentialsInput!): RestorePatreonCredentialsOrErrorPayload!
   refreshPatreonData(input: RefreshPatreonDataInput!): RefreshPatreonDataOrErrorPayload!
   setPatreonTierSubgraphs(input: SetPatreonTierSubgraphsInput!): SetPatreonTierSubgraphsOrErrorPayload!
+
+  # Boosty credentials mutations
+  createBoostyCredentials(input: CreateBoostyCredentialsInput!): CreateBoostyCredentialsOrErrorPayload!
+  deleteBoostyCredentials(input: DeleteBoostyCredentialsInput!): DeleteBoostyCredentialsOrErrorPayload!
+  restoreBoostyCredentials(input: RestoreBoostyCredentialsInput!): RestoreBoostyCredentialsOrErrorPayload!
+  updateBoostyCredentials(input: UpdateBoostyCredentialsInput!): UpdateBoostyCredentialsOrErrorPayload!
+  setBoostyTierSubgraphs(input: SetBoostyTierSubgraphsInput!): SetBoostyTierSubgraphsOrErrorPayload!
 }
