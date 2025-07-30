@@ -49,6 +49,7 @@ import (
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/case/refreshboostydata"
 	"trip2g/internal/case/refreshpatreondata"
 	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/case/requestemailsignin"
@@ -377,6 +378,16 @@ func (r *adminMutationResolver) RestoreBoostyCredentials(ctx context.Context, ob
 // UpdateBoostyCredentials is the resolver for the updateBoostyCredentials field.
 func (r *adminMutationResolver) UpdateBoostyCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateBoostyCredentialsInput) (model.UpdateBoostyCredentialsOrErrorPayload, error) {
 	return updateboostycredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// RefreshBoostyData is the resolver for the refreshBoostyData field.
+func (r *adminMutationResolver) RefreshBoostyData(ctx context.Context, obj *appmodel.AdminMutation, input model.RefreshBoostyDataInput) (model.RefreshBoostyDataOrErrorPayload, error) {
+	err := refreshboostydata.Resolve(ctx, r.env(ctx), input.CredentialsID)
+	if err != nil {
+		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // the error passed to the ErrorPayload
+	}
+
+	return &model.RefreshBoostyDataPayload{Success: true}, nil
 }
 
 // SetBoostyTierSubgraphs is the resolver for the setBoostyTierSubgraphs field.

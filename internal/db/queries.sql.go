@@ -4003,19 +4003,16 @@ func (q *Queries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminSubgra
 
 const updateBoostyCredentials = `-- name: UpdateBoostyCredentials :one
 update boosty_credentials
-set 
-  auth_data = coalesce(?2, auth_data),
-  device_id = coalesce(?3, device_id),
-  blog_name = coalesce(?4, blog_name)
+set auth_data = ?, device_id = ?, blog_name = ?
 where id = ?
 returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name
 `
 
 type UpdateBoostyCredentialsParams struct {
-	AuthData sql.NullString `json:"auth_data"`
-	DeviceID sql.NullString `json:"device_id"`
-	BlogName sql.NullString `json:"blog_name"`
-	ID       int64          `json:"id"`
+	AuthData string `json:"auth_data"`
+	DeviceID string `json:"device_id"`
+	BlogName string `json:"blog_name"`
+	ID       int64  `json:"id"`
 }
 
 func (q *Queries) UpdateBoostyCredentials(ctx context.Context, arg UpdateBoostyCredentialsParams) (BoostyCredential, error) {

@@ -40,6 +40,7 @@ import (
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/case/refreshboostydata"
 	"trip2g/internal/case/refreshpatreondata"
 	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/case/requestemailsignin"
@@ -162,6 +163,7 @@ type Env interface {
 	deleteboostycredentials.Env
 	restoreboostycredentials.Env
 	updateboostycredentials.Env
+	refreshboostydata.Env
 
 	// Patreon tier queries
 	GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]db.Subgraph, error)

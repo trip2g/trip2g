@@ -55,6 +55,7 @@ namespace $.$$ {
 
 			if( data.state === 'ACTIVE' ) {
 				tools.push( this.DeleteButton() )
+				tools.push( this.RefreshButton() )
 			}
 
 			if( data.state === 'DELETED' ) {

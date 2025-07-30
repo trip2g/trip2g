@@ -8,12 +8,15 @@ import (
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 
+	"trip2g/internal/boosty"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 )
 
 type Env interface {
+	BoostyCredentials(ctx context.Context, id int64) (db.BoostyCredential, error)
 	UpdateBoostyCredentials(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error)
+	BoostyClientByCredentialsID(ctx context.Context, credentialID int64) (boosty.Client, error)
 }
 
 // Input is an alias for UpdateBoostyCredentialsInput for cleaner code.
@@ -39,28 +42,37 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return errPayload, nil // User-visible errors go in ErrorPayload
 	}
 
-	// Check that at least one field is being updated
-	if input.AuthData == nil && input.DeviceID == nil && input.BlogName == nil {
-		return &model.ErrorPayload{Message: "No fields to update"}, nil
+	creds, err := env.BoostyCredentials(ctx, input.ID)
+	if err != nil {
+		if db.IsNoFound(err) {
+			return &model.ErrorPayload{Message: "not found"}, nil
+		}
+
+		return nil, fmt.Errorf("failed to get boosty credentials: %w", err)
 	}
+
+	// Check that at least one field is being updated
+	// if input.AuthData == nil && input.DeviceID == nil && input.BlogName == nil {
+	// 	return &model.ErrorPayload{Message: "No fields to update"}, nil
+	// }
 
 	// Define params as separate variable for cleaner code
 	params := db.UpdateBoostyCredentialsParams{
 		ID:       input.ID,
-		AuthData: sql.NullString{Valid: false},
-		DeviceID: sql.NullString{Valid: false},
-		BlogName: sql.NullString{Valid: false},
+		AuthData: creds.AuthData,
+		DeviceID: creds.DeviceID,
+		BlogName: creds.BlogName,
 	}
 
 	// Set fields only if provided
 	if input.AuthData != nil {
-		params.AuthData = sql.NullString{String: *input.AuthData, Valid: true}
+		params.AuthData = *input.AuthData
 	}
 	if input.DeviceID != nil {
-		params.DeviceID = sql.NullString{String: *input.DeviceID, Valid: true}
+		params.DeviceID = *input.DeviceID
 	}
 	if input.BlogName != nil {
-		params.BlogName = sql.NullString{String: *input.BlogName, Valid: true}
+		params.BlogName = *input.BlogName
 	}
 
 	// Execute database operation
@@ -72,6 +84,18 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		// System errors are returned as error (will show generic message to user)
 		return nil, fmt.Errorf("failed to update boosty credentials: %w", err)
 	}
+
+	client, err := env.BoostyClientByCredentialsID(ctx, credentials.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get boosty client: %w", err)
+	}
+
+	subscribers, err := client.Subscribers()
+	if err != nil {
+		msg := fmt.Sprintf("Failed to fetch subscribers: %v", err)
+		return &model.ErrorPayload{Message: msg}, nil
+	}
+	fmt.Println("subscribers", subscribers)
 
 	// Define payload as separate variable
 	payload := model.UpdateBoostyCredentialsPayload{

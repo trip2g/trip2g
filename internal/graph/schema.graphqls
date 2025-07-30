@@ -1204,6 +1204,20 @@ type UpdateBoostyCredentialsPayload {
 union UpdateBoostyCredentialsOrErrorPayload = UpdateBoostyCredentialsPayload | ErrorPayload
 
 #
+# refreshBoostyData
+#
+
+input RefreshBoostyDataInput {
+  credentialsId: Int64!
+}
+
+type RefreshBoostyDataPayload {
+  success: Boolean!
+}
+
+union RefreshBoostyDataOrErrorPayload = RefreshBoostyDataPayload | ErrorPayload
+
+#
 # setBoostyTierSubgraphs
 #
 
@@ -1264,5 +1278,6 @@ type AdminMutation {
   deleteBoostyCredentials(input: DeleteBoostyCredentialsInput!): DeleteBoostyCredentialsOrErrorPayload!
   restoreBoostyCredentials(input: RestoreBoostyCredentialsInput!): RestoreBoostyCredentialsOrErrorPayload!
   updateBoostyCredentials(input: UpdateBoostyCredentialsInput!): UpdateBoostyCredentialsOrErrorPayload!
+  refreshBoostyData(input: RefreshBoostyDataInput!): RefreshBoostyDataOrErrorPayload!
   setBoostyTierSubgraphs(input: SetBoostyTierSubgraphsInput!): SetBoostyTierSubgraphsOrErrorPayload!
 }

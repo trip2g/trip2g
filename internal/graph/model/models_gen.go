@@ -94,6 +94,10 @@ type PushNotesOrErrorPayload interface {
 	IsPushNotesOrErrorPayload()
 }
 
+type RefreshBoostyDataOrErrorPayload interface {
+	IsRefreshBoostyDataOrErrorPayload()
+}
+
 type RefreshPatreonDataOrErrorPayload interface {
 	IsRefreshPatreonDataOrErrorPayload()
 }
@@ -589,6 +593,8 @@ func (ErrorPayload) IsRestoreBoostyCredentialsOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateBoostyCredentialsOrErrorPayload() {}
 
+func (ErrorPayload) IsRefreshBoostyDataOrErrorPayload() {}
+
 func (ErrorPayload) IsSetBoostyTierSubgraphsOrErrorPayload() {}
 
 type FieldMessage struct {
@@ -660,6 +666,16 @@ type PushedNoteAsset struct {
 
 type Query struct {
 }
+
+type RefreshBoostyDataInput struct {
+	CredentialsID int64 `json:"credentialsId"`
+}
+
+type RefreshBoostyDataPayload struct {
+	Success bool `json:"success"`
+}
+
+func (RefreshBoostyDataPayload) IsRefreshBoostyDataOrErrorPayload() {}
 
 type RefreshPatreonDataInput struct {
 	CredentialsID int64 `json:"credentialsId"`

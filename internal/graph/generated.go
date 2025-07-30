@@ -222,6 +222,7 @@ type ComplexityRoot struct {
 		DeleteRedirect               func(childComplexity int, input model.DeleteRedirectInput) int
 		DisableAPIKey                func(childComplexity int, input model.DisableAPIKeyInput) int
 		MakeReleaseLive              func(childComplexity int, input model.MakeReleaseLiveInput) int
+		RefreshBoostyData            func(childComplexity int, input model.RefreshBoostyDataInput) int
 		RefreshPatreonData           func(childComplexity int, input model.RefreshPatreonDataInput) int
 		RemoveTgChatSubgraphAccess   func(childComplexity int, input model.RemoveTgChatSubgraphAccessInput) int
 		ResetNotFoundPath            func(childComplexity int, input model.ResetNotFoundPathInput) int
@@ -684,6 +685,10 @@ type ComplexityRoot struct {
 		Viewer    func(childComplexity int) int
 	}
 
+	RefreshBoostyDataPayload struct {
+		Success func(childComplexity int) int
+	}
+
 	RefreshPatreonDataPayload struct {
 		Success func(childComplexity int) int
 	}
@@ -895,6 +900,7 @@ type AdminMutationResolver interface {
 	DeleteBoostyCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeleteBoostyCredentialsInput) (model.DeleteBoostyCredentialsOrErrorPayload, error)
 	RestoreBoostyCredentials(ctx context.Context, obj *model1.AdminMutation, input model.RestoreBoostyCredentialsInput) (model.RestoreBoostyCredentialsOrErrorPayload, error)
 	UpdateBoostyCredentials(ctx context.Context, obj *model1.AdminMutation, input model.UpdateBoostyCredentialsInput) (model.UpdateBoostyCredentialsOrErrorPayload, error)
+	RefreshBoostyData(ctx context.Context, obj *model1.AdminMutation, input model.RefreshBoostyDataInput) (model.RefreshBoostyDataOrErrorPayload, error)
 	SetBoostyTierSubgraphs(ctx context.Context, obj *model1.AdminMutation, input model.SetBoostyTierSubgraphsInput) (model.SetBoostyTierSubgraphsOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
@@ -1679,6 +1685,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.MakeReleaseLive(childComplexity, args["input"].(model.MakeReleaseLiveInput)), true
+
+	case "AdminMutation.refreshBoostyData":
+		if e.complexity.AdminMutation.RefreshBoostyData == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_refreshBoostyData_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.RefreshBoostyData(childComplexity, args["input"].(model.RefreshBoostyDataInput)), true
 
 	case "AdminMutation.refreshPatreonData":
 		if e.complexity.AdminMutation.RefreshPatreonData == nil {
@@ -3672,6 +3690,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Viewer(childComplexity), true
 
+	case "RefreshBoostyDataPayload.success":
+		if e.complexity.RefreshBoostyDataPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.RefreshBoostyDataPayload.Success(childComplexity), true
+
 	case "RefreshPatreonDataPayload.success":
 		if e.complexity.RefreshPatreonDataPayload.Success == nil {
 			break
@@ -4050,6 +4075,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNoteInput,
 		ec.unmarshalInputPushNoteInput,
 		ec.unmarshalInputPushNotesInput,
+		ec.unmarshalInputRefreshBoostyDataInput,
 		ec.unmarshalInputRefreshPatreonDataInput,
 		ec.unmarshalInputRemoveTgChatSubgraphAccessInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
@@ -4552,6 +4578,29 @@ func (ec *executionContext) field_AdminMutation_makeReleaseLive_argsInput(
 	}
 
 	var zeroVal model.MakeReleaseLiveInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_refreshBoostyData_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_refreshBoostyData_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_refreshBoostyData_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.RefreshBoostyDataInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRefreshBoostyDataInput2trip2gᚋinternalᚋgraphᚋmodelᚐRefreshBoostyDataInput(ctx, tmp)
+	}
+
+	var zeroVal model.RefreshBoostyDataInput
 	return zeroVal, nil
 }
 
@@ -9539,6 +9588,61 @@ func (ec *executionContext) fieldContext_AdminMutation_updateBoostyCredentials(c
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_updateBoostyCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_refreshBoostyData(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_refreshBoostyData(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().RefreshBoostyData(rctx, obj, fc.Args["input"].(model.RefreshBoostyDataInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.RefreshBoostyDataOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNRefreshBoostyDataOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRefreshBoostyDataOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_refreshBoostyData(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RefreshBoostyDataOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_refreshBoostyData_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -19597,6 +19701,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_restoreBoostyCredentials(ctx, field)
 			case "updateBoostyCredentials":
 				return ec.fieldContext_AdminMutation_updateBoostyCredentials(ctx, field)
+			case "refreshBoostyData":
+				return ec.fieldContext_AdminMutation_refreshBoostyData(ctx, field)
 			case "setBoostyTierSubgraphs":
 				return ec.fieldContext_AdminMutation_setBoostyTierSubgraphs(ctx, field)
 			}
@@ -21652,6 +21758,50 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RefreshBoostyDataPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.RefreshBoostyDataPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RefreshBoostyDataPayload_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RefreshBoostyDataPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RefreshBoostyDataPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -26959,6 +27109,33 @@ func (ec *executionContext) unmarshalInputPushNotesInput(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputRefreshBoostyDataInput(ctx context.Context, obj any) (model.RefreshBoostyDataInput, error) {
+	var it model.RefreshBoostyDataInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"credentialsId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "credentialsId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialsId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialsID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRefreshPatreonDataInput(ctx context.Context, obj any) (model.RefreshPatreonDataInput, error) {
 	var it model.RefreshPatreonDataInput
 	asMap := map[string]any{}
@@ -28167,6 +28344,29 @@ func (ec *executionContext) _PushNotesOrErrorPayload(ctx context.Context, sel as
 			return graphql.Null
 		}
 		return ec._PushNotesPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _RefreshBoostyDataOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RefreshBoostyDataOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RefreshBoostyDataPayload:
+		return ec._RefreshBoostyDataPayload(ctx, sel, &obj)
+	case *model.RefreshBoostyDataPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RefreshBoostyDataPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -31168,6 +31368,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_updateBoostyCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "refreshBoostyData":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_refreshBoostyData(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -36792,7 +37028,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -38092,6 +38328,45 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var refreshBoostyDataPayloadImplementors = []string{"RefreshBoostyDataPayload", "RefreshBoostyDataOrErrorPayload"}
+
+func (ec *executionContext) _RefreshBoostyDataPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RefreshBoostyDataPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, refreshBoostyDataPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RefreshBoostyDataPayload")
+		case "success":
+			out.Values[i] = ec._RefreshBoostyDataPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -42556,6 +42831,21 @@ func (ec *executionContext) marshalNPushedNoteAsset2ᚕtrip2gᚋinternalᚋgraph
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNRefreshBoostyDataInput2trip2gᚋinternalᚋgraphᚋmodelᚐRefreshBoostyDataInput(ctx context.Context, v any) (model.RefreshBoostyDataInput, error) {
+	res, err := ec.unmarshalInputRefreshBoostyDataInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRefreshBoostyDataOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRefreshBoostyDataOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RefreshBoostyDataOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RefreshBoostyDataOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNRefreshPatreonDataInput2trip2gᚋinternalᚋgraphᚋmodelᚐRefreshPatreonDataInput(ctx context.Context, v any) (model.RefreshPatreonDataInput, error) {

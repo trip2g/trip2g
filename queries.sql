@@ -895,10 +895,7 @@ returning *;
 
 -- name: UpdateBoostyCredentials :one
 update boosty_credentials
-set 
-  auth_data = coalesce(sqlc.narg('auth_data'), auth_data),
-  device_id = coalesce(sqlc.narg('device_id'), device_id),
-  blog_name = coalesce(sqlc.narg('blog_name'), blog_name)
+set auth_data = ?, device_id = ?, blog_name = ?
 where id = ?
 returning *;
 

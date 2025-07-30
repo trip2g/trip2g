@@ -25,6 +25,7 @@ import (
 	"trip2g/internal/acmecache"
 	"trip2g/internal/appconfig"
 	"trip2g/internal/appreq"
+	"trip2g/internal/boosty"
 	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/signinbypurchasetoken"
@@ -106,6 +107,7 @@ type app struct {
 	latestNoteLoader *noteloader.Loader
 
 	patreonClientManager *patreon.ClientManager
+	boostyClientManager  *boosty.ClientManager
 }
 
 func main() {
@@ -180,6 +182,8 @@ func main() {
 
 		patreonClientManager: patreon.NewClientManager(),
 	}
+
+	a.boostyClientManager = boosty.NewClientManager(a)
 
 	a.PatreonJobs, err = patreonjobs.New(ctx, a)
 	if err != nil {
@@ -352,6 +356,21 @@ func (a *app) PatreonDeleteWebhook(webhookID string) error {
 	}
 
 	return client.DeleteWebhook(webhookID)
+}
+
+func (a *app) UpdateBoostyCredentials(ctx context.Context, args db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
+	a.boostyClientManager.Reset(ctx, args.ID)
+
+	return a.Queries.UpdateBoostyCredentials(ctx, args)
+}
+
+func (a *app) BoostyClientByCredentialsID(ctx context.Context, credentialID int64) (boosty.Client, error) {
+	env, err := getEnvOrDefault[boosty.ClientManagerEnv](ctx, a)
+	if err != nil {
+		return nil, err
+	}
+
+	return a.boostyClientManager.Get(ctx, env, credentialID)
 }
 
 func (a *app) SendMail(ctx context.Context, data model.Mail) error {
@@ -1187,4 +1206,31 @@ func (a *app) startACMEServer(s *fasthttp.Server) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// getEnvOrDefault retrieves the environment from the request context or returns a default environment.
+// the context from the request wrapped all queries in a transaction.
+func getEnvOrDefault[T any](ctx context.Context, defaultEnv *app) (T, error) {
+	var zero T
+
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		if errors.Is(err, appreq.ErrNotFound) {
+			env, ok := any(defaultEnv).(T)
+			if ok {
+				return env, nil
+			}
+
+			return zero, fmt.Errorf("app does not implement required type: %T", zero)
+		}
+
+		return zero, fmt.Errorf("failed to get request from context: %w", err)
+	}
+
+	env, ok := req.Env.(T)
+	if ok {
+		return env, nil
+	}
+
+	return zero, fmt.Errorf("request env does not implement required type: %T", zero)
 }

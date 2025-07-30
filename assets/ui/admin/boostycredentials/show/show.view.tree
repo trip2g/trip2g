@@ -6,6 +6,8 @@ $trip2g_admin_boostycredentials_show $mol_page
 			credentials_id <= credentials_id
 		<= RestoreButton $trip2g_admin_boostycredentials_button_restore
 			credentials_id <= credentials_id
+		<= RefreshButton $trip2g_admin_boostycredentials_button_refresh
+			credentials_id <= credentials_id
 	body /
 		<= CredentialsDetails $mol_view
 			sub /
