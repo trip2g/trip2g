@@ -10,6 +10,8 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+//go:generate go tool github.com/matryer/moq -out mocks.go . Client
+
 const baseURL = "https://api.boosty.to/v1"
 
 type AuthData struct {

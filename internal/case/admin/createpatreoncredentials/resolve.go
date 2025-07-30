@@ -6,18 +6,19 @@ import (
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 
+	"trip2g/internal/case/refreshpatreondata"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
-	"trip2g/internal/patreon"
 	"trip2g/internal/usertoken"
 )
 
 type Env interface {
 	InsertPatreonCredentials(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error)
 	UpsertPatreonCampaign(ctx context.Context, arg db.UpsertPatreonCampaignParams) error
-	PatreonListCampaigns(token string) ([]patreon.Campaign, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	StartPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64) error
+
+	refreshpatreondata.Env
 }
 
 // Input is an alias for CreatePatreonCredentialsInput for cleaner code.
@@ -45,13 +46,6 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get current admin user token: %w", err)
 	}
 
-	// Fetch campaigns from Patreon before creating credentials
-	campaigns, err := env.PatreonListCampaigns(input.CreatorAccessToken)
-	if err != nil {
-		// Return Patreon API errors as user-visible errors
-		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to fetch campaigns from Patreon: %v", err)}, nil
-	}
-
 	// Define params as separate variable for cleaner code
 	params := db.InsertPatreonCredentialsParams{
 		CreatedBy:          int64(token.ID),
@@ -68,20 +62,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to insert patreon credentials: %w", err)
 	}
 
-	// Save campaigns after creating credentials
-	for _, campaign := range campaigns {
-		// Save campaign with attributes
-		campaignAttrs, _ := campaign.Attributes.MarshalJSON()
-		campaignParams := db.UpsertPatreonCampaignParams{
-			CredentialsID: credentials.ID,
-			CampaignID:    campaign.ID,
-			Attributes:    string(campaignAttrs),
-		}
-
-		err = env.UpsertPatreonCampaign(ctx, campaignParams)
-		if err != nil {
-			return nil, fmt.Errorf("failed to save campaign %s: %w", campaign.ID, err)
-		}
+	err = refreshpatreondata.Resolve(ctx, env, &credentials.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to refresh Patreon data: %w", err)
 	}
 
 	err = env.StartPatreonRefreshBackgroundJob(ctx, credentials.ID)

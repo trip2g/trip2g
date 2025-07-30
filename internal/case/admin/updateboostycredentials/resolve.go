@@ -90,12 +90,11 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get boosty client: %w", err)
 	}
 
-	subscribers, err := client.Subscribers()
+	_, err = client.Subscribers()
 	if err != nil {
 		msg := fmt.Sprintf("Failed to fetch subscribers: %v", err)
 		return &model.ErrorPayload{Message: msg}, nil
 	}
-	fmt.Println("subscribers", subscribers)
 
 	// Define payload as separate variable
 	payload := model.UpdateBoostyCredentialsPayload{

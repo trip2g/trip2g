@@ -20,10 +20,7 @@ type Env interface {
 	UpdatePatreonCredentialsWebhookSecret(ctx context.Context, arg db.UpdatePatreonCredentialsWebhookSecretParams) error
 	ClearPatreonCredentialsWebhookSecret(ctx context.Context, id int64) error
 
-	PatreonListCampaigns(token string) ([]patreon.Campaign, error)
-	PatreonCreateWebhook(campaignID string, webhookURL string, triggers []string) (*patreon.Webhook, error)
-	PatreonListWebhooks() ([]patreon.Webhook, error)
-	PatreonDeleteWebhook(webhookID string) error
+	PatreonClientByID(ctx context.Context, credentialsID int64) (patreon.Client, error)
 
 	refreshpatreondata.Env
 }
@@ -41,19 +38,17 @@ func New(ctx context.Context, env Env) (*PatreonJobs, error) {
 		cancelMap: make(map[int64]context.CancelFunc),
 	}
 
-	// Register webhooks if public URL is configured
-	err := io.RegisterWebhook(ctx)
-	if err != nil {
-		env.Logger().Error("failed to register webhooks", "error", err)
-		// Don't fail the initialization if webhook registration fails
-	}
-
 	credentials, err := env.AllActivePatreonCredentials(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all active Patreon credentials: %w", err)
 	}
 
 	for _, cred := range credentials {
+		err := io.RegisterWebhook(ctx, cred.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to register webhooks: %w", err)
+		}
+
 		startErr := io.StartPatreonRefreshBackgroundJob(ctx, cred.ID)
 		if startErr != nil {
 			return nil, fmt.Errorf("failed to start Patreon refresh background job for credentials ID %d: %w", cred.ID, startErr)
@@ -63,17 +58,14 @@ func New(ctx context.Context, env Env) (*PatreonJobs, error) {
 	return &io, nil
 }
 
-func (io *PatreonJobs) Stop() {
-	// Unregister webhooks
-	ctx := context.Background()
-	err := io.UnregisterWebhook(ctx)
-	if err != nil {
-		io.env.Logger().Error("failed to unregister webhooks", "error", err)
-	}
-
-	// Stop all background jobs
-	for _, cancel := range io.cancelMap {
+func (io *PatreonJobs) Stop(ctx context.Context) {
+	for id, cancel := range io.cancelMap {
 		cancel()
+
+		err := io.UnregisterWebhook(ctx, id)
+		if err != nil {
+			io.env.Logger().Error("failed to unregister webhooks", "error", err)
+		}
 	}
 }
 
@@ -148,12 +140,17 @@ func (io *PatreonJobs) StopPatreonRefreshBackgroundJob(ctx context.Context, cred
 	return nil
 }
 
-func (io *PatreonJobs) RegisterWebhook(ctx context.Context) error {
+func (io *PatreonJobs) RegisterWebhook(ctx context.Context, credentialsID int64) error {
 	if !io.withWebhooks() {
 		return nil
 	}
 
 	publicURL := io.env.PublicURL()
+
+	client, err := io.env.PatreonClientByID(ctx, credentialsID)
+	if err != nil {
+		return fmt.Errorf("failed to get Patreon client: %w", err)
+	}
 
 	credentials, err := io.env.AllActivePatreonCredentials(ctx)
 	if err != nil {
@@ -166,39 +163,38 @@ func (io *PatreonJobs) RegisterWebhook(ctx context.Context) error {
 			continue
 		}
 
-		registerErr := io.registerWebhookForCredentials(ctx, cred, publicURL)
+		registerErr := io.registerWebhookForCredentials(ctx, credentialsID, publicURL, client)
 		if registerErr != nil {
-			io.env.Logger().Error("failed to register webhook for credentials", "credentialsID", cred.ID, "error", registerErr)
-			// Continue with other credentials even if one fails
+			return fmt.Errorf("failed to register webhook for credentials ID %d: %w", cred.ID, registerErr)
 		}
 	}
 
 	return nil
 }
 
-func (io *PatreonJobs) registerWebhookForCredentials(ctx context.Context, cred db.PatreonCredential, publicURL string) error {
+func (io *PatreonJobs) registerWebhookForCredentials(ctx context.Context, credID int64, publicURL string, client patreon.Client) error {
 	// Get campaigns for this credential
-	campaigns, err := io.env.PatreonListCampaigns(cred.CreatorAccessToken)
+	campaigns, err := client.ListCampaigns()
 	if err != nil {
 		return fmt.Errorf("failed to list campaigns: %w", err)
 	}
 
 	if len(campaigns) == 0 {
-		io.env.Logger().Warn("no campaigns found for credentials", "credentialsID", cred.ID)
+		io.env.Logger().Warn("no campaigns found for credentials", "credentialsID", credID)
 		return nil
 	}
 
 	// Use the first campaign (creators typically have one main campaign)
 	campaign := campaigns[0]
 
-	webhookURL := fmt.Sprintf("%s/api/patreon/webhook?credential_id=%d", publicURL, cred.ID)
+	webhookURL := fmt.Sprintf("%s/api/patreon/webhook?credential_id=%d", publicURL, credID)
 	triggers := []string{
 		"members:create",
 		"members:update",
 		"members:delete",
 	}
 
-	webhook, err := io.env.PatreonCreateWebhook(campaign.ID, webhookURL, triggers)
+	webhook, err := client.CreateWebhook(campaign.ID, webhookURL, triggers)
 	if err != nil {
 		return fmt.Errorf("failed to create webhook: %w", err)
 	}
@@ -206,7 +202,7 @@ func (io *PatreonJobs) registerWebhookForCredentials(ctx context.Context, cred d
 	// Save the webhook secret to the database
 	params := db.UpdatePatreonCredentialsWebhookSecretParams{
 		WebhookSecret: sql.NullString{String: webhook.Attributes.Secret, Valid: true},
-		ID:            cred.ID,
+		ID:            credID,
 	}
 
 	err = io.env.UpdatePatreonCredentialsWebhookSecret(ctx, params)
@@ -215,7 +211,7 @@ func (io *PatreonJobs) registerWebhookForCredentials(ctx context.Context, cred d
 	}
 
 	io.env.Logger().Info("webhook registered successfully",
-		"credentialsID", cred.ID,
+		"credentialsID", credID,
 		"campaignID", campaign.ID,
 		"webhookURL", webhookURL,
 	)
@@ -223,15 +219,20 @@ func (io *PatreonJobs) registerWebhookForCredentials(ctx context.Context, cred d
 	return nil
 }
 
-func (io *PatreonJobs) UnregisterWebhook(ctx context.Context) error {
+func (io *PatreonJobs) UnregisterWebhook(ctx context.Context, credentialsID int64) error {
 	if !io.withWebhooks() {
 		return nil
 	}
 
 	publicURL := io.env.PublicURL()
 
+	client, err := io.env.PatreonClientByID(ctx, 0)
+	if err != nil {
+		return fmt.Errorf("failed to get Patreon client: %w", err)
+	}
+
 	// List all existing webhooks and delete only ones matching our public URL
-	webhooks, err := io.env.PatreonListWebhooks()
+	webhooks, err := client.ListWebhooks()
 	if err != nil {
 		return fmt.Errorf("failed to list webhooks: %w", err)
 	}
@@ -245,7 +246,7 @@ func (io *PatreonJobs) UnregisterWebhook(ctx context.Context) error {
 		}
 
 		if webhook.Attributes.URI[:len(expectedURLPrefix)] == expectedURLPrefix {
-			deleteErr := io.env.PatreonDeleteWebhook(webhook.ID)
+			deleteErr := client.DeleteWebhook(webhook.ID)
 			if deleteErr != nil {
 				io.env.Logger().Error("failed to delete webhook", "webhookID", webhook.ID, "error", deleteErr)
 				// Continue with other webhooks even if one fails
@@ -284,14 +285,13 @@ func (io *PatreonJobs) registerWebhookForCredentialID(ctx context.Context, crede
 
 	publicURL := io.env.PublicURL()
 
-	// Get the credential to access the token
-	credential, err := io.env.PatreonCredentials(ctx, credentialID)
+	client, err := io.env.PatreonClientByID(ctx, credentialID)
 	if err != nil {
-		return fmt.Errorf("failed to get patreon credentials: %w", err)
+		return fmt.Errorf("failed to get Patreon client for credential ID %d: %w", credentialID, err)
 	}
 
 	// Check if webhook already exists via API (don't trust database)
-	webhooks, err := io.env.PatreonListWebhooks()
+	webhooks, err := client.ListWebhooks()
 	if err != nil {
 		return fmt.Errorf("failed to list existing webhooks: %w", err)
 	}
@@ -301,23 +301,22 @@ func (io *PatreonJobs) registerWebhookForCredentialID(ctx context.Context, crede
 		if webhook.Attributes.URI == expectedURL {
 			io.env.Logger().Info("webhook already exists for credential", "credentialID", credentialID, "webhookID", webhook.ID)
 
-			// Update database with the webhook secret if it's missing
-			if !credential.WebhookSecret.Valid || credential.WebhookSecret.String == "" {
-				params := db.UpdatePatreonCredentialsWebhookSecretParams{
-					WebhookSecret: sql.NullString{String: webhook.Attributes.Secret, Valid: true},
-					ID:            credentialID,
-				}
-				updateErr := io.env.UpdatePatreonCredentialsWebhookSecret(ctx, params)
-				if updateErr != nil {
-					io.env.Logger().Error("failed to update webhook secret in database", "credentialID", credentialID, "error", updateErr)
-				}
+			params := db.UpdatePatreonCredentialsWebhookSecretParams{
+				WebhookSecret: sql.NullString{String: webhook.Attributes.Secret, Valid: true},
+				ID:            credentialID,
 			}
+
+			updateErr := io.env.UpdatePatreonCredentialsWebhookSecret(ctx, params)
+			if updateErr != nil {
+				io.env.Logger().Error("failed to update webhook secret in database", "credentialID", credentialID, "error", updateErr)
+			}
+
 			return nil
 		}
 	}
 
 	// Register the webhook using the existing logic
-	return io.registerWebhookForCredentials(ctx, credential, publicURL)
+	return io.registerWebhookForCredentials(ctx, credentialID, publicURL, client)
 }
 
 func (io *PatreonJobs) unregisterWebhookForCredentialID(ctx context.Context, credentialID int64) error {
@@ -327,8 +326,13 @@ func (io *PatreonJobs) unregisterWebhookForCredentialID(ctx context.Context, cre
 
 	publicURL := io.env.PublicURL()
 
+	client, err := io.env.PatreonClientByID(ctx, credentialID)
+	if err != nil {
+		return fmt.Errorf("failed to get Patreon client for credential ID %d: %w", credentialID, err)
+	}
+
 	// List all webhooks and find the one matching this credential
-	webhooks, err := io.env.PatreonListWebhooks()
+	webhooks, err := client.ListWebhooks()
 	if err != nil {
 		return fmt.Errorf("failed to list webhooks: %w", err)
 	}
@@ -337,7 +341,7 @@ func (io *PatreonJobs) unregisterWebhookForCredentialID(ctx context.Context, cre
 
 	for _, webhook := range webhooks {
 		if webhook.Attributes.URI == expectedURL {
-			deleteErr := io.env.PatreonDeleteWebhook(webhook.ID)
+			deleteErr := client.DeleteWebhook(webhook.ID)
 			if deleteErr != nil {
 				io.env.Logger().Error("failed to delete webhook", "webhookID", webhook.ID, "error", deleteErr)
 				// Continue to clear the secret even if deletion fails

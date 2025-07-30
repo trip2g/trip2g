@@ -335,11 +335,14 @@ CREATE TABLE boosty_credentials (
 );
 CREATE TABLE boosty_tiers (
   id integer primary key autoincrement,
+  credentials_id integer not null references boosty_credentials(id) on delete restrict,
   boosty_id integer not null,
   created_at datetime not null default current_timestamp,
   missed_at datetime,
   name text not null,
-  data text not null
+  data text not null,
+
+  unique (credentials_id, boosty_id)
 );
 CREATE TABLE boosty_tier_subgraphs (
   tier_id integer not null references boosty_tiers(id) on delete cascade,
@@ -351,12 +354,15 @@ CREATE TABLE boosty_tier_subgraphs (
 );
 CREATE TABLE boosty_members (
   id integer primary key autoincrement,
+  credentials_id integer not null references boosty_credentials(id) on delete restrict,
   boosty_id integer not null,
   created_at datetime not null default current_timestamp,
   missed_at datetime,
   email text not null,
   status text not null,
-  data text not null
+  data text not null,
+
+  unique (credentials_id, boosty_id)
 );
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES

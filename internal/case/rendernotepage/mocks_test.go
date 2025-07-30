@@ -31,7 +31,7 @@ var _ rendernotepage.Env = &EnvMock{}
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
-//			ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
+//			ListActivePatreonSubgraphNamesByUserIDFunc: func(ctx context.Context, id int64) ([]string, error) {
 //				panic("mock out the ListActivePatreonSubgraphNamesByUserID method")
 //			},
 //			ListActiveSubgraphNamesByUserIDFunc: func(ctx context.Context, userID int64) ([]string, error) {
@@ -66,7 +66,7 @@ type EnvMock struct {
 	LatestNoteViewsFunc func() *model.NoteViews
 
 	// ListActivePatreonSubgraphNamesByUserIDFunc mocks the ListActivePatreonSubgraphNamesByUserID method.
-	ListActivePatreonSubgraphNamesByUserIDFunc func(ctx context.Context, userID int64) ([]string, error)
+	ListActivePatreonSubgraphNamesByUserIDFunc func(ctx context.Context, id int64) ([]string, error)
 
 	// ListActiveSubgraphNamesByUserIDFunc mocks the ListActiveSubgraphNamesByUserID method.
 	ListActiveSubgraphNamesByUserIDFunc func(ctx context.Context, userID int64) ([]string, error)
@@ -106,8 +106,8 @@ type EnvMock struct {
 		ListActivePatreonSubgraphNamesByUserID []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// UserID is the userID argument value.
-			UserID int64
+			// ID is the id argument value.
+			ID int64
 		}
 		// ListActiveSubgraphNamesByUserID holds details about calls to the ListActiveSubgraphNamesByUserID method.
 		ListActiveSubgraphNamesByUserID []struct {
@@ -248,21 +248,21 @@ func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 }
 
 // ListActivePatreonSubgraphNamesByUserID calls ListActivePatreonSubgraphNamesByUserIDFunc.
-func (mock *EnvMock) ListActivePatreonSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error) {
+func (mock *EnvMock) ListActivePatreonSubgraphNamesByUserID(ctx context.Context, id int64) ([]string, error) {
 	if mock.ListActivePatreonSubgraphNamesByUserIDFunc == nil {
 		panic("EnvMock.ListActivePatreonSubgraphNamesByUserIDFunc: method is nil but Env.ListActivePatreonSubgraphNamesByUserID was just called")
 	}
 	callInfo := struct {
-		Ctx    context.Context
-		UserID int64
+		Ctx context.Context
+		ID  int64
 	}{
-		Ctx:    ctx,
-		UserID: userID,
+		Ctx: ctx,
+		ID:  id,
 	}
 	mock.lockListActivePatreonSubgraphNamesByUserID.Lock()
 	mock.calls.ListActivePatreonSubgraphNamesByUserID = append(mock.calls.ListActivePatreonSubgraphNamesByUserID, callInfo)
 	mock.lockListActivePatreonSubgraphNamesByUserID.Unlock()
-	return mock.ListActivePatreonSubgraphNamesByUserIDFunc(ctx, userID)
+	return mock.ListActivePatreonSubgraphNamesByUserIDFunc(ctx, id)
 }
 
 // ListActivePatreonSubgraphNamesByUserIDCalls gets all the calls that were made to ListActivePatreonSubgraphNamesByUserID.
@@ -270,12 +270,12 @@ func (mock *EnvMock) ListActivePatreonSubgraphNamesByUserID(ctx context.Context,
 //
 //	len(mockedEnv.ListActivePatreonSubgraphNamesByUserIDCalls())
 func (mock *EnvMock) ListActivePatreonSubgraphNamesByUserIDCalls() []struct {
-	Ctx    context.Context
-	UserID int64
+	Ctx context.Context
+	ID  int64
 } {
 	var calls []struct {
-		Ctx    context.Context
-		UserID int64
+		Ctx context.Context
+		ID  int64
 	}
 	mock.lockListActivePatreonSubgraphNamesByUserID.RLock()
 	calls = mock.calls.ListActivePatreonSubgraphNamesByUserID

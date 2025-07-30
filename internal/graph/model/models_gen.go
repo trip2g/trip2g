@@ -672,7 +672,9 @@ type RefreshBoostyDataInput struct {
 }
 
 type RefreshBoostyDataPayload struct {
-	Success bool `json:"success"`
+	Success       bool                 `json:"success"`
+	CredentialsID int64                `json:"credentialsID"`
+	Credentials   *db.BoostyCredential `json:"credentials"`
 }
 
 func (RefreshBoostyDataPayload) IsRefreshBoostyDataOrErrorPayload() {}
@@ -682,7 +684,9 @@ type RefreshPatreonDataInput struct {
 }
 
 type RefreshPatreonDataPayload struct {
-	Success bool `json:"success"`
+	Success       bool                  `json:"success"`
+	CredentialsID int64                 `json:"credentialsID"`
+	Credentials   *db.PatreonCredential `json:"credentials"`
 }
 
 func (RefreshPatreonDataPayload) IsRefreshPatreonDataOrErrorPayload() {}

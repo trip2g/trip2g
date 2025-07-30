@@ -906,15 +906,16 @@ select * from boosty_tiers
 order by created_at;
 
 -- name: InsertBoostyTier :exec
-insert into boosty_tiers (boosty_id, name, data)
-values (?, ?, ?);
+insert into boosty_tiers (credentials_id, boosty_id, name, data)
+values (?, ?, ?, ?);
 
 -- name: UpsertBoostyTier :exec
-insert into boosty_tiers (boosty_id, name, data)
-values (?, ?, ?)
-on conflict(boosty_id) do update set
+insert into boosty_tiers (credentials_id, boosty_id, name, data)
+values (?, ?, ?, ?)
+on conflict(credentials_id, boosty_id) do update set
   name = excluded.name,
-  data = excluded.data;
+  data = excluded.data,
+  missed_at = null;
 
 -- Boosty tier subgraphs
 
@@ -942,12 +943,31 @@ insert into boosty_members (boosty_id, email, status, data)
 values (?, ?, ?, ?);
 
 -- name: UpsertBoostyMember :exec
-insert into boosty_members (boosty_id, email, status, data)
-values (?, ?, ?, ?)
-on conflict(boosty_id) do update set
+insert into boosty_members (credentials_id, boosty_id, email, status, data)
+values (?, ?, ?, ?, ?)
+on conflict(credentials_id, boosty_id) do update set
   email = excluded.email,
   status = excluded.status,
-  data = excluded.data;
+  data = excluded.data,
+  missed_at = null;
+
+-- name: MarkBoostyMembersAsMissed :exec
+update boosty_members
+set missed_at = datetime('now')
+where missed_at is null
+  and boosty_id not in (sqlc.slice('boosty_ids'));
+
+-- name: MarkBoostyTiersAsMissed :exec
+update boosty_tiers
+set missed_at = datetime('now')
+where credentials_id = ?
+  and missed_at is null
+  and boosty_id not in (sqlc.slice('boosty_ids'));
+
+-- name: GetBoostyTierByBoostyID :one
+select * from boosty_tiers
+where boosty_id = ?
+limit 1;
 
 -- name: MarkPatreonMembersAsMissed :exec
 update patreon_members

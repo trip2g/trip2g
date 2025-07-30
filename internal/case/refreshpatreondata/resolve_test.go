@@ -14,6 +14,50 @@ import (
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
+// mockPatreonClient is a mock implementation of patreon.Client
+type mockPatreonClient struct {
+	listCampaignsFunc func() ([]patreon.Campaign, error)
+	listPatronsFunc   func(campaignID string, nextPageURL ...string) (*patreon.PatronsResponse, error)
+	listWebhooksFunc  func() ([]patreon.Webhook, error)
+	createWebhookFunc func(campaignID string, webhookURL string, triggers []string) (*patreon.Webhook, error)
+	deleteWebhookFunc func(webhookID string) error
+}
+
+func (m *mockPatreonClient) ListCampaigns() ([]patreon.Campaign, error) {
+	if m.listCampaignsFunc != nil {
+		return m.listCampaignsFunc()
+	}
+	return nil, nil
+}
+
+func (m *mockPatreonClient) ListPatrons(campaignID string, nextPageURL ...string) (*patreon.PatronsResponse, error) {
+	if m.listPatronsFunc != nil {
+		return m.listPatronsFunc(campaignID, nextPageURL...)
+	}
+	return nil, nil
+}
+
+func (m *mockPatreonClient) ListWebhooks() ([]patreon.Webhook, error) {
+	if m.listWebhooksFunc != nil {
+		return m.listWebhooksFunc()
+	}
+	return nil, nil
+}
+
+func (m *mockPatreonClient) CreateWebhook(campaignID string, webhookURL string, triggers []string) (*patreon.Webhook, error) {
+	if m.createWebhookFunc != nil {
+		return m.createWebhookFunc(campaignID, webhookURL, triggers)
+	}
+	return nil, nil
+}
+
+func (m *mockPatreonClient) DeleteWebhook(webhookID string) error {
+	if m.deleteWebhookFunc != nil {
+		return m.deleteWebhookFunc(webhookID)
+	}
+	return nil
+}
+
 func TestSyncTiers(t *testing.T) {
 	// Load test campaign data
 	campaignData, err := os.ReadFile("test_list_campaigns.json")
@@ -121,9 +165,16 @@ func TestSyncMembers(t *testing.T) {
 		return nil
 	}
 
-	// Mock PatreonListPatrons to return test data
-	mockEnv.PatreonListPatronsFunc = func(token string, campaignID string) (*patreon.PatronsResponse, error) {
-		return &patronsResp, nil
+	// Create a mock Patreon client
+	mockPatreonClient := &mockPatreonClient{
+		listPatronsFunc: func(campaignID string, nextPageURL ...string) (*patreon.PatronsResponse, error) {
+			return &patronsResp, nil
+		},
+	}
+
+	// Mock PatreonClientByID to return our mock client
+	mockEnv.PatreonClientByIDFunc = func(ctx context.Context, credentialsID int64) (patreon.Client, error) {
+		return mockPatreonClient, nil
 	}
 
 	// Test syncMembers
@@ -158,9 +209,16 @@ func TestSyncCampaigns(t *testing.T) {
 		CreatorAccessToken: "test-token",
 	}
 
-	// Mock PatreonListCampaigns to return test data
-	mockEnv.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
-		return campaigns, nil
+	// Create a mock Patreon client
+	mockPatreonClient := &mockPatreonClient{
+		listCampaignsFunc: func() ([]patreon.Campaign, error) {
+			return campaigns, nil
+		},
+	}
+
+	// Mock PatreonClientByID to return our mock client
+	mockEnv.PatreonClientByIDFunc = func(ctx context.Context, credentialsID int64) (patreon.Client, error) {
+		return mockPatreonClient, nil
 	}
 
 	// Track upserted campaigns
@@ -209,13 +267,19 @@ func TestFullSyncIntegration(t *testing.T) {
 	// Track all upserted tiers to see the overwrite issue
 	var allTierUpserts []db.UpsertPatreonTierParams
 
-	// Mock functions
-	mockEnv.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
-		return campaigns, nil
+	// Create a mock Patreon client
+	mockClient := &mockPatreonClient{
+		listCampaignsFunc: func() ([]patreon.Campaign, error) {
+			return campaigns, nil
+		},
+		listPatronsFunc: func(campaignID string, nextPageURL ...string) (*patreon.PatronsResponse, error) {
+			return &patronsResp, nil
+		},
 	}
 
-	mockEnv.PatreonListPatronsFunc = func(token string, campaignID string) (*patreon.PatronsResponse, error) {
-		return &patronsResp, nil
+	// Mock PatreonClientByID to return our mock client
+	mockEnv.PatreonClientByIDFunc = func(ctx context.Context, credentialsID int64) (patreon.Client, error) {
+		return mockClient, nil
 	}
 
 	mockEnv.UpsertPatreonCampaignFunc = func(ctx context.Context, arg db.UpsertPatreonCampaignParams) error {
@@ -301,8 +365,16 @@ func TestSyncMembersSkipsEmptyTiers(t *testing.T) {
 	// Track upserted tiers - should be empty because test data has empty tier attributes
 	var upsertedTiers []db.UpsertPatreonTierParams
 
-	mockEnv.PatreonListPatronsFunc = func(token string, campaignID string) (*patreon.PatronsResponse, error) {
-		return &patronsResp, nil
+	// Create a mock Patreon client
+	mockPatreonClientForTiers := &mockPatreonClient{
+		listPatronsFunc: func(campaignID string, nextPageURL ...string) (*patreon.PatronsResponse, error) {
+			return &patronsResp, nil
+		},
+	}
+
+	// Mock PatreonClientByID to return our mock client
+	mockEnv.PatreonClientByIDFunc = func(ctx context.Context, credentialsID int64) (patreon.Client, error) {
+		return mockPatreonClientForTiers, nil
 	}
 
 	mockEnv.UpsertPatreonTierFunc = func(ctx context.Context, arg db.UpsertPatreonTierParams) error {

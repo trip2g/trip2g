@@ -14,8 +14,7 @@ type Env interface {
 	PatreonCredentials(ctx context.Context, id int64) (db.PatreonCredential, error)
 
 	AllActivePatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
-	PatreonListCampaigns(token string) ([]patreon.Campaign, error)
-	PatreonListPatrons(token string, campaignID string) (*patreon.PatronsResponse, error)
+	PatreonClientByID(ctx context.Context, credentialsID int64) (patreon.Client, error)
 
 	UpdatePatreonCredentialsSyncedAt(ctx context.Context, id int64) error
 	SetPatreonMemberCurrentTier(ctx context.Context, arg db.SetPatreonMemberCurrentTierParams) error
@@ -30,8 +29,14 @@ type Env interface {
 }
 
 func syncCampaigns(ctx context.Context, env Env, credentials db.PatreonCredential) ([]patreon.Campaign, error) {
+	// Get Patreon client
+	client, err := env.PatreonClientByID(ctx, credentials.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Patreon client: %w", err)
+	}
+
 	// Fetch campaigns from Patreon
-	campaigns, err := env.PatreonListCampaigns(credentials.CreatorAccessToken)
+	campaigns, err := client.ListCampaigns()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch campaigns from Patreon: %w", err)
 	}
@@ -162,8 +167,14 @@ func processIncludedTier(ctx context.Context, env Env, included patreon.Included
 }
 
 func syncMembers(ctx context.Context, env Env, credentials db.PatreonCredential, campaignID string, dbCampaignID int64) error {
+	// Get Patreon client
+	client, err := env.PatreonClientByID(ctx, credentials.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get Patreon client: %w", err)
+	}
+
 	// Fetch and sync members for this campaign
-	patronsResp, err := env.PatreonListPatrons(credentials.CreatorAccessToken, campaignID)
+	patronsResp, err := client.ListPatrons(campaignID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch patrons for campaign %s: %w", campaignID, err)
 	}

@@ -41,10 +41,21 @@ func assertPayload(t *testing.T, want, got model.CreatePatreonCredentialsOrError
 
 type Env interface {
 	InsertPatreonCredentials(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error)
-	UpsertPatreonCampaign(ctx context.Context, arg db.UpsertPatreonCampaignParams) error
-	PatreonListCampaigns(token string) ([]patreon.Campaign, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	StartPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64) error
+
+	// refreshpatreondata.Env methods
+	PatreonCredentials(ctx context.Context, id int64) (db.PatreonCredential, error)
+	AllActivePatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error)
+	PatreonClientByID(ctx context.Context, credentialsID int64) (patreon.Client, error)
+	UpdatePatreonCredentialsSyncedAt(ctx context.Context, id int64) error
+	SetPatreonMemberCurrentTier(ctx context.Context, arg db.SetPatreonMemberCurrentTierParams) error
+	GetPatreonCampaignsByCredentialsID(ctx context.Context, credentialsID int64) ([]db.PatreonCampaign, error)
+	GetPatreonTierByTierID(ctx context.Context, arg db.GetPatreonTierByTierIDParams) (db.PatreonTier, error)
+	GetPatreonMemberByPatreonIDAndCampaignID(ctx context.Context, arg db.GetPatreonMemberByPatreonIDAndCampaignIDParams) (db.PatreonMember, error)
+	UpsertPatreonCampaign(ctx context.Context, arg db.UpsertPatreonCampaignParams) error
+	UpsertPatreonTier(ctx context.Context, arg db.UpsertPatreonTierParams) error
+	UpsertPatreonMember(ctx context.Context, arg db.UpsertPatreonMemberParams) error
 }
 
 type envMock = EnvMock
@@ -69,11 +80,62 @@ func TestResolve(t *testing.T) {
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
-				mock.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
-					return []patreon.Campaign{
-						{ID: "campaign1", Type: "campaign"},
-						{ID: "campaign2", Type: "campaign"},
+				// Mock methods for refreshpatreondata.Resolve
+				mock.PatreonCredentialsFunc = func(ctx context.Context, id int64) (db.PatreonCredential, error) {
+					return db.PatreonCredential{
+						ID:                 id,
+						CreatorAccessToken: "test-token-123456789",
 					}, nil
+				}
+				mock.PatreonClientByIDFunc = func(ctx context.Context, credentialsID int64) (patreon.Client, error) {
+					return &patreon.ClientMock{
+						ListCampaignsFunc: func() ([]patreon.Campaign, error) {
+							return []patreon.Campaign{
+								{ID: "campaign1", Type: "campaign"},
+								{ID: "campaign2", Type: "campaign"},
+							}, nil
+						},
+						ListPatronsFunc: func(campaignID string, nextPageURL ...string) (*patreon.PatronsResponse, error) {
+							return &patreon.PatronsResponse{}, nil
+						},
+					}, nil
+				}
+				mock.AllActivePatreonCredentialsFunc = func(ctx context.Context) ([]db.PatreonCredential, error) {
+					return []db.PatreonCredential{}, nil
+				}
+				mock.UpdatePatreonCredentialsSyncedAtFunc = func(ctx context.Context, id int64) error {
+					return nil
+				}
+				mock.SetPatreonMemberCurrentTierFunc = func(ctx context.Context, arg db.SetPatreonMemberCurrentTierParams) error {
+					return nil
+				}
+				mock.GetPatreonCampaignsByCredentialsIDFunc = func(ctx context.Context, credentialsID int64) ([]db.PatreonCampaign, error) {
+					return []db.PatreonCampaign{
+						{
+							ID:            1,
+							CredentialsID: credentialsID,
+							CampaignID:    "campaign1",
+							Attributes:    "{}",
+						},
+						{
+							ID:            2,
+							CredentialsID: credentialsID,
+							CampaignID:    "campaign2",
+							Attributes:    "{}",
+						},
+					}, nil
+				}
+				mock.GetPatreonTierByTierIDFunc = func(ctx context.Context, arg db.GetPatreonTierByTierIDParams) (db.PatreonTier, error) {
+					return db.PatreonTier{}, nil
+				}
+				mock.GetPatreonMemberByPatreonIDAndCampaignIDFunc = func(ctx context.Context, arg db.GetPatreonMemberByPatreonIDAndCampaignIDParams) (db.PatreonMember, error) {
+					return db.PatreonMember{}, nil
+				}
+				mock.UpsertPatreonTierFunc = func(ctx context.Context, arg db.UpsertPatreonTierParams) error {
+					return nil
+				}
+				mock.UpsertPatreonMemberFunc = func(ctx context.Context, arg db.UpsertPatreonMemberParams) error {
+					return nil
 				}
 				mock.InsertPatreonCredentialsFunc = func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error) {
 					return db.PatreonCredential{
@@ -164,9 +226,6 @@ func TestResolve(t *testing.T) {
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
-				mock.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
-					return []patreon.Campaign{{ID: "campaign1", Type: "campaign"}}, nil
-				}
 				mock.InsertPatreonCredentialsFunc = func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error) {
 					return db.PatreonCredential{}, errors.New("UNIQUE constraint failed: patreon_credentials.creator_access_token")
 				}
@@ -178,7 +237,7 @@ func TestResolve(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "patreon API error",
+			name: "refresh patreon data error",
 			input: model.CreatePatreonCredentialsInput{
 				CreatorAccessToken: "test-token-123456789",
 			},
@@ -187,15 +246,22 @@ func TestResolve(t *testing.T) {
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
-				mock.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
-					return nil, errors.New("invalid token")
+				mock.InsertPatreonCredentialsFunc = func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error) {
+					return db.PatreonCredential{
+						ID:                 1,
+						CreatedAt:          time.Now(),
+						CreatedBy:          1,
+						CreatorAccessToken: arg.CreatorAccessToken,
+					}, nil
+				}
+				// Mock that causes refreshpatreondata.Resolve to fail
+				mock.PatreonCredentialsFunc = func(ctx context.Context, id int64) (db.PatreonCredential, error) {
+					return db.PatreonCredential{}, errors.New("database error")
 				}
 				return mock
 			},
-			want: &model.ErrorPayload{
-				Message: "Failed to fetch campaigns from Patreon: invalid token",
-			},
-			wantErr: false,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "database error",
@@ -206,9 +272,6 @@ func TestResolve(t *testing.T) {
 				mock := &envMock{}
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
-				}
-				mock.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
-					return []patreon.Campaign{{ID: "campaign1", Type: "campaign"}}, nil
 				}
 				mock.InsertPatreonCredentialsFunc = func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error) {
 					return db.PatreonCredential{}, errors.New("database error")
@@ -228,9 +291,6 @@ func TestResolve(t *testing.T) {
 				mock.CurrentAdminUserTokenFunc = func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
 				}
-				mock.PatreonListCampaignsFunc = func(token string) ([]patreon.Campaign, error) {
-					return []patreon.Campaign{{ID: "campaign1", Type: "campaign"}}, nil
-				}
 				mock.InsertPatreonCredentialsFunc = func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error) {
 					return db.PatreonCredential{
 						ID:                 1,
@@ -239,7 +299,55 @@ func TestResolve(t *testing.T) {
 						CreatorAccessToken: arg.CreatorAccessToken,
 					}, nil
 				}
+				// Mock methods for refreshpatreondata.Resolve - need to succeed
+				mock.PatreonCredentialsFunc = func(ctx context.Context, id int64) (db.PatreonCredential, error) {
+					return db.PatreonCredential{
+						ID:                 id,
+						CreatorAccessToken: "test-token-123456789",
+					}, nil
+				}
+				mock.PatreonClientByIDFunc = func(ctx context.Context, credentialsID int64) (patreon.Client, error) {
+					return &patreon.ClientMock{
+						ListCampaignsFunc: func() ([]patreon.Campaign, error) {
+							return []patreon.Campaign{{ID: "campaign1", Type: "campaign"}}, nil
+						},
+						ListPatronsFunc: func(campaignID string, nextPageURL ...string) (*patreon.PatronsResponse, error) {
+							return &patreon.PatronsResponse{}, nil
+						},
+					}, nil
+				}
+				mock.AllActivePatreonCredentialsFunc = func(ctx context.Context) ([]db.PatreonCredential, error) {
+					return []db.PatreonCredential{}, nil
+				}
+				mock.UpdatePatreonCredentialsSyncedAtFunc = func(ctx context.Context, id int64) error {
+					return nil
+				}
+				mock.SetPatreonMemberCurrentTierFunc = func(ctx context.Context, arg db.SetPatreonMemberCurrentTierParams) error {
+					return nil
+				}
+				mock.GetPatreonCampaignsByCredentialsIDFunc = func(ctx context.Context, credentialsID int64) ([]db.PatreonCampaign, error) {
+					return []db.PatreonCampaign{
+						{
+							ID:            1,
+							CredentialsID: credentialsID,
+							CampaignID:    "campaign1",
+							Attributes:    "{}",
+						},
+					}, nil
+				}
+				mock.GetPatreonTierByTierIDFunc = func(ctx context.Context, arg db.GetPatreonTierByTierIDParams) (db.PatreonTier, error) {
+					return db.PatreonTier{}, nil
+				}
+				mock.GetPatreonMemberByPatreonIDAndCampaignIDFunc = func(ctx context.Context, arg db.GetPatreonMemberByPatreonIDAndCampaignIDParams) (db.PatreonMember, error) {
+					return db.PatreonMember{}, nil
+				}
 				mock.UpsertPatreonCampaignFunc = func(ctx context.Context, arg db.UpsertPatreonCampaignParams) error {
+					return nil
+				}
+				mock.UpsertPatreonTierFunc = func(ctx context.Context, arg db.UpsertPatreonTierParams) error {
+					return nil
+				}
+				mock.UpsertPatreonMemberFunc = func(ctx context.Context, arg db.UpsertPatreonMemberParams) error {
 					return nil
 				}
 				mock.StartPatreonRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {

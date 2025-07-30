@@ -101,6 +101,8 @@ type ResolverRoot interface {
 	Purchase() PurchaseResolver
 	PushedNote() PushedNoteResolver
 	Query() QueryResolver
+	RefreshBoostyDataPayload() RefreshBoostyDataPayloadResolver
+	RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
 	Subgraph() SubgraphResolver
 	UnbanUserPayload() UnbanUserPayloadResolver
 	UpdateNoteGraphPositionsPayload() UpdateNoteGraphPositionsPayloadResolver
@@ -686,11 +688,15 @@ type ComplexityRoot struct {
 	}
 
 	RefreshBoostyDataPayload struct {
-		Success func(childComplexity int) int
+		Credentials   func(childComplexity int) int
+		CredentialsID func(childComplexity int) int
+		Success       func(childComplexity int) int
 	}
 
 	RefreshPatreonDataPayload struct {
-		Success func(childComplexity int) int
+		Credentials   func(childComplexity int) int
+		CredentialsID func(childComplexity int) int
+		Success       func(childComplexity int) int
 	}
 
 	RemoveTgChatSubgraphAccessPayload struct {
@@ -1120,6 +1126,12 @@ type QueryResolver interface {
 	NotePaths(ctx context.Context) ([]db.NotePath, error)
 	Admin(ctx context.Context) (*model1.AdminQuery, error)
 	Note(ctx context.Context, input model.NoteInput) (*model.PublicNote, error)
+}
+type RefreshBoostyDataPayloadResolver interface {
+	Credentials(ctx context.Context, obj *model.RefreshBoostyDataPayload) (*db.BoostyCredential, error)
+}
+type RefreshPatreonDataPayloadResolver interface {
+	Credentials(ctx context.Context, obj *model.RefreshPatreonDataPayload) (*db.PatreonCredential, error)
 }
 type SubgraphResolver interface {
 	Offers(ctx context.Context, obj *db.Subgraph) ([]db.Offer, error)
@@ -3690,12 +3702,40 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Viewer(childComplexity), true
 
+	case "RefreshBoostyDataPayload.credentials":
+		if e.complexity.RefreshBoostyDataPayload.Credentials == nil {
+			break
+		}
+
+		return e.complexity.RefreshBoostyDataPayload.Credentials(childComplexity), true
+
+	case "RefreshBoostyDataPayload.credentialsID":
+		if e.complexity.RefreshBoostyDataPayload.CredentialsID == nil {
+			break
+		}
+
+		return e.complexity.RefreshBoostyDataPayload.CredentialsID(childComplexity), true
+
 	case "RefreshBoostyDataPayload.success":
 		if e.complexity.RefreshBoostyDataPayload.Success == nil {
 			break
 		}
 
 		return e.complexity.RefreshBoostyDataPayload.Success(childComplexity), true
+
+	case "RefreshPatreonDataPayload.credentials":
+		if e.complexity.RefreshPatreonDataPayload.Credentials == nil {
+			break
+		}
+
+		return e.complexity.RefreshPatreonDataPayload.Credentials(childComplexity), true
+
+	case "RefreshPatreonDataPayload.credentialsID":
+		if e.complexity.RefreshPatreonDataPayload.CredentialsID == nil {
+			break
+		}
+
+		return e.complexity.RefreshPatreonDataPayload.CredentialsID(childComplexity), true
 
 	case "RefreshPatreonDataPayload.success":
 		if e.complexity.RefreshPatreonDataPayload.Success == nil {
@@ -21807,6 +21847,116 @@ func (ec *executionContext) fieldContext_RefreshBoostyDataPayload_success(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _RefreshBoostyDataPayload_credentialsID(ctx context.Context, field graphql.CollectedField, obj *model.RefreshBoostyDataPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RefreshBoostyDataPayload_credentialsID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CredentialsID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RefreshBoostyDataPayload_credentialsID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RefreshBoostyDataPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RefreshBoostyDataPayload_credentials(ctx context.Context, field graphql.CollectedField, obj *model.RefreshBoostyDataPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RefreshBoostyDataPayload_credentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.RefreshBoostyDataPayload().Credentials(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.BoostyCredential)
+	fc.Result = res
+	return ec.marshalNAdminBoostyCredentials2ᚖtrip2gᚋinternalᚋdbᚐBoostyCredential(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RefreshBoostyDataPayload_credentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RefreshBoostyDataPayload",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBoostyCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminBoostyCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminBoostyCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminBoostyCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminBoostyCredentials_deletedBy(ctx, field)
+			case "deviceId":
+				return ec.fieldContext_AdminBoostyCredentials_deviceId(ctx, field)
+			case "blogName":
+				return ec.fieldContext_AdminBoostyCredentials_blogName(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminBoostyCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminBoostyCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminBoostyCredentials_members(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RefreshPatreonDataPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.RefreshPatreonDataPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_RefreshPatreonDataPayload_success(ctx, field)
 	if err != nil {
@@ -21846,6 +21996,116 @@ func (ec *executionContext) fieldContext_RefreshPatreonDataPayload_success(_ con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RefreshPatreonDataPayload_credentialsID(ctx context.Context, field graphql.CollectedField, obj *model.RefreshPatreonDataPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RefreshPatreonDataPayload_credentialsID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CredentialsID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RefreshPatreonDataPayload_credentialsID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RefreshPatreonDataPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RefreshPatreonDataPayload_credentials(ctx context.Context, field graphql.CollectedField, obj *model.RefreshPatreonDataPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RefreshPatreonDataPayload_credentials(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.RefreshPatreonDataPayload().Credentials(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.PatreonCredential)
+	fc.Result = res
+	return ec.marshalNAdminPatreonCredentials2ᚖtrip2gᚋinternalᚋdbᚐPatreonCredential(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RefreshPatreonDataPayload_credentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RefreshPatreonDataPayload",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminPatreonCredentials_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminPatreonCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminPatreonCredentials_createdBy(ctx, field)
+			case "deletedAt":
+				return ec.fieldContext_AdminPatreonCredentials_deletedAt(ctx, field)
+			case "deletedBy":
+				return ec.fieldContext_AdminPatreonCredentials_deletedBy(ctx, field)
+			case "syncedAt":
+				return ec.fieldContext_AdminPatreonCredentials_syncedAt(ctx, field)
+			case "creatorAccessToken":
+				return ec.fieldContext_AdminPatreonCredentials_creatorAccessToken(ctx, field)
+			case "state":
+				return ec.fieldContext_AdminPatreonCredentials_state(ctx, field)
+			case "tiers":
+				return ec.fieldContext_AdminPatreonCredentials_tiers(ctx, field)
+			case "members":
+				return ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
 		},
 	}
 	return fc, nil
@@ -38365,8 +38625,49 @@ func (ec *executionContext) _RefreshBoostyDataPayload(ctx context.Context, sel a
 		case "success":
 			out.Values[i] = ec._RefreshBoostyDataPayload_success(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "credentialsID":
+			out.Values[i] = ec._RefreshBoostyDataPayload_credentialsID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "credentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RefreshBoostyDataPayload_credentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -38404,8 +38705,49 @@ func (ec *executionContext) _RefreshPatreonDataPayload(ctx context.Context, sel 
 		case "success":
 			out.Values[i] = ec._RefreshPatreonDataPayload_success(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "credentialsID":
+			out.Values[i] = ec._RefreshPatreonDataPayload_credentialsID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "credentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._RefreshPatreonDataPayload_credentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"trip2g/internal/boosty"
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
@@ -46,11 +47,27 @@ func TestResolve(t *testing.T) {
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:       id,
+						AuthData: "old-auth-data",
+						DeviceID: "old-device",
+						BlogName: "oldblog",
+					}, nil
+				}
+				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					mockClient := &boosty.ClientMock{
+						SubscribersFunc: func() ([]boosty.Subscriber, error) {
+							return []boosty.Subscriber{}, nil
+						},
+					}
+					return mockClient, nil
+				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					require.Equal(t, int64(1), arg.ID)
-					require.Equal(t, sql.NullString{String: "new-auth-data-123456789", Valid: true}, arg.AuthData)
-					require.Equal(t, sql.NullString{String: "new-device-123", Valid: true}, arg.DeviceID)
-					require.Equal(t, sql.NullString{String: "newblog", Valid: true}, arg.BlogName)
+					require.Equal(t, "new-auth-data-123456789", arg.AuthData)
+					require.Equal(t, "new-device-123", arg.DeviceID)
+					require.Equal(t, "newblog", arg.BlogName)
 					return db.BoostyCredential{
 						ID:        1,
 						CreatedAt: time.Now(),
@@ -81,11 +98,27 @@ func TestResolve(t *testing.T) {
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:       id,
+						AuthData: "old-auth-data",
+						DeviceID: "device-123",
+						BlogName: "testblog",
+					}, nil
+				}
+				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					mockClient := &boosty.ClientMock{
+						SubscribersFunc: func() ([]boosty.Subscriber, error) {
+							return []boosty.Subscriber{}, nil
+						},
+					}
+					return mockClient, nil
+				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					require.Equal(t, int64(1), arg.ID)
-					require.Equal(t, sql.NullString{String: "new-auth-data-123456789", Valid: true}, arg.AuthData)
-					require.Equal(t, sql.NullString{Valid: false}, arg.DeviceID)
-					require.Equal(t, sql.NullString{Valid: false}, arg.BlogName)
+					require.Equal(t, "new-auth-data-123456789", arg.AuthData)
+					require.Equal(t, "device-123", arg.DeviceID)
+					require.Equal(t, "testblog", arg.BlogName)
 					return db.BoostyCredential{
 						ID:        1,
 						CreatedAt: time.Now(),
@@ -114,10 +147,42 @@ func TestResolve(t *testing.T) {
 				ID: 1,
 			},
 			mockFunc: func() *envMock {
-				return &envMock{}
+				mock := &envMock{}
+				mock.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:       id,
+						AuthData: "existing-auth-data",
+						DeviceID: "existing-device",
+						BlogName: "existing-blog",
+					}, nil
+				}
+				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					mockClient := &boosty.ClientMock{
+						SubscribersFunc: func() ([]boosty.Subscriber, error) {
+							return []boosty.Subscriber{}, nil
+						},
+					}
+					return mockClient, nil
+				}
+				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:        1,
+						CreatedBy: 1,
+						AuthData:  arg.AuthData,
+						DeviceID:  arg.DeviceID,
+						BlogName:  arg.BlogName,
+					}, nil
+				}
+				return mock
 			},
-			want: &model.ErrorPayload{
-				Message: "No fields to update",
+			want: &model.UpdateBoostyCredentialsPayload{
+				BoostyCredentials: &db.BoostyCredential{
+					ID:        1,
+					CreatedBy: 1,
+					AuthData:  "existing-auth-data",
+					DeviceID:  "existing-device",
+					BlogName:  "existing-blog",
+				},
 			},
 			wantErr: false,
 		},
@@ -128,7 +193,33 @@ func TestResolve(t *testing.T) {
 				AuthData: strPtr("short"),
 			},
 			mockFunc: func() *envMock {
-				return &envMock{}
+				mock := &envMock{}
+				mock.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:       id,
+						AuthData: "existing-auth-data",
+						DeviceID: "existing-device",
+						BlogName: "existing-blog",
+					}, nil
+				}
+				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					mockClient := &boosty.ClientMock{
+						SubscribersFunc: func() ([]boosty.Subscriber, error) {
+							return []boosty.Subscriber{}, nil
+						},
+					}
+					return mockClient, nil
+				}
+				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:        1,
+						CreatedBy: 1,
+						AuthData:  arg.AuthData,
+						DeviceID:  arg.DeviceID,
+						BlogName:  arg.BlogName,
+					}, nil
+				}
+				return mock
 			},
 			want: &model.ErrorPayload{
 				ByFields: []model.FieldMessage{{Name: "authData", Value: "the length must be between 10 and 10000"}},
@@ -142,7 +233,33 @@ func TestResolve(t *testing.T) {
 				DeviceID: strPtr("dev"),
 			},
 			mockFunc: func() *envMock {
-				return &envMock{}
+				mock := &envMock{}
+				mock.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:       id,
+						AuthData: "existing-auth-data",
+						DeviceID: "existing-device",
+						BlogName: "existing-blog",
+					}, nil
+				}
+				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					mockClient := &boosty.ClientMock{
+						SubscribersFunc: func() ([]boosty.Subscriber, error) {
+							return []boosty.Subscriber{}, nil
+						},
+					}
+					return mockClient, nil
+				}
+				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:        1,
+						CreatedBy: 1,
+						AuthData:  arg.AuthData,
+						DeviceID:  arg.DeviceID,
+						BlogName:  arg.BlogName,
+					}, nil
+				}
+				return mock
 			},
 			want: &model.ErrorPayload{
 				ByFields: []model.FieldMessage{{Name: "deviceId", Value: "the length must be between 5 and 100"}},
@@ -156,7 +273,33 @@ func TestResolve(t *testing.T) {
 				BlogName: strPtr(string(make([]byte, 101))),
 			},
 			mockFunc: func() *envMock {
-				return &envMock{}
+				mock := &envMock{}
+				mock.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:       id,
+						AuthData: "existing-auth-data",
+						DeviceID: "existing-device",
+						BlogName: "existing-blog",
+					}, nil
+				}
+				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					mockClient := &boosty.ClientMock{
+						SubscribersFunc: func() ([]boosty.Subscriber, error) {
+							return []boosty.Subscriber{}, nil
+						},
+					}
+					return mockClient, nil
+				}
+				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:        1,
+						CreatedBy: 1,
+						AuthData:  arg.AuthData,
+						DeviceID:  arg.DeviceID,
+						BlogName:  arg.BlogName,
+					}, nil
+				}
+				return mock
 			},
 			want: &model.ErrorPayload{
 				ByFields: []model.FieldMessage{{Name: "blogName", Value: "the length must be between 1 and 100"}},
@@ -171,6 +314,22 @@ func TestResolve(t *testing.T) {
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:       id,
+						AuthData: "existing-auth-data",
+						DeviceID: "existing-device",
+						BlogName: "existing-blog",
+					}, nil
+				}
+				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					mockClient := &boosty.ClientMock{
+						SubscribersFunc: func() ([]boosty.Subscriber, error) {
+							return []boosty.Subscriber{}, nil
+						},
+					}
+					return mockClient, nil
+				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					return db.BoostyCredential{}, sql.ErrNoRows
 				}
@@ -189,6 +348,22 @@ func TestResolve(t *testing.T) {
 			},
 			mockFunc: func() *envMock {
 				mock := &envMock{}
+				mock.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
+					return db.BoostyCredential{
+						ID:       id,
+						AuthData: "existing-auth-data",
+						DeviceID: "existing-device",
+						BlogName: "existing-blog",
+					}, nil
+				}
+				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					mockClient := &boosty.ClientMock{
+						SubscribersFunc: func() ([]boosty.Subscriber, error) {
+							return []boosty.Subscriber{}, nil
+						},
+					}
+					return mockClient, nil
+				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					return db.BoostyCredential{}, errors.New("database error")
 				}

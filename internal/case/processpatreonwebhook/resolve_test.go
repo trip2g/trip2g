@@ -63,9 +63,13 @@ func TestResolve_Success(t *testing.T) {
 			require.Equal(t, credentialID, id)
 			return expectedCredentials, nil
 		},
-		PatreonListCampaignsFunc: func(token string) ([]patreon.Campaign, error) {
-			require.Equal(t, "test_token", token)
-			return []patreon.Campaign{}, nil
+		PatreonClientByIDFunc: func(ctx context.Context, credentialsID int64) (patreon.Client, error) {
+			require.Equal(t, credentialID, credentialsID)
+			return &patreon.ClientMock{
+				ListCampaignsFunc: func() ([]patreon.Campaign, error) {
+					return []patreon.Campaign{}, nil
+				},
+			}, nil
 		},
 		GetPatreonCampaignsByCredentialsIDFunc: func(ctx context.Context, credentialsID int64) ([]db.PatreonCampaign, error) {
 			require.Equal(t, credentialID, credentialsID)
@@ -147,8 +151,12 @@ func TestResolve_RefreshDataError(t *testing.T) {
 		PatreonCredentialsFunc: func(ctx context.Context, id int64) (db.PatreonCredential, error) {
 			return expectedCredentials, nil
 		},
-		PatreonListCampaignsFunc: func(token string) ([]patreon.Campaign, error) {
-			return nil, errors.New("API error")
+		PatreonClientByIDFunc: func(ctx context.Context, credentialsID int64) (patreon.Client, error) {
+			return &patreon.ClientMock{
+				ListCampaignsFunc: func() ([]patreon.Campaign, error) {
+					return nil, errors.New("API error")
+				},
+			}, nil
 		},
 		GetPatreonCampaignsByCredentialsIDFunc: func(ctx context.Context, credentialsID int64) ([]db.PatreonCampaign, error) {
 			return []db.PatreonCampaign{}, nil

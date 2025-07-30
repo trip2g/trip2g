@@ -1033,7 +1033,7 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 
 const getBoostyMembers = `-- name: GetBoostyMembers :many
 
-select id, boosty_id, created_at, missed_at, email, status, data from boosty_members
+select id, credentials_id, boosty_id, created_at, missed_at, email, status, data from boosty_members
 order by created_at
 `
 
@@ -1049,6 +1049,7 @@ func (q *Queries) GetBoostyMembers(ctx context.Context) ([]BoostyMember, error) 
 		var i BoostyMember
 		if err := rows.Scan(
 			&i.ID,
+			&i.CredentialsID,
 			&i.BoostyID,
 			&i.CreatedAt,
 			&i.MissedAt,
@@ -1069,9 +1070,30 @@ func (q *Queries) GetBoostyMembers(ctx context.Context) ([]BoostyMember, error) 
 	return items, nil
 }
 
+const getBoostyTierByBoostyID = `-- name: GetBoostyTierByBoostyID :one
+select id, credentials_id, boosty_id, created_at, missed_at, name, data from boosty_tiers
+where boosty_id = ?
+limit 1
+`
+
+func (q *Queries) GetBoostyTierByBoostyID(ctx context.Context, boostyID int64) (BoostyTier, error) {
+	row := q.db.QueryRowContext(ctx, getBoostyTierByBoostyID, boostyID)
+	var i BoostyTier
+	err := row.Scan(
+		&i.ID,
+		&i.CredentialsID,
+		&i.BoostyID,
+		&i.CreatedAt,
+		&i.MissedAt,
+		&i.Name,
+		&i.Data,
+	)
+	return i, err
+}
+
 const getBoostyTiers = `-- name: GetBoostyTiers :many
 
-select id, boosty_id, created_at, missed_at, name, data from boosty_tiers
+select id, credentials_id, boosty_id, created_at, missed_at, name, data from boosty_tiers
 order by created_at
 `
 
@@ -1087,6 +1109,7 @@ func (q *Queries) GetBoostyTiers(ctx context.Context) ([]BoostyTier, error) {
 		var i BoostyTier
 		if err := rows.Scan(
 			&i.ID,
+			&i.CredentialsID,
 			&i.BoostyID,
 			&i.CreatedAt,
 			&i.MissedAt,
@@ -1550,18 +1573,24 @@ func (q *Queries) InsertBoostyMember(ctx context.Context, arg InsertBoostyMember
 }
 
 const insertBoostyTier = `-- name: InsertBoostyTier :exec
-insert into boosty_tiers (boosty_id, name, data)
-values (?, ?, ?)
+insert into boosty_tiers (credentials_id, boosty_id, name, data)
+values (?, ?, ?, ?)
 `
 
 type InsertBoostyTierParams struct {
-	BoostyID int64  `json:"boosty_id"`
-	Name     string `json:"name"`
-	Data     string `json:"data"`
+	CredentialsID int64  `json:"credentials_id"`
+	BoostyID      int64  `json:"boosty_id"`
+	Name          string `json:"name"`
+	Data          string `json:"data"`
 }
 
 func (q *Queries) InsertBoostyTier(ctx context.Context, arg InsertBoostyTierParams) error {
-	_, err := q.db.ExecContext(ctx, insertBoostyTier, arg.BoostyID, arg.Name, arg.Data)
+	_, err := q.db.ExecContext(ctx, insertBoostyTier,
+		arg.CredentialsID,
+		arg.BoostyID,
+		arg.Name,
+		arg.Data,
+	)
 	return err
 }
 
@@ -3119,6 +3148,57 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 	return items, nil
 }
 
+const markBoostyMembersAsMissed = `-- name: MarkBoostyMembersAsMissed :exec
+update boosty_members
+set missed_at = datetime('now')
+where missed_at is null
+  and boosty_id not in (/*SLICE:boosty_ids*/?)
+`
+
+func (q *Queries) MarkBoostyMembersAsMissed(ctx context.Context, boostyIds []int64) error {
+	query := markBoostyMembersAsMissed
+	var queryParams []interface{}
+	if len(boostyIds) > 0 {
+		for _, v := range boostyIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:boosty_ids*/?", strings.Repeat(",?", len(boostyIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:boosty_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
+const markBoostyTiersAsMissed = `-- name: MarkBoostyTiersAsMissed :exec
+update boosty_tiers
+set missed_at = datetime('now')
+where credentials_id = ?
+  and missed_at is null
+  and boosty_id not in (/*SLICE:boosty_ids*/?)
+`
+
+type MarkBoostyTiersAsMissedParams struct {
+	CredentialsID int64   `json:"credentials_id"`
+	BoostyIds     []int64 `json:"boosty_ids"`
+}
+
+func (q *Queries) MarkBoostyTiersAsMissed(ctx context.Context, arg MarkBoostyTiersAsMissedParams) error {
+	query := markBoostyTiersAsMissed
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.CredentialsID)
+	if len(arg.BoostyIds) > 0 {
+		for _, v := range arg.BoostyIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:boosty_ids*/?", strings.Repeat(",?", len(arg.BoostyIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:boosty_ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
 const markPatreonMembersAsMissed = `-- name: MarkPatreonMembersAsMissed :exec
 update patreon_members
 set status = 'missed'
@@ -4298,23 +4378,26 @@ func (q *Queries) UpsertAPIKeyLogIP(ctx context.Context, value string) error {
 }
 
 const upsertBoostyMember = `-- name: UpsertBoostyMember :exec
-insert into boosty_members (boosty_id, email, status, data)
-values (?, ?, ?, ?)
-on conflict(boosty_id) do update set
+insert into boosty_members (credentials_id, boosty_id, email, status, data)
+values (?, ?, ?, ?, ?)
+on conflict(credentials_id, boosty_id) do update set
   email = excluded.email,
   status = excluded.status,
-  data = excluded.data
+  data = excluded.data,
+  missed_at = null
 `
 
 type UpsertBoostyMemberParams struct {
-	BoostyID int64  `json:"boosty_id"`
-	Email    string `json:"email"`
-	Status   string `json:"status"`
-	Data     string `json:"data"`
+	CredentialsID int64  `json:"credentials_id"`
+	BoostyID      int64  `json:"boosty_id"`
+	Email         string `json:"email"`
+	Status        string `json:"status"`
+	Data          string `json:"data"`
 }
 
 func (q *Queries) UpsertBoostyMember(ctx context.Context, arg UpsertBoostyMemberParams) error {
 	_, err := q.db.ExecContext(ctx, upsertBoostyMember,
+		arg.CredentialsID,
 		arg.BoostyID,
 		arg.Email,
 		arg.Status,
@@ -4324,21 +4407,28 @@ func (q *Queries) UpsertBoostyMember(ctx context.Context, arg UpsertBoostyMember
 }
 
 const upsertBoostyTier = `-- name: UpsertBoostyTier :exec
-insert into boosty_tiers (boosty_id, name, data)
-values (?, ?, ?)
-on conflict(boosty_id) do update set
+insert into boosty_tiers (credentials_id, boosty_id, name, data)
+values (?, ?, ?, ?)
+on conflict(credentials_id, boosty_id) do update set
   name = excluded.name,
-  data = excluded.data
+  data = excluded.data,
+  missed_at = null
 `
 
 type UpsertBoostyTierParams struct {
-	BoostyID int64  `json:"boosty_id"`
-	Name     string `json:"name"`
-	Data     string `json:"data"`
+	CredentialsID int64  `json:"credentials_id"`
+	BoostyID      int64  `json:"boosty_id"`
+	Name          string `json:"name"`
+	Data          string `json:"data"`
 }
 
 func (q *Queries) UpsertBoostyTier(ctx context.Context, arg UpsertBoostyTierParams) error {
-	_, err := q.db.ExecContext(ctx, upsertBoostyTier, arg.BoostyID, arg.Name, arg.Data)
+	_, err := q.db.ExecContext(ctx, upsertBoostyTier,
+		arg.CredentialsID,
+		arg.BoostyID,
+		arg.Name,
+		arg.Data,
+	)
 	return err
 }
 

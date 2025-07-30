@@ -1121,6 +1121,8 @@ input RefreshPatreonDataInput {
 
 type RefreshPatreonDataPayload {
   success: Boolean!
+  credentialsID: Int64!
+  credentials: AdminPatreonCredentials! @goField(forceResolver: true)
 }
 
 union RefreshPatreonDataOrErrorPayload = RefreshPatreonDataPayload | ErrorPayload
@@ -1213,6 +1215,8 @@ input RefreshBoostyDataInput {
 
 type RefreshBoostyDataPayload {
   success: Boolean!
+  credentialsID: Int64!
+  credentials: AdminBoostyCredentials! @goField(forceResolver: true)
 }
 
 union RefreshBoostyDataOrErrorPayload = RefreshBoostyDataPayload | ErrorPayload

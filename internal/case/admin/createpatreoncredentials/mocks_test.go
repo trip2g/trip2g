@@ -22,20 +22,47 @@ var _ createpatreoncredentials.Env = &EnvMock{}
 //
 //		// make and configure a mocked createpatreoncredentials.Env
 //		mockedEnv := &EnvMock{
+//			AllActivePatreonCredentialsFunc: func(ctx context.Context) ([]db.PatreonCredential, error) {
+//				panic("mock out the AllActivePatreonCredentials method")
+//			},
 //			CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentAdminUserToken method")
+//			},
+//			GetPatreonCampaignsByCredentialsIDFunc: func(ctx context.Context, credentialsID int64) ([]db.PatreonCampaign, error) {
+//				panic("mock out the GetPatreonCampaignsByCredentialsID method")
+//			},
+//			GetPatreonMemberByPatreonIDAndCampaignIDFunc: func(ctx context.Context, arg db.GetPatreonMemberByPatreonIDAndCampaignIDParams) (db.PatreonMember, error) {
+//				panic("mock out the GetPatreonMemberByPatreonIDAndCampaignID method")
+//			},
+//			GetPatreonTierByTierIDFunc: func(ctx context.Context, arg db.GetPatreonTierByTierIDParams) (db.PatreonTier, error) {
+//				panic("mock out the GetPatreonTierByTierID method")
 //			},
 //			InsertPatreonCredentialsFunc: func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error) {
 //				panic("mock out the InsertPatreonCredentials method")
 //			},
-//			PatreonListCampaignsFunc: func(token string) ([]patreon.Campaign, error) {
-//				panic("mock out the PatreonListCampaigns method")
+//			PatreonClientByIDFunc: func(ctx context.Context, credentialsID int64) (patreon.Client, error) {
+//				panic("mock out the PatreonClientByID method")
+//			},
+//			PatreonCredentialsFunc: func(ctx context.Context, id int64) (db.PatreonCredential, error) {
+//				panic("mock out the PatreonCredentials method")
+//			},
+//			SetPatreonMemberCurrentTierFunc: func(ctx context.Context, arg db.SetPatreonMemberCurrentTierParams) error {
+//				panic("mock out the SetPatreonMemberCurrentTier method")
 //			},
 //			StartPatreonRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64) error {
 //				panic("mock out the StartPatreonRefreshBackgroundJob method")
 //			},
+//			UpdatePatreonCredentialsSyncedAtFunc: func(ctx context.Context, id int64) error {
+//				panic("mock out the UpdatePatreonCredentialsSyncedAt method")
+//			},
 //			UpsertPatreonCampaignFunc: func(ctx context.Context, arg db.UpsertPatreonCampaignParams) error {
 //				panic("mock out the UpsertPatreonCampaign method")
+//			},
+//			UpsertPatreonMemberFunc: func(ctx context.Context, arg db.UpsertPatreonMemberParams) error {
+//				panic("mock out the UpsertPatreonMember method")
+//			},
+//			UpsertPatreonTierFunc: func(ctx context.Context, arg db.UpsertPatreonTierParams) error {
+//				panic("mock out the UpsertPatreonTier method")
 //			},
 //		}
 //
@@ -44,27 +71,80 @@ var _ createpatreoncredentials.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// AllActivePatreonCredentialsFunc mocks the AllActivePatreonCredentials method.
+	AllActivePatreonCredentialsFunc func(ctx context.Context) ([]db.PatreonCredential, error)
+
 	// CurrentAdminUserTokenFunc mocks the CurrentAdminUserToken method.
 	CurrentAdminUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
+
+	// GetPatreonCampaignsByCredentialsIDFunc mocks the GetPatreonCampaignsByCredentialsID method.
+	GetPatreonCampaignsByCredentialsIDFunc func(ctx context.Context, credentialsID int64) ([]db.PatreonCampaign, error)
+
+	// GetPatreonMemberByPatreonIDAndCampaignIDFunc mocks the GetPatreonMemberByPatreonIDAndCampaignID method.
+	GetPatreonMemberByPatreonIDAndCampaignIDFunc func(ctx context.Context, arg db.GetPatreonMemberByPatreonIDAndCampaignIDParams) (db.PatreonMember, error)
+
+	// GetPatreonTierByTierIDFunc mocks the GetPatreonTierByTierID method.
+	GetPatreonTierByTierIDFunc func(ctx context.Context, arg db.GetPatreonTierByTierIDParams) (db.PatreonTier, error)
 
 	// InsertPatreonCredentialsFunc mocks the InsertPatreonCredentials method.
 	InsertPatreonCredentialsFunc func(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error)
 
-	// PatreonListCampaignsFunc mocks the PatreonListCampaigns method.
-	PatreonListCampaignsFunc func(token string) ([]patreon.Campaign, error)
+	// PatreonClientByIDFunc mocks the PatreonClientByID method.
+	PatreonClientByIDFunc func(ctx context.Context, credentialsID int64) (patreon.Client, error)
+
+	// PatreonCredentialsFunc mocks the PatreonCredentials method.
+	PatreonCredentialsFunc func(ctx context.Context, id int64) (db.PatreonCredential, error)
+
+	// SetPatreonMemberCurrentTierFunc mocks the SetPatreonMemberCurrentTier method.
+	SetPatreonMemberCurrentTierFunc func(ctx context.Context, arg db.SetPatreonMemberCurrentTierParams) error
 
 	// StartPatreonRefreshBackgroundJobFunc mocks the StartPatreonRefreshBackgroundJob method.
 	StartPatreonRefreshBackgroundJobFunc func(ctx context.Context, credentialsID int64) error
 
+	// UpdatePatreonCredentialsSyncedAtFunc mocks the UpdatePatreonCredentialsSyncedAt method.
+	UpdatePatreonCredentialsSyncedAtFunc func(ctx context.Context, id int64) error
+
 	// UpsertPatreonCampaignFunc mocks the UpsertPatreonCampaign method.
 	UpsertPatreonCampaignFunc func(ctx context.Context, arg db.UpsertPatreonCampaignParams) error
 
+	// UpsertPatreonMemberFunc mocks the UpsertPatreonMember method.
+	UpsertPatreonMemberFunc func(ctx context.Context, arg db.UpsertPatreonMemberParams) error
+
+	// UpsertPatreonTierFunc mocks the UpsertPatreonTier method.
+	UpsertPatreonTierFunc func(ctx context.Context, arg db.UpsertPatreonTierParams) error
+
 	// calls tracks calls to the methods.
 	calls struct {
+		// AllActivePatreonCredentials holds details about calls to the AllActivePatreonCredentials method.
+		AllActivePatreonCredentials []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// CurrentAdminUserToken holds details about calls to the CurrentAdminUserToken method.
 		CurrentAdminUserToken []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
+		}
+		// GetPatreonCampaignsByCredentialsID holds details about calls to the GetPatreonCampaignsByCredentialsID method.
+		GetPatreonCampaignsByCredentialsID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// CredentialsID is the credentialsID argument value.
+			CredentialsID int64
+		}
+		// GetPatreonMemberByPatreonIDAndCampaignID holds details about calls to the GetPatreonMemberByPatreonIDAndCampaignID method.
+		GetPatreonMemberByPatreonIDAndCampaignID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetPatreonMemberByPatreonIDAndCampaignIDParams
+		}
+		// GetPatreonTierByTierID holds details about calls to the GetPatreonTierByTierID method.
+		GetPatreonTierByTierID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetPatreonTierByTierIDParams
 		}
 		// InsertPatreonCredentials holds details about calls to the InsertPatreonCredentials method.
 		InsertPatreonCredentials []struct {
@@ -73,10 +153,26 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.InsertPatreonCredentialsParams
 		}
-		// PatreonListCampaigns holds details about calls to the PatreonListCampaigns method.
-		PatreonListCampaigns []struct {
-			// Token is the token argument value.
-			Token string
+		// PatreonClientByID holds details about calls to the PatreonClientByID method.
+		PatreonClientByID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// CredentialsID is the credentialsID argument value.
+			CredentialsID int64
+		}
+		// PatreonCredentials holds details about calls to the PatreonCredentials method.
+		PatreonCredentials []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
+		}
+		// SetPatreonMemberCurrentTier holds details about calls to the SetPatreonMemberCurrentTier method.
+		SetPatreonMemberCurrentTier []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.SetPatreonMemberCurrentTierParams
 		}
 		// StartPatreonRefreshBackgroundJob holds details about calls to the StartPatreonRefreshBackgroundJob method.
 		StartPatreonRefreshBackgroundJob []struct {
@@ -85,6 +181,13 @@ type EnvMock struct {
 			// CredentialsID is the credentialsID argument value.
 			CredentialsID int64
 		}
+		// UpdatePatreonCredentialsSyncedAt holds details about calls to the UpdatePatreonCredentialsSyncedAt method.
+		UpdatePatreonCredentialsSyncedAt []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
+		}
 		// UpsertPatreonCampaign holds details about calls to the UpsertPatreonCampaign method.
 		UpsertPatreonCampaign []struct {
 			// Ctx is the ctx argument value.
@@ -92,12 +195,67 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.UpsertPatreonCampaignParams
 		}
+		// UpsertPatreonMember holds details about calls to the UpsertPatreonMember method.
+		UpsertPatreonMember []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpsertPatreonMemberParams
+		}
+		// UpsertPatreonTier holds details about calls to the UpsertPatreonTier method.
+		UpsertPatreonTier []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpsertPatreonTierParams
+		}
 	}
-	lockCurrentAdminUserToken            sync.RWMutex
-	lockInsertPatreonCredentials         sync.RWMutex
-	lockPatreonListCampaigns             sync.RWMutex
-	lockStartPatreonRefreshBackgroundJob sync.RWMutex
-	lockUpsertPatreonCampaign            sync.RWMutex
+	lockAllActivePatreonCredentials              sync.RWMutex
+	lockCurrentAdminUserToken                    sync.RWMutex
+	lockGetPatreonCampaignsByCredentialsID       sync.RWMutex
+	lockGetPatreonMemberByPatreonIDAndCampaignID sync.RWMutex
+	lockGetPatreonTierByTierID                   sync.RWMutex
+	lockInsertPatreonCredentials                 sync.RWMutex
+	lockPatreonClientByID                        sync.RWMutex
+	lockPatreonCredentials                       sync.RWMutex
+	lockSetPatreonMemberCurrentTier              sync.RWMutex
+	lockStartPatreonRefreshBackgroundJob         sync.RWMutex
+	lockUpdatePatreonCredentialsSyncedAt         sync.RWMutex
+	lockUpsertPatreonCampaign                    sync.RWMutex
+	lockUpsertPatreonMember                      sync.RWMutex
+	lockUpsertPatreonTier                        sync.RWMutex
+}
+
+// AllActivePatreonCredentials calls AllActivePatreonCredentialsFunc.
+func (mock *EnvMock) AllActivePatreonCredentials(ctx context.Context) ([]db.PatreonCredential, error) {
+	if mock.AllActivePatreonCredentialsFunc == nil {
+		panic("EnvMock.AllActivePatreonCredentialsFunc: method is nil but Env.AllActivePatreonCredentials was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockAllActivePatreonCredentials.Lock()
+	mock.calls.AllActivePatreonCredentials = append(mock.calls.AllActivePatreonCredentials, callInfo)
+	mock.lockAllActivePatreonCredentials.Unlock()
+	return mock.AllActivePatreonCredentialsFunc(ctx)
+}
+
+// AllActivePatreonCredentialsCalls gets all the calls that were made to AllActivePatreonCredentials.
+// Check the length with:
+//
+//	len(mockedEnv.AllActivePatreonCredentialsCalls())
+func (mock *EnvMock) AllActivePatreonCredentialsCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockAllActivePatreonCredentials.RLock()
+	calls = mock.calls.AllActivePatreonCredentials
+	mock.lockAllActivePatreonCredentials.RUnlock()
+	return calls
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -129,6 +287,114 @@ func (mock *EnvMock) CurrentAdminUserTokenCalls() []struct {
 	mock.lockCurrentAdminUserToken.RLock()
 	calls = mock.calls.CurrentAdminUserToken
 	mock.lockCurrentAdminUserToken.RUnlock()
+	return calls
+}
+
+// GetPatreonCampaignsByCredentialsID calls GetPatreonCampaignsByCredentialsIDFunc.
+func (mock *EnvMock) GetPatreonCampaignsByCredentialsID(ctx context.Context, credentialsID int64) ([]db.PatreonCampaign, error) {
+	if mock.GetPatreonCampaignsByCredentialsIDFunc == nil {
+		panic("EnvMock.GetPatreonCampaignsByCredentialsIDFunc: method is nil but Env.GetPatreonCampaignsByCredentialsID was just called")
+	}
+	callInfo := struct {
+		Ctx           context.Context
+		CredentialsID int64
+	}{
+		Ctx:           ctx,
+		CredentialsID: credentialsID,
+	}
+	mock.lockGetPatreonCampaignsByCredentialsID.Lock()
+	mock.calls.GetPatreonCampaignsByCredentialsID = append(mock.calls.GetPatreonCampaignsByCredentialsID, callInfo)
+	mock.lockGetPatreonCampaignsByCredentialsID.Unlock()
+	return mock.GetPatreonCampaignsByCredentialsIDFunc(ctx, credentialsID)
+}
+
+// GetPatreonCampaignsByCredentialsIDCalls gets all the calls that were made to GetPatreonCampaignsByCredentialsID.
+// Check the length with:
+//
+//	len(mockedEnv.GetPatreonCampaignsByCredentialsIDCalls())
+func (mock *EnvMock) GetPatreonCampaignsByCredentialsIDCalls() []struct {
+	Ctx           context.Context
+	CredentialsID int64
+} {
+	var calls []struct {
+		Ctx           context.Context
+		CredentialsID int64
+	}
+	mock.lockGetPatreonCampaignsByCredentialsID.RLock()
+	calls = mock.calls.GetPatreonCampaignsByCredentialsID
+	mock.lockGetPatreonCampaignsByCredentialsID.RUnlock()
+	return calls
+}
+
+// GetPatreonMemberByPatreonIDAndCampaignID calls GetPatreonMemberByPatreonIDAndCampaignIDFunc.
+func (mock *EnvMock) GetPatreonMemberByPatreonIDAndCampaignID(ctx context.Context, arg db.GetPatreonMemberByPatreonIDAndCampaignIDParams) (db.PatreonMember, error) {
+	if mock.GetPatreonMemberByPatreonIDAndCampaignIDFunc == nil {
+		panic("EnvMock.GetPatreonMemberByPatreonIDAndCampaignIDFunc: method is nil but Env.GetPatreonMemberByPatreonIDAndCampaignID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetPatreonMemberByPatreonIDAndCampaignIDParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetPatreonMemberByPatreonIDAndCampaignID.Lock()
+	mock.calls.GetPatreonMemberByPatreonIDAndCampaignID = append(mock.calls.GetPatreonMemberByPatreonIDAndCampaignID, callInfo)
+	mock.lockGetPatreonMemberByPatreonIDAndCampaignID.Unlock()
+	return mock.GetPatreonMemberByPatreonIDAndCampaignIDFunc(ctx, arg)
+}
+
+// GetPatreonMemberByPatreonIDAndCampaignIDCalls gets all the calls that were made to GetPatreonMemberByPatreonIDAndCampaignID.
+// Check the length with:
+//
+//	len(mockedEnv.GetPatreonMemberByPatreonIDAndCampaignIDCalls())
+func (mock *EnvMock) GetPatreonMemberByPatreonIDAndCampaignIDCalls() []struct {
+	Ctx context.Context
+	Arg db.GetPatreonMemberByPatreonIDAndCampaignIDParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetPatreonMemberByPatreonIDAndCampaignIDParams
+	}
+	mock.lockGetPatreonMemberByPatreonIDAndCampaignID.RLock()
+	calls = mock.calls.GetPatreonMemberByPatreonIDAndCampaignID
+	mock.lockGetPatreonMemberByPatreonIDAndCampaignID.RUnlock()
+	return calls
+}
+
+// GetPatreonTierByTierID calls GetPatreonTierByTierIDFunc.
+func (mock *EnvMock) GetPatreonTierByTierID(ctx context.Context, arg db.GetPatreonTierByTierIDParams) (db.PatreonTier, error) {
+	if mock.GetPatreonTierByTierIDFunc == nil {
+		panic("EnvMock.GetPatreonTierByTierIDFunc: method is nil but Env.GetPatreonTierByTierID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetPatreonTierByTierIDParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetPatreonTierByTierID.Lock()
+	mock.calls.GetPatreonTierByTierID = append(mock.calls.GetPatreonTierByTierID, callInfo)
+	mock.lockGetPatreonTierByTierID.Unlock()
+	return mock.GetPatreonTierByTierIDFunc(ctx, arg)
+}
+
+// GetPatreonTierByTierIDCalls gets all the calls that were made to GetPatreonTierByTierID.
+// Check the length with:
+//
+//	len(mockedEnv.GetPatreonTierByTierIDCalls())
+func (mock *EnvMock) GetPatreonTierByTierIDCalls() []struct {
+	Ctx context.Context
+	Arg db.GetPatreonTierByTierIDParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetPatreonTierByTierIDParams
+	}
+	mock.lockGetPatreonTierByTierID.RLock()
+	calls = mock.calls.GetPatreonTierByTierID
+	mock.lockGetPatreonTierByTierID.RUnlock()
 	return calls
 }
 
@@ -168,35 +434,111 @@ func (mock *EnvMock) InsertPatreonCredentialsCalls() []struct {
 	return calls
 }
 
-// PatreonListCampaigns calls PatreonListCampaignsFunc.
-func (mock *EnvMock) PatreonListCampaigns(token string) ([]patreon.Campaign, error) {
-	if mock.PatreonListCampaignsFunc == nil {
-		panic("EnvMock.PatreonListCampaignsFunc: method is nil but Env.PatreonListCampaigns was just called")
+// PatreonClientByID calls PatreonClientByIDFunc.
+func (mock *EnvMock) PatreonClientByID(ctx context.Context, credentialsID int64) (patreon.Client, error) {
+	if mock.PatreonClientByIDFunc == nil {
+		panic("EnvMock.PatreonClientByIDFunc: method is nil but Env.PatreonClientByID was just called")
 	}
 	callInfo := struct {
-		Token string
+		Ctx           context.Context
+		CredentialsID int64
 	}{
-		Token: token,
+		Ctx:           ctx,
+		CredentialsID: credentialsID,
 	}
-	mock.lockPatreonListCampaigns.Lock()
-	mock.calls.PatreonListCampaigns = append(mock.calls.PatreonListCampaigns, callInfo)
-	mock.lockPatreonListCampaigns.Unlock()
-	return mock.PatreonListCampaignsFunc(token)
+	mock.lockPatreonClientByID.Lock()
+	mock.calls.PatreonClientByID = append(mock.calls.PatreonClientByID, callInfo)
+	mock.lockPatreonClientByID.Unlock()
+	return mock.PatreonClientByIDFunc(ctx, credentialsID)
 }
 
-// PatreonListCampaignsCalls gets all the calls that were made to PatreonListCampaigns.
+// PatreonClientByIDCalls gets all the calls that were made to PatreonClientByID.
 // Check the length with:
 //
-//	len(mockedEnv.PatreonListCampaignsCalls())
-func (mock *EnvMock) PatreonListCampaignsCalls() []struct {
-	Token string
+//	len(mockedEnv.PatreonClientByIDCalls())
+func (mock *EnvMock) PatreonClientByIDCalls() []struct {
+	Ctx           context.Context
+	CredentialsID int64
 } {
 	var calls []struct {
-		Token string
+		Ctx           context.Context
+		CredentialsID int64
 	}
-	mock.lockPatreonListCampaigns.RLock()
-	calls = mock.calls.PatreonListCampaigns
-	mock.lockPatreonListCampaigns.RUnlock()
+	mock.lockPatreonClientByID.RLock()
+	calls = mock.calls.PatreonClientByID
+	mock.lockPatreonClientByID.RUnlock()
+	return calls
+}
+
+// PatreonCredentials calls PatreonCredentialsFunc.
+func (mock *EnvMock) PatreonCredentials(ctx context.Context, id int64) (db.PatreonCredential, error) {
+	if mock.PatreonCredentialsFunc == nil {
+		panic("EnvMock.PatreonCredentialsFunc: method is nil but Env.PatreonCredentials was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockPatreonCredentials.Lock()
+	mock.calls.PatreonCredentials = append(mock.calls.PatreonCredentials, callInfo)
+	mock.lockPatreonCredentials.Unlock()
+	return mock.PatreonCredentialsFunc(ctx, id)
+}
+
+// PatreonCredentialsCalls gets all the calls that were made to PatreonCredentials.
+// Check the length with:
+//
+//	len(mockedEnv.PatreonCredentialsCalls())
+func (mock *EnvMock) PatreonCredentialsCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockPatreonCredentials.RLock()
+	calls = mock.calls.PatreonCredentials
+	mock.lockPatreonCredentials.RUnlock()
+	return calls
+}
+
+// SetPatreonMemberCurrentTier calls SetPatreonMemberCurrentTierFunc.
+func (mock *EnvMock) SetPatreonMemberCurrentTier(ctx context.Context, arg db.SetPatreonMemberCurrentTierParams) error {
+	if mock.SetPatreonMemberCurrentTierFunc == nil {
+		panic("EnvMock.SetPatreonMemberCurrentTierFunc: method is nil but Env.SetPatreonMemberCurrentTier was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.SetPatreonMemberCurrentTierParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockSetPatreonMemberCurrentTier.Lock()
+	mock.calls.SetPatreonMemberCurrentTier = append(mock.calls.SetPatreonMemberCurrentTier, callInfo)
+	mock.lockSetPatreonMemberCurrentTier.Unlock()
+	return mock.SetPatreonMemberCurrentTierFunc(ctx, arg)
+}
+
+// SetPatreonMemberCurrentTierCalls gets all the calls that were made to SetPatreonMemberCurrentTier.
+// Check the length with:
+//
+//	len(mockedEnv.SetPatreonMemberCurrentTierCalls())
+func (mock *EnvMock) SetPatreonMemberCurrentTierCalls() []struct {
+	Ctx context.Context
+	Arg db.SetPatreonMemberCurrentTierParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.SetPatreonMemberCurrentTierParams
+	}
+	mock.lockSetPatreonMemberCurrentTier.RLock()
+	calls = mock.calls.SetPatreonMemberCurrentTier
+	mock.lockSetPatreonMemberCurrentTier.RUnlock()
 	return calls
 }
 
@@ -236,6 +578,42 @@ func (mock *EnvMock) StartPatreonRefreshBackgroundJobCalls() []struct {
 	return calls
 }
 
+// UpdatePatreonCredentialsSyncedAt calls UpdatePatreonCredentialsSyncedAtFunc.
+func (mock *EnvMock) UpdatePatreonCredentialsSyncedAt(ctx context.Context, id int64) error {
+	if mock.UpdatePatreonCredentialsSyncedAtFunc == nil {
+		panic("EnvMock.UpdatePatreonCredentialsSyncedAtFunc: method is nil but Env.UpdatePatreonCredentialsSyncedAt was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockUpdatePatreonCredentialsSyncedAt.Lock()
+	mock.calls.UpdatePatreonCredentialsSyncedAt = append(mock.calls.UpdatePatreonCredentialsSyncedAt, callInfo)
+	mock.lockUpdatePatreonCredentialsSyncedAt.Unlock()
+	return mock.UpdatePatreonCredentialsSyncedAtFunc(ctx, id)
+}
+
+// UpdatePatreonCredentialsSyncedAtCalls gets all the calls that were made to UpdatePatreonCredentialsSyncedAt.
+// Check the length with:
+//
+//	len(mockedEnv.UpdatePatreonCredentialsSyncedAtCalls())
+func (mock *EnvMock) UpdatePatreonCredentialsSyncedAtCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockUpdatePatreonCredentialsSyncedAt.RLock()
+	calls = mock.calls.UpdatePatreonCredentialsSyncedAt
+	mock.lockUpdatePatreonCredentialsSyncedAt.RUnlock()
+	return calls
+}
+
 // UpsertPatreonCampaign calls UpsertPatreonCampaignFunc.
 func (mock *EnvMock) UpsertPatreonCampaign(ctx context.Context, arg db.UpsertPatreonCampaignParams) error {
 	if mock.UpsertPatreonCampaignFunc == nil {
@@ -269,5 +647,77 @@ func (mock *EnvMock) UpsertPatreonCampaignCalls() []struct {
 	mock.lockUpsertPatreonCampaign.RLock()
 	calls = mock.calls.UpsertPatreonCampaign
 	mock.lockUpsertPatreonCampaign.RUnlock()
+	return calls
+}
+
+// UpsertPatreonMember calls UpsertPatreonMemberFunc.
+func (mock *EnvMock) UpsertPatreonMember(ctx context.Context, arg db.UpsertPatreonMemberParams) error {
+	if mock.UpsertPatreonMemberFunc == nil {
+		panic("EnvMock.UpsertPatreonMemberFunc: method is nil but Env.UpsertPatreonMember was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpsertPatreonMemberParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpsertPatreonMember.Lock()
+	mock.calls.UpsertPatreonMember = append(mock.calls.UpsertPatreonMember, callInfo)
+	mock.lockUpsertPatreonMember.Unlock()
+	return mock.UpsertPatreonMemberFunc(ctx, arg)
+}
+
+// UpsertPatreonMemberCalls gets all the calls that were made to UpsertPatreonMember.
+// Check the length with:
+//
+//	len(mockedEnv.UpsertPatreonMemberCalls())
+func (mock *EnvMock) UpsertPatreonMemberCalls() []struct {
+	Ctx context.Context
+	Arg db.UpsertPatreonMemberParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpsertPatreonMemberParams
+	}
+	mock.lockUpsertPatreonMember.RLock()
+	calls = mock.calls.UpsertPatreonMember
+	mock.lockUpsertPatreonMember.RUnlock()
+	return calls
+}
+
+// UpsertPatreonTier calls UpsertPatreonTierFunc.
+func (mock *EnvMock) UpsertPatreonTier(ctx context.Context, arg db.UpsertPatreonTierParams) error {
+	if mock.UpsertPatreonTierFunc == nil {
+		panic("EnvMock.UpsertPatreonTierFunc: method is nil but Env.UpsertPatreonTier was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpsertPatreonTierParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpsertPatreonTier.Lock()
+	mock.calls.UpsertPatreonTier = append(mock.calls.UpsertPatreonTier, callInfo)
+	mock.lockUpsertPatreonTier.Unlock()
+	return mock.UpsertPatreonTierFunc(ctx, arg)
+}
+
+// UpsertPatreonTierCalls gets all the calls that were made to UpsertPatreonTier.
+// Check the length with:
+//
+//	len(mockedEnv.UpsertPatreonTierCalls())
+func (mock *EnvMock) UpsertPatreonTierCalls() []struct {
+	Ctx context.Context
+	Arg db.UpsertPatreonTierParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpsertPatreonTierParams
+	}
+	mock.lockUpsertPatreonTier.RLock()
+	calls = mock.calls.UpsertPatreonTier
+	mock.lockUpsertPatreonTier.RUnlock()
 	return calls
 }

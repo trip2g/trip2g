@@ -9,13 +9,23 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+//go:generate go tool github.com/matryer/moq -out mocks.go . Client
+
 const baseURL = "https://www.patreon.com/api/oauth2/v2"
 
 type ClientConfig struct {
 	CreatorAccessToken string
 }
 
-type Client struct {
+type Client interface {
+	ListCampaigns() ([]Campaign, error)
+	ListPatrons(campaignID string, nextPageURL ...string) (*PatronsResponse, error)
+	ListWebhooks() ([]Webhook, error)
+	CreateWebhook(campaignID string, webhookURL string, triggers []string) (*Webhook, error)
+	DeleteWebhook(webhookID string) error
+}
+
+type ClientImpl struct {
 	accessToken string
 	http        *fasthttp.Client
 	reqTimeout  time.Duration
@@ -30,8 +40,8 @@ func (e *UnexpectedStatusCodeError) Error() string {
 	return fmt.Sprintf("unexpected status code: %d, body: %s", e.StatusCode, e.Body)
 }
 
-func NewClient(config ClientConfig) (*Client, error) {
-	c := Client{
+func NewClient(config ClientConfig) (Client, error) {
+	c := ClientImpl{
 		accessToken: config.CreatorAccessToken,
 		reqTimeout:  10 * time.Second,
 		http: &fasthttp.Client{
@@ -45,7 +55,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 }
 
 // ListCampaigns retrieves all campaigns associated with the creator's account.
-func (c *Client) ListCampaigns() ([]Campaign, error) {
+func (c *ClientImpl) ListCampaigns() ([]Campaign, error) {
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 
@@ -92,7 +102,7 @@ func (c *Client) ListCampaigns() ([]Campaign, error) {
 }
 
 // CreateWebhook creates a new webhook for the campaign.
-func (c *Client) CreateWebhook(campaignID string, webhookURL string, triggers []string) (*Webhook, error) {
+func (c *ClientImpl) CreateWebhook(campaignID string, webhookURL string, triggers []string) (*Webhook, error) {
 	webhookData := WebhookRequest{
 		Data: WebhookData{
 			Type: "webhook",
@@ -154,7 +164,7 @@ func (c *Client) CreateWebhook(campaignID string, webhookURL string, triggers []
 }
 
 // ListWebhooks retrieves all webhooks for the authenticated user.
-func (c *Client) ListWebhooks() ([]Webhook, error) {
+func (c *ClientImpl) ListWebhooks() ([]Webhook, error) {
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 
@@ -188,7 +198,7 @@ func (c *Client) ListWebhooks() ([]Webhook, error) {
 }
 
 // ListPatrons retrieves patrons for a campaign with specified includes and fields.
-func (c *Client) ListPatrons(campaignID string, nextPageURL ...string) (*PatronsResponse, error) {
+func (c *ClientImpl) ListPatrons(campaignID string, nextPageURL ...string) (*PatronsResponse, error) {
 	var reqURL string
 
 	if len(nextPageURL) > 0 && nextPageURL[0] != "" {
@@ -239,7 +249,7 @@ func (c *Client) ListPatrons(campaignID string, nextPageURL ...string) (*Patrons
 }
 
 // DeleteWebhook deletes a webhook by ID.
-func (c *Client) DeleteWebhook(webhookID string) error {
+func (c *ClientImpl) DeleteWebhook(webhookID string) error {
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 

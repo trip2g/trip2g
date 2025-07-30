@@ -1,30 +1,50 @@
 package patreon
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"trip2g/internal/db"
+	"trip2g/internal/logger"
 )
 
 type ClientManager struct {
 	sync.Mutex
 
-	clients map[string]*Client
+	env     ClientManagerEnv
+	clients map[int64]Client
 }
 
-func NewClientManager() *ClientManager {
+type ClientManagerEnv interface {
+	PatreonCredentials(ctx context.Context, id int64) (db.PatreonCredential, error)
+	Logger() logger.Logger
+}
+
+func NewClientManager(env ClientManagerEnv) *ClientManager {
 	return &ClientManager{
-		clients: make(map[string]*Client),
+		env:     env,
+		clients: make(map[int64]Client),
 	}
 }
 
-func (cm *ClientManager) Get(creatorAccessToken string) (*Client, error) {
+func (cm *ClientManager) Get(ctx context.Context, env ClientManagerEnv, id int64) (Client, error) {
+	if env == nil {
+		env.Logger().Debug("using default environment for Boosty client manager")
+		env = cm.env
+	}
+
 	cm.Lock()
 	defer cm.Unlock()
 
-	client, exists := cm.clients[creatorAccessToken]
+	client, exists := cm.clients[id]
 	if !exists {
+		creds, err := env.PatreonCredentials(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get patreon credentials: %w", err)
+		}
+
 		cfg := ClientConfig{
-			CreatorAccessToken: creatorAccessToken,
+			CreatorAccessToken: creds.CreatorAccessToken,
 		}
 
 		newClient, err := NewClient(cfg)
@@ -32,7 +52,7 @@ func (cm *ClientManager) Get(creatorAccessToken string) (*Client, error) {
 			return nil, fmt.Errorf("failed to create Patreon client: %w", err)
 		}
 
-		cm.clients[creatorAccessToken] = newClient
+		cm.clients[id] = newClient
 
 		return newClient, nil
 	}

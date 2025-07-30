@@ -97,22 +97,24 @@ type BoostyCredential struct {
 }
 
 type BoostyMember struct {
-	ID        int64        `json:"id"`
-	BoostyID  int64        `json:"boosty_id"`
-	CreatedAt time.Time    `json:"created_at"`
-	MissedAt  sql.NullTime `json:"missed_at"`
-	Email     string       `json:"email"`
-	Status    string       `json:"status"`
-	Data      string       `json:"data"`
+	ID            int64        `json:"id"`
+	CredentialsID int64        `json:"credentials_id"`
+	BoostyID      int64        `json:"boosty_id"`
+	CreatedAt     time.Time    `json:"created_at"`
+	MissedAt      sql.NullTime `json:"missed_at"`
+	Email         string       `json:"email"`
+	Status        string       `json:"status"`
+	Data          string       `json:"data"`
 }
 
 type BoostyTier struct {
-	ID        int64        `json:"id"`
-	BoostyID  int64        `json:"boosty_id"`
-	CreatedAt time.Time    `json:"created_at"`
-	MissedAt  sql.NullTime `json:"missed_at"`
-	Name      string       `json:"name"`
-	Data      string       `json:"data"`
+	ID            int64        `json:"id"`
+	CredentialsID int64        `json:"credentials_id"`
+	BoostyID      int64        `json:"boosty_id"`
+	CreatedAt     time.Time    `json:"created_at"`
+	MissedAt      sql.NullTime `json:"missed_at"`
+	Name          string       `json:"name"`
+	Data          string       `json:"data"`
 }
 
 type BoostyTierSubgraph struct {

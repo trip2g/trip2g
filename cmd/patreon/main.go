@@ -40,7 +40,7 @@ func main() {
 	logPrintln("\n=== Patreon client test completed successfully! ===")
 }
 
-func testListCampaigns(client *patreon.Client) string {
+func testListCampaigns(client patreon.Client) string {
 	logPrintln("=== Testing ListCampaigns ===")
 	campaigns, err := client.ListCampaigns()
 	if err != nil {
@@ -86,7 +86,7 @@ func testListCampaigns(client *patreon.Client) string {
 	return campaigns[0].ID
 }
 
-func testPatrons(client *patreon.Client, campaignID string) {
+func testPatrons(client patreon.Client, campaignID string) {
 	logPrintln("\n=== Testing ListPatrons ===")
 	patronsResp, err := client.ListPatrons(campaignID)
 	if err != nil {
@@ -113,7 +113,7 @@ func testPatrons(client *patreon.Client, campaignID string) {
 	}
 }
 
-func testWebhookWorkflow(client *patreon.Client, campaignID string) {
+func testWebhookWorkflow(client patreon.Client, campaignID string) {
 	logPrintln("\n=== Testing Webhook Workflow ===")
 
 	listCurrentWebhooks(client)
@@ -138,7 +138,7 @@ func testWebhookWorkflow(client *patreon.Client, campaignID string) {
 	// }
 }
 
-func listCurrentWebhooks(client *patreon.Client) {
+func listCurrentWebhooks(client patreon.Client) {
 	logPrintln("1. Listing current webhooks...")
 	webhooks, err := client.ListWebhooks()
 	if err != nil {
@@ -150,7 +150,7 @@ func listCurrentWebhooks(client *patreon.Client) {
 	}
 }
 
-func createTestWebhook(client *patreon.Client, campaignID string) string {
+func createTestWebhook(client patreon.Client, campaignID string) string {
 	logPrintln("\n2. Adding test webhook...")
 	testWebhookURL := "https://example.com/test-webhook"
 	triggers := []string{
@@ -169,7 +169,7 @@ func createTestWebhook(client *patreon.Client, campaignID string) string {
 	return testWebhookURL
 }
 
-func listWebhooksAfterCreation(client *patreon.Client) string {
+func listWebhooksAfterCreation(client patreon.Client) string {
 	logPrintln("\n3. Listing webhooks after creation...")
 	webhooksAfter, err := client.ListWebhooks()
 	if err != nil {
@@ -188,7 +188,7 @@ func listWebhooksAfterCreation(client *patreon.Client) string {
 	return testWebhookID
 }
 
-func deleteTestWebhook(client *patreon.Client, testWebhookID string) {
+func deleteTestWebhook(client patreon.Client, testWebhookID string) {
 	logPrintf("\n4. Deleting test webhook (ID: %s)...\n", testWebhookID)
 	err := client.DeleteWebhook(testWebhookID)
 	if err != nil {
@@ -198,7 +198,7 @@ func deleteTestWebhook(client *patreon.Client, testWebhookID string) {
 	}
 }
 
-func listWebhooksAfterDeletion(client *patreon.Client) {
+func listWebhooksAfterDeletion(client patreon.Client) {
 	logPrintln("\n5. Listing webhooks after deletion...")
 	webhooksFinal, err := client.ListWebhooks()
 	if err != nil {

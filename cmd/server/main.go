@@ -179,10 +179,9 @@ func main() {
 		UserBans: userbans.New(queries),
 
 		nowpaymentsClient: nowpaymentsClient,
-
-		patreonClientManager: patreon.NewClientManager(),
 	}
 
+	a.patreonClientManager = patreon.NewClientManager(a)
 	a.boostyClientManager = boosty.NewClientManager(a)
 
 	a.PatreonJobs, err = patreonjobs.New(ctx, a)
@@ -283,79 +282,18 @@ func (a *app) createOwnerIfNotExists(ctx context.Context) error {
 	return nil
 }
 
-func (a *app) PatreonListCampaigns(token string) ([]patreon.Campaign, error) {
-	client, err := a.patreonClientManager.Get(token)
+func (a *app) PatreonClientByID(ctx context.Context, credentialsID int64) (patreon.Client, error) {
+	env, err := getEnvOrDefault[patreon.ClientManagerEnv](ctx, a)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Patreon client manager environment: %w", err)
+	}
+
+	client, err := a.patreonClientManager.Get(ctx, env, credentialsID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Patreon client: %w", err)
 	}
 
-	return client.ListCampaigns()
-}
-
-func (a *app) PatreonListPatrons(token string, campaignID string) (*patreon.PatronsResponse, error) {
-	client, err := a.patreonClientManager.Get(token)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get Patreon client: %w", err)
-	}
-
-	return client.ListPatrons(campaignID)
-}
-
-func (a *app) PatreonCreateWebhook(campaignID string, webhookURL string, triggers []string) (*patreon.Webhook, error) {
-	// Use the first available credential's token for webhook operations
-	credentials, err := a.AllActivePatreonCredentials(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get active credentials: %w", err)
-	}
-
-	if len(credentials) == 0 {
-		return nil, errors.New("no active Patreon credentials found")
-	}
-
-	client, err := a.patreonClientManager.Get(credentials[0].CreatorAccessToken)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get Patreon client: %w", err)
-	}
-
-	return client.CreateWebhook(campaignID, webhookURL, triggers)
-}
-
-func (a *app) PatreonListWebhooks() ([]patreon.Webhook, error) {
-	// Use the first available credential's token for webhook operations
-	credentials, err := a.AllActivePatreonCredentials(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get active credentials: %w", err)
-	}
-
-	if len(credentials) == 0 {
-		return nil, errors.New("no active Patreon credentials found")
-	}
-
-	client, err := a.patreonClientManager.Get(credentials[0].CreatorAccessToken)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get Patreon client: %w", err)
-	}
-
-	return client.ListWebhooks()
-}
-
-func (a *app) PatreonDeleteWebhook(webhookID string) error {
-	// Use the first available credential's token for webhook operations
-	credentials, err := a.AllActivePatreonCredentials(context.Background())
-	if err != nil {
-		return fmt.Errorf("failed to get active credentials: %w", err)
-	}
-
-	if len(credentials) == 0 {
-		return errors.New("no active Patreon credentials found")
-	}
-
-	client, err := a.patreonClientManager.Get(credentials[0].CreatorAccessToken)
-	if err != nil {
-		return fmt.Errorf("failed to get Patreon client: %w", err)
-	}
-
-	return client.DeleteWebhook(webhookID)
+	return client, nil
 }
 
 func (a *app) UpdateBoostyCredentials(ctx context.Context, args db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {

@@ -352,7 +352,7 @@ func (r *adminMutationResolver) RefreshPatreonData(ctx context.Context, obj *app
 		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // the error passed to the ErrorPayload
 	}
 
-	return &model.RefreshPatreonDataPayload{Success: true}, nil
+	return &model.RefreshPatreonDataPayload{Success: true, CredentialsID: input.CredentialsID}, nil
 }
 
 // SetPatreonTierSubgraphs is the resolver for the setPatreonTierSubgraphs field.
@@ -387,7 +387,7 @@ func (r *adminMutationResolver) RefreshBoostyData(ctx context.Context, obj *appm
 		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // the error passed to the ErrorPayload
 	}
 
-	return &model.RefreshBoostyDataPayload{Success: true}, nil
+	return &model.RefreshBoostyDataPayload{Success: true, CredentialsID: input.CredentialsID}, nil
 }
 
 // SetBoostyTierSubgraphs is the resolver for the setBoostyTierSubgraphs field.
@@ -1291,6 +1291,16 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 	}, nil
 }
 
+// Credentials is the resolver for the credentials field.
+func (r *refreshBoostyDataPayloadResolver) Credentials(ctx context.Context, obj *model.RefreshBoostyDataPayload) (*db.BoostyCredential, error) {
+	return resolveOne[db.BoostyCredential](ctx, obj.CredentialsID, r.env(ctx).BoostyCredentials)
+}
+
+// Credentials is the resolver for the credentials field.
+func (r *refreshPatreonDataPayloadResolver) Credentials(ctx context.Context, obj *model.RefreshPatreonDataPayload) (*db.PatreonCredential, error) {
+	return resolveOne[db.PatreonCredential](ctx, obj.CredentialsID, r.env(ctx).PatreonCredentials)
+}
+
 // Offers is the resolver for the offers field.
 func (r *subgraphResolver) Offers(ctx context.Context, obj *db.Subgraph) ([]db.Offer, error) {
 	return r.env(ctx).ListActiveOffersBySubgraphID(ctx, obj.ID)
@@ -1712,6 +1722,16 @@ func (r *Resolver) PushedNote() PushedNoteResolver { return &pushedNoteResolver{
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// RefreshBoostyDataPayload returns RefreshBoostyDataPayloadResolver implementation.
+func (r *Resolver) RefreshBoostyDataPayload() RefreshBoostyDataPayloadResolver {
+	return &refreshBoostyDataPayloadResolver{r}
+}
+
+// RefreshPatreonDataPayload returns RefreshPatreonDataPayloadResolver implementation.
+func (r *Resolver) RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver {
+	return &refreshPatreonDataPayloadResolver{r}
+}
+
 // Subgraph returns SubgraphResolver implementation.
 func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
 
@@ -1794,6 +1814,8 @@ type offerResolver struct{ *Resolver }
 type purchaseResolver struct{ *Resolver }
 type pushedNoteResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type refreshBoostyDataPayloadResolver struct{ *Resolver }
+type refreshPatreonDataPayloadResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
 type updateNoteGraphPositionsPayloadResolver struct{ *Resolver }
