@@ -44,7 +44,7 @@ func New(ctx context.Context, env Env) (*PatreonJobs, error) {
 	}
 
 	for _, cred := range credentials {
-		err := io.RegisterWebhook(ctx, cred.ID)
+		err = io.RegisterWebhook(ctx, cred.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to register webhooks: %w", err)
 		}

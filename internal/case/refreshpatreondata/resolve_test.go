@@ -14,7 +14,7 @@ import (
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
-// mockPatreonClient is a mock implementation of patreon.Client
+// mockPatreonClient is a mock implementation of patreon.Client.
 type mockPatreonClient struct {
 	listCampaignsFunc func() ([]patreon.Campaign, error)
 	listPatronsFunc   func(campaignID string, nextPageURL ...string) (*patreon.PatronsResponse, error)

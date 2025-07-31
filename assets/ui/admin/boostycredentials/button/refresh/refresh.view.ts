@@ -11,6 +11,9 @@ namespace $.$$ {
 								}
 								... on RefreshBoostyDataPayload {
 									success
+									credentials {
+										id
+									}
 								}
 							}
 						}

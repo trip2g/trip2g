@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -12,7 +13,10 @@ import (
 
 //go:generate go tool github.com/matryer/moq -out mocks.go . Client
 
-const baseURL = "https://api.boosty.to/v1"
+const (
+	baseURL       = "https://api.boosty.to/v1"
+	oauthTokenURL = "https://api.boosty.to/oauth/token/"
+)
 
 type AuthData struct {
 	AccessToken  string `json:"accessToken"`
@@ -22,8 +26,15 @@ type AuthData struct {
 	BlogName     string `json:"blogName"`
 }
 
+type RefreshTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int    `json:"expires_in"`
+}
+
 type Client interface {
 	Subscribers() ([]Subscriber, error)
+	RefreshToken() (*RefreshTokenResponse, error)
 }
 
 type ClientImpl struct {
@@ -166,4 +177,67 @@ func (c *ClientImpl) fetchSubscribersPage(sortBy string, limit int, order string
 	}
 
 	return &respData, nil
+}
+
+// RefreshToken refreshes the access token using the refresh token.
+func (c *ClientImpl) RefreshToken() (*RefreshTokenResponse, error) {
+	if c.authData.RefreshToken == "" {
+		return nil, fmt.Errorf("no refresh token was found to refresh auth data")
+	}
+
+	req := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(req)
+
+	// Create form data exactly like the JavaScript version
+	formData := url.Values{}
+	formData.Set("device_id", c.authData.DeviceID)
+	formData.Set("grant_type", "refresh_token")
+	formData.Set("refresh_token", c.authData.RefreshToken)
+	formData.Set("device_os", "web")
+
+	req.SetRequestURI(oauthTokenURL)
+	req.Header.SetMethod(fasthttp.MethodPost)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json, text/plain, */*")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("Origin", "https://boosty.to")
+	req.Header.Set("Referer", fmt.Sprintf("https://boosty.to/%s/blog/statistics/subscribers", c.authData.BlogName))
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36")
+	req.Header.Set("X-App", "web")
+	req.Header.Set("X-Currency", "USD")
+	req.Header.Set("X-From-Id", c.authData.DeviceID)
+	req.Header.Set("X-Locale", "ru_RU")
+	req.SetBodyString(formData.Encode())
+
+	// Add authorization header if access token exists
+	if c.authData.AccessToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.authData.AccessToken)
+	}
+
+	resp := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(resp)
+
+	err := c.http.DoTimeout(req, resp, c.reqTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to refresh token: %w", err)
+	}
+
+	if resp.StatusCode() != fasthttp.StatusOK {
+		return nil, &UnexpectedStatusCodeError{
+			StatusCode: resp.StatusCode(),
+			Body:       string(resp.Body()),
+		}
+	}
+
+	var result RefreshTokenResponse
+	err = json.Unmarshal(resp.Body(), &result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal refresh token response: %w", err)
+	}
+
+	// Update internal auth data with new tokens
+	c.authData.AccessToken = result.AccessToken
+	c.authData.RefreshToken = result.RefreshToken
+
+	return &result, nil
 }

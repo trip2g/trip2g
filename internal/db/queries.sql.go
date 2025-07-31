@@ -1033,7 +1033,7 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 
 const getBoostyMembers = `-- name: GetBoostyMembers :many
 
-select id, credentials_id, boosty_id, created_at, missed_at, email, status, data from boosty_members
+select id, credentials_id, boosty_id, created_at, missed_at, email, status, data, current_tier_id from boosty_members
 order by created_at
 `
 
@@ -1056,6 +1056,7 @@ func (q *Queries) GetBoostyMembers(ctx context.Context) ([]BoostyMember, error) 
 			&i.Email,
 			&i.Status,
 			&i.Data,
+			&i.CurrentTierID,
 		); err != nil {
 			return nil, err
 		}
@@ -1089,6 +1090,24 @@ func (q *Queries) GetBoostyTierByBoostyID(ctx context.Context, boostyID int64) (
 		&i.Data,
 	)
 	return i, err
+}
+
+const getBoostyTierIDByCredentialsAndBoostyID = `-- name: GetBoostyTierIDByCredentialsAndBoostyID :one
+select id from boosty_tiers
+where credentials_id = ? and boosty_id = ?
+limit 1
+`
+
+type GetBoostyTierIDByCredentialsAndBoostyIDParams struct {
+	CredentialsID int64 `json:"credentials_id"`
+	BoostyID      int64 `json:"boosty_id"`
+}
+
+func (q *Queries) GetBoostyTierIDByCredentialsAndBoostyID(ctx context.Context, arg GetBoostyTierIDByCredentialsAndBoostyIDParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getBoostyTierIDByCredentialsAndBoostyID, arg.CredentialsID, arg.BoostyID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getBoostyTiers = `-- name: GetBoostyTiers :many
@@ -4378,21 +4397,23 @@ func (q *Queries) UpsertAPIKeyLogIP(ctx context.Context, value string) error {
 }
 
 const upsertBoostyMember = `-- name: UpsertBoostyMember :exec
-insert into boosty_members (credentials_id, boosty_id, email, status, data)
-values (?, ?, ?, ?, ?)
+insert into boosty_members (credentials_id, boosty_id, email, status, data, current_tier_id)
+values (?, ?, ?, ?, ?, ?)
 on conflict(credentials_id, boosty_id) do update set
   email = excluded.email,
   status = excluded.status,
   data = excluded.data,
+  current_tier_id = excluded.current_tier_id,
   missed_at = null
 `
 
 type UpsertBoostyMemberParams struct {
-	CredentialsID int64  `json:"credentials_id"`
-	BoostyID      int64  `json:"boosty_id"`
-	Email         string `json:"email"`
-	Status        string `json:"status"`
-	Data          string `json:"data"`
+	CredentialsID int64         `json:"credentials_id"`
+	BoostyID      int64         `json:"boosty_id"`
+	Email         string        `json:"email"`
+	Status        string        `json:"status"`
+	Data          string        `json:"data"`
+	CurrentTierID sql.NullInt64 `json:"current_tier_id"`
 }
 
 func (q *Queries) UpsertBoostyMember(ctx context.Context, arg UpsertBoostyMemberParams) error {
@@ -4402,6 +4423,7 @@ func (q *Queries) UpsertBoostyMember(ctx context.Context, arg UpsertBoostyMember
 		arg.Email,
 		arg.Status,
 		arg.Data,
+		arg.CurrentTierID,
 	)
 	return err
 }

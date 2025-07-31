@@ -166,14 +166,88 @@ func processIncludedTier(ctx context.Context, env Env, included patreon.Included
 	}
 }
 
+func extractPatronEmail(patron patreon.Patron) string {
+	if patron.Attributes.Email != "" {
+		return patron.Attributes.Email
+	}
+	return fmt.Sprintf("patron_%s@patreon.local", patron.ID)
+}
+
+func extractPatronStatus(patron patreon.Patron) string {
+	if patron.Attributes.PatronStatus != nil {
+		return *patron.Attributes.PatronStatus
+	}
+	return "unknown"
+}
+
+func processPatronTier(ctx context.Context, env Env, patron patreon.Patron, dbCampaignID int64) sql.NullInt64 {
+	tierData, _ := patron.GetCurrentlyEntitledTiers()
+	var currentTierID sql.NullInt64
+
+	if len(tierData) == 0 {
+		return currentTierID
+	}
+
+	tierID := tierData[0].ID
+	dbTier, err := env.GetPatreonTierByTierID(ctx, db.GetPatreonTierByTierIDParams{
+		CampaignID: dbCampaignID,
+		TierID:     tierID,
+	})
+	if err == nil {
+		currentTierID = sql.NullInt64{Int64: dbTier.ID, Valid: true}
+	}
+
+	return currentTierID
+}
+
+func updatePatronMemberTier(ctx context.Context, env Env, patron patreon.Patron, dbCampaignID int64, currentTierID sql.NullInt64) {
+	if !currentTierID.Valid {
+		return
+	}
+
+	dbMember, err := env.GetPatreonMemberByPatreonIDAndCampaignID(ctx, db.GetPatreonMemberByPatreonIDAndCampaignIDParams{
+		PatreonID:  patron.ID,
+		CampaignID: dbCampaignID,
+	})
+	if err != nil {
+		return // Ignore error, just skip tier update
+	}
+
+	err = env.SetPatreonMemberCurrentTier(ctx, db.SetPatreonMemberCurrentTierParams{
+		CurrentTierID: currentTierID,
+		ID:            dbMember.ID,
+	})
+	// Ignore error, just log but don't fail
+	_ = err
+}
+
+func processPatron(ctx context.Context, env Env, patron patreon.Patron, dbCampaignID int64) error {
+	email := extractPatronEmail(patron)
+	status := extractPatronStatus(patron)
+
+	memberParams := db.UpsertPatreonMemberParams{
+		PatreonID:  patron.ID,
+		CampaignID: dbCampaignID,
+		Status:     status,
+		Email:      email,
+	}
+
+	err := env.UpsertPatreonMember(ctx, memberParams)
+	if err != nil {
+		return fmt.Errorf("failed to upsert member %s: %w", patron.ID, err)
+	}
+
+	currentTierID := processPatronTier(ctx, env, patron, dbCampaignID)
+	updatePatronMemberTier(ctx, env, patron, dbCampaignID, currentTierID)
+	return nil
+}
+
 func syncMembers(ctx context.Context, env Env, credentials db.PatreonCredential, campaignID string, dbCampaignID int64) error {
-	// Get Patreon client
 	client, err := env.PatreonClientByID(ctx, credentials.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get Patreon client: %w", err)
 	}
 
-	// Fetch and sync members for this campaign
 	patronsResp, err := client.ListPatrons(campaignID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch patrons for campaign %s: %w", campaignID, err)
@@ -186,78 +260,14 @@ func syncMembers(ctx context.Context, env Env, credentials db.PatreonCredential,
 		}
 	}
 
-	// Collect patron IDs for marking missed members
-	patronIDs := make([]string, 0, len(patronsResp.Data))
-
 	// Process each patron
+	patronIDs := make([]string, 0, len(patronsResp.Data))
 	for _, patron := range patronsResp.Data {
 		patronIDs = append(patronIDs, patron.ID)
 
-		// Get user email from patron attributes
-		var email string
-		if patron.Attributes.Email != "" {
-			email = patron.Attributes.Email
-		} else {
-			// Use a placeholder if no email is available
-			email = fmt.Sprintf("patron_%s@patreon.local", patron.ID)
-		}
-
-		// Extract patron status
-		var status string
-		if patron.Attributes.PatronStatus != nil {
-			status = *patron.Attributes.PatronStatus
-		} else {
-			status = "unknown"
-		}
-
-		// Upsert member
-		memberParams := db.UpsertPatreonMemberParams{
-			PatreonID:  patron.ID,
-			CampaignID: dbCampaignID,
-			Status:     status,
-			Email:      email,
-		}
-
-		err = env.UpsertPatreonMember(ctx, memberParams)
+		err = processPatron(ctx, env, patron, dbCampaignID)
 		if err != nil {
-			return fmt.Errorf("failed to upsert member %s: %w", patron.ID, err)
-		}
-
-		// Handle currently entitled tiers
-		tierData, _ := patron.GetCurrentlyEntitledTiers()
-		var currentTierID sql.NullInt64
-
-		if len(tierData) > 0 {
-			// Get the first tier (primary tier)
-			tierID := tierData[0].ID
-
-			// Find the tier in our database
-			dbTier, tierErr := env.GetPatreonTierByTierID(ctx, db.GetPatreonTierByTierIDParams{
-				CampaignID: dbCampaignID,
-				TierID:     tierID,
-			})
-			if tierErr == nil {
-				currentTierID = sql.NullInt64{Int64: dbTier.ID, Valid: true}
-			}
-		}
-
-		// Get the member we just created/updated and set tier if we have one
-		if currentTierID.Valid {
-			dbMember, memberErr := env.GetPatreonMemberByPatreonIDAndCampaignID(ctx, db.GetPatreonMemberByPatreonIDAndCampaignIDParams{
-				PatreonID:  patron.ID,
-				CampaignID: dbCampaignID,
-			})
-			if memberErr == nil {
-				// Update member's current tier
-				updateErr := env.SetPatreonMemberCurrentTier(ctx, db.SetPatreonMemberCurrentTierParams{
-					CurrentTierID: currentTierID,
-					ID:            dbMember.ID,
-				})
-				if updateErr != nil {
-					// Log but don't fail
-					_ = updateErr
-				}
-			}
+			return err
 		}
 	}
 
@@ -267,7 +277,6 @@ func syncMembers(ctx context.Context, env Env, credentials db.PatreonCredential,
 		if marshalErr != nil {
 			return fmt.Errorf("failed to marshal patron IDs: %w", marshalErr)
 		}
-
 		// TODO: Implement MarkMissedPatreonMembers when sqlc supports json_each properly
 		_ = patronIDsJSON
 	}

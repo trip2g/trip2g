@@ -356,6 +356,7 @@ type AdminBoostyMember @goModel(model: "trip2g/internal/db.BoostyMember") {
   email: String!
   status: String!
   data: String!
+  currentTier: AdminBoostyTier @goField(forceResolver: true)
 }
 
 type AdminBoostyMembersConnection {

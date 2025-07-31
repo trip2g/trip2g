@@ -42,8 +42,8 @@ func (cm *ClientManager) Reset(ctx context.Context, credentialsID int64) {
 
 func (cm *ClientManager) Get(ctx context.Context, env ClientManagerEnv, credentialsID int64) (Client, error) {
 	if env == nil {
-		env.Logger().Debug("using default environment for Boosty client manager")
 		env = cm.env
+		env.Logger().Debug("using default environment for Boosty client manager")
 	}
 
 	cm.Lock()

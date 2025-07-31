@@ -2,6 +2,7 @@ package refreshboostydata
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"trip2g/internal/boosty"
@@ -15,6 +16,7 @@ type Env interface {
 	// Boosty tier operations
 	UpsertBoostyTier(ctx context.Context, arg db.UpsertBoostyTierParams) error
 	MarkBoostyTiersAsMissed(ctx context.Context, arg db.MarkBoostyTiersAsMissedParams) error
+	GetBoostyTierIDByCredentialsAndBoostyID(ctx context.Context, arg db.GetBoostyTierIDByCredentialsAndBoostyIDParams) (int64, error)
 
 	// Boosty member operations
 	UpsertBoostyMember(ctx context.Context, arg db.UpsertBoostyMemberParams) error
@@ -23,102 +25,101 @@ type Env interface {
 	Logger() logger.Logger
 }
 
-func syncBoostyData(ctx context.Context, env Env, credentialsID int64) error {
-	// Get Boosty client
-	client, err := env.BoostyClientByCredentialsID(ctx, credentialsID)
-	if err != nil {
-		return fmt.Errorf("failed to get Boosty client: %w", err)
+func processBoostyTier(ctx context.Context, env Env, credentialsID int64, subscriber boosty.Subscriber, tierBoostyIDs map[int64]bool) error {
+	if subscriber.Level.ID <= 0 || subscriber.Level.Deleted {
+		return nil
 	}
 
-	// Fetch all subscribers
-	subscribers, err := client.Subscribers()
-	if err != nil {
-		return fmt.Errorf("failed to get subscribers: %w", err)
+	tierID := int64(subscriber.Level.ID)
+	if tierBoostyIDs[tierID] {
+		return nil // Already processed
 	}
 
-	env.Logger().Debug("fetched subscribers from Boosty", "count", len(subscribers))
+	tierBoostyIDs[tierID] = true
 
-	// Collect unique tiers and member IDs
-	tierBoostyIDs := make(map[int64]bool)
-	memberBoostyIDs := make([]int64, 0, len(subscribers))
+	levelData, err := json.Marshal(subscriber.Level)
+	if err != nil {
+		return fmt.Errorf("failed to marshal tier data for tier %d: %w", tierID, err)
+	}
 
-	// Process each subscriber
-	for _, subscriber := range subscribers {
-		// Track member ID
-		memberBoostyIDs = append(memberBoostyIDs, int64(subscriber.ID))
+	tierParams := db.UpsertBoostyTierParams{
+		CredentialsID: credentialsID,
+		BoostyID:      int64(subscriber.Level.ID),
+		Name:          subscriber.Level.Name,
+		Data:          string(levelData),
+	}
 
-		// Process tier if present
-		if subscriber.Level.ID > 0 && !subscriber.Level.Deleted {
-			tierID := int64(subscriber.Level.ID)
+	err = env.UpsertBoostyTier(ctx, tierParams)
+	if err != nil {
+		return fmt.Errorf("failed to upsert tier %d: %w", tierID, err)
+	}
 
-			// Only process each tier once
-			if !tierBoostyIDs[tierID] {
-				tierBoostyIDs[tierID] = true
+	return nil
+}
 
-				// Marshal level data
-				levelData, marshalErr := json.Marshal(subscriber.Level)
-				if marshalErr != nil {
-					return fmt.Errorf("failed to marshal tier data for tier %d: %w", tierID, marshalErr)
-				}
+func determineSubscriberStatus(subscriber boosty.Subscriber) string {
+	status := "inactive"
+	if subscriber.Subscribed {
+		status = "active"
+	}
+	if subscriber.IsBlackListed {
+		status = "blacklisted"
+	}
+	return status
+}
 
-				// Upsert tier
-				tierParams := db.UpsertBoostyTierParams{
-					CredentialsID: credentialsID,
-					BoostyID:      int64(subscriber.Level.ID),
-					Name:          subscriber.Level.Name,
-					Data:          string(levelData),
-				}
+func processBoostyMember(ctx context.Context, env Env, credentialsID int64, subscriber boosty.Subscriber) error {
+	status := determineSubscriberStatus(subscriber)
 
-				err = env.UpsertBoostyTier(ctx, tierParams)
-				if err != nil {
-					return fmt.Errorf("failed to upsert tier %d: %w", tierID, err)
-				}
-			}
-		}
+	subscriberData, err := json.Marshal(subscriber)
+	if err != nil {
+		return fmt.Errorf("failed to marshal subscriber data for %d: %w", subscriber.ID, err)
+	}
 
-		// Determine member status based on available fields
-		// Status is derived from Subscribed boolean as there's no Status field in the API response
-		status := "inactive"
-		if subscriber.Subscribed {
-			status = "active"
-		}
-		if subscriber.IsBlackListed {
-			status = "blacklisted"
-		}
+	memberParams := db.UpsertBoostyMemberParams{
+		CredentialsID: credentialsID,
+		BoostyID:      int64(subscriber.ID),
+		Email:         subscriber.Email,
+		Status:        status,
+		Data:          string(subscriberData),
+	}
 
-		// Marshal subscriber data
-		subscriberData, marshalErr := json.Marshal(subscriber)
-		if marshalErr != nil {
-			return fmt.Errorf("failed to marshal subscriber data for %d: %w", subscriber.ID, marshalErr)
-		}
-
-		// Upsert member
-		memberParams := db.UpsertBoostyMemberParams{
+	// Set current_tier_id if the subscriber has a valid tier
+	if subscriber.Level.ID > 0 && !subscriber.Level.Deleted {
+		tierParams := db.GetBoostyTierIDByCredentialsAndBoostyIDParams{
 			CredentialsID: credentialsID,
-			BoostyID:      int64(subscriber.ID),
-			Email:         subscriber.Email,
-			Status:        status,
-			Data:          string(subscriberData),
+			BoostyID:      int64(subscriber.Level.ID),
 		}
-
-		err = env.UpsertBoostyMember(ctx, memberParams)
+		tierID, err := env.GetBoostyTierIDByCredentialsAndBoostyID(ctx, tierParams)
 		if err != nil {
-			return fmt.Errorf("failed to upsert member %d: %w", subscriber.ID, err)
+			// If tier not found, log but continue without setting current_tier_id
+			env.Logger().Debug("tier not found for member", "member_id", subscriber.ID, "tier_boosty_id", subscriber.Level.ID, "error", err)
+		} else {
+			memberParams.CurrentTierID = sql.NullInt64{Int64: tierID, Valid: true}
 		}
 	}
 
-	// Mark tiers not in current sync as missed
-	tierIDsList := make([]int64, 0, len(tierBoostyIDs))
-	for tierID := range tierBoostyIDs {
-		tierIDsList = append(tierIDsList, tierID)
+	err = env.UpsertBoostyMember(ctx, memberParams)
+	if err != nil {
+		return fmt.Errorf("failed to upsert member %d: %w", subscriber.ID, err)
 	}
 
-	if len(tierIDsList) > 0 {
+	return nil
+}
+
+func markMissedEntities(ctx context.Context, env Env, credentialsID int64, tierBoostyIDs map[int64]bool, memberBoostyIDs []int64) error {
+	// Mark tiers not in current sync as missed
+	if len(tierBoostyIDs) > 0 {
+		tierIDsList := make([]int64, 0, len(tierBoostyIDs))
+		for tierID := range tierBoostyIDs {
+			tierIDsList = append(tierIDsList, tierID)
+		}
+
 		markTiersParams := db.MarkBoostyTiersAsMissedParams{
 			CredentialsID: credentialsID,
 			BoostyIds:     tierIDsList,
 		}
-		err = env.MarkBoostyTiersAsMissed(ctx, markTiersParams)
+		err := env.MarkBoostyTiersAsMissed(ctx, markTiersParams)
 		if err != nil {
 			return fmt.Errorf("failed to mark missed tiers: %w", err)
 		}
@@ -126,13 +127,46 @@ func syncBoostyData(ctx context.Context, env Env, credentialsID int64) error {
 
 	// Mark members not in current sync as missed
 	if len(memberBoostyIDs) > 0 {
-		err = env.MarkBoostyMembersAsMissed(ctx, memberBoostyIDs)
+		err := env.MarkBoostyMembersAsMissed(ctx, memberBoostyIDs)
 		if err != nil {
 			return fmt.Errorf("failed to mark missed members: %w", err)
 		}
 	}
 
 	return nil
+}
+
+func syncBoostyData(ctx context.Context, env Env, credentialsID int64) error {
+	client, err := env.BoostyClientByCredentialsID(ctx, credentialsID)
+	if err != nil {
+		return fmt.Errorf("failed to get Boosty client: %w", err)
+	}
+
+	subscribers, err := client.Subscribers()
+	if err != nil {
+		return fmt.Errorf("failed to get subscribers: %w", err)
+	}
+
+	env.Logger().Debug("fetched subscribers from Boosty", "count", len(subscribers))
+
+	tierBoostyIDs := make(map[int64]bool)
+	memberBoostyIDs := make([]int64, 0, len(subscribers))
+
+	for _, subscriber := range subscribers {
+		memberBoostyIDs = append(memberBoostyIDs, int64(subscriber.ID))
+
+		err = processBoostyTier(ctx, env, credentialsID, subscriber, tierBoostyIDs)
+		if err != nil {
+			return err
+		}
+
+		err = processBoostyMember(ctx, env, credentialsID, subscriber)
+		if err != nil {
+			return err
+		}
+	}
+
+	return markMissedEntities(ctx, env, credentialsID, tierBoostyIDs, memberBoostyIDs)
 }
 
 func Resolve(ctx context.Context, env Env, credentialsID int64) error {

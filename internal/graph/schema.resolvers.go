@@ -173,6 +173,11 @@ func (r *adminBoostyMemberResolver) MissedAt(ctx context.Context, obj *db.Boosty
 	return db.ToTimePtr(obj.MissedAt), nil
 }
 
+// CurrentTier is the resolver for the currentTier field.
+func (r *adminBoostyMemberResolver) CurrentTier(ctx context.Context, obj *db.BoostyMember) (*db.BoostyTier, error) {
+	panic(fmt.Errorf("not implemented: CurrentTier - currentTier"))
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminBoostyMembersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminBoostyMembersConnection) ([]db.BoostyMember, error) {
 	return r.env(ctx).GetBoostyMembers(ctx)

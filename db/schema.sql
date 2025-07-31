@@ -361,6 +361,7 @@ CREATE TABLE boosty_members (
   email text not null,
   status text not null,
   data text not null,
+  current_tier_id integer references boosty_tiers(id) on delete restrict,
 
   unique (credentials_id, boosty_id)
 );

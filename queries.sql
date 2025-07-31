@@ -943,12 +943,13 @@ insert into boosty_members (boosty_id, email, status, data)
 values (?, ?, ?, ?);
 
 -- name: UpsertBoostyMember :exec
-insert into boosty_members (credentials_id, boosty_id, email, status, data)
-values (?, ?, ?, ?, ?)
+insert into boosty_members (credentials_id, boosty_id, email, status, data, current_tier_id)
+values (?, ?, ?, ?, ?, ?)
 on conflict(credentials_id, boosty_id) do update set
   email = excluded.email,
   status = excluded.status,
   data = excluded.data,
+  current_tier_id = excluded.current_tier_id,
   missed_at = null;
 
 -- name: MarkBoostyMembersAsMissed :exec
@@ -967,6 +968,11 @@ where credentials_id = ?
 -- name: GetBoostyTierByBoostyID :one
 select * from boosty_tiers
 where boosty_id = ?
+limit 1;
+
+-- name: GetBoostyTierIDByCredentialsAndBoostyID :one
+select id from boosty_tiers
+where credentials_id = ? and boosty_id = ?
 limit 1;
 
 -- name: MarkPatreonMembersAsMissed :exec

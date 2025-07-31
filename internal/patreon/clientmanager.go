@@ -29,8 +29,8 @@ func NewClientManager(env ClientManagerEnv) *ClientManager {
 
 func (cm *ClientManager) Get(ctx context.Context, env ClientManagerEnv, id int64) (Client, error) {
 	if env == nil {
-		env.Logger().Debug("using default environment for Boosty client manager")
 		env = cm.env
+		env.Logger().Debug("using default environment for Patreon client manager")
 	}
 
 	cm.Lock()
