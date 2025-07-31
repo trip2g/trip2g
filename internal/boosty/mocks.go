@@ -17,6 +17,9 @@ var _ Client = &ClientMock{}
 //
 //		// make and configure a mocked Client
 //		mockedClient := &ClientMock{
+//			RefreshTokenFunc: func() (*RefreshTokenResponse, error) {
+//				panic("mock out the RefreshToken method")
+//			},
 //			SubscribersFunc: func() ([]Subscriber, error) {
 //				panic("mock out the Subscribers method")
 //			},
@@ -27,16 +30,50 @@ var _ Client = &ClientMock{}
 //
 //	}
 type ClientMock struct {
+	// RefreshTokenFunc mocks the RefreshToken method.
+	RefreshTokenFunc func() (*RefreshTokenResponse, error)
+
 	// SubscribersFunc mocks the Subscribers method.
 	SubscribersFunc func() ([]Subscriber, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// RefreshToken holds details about calls to the RefreshToken method.
+		RefreshToken []struct {
+		}
 		// Subscribers holds details about calls to the Subscribers method.
 		Subscribers []struct {
 		}
 	}
-	lockSubscribers sync.RWMutex
+	lockRefreshToken sync.RWMutex
+	lockSubscribers  sync.RWMutex
+}
+
+// RefreshToken calls RefreshTokenFunc.
+func (mock *ClientMock) RefreshToken() (*RefreshTokenResponse, error) {
+	if mock.RefreshTokenFunc == nil {
+		panic("ClientMock.RefreshTokenFunc: method is nil but Client.RefreshToken was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockRefreshToken.Lock()
+	mock.calls.RefreshToken = append(mock.calls.RefreshToken, callInfo)
+	mock.lockRefreshToken.Unlock()
+	return mock.RefreshTokenFunc()
+}
+
+// RefreshTokenCalls gets all the calls that were made to RefreshToken.
+// Check the length with:
+//
+//	len(mockedClient.RefreshTokenCalls())
+func (mock *ClientMock) RefreshTokenCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockRefreshToken.RLock()
+	calls = mock.calls.RefreshToken
+	mock.lockRefreshToken.RUnlock()
+	return calls
 }
 
 // Subscribers calls SubscribersFunc.

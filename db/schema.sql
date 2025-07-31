@@ -332,7 +332,7 @@ CREATE TABLE boosty_credentials (
   auth_data text not null, -- json from the site cookie
   device_id text not null, -- client_id from the site cookie
   blog_name text not null -- the user page name
-);
+, expires_at datetime);
 CREATE TABLE boosty_tiers (
   id integer primary key autoincrement,
   credentials_id integer not null references boosty_credentials(id) on delete restrict,
@@ -361,7 +361,7 @@ CREATE TABLE boosty_members (
   email text not null,
   status text not null,
   data text not null,
-  current_tier_id integer references boosty_tiers(id) on delete restrict,
+  current_tier_id integer references boosty_tiers(id) on delete restrict, user_id integer references users(id) on delete restrict,
 
   unique (credentials_id, boosty_id)
 );
@@ -416,4 +416,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250728130332'),
   ('20250729014409'),
   ('20250729111321'),
-  ('20250729112136');
+  ('20250729112136'),
+  ('20250731060940'),
+  ('20250731061653');

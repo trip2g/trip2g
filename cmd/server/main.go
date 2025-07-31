@@ -27,6 +27,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/boosty"
 	"trip2g/internal/bqtask/sendsignincode"
+	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
@@ -897,12 +898,20 @@ func (a *app) NotifyPuchaseUpdated(email string) {
 }
 
 func (a *app) TryToAutoRegisterUser(ctx context.Context, email string) (*db.User, error) {
-	user, err := getpatreonuser.Resolve(ctx, a, email)
+	user, err := getboostyuser.Resolve(ctx, a, email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check Boosty user: %w", err)
+	}
+
+	if user != nil {
+		return user, nil
+	}
+
+	user, err = getpatreonuser.Resolve(ctx, a, email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check Patreon user: %w", err)
 	}
 
-	// boosty
 	// etc
 
 	return user, nil

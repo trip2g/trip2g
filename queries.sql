@@ -899,6 +899,12 @@ set auth_data = ?, device_id = ?, blog_name = ?
 where id = ?
 returning *;
 
+-- name: UpdateBoostyCredentialsTokens :one
+update boosty_credentials
+set auth_data = ?, expires_at = ?
+where id = ?
+returning *;
+
 -- Boosty tiers
 
 -- name: GetBoostyTiers :many
@@ -951,6 +957,17 @@ on conflict(credentials_id, boosty_id) do update set
   data = excluded.data,
   current_tier_id = excluded.current_tier_id,
   missed_at = null;
+
+-- name: GetBoostyMemberByEmail :one
+select * from boosty_members
+where email = ? and status = 'active'
+order by created_at desc
+limit 1;
+
+-- name: UpdateBoostyMemberUserID :exec
+update boosty_members
+set user_id = ?
+where id = ?;
 
 -- name: MarkBoostyMembersAsMissed :exec
 update boosty_members

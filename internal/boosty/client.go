@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -208,11 +207,7 @@ func (c *ClientImpl) RefreshToken() (*RefreshTokenResponse, error) {
 	req.Header.Set("X-From-Id", c.authData.DeviceID)
 	req.Header.Set("X-Locale", "ru_RU")
 	req.SetBodyString(formData.Encode())
-
-	// Add authorization header if access token exists
-	if c.authData.AccessToken != "" {
-		req.Header.Set("Authorization", "Bearer "+c.authData.AccessToken)
-	}
+	req.Header.Set("Authorization", "Bearer "+c.authData.AccessToken)
 
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)

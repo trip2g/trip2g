@@ -94,6 +94,7 @@ type BoostyCredential struct {
 	AuthData  string        `json:"auth_data"`
 	DeviceID  string        `json:"device_id"`
 	BlogName  string        `json:"blog_name"`
+	ExpiresAt sql.NullTime  `json:"expires_at"`
 }
 
 type BoostyMember struct {
@@ -106,6 +107,7 @@ type BoostyMember struct {
 	Status        string        `json:"status"`
 	Data          string        `json:"data"`
 	CurrentTierID sql.NullInt64 `json:"current_tier_id"`
+	UserID        sql.NullInt64 `json:"user_id"`
 }
 
 type BoostyTier struct {
