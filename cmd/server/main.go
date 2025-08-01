@@ -188,16 +188,12 @@ func main() {
 	a.patreonClientManager = patreon.NewClientManager(a)
 	a.boostyClientManager = boosty.NewClientManager(a)
 
-	// Use default configurations for jobs
-	patreonConfig := patreonjobs.DefaultConfig()
-	boostyConfig := boostyjobs.DefaultConfig()
-
-	a.PatreonJobs, err = patreonjobs.New(ctx, a, patreonConfig)
+	a.PatreonJobs, err = patreonjobs.New(ctx, a, a.config.PatreonJobsConfig)
 	if err != nil {
 		panic(fmt.Errorf("failed to create Patreon IO: %w", err))
 	}
 
-	a.BoostyJobs, err = boostyjobs.New(ctx, a, boostyConfig)
+	a.BoostyJobs, err = boostyjobs.New(ctx, a, a.config.BoostyJobsConfig)
 	if err != nil {
 		panic(fmt.Errorf("failed to create Boosty IO: %w", err))
 	}

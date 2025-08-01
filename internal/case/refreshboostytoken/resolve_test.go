@@ -68,11 +68,11 @@ func TestResolve(t *testing.T) {
 				env.UpdateBoostyCredentialsTokensFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsTokensParams) (db.BoostyCredential, error) {
 					require.Equal(t, int64(1), arg.ID)
 					// Check that auth data contains new tokens
-					var authData boosty.AuthData
-					err := json.Unmarshal([]byte(arg.AuthData), &authData)
+					var updatedAuthData boosty.AuthData
+					err := json.Unmarshal([]byte(arg.AuthData), &updatedAuthData)
 					require.NoError(t, err)
-					require.Equal(t, "new-access-token", authData.AccessToken)
-					require.Equal(t, "new-refresh-token", authData.RefreshToken)
+					require.Equal(t, "new-access-token", updatedAuthData.AccessToken)
+					require.Equal(t, "new-refresh-token", updatedAuthData.RefreshToken)
 					require.True(t, arg.ExpiresAt.Valid)
 					require.True(t, arg.ExpiresAt.Time.After(time.Now()))
 					return db.BoostyCredential{}, nil

@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"trip2g/internal/boosty"
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
@@ -18,7 +17,10 @@ import (
 //go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg updateboostycredentials_test . Env
 
 type Env interface {
+	BoostyCredentials(ctx context.Context, id int64) (db.BoostyCredential, error)
 	UpdateBoostyCredentials(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error)
+	StartBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64, immediately bool) error
+	StopBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64) error
 }
 
 type envMock = EnvMock
@@ -55,13 +57,11 @@ func TestResolve(t *testing.T) {
 						BlogName: "oldblog",
 					}, nil
 				}
-				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
-					mockClient := &boosty.ClientMock{
-						SubscribersFunc: func() ([]boosty.Subscriber, error) {
-							return []boosty.Subscriber{}, nil
-						},
-					}
-					return mockClient, nil
+				mock.StartBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
+					return nil
+				}
+				mock.StopBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return nil
 				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					require.Equal(t, int64(1), arg.ID)
@@ -106,13 +106,11 @@ func TestResolve(t *testing.T) {
 						BlogName: "testblog",
 					}, nil
 				}
-				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
-					mockClient := &boosty.ClientMock{
-						SubscribersFunc: func() ([]boosty.Subscriber, error) {
-							return []boosty.Subscriber{}, nil
-						},
-					}
-					return mockClient, nil
+				mock.StartBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
+					return nil
+				}
+				mock.StopBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return nil
 				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					require.Equal(t, int64(1), arg.ID)
@@ -156,13 +154,11 @@ func TestResolve(t *testing.T) {
 						BlogName: "existing-blog",
 					}, nil
 				}
-				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
-					mockClient := &boosty.ClientMock{
-						SubscribersFunc: func() ([]boosty.Subscriber, error) {
-							return []boosty.Subscriber{}, nil
-						},
-					}
-					return mockClient, nil
+				mock.StartBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
+					return nil
+				}
+				mock.StopBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return nil
 				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					return db.BoostyCredential{
@@ -202,13 +198,11 @@ func TestResolve(t *testing.T) {
 						BlogName: "existing-blog",
 					}, nil
 				}
-				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
-					mockClient := &boosty.ClientMock{
-						SubscribersFunc: func() ([]boosty.Subscriber, error) {
-							return []boosty.Subscriber{}, nil
-						},
-					}
-					return mockClient, nil
+				mock.StartBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
+					return nil
+				}
+				mock.StopBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return nil
 				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					return db.BoostyCredential{
@@ -242,13 +236,11 @@ func TestResolve(t *testing.T) {
 						BlogName: "existing-blog",
 					}, nil
 				}
-				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
-					mockClient := &boosty.ClientMock{
-						SubscribersFunc: func() ([]boosty.Subscriber, error) {
-							return []boosty.Subscriber{}, nil
-						},
-					}
-					return mockClient, nil
+				mock.StartBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
+					return nil
+				}
+				mock.StopBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return nil
 				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					return db.BoostyCredential{
@@ -282,13 +274,11 @@ func TestResolve(t *testing.T) {
 						BlogName: "existing-blog",
 					}, nil
 				}
-				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
-					mockClient := &boosty.ClientMock{
-						SubscribersFunc: func() ([]boosty.Subscriber, error) {
-							return []boosty.Subscriber{}, nil
-						},
-					}
-					return mockClient, nil
+				mock.StartBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
+					return nil
+				}
+				mock.StopBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return nil
 				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					return db.BoostyCredential{
@@ -322,13 +312,11 @@ func TestResolve(t *testing.T) {
 						BlogName: "existing-blog",
 					}, nil
 				}
-				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
-					mockClient := &boosty.ClientMock{
-						SubscribersFunc: func() ([]boosty.Subscriber, error) {
-							return []boosty.Subscriber{}, nil
-						},
-					}
-					return mockClient, nil
+				mock.StartBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
+					return nil
+				}
+				mock.StopBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return nil
 				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					return db.BoostyCredential{}, sql.ErrNoRows
@@ -356,13 +344,11 @@ func TestResolve(t *testing.T) {
 						BlogName: "existing-blog",
 					}, nil
 				}
-				mock.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
-					mockClient := &boosty.ClientMock{
-						SubscribersFunc: func() ([]boosty.Subscriber, error) {
-							return []boosty.Subscriber{}, nil
-						},
-					}
-					return mockClient, nil
+				mock.StartBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
+					return nil
+				}
+				mock.StopBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return nil
 				}
 				mock.UpdateBoostyCredentialsFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 					return db.BoostyCredential{}, errors.New("database error")

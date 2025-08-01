@@ -14,6 +14,7 @@ import (
 type Env interface {
 	InsertBoostyCredentials(ctx context.Context, arg db.InsertBoostyCredentialsParams) (db.BoostyCredential, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	StartBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64, immediately bool) error
 }
 
 // Input is an alias for CreateBoostyCredentialsInput for cleaner code.
@@ -59,6 +60,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		}
 		// System errors are returned as error (will show generic message to user)
 		return nil, fmt.Errorf("failed to insert boosty credentials: %w", err)
+	}
+
+	// Start background job for refreshing Boosty data
+	err = env.StartBoostyRefreshBackgroundJob(ctx, credentials.ID, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start Boosty refresh job: %w", err)
 	}
 
 	// Define payload as separate variable

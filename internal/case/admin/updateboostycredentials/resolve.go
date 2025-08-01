@@ -8,7 +8,6 @@ import (
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 
-	"trip2g/internal/boosty"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 )
@@ -16,7 +15,8 @@ import (
 type Env interface {
 	BoostyCredentials(ctx context.Context, id int64) (db.BoostyCredential, error)
 	UpdateBoostyCredentials(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error)
-	BoostyClientByCredentialsID(ctx context.Context, credentialID int64) (boosty.Client, error)
+	StartBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64, immediately bool) error
+	StopBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64) error
 }
 
 // Input is an alias for UpdateBoostyCredentialsInput for cleaner code.
@@ -85,15 +85,14 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to update boosty credentials: %w", err)
 	}
 
-	client, err := env.BoostyClientByCredentialsID(ctx, credentials.ID)
+	err = env.StopBoostyRefreshBackgroundJob(ctx, credentials.ID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get boosty client: %w", err)
+		return nil, fmt.Errorf("failed to stop boosty refresh job: %w", err)
 	}
 
-	_, err = client.Subscribers()
+	err = env.StartBoostyRefreshBackgroundJob(ctx, credentials.ID, true)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to fetch subscribers: %v", err)
-		return &model.ErrorPayload{Message: msg}, nil
+		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // error payload pattern
 	}
 
 	// Define payload as separate variable

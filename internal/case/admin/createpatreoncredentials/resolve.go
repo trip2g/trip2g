@@ -16,7 +16,7 @@ type Env interface {
 	InsertPatreonCredentials(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error)
 	UpsertPatreonCampaign(ctx context.Context, arg db.UpsertPatreonCampaignParams) error
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
-	StartPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64) error
+	StartPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64, immediately bool) error
 
 	refreshpatreondata.Env
 }
@@ -67,7 +67,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to refresh Patreon data: %w", err)
 	}
 
-	err = env.StartPatreonRefreshBackgroundJob(ctx, credentials.ID)
+	err = env.StartPatreonRefreshBackgroundJob(ctx, credentials.ID, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start Patreon refresh background jobs: %w", err)
 	}

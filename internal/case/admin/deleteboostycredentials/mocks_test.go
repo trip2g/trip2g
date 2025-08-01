@@ -27,6 +27,9 @@ var _ deleteboostycredentials.Env = &EnvMock{}
 //			SoftDeleteBoostyCredentialsFunc: func(ctx context.Context, arg db.SoftDeleteBoostyCredentialsParams) (db.BoostyCredential, error) {
 //				panic("mock out the SoftDeleteBoostyCredentials method")
 //			},
+//			StopBoostyRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64) error {
+//				panic("mock out the StopBoostyRefreshBackgroundJob method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires deleteboostycredentials.Env
@@ -39,6 +42,9 @@ type EnvMock struct {
 
 	// SoftDeleteBoostyCredentialsFunc mocks the SoftDeleteBoostyCredentials method.
 	SoftDeleteBoostyCredentialsFunc func(ctx context.Context, arg db.SoftDeleteBoostyCredentialsParams) (db.BoostyCredential, error)
+
+	// StopBoostyRefreshBackgroundJobFunc mocks the StopBoostyRefreshBackgroundJob method.
+	StopBoostyRefreshBackgroundJobFunc func(ctx context.Context, credentialsID int64) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -54,9 +60,17 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.SoftDeleteBoostyCredentialsParams
 		}
+		// StopBoostyRefreshBackgroundJob holds details about calls to the StopBoostyRefreshBackgroundJob method.
+		StopBoostyRefreshBackgroundJob []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// CredentialsID is the credentialsID argument value.
+			CredentialsID int64
+		}
 	}
-	lockCurrentAdminUserToken       sync.RWMutex
-	lockSoftDeleteBoostyCredentials sync.RWMutex
+	lockCurrentAdminUserToken          sync.RWMutex
+	lockSoftDeleteBoostyCredentials    sync.RWMutex
+	lockStopBoostyRefreshBackgroundJob sync.RWMutex
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -124,5 +138,41 @@ func (mock *EnvMock) SoftDeleteBoostyCredentialsCalls() []struct {
 	mock.lockSoftDeleteBoostyCredentials.RLock()
 	calls = mock.calls.SoftDeleteBoostyCredentials
 	mock.lockSoftDeleteBoostyCredentials.RUnlock()
+	return calls
+}
+
+// StopBoostyRefreshBackgroundJob calls StopBoostyRefreshBackgroundJobFunc.
+func (mock *EnvMock) StopBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64) error {
+	if mock.StopBoostyRefreshBackgroundJobFunc == nil {
+		panic("EnvMock.StopBoostyRefreshBackgroundJobFunc: method is nil but Env.StopBoostyRefreshBackgroundJob was just called")
+	}
+	callInfo := struct {
+		Ctx           context.Context
+		CredentialsID int64
+	}{
+		Ctx:           ctx,
+		CredentialsID: credentialsID,
+	}
+	mock.lockStopBoostyRefreshBackgroundJob.Lock()
+	mock.calls.StopBoostyRefreshBackgroundJob = append(mock.calls.StopBoostyRefreshBackgroundJob, callInfo)
+	mock.lockStopBoostyRefreshBackgroundJob.Unlock()
+	return mock.StopBoostyRefreshBackgroundJobFunc(ctx, credentialsID)
+}
+
+// StopBoostyRefreshBackgroundJobCalls gets all the calls that were made to StopBoostyRefreshBackgroundJob.
+// Check the length with:
+//
+//	len(mockedEnv.StopBoostyRefreshBackgroundJobCalls())
+func (mock *EnvMock) StopBoostyRefreshBackgroundJobCalls() []struct {
+	Ctx           context.Context
+	CredentialsID int64
+} {
+	var calls []struct {
+		Ctx           context.Context
+		CredentialsID int64
+	}
+	mock.lockStopBoostyRefreshBackgroundJob.RLock()
+	calls = mock.calls.StopBoostyRefreshBackgroundJob
+	mock.lockStopBoostyRefreshBackgroundJob.RUnlock()
 	return calls
 }

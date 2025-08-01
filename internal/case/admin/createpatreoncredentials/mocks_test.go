@@ -49,7 +49,7 @@ var _ createpatreoncredentials.Env = &EnvMock{}
 //			SetPatreonMemberCurrentTierFunc: func(ctx context.Context, arg db.SetPatreonMemberCurrentTierParams) error {
 //				panic("mock out the SetPatreonMemberCurrentTier method")
 //			},
-//			StartPatreonRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64) error {
+//			StartPatreonRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64, immediately bool) error {
 //				panic("mock out the StartPatreonRefreshBackgroundJob method")
 //			},
 //			UpdatePatreonCredentialsSyncedAtFunc: func(ctx context.Context, id int64) error {
@@ -99,7 +99,7 @@ type EnvMock struct {
 	SetPatreonMemberCurrentTierFunc func(ctx context.Context, arg db.SetPatreonMemberCurrentTierParams) error
 
 	// StartPatreonRefreshBackgroundJobFunc mocks the StartPatreonRefreshBackgroundJob method.
-	StartPatreonRefreshBackgroundJobFunc func(ctx context.Context, credentialsID int64) error
+	StartPatreonRefreshBackgroundJobFunc func(ctx context.Context, credentialsID int64, immediately bool) error
 
 	// UpdatePatreonCredentialsSyncedAtFunc mocks the UpdatePatreonCredentialsSyncedAt method.
 	UpdatePatreonCredentialsSyncedAtFunc func(ctx context.Context, id int64) error
@@ -180,6 +180,8 @@ type EnvMock struct {
 			Ctx context.Context
 			// CredentialsID is the credentialsID argument value.
 			CredentialsID int64
+			// Immediately is the immediately argument value.
+			Immediately bool
 		}
 		// UpdatePatreonCredentialsSyncedAt holds details about calls to the UpdatePatreonCredentialsSyncedAt method.
 		UpdatePatreonCredentialsSyncedAt []struct {
@@ -543,21 +545,23 @@ func (mock *EnvMock) SetPatreonMemberCurrentTierCalls() []struct {
 }
 
 // StartPatreonRefreshBackgroundJob calls StartPatreonRefreshBackgroundJobFunc.
-func (mock *EnvMock) StartPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64) error {
+func (mock *EnvMock) StartPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64, immediately bool) error {
 	if mock.StartPatreonRefreshBackgroundJobFunc == nil {
 		panic("EnvMock.StartPatreonRefreshBackgroundJobFunc: method is nil but Env.StartPatreonRefreshBackgroundJob was just called")
 	}
 	callInfo := struct {
 		Ctx           context.Context
 		CredentialsID int64
+		Immediately   bool
 	}{
 		Ctx:           ctx,
 		CredentialsID: credentialsID,
+		Immediately:   immediately,
 	}
 	mock.lockStartPatreonRefreshBackgroundJob.Lock()
 	mock.calls.StartPatreonRefreshBackgroundJob = append(mock.calls.StartPatreonRefreshBackgroundJob, callInfo)
 	mock.lockStartPatreonRefreshBackgroundJob.Unlock()
-	return mock.StartPatreonRefreshBackgroundJobFunc(ctx, credentialsID)
+	return mock.StartPatreonRefreshBackgroundJobFunc(ctx, credentialsID, immediately)
 }
 
 // StartPatreonRefreshBackgroundJobCalls gets all the calls that were made to StartPatreonRefreshBackgroundJob.
@@ -567,10 +571,12 @@ func (mock *EnvMock) StartPatreonRefreshBackgroundJob(ctx context.Context, crede
 func (mock *EnvMock) StartPatreonRefreshBackgroundJobCalls() []struct {
 	Ctx           context.Context
 	CredentialsID int64
+	Immediately   bool
 } {
 	var calls []struct {
 		Ctx           context.Context
 		CredentialsID int64
+		Immediately   bool
 	}
 	mock.lockStartPatreonRefreshBackgroundJob.RLock()
 	calls = mock.calls.StartPatreonRefreshBackgroundJob

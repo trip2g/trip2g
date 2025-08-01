@@ -176,7 +176,11 @@ func (r *adminBoostyMemberResolver) MissedAt(ctx context.Context, obj *db.Boosty
 
 // CurrentTier is the resolver for the currentTier field.
 func (r *adminBoostyMemberResolver) CurrentTier(ctx context.Context, obj *db.BoostyMember) (*db.BoostyTier, error) {
-	panic(fmt.Errorf("not implemented: CurrentTier - currentTier"))
+	if !obj.CurrentTierID.Valid {
+		return nil, nil
+	}
+
+	return resolveOne[db.BoostyTier](ctx, obj.CurrentTierID.Int64, r.env(ctx).BoostyTierByID)
 }
 
 // Nodes is the resolver for the nodes field.

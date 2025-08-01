@@ -39,7 +39,7 @@ func TestResolve_Success(t *testing.T) {
 			require.Equal(t, int64(123), id)
 			return expectedCredentials, nil
 		},
-		StartPatreonRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64) error {
+		StartPatreonRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64, immediately bool) error {
 			require.Equal(t, int64(123), credentialsID)
 			return nil
 		},
@@ -113,7 +113,7 @@ func TestResolve_StartBackgroundJobError(t *testing.T) {
 			require.Equal(t, int64(123), id)
 			return expectedCredentials, nil
 		},
-		StartPatreonRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64) error {
+		StartPatreonRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64, immediately bool) error {
 			require.Equal(t, int64(123), credentialsID)
 			return errors.New("failed to start background job")
 		},

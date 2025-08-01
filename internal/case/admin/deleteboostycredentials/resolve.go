@@ -13,6 +13,7 @@ import (
 type Env interface {
 	SoftDeleteBoostyCredentials(ctx context.Context, arg db.SoftDeleteBoostyCredentialsParams) (db.BoostyCredential, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	StopBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64) error
 }
 
 // Input is an alias for DeleteBoostyCredentialsInput for cleaner code.
@@ -38,6 +39,11 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	if err != nil {
 		// System errors are returned as error (will show generic message to user)
 		return nil, fmt.Errorf("failed to delete boosty credentials: %w", err)
+	}
+
+	err = env.StopBoostyRefreshBackgroundJob(ctx, input.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stop boosty refresh job: %w", err)
 	}
 
 	// Define payload as separate variable

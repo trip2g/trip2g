@@ -20,6 +20,7 @@ import (
 type Env interface {
 	SoftDeleteBoostyCredentials(ctx context.Context, arg db.SoftDeleteBoostyCredentialsParams) (db.BoostyCredential, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	StopBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64) error
 }
 
 type envMock = EnvMock
@@ -54,6 +55,9 @@ func TestResolve(t *testing.T) {
 						DeletedAt: sql.NullTime{Time: time.Now(), Valid: true},
 						DeletedBy: sql.NullInt64{Int64: 1, Valid: true},
 					}, nil
+				}
+				mock.StopBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+					return nil
 				}
 				return mock
 			},

@@ -43,6 +43,7 @@ func assertPayload(t *testing.T, want, got model.CreateBoostyCredentialsOrErrorP
 type Env interface {
 	InsertBoostyCredentials(ctx context.Context, arg db.InsertBoostyCredentialsParams) (db.BoostyCredential, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	StartBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64, immediately bool) error
 }
 
 type envMock = EnvMock
@@ -78,6 +79,9 @@ func TestResolve(t *testing.T) {
 						DeviceID:  arg.DeviceID,
 						BlogName:  arg.BlogName,
 					}, nil
+				}
+				mock.StartBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
+					return nil
 				}
 				return mock
 			},

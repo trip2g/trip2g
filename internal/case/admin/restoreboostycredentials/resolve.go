@@ -10,6 +10,7 @@ import (
 
 type Env interface {
 	RestoreBoostyCredentials(ctx context.Context, id int64) (db.BoostyCredential, error)
+	StartBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64, immediately bool) error
 }
 
 // Input is an alias for RestoreBoostyCredentialsInput for cleaner code.
@@ -24,6 +25,11 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	if err != nil {
 		// System errors are returned as error (will show generic message to user)
 		return nil, fmt.Errorf("failed to restore boosty credentials: %w", err)
+	}
+
+	err = env.StartBoostyRefreshBackgroundJob(ctx, credentials.ID, true)
+	if err != nil {
+		return &model.ErrorPayload{Message: err.Error()}, nil //nolint:nilerr // error payload pattern
 	}
 
 	// Define payload as separate variable

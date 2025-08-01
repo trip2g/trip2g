@@ -93,10 +93,10 @@ func processBoostyMember(ctx context.Context, env Env, credentialsID int64, subs
 			CredentialsID: credentialsID,
 			BoostyID:      int64(subscriber.Level.ID),
 		}
-		tierID, err := env.GetBoostyTierIDByCredentialsAndBoostyID(ctx, tierParams)
-		if err != nil {
+		tierID, tierErr := env.GetBoostyTierIDByCredentialsAndBoostyID(ctx, tierParams)
+		if tierErr != nil {
 			// If tier not found, log but continue without setting current_tier_id
-			env.Logger().Debug("tier not found for member", "member_id", subscriber.ID, "tier_boosty_id", subscriber.Level.ID, "error", err)
+			env.Logger().Debug("tier not found for member", "member_id", subscriber.ID, "tier_boosty_id", subscriber.Level.ID, "error", tierErr)
 		} else {
 			memberParams.CurrentTierID = sql.NullInt64{Int64: tierID, Valid: true}
 		}

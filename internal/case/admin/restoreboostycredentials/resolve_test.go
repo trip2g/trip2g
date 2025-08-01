@@ -18,6 +18,7 @@ import (
 
 type Env interface {
 	RestoreBoostyCredentials(ctx context.Context, id int64) (db.BoostyCredential, error)
+	StartBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64, immediately bool) error
 }
 
 type envMock = EnvMock
@@ -51,6 +52,9 @@ func TestResolve(t *testing.T) {
 						DeletedAt: sql.NullTime{Valid: false},
 						DeletedBy: sql.NullInt64{Valid: false},
 					}, nil
+				}
+				mock.StartBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
+					return nil
 				}
 				return mock
 			},

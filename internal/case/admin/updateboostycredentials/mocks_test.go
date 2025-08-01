@@ -6,7 +6,6 @@ package updateboostycredentials_test
 import (
 	"context"
 	"sync"
-	"trip2g/internal/boosty"
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/db"
 )
@@ -21,11 +20,14 @@ var _ updateboostycredentials.Env = &EnvMock{}
 //
 //		// make and configure a mocked updateboostycredentials.Env
 //		mockedEnv := &EnvMock{
-//			BoostyClientByCredentialsIDFunc: func(ctx context.Context, credentialID int64) (boosty.Client, error) {
-//				panic("mock out the BoostyClientByCredentialsID method")
-//			},
 //			BoostyCredentialsFunc: func(ctx context.Context, id int64) (db.BoostyCredential, error) {
 //				panic("mock out the BoostyCredentials method")
+//			},
+//			StartBoostyRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64, immediately bool) error {
+//				panic("mock out the StartBoostyRefreshBackgroundJob method")
+//			},
+//			StopBoostyRefreshBackgroundJobFunc: func(ctx context.Context, credentialsID int64) error {
+//				panic("mock out the StopBoostyRefreshBackgroundJob method")
 //			},
 //			UpdateBoostyCredentialsFunc: func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 //				panic("mock out the UpdateBoostyCredentials method")
@@ -37,30 +39,42 @@ var _ updateboostycredentials.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
-	// BoostyClientByCredentialsIDFunc mocks the BoostyClientByCredentialsID method.
-	BoostyClientByCredentialsIDFunc func(ctx context.Context, credentialID int64) (boosty.Client, error)
-
 	// BoostyCredentialsFunc mocks the BoostyCredentials method.
 	BoostyCredentialsFunc func(ctx context.Context, id int64) (db.BoostyCredential, error)
+
+	// StartBoostyRefreshBackgroundJobFunc mocks the StartBoostyRefreshBackgroundJob method.
+	StartBoostyRefreshBackgroundJobFunc func(ctx context.Context, credentialsID int64, immediately bool) error
+
+	// StopBoostyRefreshBackgroundJobFunc mocks the StopBoostyRefreshBackgroundJob method.
+	StopBoostyRefreshBackgroundJobFunc func(ctx context.Context, credentialsID int64) error
 
 	// UpdateBoostyCredentialsFunc mocks the UpdateBoostyCredentials method.
 	UpdateBoostyCredentialsFunc func(ctx context.Context, arg db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// BoostyClientByCredentialsID holds details about calls to the BoostyClientByCredentialsID method.
-		BoostyClientByCredentialsID []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// CredentialID is the credentialID argument value.
-			CredentialID int64
-		}
 		// BoostyCredentials holds details about calls to the BoostyCredentials method.
 		BoostyCredentials []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// ID is the id argument value.
 			ID int64
+		}
+		// StartBoostyRefreshBackgroundJob holds details about calls to the StartBoostyRefreshBackgroundJob method.
+		StartBoostyRefreshBackgroundJob []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// CredentialsID is the credentialsID argument value.
+			CredentialsID int64
+			// Immediately is the immediately argument value.
+			Immediately bool
+		}
+		// StopBoostyRefreshBackgroundJob holds details about calls to the StopBoostyRefreshBackgroundJob method.
+		StopBoostyRefreshBackgroundJob []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// CredentialsID is the credentialsID argument value.
+			CredentialsID int64
 		}
 		// UpdateBoostyCredentials holds details about calls to the UpdateBoostyCredentials method.
 		UpdateBoostyCredentials []struct {
@@ -70,45 +84,10 @@ type EnvMock struct {
 			Arg db.UpdateBoostyCredentialsParams
 		}
 	}
-	lockBoostyClientByCredentialsID sync.RWMutex
-	lockBoostyCredentials           sync.RWMutex
-	lockUpdateBoostyCredentials     sync.RWMutex
-}
-
-// BoostyClientByCredentialsID calls BoostyClientByCredentialsIDFunc.
-func (mock *EnvMock) BoostyClientByCredentialsID(ctx context.Context, credentialID int64) (boosty.Client, error) {
-	if mock.BoostyClientByCredentialsIDFunc == nil {
-		panic("EnvMock.BoostyClientByCredentialsIDFunc: method is nil but Env.BoostyClientByCredentialsID was just called")
-	}
-	callInfo := struct {
-		Ctx          context.Context
-		CredentialID int64
-	}{
-		Ctx:          ctx,
-		CredentialID: credentialID,
-	}
-	mock.lockBoostyClientByCredentialsID.Lock()
-	mock.calls.BoostyClientByCredentialsID = append(mock.calls.BoostyClientByCredentialsID, callInfo)
-	mock.lockBoostyClientByCredentialsID.Unlock()
-	return mock.BoostyClientByCredentialsIDFunc(ctx, credentialID)
-}
-
-// BoostyClientByCredentialsIDCalls gets all the calls that were made to BoostyClientByCredentialsID.
-// Check the length with:
-//
-//	len(mockedEnv.BoostyClientByCredentialsIDCalls())
-func (mock *EnvMock) BoostyClientByCredentialsIDCalls() []struct {
-	Ctx          context.Context
-	CredentialID int64
-} {
-	var calls []struct {
-		Ctx          context.Context
-		CredentialID int64
-	}
-	mock.lockBoostyClientByCredentialsID.RLock()
-	calls = mock.calls.BoostyClientByCredentialsID
-	mock.lockBoostyClientByCredentialsID.RUnlock()
-	return calls
+	lockBoostyCredentials               sync.RWMutex
+	lockStartBoostyRefreshBackgroundJob sync.RWMutex
+	lockStopBoostyRefreshBackgroundJob  sync.RWMutex
+	lockUpdateBoostyCredentials         sync.RWMutex
 }
 
 // BoostyCredentials calls BoostyCredentialsFunc.
@@ -144,6 +123,82 @@ func (mock *EnvMock) BoostyCredentialsCalls() []struct {
 	mock.lockBoostyCredentials.RLock()
 	calls = mock.calls.BoostyCredentials
 	mock.lockBoostyCredentials.RUnlock()
+	return calls
+}
+
+// StartBoostyRefreshBackgroundJob calls StartBoostyRefreshBackgroundJobFunc.
+func (mock *EnvMock) StartBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64, immediately bool) error {
+	if mock.StartBoostyRefreshBackgroundJobFunc == nil {
+		panic("EnvMock.StartBoostyRefreshBackgroundJobFunc: method is nil but Env.StartBoostyRefreshBackgroundJob was just called")
+	}
+	callInfo := struct {
+		Ctx           context.Context
+		CredentialsID int64
+		Immediately   bool
+	}{
+		Ctx:           ctx,
+		CredentialsID: credentialsID,
+		Immediately:   immediately,
+	}
+	mock.lockStartBoostyRefreshBackgroundJob.Lock()
+	mock.calls.StartBoostyRefreshBackgroundJob = append(mock.calls.StartBoostyRefreshBackgroundJob, callInfo)
+	mock.lockStartBoostyRefreshBackgroundJob.Unlock()
+	return mock.StartBoostyRefreshBackgroundJobFunc(ctx, credentialsID, immediately)
+}
+
+// StartBoostyRefreshBackgroundJobCalls gets all the calls that were made to StartBoostyRefreshBackgroundJob.
+// Check the length with:
+//
+//	len(mockedEnv.StartBoostyRefreshBackgroundJobCalls())
+func (mock *EnvMock) StartBoostyRefreshBackgroundJobCalls() []struct {
+	Ctx           context.Context
+	CredentialsID int64
+	Immediately   bool
+} {
+	var calls []struct {
+		Ctx           context.Context
+		CredentialsID int64
+		Immediately   bool
+	}
+	mock.lockStartBoostyRefreshBackgroundJob.RLock()
+	calls = mock.calls.StartBoostyRefreshBackgroundJob
+	mock.lockStartBoostyRefreshBackgroundJob.RUnlock()
+	return calls
+}
+
+// StopBoostyRefreshBackgroundJob calls StopBoostyRefreshBackgroundJobFunc.
+func (mock *EnvMock) StopBoostyRefreshBackgroundJob(ctx context.Context, credentialsID int64) error {
+	if mock.StopBoostyRefreshBackgroundJobFunc == nil {
+		panic("EnvMock.StopBoostyRefreshBackgroundJobFunc: method is nil but Env.StopBoostyRefreshBackgroundJob was just called")
+	}
+	callInfo := struct {
+		Ctx           context.Context
+		CredentialsID int64
+	}{
+		Ctx:           ctx,
+		CredentialsID: credentialsID,
+	}
+	mock.lockStopBoostyRefreshBackgroundJob.Lock()
+	mock.calls.StopBoostyRefreshBackgroundJob = append(mock.calls.StopBoostyRefreshBackgroundJob, callInfo)
+	mock.lockStopBoostyRefreshBackgroundJob.Unlock()
+	return mock.StopBoostyRefreshBackgroundJobFunc(ctx, credentialsID)
+}
+
+// StopBoostyRefreshBackgroundJobCalls gets all the calls that were made to StopBoostyRefreshBackgroundJob.
+// Check the length with:
+//
+//	len(mockedEnv.StopBoostyRefreshBackgroundJobCalls())
+func (mock *EnvMock) StopBoostyRefreshBackgroundJobCalls() []struct {
+	Ctx           context.Context
+	CredentialsID int64
+} {
+	var calls []struct {
+		Ctx           context.Context
+		CredentialsID int64
+	}
+	mock.lockStopBoostyRefreshBackgroundJob.RLock()
+	calls = mock.calls.StopBoostyRefreshBackgroundJob
+	mock.lockStopBoostyRefreshBackgroundJob.RUnlock()
 	return calls
 }
 

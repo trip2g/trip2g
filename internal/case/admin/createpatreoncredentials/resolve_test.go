@@ -42,7 +42,7 @@ func assertPayload(t *testing.T, want, got model.CreatePatreonCredentialsOrError
 type Env interface {
 	InsertPatreonCredentials(ctx context.Context, arg db.InsertPatreonCredentialsParams) (db.PatreonCredential, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
-	StartPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64) error
+	StartPatreonRefreshBackgroundJob(ctx context.Context, credentialsID int64, immediately bool) error
 
 	// refreshpatreondata.Env methods
 	PatreonCredentials(ctx context.Context, id int64) (db.PatreonCredential, error)
@@ -148,7 +148,7 @@ func TestResolve(t *testing.T) {
 				mock.UpsertPatreonCampaignFunc = func(ctx context.Context, arg db.UpsertPatreonCampaignParams) error {
 					return nil
 				}
-				mock.StartPatreonRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+				mock.StartPatreonRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
 					return nil
 				}
 				return mock
@@ -350,7 +350,7 @@ func TestResolve(t *testing.T) {
 				mock.UpsertPatreonMemberFunc = func(ctx context.Context, arg db.UpsertPatreonMemberParams) error {
 					return nil
 				}
-				mock.StartPatreonRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {
+				mock.StartPatreonRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {
 					return errors.New("failed to start background job")
 				}
 				return mock

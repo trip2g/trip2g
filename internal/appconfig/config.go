@@ -10,10 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"trip2g/internal/boostyjobs"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/miniostorage"
-	"trip2g/internal/patreon"
+	"trip2g/internal/patreonjobs"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -72,7 +73,8 @@ type Config struct {
 
 	MDLoaderConfig mdloader.Config
 
-	PatreonConfig patreon.ClientConfig
+	PatreonJobsConfig patreonjobs.Config
+	BoostyJobsConfig  boostyjobs.Config
 }
 
 // Default values for configuration.
@@ -220,8 +222,39 @@ func (c *Config) defineFlags() {
 	// MD Loader
 	flag.BoolVar(&c.MDLoaderConfig.AutoLowerWikilinks, "md-loader-auto-lower-wikilinks", false, "Automatically lower-case wikilinks")
 
-	// Patreon
-	flag.StringVar(&c.PatreonConfig.CreatorAccessToken, "patreon-creator-access-token", "", "Patreon creator access token")
+	// Patreon jobs configuration
+	patreonJobsDefaults := patreonjobs.DefaultConfig()
+
+	flag.DurationVar(
+		&c.PatreonJobsConfig.RefreshInterval,
+		"patreon-jobs-refresh-interval",
+		patreonJobsDefaults.RefreshInterval,
+		"Patreon jobs refresh interval",
+	)
+
+	flag.DurationVar(
+		&c.PatreonJobsConfig.ImmediatelyGap,
+		"patreon-jobs-immediately-gap",
+		patreonJobsDefaults.ImmediatelyGap,
+		"how old synced_at must be to trigger immediate refresh",
+	)
+
+	// Boosty jobs configuration
+	boostyJobsDefaults := boostyjobs.DefaultConfig()
+
+	flag.DurationVar(
+		&c.BoostyJobsConfig.RefreshInterval,
+		"boosty-jobs-refresh-interval",
+		boostyJobsDefaults.RefreshInterval,
+		"Boosty jobs refresh interval",
+	)
+
+	flag.DurationVar(
+		&c.BoostyJobsConfig.ImmediatelyGap,
+		"boosty-jobs-immediately-gap",
+		boostyJobsDefaults.ImmediatelyGap,
+		"how old synced_at must be to trigger immediate refresh",
+	)
 }
 
 // validate checks if the configuration is valid using ozzo validation.
