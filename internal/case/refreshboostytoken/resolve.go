@@ -14,6 +14,7 @@ import (
 type Env interface {
 	BoostyCredentials(ctx context.Context, id int64) (db.BoostyCredential, error)
 	UpdateBoostyCredentialsTokens(ctx context.Context, arg db.UpdateBoostyCredentialsTokensParams) (db.BoostyCredential, error)
+	BoostyClientByCredentialsID(ctx context.Context, credentialID int64) (boosty.Client, error)
 }
 
 func Resolve(ctx context.Context, env Env, credentialID int64) error {
@@ -23,25 +24,22 @@ func Resolve(ctx context.Context, env Env, credentialID int64) error {
 		return fmt.Errorf("failed to get boosty credential: %w", err)
 	}
 
-	// Parse the auth data
-	var authData boosty.AuthData
-	err = json.Unmarshal([]byte(cred.AuthData), &authData)
+	// Get client and refresh token
+	client, err := env.BoostyClientByCredentialsID(ctx, credentialID)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal auth data: %w", err)
-	}
-
-	authData.DeviceID = cred.DeviceID
-	authData.BlogName = cred.BlogName
-
-	// Create client and refresh token
-	client, err := boosty.NewClient(authData)
-	if err != nil {
-		return fmt.Errorf("failed to create boosty client: %w", err)
+		return fmt.Errorf("failed to get boosty client: %w", err)
 	}
 
 	result, err := client.RefreshToken()
 	if err != nil {
 		return fmt.Errorf("failed to refresh token: %w", err)
+	}
+
+	// Parse the current auth data to update it
+	var authData boosty.AuthData
+	err = json.Unmarshal([]byte(cred.AuthData), &authData)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal auth data: %w", err)
 	}
 
 	// Update auth data with new tokens

@@ -931,7 +931,7 @@ from subgraphs s
 join boosty_tier_subgraphs bts on s.id = bts.subgraph_id
 where bts.tier_id = ?;
 
--- name: SetBoostyTierSubgraphs :exec
+-- name: DeleteBoostyTierSubgraphsByTierID :exec
 delete from boosty_tier_subgraphs where tier_id = ?;
 
 -- name: InsertBoostyTierSubgraph :exec
@@ -986,6 +986,10 @@ where credentials_id = ?
 select * from boosty_tiers
 where boosty_id = ?
 limit 1;
+
+-- name: BoostyTierByID :one
+select * from boosty_tiers
+where id = ?;
 
 -- name: GetBoostyTierIDByCredentialsAndBoostyID :one
 select id from boosty_tiers

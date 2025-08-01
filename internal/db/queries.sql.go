@@ -818,6 +818,26 @@ func (q *Queries) BoostyCredentials(ctx context.Context, id int64) (BoostyCreden
 	return i, err
 }
 
+const boostyTierByID = `-- name: BoostyTierByID :one
+select id, credentials_id, boosty_id, created_at, missed_at, name, data from boosty_tiers
+where id = ?
+`
+
+func (q *Queries) BoostyTierByID(ctx context.Context, id int64) (BoostyTier, error) {
+	row := q.db.QueryRowContext(ctx, boostyTierByID, id)
+	var i BoostyTier
+	err := row.Scan(
+		&i.ID,
+		&i.CredentialsID,
+		&i.BoostyID,
+		&i.CreatedAt,
+		&i.MissedAt,
+		&i.Name,
+		&i.Data,
+	)
+	return i, err
+}
+
 const changeLiveRelease = `-- name: ChangeLiveRelease :exec
 update releases set is_live = (?1 = id)
 `
@@ -926,6 +946,15 @@ delete from acme_certs where key = ?
 
 func (q *Queries) DeleteAcmeCert(ctx context.Context, key string) error {
 	_, err := q.db.ExecContext(ctx, deleteAcmeCert, key)
+	return err
+}
+
+const deleteBoostyTierSubgraphsByTierID = `-- name: DeleteBoostyTierSubgraphsByTierID :exec
+delete from boosty_tier_subgraphs where tier_id = ?
+`
+
+func (q *Queries) DeleteBoostyTierSubgraphsByTierID(ctx context.Context, tierID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteBoostyTierSubgraphsByTierID, tierID)
 	return err
 }
 
@@ -3623,15 +3652,6 @@ type RevokeUserSubgraphAccessParams struct {
 
 func (q *Queries) RevokeUserSubgraphAccess(ctx context.Context, arg RevokeUserSubgraphAccessParams) error {
 	_, err := q.db.ExecContext(ctx, revokeUserSubgraphAccess, arg.RevokeID, arg.ID)
-	return err
-}
-
-const setBoostyTierSubgraphs = `-- name: SetBoostyTierSubgraphs :exec
-delete from boosty_tier_subgraphs where tier_id = ?
-`
-
-func (q *Queries) SetBoostyTierSubgraphs(ctx context.Context, tierID int64) error {
-	_, err := q.db.ExecContext(ctx, setBoostyTierSubgraphs, tierID)
 	return err
 }
 

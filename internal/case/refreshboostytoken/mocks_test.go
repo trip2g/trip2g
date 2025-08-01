@@ -6,6 +6,7 @@ package refreshboostytoken
 import (
 	"context"
 	"sync"
+	"trip2g/internal/boosty"
 	"trip2g/internal/db"
 )
 
@@ -19,6 +20,9 @@ var _ Env = &EnvMock{}
 //
 //		// make and configure a mocked Env
 //		mockedEnv := &EnvMock{
+//			BoostyClientByCredentialsIDFunc: func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+//				panic("mock out the BoostyClientByCredentialsID method")
+//			},
 //			BoostyCredentialsFunc: func(ctx context.Context, id int64) (db.BoostyCredential, error) {
 //				panic("mock out the BoostyCredentials method")
 //			},
@@ -32,6 +36,9 @@ var _ Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// BoostyClientByCredentialsIDFunc mocks the BoostyClientByCredentialsID method.
+	BoostyClientByCredentialsIDFunc func(ctx context.Context, credentialID int64) (boosty.Client, error)
+
 	// BoostyCredentialsFunc mocks the BoostyCredentials method.
 	BoostyCredentialsFunc func(ctx context.Context, id int64) (db.BoostyCredential, error)
 
@@ -40,6 +47,13 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// BoostyClientByCredentialsID holds details about calls to the BoostyClientByCredentialsID method.
+		BoostyClientByCredentialsID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// CredentialID is the credentialID argument value.
+			CredentialID int64
+		}
 		// BoostyCredentials holds details about calls to the BoostyCredentials method.
 		BoostyCredentials []struct {
 			// Ctx is the ctx argument value.
@@ -55,8 +69,45 @@ type EnvMock struct {
 			Arg db.UpdateBoostyCredentialsTokensParams
 		}
 	}
+	lockBoostyClientByCredentialsID   sync.RWMutex
 	lockBoostyCredentials             sync.RWMutex
 	lockUpdateBoostyCredentialsTokens sync.RWMutex
+}
+
+// BoostyClientByCredentialsID calls BoostyClientByCredentialsIDFunc.
+func (mock *EnvMock) BoostyClientByCredentialsID(ctx context.Context, credentialID int64) (boosty.Client, error) {
+	if mock.BoostyClientByCredentialsIDFunc == nil {
+		panic("EnvMock.BoostyClientByCredentialsIDFunc: method is nil but Env.BoostyClientByCredentialsID was just called")
+	}
+	callInfo := struct {
+		Ctx          context.Context
+		CredentialID int64
+	}{
+		Ctx:          ctx,
+		CredentialID: credentialID,
+	}
+	mock.lockBoostyClientByCredentialsID.Lock()
+	mock.calls.BoostyClientByCredentialsID = append(mock.calls.BoostyClientByCredentialsID, callInfo)
+	mock.lockBoostyClientByCredentialsID.Unlock()
+	return mock.BoostyClientByCredentialsIDFunc(ctx, credentialID)
+}
+
+// BoostyClientByCredentialsIDCalls gets all the calls that were made to BoostyClientByCredentialsID.
+// Check the length with:
+//
+//	len(mockedEnv.BoostyClientByCredentialsIDCalls())
+func (mock *EnvMock) BoostyClientByCredentialsIDCalls() []struct {
+	Ctx          context.Context
+	CredentialID int64
+} {
+	var calls []struct {
+		Ctx          context.Context
+		CredentialID int64
+	}
+	mock.lockBoostyClientByCredentialsID.RLock()
+	calls = mock.calls.BoostyClientByCredentialsID
+	mock.lockBoostyClientByCredentialsID.RUnlock()
+	return calls
 }
 
 // BoostyCredentials calls BoostyCredentialsFunc.

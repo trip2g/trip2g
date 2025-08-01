@@ -25,6 +25,7 @@ import (
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
+	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
@@ -157,6 +158,7 @@ type Env interface {
 	refreshpatreondata.Env
 	restorepatreoncredentials.Env
 	setpatreontiersubgraphs.Env
+	setboostytiersubgraphs.Env
 
 	// Boosty credentials
 	createboostycredentials.Env

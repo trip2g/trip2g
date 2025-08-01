@@ -56,6 +56,11 @@ $trip2g_admin_boostycredentials_show_tiers $mol_section
 					title \Title
 					Content <= RowTitle* $trip2g_admin_cell
 						content <= row_title* \
+				<= Subgraphs_labeler* $mol_labeler
+					title \Subgraphs
+					Content <= Subgraphs* $trip2g_admin_boostycredentials_show_subgraphs
+						tier_id <= row_id* 0
+						current_ids <= row_subgraph_ids* /
 
 $trip2g_admin_boostycredentials_show_members $mol_section
 	title \Members

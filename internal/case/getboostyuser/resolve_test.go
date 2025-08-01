@@ -3,6 +3,7 @@ package getboostyuser
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -129,7 +130,7 @@ func TestResolve(t *testing.T) {
 			email: "error@example.com",
 			setupMock: func(env *EnvMock) {
 				env.GetBoostyMemberByEmailFunc = func(ctx context.Context, email string) (db.BoostyMember, error) {
-					return db.BoostyMember{}, db.ErrorE("database error")
+					return db.BoostyMember{}, errors.New("database error")
 				}
 			},
 			wantErr: true,
@@ -150,7 +151,7 @@ func TestResolve(t *testing.T) {
 					return db.User{ID: 999}, nil
 				}
 				env.UpdateBoostyMemberUserIDFunc = func(ctx context.Context, arg db.UpdateBoostyMemberUserIDParams) error {
-					return db.ErrorE("update failed")
+					return errors.New("update failed")
 				}
 			},
 			wantErr: true,

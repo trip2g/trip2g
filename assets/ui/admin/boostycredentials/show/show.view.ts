@@ -17,6 +17,10 @@ namespace $.$$ {
 								nodes {
 									id
 									name
+
+									subgraphs {
+										id
+									}
 								}
 							}
 							
@@ -32,7 +36,7 @@ namespace $.$$ {
 			`, { id } )
 
 		if( !res.admin.boostyCredentials ) {
-			throw new Error( `Boosty credentials with ID ${id} not found` )
+			throw new Error( `Boosty credentials with ID ${ id } not found` )
 		}
 
 		return res.admin.boostyCredentials
@@ -110,12 +114,20 @@ namespace $.$$ {
 			return this.data_rows()[ id ]
 		}
 
+		override row_id( id: any ): number {
+			return this.row( id ).id
+		}
+
 		override row_id_string( id: any ) {
 			return this.row( id ).id.toString()
 		}
 
 		override row_title( id: any ) {
 			return this.row( id ).name
+		}
+
+		override row_subgraph_ids( id: any ) {
+			return this.row( id ).subgraphs.map( s => s.id )
 		}
 	}
 

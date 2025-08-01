@@ -35,15 +35,16 @@ func TestResolve(t *testing.T) {
 		BlogName: "test-blog",
 	}
 
-	// Expected updated auth data
-	updatedAuthData := boosty.AuthData{
-		AccessToken:  "new-access-token",
-		RefreshToken: "new-refresh-token",
-		ExpiresAt:    "1234567890",
-		DeviceID:     "test-device-id",
-		BlogName:     "test-blog",
+	// Mock client
+	mockClient := &boosty.ClientMock{
+		RefreshTokenFunc: func() (*boosty.RefreshTokenResponse, error) {
+			return &boosty.RefreshTokenResponse{
+				AccessToken:  "new-access-token",
+				RefreshToken: "new-refresh-token",
+				ExpiresIn:    3600,
+			}, nil
+		},
 	}
-	updatedAuthDataJSON, _ := json.Marshal(updatedAuthData)
 
 	tests := []struct {
 		name      string
@@ -60,9 +61,18 @@ func TestResolve(t *testing.T) {
 					require.Equal(t, int64(1), id)
 					return mockCred, nil
 				}
+				env.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					require.Equal(t, int64(1), credentialID)
+					return mockClient, nil
+				}
 				env.UpdateBoostyCredentialsTokensFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsTokensParams) (db.BoostyCredential, error) {
 					require.Equal(t, int64(1), arg.ID)
-					require.Equal(t, string(updatedAuthDataJSON), arg.AuthData)
+					// Check that auth data contains new tokens
+					var authData boosty.AuthData
+					err := json.Unmarshal([]byte(arg.AuthData), &authData)
+					require.NoError(t, err)
+					require.Equal(t, "new-access-token", authData.AccessToken)
+					require.Equal(t, "new-refresh-token", authData.RefreshToken)
 					require.True(t, arg.ExpiresAt.Valid)
 					require.True(t, arg.ExpiresAt.Time.After(time.Now()))
 					return db.BoostyCredential{}, nil
@@ -82,7 +92,39 @@ func TestResolve(t *testing.T) {
 			errMsg:  "failed to get boosty credential",
 		},
 		{
-			name:   "invalid auth data",
+			name:   "client creation fails",
+			credID: 1,
+			setupMock: func(env *EnvMock) {
+				env.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
+					return mockCred, nil
+				}
+				env.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					return nil, fmt.Errorf("failed to create client")
+				}
+			},
+			wantErr: true,
+			errMsg:  "failed to get boosty client",
+		},
+		{
+			name:   "token refresh fails",
+			credID: 1,
+			setupMock: func(env *EnvMock) {
+				env.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
+					return mockCred, nil
+				}
+				env.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					return &boosty.ClientMock{
+						RefreshTokenFunc: func() (*boosty.RefreshTokenResponse, error) {
+							return nil, fmt.Errorf("API error")
+						},
+					}, nil
+				}
+			},
+			wantErr: true,
+			errMsg:  "failed to refresh token",
+		},
+		{
+			name:   "invalid auth data after refresh",
 			credID: 1,
 			setupMock: func(env *EnvMock) {
 				env.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
@@ -92,6 +134,9 @@ func TestResolve(t *testing.T) {
 						DeviceID: "test-device-id",
 						BlogName: "test-blog",
 					}, nil
+				}
+				env.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					return mockClient, nil
 				}
 			},
 			wantErr: true,
@@ -103,6 +148,9 @@ func TestResolve(t *testing.T) {
 			setupMock: func(env *EnvMock) {
 				env.BoostyCredentialsFunc = func(ctx context.Context, id int64) (db.BoostyCredential, error) {
 					return mockCred, nil
+				}
+				env.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
+					return mockClient, nil
 				}
 				env.UpdateBoostyCredentialsTokensFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsTokensParams) (db.BoostyCredential, error) {
 					return db.BoostyCredential{}, fmt.Errorf("database error")
@@ -117,10 +165,8 @@ func TestResolve(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Note: We cannot test the actual token refresh without mocking the boosty client
 			// This test focuses on the database interaction logic
-			
-			if tt.name == "successful token refresh" {
-				t.Skip("Skipping test that requires actual Boosty API client")
-			}
+
+			// All tests can now run with mocked client
 
 			env := &EnvMock{}
 			tt.setupMock(env)

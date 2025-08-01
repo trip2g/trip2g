@@ -34,6 +34,7 @@ import (
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
+	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
@@ -397,8 +398,7 @@ func (r *adminMutationResolver) RefreshBoostyData(ctx context.Context, obj *appm
 
 // SetBoostyTierSubgraphs is the resolver for the setBoostyTierSubgraphs field.
 func (r *adminMutationResolver) SetBoostyTierSubgraphs(ctx context.Context, obj *appmodel.AdminMutation, input model.SetBoostyTierSubgraphsInput) (model.SetBoostyTierSubgraphsOrErrorPayload, error) {
-	// For now, return a not implemented error until we implement the setBoostyTierSubgraphs case
-	return &model.ErrorPayload{Message: "SetBoostyTierSubgraphs not implemented yet"}, nil
+	return setboostytiersubgraphs.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatedBy is the resolver for the createdBy field.
