@@ -26,6 +26,7 @@ import (
 	"trip2g/internal/appconfig"
 	"trip2g/internal/appreq"
 	"trip2g/internal/boosty"
+	"trip2g/internal/boostyjobs"
 	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
@@ -74,6 +75,7 @@ type app struct {
 	*db.Queries
 	*miniostorage.FileStorage
 	*patreonjobs.PatreonJobs
+	*boostyjobs.BoostyJobs
 
 	graphTxs *graphTransactions
 
@@ -186,9 +188,18 @@ func main() {
 	a.patreonClientManager = patreon.NewClientManager(a)
 	a.boostyClientManager = boosty.NewClientManager(a)
 
-	a.PatreonJobs, err = patreonjobs.New(ctx, a)
+	// Use default configurations for jobs
+	patreonConfig := patreonjobs.DefaultConfig()
+	boostyConfig := boostyjobs.DefaultConfig()
+
+	a.PatreonJobs, err = patreonjobs.New(ctx, a, patreonConfig)
 	if err != nil {
 		panic(fmt.Errorf("failed to create Patreon IO: %w", err))
+	}
+
+	a.BoostyJobs, err = boostyjobs.New(ctx, a, boostyConfig)
+	if err != nil {
+		panic(fmt.Errorf("failed to create Boosty IO: %w", err))
 	}
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)
@@ -1015,7 +1026,7 @@ func (a *app) startServer() {
 
 	rtr := router.New(a)
 
-	// graphql
+	// graphql.
 	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
 	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(graph.NewHandler(a))
 

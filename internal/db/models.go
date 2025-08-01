@@ -95,6 +95,7 @@ type BoostyCredential struct {
 	DeviceID  string        `json:"device_id"`
 	BlogName  string        `json:"blog_name"`
 	ExpiresAt sql.NullTime  `json:"expires_at"`
+	SyncedAt  sql.NullTime  `json:"synced_at"`
 }
 
 type BoostyMember struct {

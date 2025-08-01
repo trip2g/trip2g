@@ -62,7 +62,7 @@ func (q *Queries) AdminByUserID(ctx context.Context, userID int64) (Admin, error
 }
 
 const allActiveBoostyCredentials = `-- name: AllActiveBoostyCredentials :many
-select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at from boosty_credentials
+select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at, synced_at from boosty_credentials
 where deleted_at is null
 order by created_at desc
 `
@@ -86,6 +86,7 @@ func (q *Queries) AllActiveBoostyCredentials(ctx context.Context) ([]BoostyCrede
 			&i.DeviceID,
 			&i.BlogName,
 			&i.ExpiresAt,
+			&i.SyncedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -140,7 +141,7 @@ func (q *Queries) AllActivePatreonCredentials(ctx context.Context) ([]PatreonCre
 
 const allBoostyCredentials = `-- name: AllBoostyCredentials :many
 
-select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at from boosty_credentials
+select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at, synced_at from boosty_credentials
 order by created_at desc
 `
 
@@ -164,6 +165,7 @@ func (q *Queries) AllBoostyCredentials(ctx context.Context) ([]BoostyCredential,
 			&i.DeviceID,
 			&i.BlogName,
 			&i.ExpiresAt,
+			&i.SyncedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -179,7 +181,7 @@ func (q *Queries) AllBoostyCredentials(ctx context.Context) ([]BoostyCredential,
 }
 
 const allDeletedBoostyCredentials = `-- name: AllDeletedBoostyCredentials :many
-select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at from boosty_credentials
+select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at, synced_at from boosty_credentials
 where deleted_at is not null
 order by created_at desc
 `
@@ -203,6 +205,7 @@ func (q *Queries) AllDeletedBoostyCredentials(ctx context.Context) ([]BoostyCred
 			&i.DeviceID,
 			&i.BlogName,
 			&i.ExpiresAt,
+			&i.SyncedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -796,7 +799,7 @@ func (q *Queries) BanUser(ctx context.Context, arg BanUserParams) error {
 }
 
 const boostyCredentials = `-- name: BoostyCredentials :one
-select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at
+select id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at, synced_at
   from boosty_credentials
  where id = ?
 `
@@ -814,6 +817,7 @@ func (q *Queries) BoostyCredentials(ctx context.Context, id int64) (BoostyCreden
 		&i.DeviceID,
 		&i.BlogName,
 		&i.ExpiresAt,
+		&i.SyncedAt,
 	)
 	return i, err
 }
@@ -1597,7 +1601,7 @@ func (q *Queries) InsertAdmin(ctx context.Context, arg InsertAdminParams) (Admin
 const insertBoostyCredentials = `-- name: InsertBoostyCredentials :one
 insert into boosty_credentials (created_by, auth_data, device_id, blog_name)
 values (?, ?, ?, ?)
-returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at
+returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at, synced_at
 `
 
 type InsertBoostyCredentialsParams struct {
@@ -1625,6 +1629,7 @@ func (q *Queries) InsertBoostyCredentials(ctx context.Context, arg InsertBoostyC
 		&i.DeviceID,
 		&i.BlogName,
 		&i.ExpiresAt,
+		&i.SyncedAt,
 	)
 	return i, err
 }
@@ -3630,7 +3635,7 @@ const restoreBoostyCredentials = `-- name: RestoreBoostyCredentials :one
 update boosty_credentials
 set deleted_at = null, deleted_by = null
 where id = ? and deleted_at is not null
-returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at
+returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at, synced_at
 `
 
 func (q *Queries) RestoreBoostyCredentials(ctx context.Context, id int64) (BoostyCredential, error) {
@@ -3646,6 +3651,7 @@ func (q *Queries) RestoreBoostyCredentials(ctx context.Context, id int64) (Boost
 		&i.DeviceID,
 		&i.BlogName,
 		&i.ExpiresAt,
+		&i.SyncedAt,
 	)
 	return i, err
 }
@@ -3709,7 +3715,7 @@ const softDeleteBoostyCredentials = `-- name: SoftDeleteBoostyCredentials :one
 update boosty_credentials
 set deleted_at = current_timestamp, deleted_by = ?
 where id = ? and deleted_at is null
-returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at
+returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at, synced_at
 `
 
 type SoftDeleteBoostyCredentialsParams struct {
@@ -3730,6 +3736,7 @@ func (q *Queries) SoftDeleteBoostyCredentials(ctx context.Context, arg SoftDelet
 		&i.DeviceID,
 		&i.BlogName,
 		&i.ExpiresAt,
+		&i.SyncedAt,
 	)
 	return i, err
 }
@@ -4191,7 +4198,7 @@ const updateBoostyCredentials = `-- name: UpdateBoostyCredentials :one
 update boosty_credentials
 set auth_data = ?, device_id = ?, blog_name = ?
 where id = ?
-returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at
+returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at, synced_at
 `
 
 type UpdateBoostyCredentialsParams struct {
@@ -4219,15 +4226,27 @@ func (q *Queries) UpdateBoostyCredentials(ctx context.Context, arg UpdateBoostyC
 		&i.DeviceID,
 		&i.BlogName,
 		&i.ExpiresAt,
+		&i.SyncedAt,
 	)
 	return i, err
+}
+
+const updateBoostyCredentialsSyncedAt = `-- name: UpdateBoostyCredentialsSyncedAt :exec
+update boosty_credentials
+set synced_at = current_timestamp
+where id = ?
+`
+
+func (q *Queries) UpdateBoostyCredentialsSyncedAt(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, updateBoostyCredentialsSyncedAt, id)
+	return err
 }
 
 const updateBoostyCredentialsTokens = `-- name: UpdateBoostyCredentialsTokens :one
 update boosty_credentials
 set auth_data = ?, expires_at = ?
 where id = ?
-returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at
+returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_id, blog_name, expires_at, synced_at
 `
 
 type UpdateBoostyCredentialsTokensParams struct {
@@ -4249,6 +4268,7 @@ func (q *Queries) UpdateBoostyCredentialsTokens(ctx context.Context, arg UpdateB
 		&i.DeviceID,
 		&i.BlogName,
 		&i.ExpiresAt,
+		&i.SyncedAt,
 	)
 	return i, err
 }

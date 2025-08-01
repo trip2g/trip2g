@@ -915,6 +915,11 @@ set auth_data = ?, expires_at = ?
 where id = ?
 returning *;
 
+-- name: UpdateBoostyCredentialsSyncedAt :exec
+update boosty_credentials
+set synced_at = current_timestamp
+where id = ?;
+
 -- Boosty tiers
 
 -- name: GetBoostyTiers :many

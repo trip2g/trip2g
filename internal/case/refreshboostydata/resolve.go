@@ -22,6 +22,9 @@ type Env interface {
 	UpsertBoostyMember(ctx context.Context, arg db.UpsertBoostyMemberParams) error
 	MarkBoostyMembersAsMissed(ctx context.Context, boostyIDs []int64) error
 
+	// Sync tracking
+	UpdateBoostyCredentialsSyncedAt(ctx context.Context, id int64) error
+
 	Logger() logger.Logger
 }
 
@@ -170,5 +173,17 @@ func syncBoostyData(ctx context.Context, env Env, credentialsID int64) error {
 }
 
 func Resolve(ctx context.Context, env Env, credentialsID int64) error {
-	return syncBoostyData(ctx, env, credentialsID)
+	err := syncBoostyData(ctx, env, credentialsID)
+	if err != nil {
+		return err
+	}
+
+	// Update synced_at timestamp after successful sync
+	err = env.UpdateBoostyCredentialsSyncedAt(ctx, credentialsID)
+	if err != nil {
+		// Log the error but don't fail the entire operation
+		env.Logger().Error("failed to update synced_at timestamp", "credentials_id", credentialsID, "error", err)
+	}
+
+	return nil
 }
