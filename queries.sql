@@ -145,11 +145,21 @@ select distinct s.name
 -- name: ListActivePatreonSubgraphNamesByUserID :many
 select distinct s.name
   from users u
-  join patreon_members pm on u.id = pm.user_id
+  join patreon_members pm on u.email = pm.email
   join patreon_tier_subgraphs pts on pm.current_tier_id = pts.tier_id
   join subgraphs s on pts.subgraph_id = s.id
  where u.id = ? -- if we select by user_id, the sqlc will generate a sql.Null64 arg
    and pm.status = 'active_patron'
+ order by s.name;
+
+-- name: ListActiveBoostySubgraphNamesByUserID :many
+select distinct s.name
+  from users u
+  join boosty_members bm on u.email = bm.email
+  join boosty_tier_subgraphs bts on bm.current_tier_id = bts.tier_id
+  join subgraphs s on bts.subgraph_id = s.id
+ where u.id = ? -- if we select by user_id, the sqlc will generate a sql.Null64 arg
+   and bm.status = 'active_patron'
  order by s.name;
 
 -- name: InsertSubgraph :exec

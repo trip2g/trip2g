@@ -29,6 +29,7 @@ import (
 	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
+	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
 	"trip2g/internal/db"
@@ -312,7 +313,17 @@ func (a *app) BoostyClientByCredentialsID(ctx context.Context, credentialID int6
 	return a.boostyClientManager.Get(ctx, env, credentialID)
 }
 
+func (a *app) ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error) {
+	// TODO: add caching for this method
+	return listactiveusersubgraphs.Resolve(ctx, a, userID)
+}
+
 func (a *app) SendMail(ctx context.Context, data model.Mail) error {
+	if a.config.DevMode {
+		a.log.Info("send email", "to", data.To, "subject", data.Subject, "plain", string(data.Plain))
+		return nil
+	}
+
 	client := resend.NewClient(a.config.ResendAPIKey)
 
 	params := &resend.SendEmailRequest{

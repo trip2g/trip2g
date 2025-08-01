@@ -9,6 +9,7 @@ type Env interface {
 	ListActiveSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
 	ListActiveTgChatSubgraphNamesByUserID(ctx context.Context, id int64) ([]string, error)
 	ListActivePatreonSubgraphNamesByUserID(ctx context.Context, id int64) ([]string, error)
+	ListActiveBoostySubgraphNamesByUserID(ctx context.Context, id int64) ([]string, error)
 }
 
 // TODO: maybe we need to add a cache for this function
@@ -32,6 +33,11 @@ func Resolve(ctx context.Context, env Env, userID int64) ([]string, error) {
 		return nil, fmt.Errorf("failed to list active patreon subgraph names: %w", err)
 	}
 
+	boostySubgraphs, err := env.ListActiveBoostySubgraphNamesByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list active boosty subgraph names: %w", err)
+	}
+
 	for _, subgraph := range payedSubgraphs {
 		uniqMap[subgraph] = struct{}{}
 	}
@@ -41,6 +47,10 @@ func Resolve(ctx context.Context, env Env, userID int64) ([]string, error) {
 	}
 
 	for _, subgraph := range patreonSubgraphs {
+		uniqMap[subgraph] = struct{}{}
+	}
+
+	for _, subgraph := range boostySubgraphs {
 		uniqMap[subgraph] = struct{}{}
 	}
 

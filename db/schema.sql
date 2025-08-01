@@ -365,6 +365,8 @@ CREATE TABLE boosty_members (
 
   unique (credentials_id, boosty_id)
 );
+CREATE INDEX idx_boosty_members_email on boosty_members(email);
+CREATE INDEX idx_patreon_members_email on patreon_members(email);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -418,4 +420,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250729111321'),
   ('20250729112136'),
   ('20250731060940'),
-  ('20250731061653');
+  ('20250731061653'),
+  ('20250801040147');

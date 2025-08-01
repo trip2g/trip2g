@@ -2257,6 +2257,40 @@ func (q *Queries) ListAPIKeyLogsByAPIKeyID(ctx context.Context, apiKeyID int64) 
 	return items, nil
 }
 
+const listActiveBoostySubgraphNamesByUserID = `-- name: ListActiveBoostySubgraphNamesByUserID :many
+select distinct s.name
+  from users u
+  join boosty_members bm on u.email = bm.email
+  join boosty_tier_subgraphs bts on bm.current_tier_id = bts.tier_id
+  join subgraphs s on bts.subgraph_id = s.id
+ where u.id = ? -- if we select by user_id, the sqlc will generate a sql.Null64 arg
+   and bm.status = 'active_patron'
+ order by s.name
+`
+
+func (q *Queries) ListActiveBoostySubgraphNamesByUserID(ctx context.Context, id int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveBoostySubgraphNamesByUserID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listActiveNotFoundIPHits = `-- name: ListActiveNotFoundIPHits :many
 select ip, total_hits, last_hit_at from not_found_ip_hits where last_hit_at > datetime('now', '-7 days')
 `
@@ -2420,7 +2454,7 @@ func (q *Queries) ListActivePatreonCredentials(ctx context.Context) ([]PatreonCr
 const listActivePatreonSubgraphNamesByUserID = `-- name: ListActivePatreonSubgraphNamesByUserID :many
 select distinct s.name
   from users u
-  join patreon_members pm on u.id = pm.user_id
+  join patreon_members pm on u.email = pm.email
   join patreon_tier_subgraphs pts on pm.current_tier_id = pts.tier_id
   join subgraphs s on pts.subgraph_id = s.id
  where u.id = ? -- if we select by user_id, the sqlc will generate a sql.Null64 arg
