@@ -2,6 +2,7 @@ package boosty
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -14,7 +15,7 @@ import (
 
 const (
 	baseURL       = "https://api.boosty.to/v1"
-	oauthTokenURL = "https://api.boosty.to/oauth/token/"
+	oauthTokenURL = "https://api.boosty.to/oauth/token/" //nolint:gosec // this is an API endpoint, not a credential
 )
 
 type AuthData struct {
@@ -181,7 +182,7 @@ func (c *ClientImpl) fetchSubscribersPage(sortBy string, limit int, order string
 // RefreshToken refreshes the access token using the refresh token.
 func (c *ClientImpl) RefreshToken() (*RefreshTokenResponse, error) {
 	if c.authData.RefreshToken == "" {
-		return nil, fmt.Errorf("no refresh token was found to refresh auth data")
+		return nil, errors.New("no refresh token was found to refresh auth data")
 	}
 
 	req := fasthttp.AcquireRequest()

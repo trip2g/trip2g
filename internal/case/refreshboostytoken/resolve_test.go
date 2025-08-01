@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -99,7 +99,7 @@ func TestResolve(t *testing.T) {
 					return mockCred, nil
 				}
 				env.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
-					return nil, fmt.Errorf("failed to create client")
+					return nil, errors.New("failed to create client")
 				}
 			},
 			wantErr: true,
@@ -115,7 +115,7 @@ func TestResolve(t *testing.T) {
 				env.BoostyClientByCredentialsIDFunc = func(ctx context.Context, credentialID int64) (boosty.Client, error) {
 					return &boosty.ClientMock{
 						RefreshTokenFunc: func() (*boosty.RefreshTokenResponse, error) {
-							return nil, fmt.Errorf("API error")
+							return nil, errors.New("API error")
 						},
 					}, nil
 				}
@@ -153,7 +153,7 @@ func TestResolve(t *testing.T) {
 					return mockClient, nil
 				}
 				env.UpdateBoostyCredentialsTokensFunc = func(ctx context.Context, arg db.UpdateBoostyCredentialsTokensParams) (db.BoostyCredential, error) {
-					return db.BoostyCredential{}, fmt.Errorf("database error")
+					return db.BoostyCredential{}, errors.New("database error")
 				}
 			},
 			wantErr: true,
