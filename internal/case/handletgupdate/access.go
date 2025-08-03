@@ -243,7 +243,16 @@ func (req *request) sendContentMenu(ctx context.Context) error {
 	}
 
 	if len(subgraphs) == 0 {
-		return nil // silently return if no subgraphs are available
+		text += "Ничего не найдено"
+
+		msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, text)
+
+		_, sendErr := req.env.Send(msg)
+		if sendErr != nil {
+			return fmt.Errorf("failed to send message: %w", sendErr)
+		}
+
+		return nil
 	}
 
 	msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, text)

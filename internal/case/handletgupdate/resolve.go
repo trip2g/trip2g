@@ -236,7 +236,7 @@ func (req *request) handleCommands(ctx context.Context) error {
 			return fmt.Errorf("failed to get questions: %w", err)
 		}
 
-		if len(questions) == 0 || true {
+		if len(questions) == 0 {
 			return req.sendContentMenu(ctx)
 		}
 
@@ -310,13 +310,15 @@ func (req *request) updateUserState(ctx context.Context) error {
 		return fmt.Errorf("failed to marshal user state: %w", err)
 	}
 
-	err = req.env.UpsertTgUserState(ctx, db.UpsertTgUserStateParams{
+	params := db.UpsertTgUserStateParams{
 		BotID:       req.env.BotID(),
 		ChatID:      req.userState.ChatID,
 		Value:       req.userState.Value,
 		Data:        string(data),
 		UpdateCount: req.userState.UpdateCount + 1,
-	})
+	}
+
+	err = req.env.UpsertTgUserState(ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed to upsert user state: %w", err)
 	}

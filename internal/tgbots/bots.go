@@ -121,7 +121,7 @@ func (io *TgBots) StartTgBot(ctx context.Context, id int64) {
 		return
 	}
 
-	handlerIO := HandlerIO{bot: bot}
+	handlerIO := HandlerIO{bot: bot, dbBotID: id}
 
 	// Store bot instance in botMap
 	io.mu.Lock()

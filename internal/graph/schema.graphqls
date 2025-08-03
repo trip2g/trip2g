@@ -246,6 +246,8 @@ type AdminTgBot @goModel(model: "trip2g/internal/db.TgBot") {
   description: String!
   createdAt: Time!
   createdBy: AdminUser! @goField(forceResolver: true)
+
+  chats: AdminTgBotChatsConnection!
 }
 
 type AdminTgBotChat @goModel(model: "trip2g/internal/db.TgBotChat") {
