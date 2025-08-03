@@ -230,6 +230,16 @@ func (req *request) handleCommands(ctx context.Context) error {
 		if strings.HasPrefix(args, "wl_") {
 			return req.handleWaitListRequest(ctx, args)
 		}
+
+		questions, err := req.Questions(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get questions: %w", err)
+		}
+
+		if len(questions) == 0 || true {
+			return req.sendContentMenu(ctx)
+		}
+
 		return req.sendStartMenu(ctx)
 
 	case "content":

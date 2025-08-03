@@ -174,6 +174,9 @@ func TestResolve(t *testing.T) {
 						},
 					}
 				}
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+					return []string{}, nil
+				}
 			},
 			wantErr: false,
 		},

@@ -600,7 +600,12 @@ func (a *app) GenerateTgAuthURL(_ context.Context, path string, data model.TgAut
 		return "", fmt.Errorf("failed to generate Telegram auth token: %w", err)
 	}
 
-	u, err := url.Parse(a.PublicURL())
+	publicURL := a.PublicURL()
+	if publicURL == "" {
+		publicURL = "https://example.com" // Fallback URL, must has a https scheme
+	}
+
+	u, err := url.Parse(publicURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse public URL: %w", err)
 	}
