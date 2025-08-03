@@ -15,6 +15,8 @@ import (
 type Env interface {
 	TgBot(ctx context.Context, id int64) (db.TgBot, error)
 	UpdateTgBot(ctx context.Context, arg db.UpdateTgBotParams) (db.TgBot, error)
+	StartTgBot(ctx context.Context, id int64)
+	StopTgBot(ctx context.Context, id int64)
 }
 
 func Resolve(ctx context.Context, env Env, input model.UpdateTgBotInput) (model.UpdateTgBotOrErrorPayload, error) {
@@ -43,6 +45,14 @@ func Resolve(ctx context.Context, env Env, input model.UpdateTgBotInput) (model.
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update telegram bot: %w", err)
+	}
+
+	if input.Enabled != nil {
+		if *input.Enabled {
+			env.StartTgBot(ctx, input.ID)
+		} else {
+			env.StopTgBot(ctx, input.ID)
+		}
 	}
 
 	return &model.UpdateTgBotPayload{

@@ -15,6 +15,7 @@ import (
 type Env interface {
 	InsertTgBot(ctx context.Context, arg db.InsertTgBotParams) (db.TgBot, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	StartTgBot(ctx context.Context, id int64)
 }
 
 func Resolve(ctx context.Context, env Env, input model.CreateTgBotInput) (model.CreateTgBotOrErrorPayload, error) {
@@ -59,6 +60,8 @@ func Resolve(ctx context.Context, env Env, input model.CreateTgBotInput) (model.
 	if err != nil {
 		return nil, fmt.Errorf("failed to create telegram bot: %w", err)
 	}
+
+	env.StartTgBot(ctx, bot.ID)
 
 	return &model.CreateTgBotPayload{
 		TgBot: &bot,

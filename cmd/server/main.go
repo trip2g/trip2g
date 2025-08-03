@@ -30,6 +30,7 @@ import (
 	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
+	"trip2g/internal/case/handletgupdate"
 	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
@@ -49,11 +50,13 @@ import (
 	"trip2g/internal/redirectmanager"
 	"trip2g/internal/router"
 	"trip2g/internal/tgauthtoken"
+	"trip2g/internal/tgbots"
 	"trip2g/internal/userbans"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
 
 	"github.com/99designs/gqlgen/graphql/playground"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vektah/gqlparser/gqlerror"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
@@ -76,6 +79,7 @@ type app struct {
 	*miniostorage.FileStorage
 	*patreonjobs.PatreonJobs
 	*boostyjobs.BoostyJobs
+	*tgbots.TgBots
 
 	graphTxs *graphTransactions
 
@@ -198,6 +202,23 @@ func main() {
 		panic(fmt.Errorf("failed to create Boosty IO: %w", err))
 	}
 
+	a.TgBots, err = tgbots.New(ctx, a, tgbots.DefaultConfig())
+	if err != nil {
+		panic(fmt.Errorf("failed to create Telegram bots: %w", err))
+	}
+
+	a.TgBots.SetHandler(func(ctx context.Context, io *tgbots.HandlerIO, update tgbotapi.Update) error {
+		var be struct {
+			*app
+			*tgbots.HandlerIO
+		}
+
+		be.app = a
+		be.HandlerIO = io
+
+		return handletgupdate.Resolve(ctx, be, update)
+	})
+
 	a.redirectManager, err = redirectmanager.New(ctx, a)
 	if err != nil {
 		panic(fmt.Errorf("failed to create redirect manager: %w", err))
@@ -245,14 +266,6 @@ func main() {
 			log.Error("failed to reload all notes", "error", loadErr)
 		}
 	})
-
-	go func() {
-		runErr := a.RunTgBots(ctx)
-		if runErr != nil {
-			log.Error("failed to run Telegram bots", "error", runErr)
-			return
-		}
-	}()
 
 	a.startServer()
 }
@@ -1059,6 +1072,10 @@ func (a *app) startServer() {
 			}
 
 			if signinbytgauthtoken.Process(ctx, a) {
+				return
+			}
+
+			if a.TgBots.ProcessWebhookRequest(path, func() []byte { return ctx.PostBody() }) {
 				return
 			}
 
