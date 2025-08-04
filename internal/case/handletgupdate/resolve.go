@@ -36,6 +36,7 @@ type Env interface {
 	Send(msg tgbotapi.Chattable) (tgbotapi.Message, error)
 	Request(c tgbotapi.Chattable) (*tgbotapi.APIResponse, error)
 	GetChatMemberStatus(ctx context.Context, chatID, userID int64) (string, error)
+	BotLink() string
 
 	GenerateTgAuthURL(ctx context.Context, path string, data model.TgAuthToken) (string, error)
 	ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, id sql.NullInt64) ([]string, error)
@@ -223,6 +224,10 @@ func (req *request) handleCallbackQuery(ctx context.Context) error {
 func (req *request) handleCommands(ctx context.Context) error {
 	switch req.update.Message.Command() {
 	case "start":
+		if req.update.Message.Chat.ID < 0 {
+			return nil
+		}
+
 		args := req.update.Message.CommandArguments()
 		if strings.HasPrefix(args, "group_") {
 			return req.handleGroupAccess(ctx, args)
@@ -243,6 +248,22 @@ func (req *request) handleCommands(ctx context.Context) error {
 		return req.sendStartMenu(ctx)
 
 	case "content":
+		if req.update.Message.Chat.ID < 0 {
+			url := fmt.Sprintf("%s?start=group_%d", req.env.BotLink(), req.update.Message.Chat.ID)
+			msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, "Доступ к материалам через бота")
+			msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+				tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonURL("Открыть", url),
+				),
+			)
+			_, err := req.env.Send(msg)
+			if err != nil {
+				return fmt.Errorf("failed to send content message: %w", err)
+			}
+
+			return nil
+		}
+
 		return req.sendContentMenu(ctx)
 
 	default:

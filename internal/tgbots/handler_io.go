@@ -24,6 +24,10 @@ func (io *HandlerIO) TgID() int64 {
 	return io.bot.Self.ID
 }
 
+func (io *HandlerIO) BotLink() string {
+	return fmt.Sprintf("https://t.me/%s", io.bot.Self.UserName)
+}
+
 func (io *HandlerIO) Send(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 	return io.bot.Send(msg)
 }
