@@ -15,9 +15,7 @@ namespace $.$$ {
 								memberCount
 								subgraphAccesses {
 									id
-									subgraph {
-										name
-									}
+									subgraphId
 								}
 							}
 						}
@@ -73,10 +71,8 @@ namespace $.$$ {
 			return m.toString( 'YYYY-MM-DD HH:mm' )
 		}
 
-		override row_subgraph_accesses( id: any ): string {
-			const accesses = this.row( id ).subgraphAccesses
-			if( !accesses || accesses.length === 0 ) return '-'
-			return accesses.map( a => a.subgraph.name ).join( ', ' )
+		override row_subgraph_ids( id: any ) {
+			return this.row(id).subgraphAccesses.map( a => a.subgraphId)
 		}
 	}
 }

@@ -724,6 +724,10 @@ returning *;
 delete from tg_chat_subgraph_accesses
 where id = ?;
 
+-- name: DeleteTgChatSubgraphAccessesByChatID :exec
+delete from tg_chat_subgraph_accesses
+where chat_id = ?;
+
 -- name: TgBotChat :one
 select * from tg_bot_chats
 where id = ?;

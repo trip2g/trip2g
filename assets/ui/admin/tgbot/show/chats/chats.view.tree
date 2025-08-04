@@ -25,6 +25,7 @@ $trip2g_admin_tgbot_show_chats $mol_view
 								content <= row_member_count*? \
 						<= Subgraphs_labeler* $mol_labeler
 							title \Subgraphs
-							Content <= Subgraphs* $trip2g_admin_cell
-								content <= row_subgraph_accesses*? \
+							Content <= Subgraphs* $trip2g_admin_tgbot_show_chats_subgraphs
+								chat_id <= row_id* 0
+								current_ids <= row_subgraph_ids* /number
 

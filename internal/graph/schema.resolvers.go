@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
-	"trip2g/internal/case/admin/addtgchatsubgraphaccess"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
@@ -30,12 +29,12 @@ import (
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
-	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
+	"trip2g/internal/case/admin/settgchatsubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
@@ -330,14 +329,9 @@ func (r *adminMutationResolver) UpdateTgBot(ctx context.Context, obj *appmodel.A
 	return updatetgbot.Resolve(ctx, r.env(ctx), input)
 }
 
-// AddTgChatSubgraphAccess is the resolver for the addTgChatSubgraphAccess field.
-func (r *adminMutationResolver) AddTgChatSubgraphAccess(ctx context.Context, obj *appmodel.AdminMutation, input model.AddTgChatSubgraphAccessInput) (model.AddTgChatSubgraphAccessOrErrorPayload, error) {
-	return addtgchatsubgraphaccess.Resolve(ctx, r.env(ctx), input)
-}
-
-// RemoveTgChatSubgraphAccess is the resolver for the removeTgChatSubgraphAccess field.
-func (r *adminMutationResolver) RemoveTgChatSubgraphAccess(ctx context.Context, obj *appmodel.AdminMutation, input model.RemoveTgChatSubgraphAccessInput) (model.RemoveTgChatSubgraphAccessOrErrorPayload, error) {
-	return removetgchatsubgraphaccess.Resolve(ctx, r.env(ctx), input)
+// SetTgChatSubgraphs is the resolver for the setTgChatSubgraphs field.
+func (r *adminMutationResolver) SetTgChatSubgraphs(ctx context.Context, obj *appmodel.AdminMutation, input model.SetTgChatSubgraphsInput) (model.SetTgChatSubgraphsOrErrorPayload, error) {
+	return settgchatsubgraphs.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatePatreonCredentials is the resolver for the createPatreonCredentials field.
@@ -1310,6 +1304,11 @@ func (r *refreshPatreonDataPayloadResolver) Credentials(ctx context.Context, obj
 	return resolveOne[db.PatreonCredential](ctx, obj.CredentialsID, r.env(ctx).PatreonCredentials)
 }
 
+// Chat is the resolver for the chat field.
+func (r *setTgChatSubgraphsPayloadResolver) Chat(ctx context.Context, obj *model.SetTgChatSubgraphsPayload) (*db.TgBotChat, error) {
+	return resolveOne[db.TgBotChat](ctx, obj.ChatID, r.env(ctx).TgBotChat)
+}
+
 // Offers is the resolver for the offers field.
 func (r *subgraphResolver) Offers(ctx context.Context, obj *db.Subgraph) ([]db.Offer, error) {
 	return r.env(ctx).ListActiveOffersBySubgraphID(ctx, obj.ID)
@@ -1741,6 +1740,11 @@ func (r *Resolver) RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
 	return &refreshPatreonDataPayloadResolver{r}
 }
 
+// SetTgChatSubgraphsPayload returns SetTgChatSubgraphsPayloadResolver implementation.
+func (r *Resolver) SetTgChatSubgraphsPayload() SetTgChatSubgraphsPayloadResolver {
+	return &setTgChatSubgraphsPayloadResolver{r}
+}
+
 // Subgraph returns SubgraphResolver implementation.
 func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
 
@@ -1825,6 +1829,7 @@ type pushedNoteResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type refreshBoostyDataPayloadResolver struct{ *Resolver }
 type refreshPatreonDataPayloadResolver struct{ *Resolver }
+type setTgChatSubgraphsPayloadResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
 type updateNoteGraphPositionsPayloadResolver struct{ *Resolver }
@@ -1832,3 +1837,15 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *adminTgBotResolver) Chats(ctx context.Context, obj *db.TgBot) (*model.AdminTgBotChatsConnection, error) {
+	panic(fmt.Errorf("not implemented: Chats - chats"))
+}
+*/

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 
 	"trip2g/internal/appreq"
-	"trip2g/internal/case/admin/addtgchatsubgraphaccess"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
@@ -21,12 +20,12 @@ import (
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/makereleaselive"
-	"trip2g/internal/case/admin/removetgchatsubgraphaccess"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
+	"trip2g/internal/case/admin/settgchatsubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
@@ -151,8 +150,7 @@ type Env interface {
 	resetnotfoundpath.Env
 	createtgbot.Env
 	updatetgbot.Env
-	addtgchatsubgraphaccess.Env
-	removetgchatsubgraphaccess.Env
+	settgchatsubgraphs.Env
 	createpatreoncredentials.Env
 	deletepatreoncredentials.Env
 	refreshpatreondata.Env

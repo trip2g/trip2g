@@ -14,10 +14,6 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
-type AddTgChatSubgraphAccessOrErrorPayload interface {
-	IsAddTgChatSubgraphAccessOrErrorPayload()
-}
-
 type BanUserOrErrorPayload interface {
 	IsBanUserOrErrorPayload()
 }
@@ -102,10 +98,6 @@ type RefreshPatreonDataOrErrorPayload interface {
 	IsRefreshPatreonDataOrErrorPayload()
 }
 
-type RemoveTgChatSubgraphAccessOrErrorPayload interface {
-	IsRemoveTgChatSubgraphAccessOrErrorPayload()
-}
-
 type RequestEmailSignInCodeOrErrorPayload interface {
 	IsRequestEmailSignInCodeOrErrorPayload()
 }
@@ -128,6 +120,10 @@ type SetBoostyTierSubgraphsOrErrorPayload interface {
 
 type SetPatreonTierSubgraphsOrErrorPayload interface {
 	IsSetPatreonTierSubgraphsOrErrorPayload()
+}
+
+type SetTgChatSubgraphsOrErrorPayload interface {
+	IsSetTgChatSubgraphsOrErrorPayload()
 }
 
 type SignInOrErrorPayload interface {
@@ -187,17 +183,6 @@ type ActiveOffers struct {
 }
 
 func (ActiveOffers) IsViewerOffers() {}
-
-type AddTgChatSubgraphAccessInput struct {
-	ChatID     int64 `json:"chatId"`
-	SubgraphID int64 `json:"subgraphId"`
-}
-
-type AddTgChatSubgraphAccessPayload struct {
-	ChatSubgraphAccess *db.TgChatSubgraphAccess `json:"chatSubgraphAccess"`
-}
-
-func (AddTgChatSubgraphAccessPayload) IsAddTgChatSubgraphAccessOrErrorPayload() {}
 
 type AdminAdminsConnection struct {
 	Nodes []db.Admin `json:"nodes"`
@@ -571,9 +556,7 @@ func (ErrorPayload) IsCreateTgBotOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateTgBotOrErrorPayload() {}
 
-func (ErrorPayload) IsAddTgChatSubgraphAccessOrErrorPayload() {}
-
-func (ErrorPayload) IsRemoveTgChatSubgraphAccessOrErrorPayload() {}
+func (ErrorPayload) IsSetTgChatSubgraphsOrErrorPayload() {}
 
 func (ErrorPayload) IsCreatePatreonCredentialsOrErrorPayload() {}
 
@@ -691,16 +674,6 @@ type RefreshPatreonDataPayload struct {
 
 func (RefreshPatreonDataPayload) IsRefreshPatreonDataOrErrorPayload() {}
 
-type RemoveTgChatSubgraphAccessInput struct {
-	ID int64 `json:"id"`
-}
-
-type RemoveTgChatSubgraphAccessPayload struct {
-	DeletedID int64 `json:"deletedId"`
-}
-
-func (RemoveTgChatSubgraphAccessPayload) IsRemoveTgChatSubgraphAccessOrErrorPayload() {}
-
 type RequestEmailSignInCodeInput struct {
 	Email string `json:"email"`
 }
@@ -764,6 +737,19 @@ type SetPatreonTierSubgraphsPayload struct {
 }
 
 func (SetPatreonTierSubgraphsPayload) IsSetPatreonTierSubgraphsOrErrorPayload() {}
+
+type SetTgChatSubgraphsInput struct {
+	ChatID      int64   `json:"chatId"`
+	SubgraphIds []int64 `json:"subgraphIds"`
+}
+
+type SetTgChatSubgraphsPayload struct {
+	Chat    *db.TgBotChat `json:"chat"`
+	Success bool          `json:"success"`
+	ChatID  int64         `json:"-"`
+}
+
+func (SetTgChatSubgraphsPayload) IsSetTgChatSubgraphsOrErrorPayload() {}
 
 type SignInByEmailInput struct {
 	Email string `json:"email"`

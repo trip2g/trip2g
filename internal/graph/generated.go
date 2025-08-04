@@ -103,6 +103,7 @@ type ResolverRoot interface {
 	Query() QueryResolver
 	RefreshBoostyDataPayload() RefreshBoostyDataPayloadResolver
 	RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
+	SetTgChatSubgraphsPayload() SetTgChatSubgraphsPayloadResolver
 	Subgraph() SubgraphResolver
 	UnbanUserPayload() UnbanUserPayloadResolver
 	UpdateNoteGraphPositionsPayload() UpdateNoteGraphPositionsPayloadResolver
@@ -118,10 +119,6 @@ type DirectiveRoot struct {
 type ComplexityRoot struct {
 	ActiveOffers struct {
 		Nodes func(childComplexity int) int
-	}
-
-	AddTgChatSubgraphAccessPayload struct {
-		ChatSubgraphAccess func(childComplexity int) int
 	}
 
 	Admin struct {
@@ -209,7 +206,6 @@ type ComplexityRoot struct {
 	}
 
 	AdminMutation struct {
-		AddTgChatSubgraphAccess      func(childComplexity int, input model.AddTgChatSubgraphAccessInput) int
 		BanUser                      func(childComplexity int, input model.BanUserInput) int
 		CreateAPIKey                 func(childComplexity int, input model.CreateAPIKeyInput) int
 		CreateBoostyCredentials      func(childComplexity int, input model.CreateBoostyCredentialsInput) int
@@ -227,12 +223,12 @@ type ComplexityRoot struct {
 		MakeReleaseLive              func(childComplexity int, input model.MakeReleaseLiveInput) int
 		RefreshBoostyData            func(childComplexity int, input model.RefreshBoostyDataInput) int
 		RefreshPatreonData           func(childComplexity int, input model.RefreshPatreonDataInput) int
-		RemoveTgChatSubgraphAccess   func(childComplexity int, input model.RemoveTgChatSubgraphAccessInput) int
 		ResetNotFoundPath            func(childComplexity int, input model.ResetNotFoundPathInput) int
 		RestoreBoostyCredentials     func(childComplexity int, input model.RestoreBoostyCredentialsInput) int
 		RestorePatreonCredentials    func(childComplexity int, input model.RestorePatreonCredentialsInput) int
 		SetBoostyTierSubgraphs       func(childComplexity int, input model.SetBoostyTierSubgraphsInput) int
 		SetPatreonTierSubgraphs      func(childComplexity int, input model.SetPatreonTierSubgraphsInput) int
+		SetTgChatSubgraphs           func(childComplexity int, input model.SetTgChatSubgraphsInput) int
 		UnbanUser                    func(childComplexity int, input model.UnbanUserInput) int
 		UpdateBoostyCredentials      func(childComplexity int, input model.UpdateBoostyCredentialsInput) int
 		UpdateNotFoundIgnoredPattern func(childComplexity int, input model.UpdateNotFoundIgnoredPatternInput) int
@@ -700,10 +696,6 @@ type ComplexityRoot struct {
 		Success       func(childComplexity int) int
 	}
 
-	RemoveTgChatSubgraphAccessPayload struct {
-		DeletedID func(childComplexity int) int
-	}
-
 	RequestEmailSignInCodePayload struct {
 		Success func(childComplexity int) int
 	}
@@ -728,6 +720,11 @@ type ComplexityRoot struct {
 	SetPatreonTierSubgraphsPayload struct {
 		Success func(childComplexity int) int
 		Tier    func(childComplexity int) int
+	}
+
+	SetTgChatSubgraphsPayload struct {
+		Chat    func(childComplexity int) int
+		Success func(childComplexity int) int
 	}
 
 	SignInPayload struct {
@@ -898,8 +895,7 @@ type AdminMutationResolver interface {
 	UpdateNoteGraphPositions(ctx context.Context, obj *model1.AdminMutation, input model.UpdateNoteGraphPositionsInput) (model.UpdateNoteGraphPositionsOrErrorPayload, error)
 	CreateTgBot(ctx context.Context, obj *model1.AdminMutation, input model.CreateTgBotInput) (model.CreateTgBotOrErrorPayload, error)
 	UpdateTgBot(ctx context.Context, obj *model1.AdminMutation, input model.UpdateTgBotInput) (model.UpdateTgBotOrErrorPayload, error)
-	AddTgChatSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input model.AddTgChatSubgraphAccessInput) (model.AddTgChatSubgraphAccessOrErrorPayload, error)
-	RemoveTgChatSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input model.RemoveTgChatSubgraphAccessInput) (model.RemoveTgChatSubgraphAccessOrErrorPayload, error)
+	SetTgChatSubgraphs(ctx context.Context, obj *model1.AdminMutation, input model.SetTgChatSubgraphsInput) (model.SetTgChatSubgraphsOrErrorPayload, error)
 	CreatePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreatePatreonCredentialsInput) (model.CreatePatreonCredentialsOrErrorPayload, error)
 	DeletePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeletePatreonCredentialsInput) (model.DeletePatreonCredentialsOrErrorPayload, error)
 	RestorePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.RestorePatreonCredentialsInput) (model.RestorePatreonCredentialsOrErrorPayload, error)
@@ -1136,6 +1132,9 @@ type RefreshBoostyDataPayloadResolver interface {
 type RefreshPatreonDataPayloadResolver interface {
 	Credentials(ctx context.Context, obj *model.RefreshPatreonDataPayload) (*db.PatreonCredential, error)
 }
+type SetTgChatSubgraphsPayloadResolver interface {
+	Chat(ctx context.Context, obj *model.SetTgChatSubgraphsPayload) (*db.TgBotChat, error)
+}
 type SubgraphResolver interface {
 	Offers(ctx context.Context, obj *db.Subgraph) ([]db.Offer, error)
 	HomePath(ctx context.Context, obj *db.Subgraph) (string, error)
@@ -1193,13 +1192,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ActiveOffers.Nodes(childComplexity), true
-
-	case "AddTgChatSubgraphAccessPayload.chatSubgraphAccess":
-		if e.complexity.AddTgChatSubgraphAccessPayload.ChatSubgraphAccess == nil {
-			break
-		}
-
-		return e.complexity.AddTgChatSubgraphAccessPayload.ChatSubgraphAccess(childComplexity), true
 
 	case "Admin.grantedAt":
 		if e.complexity.Admin.GrantedAt == nil {
@@ -1516,18 +1508,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminLatestNoteViewsConnection.Nodes(childComplexity), true
 
-	case "AdminMutation.addTgChatSubgraphAccess":
-		if e.complexity.AdminMutation.AddTgChatSubgraphAccess == nil {
-			break
-		}
-
-		args, err := ec.field_AdminMutation_addTgChatSubgraphAccess_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.AdminMutation.AddTgChatSubgraphAccess(childComplexity, args["input"].(model.AddTgChatSubgraphAccessInput)), true
-
 	case "AdminMutation.banUser":
 		if e.complexity.AdminMutation.BanUser == nil {
 			break
@@ -1732,18 +1712,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.RefreshPatreonData(childComplexity, args["input"].(model.RefreshPatreonDataInput)), true
 
-	case "AdminMutation.removeTgChatSubgraphAccess":
-		if e.complexity.AdminMutation.RemoveTgChatSubgraphAccess == nil {
-			break
-		}
-
-		args, err := ec.field_AdminMutation_removeTgChatSubgraphAccess_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.AdminMutation.RemoveTgChatSubgraphAccess(childComplexity, args["input"].(model.RemoveTgChatSubgraphAccessInput)), true
-
 	case "AdminMutation.resetNotFoundPath":
 		if e.complexity.AdminMutation.ResetNotFoundPath == nil {
 			break
@@ -1803,6 +1771,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.SetPatreonTierSubgraphs(childComplexity, args["input"].(model.SetPatreonTierSubgraphsInput)), true
+
+	case "AdminMutation.setTgChatSubgraphs":
+		if e.complexity.AdminMutation.SetTgChatSubgraphs == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_setTgChatSubgraphs_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.SetTgChatSubgraphs(childComplexity, args["input"].(model.SetTgChatSubgraphsInput)), true
 
 	case "AdminMutation.unbanUser":
 		if e.complexity.AdminMutation.UnbanUser == nil {
@@ -3754,13 +3734,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.RefreshPatreonDataPayload.Success(childComplexity), true
 
-	case "RemoveTgChatSubgraphAccessPayload.deletedId":
-		if e.complexity.RemoveTgChatSubgraphAccessPayload.DeletedID == nil {
-			break
-		}
-
-		return e.complexity.RemoveTgChatSubgraphAccessPayload.DeletedID(childComplexity), true
-
 	case "RequestEmailSignInCodePayload.success":
 		if e.complexity.RequestEmailSignInCodePayload.Success == nil {
 			break
@@ -3816,6 +3789,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SetPatreonTierSubgraphsPayload.Tier(childComplexity), true
+
+	case "SetTgChatSubgraphsPayload.chat":
+		if e.complexity.SetTgChatSubgraphsPayload.Chat == nil {
+			break
+		}
+
+		return e.complexity.SetTgChatSubgraphsPayload.Chat(childComplexity), true
+
+	case "SetTgChatSubgraphsPayload.success":
+		if e.complexity.SetTgChatSubgraphsPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.SetTgChatSubgraphsPayload.Success(childComplexity), true
 
 	case "SignInPayload.token":
 		if e.complexity.SignInPayload.Token == nil {
@@ -4096,7 +4083,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		ec.unmarshalInputAddTgChatSubgraphAccessInput,
 		ec.unmarshalInputAdminBoostyCredentialsFilterInput,
 		ec.unmarshalInputAdminLatestNoteViewsFilter,
 		ec.unmarshalInputAdminPatreonCredentialsFilterInput,
@@ -4127,13 +4113,13 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputPushNotesInput,
 		ec.unmarshalInputRefreshBoostyDataInput,
 		ec.unmarshalInputRefreshPatreonDataInput,
-		ec.unmarshalInputRemoveTgChatSubgraphAccessInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
 		ec.unmarshalInputRestoreBoostyCredentialsInput,
 		ec.unmarshalInputRestorePatreonCredentialsInput,
 		ec.unmarshalInputSetBoostyTierSubgraphsInput,
 		ec.unmarshalInputSetPatreonTierSubgraphsInput,
+		ec.unmarshalInputSetTgChatSubgraphsInput,
 		ec.unmarshalInputSignInByEmailInput,
 		ec.unmarshalInputUnbanUserInput,
 		ec.unmarshalInputUpdateBoostyCredentialsInput,
@@ -4262,29 +4248,6 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) field_AdminMutation_addTgChatSubgraphAccess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_AdminMutation_addTgChatSubgraphAccess_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_AdminMutation_addTgChatSubgraphAccess_argsInput(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (model.AddTgChatSubgraphAccessInput, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNAddTgChatSubgraphAccessInput2trip2gᚋinternalᚋgraphᚋmodelᚐAddTgChatSubgraphAccessInput(ctx, tmp)
-	}
-
-	var zeroVal model.AddTgChatSubgraphAccessInput
-	return zeroVal, nil
-}
 
 func (ec *executionContext) field_AdminMutation_banUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -4677,29 +4640,6 @@ func (ec *executionContext) field_AdminMutation_refreshPatreonData_argsInput(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_AdminMutation_removeTgChatSubgraphAccess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_AdminMutation_removeTgChatSubgraphAccess_argsInput(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_AdminMutation_removeTgChatSubgraphAccess_argsInput(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (model.RemoveTgChatSubgraphAccessInput, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNRemoveTgChatSubgraphAccessInput2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveTgChatSubgraphAccessInput(ctx, tmp)
-	}
-
-	var zeroVal model.RemoveTgChatSubgraphAccessInput
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_AdminMutation_resetNotFoundPath_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4812,6 +4752,29 @@ func (ec *executionContext) field_AdminMutation_setPatreonTierSubgraphs_argsInpu
 	}
 
 	var zeroVal model.SetPatreonTierSubgraphsInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_setTgChatSubgraphs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_setTgChatSubgraphs_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_setTgChatSubgraphs_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.SetTgChatSubgraphsInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNSetTgChatSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetTgChatSubgraphsInput(ctx, tmp)
+	}
+
+	var zeroVal model.SetTgChatSubgraphsInput
 	return zeroVal, nil
 }
 
@@ -5767,64 +5730,6 @@ func (ec *executionContext) fieldContext_ActiveOffers_nodes(_ context.Context, f
 				return ec.fieldContext_Offer_subgraphs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Offer", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AddTgChatSubgraphAccessPayload_chatSubgraphAccess(ctx context.Context, field graphql.CollectedField, obj *model.AddTgChatSubgraphAccessPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AddTgChatSubgraphAccessPayload_chatSubgraphAccess(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ChatSubgraphAccess, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*db.TgChatSubgraphAccess)
-	fc.Result = res
-	return ec.marshalNAdminTgChatSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐTgChatSubgraphAccess(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_AddTgChatSubgraphAccessPayload_chatSubgraphAccess(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AddTgChatSubgraphAccessPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_AdminTgChatSubgraphAccess_id(ctx, field)
-			case "chatId":
-				return ec.fieldContext_AdminTgChatSubgraphAccess_chatId(ctx, field)
-			case "subgraphId":
-				return ec.fieldContext_AdminTgChatSubgraphAccess_subgraphId(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_AdminTgChatSubgraphAccess_createdAt(ctx, field)
-			case "chat":
-				return ec.fieldContext_AdminTgChatSubgraphAccess_chat(ctx, field)
-			case "subgraph":
-				return ec.fieldContext_AdminTgChatSubgraphAccess_subgraph(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminTgChatSubgraphAccess", field.Name)
 		},
 	}
 	return fc, nil
@@ -9098,8 +9003,8 @@ func (ec *executionContext) fieldContext_AdminMutation_updateTgBot(ctx context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminMutation_addTgChatSubgraphAccess(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminMutation_addTgChatSubgraphAccess(ctx, field)
+func (ec *executionContext) _AdminMutation_setTgChatSubgraphs(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_setTgChatSubgraphs(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -9112,7 +9017,7 @@ func (ec *executionContext) _AdminMutation_addTgChatSubgraphAccess(ctx context.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminMutation().AddTgChatSubgraphAccess(rctx, obj, fc.Args["input"].(model.AddTgChatSubgraphAccessInput))
+		return ec.resolvers.AdminMutation().SetTgChatSubgraphs(rctx, obj, fc.Args["input"].(model.SetTgChatSubgraphsInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9124,19 +9029,19 @@ func (ec *executionContext) _AdminMutation_addTgChatSubgraphAccess(ctx context.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.AddTgChatSubgraphAccessOrErrorPayload)
+	res := resTmp.(model.SetTgChatSubgraphsOrErrorPayload)
 	fc.Result = res
-	return ec.marshalNAddTgChatSubgraphAccessOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐAddTgChatSubgraphAccessOrErrorPayload(ctx, field.Selections, res)
+	return ec.marshalNSetTgChatSubgraphsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetTgChatSubgraphsOrErrorPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminMutation_addTgChatSubgraphAccess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminMutation_setTgChatSubgraphs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminMutation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type AddTgChatSubgraphAccessOrErrorPayload does not have child fields")
+			return nil, errors.New("field of type SetTgChatSubgraphsOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -9146,62 +9051,7 @@ func (ec *executionContext) fieldContext_AdminMutation_addTgChatSubgraphAccess(c
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_addTgChatSubgraphAccess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminMutation_removeTgChatSubgraphAccess(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminMutation_removeTgChatSubgraphAccess(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminMutation().RemoveTgChatSubgraphAccess(rctx, obj, fc.Args["input"].(model.RemoveTgChatSubgraphAccessInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(model.RemoveTgChatSubgraphAccessOrErrorPayload)
-	fc.Result = res
-	return ec.marshalNRemoveTgChatSubgraphAccessOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveTgChatSubgraphAccessOrErrorPayload(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_AdminMutation_removeTgChatSubgraphAccess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminMutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type RemoveTgChatSubgraphAccessOrErrorPayload does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_removeTgChatSubgraphAccess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_AdminMutation_setTgChatSubgraphs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -19788,10 +19638,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_createTgBot(ctx, field)
 			case "updateTgBot":
 				return ec.fieldContext_AdminMutation_updateTgBot(ctx, field)
-			case "addTgChatSubgraphAccess":
-				return ec.fieldContext_AdminMutation_addTgChatSubgraphAccess(ctx, field)
-			case "removeTgChatSubgraphAccess":
-				return ec.fieldContext_AdminMutation_removeTgChatSubgraphAccess(ctx, field)
+			case "setTgChatSubgraphs":
+				return ec.fieldContext_AdminMutation_setTgChatSubgraphs(ctx, field)
 			case "createPatreonCredentials":
 				return ec.fieldContext_AdminMutation_createPatreonCredentials(ctx, field)
 			case "deletePatreonCredentials":
@@ -22180,50 +22028,6 @@ func (ec *executionContext) fieldContext_RefreshPatreonDataPayload_credentials(_
 	return fc, nil
 }
 
-func (ec *executionContext) _RemoveTgChatSubgraphAccessPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.RemoveTgChatSubgraphAccessPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_RemoveTgChatSubgraphAccessPayload_deletedId(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.DeletedID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int64)
-	fc.Result = res
-	return ec.marshalNInt642int64(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_RemoveTgChatSubgraphAccessPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "RemoveTgChatSubgraphAccessPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int64 does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _RequestEmailSignInCodePayload_success(ctx context.Context, field graphql.CollectedField, obj *model.RequestEmailSignInCodePayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_RequestEmailSignInCodePayload_success(ctx, field)
 	if err != nil {
@@ -22656,6 +22460,110 @@ func (ec *executionContext) _SetPatreonTierSubgraphsPayload_success(ctx context.
 func (ec *executionContext) fieldContext_SetPatreonTierSubgraphsPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SetPatreonTierSubgraphsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetTgChatSubgraphsPayload_chat(ctx context.Context, field graphql.CollectedField, obj *model.SetTgChatSubgraphsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SetTgChatSubgraphsPayload_chat(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.SetTgChatSubgraphsPayload().Chat(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.TgBotChat)
+	fc.Result = res
+	return ec.marshalNAdminTgBotChat2ᚖtrip2gᚋinternalᚋdbᚐTgBotChat(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SetTgChatSubgraphsPayload_chat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetTgChatSubgraphsPayload",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTgBotChat_id(ctx, field)
+			case "chatType":
+				return ec.fieldContext_AdminTgBotChat_chatType(ctx, field)
+			case "chatTitle":
+				return ec.fieldContext_AdminTgBotChat_chatTitle(ctx, field)
+			case "addedAt":
+				return ec.fieldContext_AdminTgBotChat_addedAt(ctx, field)
+			case "removedAt":
+				return ec.fieldContext_AdminTgBotChat_removedAt(ctx, field)
+			case "memberCount":
+				return ec.fieldContext_AdminTgBotChat_memberCount(ctx, field)
+			case "subgraphAccesses":
+				return ec.fieldContext_AdminTgBotChat_subgraphAccesses(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTgBotChat", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetTgChatSubgraphsPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.SetTgChatSubgraphsPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SetTgChatSubgraphsPayload_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SetTgChatSubgraphsPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetTgChatSubgraphsPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -26508,40 +26416,6 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputAddTgChatSubgraphAccessInput(ctx context.Context, obj any) (model.AddTgChatSubgraphAccessInput, error) {
-	var it model.AddTgChatSubgraphAccessInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"chatId", "subgraphId"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "chatId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("chatId"))
-			data, err := ec.unmarshalNInt642int64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ChatID = data
-		case "subgraphId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphId"))
-			data, err := ec.unmarshalNInt642int64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.SubgraphID = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputAdminBoostyCredentialsFilterInput(ctx context.Context, obj any) (model.AdminBoostyCredentialsFilterInput, error) {
 	var it model.AdminBoostyCredentialsFilterInput
 	asMap := map[string]any{}
@@ -27492,33 +27366,6 @@ func (ec *executionContext) unmarshalInputRefreshPatreonDataInput(ctx context.Co
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputRemoveTgChatSubgraphAccessInput(ctx context.Context, obj any) (model.RemoveTgChatSubgraphAccessInput, error) {
-	var it model.RemoveTgChatSubgraphAccessInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"id"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			data, err := ec.unmarshalNInt642int64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ID = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputRequestEmailSignInCodeInput(ctx context.Context, obj any) (model.RequestEmailSignInCodeInput, error) {
 	var it model.RequestEmailSignInCodeInput
 	asMap := map[string]any{}
@@ -27682,6 +27529,40 @@ func (ec *executionContext) unmarshalInputSetPatreonTierSubgraphsInput(ctx conte
 				return it, err
 			}
 			it.TierID = data
+		case "subgraphIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphIds"))
+			data, err := ec.unmarshalNInt642ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubgraphIds = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSetTgChatSubgraphsInput(ctx context.Context, obj any) (model.SetTgChatSubgraphsInput, error) {
+	var it model.SetTgChatSubgraphsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"chatId", "subgraphIds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "chatId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("chatId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChatID = data
 		case "subgraphIds":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subgraphIds"))
 			data, err := ec.unmarshalNInt642ᚕint64ᚄ(ctx, v)
@@ -28225,29 +28106,6 @@ func (ec *executionContext) unmarshalInputViewerOffersFilter(ctx context.Context
 
 // region    ************************** interface.gotpl ***************************
 
-func (ec *executionContext) _AddTgChatSubgraphAccessOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.AddTgChatSubgraphAccessOrErrorPayload) graphql.Marshaler {
-	switch obj := (obj).(type) {
-	case nil:
-		return graphql.Null
-	case model.ErrorPayload:
-		return ec._ErrorPayload(ctx, sel, &obj)
-	case *model.ErrorPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ErrorPayload(ctx, sel, obj)
-	case model.AddTgChatSubgraphAccessPayload:
-		return ec._AddTgChatSubgraphAccessPayload(ctx, sel, &obj)
-	case *model.AddTgChatSubgraphAccessPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._AddTgChatSubgraphAccessPayload(ctx, sel, obj)
-	default:
-		panic(fmt.Errorf("unexpected type %T", obj))
-	}
-}
-
 func (ec *executionContext) _BanUserOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.BanUserOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -28731,29 +28589,6 @@ func (ec *executionContext) _RefreshPatreonDataOrErrorPayload(ctx context.Contex
 	}
 }
 
-func (ec *executionContext) _RemoveTgChatSubgraphAccessOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RemoveTgChatSubgraphAccessOrErrorPayload) graphql.Marshaler {
-	switch obj := (obj).(type) {
-	case nil:
-		return graphql.Null
-	case model.RemoveTgChatSubgraphAccessPayload:
-		return ec._RemoveTgChatSubgraphAccessPayload(ctx, sel, &obj)
-	case *model.RemoveTgChatSubgraphAccessPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._RemoveTgChatSubgraphAccessPayload(ctx, sel, obj)
-	case model.ErrorPayload:
-		return ec._ErrorPayload(ctx, sel, &obj)
-	case *model.ErrorPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ErrorPayload(ctx, sel, obj)
-	default:
-		panic(fmt.Errorf("unexpected type %T", obj))
-	}
-}
-
 func (ec *executionContext) _RequestEmailSignInCodeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RequestEmailSignInCodeOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -28880,6 +28715,29 @@ func (ec *executionContext) _SetPatreonTierSubgraphsOrErrorPayload(ctx context.C
 			return graphql.Null
 		}
 		return ec._SetPatreonTierSubgraphsPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SetTgChatSubgraphsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SetTgChatSubgraphsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SetTgChatSubgraphsPayload:
+		return ec._SetTgChatSubgraphsPayload(ctx, sel, &obj)
+	case *model.SetTgChatSubgraphsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SetTgChatSubgraphsPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -29208,45 +29066,6 @@ func (ec *executionContext) _ActiveOffers(ctx context.Context, sel ast.Selection
 			out.Values[i] = graphql.MarshalString("ActiveOffers")
 		case "nodes":
 			out.Values[i] = ec._ActiveOffers_nodes(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var addTgChatSubgraphAccessPayloadImplementors = []string{"AddTgChatSubgraphAccessPayload", "AddTgChatSubgraphAccessOrErrorPayload"}
-
-func (ec *executionContext) _AddTgChatSubgraphAccessPayload(ctx context.Context, sel ast.SelectionSet, obj *model.AddTgChatSubgraphAccessPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, addTgChatSubgraphAccessPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("AddTgChatSubgraphAccessPayload")
-		case "chatSubgraphAccess":
-			out.Values[i] = ec._AddTgChatSubgraphAccessPayload_chatSubgraphAccess(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -31360,7 +31179,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "addTgChatSubgraphAccess":
+		case "setTgChatSubgraphs":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -31369,43 +31188,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminMutation_addTgChatSubgraphAccess(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "removeTgChatSubgraphAccess":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminMutation_removeTgChatSubgraphAccess(ctx, field, obj)
+				res = ec._AdminMutation_setTgChatSubgraphs(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -37390,7 +37173,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "AddTgChatSubgraphAccessOrErrorPayload", "RemoveTgChatSubgraphAccessOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -38873,45 +38656,6 @@ func (ec *executionContext) _RefreshPatreonDataPayload(ctx context.Context, sel 
 	return out
 }
 
-var removeTgChatSubgraphAccessPayloadImplementors = []string{"RemoveTgChatSubgraphAccessPayload", "RemoveTgChatSubgraphAccessOrErrorPayload"}
-
-func (ec *executionContext) _RemoveTgChatSubgraphAccessPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RemoveTgChatSubgraphAccessPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, removeTgChatSubgraphAccessPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("RemoveTgChatSubgraphAccessPayload")
-		case "deletedId":
-			out.Values[i] = ec._RemoveTgChatSubgraphAccessPayload_deletedId(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var requestEmailSignInCodePayloadImplementors = []string{"RequestEmailSignInCodePayload", "RequestEmailSignInCodeOrErrorPayload"}
 
 func (ec *executionContext) _RequestEmailSignInCodePayload(ctx context.Context, sel ast.SelectionSet, obj *model.RequestEmailSignInCodePayload) graphql.Marshaler {
@@ -39132,6 +38876,81 @@ func (ec *executionContext) _SetPatreonTierSubgraphsPayload(ctx context.Context,
 			out.Values[i] = ec._SetPatreonTierSubgraphsPayload_success(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var setTgChatSubgraphsPayloadImplementors = []string{"SetTgChatSubgraphsPayload", "SetTgChatSubgraphsOrErrorPayload"}
+
+func (ec *executionContext) _SetTgChatSubgraphsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SetTgChatSubgraphsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, setTgChatSubgraphsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SetTgChatSubgraphsPayload")
+		case "chat":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SetTgChatSubgraphsPayload_chat(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "success":
+			out.Values[i] = ec._SetTgChatSubgraphsPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -40774,21 +40593,6 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) unmarshalNAddTgChatSubgraphAccessInput2trip2gᚋinternalᚋgraphᚋmodelᚐAddTgChatSubgraphAccessInput(ctx context.Context, v any) (model.AddTgChatSubgraphAccessInput, error) {
-	res, err := ec.unmarshalInputAddTgChatSubgraphAccessInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNAddTgChatSubgraphAccessOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐAddTgChatSubgraphAccessOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.AddTgChatSubgraphAccessOrErrorPayload) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._AddTgChatSubgraphAccessOrErrorPayload(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNAdmin2trip2gᚋinternalᚋdbᚐAdmin(ctx context.Context, sel ast.SelectionSet, v db.Admin) graphql.Marshaler {
 	return ec._Admin(ctx, sel, &v)
 }
@@ -42197,16 +42001,6 @@ func (ec *executionContext) marshalNAdminTgChatSubgraphAccess2ᚕtrip2gᚋintern
 	return ret
 }
 
-func (ec *executionContext) marshalNAdminTgChatSubgraphAccess2ᚖtrip2gᚋinternalᚋdbᚐTgChatSubgraphAccess(ctx context.Context, sel ast.SelectionSet, v *db.TgChatSubgraphAccess) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._AdminTgChatSubgraphAccess(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNAdminTgChatSubgraphAccessesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTgChatSubgraphAccessesConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminTgChatSubgraphAccessesConnection) graphql.Marshaler {
 	return ec._AdminTgChatSubgraphAccessesConnection(ctx, sel, &v)
 }
@@ -43307,21 +43101,6 @@ func (ec *executionContext) marshalNRefreshPatreonDataOrErrorPayload2trip2gᚋin
 	return ec._RefreshPatreonDataOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNRemoveTgChatSubgraphAccessInput2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveTgChatSubgraphAccessInput(ctx context.Context, v any) (model.RemoveTgChatSubgraphAccessInput, error) {
-	res, err := ec.unmarshalInputRemoveTgChatSubgraphAccessInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNRemoveTgChatSubgraphAccessOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveTgChatSubgraphAccessOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RemoveTgChatSubgraphAccessOrErrorPayload) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._RemoveTgChatSubgraphAccessOrErrorPayload(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeInput(ctx context.Context, v any) (model.RequestEmailSignInCodeInput, error) {
 	res, err := ec.unmarshalInputRequestEmailSignInCodeInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -43420,6 +43199,21 @@ func (ec *executionContext) marshalNSetPatreonTierSubgraphsOrErrorPayload2trip2g
 		return graphql.Null
 	}
 	return ec._SetPatreonTierSubgraphsOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSetTgChatSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetTgChatSubgraphsInput(ctx context.Context, v any) (model.SetTgChatSubgraphsInput, error) {
+	res, err := ec.unmarshalInputSetTgChatSubgraphsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSetTgChatSubgraphsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetTgChatSubgraphsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SetTgChatSubgraphsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SetTgChatSubgraphsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSignInByEmailInput2trip2gᚋinternalᚋgraphᚋmodelᚐSignInByEmailInput(ctx context.Context, v any) (model.SignInByEmailInput, error) {

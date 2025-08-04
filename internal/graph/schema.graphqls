@@ -246,8 +246,6 @@ type AdminTgBot @goModel(model: "trip2g/internal/db.TgBot") {
   description: String!
   createdAt: Time!
   createdBy: AdminUser! @goField(forceResolver: true)
-
-  chats: AdminTgBotChatsConnection!
 }
 
 type AdminTgBotChat @goModel(model: "trip2g/internal/db.TgBotChat") {
@@ -1043,33 +1041,21 @@ type UpdateTgBotPayload {
 union UpdateTgBotOrErrorPayload = UpdateTgBotPayload | ErrorPayload
 
 #
-# addTgChatSubgraphAccess
+# setTgChatSubgraphs
 #
 
-input AddTgChatSubgraphAccessInput {
+input SetTgChatSubgraphsInput {
   chatId: Int64!
-  subgraphId: Int64!
+  subgraphIds: [Int64!]!
 }
 
-type AddTgChatSubgraphAccessPayload {
-  chatSubgraphAccess: AdminTgChatSubgraphAccess!
+type SetTgChatSubgraphsPayload
+  @goExtraField(name: "ChatID", type: "int64") {
+  chat: AdminTgBotChat! @goField(forceResolver: true)
+  success: Boolean!
 }
 
-union AddTgChatSubgraphAccessOrErrorPayload = AddTgChatSubgraphAccessPayload | ErrorPayload
-
-#
-# removeTgChatSubgraphAccess
-#
-
-input RemoveTgChatSubgraphAccessInput {
-  id: Int64!
-}
-
-type RemoveTgChatSubgraphAccessPayload {
-  deletedId: Int64!
-}
-
-union RemoveTgChatSubgraphAccessOrErrorPayload = RemoveTgChatSubgraphAccessPayload | ErrorPayload
+union SetTgChatSubgraphsOrErrorPayload = SetTgChatSubgraphsPayload | ErrorPayload
 
 #
 # createPatreonCredentials
@@ -1270,8 +1256,7 @@ type AdminMutation {
   # Telegram bot mutations
   createTgBot(input: CreateTgBotInput!): CreateTgBotOrErrorPayload!
   updateTgBot(input: UpdateTgBotInput!): UpdateTgBotOrErrorPayload!
-  addTgChatSubgraphAccess(input: AddTgChatSubgraphAccessInput!): AddTgChatSubgraphAccessOrErrorPayload!
-  removeTgChatSubgraphAccess(input: RemoveTgChatSubgraphAccessInput!): RemoveTgChatSubgraphAccessOrErrorPayload!
+  setTgChatSubgraphs(input: SetTgChatSubgraphsInput!): SetTgChatSubgraphsOrErrorPayload!
 
   # Patreon credentials mutations
   createPatreonCredentials(input: CreatePatreonCredentialsInput!): CreatePatreonCredentialsOrErrorPayload!

@@ -1041,6 +1041,16 @@ func (q *Queries) DeleteTgChatSubgraphAccess(ctx context.Context, id int64) erro
 	return err
 }
 
+const deleteTgChatSubgraphAccessesByChatID = `-- name: DeleteTgChatSubgraphAccessesByChatID :exec
+delete from tg_chat_subgraph_accesses
+where chat_id = ?
+`
+
+func (q *Queries) DeleteTgChatSubgraphAccessesByChatID(ctx context.Context, chatID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTgChatSubgraphAccessesByChatID, chatID)
+	return err
+}
+
 const disableApiKey = `-- name: DisableApiKey :one
 update api_keys
   set disabled_by = ?, disabled_at = datetime('now')
