@@ -90,7 +90,11 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 	// Update user profile if we have a message with user info
 	if update.Message != nil && update.Message.From != nil {
 		user := update.Message.From
-		hash := env.CalculateSha256(fmt.Sprintf("%s%s%s", user.FirstName, user.LastName, user.UserName))
+
+		hash := env.CalculateSha256(fmt.Sprintf("%d%d%s%s%s",
+			update.Message.Chat.ID, user.ID,
+			user.FirstName, user.LastName, user.UserName,
+		))
 
 		err := env.InsertTgUserProfile(ctx, db.InsertTgUserProfileParams{
 			ChatID:     update.Message.Chat.ID,

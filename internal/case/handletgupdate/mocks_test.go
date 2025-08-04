@@ -26,6 +26,9 @@ var _ Env = &EnvMock{}
 //			BotIDFunc: func() int64 {
 //				panic("mock out the BotID method")
 //			},
+//			BotLinkFunc: func() string {
+//				panic("mock out the BotLink method")
+//			},
 //			CalculateSha256Func: func(s string) string {
 //				panic("mock out the CalculateSha256 method")
 //			},
@@ -87,6 +90,9 @@ type EnvMock struct {
 	// BotIDFunc mocks the BotID method.
 	BotIDFunc func() int64
 
+	// BotLinkFunc mocks the BotLink method.
+	BotLinkFunc func() string
+
 	// CalculateSha256Func mocks the CalculateSha256 method.
 	CalculateSha256Func func(s string) string
 
@@ -142,6 +148,9 @@ type EnvMock struct {
 	calls struct {
 		// BotID holds details about calls to the BotID method.
 		BotID []struct {
+		}
+		// BotLink holds details about calls to the BotLink method.
+		BotLink []struct {
 		}
 		// CalculateSha256 holds details about calls to the CalculateSha256 method.
 		CalculateSha256 []struct {
@@ -250,6 +259,7 @@ type EnvMock struct {
 		}
 	}
 	lockBotID                                 sync.RWMutex
+	lockBotLink                               sync.RWMutex
 	lockCalculateSha256                       sync.RWMutex
 	lockGenerateTgAuthURL                     sync.RWMutex
 	lockGetChatMemberStatus                   sync.RWMutex
@@ -293,6 +303,33 @@ func (mock *EnvMock) BotIDCalls() []struct {
 	mock.lockBotID.RLock()
 	calls = mock.calls.BotID
 	mock.lockBotID.RUnlock()
+	return calls
+}
+
+// BotLink calls BotLinkFunc.
+func (mock *EnvMock) BotLink() string {
+	if mock.BotLinkFunc == nil {
+		panic("EnvMock.BotLinkFunc: method is nil but Env.BotLink was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockBotLink.Lock()
+	mock.calls.BotLink = append(mock.calls.BotLink, callInfo)
+	mock.lockBotLink.Unlock()
+	return mock.BotLinkFunc()
+}
+
+// BotLinkCalls gets all the calls that were made to BotLink.
+// Check the length with:
+//
+//	len(mockedEnv.BotLinkCalls())
+func (mock *EnvMock) BotLinkCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockBotLink.RLock()
+	calls = mock.calls.BotLink
+	mock.lockBotLink.RUnlock()
 	return calls
 }
 
