@@ -309,6 +309,7 @@ type Subgraph struct {
 	Name      string         `json:"name"`
 	Color     sql.NullString `json:"color"`
 	CreatedAt time.Time      `json:"created_at"`
+	Hidden    bool           `json:"hidden"`
 }
 
 type TgBot struct {

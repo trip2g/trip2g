@@ -12,8 +12,9 @@ type Env interface {
 }
 
 type Request struct {
-	ID    int64
-	Color string
+	ID     int64
+	Color  string
+	Hidden bool
 }
 
 type Input = Request
@@ -26,6 +27,8 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 func (input *Request) Resolve(ctx context.Context, env Env) (Payload, error) {
 	params := db.UpdateAdminSubgraphParams{
 		ID: input.ID,
+
+		Hidden: input.Hidden,
 	}
 
 	if input.Color != "" {

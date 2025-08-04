@@ -1845,7 +1845,7 @@ type viewerResolver struct{ *Resolver }
 //    it when you're done.
 //  - You have helper methods in this file. Move them out to keep these resolver files clean.
 /*
-	func (r *adminTgBotResolver) Chats(ctx context.Context, obj *db.TgBot) (*model.AdminTgBotChatsConnection, error) {
-	panic(fmt.Errorf("not implemented: Chats - chats"))
+	func (r *adminSubgraphResolver) Hidden(ctx context.Context, obj *db.Subgraph) (bool, error) {
+	panic(fmt.Errorf("not implemented: Hidden - hidden"))
 }
 */

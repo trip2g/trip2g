@@ -13,6 +13,11 @@ $trip2g_admin_show_subgraph $mol_page
 					bid <= color_bid \
 					Content <= color_control $mol_string
 						value? <=> subgraph_color? \
+				<= Hidden_field $mol_form_field
+					name \Hidden
+					bid <= hidden_bid \
+					Content <= hidden_control $mol_check_box
+						checked? <=> subgraph_hidden? false
 			buttons /
 				<= Submit $mol_button_major
 					title \Submit

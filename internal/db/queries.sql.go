@@ -1411,7 +1411,7 @@ func (q *Queries) GetPatreonTiersByCampaignID(ctx context.Context, campaignID in
 
 const getSubgraphsByBoostyTierID = `-- name: GetSubgraphsByBoostyTierID :many
 
-select s.id, s.name, s.color, s.created_at
+select s.id, s.name, s.color, s.created_at, s.hidden
 from subgraphs s
 join boosty_tier_subgraphs bts on s.id = bts.subgraph_id
 where bts.tier_id = ?
@@ -1432,6 +1432,7 @@ func (q *Queries) GetSubgraphsByBoostyTierID(ctx context.Context, tierID int64) 
 			&i.Name,
 			&i.Color,
 			&i.CreatedAt,
+			&i.Hidden,
 		); err != nil {
 			return nil, err
 		}
@@ -1447,7 +1448,7 @@ func (q *Queries) GetSubgraphsByBoostyTierID(ctx context.Context, tierID int64) 
 }
 
 const getSubgraphsByTierID = `-- name: GetSubgraphsByTierID :many
-select s.id, s.name, s.color, s.created_at
+select s.id, s.name, s.color, s.created_at, s.hidden
 from subgraphs s
 join patreon_tier_subgraphs pts on s.id = pts.subgraph_id
 where pts.tier_id = ?
@@ -1468,6 +1469,7 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 			&i.Name,
 			&i.Color,
 			&i.CreatedAt,
+			&i.Hidden,
 		); err != nil {
 			return nil, err
 		}
@@ -2626,7 +2628,7 @@ func (q *Queries) ListActiveSubgraphNamesByUserID(ctx context.Context, userID in
 }
 
 const listActiveSubgraphsByUserID = `-- name: ListActiveSubgraphsByUserID :many
-select s.id, s.name, s.color, s.created_at
+select s.id, s.name, s.color, s.created_at, s.hidden
   from user_subgraph_accesses a
   join subgraphs s on a.subgraph_id = s.id
  where user_id = ?
@@ -2649,6 +2651,7 @@ func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64)
 			&i.Name,
 			&i.Color,
 			&i.CreatedAt,
+			&i.Hidden,
 		); err != nil {
 			return nil, err
 		}
@@ -3043,7 +3046,7 @@ func (q *Queries) ListAllReleases(ctx context.Context) ([]Release, error) {
 }
 
 const listAllSubgraphs = `-- name: ListAllSubgraphs :many
-select id, name, color, created_at from subgraphs order by id
+select id, name, color, created_at, hidden from subgraphs order by id
 `
 
 func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
@@ -3060,6 +3063,7 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 			&i.Name,
 			&i.Color,
 			&i.CreatedAt,
+			&i.Hidden,
 		); err != nil {
 			return nil, err
 		}
@@ -3241,7 +3245,7 @@ func (q *Queries) ListSubgraphIDsByOfferID(ctx context.Context, offerID int64) (
 }
 
 const listSubgraphsByOfferID = `-- name: ListSubgraphsByOfferID :many
-select s.id, s.name, s.color, s.created_at
+select s.id, s.name, s.color, s.created_at, s.hidden
   from subgraphs s
   join offer_subgraphs os on s.id = os.subgraph_id
  where os.offer_id = ?
@@ -3262,6 +3266,7 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 			&i.Name,
 			&i.Color,
 			&i.CreatedAt,
+			&i.Hidden,
 		); err != nil {
 			return nil, err
 		}
@@ -3780,7 +3785,7 @@ func (q *Queries) SoftDeletePatreonCredentials(ctx context.Context, arg SoftDele
 }
 
 const subgraphByID = `-- name: SubgraphByID :one
-select id, name, color, created_at from subgraphs where id = ?
+select id, name, color, created_at, hidden from subgraphs where id = ?
 `
 
 func (q *Queries) SubgraphByID(ctx context.Context, id int64) (Subgraph, error) {
@@ -3791,12 +3796,13 @@ func (q *Queries) SubgraphByID(ctx context.Context, id int64) (Subgraph, error) 
 		&i.Name,
 		&i.Color,
 		&i.CreatedAt,
+		&i.Hidden,
 	)
 	return i, err
 }
 
 const subgraphByName = `-- name: SubgraphByName :one
-select id, name, color, created_at from subgraphs where name = ?
+select id, name, color, created_at, hidden from subgraphs where name = ?
 `
 
 func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, error) {
@@ -3807,6 +3813,7 @@ func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, er
 		&i.Name,
 		&i.Color,
 		&i.CreatedAt,
+		&i.Hidden,
 	)
 	return i, err
 }
@@ -4182,24 +4189,26 @@ func (q *Queries) UnhideNotePath(ctx context.Context, value string) error {
 
 const updateAdminSubgraph = `-- name: UpdateAdminSubgraph :one
 update subgraphs
-   set color = ?
+   set color = ?, hidden = ?
  where id = ?
-returning id, name, color, created_at
+returning id, name, color, created_at, hidden
 `
 
 type UpdateAdminSubgraphParams struct {
-	Color sql.NullString `json:"color"`
-	ID    int64          `json:"id"`
+	Color  sql.NullString `json:"color"`
+	Hidden bool           `json:"hidden"`
+	ID     int64          `json:"id"`
 }
 
 func (q *Queries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminSubgraphParams) (Subgraph, error) {
-	row := q.db.QueryRowContext(ctx, updateAdminSubgraph, arg.Color, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateAdminSubgraph, arg.Color, arg.Hidden, arg.ID)
 	var i Subgraph
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Color,
 		&i.CreatedAt,
+		&i.Hidden,
 	)
 	return i, err
 }

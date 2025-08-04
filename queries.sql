@@ -169,7 +169,7 @@ on conflict(name) do nothing;
 
 -- name: UpdateAdminSubgraph :one
 update subgraphs
-   set color = ?
+   set color = ?, hidden = ?
  where id = ?
 returning *;
 

@@ -10,6 +10,7 @@ namespace $.$$ {
 								id
 								name
 								color
+								hidden
 							}
 						}
 					}
@@ -35,6 +36,15 @@ namespace $.$$ {
 			}
 
 			return this.data().color || ''
+		}
+
+		@$mol_mem
+		override subgraph_hidden(next?: boolean): boolean {
+			if (next !== undefined) {
+				return next
+			}
+
+			return this.data().hidden
 		}
 
 		submit() {
@@ -63,6 +73,7 @@ namespace $.$$ {
 					input: {
 						id: this.subgraph_id(),
 						color: this.subgraph_color(),
+						hidden: this.subgraph_hidden(),
 					},
 				}
 			)

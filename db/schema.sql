@@ -46,7 +46,7 @@ CREATE TABLE subgraphs (
   name text not null unique,
   color text,
   created_at datetime not null default current_timestamp
-);
+, hidden boolean not null default false);
 CREATE TABLE user_subgraph_accesses (
   id integer primary key autoincrement,
   user_id integer not null references users(id) on delete cascade,
@@ -422,4 +422,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250731060940'),
   ('20250731061653'),
   ('20250801040147'),
-  ('20250801080226');
+  ('20250801080226'),
+  ('20250804051415');
