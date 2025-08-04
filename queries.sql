@@ -165,7 +165,7 @@ select distinct s.name
 -- name: InsertSubgraph :exec
 insert into subgraphs (name)
 values (?)
-on conflict(name) do nothing;
+on conflict(name) do update set hidden = false;
 
 -- name: UpdateAdminSubgraph :one
 update subgraphs

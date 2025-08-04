@@ -2043,7 +2043,7 @@ func (q *Queries) InsertSignInCode(ctx context.Context, arg InsertSignInCodePara
 const insertSubgraph = `-- name: InsertSubgraph :exec
 insert into subgraphs (name)
 values (?)
-on conflict(name) do nothing
+on conflict(name) do update set hidden = false
 `
 
 func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
