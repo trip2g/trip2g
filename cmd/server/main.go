@@ -692,6 +692,74 @@ func (a *app) QueueRequestSignInEmail(ctx context.Context, email string, code st
 	return nil
 }
 
+func (a *app) RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+	tx, err := a.conn.BeginTx(ctx, nil)
+	if err != nil {
+		a.log.Error("failed to begin RecordUserNoteView transaction", "error", err)
+		return
+	}
+
+	queries := db.New(db.WithLogger(tx, logger.WithPrefix(a.log, "tx RecordUserNoteView:")))
+
+	err = a.recordUserNoteViewSave(ctx, queries, userID, note, referrerVersionID)
+	if err != nil {
+		a.log.Error("failed to record user note view", "error", err, "user_id", userID, "note_path", note.Path)
+
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			a.log.Error("failed to rollback RecordUserNoteView transaction", "error", rollbackErr)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		a.log.Error("failed to commit RecordUserNoteView transaction", "error", err)
+		return
+	}
+}
+
+func (a *app) recordUserNoteViewSave(
+	ctx context.Context,
+	queries *db.Queries,
+	userID int64,
+	note *model.NoteView,
+	referrerVersionID *int64,
+) error {
+	const maxCount = int64(100)
+
+	dailyParams := db.UpsertUserNoteDailyViewParams{
+		UserID: userID,
+		PathID: note.PathID,
+	}
+
+	dailyCount, err := queries.UpsertUserNoteDailyView(ctx, dailyParams)
+	if err != nil {
+		return fmt.Errorf("failed to upsert user note daily view: %w", err)
+	}
+
+	// TODO: read from the app config
+	if dailyCount < maxCount {
+
+		viewParams := db.InsertUserNoteViewParams{
+			UserID:           userID,
+			VersionID:        note.VersionID,
+			RefererVersionID: db.ToNullableInt64(referrerVersionID),
+		}
+
+		err = queries.InsertUserNoteView(ctx, viewParams)
+		if err != nil {
+			return fmt.Errorf("failed to insert user note view: %w", err)
+		}
+
+		err = queries.IncreaseUserNoteViewCount(ctx, userID)
+		if err != nil {
+			return fmt.Errorf("failed to increase user note view count: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (a *app) SetupUserToken(ctx context.Context, userID int64) (string, error) {
 	role := "user"
 

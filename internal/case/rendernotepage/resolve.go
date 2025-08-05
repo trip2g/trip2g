@@ -25,6 +25,7 @@ type Env interface {
 	UpsertUserNoteDailyView(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
 	IncreaseUserNoteViewCount(ctx context.Context, userID int64) error
 	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
+	RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
 }
 
 type Request struct {
@@ -157,10 +158,14 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 			return &response, err
 		}
 
-		err = recordUserNoteView(ctx, env, userID, note, request.Referrer, response.Notes)
-		if err != nil {
-			return nil, err
-		}
+		referrerVersionID := extractReferrerVersionID(request.Referrer, notes)
+
+		env.RecordUserNoteView(ctx, userID, note, referrerVersionID)
+
+		// err = recordUserNoteView(ctx, env, userID, note, referrerVersionID)
+		// if err != nil {
+		// 	return nil, err
+		// }
 	}
 
 	hasAccess := len(response.Note.Subgraphs) == 0
@@ -216,21 +221,21 @@ func checkLatestBanner(env Env, response *Response, isLatest bool, path string, 
 }
 
 // extractReferrerVersionID tries to find the version ID from a referrer URL.
-func extractReferrerVersionID(referrer string, notes *model.NoteViews) sql.NullInt64 {
+func extractReferrerVersionID(referrer string, notes *model.NoteViews) *int64 {
 	if referrer == "" {
-		return sql.NullInt64{}
+		return nil
 	}
 
 	// Parse the referrer URL
 	u, err := url.Parse(referrer)
 	if err != nil {
-		return sql.NullInt64{}
+		return nil
 	}
 
 	// Extract the path from the referrer
 	referrerPath := u.Path
 	if referrerPath == "" {
-		return sql.NullInt64{}
+		return nil
 	}
 
 	// Clean up path (remove trailing slash, etc.)
@@ -242,13 +247,10 @@ func extractReferrerVersionID(referrer string, notes *model.NoteViews) sql.NullI
 	// Try to find the note by path
 	referrerNote := notes.GetByPath(referrerPath)
 	if referrerNote == nil {
-		return sql.NullInt64{}
+		return nil
 	}
 
-	return sql.NullInt64{
-		Valid: true,
-		Int64: referrerNote.VersionID,
-	}
+	return &referrerNote.VersionID
 }
 
 // recordUserNoteView records a user's note view with daily limits and referrer tracking.
@@ -257,8 +259,7 @@ func recordUserNoteView(
 	env Env,
 	userID int64,
 	note *model.NoteView,
-	referrer string,
-	notes *model.NoteViews,
+	referrerVersionID sql.NullInt64,
 ) error {
 	const maxCount = int64(100)
 
@@ -274,9 +275,6 @@ func recordUserNoteView(
 
 	// TODO: read from the app config
 	if dailyCount < maxCount {
-		// Extract referrer version ID from the referrer URL
-		referrerVersionID := extractReferrerVersionID(referrer, notes)
-
 		viewParams := db.InsertUserNoteViewParams{
 			UserID:           userID,
 			VersionID:        note.VersionID,

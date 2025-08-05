@@ -82,7 +82,7 @@ func runMigrations(databaseFile string, skipDump bool) error {
 
 // openConnection opens a SQLite database connection with optimized settings.
 func openConnection(databaseFile string) (*sql.DB, error) {
-	connectionString := databaseFile + "?_journal=WAL&_timeout=5000"
+	connectionString := databaseFile + "?_journal=WAL&_timeout=10000"
 
 	conn, err := sql.Open("sqlite", connectionString)
 	if err != nil {
@@ -105,7 +105,7 @@ func enablePragmas(db *sql.DB) error {
 		PRAGMA foreign_keys = ON;
 		PRAGMA journal_mode = WAL;
 		PRAGMA synchronous = NORMAL;
-		PRAGMA busy_timeout = 3000;
+		PRAGMA busy_timeout = 10000;
 		PRAGMA strict = ON;
 	`
 

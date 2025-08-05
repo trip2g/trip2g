@@ -33,14 +33,19 @@ namespace $.$$ {
 			return res.note
 		}
 
-		@$mol_mem
 		first_page_path() {
 			return this.$.$mol_state_arg.value( 'path' ) || '/'
 		}
 
-		@$mol_mem
 		path_ids( next?: number[] ) {
-			return next || []
+			if (next !== undefined) {
+				this.$.$mol_state_arg.value( 'pids', next.join('_') )
+				this.$.$mol_state_arg.commit()
+				return next
+			}
+
+			const raw_ids = this.$.$mol_state_arg.value( 'pids' ) || ''
+			return raw_ids.split('_').map(n => parseInt(n, 10)).filter(n => !isNaN(n))
 		}
 
 		note_keys() {
