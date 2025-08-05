@@ -693,32 +693,49 @@ func (a *app) QueueRequestSignInEmail(ctx context.Context, email string, code st
 }
 
 func (a *app) RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
-	tx, err := a.conn.BeginTx(ctx, nil)
+	err := db.WithRetry(ctx, 3, func() error {
+		return a.doRecordUserNoteView(ctx, userID, note, referrerVersionID)
+	})
+
 	if err != nil {
-		a.log.Error("failed to begin RecordUserNoteView transaction", "error", err)
-		return
-	}
+		a.log.Error(
+			"failed to record user note view",
+			"error", err,
+			"user_id", userID,
+			"note_id", note.ID,
+		)
 
-	queries := db.New(db.WithLogger(tx, logger.WithPrefix(a.log, "tx RecordUserNoteView:")))
-
-	err = a.recordUserNoteViewSave(ctx, queries, userID, note, referrerVersionID)
-	if err != nil {
-		a.log.Error("failed to record user note view", "error", err, "user_id", userID, "note_path", note.Path)
-
-		rollbackErr := tx.Rollback()
-		if rollbackErr != nil {
-			a.log.Error("failed to rollback RecordUserNoteView transaction", "error", rollbackErr)
-		}
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		a.log.Error("failed to commit RecordUserNoteView transaction", "error", err)
 		return
 	}
 }
 
-func (a *app) recordUserNoteViewSave(
+func (a *app) doRecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) error {
+	tx, err := a.conn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin RecordUserNoteView transaction: %w", err)
+	}
+
+	queries := db.New(db.WithLogger(tx, logger.WithPrefix(a.log, "tx RecordUserNoteView:")))
+
+	err = a.recordUserNoteViewTx(ctx, queries, userID, note, referrerVersionID)
+	if err != nil {
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			a.log.Error("failed to rollback RecordUserNoteView transaction", "error", rollbackErr)
+		}
+
+		return fmt.Errorf("failed to record user note view: %w", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit RecordUserNoteView transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (a *app) recordUserNoteViewTx(
 	ctx context.Context,
 	queries *db.Queries,
 	userID int64,
@@ -739,7 +756,6 @@ func (a *app) recordUserNoteViewSave(
 
 	// TODO: read from the app config
 	if dailyCount < maxCount {
-
 		viewParams := db.InsertUserNoteViewParams{
 			UserID:           userID,
 			VersionID:        note.VersionID,

@@ -17,7 +17,6 @@ type HandlerIO struct {
 
 func (io *HandlerIO) BotID() int64 {
 	return io.dbBotID
-	return io.bot.Self.ID
 }
 
 func (io *HandlerIO) TgID() int64 {

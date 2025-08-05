@@ -1,10 +1,13 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"strings"
 	"time"
+
+	"math/rand/v2"
 )
 
 func IsNoFound(err error) bool {
@@ -97,4 +100,46 @@ func ToStringPtr(v sql.NullString) *string {
 	}
 
 	return nil
+}
+
+// WithRetry retries the provided operation if it fails with a SQLite busy error.
+func WithRetry(ctx context.Context, maxRetries int, operation func() error) error {
+	var lastErr error
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		err := operation()
+		if err == nil {
+			return nil
+		}
+
+		if !isSQLiteBusyError(err) {
+			return err
+		}
+
+		lastErr = err
+
+		if attempt == maxRetries {
+			break
+		}
+
+		// Небольшая задержка с jitter для SQLite
+		delay := time.Duration(10+rand.Int64N(40)) * time.Millisecond //nolint:gosec // it's okay to use rand.Int64N here
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(delay):
+		}
+	}
+
+	return lastErr
+}
+
+func isSQLiteBusyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := strings.ToLower(err.Error())
+	return strings.Contains(errStr, "database is locked") ||
+		strings.Contains(errStr, "busy") ||
+		strings.Contains(errStr, "locked")
 }

@@ -166,7 +166,6 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 			bgCtx := context.Background()
 			env.RecordUserNoteView(bgCtx, userID, note, referrerVersionID)
 		}()
-
 	}
 
 	hasAccess := len(response.Note.Subgraphs) == 0

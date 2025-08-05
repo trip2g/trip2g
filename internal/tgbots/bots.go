@@ -26,11 +26,6 @@ func DefaultConfig() Config {
 	}
 }
 
-type botInfo struct {
-	ID  int64
-	Bot *tgbotapi.BotAPI
-}
-
 type TgBots struct {
 	mu sync.Mutex
 
