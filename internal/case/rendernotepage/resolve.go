@@ -2,7 +2,6 @@ package rendernotepage
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -160,12 +159,14 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 		referrerVersionID := extractReferrerVersionID(request.Referrer, notes)
 
-		env.RecordUserNoteView(ctx, userID, note, referrerVersionID)
+		// Record user note view asynchronously to avoid blocking the response
+		// and prevent SQLite locking issues during concurrent requests
+		go func() {
+			// Use a background context to avoid cancellation when request completes
+			bgCtx := context.Background()
+			env.RecordUserNoteView(bgCtx, userID, note, referrerVersionID)
+		}()
 
-		// err = recordUserNoteView(ctx, env, userID, note, referrerVersionID)
-		// if err != nil {
-		// 	return nil, err
-		// }
 	}
 
 	hasAccess := len(response.Note.Subgraphs) == 0
@@ -251,46 +252,4 @@ func extractReferrerVersionID(referrer string, notes *model.NoteViews) *int64 {
 	}
 
 	return &referrerNote.VersionID
-}
-
-// recordUserNoteView records a user's note view with daily limits and referrer tracking.
-func recordUserNoteView(
-	ctx context.Context,
-	env Env,
-	userID int64,
-	note *model.NoteView,
-	referrerVersionID sql.NullInt64,
-) error {
-	const maxCount = int64(100)
-
-	dailyParams := db.UpsertUserNoteDailyViewParams{
-		UserID: userID,
-		PathID: note.PathID,
-	}
-
-	dailyCount, err := env.UpsertUserNoteDailyView(ctx, dailyParams)
-	if err != nil {
-		return fmt.Errorf("failed to upsert user note daily view: %w", err)
-	}
-
-	// TODO: read from the app config
-	if dailyCount < maxCount {
-		viewParams := db.InsertUserNoteViewParams{
-			UserID:           userID,
-			VersionID:        note.VersionID,
-			RefererVersionID: referrerVersionID,
-		}
-
-		err = env.InsertUserNoteView(ctx, viewParams)
-		if err != nil {
-			return fmt.Errorf("failed to insert user note view: %w", err)
-		}
-
-		err = env.IncreaseUserNoteViewCount(ctx, userID)
-		if err != nil {
-			return fmt.Errorf("failed to increase user note view count: %w", err)
-		}
-	}
-
-	return nil
 }

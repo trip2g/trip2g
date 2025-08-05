@@ -39,6 +39,8 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 
 	conn.SetMaxOpenConns(1)
 	conn.SetMaxIdleConns(1)
+	conn.SetConnMaxLifetime(0)
+	conn.SetConnMaxIdleTime(0)
 
 	// Enable SQLite pragmas
 	err = enablePragmas(conn)
@@ -110,6 +112,9 @@ func enablePragmas(db *sql.DB) error {
 		PRAGMA synchronous = NORMAL;
 		PRAGMA busy_timeout = 10000;
 		PRAGMA strict = ON;
+		PRAGMA temp_store = MEMORY;
+		PRAGMA mmap_size = 268435456;
+		PRAGMA cache_size = -64000;
 	`
 
 	_, err := db.Exec(pragmas)
