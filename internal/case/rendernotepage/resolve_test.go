@@ -136,6 +136,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
 					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
+					},
 				}
 			},
 			wantErr: false,
@@ -179,6 +182,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
+					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
 					},
 				}
 			},
@@ -226,6 +232,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
+					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
 					},
 				}
 			},
@@ -354,6 +363,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
 					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
+					},
 				}
 			},
 			wantErr: false,
@@ -396,6 +408,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					},
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
+					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
 					},
 				}
 			},
@@ -440,6 +455,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
 					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
+					},
 				}
 			},
 			wantErr: false,
@@ -483,6 +501,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
 					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
+					},
 				}
 			},
 			wantErr: false,
@@ -522,6 +543,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					},
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
+					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
 					},
 				}
 			},
@@ -674,6 +698,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
 					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
+					},
 				}
 			},
 			wantErr:            false,
@@ -712,6 +739,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					},
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
+					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
 					},
 				}
 			},
@@ -779,6 +809,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
 					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
+					},
 				}
 			},
 			wantErr:      false,
@@ -813,6 +846,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					},
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
+					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
 					},
 				}
 			},
@@ -1087,6 +1123,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
 					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
+					},
 				}
 			},
 			expectErrNF: false,
@@ -1266,6 +1305,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
 					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
+					},
 				}
 			},
 			wantErr:       true,
@@ -1302,6 +1344,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					},
 					IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 						return nil
+					},
+					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+						// Mock function - no-op for tests
 					},
 				}
 			},

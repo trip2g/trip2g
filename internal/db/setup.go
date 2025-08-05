@@ -37,6 +37,9 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
 
+	conn.SetMaxOpenConns(1)
+	conn.SetMaxIdleConns(1)
+
 	// Enable SQLite pragmas
 	err = enablePragmas(conn)
 	if err != nil {

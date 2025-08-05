@@ -40,6 +40,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
+//			RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)  {
+//				panic("mock out the RecordUserNoteView method")
+//			},
 //			UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
 //				panic("mock out the UpsertUserNoteDailyView method")
 //			},
@@ -67,6 +70,9 @@ type EnvMock struct {
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
+
+	// RecordUserNoteViewFunc mocks the RecordUserNoteView method.
+	RecordUserNoteViewFunc func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
 
 	// UpsertUserNoteDailyViewFunc mocks the UpsertUserNoteDailyView method.
 	UpsertUserNoteDailyViewFunc func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
@@ -103,6 +109,17 @@ type EnvMock struct {
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
+		// RecordUserNoteView holds details about calls to the RecordUserNoteView method.
+		RecordUserNoteView []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID int64
+			// Note is the note argument value.
+			Note *model.NoteView
+			// ReferrerVersionID is the referrerVersionID argument value.
+			ReferrerVersionID *int64
+		}
 		// UpsertUserNoteDailyView holds details about calls to the UpsertUserNoteDailyView method.
 		UpsertUserNoteDailyView []struct {
 			// Ctx is the ctx argument value.
@@ -117,6 +134,7 @@ type EnvMock struct {
 	lockListActiveUserSubgraphs   sync.RWMutex
 	lockLiveNoteViews             sync.RWMutex
 	lockLogger                    sync.RWMutex
+	lockRecordUserNoteView        sync.RWMutex
 	lockUpsertUserNoteDailyView   sync.RWMutex
 }
 
@@ -306,6 +324,50 @@ func (mock *EnvMock) LoggerCalls() []struct {
 	mock.lockLogger.RLock()
 	calls = mock.calls.Logger
 	mock.lockLogger.RUnlock()
+	return calls
+}
+
+// RecordUserNoteView calls RecordUserNoteViewFunc.
+func (mock *EnvMock) RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
+	if mock.RecordUserNoteViewFunc == nil {
+		panic("EnvMock.RecordUserNoteViewFunc: method is nil but Env.RecordUserNoteView was just called")
+	}
+	callInfo := struct {
+		Ctx               context.Context
+		UserID            int64
+		Note              *model.NoteView
+		ReferrerVersionID *int64
+	}{
+		Ctx:               ctx,
+		UserID:            userID,
+		Note:              note,
+		ReferrerVersionID: referrerVersionID,
+	}
+	mock.lockRecordUserNoteView.Lock()
+	mock.calls.RecordUserNoteView = append(mock.calls.RecordUserNoteView, callInfo)
+	mock.lockRecordUserNoteView.Unlock()
+	mock.RecordUserNoteViewFunc(ctx, userID, note, referrerVersionID)
+}
+
+// RecordUserNoteViewCalls gets all the calls that were made to RecordUserNoteView.
+// Check the length with:
+//
+//	len(mockedEnv.RecordUserNoteViewCalls())
+func (mock *EnvMock) RecordUserNoteViewCalls() []struct {
+	Ctx               context.Context
+	UserID            int64
+	Note              *model.NoteView
+	ReferrerVersionID *int64
+} {
+	var calls []struct {
+		Ctx               context.Context
+		UserID            int64
+		Note              *model.NoteView
+		ReferrerVersionID *int64
+	}
+	mock.lockRecordUserNoteView.RLock()
+	calls = mock.calls.RecordUserNoteView
+	mock.lockRecordUserNoteView.RUnlock()
 	return calls
 }
 
