@@ -652,9 +652,10 @@ type ComplexityRoot struct {
 	}
 
 	PublicNote struct {
-		HTML  func(childComplexity int) int
-		Title func(childComplexity int) int
-		Toc   func(childComplexity int) int
+		HTML   func(childComplexity int) int
+		PathID func(childComplexity int) int
+		Title  func(childComplexity int) int
+		Toc    func(childComplexity int) int
 	}
 
 	Purchase struct {
@@ -3589,6 +3590,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PublicNote.HTML(childComplexity), true
+
+	case "PublicNote.pathId":
+		if e.complexity.PublicNote.PathID == nil {
+			break
+		}
+
+		return e.complexity.PublicNote.PathID(childComplexity), true
 
 	case "PublicNote.title":
 		if e.complexity.PublicNote.Title == nil {
@@ -20838,6 +20846,50 @@ func (ec *executionContext) fieldContext_Offer_subgraphs(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _PublicNote_pathId(ctx context.Context, field graphql.CollectedField, obj *model.PublicNote) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PublicNote_pathId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PathID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PublicNote_pathId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PublicNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PublicNote_title(ctx context.Context, field graphql.CollectedField, obj *model.PublicNote) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PublicNote_title(ctx, field)
 	if err != nil {
@@ -21631,6 +21683,8 @@ func (ec *executionContext) fieldContext_Query_note(ctx context.Context, field g
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "pathId":
+				return ec.fieldContext_PublicNote_pathId(ctx, field)
 			case "title":
 				return ec.fieldContext_PublicNote_title(ctx, field)
 			case "html":
@@ -27292,7 +27346,7 @@ func (ec *executionContext) unmarshalInputNoteInput(ctx context.Context, obj any
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"path", "referer"}
+	fieldsInOrder := [...]string{"path", "pathId", "referer"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -27301,11 +27355,18 @@ func (ec *executionContext) unmarshalInputNoteInput(ctx context.Context, obj any
 		switch k {
 		case "path":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("path"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Path = data
+		case "pathId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pathId"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PathID = data
 		case "referer":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("referer"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -38132,6 +38193,11 @@ func (ec *executionContext) _PublicNote(ctx context.Context, sel ast.SelectionSe
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("PublicNote")
+		case "pathId":
+			out.Values[i] = ec._PublicNote_pathId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "title":
 			out.Values[i] = ec._PublicNote_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

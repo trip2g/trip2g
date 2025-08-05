@@ -610,8 +610,9 @@ type Mutation struct {
 }
 
 type NoteInput struct {
-	Path    string `json:"path"`
-	Referer string `json:"referer"`
+	Path    *string `json:"path,omitempty"`
+	PathID  *int64  `json:"pathId,omitempty"`
+	Referer string  `json:"referer"`
 }
 
 type NoteTocItem struct {
@@ -621,9 +622,10 @@ type NoteTocItem struct {
 }
 
 type PublicNote struct {
-	Title string        `json:"title"`
-	HTML  string        `json:"html"`
-	Toc   []NoteTocItem `json:"toc"`
+	PathID int64         `json:"pathId"`
+	Title  string        `json:"title"`
+	HTML   string        `json:"html"`
+	Toc    []NoteTocItem `json:"toc"`
 }
 
 type PushNoteInput struct {

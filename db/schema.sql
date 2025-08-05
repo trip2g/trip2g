@@ -144,14 +144,6 @@ CREATE TABLE api_key_logs (
   action_id integer not null references api_key_log_actions(id) on delete restrict,
   ip_id integer not null references api_key_log_ips(id) on delete restrict
 );
-CREATE VIEW active_offers as
-select *
- from offers
- where (starts_at < datetime('now') or starts_at is null)
-   and (ends_at > datetime('now') or ends_at is null)
-   and price_usd > 0
- order by price_usd desc
-/* active_offers(id,public_id,created_at,lifetime,price_usd,starts_at,ends_at) */;
 CREATE TABLE releases (
   id integer primary key autoincrement,
   created_at datetime not null default current_timestamp,
@@ -209,6 +201,8 @@ CREATE TABLE not_found_ignored_patterns (
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete restrict
 );
+CREATE TABLE _litestream_seq (id INTEGER PRIMARY KEY, seq INTEGER);
+CREATE TABLE _litestream_lock (id INTEGER);
 CREATE TABLE tg_bots (
   id integer not null primary key autoincrement,
   token text not null unique,
@@ -223,8 +217,9 @@ CREATE TABLE tg_user_states (
   user_id int references users(id) on delete restrict,
   created_at datetime not null default current_timestamp,
   updated_at datetime not null default current_timestamp,
+  update_count int not null default 0,
   value text not null default 'pending',
-  data text not null, update_count int not null default 0,
+  data text not null,
   primary key (chat_id, bot_id)
 );
 CREATE TABLE tg_user_profiles (
@@ -245,8 +240,8 @@ CREATE TABLE tg_bot_chats (
   removed_at datetime null
 );
 CREATE TABLE tg_chat_members (
-  user_id int, -- tg id
-  chat_id int,
+  user_id integer not null, -- tg id
+  chat_id integer not null,
   created_at datetime not null default current_timestamp,
   primary key (user_id, chat_id)
 );
@@ -258,7 +253,7 @@ CREATE TABLE tg_chat_subgraph_accesses (
 );
 CREATE TABLE IF NOT EXISTS "users" (
     id integer primary key,
-    email text unique, -- Made nullable but still unique
+    email text unique, -- nullable but unique for linked accounts
     created_at datetime not null default current_timestamp,
     last_signin_code_sent_at datetime,
     note_view_count integer default 0,
@@ -390,7 +385,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250515071316'),
   ('20250524091058'),
   ('20250525034319'),
-  ('20250528112143'),
   ('20250528125918'),
   ('20250531040526'),
   ('20250531113101'),
@@ -409,7 +403,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250628111216'),
   ('20250724085424'),
   ('20250724090433'),
-  ('20250725033413'),
   ('20250725034851'),
   ('20250725200000'),
   ('20250725201000'),

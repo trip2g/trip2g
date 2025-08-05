@@ -122,6 +122,8 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 
 				_, _ = w.WriteString(` class="paywall ` + subgraphClasses + `"`)
 			}
+
+			_, _ = w.WriteString(fmt.Sprintf(` data-pid="%d"`, note.PathID))
 		} else {
 			_, _ = w.WriteString(` class="wip"`)
 		}

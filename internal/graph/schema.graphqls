@@ -536,7 +536,8 @@ type NotePath @goModel(model: "trip2g/internal/model.NotePath"){
 }
 
 input NoteInput {
-  path: String!
+  path: String
+  pathId: Int64
   referer: String!
 }
 
@@ -547,6 +548,7 @@ type NoteTocItem {
 }
 
 type PublicNote {
+  pathId: Int64!
   title: String!
   html: String!
 

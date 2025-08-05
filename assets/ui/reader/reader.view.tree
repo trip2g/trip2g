@@ -1,2 +1,26 @@
-$trip2g_reader $mol_view
-	sub / <= title \
+$trip2g_reader $mol_page
+	title \Reader
+	Note* $mol_view
+		style *
+			flex-direction \column
+		sub /
+			<= content_title* \
+			<= CloseButton* $mol_button_major
+				title \Close
+				click? <=> close_click*? null
+			<= ContentContainer* $mol_view
+				style *
+					border-bottom \1px solid #ddd
+					padding-bottom \1rem
+					margin-bottom \1rem
+				sub /
+					<= ContentHTML* $trip2g_reader_html
+						handle_next?url <=> handle_next_url*? \
+						html <= content_html* \
+
+$trip2g_reader_html $mol_html_view
+	handle_next?url \
+	Link* $mol_link_iconed
+		uri <= link_uri*
+		content <= content*
+		click? <=> link_click*? null
