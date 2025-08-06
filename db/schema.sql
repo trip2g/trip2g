@@ -362,6 +362,13 @@ CREATE TABLE boosty_members (
 );
 CREATE INDEX idx_boosty_members_email on boosty_members(email);
 CREATE INDEX idx_patreon_members_email on patreon_members(email);
+CREATE TABLE user_favorite_notes (
+  user_id integer not null references users(id) on delete cascade,
+  note_version_id integer not null references note_versions(id) on delete restrict,
+  created_at datetime not null default current_timestamp,
+
+  primary key (user_id, note_version_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -416,4 +423,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250731061653'),
   ('20250801040147'),
   ('20250801080226'),
-  ('20250804051415');
+  ('20250804051415'),
+  ('20250806044332');

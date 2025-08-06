@@ -1051,6 +1051,21 @@ func (q *Queries) DeleteTgChatSubgraphAccessesByChatID(ctx context.Context, chat
 	return err
 }
 
+const deleteUserFavoriteNote = `-- name: DeleteUserFavoriteNote :exec
+delete from user_favorite_notes
+where user_id = ? and note_version_id = ?
+`
+
+type DeleteUserFavoriteNoteParams struct {
+	UserID        int64 `json:"user_id"`
+	NoteVersionID int64 `json:"note_version_id"`
+}
+
+func (q *Queries) DeleteUserFavoriteNote(ctx context.Context, arg DeleteUserFavoriteNoteParams) error {
+	_, err := q.db.ExecContext(ctx, deleteUserFavoriteNote, arg.UserID, arg.NoteVersionID)
+	return err
+}
+
 const disableApiKey = `-- name: DisableApiKey :one
 update api_keys
   set disabled_by = ?, disabled_at = datetime('now')
@@ -2091,8 +2106,8 @@ on conflict(user_id, chat_id) do nothing
 `
 
 type InsertTgChatMemberParams struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	ChatID sql.NullInt64 `json:"chat_id"`
+	UserID int64 `json:"user_id"`
+	ChatID int64 `json:"chat_id"`
 }
 
 func (q *Queries) InsertTgChatMember(ctx context.Context, arg InsertTgChatMemberParams) error {
@@ -2147,6 +2162,21 @@ func (q *Queries) InsertTgUserProfile(ctx context.Context, arg InsertTgUserProfi
 		arg.Username,
 		arg.Sha256Hash,
 	)
+	return err
+}
+
+const insertUserFavoriteNote = `-- name: InsertUserFavoriteNote :exec
+insert into user_favorite_notes (user_id, note_version_id)
+values (?, ?) on conflict do nothing
+`
+
+type InsertUserFavoriteNoteParams struct {
+	UserID        int64 `json:"user_id"`
+	NoteVersionID int64 `json:"note_version_id"`
+}
+
+func (q *Queries) InsertUserFavoriteNote(ctx context.Context, arg InsertUserFavoriteNoteParams) error {
+	_, err := q.db.ExecContext(ctx, insertUserFavoriteNote, arg.UserID, arg.NoteVersionID)
 	return err
 }
 
@@ -2677,7 +2707,7 @@ select distinct s.name
  order by s.name
 `
 
-func (q *Queries) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, userID sql.NullInt64) ([]string, error) {
+func (q *Queries) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, userID int64) ([]string, error) {
 	rows, err := q.db.QueryContext(ctx, listActiveTgChatSubgraphNamesByChatID, userID)
 	if err != nil {
 		return nil, err
@@ -3281,6 +3311,43 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 	return items, nil
 }
 
+const listUserFavoriteNotes = `-- name: ListUserFavoriteNotes :many
+select nv.path_id, nv.id as version_id
+  from user_favorite_notes ufn
+  join note_versions nv on ufn.note_version_id = nv.id
+  join note_paths np on nv.path_id = np.id
+ where ufn.user_id = ? and np.hidden_by is null
+ order by ufn.created_at desc
+`
+
+type ListUserFavoriteNotesRow struct {
+	PathID    int64 `json:"path_id"`
+	VersionID int64 `json:"version_id"`
+}
+
+func (q *Queries) ListUserFavoriteNotes(ctx context.Context, userID int64) ([]ListUserFavoriteNotesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listUserFavoriteNotes, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUserFavoriteNotesRow
+	for rows.Next() {
+		var i ListUserFavoriteNotesRow
+		if err := rows.Scan(&i.PathID, &i.VersionID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markBoostyMembersAsMissed = `-- name: MarkBoostyMembersAsMissed :exec
 update boosty_members
 set missed_at = datetime('now')
@@ -3618,8 +3685,8 @@ where user_id = ? and chat_id = ?
 `
 
 type RemoveTgChatMemberParams struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	ChatID sql.NullInt64 `json:"chat_id"`
+	UserID int64 `json:"user_id"`
+	ChatID int64 `json:"chat_id"`
 }
 
 func (q *Queries) RemoveTgChatMember(ctx context.Context, arg RemoveTgChatMemberParams) error {
@@ -3926,8 +3993,8 @@ where user_id = ? and chat_id = ?
 `
 
 type TgChatMemberByUserIDAndChatIDParams struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	ChatID sql.NullInt64 `json:"chat_id"`
+	UserID int64 `json:"user_id"`
+	ChatID int64 `json:"chat_id"`
 }
 
 func (q *Queries) TgChatMemberByUserIDAndChatID(ctx context.Context, arg TgChatMemberByUserIDAndChatIDParams) (TgChatMember, error) {
@@ -3946,8 +4013,8 @@ order by m.created_at desc
 `
 
 type TgChatMembersByChatIDRow struct {
-	UserID      sql.NullInt64  `json:"user_id"`
-	ChatID      sql.NullInt64  `json:"chat_id"`
+	UserID      int64          `json:"user_id"`
+	ChatID      int64          `json:"chat_id"`
 	CreatedAt   time.Time      `json:"created_at"`
 	Sha256Hash  sql.NullString `json:"sha256_hash"`
 	ChatID_2    sql.NullInt64  `json:"chat_id_2"`
@@ -3958,7 +4025,7 @@ type TgChatMembersByChatIDRow struct {
 	Username    sql.NullString `json:"username"`
 }
 
-func (q *Queries) TgChatMembersByChatID(ctx context.Context, chatID sql.NullInt64) ([]TgChatMembersByChatIDRow, error) {
+func (q *Queries) TgChatMembersByChatID(ctx context.Context, chatID int64) ([]TgChatMembersByChatIDRow, error) {
 	rows, err := q.db.QueryContext(ctx, tgChatMembersByChatID, chatID)
 	if err != nil {
 		return nil, err
@@ -3998,7 +4065,7 @@ from tg_chat_members
 where chat_id = ?
 `
 
-func (q *Queries) TgChatMembersByChatIDCount(ctx context.Context, chatID sql.NullInt64) (int64, error) {
+func (q *Queries) TgChatMembersByChatIDCount(ctx context.Context, chatID int64) (int64, error) {
 	row := q.db.QueryRowContext(ctx, tgChatMembersByChatIDCount, chatID)
 	var count int64
 	err := row.Scan(&count)
@@ -4138,7 +4205,7 @@ func (q *Queries) TgUserProfileBySha256Hash(ctx context.Context, sha256Hash stri
 }
 
 const tgUserStateByBotIDAndChatID = `-- name: TgUserStateByBotIDAndChatID :one
-select chat_id, bot_id, user_id, created_at, updated_at, value, data, update_count
+select chat_id, bot_id, user_id, created_at, updated_at, update_count, value, data
   from tg_user_states
  where bot_id = ?
    and chat_id = ?
@@ -4159,9 +4226,9 @@ func (q *Queries) TgUserStateByBotIDAndChatID(ctx context.Context, arg TgUserSta
 		&i.UserID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.UpdateCount,
 		&i.Value,
 		&i.Data,
-		&i.UpdateCount,
 	)
 	return i, err
 }

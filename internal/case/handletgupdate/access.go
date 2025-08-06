@@ -2,7 +2,6 @@ package handletgupdate
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
@@ -54,8 +53,8 @@ func (req *request) handleGroupAccess(ctx context.Context, args string) error {
 
 	// User is verified as a member, now grant access
 	params := db.InsertTgChatMemberParams{
-		UserID: sql.NullInt64{Int64: userID, Valid: true},
-		ChatID: sql.NullInt64{Int64: groupID, Valid: true},
+		UserID: userID,
+		ChatID: groupID,
 	}
 
 	err = req.env.InsertTgChatMember(ctx, params)
@@ -147,8 +146,8 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 	if (newStatus == statusMember || newStatus == statusAdministrator || newStatus == statusCreator) &&
 		(oldStatus == statusLeft || oldStatus == statusKicked || oldStatus == "") {
 		err := req.env.InsertTgChatMember(ctx, db.InsertTgChatMemberParams{
-			UserID: sql.NullInt64{Int64: userID, Valid: true},
-			ChatID: sql.NullInt64{Int64: chatID, Valid: true},
+			UserID: userID,
+			ChatID: chatID,
 		})
 		if err != nil {
 			log.Error("failed to insert chat member", "error", err, "user_id", userID, "chat_id", chatID)
@@ -161,8 +160,8 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 	if (newStatus == statusLeft || newStatus == statusKicked) &&
 		(oldStatus == statusMember || oldStatus == statusAdministrator || oldStatus == statusCreator) {
 		err := req.env.RemoveTgChatMember(ctx, db.RemoveTgChatMemberParams{
-			UserID: sql.NullInt64{Int64: userID, Valid: true},
-			ChatID: sql.NullInt64{Int64: chatID, Valid: true},
+			UserID: userID,
+			ChatID: chatID,
 		})
 		if err != nil {
 			log.Error("failed to remove chat member", "error", err, "user_id", userID, "chat_id", chatID)
@@ -193,9 +192,7 @@ func (req *request) verifyOngoingGroupAccess(ctx context.Context, userID int64, 
 }
 
 func (req *request) sendContentMenu(ctx context.Context) error {
-	sqlID := sql.NullInt64{Valid: true, Int64: req.update.Message.Chat.ID}
-
-	subgraphs, err := req.env.ListActiveTgChatSubgraphNamesByChatID(ctx, sqlID)
+	subgraphs, err := req.env.ListActiveTgChatSubgraphNamesByChatID(ctx, req.update.Message.Chat.ID)
 	if err != nil {
 		return fmt.Errorf("failed to list active subgraphs: %w", err)
 	}

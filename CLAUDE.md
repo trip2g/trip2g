@@ -74,6 +74,11 @@ Do not add co-author comments or generated signatures unless specifically reques
 
 ## Development Workflow
 
+### Database Migrations
+- **Create new migration**: `make db-new name=create_user_favorite_notes`
+- **Apply migrations**: `make db-up`
+- Migrations use [dbmate](https://github.com/amacneil/dbmate) format with `-- migrate:up` and `-- migrate:down` sections
+
 ### Backend Changes
 1. **SQL**: Add queries to `queries.sql` → run `make sqlc`
 2. **GraphQL**: Update `internal/graph/schema.graphqls` → run `make gqlgen`

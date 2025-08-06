@@ -105,6 +105,7 @@ type ResolverRoot interface {
 	RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
 	SetTgChatSubgraphsPayload() SetTgChatSubgraphsPayloadResolver
 	Subgraph() SubgraphResolver
+	ToggleFavoriteNotePayload() ToggleFavoriteNotePayloadResolver
 	UnbanUserPayload() UnbanUserPayloadResolver
 	UpdateNoteGraphPositionsPayload() UpdateNoteGraphPositionsPayloadResolver
 	User() UserResolver
@@ -609,6 +610,7 @@ type ComplexityRoot struct {
 		RequestEmailSignInCode     func(childComplexity int, input model.RequestEmailSignInCodeInput) int
 		SignInByEmail              func(childComplexity int, input model.SignInByEmailInput) int
 		SignOut                    func(childComplexity int) int
+		ToggleFavoriteNote         func(childComplexity int, input model.ToggleFavoriteNoteInput) int
 		UploadNoteAsset            func(childComplexity int, input model.UploadNoteAssetInput) int
 	}
 
@@ -749,6 +751,11 @@ type ComplexityRoot struct {
 		TgBotURL     func(childComplexity int) int
 	}
 
+	ToggleFavoriteNotePayload struct {
+		FavoriteNotes func(childComplexity int) int
+		Success       func(childComplexity int) int
+	}
+
 	UnbanUserPayload struct {
 		User   func(childComplexity int) int
 		UserID func(childComplexity int) int
@@ -793,6 +800,7 @@ type ComplexityRoot struct {
 
 	User struct {
 		Email            func(childComplexity int) int
+		FavoriteNotes    func(childComplexity int) int
 		SubgraphAccesses func(childComplexity int) int
 	}
 
@@ -1036,9 +1044,6 @@ type AdminTgBotsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminTgBotsConnection) ([]db.TgBot, error)
 }
 type AdminTgChatMemberResolver interface {
-	UserID(ctx context.Context, obj *db.TgChatMember) (int64, error)
-	ChatID(ctx context.Context, obj *db.TgChatMember) (int64, error)
-
 	Profile(ctx context.Context, obj *db.TgChatMember) (*db.TgUserProfile, error)
 }
 type AdminTgChatMembersConnectionResolver interface {
@@ -1093,6 +1098,7 @@ type MutationResolver interface {
 	SignOut(ctx context.Context) (model.SignOutOrErrorPayload, error)
 	CreatePaymentLink(ctx context.Context, input model.CreatePaymentLinkInput) (model.CreatePaymentLinkOrErrorPayload, error)
 	CreateEmailWaitListRequest(ctx context.Context, input model.CreateEmailWaitListRequestInput) (model.CreateEmailWaitListRequestOrErrorPayload, error)
+	ToggleFavoriteNote(ctx context.Context, input model.ToggleFavoriteNoteInput) (model.ToggleFavoriteNoteOrErrorPayload, error)
 	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
 	HideNotes(ctx context.Context, input model.HideNotesInput) (model.HideNotesOrErrorPayload, error)
 	UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error)
@@ -1141,6 +1147,9 @@ type SubgraphResolver interface {
 	Offers(ctx context.Context, obj *db.Subgraph) ([]db.Offer, error)
 	HomePath(ctx context.Context, obj *db.Subgraph) (string, error)
 }
+type ToggleFavoriteNotePayloadResolver interface {
+	FavoriteNotes(ctx context.Context, obj *model.ToggleFavoriteNotePayload) ([]model.PublicNote, error)
+}
 type UnbanUserPayloadResolver interface {
 	User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error)
 }
@@ -1150,6 +1159,7 @@ type UpdateNoteGraphPositionsPayloadResolver interface {
 type UserResolver interface {
 	Email(ctx context.Context, obj *db.User) (*string, error)
 	SubgraphAccesses(ctx context.Context, obj *db.User) ([]db.UserSubgraphAccess, error)
+	FavoriteNotes(ctx context.Context, obj *db.User) ([]model.PublicNote, error)
 }
 type UserBanResolver interface {
 	User(ctx context.Context, obj *db.UserBan) (*db.User, error)
@@ -3404,6 +3414,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.SignOut(childComplexity), true
 
+	case "Mutation.toggleFavoriteNote":
+		if e.complexity.Mutation.ToggleFavoriteNote == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_toggleFavoriteNote_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ToggleFavoriteNote(childComplexity, args["input"].(model.ToggleFavoriteNoteInput)), true
+
 	case "Mutation.uploadNoteAsset":
 		if e.complexity.Mutation.UploadNoteAsset == nil {
 			break
@@ -3876,6 +3898,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubgraphWaitList.TgBotURL(childComplexity), true
 
+	case "ToggleFavoriteNotePayload.favoriteNotes":
+		if e.complexity.ToggleFavoriteNotePayload.FavoriteNotes == nil {
+			break
+		}
+
+		return e.complexity.ToggleFavoriteNotePayload.FavoriteNotes(childComplexity), true
+
+	case "ToggleFavoriteNotePayload.success":
+		if e.complexity.ToggleFavoriteNotePayload.Success == nil {
+			break
+		}
+
+		return e.complexity.ToggleFavoriteNotePayload.Success(childComplexity), true
+
 	case "UnbanUserPayload.user":
 		if e.complexity.UnbanUserPayload.User == nil {
 			break
@@ -3966,6 +4002,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.Email(childComplexity), true
+
+	case "User.favoriteNotes":
+		if e.complexity.User.FavoriteNotes == nil {
+			break
+		}
+
+		return e.complexity.User.FavoriteNotes(childComplexity), true
 
 	case "User.subgraphAccesses":
 		if e.complexity.User.SubgraphAccesses == nil {
@@ -4137,6 +4180,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSetPatreonTierSubgraphsInput,
 		ec.unmarshalInputSetTgChatSubgraphsInput,
 		ec.unmarshalInputSignInByEmailInput,
+		ec.unmarshalInputToggleFavoriteNoteInput,
 		ec.unmarshalInputUnbanUserInput,
 		ec.unmarshalInputUpdateBoostyCredentialsInput,
 		ec.unmarshalInputUpdateNotFoundIgnoredPatternInput,
@@ -5504,6 +5548,29 @@ func (ec *executionContext) field_Mutation_signInByEmail_argsInput(
 	}
 
 	var zeroVal model.SignInByEmailInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_toggleFavoriteNote_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_toggleFavoriteNote_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_toggleFavoriteNote_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.ToggleFavoriteNoteInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNToggleFavoriteNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐToggleFavoriteNoteInput(ctx, tmp)
+	}
+
+	var zeroVal model.ToggleFavoriteNoteInput
 	return zeroVal, nil
 }
 
@@ -16238,7 +16305,7 @@ func (ec *executionContext) _AdminTgChatMember_userId(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminTgChatMember().UserID(rctx, obj)
+		return obj.UserID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -16259,8 +16326,8 @@ func (ec *executionContext) fieldContext_AdminTgChatMember_userId(_ context.Cont
 	fc = &graphql.FieldContext{
 		Object:     "AdminTgChatMember",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
 		},
@@ -16282,7 +16349,7 @@ func (ec *executionContext) _AdminTgChatMember_chatId(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminTgChatMember().ChatID(rctx, obj)
+		return obj.ChatID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -16303,8 +16370,8 @@ func (ec *executionContext) fieldContext_AdminTgChatMember_chatId(_ context.Cont
 	fc = &graphql.FieldContext{
 		Object:     "AdminTgChatMember",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
 		},
@@ -19462,6 +19529,61 @@ func (ec *executionContext) fieldContext_Mutation_createEmailWaitListRequest(ctx
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createEmailWaitListRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_toggleFavoriteNote(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_toggleFavoriteNote(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ToggleFavoriteNote(rctx, fc.Args["input"].(model.ToggleFavoriteNoteInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.ToggleFavoriteNoteOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNToggleFavoriteNoteOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐToggleFavoriteNoteOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_toggleFavoriteNote(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ToggleFavoriteNoteOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_toggleFavoriteNote_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -23075,6 +23197,104 @@ func (ec *executionContext) fieldContext_SubgraphWaitList_emailAllowed(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _ToggleFavoriteNotePayload_success(ctx context.Context, field graphql.CollectedField, obj *model.ToggleFavoriteNotePayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ToggleFavoriteNotePayload_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ToggleFavoriteNotePayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ToggleFavoriteNotePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ToggleFavoriteNotePayload_favoriteNotes(ctx context.Context, field graphql.CollectedField, obj *model.ToggleFavoriteNotePayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ToggleFavoriteNotePayload_favoriteNotes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ToggleFavoriteNotePayload().FavoriteNotes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.PublicNote)
+	fc.Result = res
+	return ec.marshalNPublicNote2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPublicNoteᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ToggleFavoriteNotePayload_favoriteNotes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ToggleFavoriteNotePayload",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "pathId":
+				return ec.fieldContext_PublicNote_pathId(ctx, field)
+			case "title":
+				return ec.fieldContext_PublicNote_title(ctx, field)
+			case "html":
+				return ec.fieldContext_PublicNote_html(ctx, field)
+			case "toc":
+				return ec.fieldContext_PublicNote_toc(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PublicNote", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UnbanUserPayload_userId(ctx context.Context, field graphql.CollectedField, obj *model.UnbanUserPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UnbanUserPayload_userId(ctx, field)
 	if err != nil {
@@ -23842,6 +24062,60 @@ func (ec *executionContext) fieldContext_User_subgraphAccesses(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _User_favoriteNotes(ctx context.Context, field graphql.CollectedField, obj *db.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_favoriteNotes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().FavoriteNotes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.PublicNote)
+	fc.Result = res
+	return ec.marshalNPublicNote2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPublicNoteᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_favoriteNotes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "pathId":
+				return ec.fieldContext_PublicNote_pathId(ctx, field)
+			case "title":
+				return ec.fieldContext_PublicNote_title(ctx, field)
+			case "html":
+				return ec.fieldContext_PublicNote_html(ctx, field)
+			case "toc":
+				return ec.fieldContext_PublicNote_toc(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PublicNote", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserBan_user(ctx context.Context, field graphql.CollectedField, obj *db.UserBan) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UserBan_user(ctx, field)
 	if err != nil {
@@ -24476,6 +24750,8 @@ func (ec *executionContext) fieldContext_Viewer_user(_ context.Context, field gr
 				return ec.fieldContext_User_email(ctx, field)
 			case "subgraphAccesses":
 				return ec.fieldContext_User_subgraphAccesses(ctx, field)
+			case "favoriteNotes":
+				return ec.fieldContext_User_favoriteNotes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -27739,6 +28015,40 @@ func (ec *executionContext) unmarshalInputSignInByEmailInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputToggleFavoriteNoteInput(ctx context.Context, obj any) (model.ToggleFavoriteNoteInput, error) {
+	var it model.ToggleFavoriteNoteInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"pathId", "value"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "pathId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pathId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PathID = data
+		case "value":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Value = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUnbanUserInput(ctx context.Context, obj any) (model.UnbanUserInput, error) {
 	var it model.UnbanUserInput
 	asMap := map[string]any{}
@@ -28920,6 +29230,29 @@ func (ec *executionContext) _SignOutOrErrorPayload(ctx context.Context, sel ast.
 			return graphql.Null
 		}
 		return ec._SignOutPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _ToggleFavoriteNoteOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.ToggleFavoriteNoteOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ToggleFavoriteNotePayload:
+		return ec._ToggleFavoriteNotePayload(ctx, sel, &obj)
+	case *model.ToggleFavoriteNotePayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ToggleFavoriteNotePayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -35545,77 +35878,15 @@ func (ec *executionContext) _AdminTgChatMember(ctx context.Context, sel ast.Sele
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("AdminTgChatMember")
 		case "userId":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminTgChatMember_userId(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._AdminTgChatMember_userId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "chatId":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminTgChatMember_chatId(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._AdminTgChatMember_chatId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdAt":
 			out.Values[i] = ec._AdminTgChatMember_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -37314,7 +37585,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -37561,6 +37832,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createEmailWaitListRequest":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createEmailWaitListRequest(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "toggleFavoriteNote":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_toggleFavoriteNote(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -39356,6 +39634,81 @@ func (ec *executionContext) _SubgraphWaitList(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var toggleFavoriteNotePayloadImplementors = []string{"ToggleFavoriteNotePayload", "ToggleFavoriteNoteOrErrorPayload"}
+
+func (ec *executionContext) _ToggleFavoriteNotePayload(ctx context.Context, sel ast.SelectionSet, obj *model.ToggleFavoriteNotePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, toggleFavoriteNotePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ToggleFavoriteNotePayload")
+		case "success":
+			out.Values[i] = ec._ToggleFavoriteNotePayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "favoriteNotes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ToggleFavoriteNotePayload_favoriteNotes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var unbanUserPayloadImplementors = []string{"UnbanUserPayload", "UnbanUserOrErrorPayload"}
 
 func (ec *executionContext) _UnbanUserPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UnbanUserPayload) graphql.Marshaler {
@@ -39872,6 +40225,42 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_subgraphAccesses(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "favoriteNotes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_favoriteNotes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -43032,6 +43421,54 @@ func (ec *executionContext) marshalNPaymentType2trip2gᚋinternalᚋgraphᚋmode
 	return v
 }
 
+func (ec *executionContext) marshalNPublicNote2trip2gᚋinternalᚋgraphᚋmodelᚐPublicNote(ctx context.Context, sel ast.SelectionSet, v model.PublicNote) graphql.Marshaler {
+	return ec._PublicNote(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPublicNote2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPublicNoteᚄ(ctx context.Context, sel ast.SelectionSet, v []model.PublicNote) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPublicNote2trip2gᚋinternalᚋgraphᚋmodelᚐPublicNote(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNPurchase2trip2gᚋinternalᚋdbᚐPurchase(ctx context.Context, sel ast.SelectionSet, v db.Purchase) graphql.Marshaler {
 	return ec._Purchase(ctx, sel, &v)
 }
@@ -43505,6 +43942,21 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNToggleFavoriteNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐToggleFavoriteNoteInput(ctx context.Context, v any) (model.ToggleFavoriteNoteInput, error) {
+	res, err := ec.unmarshalInputToggleFavoriteNoteInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNToggleFavoriteNoteOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐToggleFavoriteNoteOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.ToggleFavoriteNoteOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ToggleFavoriteNoteOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUnbanUserInput2trip2gᚋinternalᚋgraphᚋmodelᚐUnbanUserInput(ctx context.Context, v any) (model.UnbanUserInput, error) {

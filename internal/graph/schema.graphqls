@@ -45,6 +45,7 @@ type UserSubgraphAccess {
 type User {
   email: String
   subgraphAccesses: [UserSubgraphAccess!]!
+  favoriteNotes: [PublicNote!]!
 }
 
 type Admin {
@@ -712,6 +713,22 @@ type CreateEmailWaitListRequestPayload {
 
 union CreateEmailWaitListRequestOrErrorPayload = CreateEmailWaitListRequestPayload | ErrorPayload
 
+#
+# toggleFavoriteNote
+#
+
+input ToggleFavoriteNoteInput {
+  pathId: Int64!
+  value: Boolean!
+}
+
+type ToggleFavoriteNotePayload @goExtraField(name: "UserID", type: "int64") {
+  success: Boolean!
+  favoriteNotes: [PublicNote!]! @goField(forceResolver: true)
+}
+
+union ToggleFavoriteNoteOrErrorPayload = ToggleFavoriteNotePayload | ErrorPayload
+
 type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
@@ -719,6 +736,8 @@ type Mutation {
   createPaymentLink(input: CreatePaymentLinkInput!): CreatePaymentLinkOrErrorPayload!
 
   createEmailWaitListRequest(input: CreateEmailWaitListRequestInput!): CreateEmailWaitListRequestOrErrorPayload!
+
+  toggleFavoriteNote(input: ToggleFavoriteNoteInput!): ToggleFavoriteNoteOrErrorPayload!
 
   pushNotes(input: PushNotesInput!): PushNotesOrErrorPayload!
   hideNotes(input: HideNotesInput!): HideNotesOrErrorPayload!

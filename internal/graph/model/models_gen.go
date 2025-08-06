@@ -134,6 +134,10 @@ type SignOutOrErrorPayload interface {
 	IsSignOutOrErrorPayload()
 }
 
+type ToggleFavoriteNoteOrErrorPayload interface {
+	IsToggleFavoriteNoteOrErrorPayload()
+}
+
 type UnbanUserOrErrorPayload interface {
 	IsUnbanUserOrErrorPayload()
 }
@@ -516,6 +520,8 @@ func (ErrorPayload) IsHideNotesOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateEmailWaitListRequestOrErrorPayload() {}
 
+func (ErrorPayload) IsToggleFavoriteNoteOrErrorPayload() {}
+
 func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
@@ -777,6 +783,19 @@ type SubgraphWaitList struct {
 }
 
 func (SubgraphWaitList) IsViewerOffers() {}
+
+type ToggleFavoriteNoteInput struct {
+	PathID int64 `json:"pathId"`
+	Value  bool  `json:"value"`
+}
+
+type ToggleFavoriteNotePayload struct {
+	Success       bool         `json:"success"`
+	FavoriteNotes []PublicNote `json:"favoriteNotes"`
+	UserID        int64        `json:"-"`
+}
+
+func (ToggleFavoriteNotePayload) IsToggleFavoriteNoteOrErrorPayload() {}
 
 type UnbanUserInput struct {
 	UserID int64 `json:"userId"`

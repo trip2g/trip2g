@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"trip2g/internal/appreq"
+	"trip2g/internal/graph/model"
+	appmodel "trip2g/internal/model"
 )
 
 func resolveOne[T any, K any](
@@ -41,4 +43,21 @@ func checkAdmin(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func prepareTOC(note *appmodel.NoteView) []model.NoteTocItem {
+	toc := make([]model.NoteTocItem, 0, len(note.TOC()))
+	for _, heading := range note.TOC() {
+		level := heading.Level
+		if level > 2147483647 {
+			level = 2147483647 // Cap at max int32 value
+		}
+		toc = append(toc, model.NoteTocItem{
+			ID:    heading.ID,
+			Title: heading.Text,
+			Level: int32(level), //nolint:gosec // heading level is always a small positive number
+		})
+	}
+
+	return toc
 }

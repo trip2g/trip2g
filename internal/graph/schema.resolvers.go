@@ -55,6 +55,7 @@ import (
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
+	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
@@ -871,7 +872,7 @@ func (r *adminTgBotChatResolver) RemovedAt(ctx context.Context, obj *db.TgBotCha
 
 // MemberCount is the resolver for the memberCount field.
 func (r *adminTgBotChatResolver) MemberCount(ctx context.Context, obj *db.TgBotChat) (int32, error) {
-	count, err := r.env(ctx).TgChatMembersByChatIDCount(ctx, sql.NullInt64{Int64: obj.ID, Valid: true})
+	count, err := r.env(ctx).TgChatMembersByChatIDCount(ctx, obj.ID)
 	if err != nil {
 		return 0, err
 	}
@@ -895,16 +896,6 @@ func (r *adminTgBotChatsConnectionResolver) Nodes(ctx context.Context, obj *mode
 // Nodes is the resolver for the nodes field.
 func (r *adminTgBotsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTgBotsConnection) ([]db.TgBot, error) {
 	return r.env(ctx).AllTgBots(ctx)
-}
-
-// UserID is the resolver for the userId field.
-func (r *adminTgChatMemberResolver) UserID(ctx context.Context, obj *db.TgChatMember) (int64, error) {
-	return obj.UserID.Int64, nil
-}
-
-// ChatID is the resolver for the chatId field.
-func (r *adminTgChatMemberResolver) ChatID(ctx context.Context, obj *db.TgChatMember) (int64, error) {
-	return obj.ChatID.Int64, nil
 }
 
 // Profile is the resolver for the profile field.
@@ -1034,6 +1025,7 @@ func (r *errorPayloadResolver) Message(ctx context.Context, obj *model.ErrorPayl
 
 // RequestEmailSignInCode is the resolver for the requestEmailSignInCode field.
 func (r *mutationResolver) RequestEmailSignInCode(ctx context.Context, input model.RequestEmailSignInCodeInput) (model.RequestEmailSignInCodeOrErrorPayload, error) {
+	fmt.Println("RequestEmailSignInCode called with input:", input)
 	return requestemailsignin.Resolve(ctx, r.env(ctx), input)
 }
 
@@ -1055,6 +1047,11 @@ func (r *mutationResolver) CreatePaymentLink(ctx context.Context, input model.Cr
 // CreateEmailWaitListRequest is the resolver for the createEmailWaitListRequest field.
 func (r *mutationResolver) CreateEmailWaitListRequest(ctx context.Context, input model.CreateEmailWaitListRequestInput) (model.CreateEmailWaitListRequestOrErrorPayload, error) {
 	return createemailwaitlistrequest.Resolve(ctx, r.env(ctx), input)
+}
+
+// ToggleFavoriteNote is the resolver for the toggleFavoriteNote field.
+func (r *mutationResolver) ToggleFavoriteNote(ctx context.Context, input model.ToggleFavoriteNoteInput) (model.ToggleFavoriteNoteOrErrorPayload, error) {
+	return toggleuserfavoritenote.Resolve(ctx, r.env(ctx), input)
 }
 
 // PushNotes is the resolver for the pushNotes field.
@@ -1290,24 +1287,10 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 		return nil, nil
 	}
 
-	// Convert note headings to TOC items
-	toc := make([]model.NoteTocItem, 0, len(response.Note.TOC()))
-	for _, heading := range response.Note.TOC() {
-		level := heading.Level
-		if level > 2147483647 {
-			level = 2147483647 // Cap at max int32 value
-		}
-		toc = append(toc, model.NoteTocItem{
-			ID:    heading.ID,
-			Title: heading.Text,
-			Level: int32(level), //nolint:gosec // heading level is always a small positive number
-		})
-	}
-
 	return &model.PublicNote{
 		Title: response.Note.Title,
 		HTML:  string(response.Note.HTML),
-		Toc:   toc,
+		Toc:   prepareTOC(response.Note),
 	}, nil
 }
 
@@ -1342,6 +1325,12 @@ func (r *subgraphResolver) HomePath(ctx context.Context, obj *db.Subgraph) (stri
 	return subgraph.Home.Permalink, nil
 }
 
+// FavoriteNotes is the resolver for the favoriteNotes field.
+func (r *toggleFavoriteNotePayloadResolver) FavoriteNotes(ctx context.Context, obj *model.ToggleFavoriteNotePayload) ([]model.PublicNote, error) {
+	userResolver := userResolver{Resolver: r.Resolver}
+	return userResolver.FavoriteNotes(ctx, &db.User{ID: obj.UserID})
+}
+
 // User is the resolver for the user field.
 func (r *unbanUserPayloadResolver) User(ctx context.Context, obj *model.UnbanUserPayload) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
@@ -1367,6 +1356,35 @@ func (r *userResolver) Email(ctx context.Context, obj *db.User) (*string, error)
 // SubgraphAccesses is the resolver for the subgraphAccesses field.
 func (r *userResolver) SubgraphAccesses(ctx context.Context, obj *db.User) ([]db.UserSubgraphAccess, error) {
 	return r.env(ctx).ListActiveUserSubgraphAccessesByUserID(ctx, obj.ID)
+}
+
+// FavoriteNotes is the resolver for the favoriteNotes field.
+func (r *userResolver) FavoriteNotes(ctx context.Context, obj *db.User) ([]model.PublicNote, error) {
+	// Get user's favorite notes
+	favoriteRows, err := r.env(ctx).ListUserFavoriteNotes(ctx, obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list user favorite notes: %w", err)
+	}
+
+	nvs := r.env(ctx).LiveNoteViews()
+
+	favoriteNotes := make([]model.PublicNote, len(favoriteRows))
+
+	for i, row := range favoriteRows {
+		note := nvs.GetByPathID(row.PathID)
+		if note == nil {
+			continue
+		}
+
+		favoriteNotes[i] = model.PublicNote{
+			PathID: row.PathID,
+			Title:  note.Title,
+			HTML:   string(note.HTML),
+			Toc:    prepareTOC(note),
+		}
+	}
+
+	return favoriteNotes, nil
 }
 
 // User is the resolver for the user field.
@@ -1765,6 +1783,11 @@ func (r *Resolver) SetTgChatSubgraphsPayload() SetTgChatSubgraphsPayloadResolver
 // Subgraph returns SubgraphResolver implementation.
 func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
 
+// ToggleFavoriteNotePayload returns ToggleFavoriteNotePayloadResolver implementation.
+func (r *Resolver) ToggleFavoriteNotePayload() ToggleFavoriteNotePayloadResolver {
+	return &toggleFavoriteNotePayloadResolver{r}
+}
+
 // UnbanUserPayload returns UnbanUserPayloadResolver implementation.
 func (r *Resolver) UnbanUserPayload() UnbanUserPayloadResolver { return &unbanUserPayloadResolver{r} }
 
@@ -1848,6 +1871,7 @@ type refreshBoostyDataPayloadResolver struct{ *Resolver }
 type refreshPatreonDataPayloadResolver struct{ *Resolver }
 type setTgChatSubgraphsPayloadResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
+type toggleFavoriteNotePayloadResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
 type updateNoteGraphPositionsPayloadResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }

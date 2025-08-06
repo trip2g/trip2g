@@ -17,16 +17,6 @@ type AcmeCert struct {
 	UpdatedAt sql.NullTime `json:"updated_at"`
 }
 
-type ActiveOffer struct {
-	ID        int64           `json:"id"`
-	PublicID  string          `json:"public_id"`
-	CreatedAt time.Time       `json:"created_at"`
-	Lifetime  sql.NullString  `json:"lifetime"`
-	PriceUsd  sql.NullFloat64 `json:"price_usd"`
-	StartsAt  sql.NullTime    `json:"starts_at"`
-	EndsAt    sql.NullTime    `json:"ends_at"`
-}
-
 type Admin struct {
 	UserID    int64         `json:"user_id"`
 	GrantedAt time.Time     `json:"granted_at"`
@@ -126,6 +116,15 @@ type BoostyTierSubgraph struct {
 	SubgraphID int64     `json:"subgraph_id"`
 	CreatedAt  time.Time `json:"created_at"`
 	CreatedBy  int64     `json:"created_by"`
+}
+
+type LitestreamLock struct {
+	ID sql.NullInt64 `json:"id"`
+}
+
+type LitestreamSeq struct {
+	ID  int64         `json:"id"`
+	Seq sql.NullInt64 `json:"seq"`
 }
 
 type NotFoundIgnoredPattern struct {
@@ -331,9 +330,9 @@ type TgBotChat struct {
 }
 
 type TgChatMember struct {
-	UserID    sql.NullInt64 `json:"user_id"`
-	ChatID    sql.NullInt64 `json:"chat_id"`
-	CreatedAt time.Time     `json:"created_at"`
+	UserID    int64     `json:"user_id"`
+	ChatID    int64     `json:"chat_id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type TgChatSubgraphAccess struct {
@@ -359,9 +358,9 @@ type TgUserState struct {
 	UserID      sql.NullInt64 `json:"user_id"`
 	CreatedAt   time.Time     `json:"created_at"`
 	UpdatedAt   time.Time     `json:"updated_at"`
+	UpdateCount int64         `json:"update_count"`
 	Value       string        `json:"value"`
 	Data        string        `json:"data"`
-	UpdateCount int64         `json:"update_count"`
 }
 
 type User struct {
@@ -378,6 +377,13 @@ type UserBan struct {
 	CreatedAt time.Time     `json:"created_at"`
 	BannedBy  sql.NullInt64 `json:"banned_by"`
 	Reason    string        `json:"reason"`
+}
+
+type UserFavoriteNote struct {
+	ID            int64     `json:"id"`
+	UserID        int64     `json:"user_id"`
+	NoteVersionID int64     `json:"note_version_id"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 type UserNoteDailyViewCount struct {

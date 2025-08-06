@@ -1057,3 +1057,19 @@ order by s.name;
 select * from patreon_members
 where patreon_id = ? and campaign_id = ?
 limit 1;
+
+-- name: InsertUserFavoriteNote :exec
+insert into user_favorite_notes (user_id, note_version_id)
+values (?, ?) on conflict do nothing;
+
+-- name: DeleteUserFavoriteNote :exec
+delete from user_favorite_notes
+where user_id = ? and note_version_id = ?;
+
+-- name: ListUserFavoriteNotes :many
+select nv.path_id, nv.id as version_id
+  from user_favorite_notes ufn
+  join note_versions nv on ufn.note_version_id = nv.id
+  join note_paths np on nv.path_id = np.id
+ where ufn.user_id = ? and np.hidden_by is null
+ order by ufn.created_at desc;

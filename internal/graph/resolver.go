@@ -46,6 +46,7 @@ import (
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
+	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -124,6 +125,7 @@ type Env interface {
 	signout.Env
 	createpaymentlink.Env
 	createemailwaitlistrequest.Env
+	toggleuserfavoritenote.Env
 	pushnotes.Env
 	rendernotepage.Env
 	uploadnoteasset.Env
@@ -165,6 +167,8 @@ type Env interface {
 	updateboostycredentials.Env
 	refreshboostydata.Env
 
+	ListUserFavoriteNotes(ctx context.Context, userID int64) ([]db.ListUserFavoriteNotesRow, error)
+
 	// Patreon tier queries
 	GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]db.Subgraph, error)
 
@@ -174,8 +178,8 @@ type Env interface {
 	TgBotChat(ctx context.Context, id int64) (db.TgBotChat, error)
 	TgBotChatsByBotID(ctx context.Context, arg db.TgBotChatsByBotIDParams) ([]db.TgBotChat, error)
 	AllTgBotChats(ctx context.Context, includeRemoved interface{}) ([]db.TgBotChat, error)
-	TgChatMembersByChatID(ctx context.Context, chatID sql.NullInt64) ([]db.TgChatMembersByChatIDRow, error)
-	TgChatMembersByChatIDCount(ctx context.Context, chatID sql.NullInt64) (int64, error)
+	TgChatMembersByChatID(ctx context.Context, chatID int64) ([]db.TgChatMembersByChatIDRow, error)
+	TgChatMembersByChatIDCount(ctx context.Context, chatID int64) (int64, error)
 	TgChatSubgraphAccessesByChatID(ctx context.Context, chatID int64) ([]db.TgChatSubgraphAccess, error)
 	TgChatSubgraphAccessesBySubgraphID(ctx context.Context, subgraphID int64) ([]db.TgChatSubgraphAccess, error)
 	AllTgChatSubgraphAccesses(ctx context.Context) ([]db.TgChatSubgraphAccess, error)
