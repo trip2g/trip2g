@@ -282,7 +282,7 @@ ranked_assets as (
   join note_version_assets a on v.id = a.version_id
   join note_assets na on a.asset_id = na.id
 )
-select version_id, path, note_assets.id, note_assets.absolute_path, note_assets.file_name, note_assets.sha256_hash, note_assets.content_type, note_assets.created_at, note_assets.size
+select version_id, path, note_assets.id, note_assets.absolute_path, note_assets.file_name, note_assets.sha256_hash, note_assets.created_at, note_assets.size
 from ranked_assets
 join note_assets on ranked_assets.asset_id = note_assets.id
 where rn = 1
@@ -310,7 +310,6 @@ func (q *Queries) AllLatestNoteAssets(ctx context.Context) ([]AllLatestNoteAsset
 			&i.NoteAsset.AbsolutePath,
 			&i.NoteAsset.FileName,
 			&i.NoteAsset.Sha256Hash,
-			&i.NoteAsset.ContentType,
 			&i.NoteAsset.CreatedAt,
 			&i.NoteAsset.Size,
 		); err != nil {
@@ -387,7 +386,7 @@ with ranked_assets as (
   join releases r on rnv.release_id = r.id
  where r.is_live = true
 )
-select version_id, path, note_assets.id, note_assets.absolute_path, note_assets.file_name, note_assets.sha256_hash, note_assets.content_type, note_assets.created_at, note_assets.size
+select version_id, path, note_assets.id, note_assets.absolute_path, note_assets.file_name, note_assets.sha256_hash, note_assets.created_at, note_assets.size
 from ranked_assets
 join note_assets on ranked_assets.asset_id = note_assets.id
 where rn = 1
@@ -415,7 +414,6 @@ func (q *Queries) AllLiveNoteAssets(ctx context.Context) ([]AllLiveNoteAssetsRow
 			&i.NoteAsset.AbsolutePath,
 			&i.NoteAsset.FileName,
 			&i.NoteAsset.Sha256Hash,
-			&i.NoteAsset.ContentType,
 			&i.NoteAsset.CreatedAt,
 			&i.NoteAsset.Size,
 		); err != nil {
@@ -1745,16 +1743,15 @@ func (q *Queries) InsertNotFoundIgnoredPattern(ctx context.Context, arg InsertNo
 }
 
 const insertNoteAsset = `-- name: InsertNoteAsset :one
-insert into note_assets (absolute_path, file_name, sha256_hash, content_type, size)
-values (?, ?, ?, ?, ?)
-returning id, absolute_path, file_name, sha256_hash, content_type, created_at, size
+insert into note_assets (absolute_path, file_name, sha256_hash, size)
+values (?, ?, ?, ?)
+returning id, absolute_path, file_name, sha256_hash, created_at, size
 `
 
 type InsertNoteAssetParams struct {
 	AbsolutePath string `json:"absolute_path"`
 	FileName     string `json:"file_name"`
 	Sha256Hash   string `json:"sha256_hash"`
-	ContentType  string `json:"content_type"`
 	Size         int64  `json:"size"`
 }
 
@@ -1763,7 +1760,6 @@ func (q *Queries) InsertNoteAsset(ctx context.Context, arg InsertNoteAssetParams
 		arg.AbsolutePath,
 		arg.FileName,
 		arg.Sha256Hash,
-		arg.ContentType,
 		arg.Size,
 	)
 	var i NoteAsset
@@ -1772,7 +1768,6 @@ func (q *Queries) InsertNoteAsset(ctx context.Context, arg InsertNoteAssetParams
 		&i.AbsolutePath,
 		&i.FileName,
 		&i.Sha256Hash,
-		&i.ContentType,
 		&i.CreatedAt,
 		&i.Size,
 	)
@@ -3458,7 +3453,7 @@ func (q *Queries) NotFoundPathByID(ctx context.Context, id int64) (NotFoundPath,
 }
 
 const noteAssetByAbsolutePathAndSha256Hash = `-- name: NoteAssetByAbsolutePathAndSha256Hash :one
-select id, absolute_path, file_name, sha256_hash, content_type, created_at, size from note_assets
+select id, absolute_path, file_name, sha256_hash, created_at, size from note_assets
  where absolute_path = ?
    and sha256_hash = ?
  limit 1
@@ -3477,7 +3472,6 @@ func (q *Queries) NoteAssetByAbsolutePathAndSha256Hash(ctx context.Context, arg 
 		&i.AbsolutePath,
 		&i.FileName,
 		&i.Sha256Hash,
-		&i.ContentType,
 		&i.CreatedAt,
 		&i.Size,
 	)
@@ -3485,7 +3479,7 @@ func (q *Queries) NoteAssetByAbsolutePathAndSha256Hash(ctx context.Context, arg 
 }
 
 const noteAssetByPathAndHash = `-- name: NoteAssetByPathAndHash :one
-select id, absolute_path, file_name, sha256_hash, content_type, created_at, size from note_assets
+select id, absolute_path, file_name, sha256_hash, created_at, size from note_assets
  where absolute_path = ?
    and sha256_hash = ?
  limit 1
@@ -3504,7 +3498,6 @@ func (q *Queries) NoteAssetByPathAndHash(ctx context.Context, arg NoteAssetByPat
 		&i.AbsolutePath,
 		&i.FileName,
 		&i.Sha256Hash,
-		&i.ContentType,
 		&i.CreatedAt,
 		&i.Size,
 	)

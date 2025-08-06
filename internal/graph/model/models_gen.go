@@ -218,6 +218,10 @@ type AdminBoostyTiersConnection struct {
 	Nodes []db.BoostyTier `json:"nodes"`
 }
 
+type AdminLatestNoteAssetsConnection struct {
+	Nodes []db.NoteAsset `json:"nodes"`
+}
+
 type AdminLatestNoteViewsConnection struct {
 	Nodes  []model.NoteView            `json:"nodes"`
 	Filter *AdminLatestNoteViewsFilter `json:"-"`

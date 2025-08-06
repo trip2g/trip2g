@@ -98,16 +98,6 @@ CREATE TABLE IF NOT EXISTS "note_versions" (
   unique(path_id, version),
   foreign key (path_id) references note_paths(id) on delete restrict
 );
-CREATE TABLE note_assets (
-  id integer primary key autoincrement,
-  absolute_path text not null,
-  file_name text not null,
-  sha256_hash text not null,
-  content_type text not null,
-  created_at datetime not null default current_timestamp,
-  size integer not null,
-  unique (absolute_path, sha256_hash)
-);
 CREATE TABLE note_version_assets (
   asset_id integer not null references note_assets(id) on delete cascade,
   version_id integer not null references note_versions(id) on delete cascade,
@@ -369,6 +359,15 @@ CREATE TABLE user_favorite_notes (
 
   primary key (user_id, note_version_id)
 );
+CREATE TABLE IF NOT EXISTS "note_assets" (
+  id integer primary key autoincrement,
+  absolute_path text not null,
+  file_name text not null,
+  sha256_hash text not null unique,
+  created_at datetime not null default current_timestamp,
+  size integer not null default 0
+);
+CREATE INDEX idx_note_assets_absolute_path_sha256_hash on note_assets (absolute_path, sha256_hash);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -424,4 +423,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250801040147'),
   ('20250801080226'),
   ('20250804051415'),
-  ('20250806044332');
+  ('20250806044332'),
+  ('20250806153321');

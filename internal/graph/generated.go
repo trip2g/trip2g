@@ -55,11 +55,13 @@ type ResolverRoot interface {
 	AdminBoostyMembersConnection() AdminBoostyMembersConnectionResolver
 	AdminBoostyTier() AdminBoostyTierResolver
 	AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolver
+	AdminLatestNoteAssetsConnection() AdminLatestNoteAssetsConnectionResolver
 	AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnectionResolver
 	AdminMutation() AdminMutationResolver
 	AdminNotFoundIgnoredPattern() AdminNotFoundIgnoredPatternResolver
 	AdminNotFoundIgnoredPatternsConnection() AdminNotFoundIgnoredPatternsConnectionResolver
 	AdminNotFoundPathsConnection() AdminNotFoundPathsConnectionResolver
+	AdminNoteAsset() AdminNoteAssetResolver
 	AdminOffer() AdminOfferResolver
 	AdminOffersConnection() AdminOffersConnectionResolver
 	AdminPatreonCampaign() AdminPatreonCampaignResolver
@@ -202,6 +204,10 @@ type ComplexityRoot struct {
 		Nodes func(childComplexity int) int
 	}
 
+	AdminLatestNoteAssetsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
 	AdminLatestNoteViewsConnection struct {
 		Nodes func(childComplexity int) int
 	}
@@ -261,6 +267,15 @@ type ComplexityRoot struct {
 
 	AdminNotFoundPathsConnection struct {
 		Nodes func(childComplexity int) int
+	}
+
+	AdminNoteAsset struct {
+		AbsolutePath func(childComplexity int) int
+		CreatedAt    func(childComplexity int) int
+		FileName     func(childComplexity int) int
+		ID           func(childComplexity int) int
+		Size         func(childComplexity int) int
+		URL          func(childComplexity int) int
 	}
 
 	AdminOffer struct {
@@ -357,6 +372,7 @@ type ComplexityRoot struct {
 		AllAPIKeys                 func(childComplexity int) int
 		AllAdmins                  func(childComplexity int) int
 		AllBoostyCredentials       func(childComplexity int, filter *model.AdminBoostyCredentialsFilterInput) int
+		AllLatestNoteAssets        func(childComplexity int) int
 		AllLatestNoteViews         func(childComplexity int, filter *model.AdminLatestNoteViewsFilter) int
 		AllNotFoundIgnoredPatterns func(childComplexity int) int
 		AllNotFoundPaths           func(childComplexity int) int
@@ -881,6 +897,9 @@ type AdminBoostyTierResolver interface {
 type AdminBoostyTiersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminBoostyTiersConnection) ([]db.BoostyTier, error)
 }
+type AdminLatestNoteAssetsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminLatestNoteAssetsConnection) ([]db.NoteAsset, error)
+}
 type AdminLatestNoteViewsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminLatestNoteViewsConnection) ([]model1.NoteView, error)
 }
@@ -926,6 +945,9 @@ type AdminNotFoundIgnoredPatternsConnectionResolver interface {
 }
 type AdminNotFoundPathsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminNotFoundPathsConnection) ([]db.NotFoundPath, error)
+}
+type AdminNoteAssetResolver interface {
+	URL(ctx context.Context, obj *db.NoteAsset) (string, error)
 }
 type AdminOfferResolver interface {
 	Lifetime(ctx context.Context, obj *db.Offer) (*string, error)
@@ -988,6 +1010,7 @@ type AdminQueryResolver interface {
 	AllRedirects(ctx context.Context, obj *model1.AdminQuery) (*model.AdminRedirectsConnection, error)
 	AllNotFoundPaths(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNotFoundPathsConnection, error)
 	AllNotFoundIgnoredPatterns(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNotFoundIgnoredPatternsConnection, error)
+	AllLatestNoteAssets(ctx context.Context, obj *model1.AdminQuery) (*model.AdminLatestNoteAssetsConnection, error)
 	AllTgBots(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTgBotsConnection, error)
 	TgBotChats(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgBotChatsFilterInput) (*model.AdminTgBotChatsConnection, error)
 	TgChatSubgraphAccesses(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgChatSubgraphAccessesFilterInput) (*model.AdminTgChatSubgraphAccessesConnection, error)
@@ -1513,6 +1536,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminBoostyTiersConnection.Nodes(childComplexity), true
 
+	case "AdminLatestNoteAssetsConnection.nodes":
+		if e.complexity.AdminLatestNoteAssetsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminLatestNoteAssetsConnection.Nodes(childComplexity), true
+
 	case "AdminLatestNoteViewsConnection.nodes":
 		if e.complexity.AdminLatestNoteViewsConnection.Nodes == nil {
 			break
@@ -1974,6 +2004,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminNotFoundPathsConnection.Nodes(childComplexity), true
 
+	case "AdminNoteAsset.absolutePath":
+		if e.complexity.AdminNoteAsset.AbsolutePath == nil {
+			break
+		}
+
+		return e.complexity.AdminNoteAsset.AbsolutePath(childComplexity), true
+
+	case "AdminNoteAsset.createdAt":
+		if e.complexity.AdminNoteAsset.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminNoteAsset.CreatedAt(childComplexity), true
+
+	case "AdminNoteAsset.fileName":
+		if e.complexity.AdminNoteAsset.FileName == nil {
+			break
+		}
+
+		return e.complexity.AdminNoteAsset.FileName(childComplexity), true
+
+	case "AdminNoteAsset.id":
+		if e.complexity.AdminNoteAsset.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminNoteAsset.ID(childComplexity), true
+
+	case "AdminNoteAsset.size":
+		if e.complexity.AdminNoteAsset.Size == nil {
+			break
+		}
+
+		return e.complexity.AdminNoteAsset.Size(childComplexity), true
+
+	case "AdminNoteAsset.url":
+		if e.complexity.AdminNoteAsset.URL == nil {
+			break
+		}
+
+		return e.complexity.AdminNoteAsset.URL(childComplexity), true
+
 	case "AdminOffer.createdAt":
 		if e.complexity.AdminOffer.CreatedAt == nil {
 			break
@@ -2403,6 +2475,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AllBoostyCredentials(childComplexity, args["filter"].(*model.AdminBoostyCredentialsFilterInput)), true
+
+	case "AdminQuery.allLatestNoteAssets":
+		if e.complexity.AdminQuery.AllLatestNoteAssets == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllLatestNoteAssets(childComplexity), true
 
 	case "AdminQuery.allLatestNoteViews":
 		if e.complexity.AdminQuery.AllLatestNoteViews == nil {
@@ -7914,6 +7993,64 @@ func (ec *executionContext) fieldContext_AdminBoostyTiersConnection_nodes(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminLatestNoteAssetsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminLatestNoteAssetsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminLatestNoteAssetsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminLatestNoteAssetsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.NoteAsset)
+	fc.Result = res
+	return ec.marshalNAdminNoteAsset2ᚕtrip2gᚋinternalᚋdbᚐNoteAssetᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminLatestNoteAssetsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminLatestNoteAssetsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminNoteAsset_id(ctx, field)
+			case "absolutePath":
+				return ec.fieldContext_AdminNoteAsset_absolutePath(ctx, field)
+			case "fileName":
+				return ec.fieldContext_AdminNoteAsset_fileName(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminNoteAsset_createdAt(ctx, field)
+			case "url":
+				return ec.fieldContext_AdminNoteAsset_url(ctx, field)
+			case "size":
+				return ec.fieldContext_AdminNoteAsset_size(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminNoteAsset", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminLatestNoteViewsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminLatestNoteViewsConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminLatestNoteViewsConnection_nodes(ctx, field)
 	if err != nil {
@@ -10213,6 +10350,270 @@ func (ec *executionContext) fieldContext_AdminNotFoundPathsConnection_nodes(_ co
 				return ec.fieldContext_AdminNotFoundPath_lastHitAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminNotFoundPath", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteAsset_id(ctx context.Context, field graphql.CollectedField, obj *db.NoteAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNoteAsset_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteAsset_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteAsset_absolutePath(ctx context.Context, field graphql.CollectedField, obj *db.NoteAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNoteAsset_absolutePath(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AbsolutePath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteAsset_absolutePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteAsset_fileName(ctx context.Context, field graphql.CollectedField, obj *db.NoteAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNoteAsset_fileName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FileName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteAsset_fileName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteAsset_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.NoteAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNoteAsset_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteAsset_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteAsset_url(ctx context.Context, field graphql.CollectedField, obj *db.NoteAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNoteAsset_url(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminNoteAsset().URL(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteAsset_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteAsset",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminNoteAsset_size(ctx context.Context, field graphql.CollectedField, obj *db.NoteAsset) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminNoteAsset_size(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Size, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminNoteAsset_size(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
 		},
 	}
 	return fc, nil
@@ -13478,6 +13879,54 @@ func (ec *executionContext) fieldContext_AdminQuery_allNotFoundIgnoredPatterns(_
 				return ec.fieldContext_AdminNotFoundIgnoredPatternsConnection_nodes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminNotFoundIgnoredPatternsConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allLatestNoteAssets(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allLatestNoteAssets(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllLatestNoteAssets(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminLatestNoteAssetsConnection)
+	fc.Result = res
+	return ec.marshalNAdminLatestNoteAssetsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteAssetsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allLatestNoteAssets(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminLatestNoteAssetsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminLatestNoteAssetsConnection", field.Name)
 		},
 	}
 	return fc, nil
@@ -21730,6 +22179,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allNotFoundPaths(ctx, field)
 			case "allNotFoundIgnoredPatterns":
 				return ec.fieldContext_AdminQuery_allNotFoundIgnoredPatterns(ctx, field)
+			case "allLatestNoteAssets":
+				return ec.fieldContext_AdminQuery_allLatestNoteAssets(ctx, field)
 			case "allTgBots":
 				return ec.fieldContext_AdminQuery_allTgBots(ctx, field)
 			case "tgBotChats":
@@ -30847,6 +31298,76 @@ func (ec *executionContext) _AdminBoostyTiersConnection(ctx context.Context, sel
 	return out
 }
 
+var adminLatestNoteAssetsConnectionImplementors = []string{"AdminLatestNoteAssetsConnection"}
+
+func (ec *executionContext) _AdminLatestNoteAssetsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminLatestNoteAssetsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminLatestNoteAssetsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminLatestNoteAssetsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminLatestNoteAssetsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminLatestNoteViewsConnectionImplementors = []string{"AdminLatestNoteViewsConnection"}
 
 func (ec *executionContext) _AdminLatestNoteViewsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminLatestNoteViewsConnection) graphql.Marshaler {
@@ -32359,6 +32880,101 @@ func (ec *executionContext) _AdminNotFoundPathsConnection(ctx context.Context, s
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminNoteAssetImplementors = []string{"AdminNoteAsset"}
+
+func (ec *executionContext) _AdminNoteAsset(ctx context.Context, sel ast.SelectionSet, obj *db.NoteAsset) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminNoteAssetImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminNoteAsset")
+		case "id":
+			out.Values[i] = ec._AdminNoteAsset_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "absolutePath":
+			out.Values[i] = ec._AdminNoteAsset_absolutePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "fileName":
+			out.Values[i] = ec._AdminNoteAsset_fileName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminNoteAsset_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "url":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminNoteAsset_url(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "size":
+			out.Values[i] = ec._AdminNoteAsset_size(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -34259,6 +34875,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_allNotFoundIgnoredPatterns(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allLatestNoteAssets":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allLatestNoteAssets(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -41530,6 +42182,20 @@ func (ec *executionContext) marshalNAdminBoostyTiersConnection2ᚖtrip2gᚋinter
 	return ec._AdminBoostyTiersConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminLatestNoteAssetsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteAssetsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminLatestNoteAssetsConnection) graphql.Marshaler {
+	return ec._AdminLatestNoteAssetsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminLatestNoteAssetsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteAssetsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminLatestNoteAssetsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminLatestNoteAssetsConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminLatestNoteViewsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteViewsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminLatestNoteViewsConnection) graphql.Marshaler {
 	return ec._AdminLatestNoteViewsConnection(ctx, sel, &v)
 }
@@ -41700,6 +42366,54 @@ func (ec *executionContext) marshalNAdminNotFoundPathsConnection2ᚖtrip2gᚋint
 		return graphql.Null
 	}
 	return ec._AdminNotFoundPathsConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminNoteAsset2trip2gᚋinternalᚋdbᚐNoteAsset(ctx context.Context, sel ast.SelectionSet, v db.NoteAsset) graphql.Marshaler {
+	return ec._AdminNoteAsset(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminNoteAsset2ᚕtrip2gᚋinternalᚋdbᚐNoteAssetᚄ(ctx context.Context, sel ast.SelectionSet, v []db.NoteAsset) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminNoteAsset2trip2gᚋinternalᚋdbᚐNoteAsset(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNAdminOffer2trip2gᚋinternalᚋdbᚐOffer(ctx context.Context, sel ast.SelectionSet, v db.Offer) graphql.Marshaler {

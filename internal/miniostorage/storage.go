@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mime"
 	"net/url"
+	"path/filepath"
 	"time"
 	"trip2g/internal/db"
 
@@ -158,9 +160,21 @@ func (a *FileStorage) DeleteAssetObject(ctx context.Context, asset db.NoteAsset)
 	return nil
 }
 
+// detectContentType determines MIME type from file name.
+func detectContentType(fileName string) string {
+	ext := filepath.Ext(fileName)
+	mimeType := mime.TypeByExtension(ext)
+
+	if mimeType != "" {
+		return mimeType
+	}
+
+	return "application/octet-stream"
+}
+
 func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, asset db.NoteAsset) error {
 	options := minio.PutObjectOptions{
-		ContentType: asset.ContentType,
+		ContentType: detectContentType(asset.FileName),
 	}
 
 	path := a.NoteAssetPath(asset)

@@ -152,7 +152,6 @@ type NoteAsset struct {
 	AbsolutePath string    `json:"absolute_path"`
 	FileName     string    `json:"file_name"`
 	Sha256Hash   string    `json:"sha256_hash"`
-	ContentType  string    `json:"content_type"`
 	CreatedAt    time.Time `json:"created_at"`
 	Size         int64     `json:"size"`
 }
@@ -380,7 +379,6 @@ type UserBan struct {
 }
 
 type UserFavoriteNote struct {
-	ID            int64     `json:"id"`
 	UserID        int64     `json:"user_id"`
 	NoteVersionID int64     `json:"note_version_id"`
 	CreatedAt     time.Time `json:"created_at"`

@@ -169,6 +169,9 @@ type Env interface {
 
 	ListUserFavoriteNotes(ctx context.Context, userID int64) ([]db.ListUserFavoriteNotesRow, error)
 
+	AllLatestNoteAssets(ctx context.Context) ([]db.AllLatestNoteAssetsRow, error)
+	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (string, error)
+
 	// Patreon tier queries
 	GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]db.Subgraph, error)
 

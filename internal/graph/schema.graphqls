@@ -446,6 +446,19 @@ input AdminLatestNoteViewsFilter {
   withWarnings: Boolean
 }
 
+type AdminNoteAsset @goModel(model: "trip2g/internal/db.NoteAsset") {
+  id: Int64!
+  absolutePath: String!
+  fileName: String!
+  createdAt: Time!
+  url: String!
+  size: Int64!
+}
+
+type AdminLatestNoteAssetsConnection {
+  nodes: [AdminNoteAsset!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -460,6 +473,7 @@ type AdminQuery {
   allRedirects: AdminRedirectsConnection!
   allNotFoundPaths: AdminNotFoundPathsConnection!
   allNotFoundIgnoredPatterns: AdminNotFoundIgnoredPatternsConnection!
+  allLatestNoteAssets: AdminLatestNoteAssetsConnection!
 
   allTgBots: AdminTgBotsConnection!
   tgBotChats(filter: AdminTgBotChatsFilterInput!): AdminTgBotChatsConnection!

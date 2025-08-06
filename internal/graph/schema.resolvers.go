@@ -204,6 +204,21 @@ func (r *adminBoostyTiersConnectionResolver) Nodes(ctx context.Context, obj *mod
 }
 
 // Nodes is the resolver for the nodes field.
+func (r *adminLatestNoteAssetsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminLatestNoteAssetsConnection) ([]db.NoteAsset, error) {
+	assets, err := r.env(ctx).AllLatestNoteAssets(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest note assets: %w", err)
+	}
+
+	res := make([]db.NoteAsset, len(assets))
+	for i, asset := range assets {
+		res[i] = asset.NoteAsset
+	}
+
+	return res, nil
+}
+
+// Nodes is the resolver for the nodes field.
 func (r *adminLatestNoteViewsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminLatestNoteViewsConnection) ([]appmodel.NoteView, error) {
 	notes := r.env(ctx).LatestNoteViews()
 	res := make([]appmodel.NoteView, 0, len(notes.Map))
@@ -413,6 +428,11 @@ func (r *adminNotFoundIgnoredPatternsConnectionResolver) Nodes(ctx context.Conte
 // Nodes is the resolver for the nodes field.
 func (r *adminNotFoundPathsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminNotFoundPathsConnection) ([]db.NotFoundPath, error) {
 	return r.env(ctx).ListAllNotFoundPaths(ctx)
+}
+
+// URL is the resolver for the url field.
+func (r *adminNoteAssetResolver) URL(ctx context.Context, obj *db.NoteAsset) (string, error) {
+	return r.env(ctx).NoteAssetURL(ctx, *obj)
 }
 
 // LifeTime is the resolver for the lifetime field.
@@ -700,6 +720,11 @@ func (r *adminQueryResolver) AllNotFoundPaths(ctx context.Context, obj *appmodel
 // AllNotFoundIgnoredPatterns is the resolver for the allNotFoundIgnoredPatterns field.
 func (r *adminQueryResolver) AllNotFoundIgnoredPatterns(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminNotFoundIgnoredPatternsConnection, error) {
 	return &model.AdminNotFoundIgnoredPatternsConnection{}, nil
+}
+
+// AllLatestNoteAssets is the resolver for the allLatestNoteAssets field.
+func (r *adminQueryResolver) AllLatestNoteAssets(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminLatestNoteAssetsConnection, error) {
+	return &model.AdminLatestNoteAssetsConnection{}, nil
 }
 
 // AllTgBots is the resolver for the allTgBots field.
@@ -1575,6 +1600,11 @@ func (r *Resolver) AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolv
 	return &adminBoostyTiersConnectionResolver{r}
 }
 
+// AdminLatestNoteAssetsConnection returns AdminLatestNoteAssetsConnectionResolver implementation.
+func (r *Resolver) AdminLatestNoteAssetsConnection() AdminLatestNoteAssetsConnectionResolver {
+	return &adminLatestNoteAssetsConnectionResolver{r}
+}
+
 // AdminLatestNoteViewsConnection returns AdminLatestNoteViewsConnectionResolver implementation.
 func (r *Resolver) AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnectionResolver {
 	return &adminLatestNoteViewsConnectionResolver{r}
@@ -1597,6 +1627,9 @@ func (r *Resolver) AdminNotFoundIgnoredPatternsConnection() AdminNotFoundIgnored
 func (r *Resolver) AdminNotFoundPathsConnection() AdminNotFoundPathsConnectionResolver {
 	return &adminNotFoundPathsConnectionResolver{r}
 }
+
+// AdminNoteAsset returns AdminNoteAssetResolver implementation.
+func (r *Resolver) AdminNoteAsset() AdminNoteAssetResolver { return &adminNoteAssetResolver{r} }
 
 // AdminOffer returns AdminOfferResolver implementation.
 func (r *Resolver) AdminOffer() AdminOfferResolver { return &adminOfferResolver{r} }
@@ -1821,11 +1854,13 @@ type adminBoostyMemberResolver struct{ *Resolver }
 type adminBoostyMembersConnectionResolver struct{ *Resolver }
 type adminBoostyTierResolver struct{ *Resolver }
 type adminBoostyTiersConnectionResolver struct{ *Resolver }
+type adminLatestNoteAssetsConnectionResolver struct{ *Resolver }
 type adminLatestNoteViewsConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }
 type adminNotFoundIgnoredPatternResolver struct{ *Resolver }
 type adminNotFoundIgnoredPatternsConnectionResolver struct{ *Resolver }
 type adminNotFoundPathsConnectionResolver struct{ *Resolver }
+type adminNoteAssetResolver struct{ *Resolver }
 type adminOfferResolver struct{ *Resolver }
 type adminOffersConnectionResolver struct{ *Resolver }
 type adminPatreonCampaignResolver struct{ *Resolver }

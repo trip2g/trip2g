@@ -328,8 +328,8 @@ select a.*
  order by a.user_id, s.name;
 
 -- name: InsertNoteAsset :one
-insert into note_assets (absolute_path, file_name, sha256_hash, content_type, size)
-values (?, ?, ?, ?, ?)
+insert into note_assets (absolute_path, file_name, sha256_hash, size)
+values (?, ?, ?, ?)
 returning *;
 
 -- name: NoteAssetByPathAndHash :one

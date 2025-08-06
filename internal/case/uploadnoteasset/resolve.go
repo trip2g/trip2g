@@ -60,7 +60,6 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 				AbsolutePath: input.AbsolutePath,
 				FileName:     fileName,
 				Sha256Hash:   input.Sha256Hash,
-				ContentType:  input.File.ContentType,
 				Size:         input.File.Size,
 			}
 
