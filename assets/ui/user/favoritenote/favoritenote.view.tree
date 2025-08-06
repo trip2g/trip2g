@@ -1,0 +1,3 @@
+$trip2g_user_favoritenote $mol_button
+	OnIcon $mol_icon_star_outline
+	OffIcon $mol_icon_star

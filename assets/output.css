@@ -892,6 +892,13 @@
       outline: 2px solid currentColor;
     }
   }
+  .stats {
+    position: relative;
+    display: inline-grid;
+    grid-auto-flow: column;
+    overflow-x: auto;
+    border-radius: var(--radius-box);
+  }
   .absolute {
     position: absolute;
   }
@@ -1690,6 +1697,13 @@
         }
       }
     }
+  }
+  .mask {
+    display: inline-block;
+    vertical-align: middle;
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
   }
   .block {
     display: block;

@@ -126,12 +126,18 @@ namespace $ {
 		return out
 	}
 
-	export function $trip2g_graphql_raw_request(query: string, variables?: any) {
+	type RequestOptions = {
+		resetCache?: boolean
+	}
+
+	export function $trip2g_graphql_raw_request(query: string, variables?: any, opts?: RequestOptions): any {
+		query = inject_typenames(query)
+
 		const res = $.$mol_fetch.json('/graphql', {
 			method: 'POST',
 			credentials: 'include',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ query: inject_typenames(query), variables }),
+			body: JSON.stringify({ query, variables }),
 		}) as { data?: any; errors?: any[] }
 
 		if (res.errors) {
@@ -140,7 +146,9 @@ namespace $ {
 
 		const isMutation = !!query.match(/^\s+mutation/)
 
-		cacheInstance.markTypenames(res.data, isMutation)
+		if (opts?.resetCache) {
+			cacheInstance.markTypenames(res.data, isMutation)
+		}
 
 		return res.data
 	}

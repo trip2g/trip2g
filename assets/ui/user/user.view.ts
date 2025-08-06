@@ -14,6 +14,7 @@ namespace $.$$ {
 				paywall: this.Paywall(),
 				space: this.Space(),
 				reader: this.Reader(),
+				favorite: this.Favorite(),
 			}
 		}
 

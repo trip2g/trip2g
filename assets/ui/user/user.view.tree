@@ -7,3 +7,4 @@ $trip2g_user $mol_view
 	Paywall $trip2g_user_paywall
 	Space $trip2g_user_space
 	Reader $trip2g_reader
+	Favorite $trip2g_user_favoritenote
