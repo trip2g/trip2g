@@ -47,10 +47,8 @@ func TestHandleGroupAccess(t *testing.T) {
 					// Verify correct parameters
 					expectedUserID := int64(7828312136)
 					expectedChatID := int64(-1002529281698)
-					require.Equal(t, expectedUserID, arg.UserID.Int64)
-					require.Equal(t, expectedChatID, arg.ChatID.Int64)
-					require.True(t, arg.UserID.Valid)
-					require.True(t, arg.ChatID.Valid)
+					require.Equal(t, expectedUserID, arg.UserID)
+					require.Equal(t, expectedChatID, arg.ChatID)
 					return nil
 				}
 				env.BotIDFunc = func() int64 {
@@ -62,7 +60,7 @@ func TestHandleGroupAccess(t *testing.T) {
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
 				}
-				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id int64) ([]string, error) {
 					return []string{"test-subgraph"}, nil
 				}
 				env.LatestNoteViewsFunc = func() *model.NoteViews {
@@ -93,7 +91,7 @@ func TestHandleGroupAccess(t *testing.T) {
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
 				}
-				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id int64) ([]string, error) {
 					return []string{"test-subgraph"}, nil
 				}
 				env.LatestNoteViewsFunc = func() *model.NoteViews {
@@ -139,7 +137,7 @@ func TestHandleGroupAccess(t *testing.T) {
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
 				}
-				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id int64) ([]string, error) {
 					return []string{"test-subgraph"}, nil
 				}
 				env.LatestNoteViewsFunc = func() *model.NoteViews {
@@ -176,7 +174,7 @@ func TestHandleGroupAccess(t *testing.T) {
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
 				}
-				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id int64) ([]string, error) {
 					return []string{"test-subgraph"}, nil
 				}
 				env.LatestNoteViewsFunc = func() *model.NoteViews {
@@ -213,7 +211,7 @@ func TestHandleGroupAccess(t *testing.T) {
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 					return tgbotapi.Message{}, nil
 				}
-				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id int64) ([]string, error) {
 					return []string{"test-subgraph"}, nil
 				}
 				env.LatestNoteViewsFunc = func() *model.NoteViews {
@@ -423,10 +421,8 @@ func TestHandleChatMember(t *testing.T) {
 					}, nil
 				}
 				env.InsertTgChatMemberFunc = func(ctx context.Context, arg db.InsertTgChatMemberParams) error {
-					require.Equal(t, int64(7828312136), arg.UserID.Int64)
-					require.Equal(t, int64(-1002529281698), arg.ChatID.Int64)
-					require.True(t, arg.UserID.Valid)
-					require.True(t, arg.ChatID.Valid)
+					require.Equal(t, int64(7828312136), arg.UserID)
+					require.Equal(t, int64(-1002529281698), arg.ChatID)
 					return nil
 				}
 				env.LoggerFunc = func() logger.Logger {
@@ -461,10 +457,8 @@ func TestHandleChatMember(t *testing.T) {
 			},
 			setup: func(env *EnvMock) {
 				env.RemoveTgChatMemberFunc = func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
-					require.Equal(t, int64(7828312136), arg.UserID.Int64)
-					require.Equal(t, int64(-1002529281698), arg.ChatID.Int64)
-					require.True(t, arg.UserID.Valid)
-					require.True(t, arg.ChatID.Valid)
+					require.Equal(t, int64(7828312136), arg.UserID)
+					require.Equal(t, int64(-1002529281698), arg.ChatID)
 					return nil
 				}
 				env.LoggerFunc = func() logger.Logger {

@@ -5,7 +5,6 @@ package handletgupdate
 
 import (
 	"context"
-	"database/sql"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"sync"
 	"trip2g/internal/db"
@@ -50,7 +49,7 @@ var _ Env = &EnvMock{}
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
-//			ListActiveTgChatSubgraphNamesByChatIDFunc: func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+//			ListActiveTgChatSubgraphNamesByChatIDFunc: func(ctx context.Context, id int64) ([]string, error) {
 //				panic("mock out the ListActiveTgChatSubgraphNamesByChatID method")
 //			},
 //			LoggerFunc: func() logger.Logger {
@@ -115,7 +114,7 @@ type EnvMock struct {
 	LatestNoteViewsFunc func() *model.NoteViews
 
 	// ListActiveTgChatSubgraphNamesByChatIDFunc mocks the ListActiveTgChatSubgraphNamesByChatID method.
-	ListActiveTgChatSubgraphNamesByChatIDFunc func(ctx context.Context, id sql.NullInt64) ([]string, error)
+	ListActiveTgChatSubgraphNamesByChatIDFunc func(ctx context.Context, id int64) ([]string, error)
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -204,7 +203,7 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// ID is the id argument value.
-			ID sql.NullInt64
+			ID int64
 		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
@@ -581,13 +580,13 @@ func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 }
 
 // ListActiveTgChatSubgraphNamesByChatID calls ListActiveTgChatSubgraphNamesByChatIDFunc.
-func (mock *EnvMock) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, id sql.NullInt64) ([]string, error) {
+func (mock *EnvMock) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, id int64) ([]string, error) {
 	if mock.ListActiveTgChatSubgraphNamesByChatIDFunc == nil {
 		panic("EnvMock.ListActiveTgChatSubgraphNamesByChatIDFunc: method is nil but Env.ListActiveTgChatSubgraphNamesByChatID was just called")
 	}
 	callInfo := struct {
 		Ctx context.Context
-		ID  sql.NullInt64
+		ID  int64
 	}{
 		Ctx: ctx,
 		ID:  id,
@@ -604,11 +603,11 @@ func (mock *EnvMock) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, 
 //	len(mockedEnv.ListActiveTgChatSubgraphNamesByChatIDCalls())
 func (mock *EnvMock) ListActiveTgChatSubgraphNamesByChatIDCalls() []struct {
 	Ctx context.Context
-	ID  sql.NullInt64
+	ID  int64
 } {
 	var calls []struct {
 		Ctx context.Context
-		ID  sql.NullInt64
+		ID  int64
 	}
 	mock.lockListActiveTgChatSubgraphNamesByChatID.RLock()
 	calls = mock.calls.ListActiveTgChatSubgraphNamesByChatID

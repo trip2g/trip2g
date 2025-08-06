@@ -13,6 +13,8 @@ import (
 	"trip2g/internal/usertoken"
 )
 
+//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg toggleuserfavoritenote_test . Env
+
 type Env interface {
 	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
 	InsertUserFavoriteNote(ctx context.Context, arg db.InsertUserFavoriteNoteParams) error

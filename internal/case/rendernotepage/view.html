@@ -160,7 +160,10 @@
 
   <div class="noteview__content" id="noteview-content">
     {% if !resp.Note.IsHomePage() %}
-    <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
+    <div class="noteview__title-container">
+      <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
+      <div mol_view_root="$trip2g_user_favoritenote" data-pid="{%d resp.Note.PathID %}"></div>
+    </div>
     {% endif %}
 
     {%= ReadingMeta(resp) %}

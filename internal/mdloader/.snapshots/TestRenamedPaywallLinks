@@ -1,6 +1,6 @@
 (map[string]string) (len=4) {
-  (string) (len=26) "/ponedeljnik_9_iyunya_2025": (string) (len=97) "<p><a class=\"paywall paywall:core\" href=\"/shablon_dnevnoj_zametki\">шаблона дня</a></p>\n",
+  (string) (len=26) "/ponedeljnik_9_iyunya_2025": (string) (len=110) "<p><a class=\"paywall paywall:core\" data-pid=\"0\" href=\"/shablon_dnevnoj_zametki\">шаблона дня</a></p>\n",
   (string) (len=24) "/shablon_dnevnoj_zametki": (string) (len=18) "<p>Content...</p>\n",
-  (string) (len=39) "/понедельник_9_июня_2025": (string) (len=97) "<p><a class=\"paywall paywall:core\" href=\"/shablon_dnevnoj_zametki\">шаблона дня</a></p>\n",
+  (string) (len=39) "/понедельник_9_июня_2025": (string) (len=110) "<p><a class=\"paywall paywall:core\" data-pid=\"0\" href=\"/shablon_dnevnoj_zametki\">шаблона дня</a></p>\n",
   (string) (len=43) "/шаблон_дневной_заметки": (string) (len=18) "<p>Content...</p>\n"
 }

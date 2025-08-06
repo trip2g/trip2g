@@ -1,4 +1,4 @@
 (map[string]string) (len=2) {
   (string) (len=7) "/hidden": (string) (len=21) "<p>Payed content</p>\n",
-  (string) (len=6) "/index": (string) (len=71) "<p>Hello <a class=\"paywall paywall:core\" href=\"/hidden\">hidden</a></p>\n"
+  (string) (len=6) "/index": (string) (len=84) "<p>Hello <a class=\"paywall paywall:core\" data-pid=\"0\" href=\"/hidden\">hidden</a></p>\n"
 }

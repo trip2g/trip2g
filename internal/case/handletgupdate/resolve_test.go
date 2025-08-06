@@ -101,7 +101,7 @@ func TestResolve(t *testing.T) {
 				}
 
 				// ListActiveTgChatSubgraphNamesByChatID for content menu
-				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id int64) ([]string, error) {
 					return []string{"test-subgraph"}, nil
 				}
 				env.LatestNoteViewsFunc = func() *model.NoteViews {
@@ -174,7 +174,7 @@ func TestResolve(t *testing.T) {
 						},
 					}
 				}
-				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id sql.NullInt64) ([]string, error) {
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id int64) ([]string, error) {
 					return []string{}, nil
 				}
 			},
