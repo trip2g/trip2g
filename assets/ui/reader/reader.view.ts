@@ -8,9 +8,9 @@ namespace $.$$ {
 			let path: string | undefined
 			let pathId: number | undefined
 
-			if ( typeof key === 'string' ) {
+			if( typeof key === 'string' ) {
 				path = key.replace( '?version=latest', '' )
-			} else if (typeof key === 'number') {
+			} else if( typeof key === 'number' ) {
 				pathId = key
 			}
 
@@ -20,6 +20,11 @@ namespace $.$$ {
 						title
 						html
 						pathId
+						toc {
+							id
+							title
+							level
+						}
 					}
 				}
 			`, {
@@ -38,14 +43,14 @@ namespace $.$$ {
 		}
 
 		path_ids( next?: number[] ) {
-			if (next !== undefined) {
-				this.$.$mol_state_arg.value( 'pids', next.join('_') )
+			if( next !== undefined ) {
+				this.$.$mol_state_arg.value( 'pids', next.join( '_' ) )
 				this.$.$mol_state_arg.commit()
 				return next
 			}
 
 			const raw_ids = this.$.$mol_state_arg.value( 'pids' ) || ''
-			return raw_ids.split('_').map(n => parseInt(n, 10)).filter(n => !isNaN(n))
+			return raw_ids.split( '_' ).map( n => parseInt( n, 10 ) ).filter( n => !isNaN( n ) )
 		}
 
 		note_keys() {
@@ -60,7 +65,7 @@ namespace $.$$ {
 			this.path_ids( path_ids.filter( id => id !== key ) )
 		}
 
-		override body(): readonly ( $mol_view )[] {
+		override note_items(): readonly ( $mol_view )[] {
 			return this.note_keys().map( key => this.Note( key ) )
 		}
 
@@ -74,7 +79,7 @@ namespace $.$$ {
 
 		override handle_next_url( path: string, next?: string | undefined ) {
 			if( next ) {
-				if (typeof next !== 'number') {
+				if( typeof next !== 'number' ) {
 					return ''
 				}
 
@@ -96,6 +101,18 @@ namespace $.$$ {
 
 			return next || ''
 		}
+
+		override nav_items(): readonly ( $mol_view )[] {
+			return this.note_keys().map( key => this.NavItem( key ) )
+		}
+
+		override nav_title( key: any ): string {
+			return this.note( key ).title
+		}
+
+		override nav_toc_titles( key: any ): string {
+			return this.note( key ).toc.map( item => item.title ).join( ' / ' )
+		}
 	}
 
 	export class $trip2g_reader_html extends $.$trip2g_reader_html {
@@ -108,7 +125,7 @@ namespace $.$$ {
 		override link_click( el: any, e: MouseEvent ) {
 			if( this.handle_next ) {
 				e.preventDefault()
-				const key = parseInt( el.dataset.pid, 10 ) || el.getAttribute('href')
+				const key = parseInt( el.dataset.pid, 10 ) || el.getAttribute( 'href' )
 				this.handle_next( key )
 			}
 		}

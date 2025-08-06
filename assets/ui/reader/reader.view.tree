@@ -13,10 +13,29 @@ $trip2g_reader $mol_page
 					border-bottom \1px solid #ddd
 					padding-bottom \1rem
 					margin-bottom \1rem
+					min-height \100vh
 				sub /
 					<= ContentHTML* $trip2g_reader_html
 						handle_next?url <=> handle_next_url*? \
 						html <= content_html* \
+	NavItem* $mol_view
+		style *
+			flex-direction \column
+		sub /
+			<= nav_title* \Nav Title
+			<= nav_toc_titles* \
+	body /
+		<= Columns $mol_view
+			sub /
+				<= LeftColumn $mol_view
+					style *
+						flex-direction \column
+						max-width \800px
+					sub <= note_items /$mol_view
+				<= RightColumn $mol_view
+					style *
+						flex-direction \column
+					sub <= nav_items /$mol_view
 
 $trip2g_reader_html $mol_html_view
 	handle_next?url \
