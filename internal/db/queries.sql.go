@@ -3478,6 +3478,26 @@ func (q *Queries) NoteAssetByAbsolutePathAndSha256Hash(ctx context.Context, arg 
 	return i, err
 }
 
+const noteAssetByID = `-- name: NoteAssetByID :one
+select id, absolute_path, file_name, sha256_hash, created_at, size
+  from note_assets
+ where id = ?
+`
+
+func (q *Queries) NoteAssetByID(ctx context.Context, id int64) (NoteAsset, error) {
+	row := q.db.QueryRowContext(ctx, noteAssetByID, id)
+	var i NoteAsset
+	err := row.Scan(
+		&i.ID,
+		&i.AbsolutePath,
+		&i.FileName,
+		&i.Sha256Hash,
+		&i.CreatedAt,
+		&i.Size,
+	)
+	return i, err
+}
+
 const noteAssetByPathAndHash = `-- name: NoteAssetByPathAndHash :one
 select id, absolute_path, file_name, sha256_hash, created_at, size from note_assets
  where absolute_path = ?

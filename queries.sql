@@ -1073,3 +1073,8 @@ select nv.path_id, nv.id as version_id
   join note_paths np on nv.path_id = np.id
  where ufn.user_id = ? and np.hidden_by is null
  order by ufn.created_at desc;
+
+-- name: NoteAssetByID :one
+select *
+  from note_assets
+ where id = ?;

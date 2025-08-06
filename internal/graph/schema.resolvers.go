@@ -809,6 +809,11 @@ func (r *adminQueryResolver) TgBot(ctx context.Context, obj *appmodel.AdminQuery
 	return resolveOne[db.TgBot](ctx, id, r.env(ctx).TgBot)
 }
 
+// NoteAsset is the resolver for the noteAsset field.
+func (r *adminQueryResolver) NoteAsset(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.NoteAsset, error) {
+	return resolveOne[db.NoteAsset](ctx, id, r.env(ctx).NoteAssetByID)
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminRedirectResolver) CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)

@@ -495,6 +495,7 @@ type AdminQuery {
   purchase(id: String!): AdminPurchase
   redirect(id: Int64!): AdminRedirect
   tgBot(id: Int64!): AdminTgBot
+  noteAsset(id: Int64!): AdminNoteAsset
 }
 
 enum Role {
