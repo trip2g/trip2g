@@ -151,37 +151,9 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	}
 
 	if request.UserToken != nil {
-		userID := int64(request.UserToken.ID)
-
-		var err error
-
-		response.UserSubgraphs, err = env.ListActiveUserSubgraphs(ctx, userID)
+		err := handleUserToken(ctx, env, request.UserToken, &response, note, notes, request.Referrer)
 		if err != nil {
 			return &response, err
-		}
-
-		referrerVersionID := extractReferrerVersionID(request.Referrer, notes)
-
-		// Record user note view asynchronously to avoid blocking the response
-		// and prevent SQLite locking issues during concurrent requests
-		go func() {
-			// Use a background context to avoid cancellation when request completes
-			bgCtx := context.Background()
-			env.RecordUserNoteView(bgCtx, userID, note, referrerVersionID)
-		}()
-
-		lastViewParams := db.LastUserNoteViewParams{
-			UserID: userID,
-			PathID: note.PathID,
-		}
-
-		lastView, err := env.LastUserNoteView(ctx, lastViewParams)
-		if err != nil {
-			if !db.IsNoFound(err) {
-				return &response, fmt.Errorf("failed to get last user note view: %w", err)
-			}
-		} else {
-			response.ViewedAt = &lastView.CreatedAt
 		}
 	}
 
@@ -235,6 +207,52 @@ func checkLatestBanner(env Env, response *Response, isLatest bool, path string, 
 			response.versionBanner.Label = "Это последняя опубликованная версия, которая отличается от загруженной"
 		}
 	}
+}
+
+// handleUserToken processes user token and updates response with user-specific data.
+func handleUserToken(
+	ctx context.Context,
+	env Env,
+	userToken *usertoken.Data,
+	response *Response,
+	note *model.NoteView,
+	notes *model.NoteViews,
+	referrer string,
+) error {
+	userID := int64(userToken.ID)
+
+	var err error
+
+	response.UserSubgraphs, err = env.ListActiveUserSubgraphs(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	referrerVersionID := extractReferrerVersionID(referrer, notes)
+
+	// Record user note view asynchronously to avoid blocking the response
+	// and prevent SQLite locking issues during concurrent requests
+	go func() {
+		// Use a background context to avoid cancellation when request completes
+		bgCtx := context.Background()
+		env.RecordUserNoteView(bgCtx, userID, note, referrerVersionID)
+	}()
+
+	lastViewParams := db.LastUserNoteViewParams{
+		UserID: userID,
+		PathID: note.PathID,
+	}
+
+	lastView, err := env.LastUserNoteView(ctx, lastViewParams)
+	if err != nil {
+		if !db.IsNoFound(err) {
+			return fmt.Errorf("failed to get last user note view: %w", err)
+		}
+	} else {
+		response.ViewedAt = &lastView.CreatedAt
+	}
+
+	return nil
 }
 
 // extractReferrerVersionID tries to find the version ID from a referrer URL.

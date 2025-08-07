@@ -78,7 +78,7 @@ func TestResolve(t *testing.T) {
 				require.Len(t, env.CurrentUserTokenCalls(), 1)
 				require.Len(t, env.LiveNoteViewsCalls(), 1)
 				require.Len(t, env.InsertUserFavoriteNoteCalls(), 1)
-				require.Len(t, env.DeleteUserFavoriteNoteCalls(), 0)
+				require.Empty(t, env.DeleteUserFavoriteNoteCalls())
 			},
 		},
 		{
@@ -114,7 +114,7 @@ func TestResolve(t *testing.T) {
 			afterCallback: func(t *testing.T, env *envMock) {
 				require.Len(t, env.CurrentUserTokenCalls(), 1)
 				require.Len(t, env.LiveNoteViewsCalls(), 1)
-				require.Len(t, env.InsertUserFavoriteNoteCalls(), 0)
+				require.Empty(t, env.InsertUserFavoriteNoteCalls())
 				require.Len(t, env.DeleteUserFavoriteNoteCalls(), 1)
 			},
 		},
@@ -141,7 +141,7 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: false,
 			afterCallback: func(t *testing.T, env *envMock) {
-				require.Len(t, env.CurrentUserTokenCalls(), 0)
+				require.Empty(t, env.CurrentUserTokenCalls())
 			},
 		},
 		{

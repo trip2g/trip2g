@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"trip2g/internal/db"
@@ -26,8 +25,8 @@ type Input = model.ToggleFavoriteNoteInput
 type Payload = model.ToggleFavoriteNoteOrErrorPayload
 
 func validateRequest(r *Input) *model.ErrorPayload {
-	return model.NewOzzoError(ozzo.ValidateStruct(r,
-		ozzo.Field(&r.PathID, validation.Required, validation.Min(int64(1))),
+	return model.NewOzzoError(validation.ValidateStruct(r,
+		validation.Field(&r.PathID, validation.Required, validation.Min(int64(1))),
 	))
 }
 
