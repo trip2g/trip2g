@@ -2,6 +2,7 @@ package mdloader
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 
@@ -21,7 +22,7 @@ func (ldr *loader) generateFreeHTML(p *model.NoteView) error {
 		switch v := cutValue.(type) {
 		case bool:
 			if v {
-				freeCut = 1 // free_cut: true means cut after first paragraph
+				freeCut = 1 // free_cut: true means cut at first --- or after first paragraph
 			}
 		case float64:
 			freeCut = int(v)
@@ -50,21 +51,9 @@ func (ldr *loader) generateFreeHTML(p *model.NoteView) error {
 		return nil
 	}
 
-	// Determine how many paragraphs to include
-	paragraphsToInclude := freeParagraphs
-	if freeCut > 0 {
-		paragraphsToInclude = freeCut
-	}
-
-	// Extract the first N paragraphs from the AST
-	freeAst, err := ldr.extractFirstNParagraphs(p.Ast(), paragraphsToInclude)
-	if err != nil {
-		return fmt.Errorf("failed to extract free paragraphs: %w", err)
-	}
-
-	// Render the free content
+	// Render free content by walking AST and rendering only the allowed nodes
 	var buf bytes.Buffer
-	err = ldr.md.Renderer().Render(&buf, p.Content, freeAst)
+	err := ldr.renderFreeContent(&buf, p.Ast(), p.Content, freeCut, freeParagraphs)
 	if err != nil {
 		return fmt.Errorf("failed to render free HTML: %w", err)
 	}
@@ -74,144 +63,60 @@ func (ldr *loader) generateFreeHTML(p *model.NoteView) error {
 	return nil
 }
 
-// extractFirstNParagraphs creates a new AST containing only the first N paragraphs.
-func (ldr *loader) extractFirstNParagraphs(root ast.Node, n int) (ast.Node, error) {
-	if n <= 0 {
-		return nil, fmt.Errorf("invalid number of paragraphs: %d", n)
+// renderFreeContent walks the AST and renders nodes until any limit is reached.
+func (ldr *loader) renderFreeContent(buf *bytes.Buffer, root ast.Node, source []byte, cutLimit int, paragraphLimit int) error {
+	if cutLimit <= 0 && paragraphLimit <= 0 {
+		return errors.New("at least one limit must be positive")
 	}
 
-	// Create a new document node
-	doc := ast.NewDocument()
-	doc.SetBlankPreviousLines(false)
-
+	cutCount := 0
 	paragraphCount := 0
-	var currentContainer ast.Node = doc
+	renderer := ldr.md.Renderer()
 
-	// Walk through the original AST and copy nodes
 	err := ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
 		}
 
-		// Handle different node types
-		switch node.Kind() {
-		case ast.KindDocument:
-			// Skip the document node itself
-			return ast.WalkContinue, nil
-
-		case ast.KindParagraph:
-			if paragraphCount >= n {
-				return ast.WalkStop, nil
-			}
-
-			// Clone the paragraph and its content
-			para := ast.NewParagraph()
-			currentContainer.AppendChild(currentContainer, para)
-
-			// Copy all children of the paragraph
-			for child := node.FirstChild(); child != nil; child = child.NextSibling() {
-				cloned := ldr.cloneNode(child)
-				if cloned != nil {
-					para.AppendChild(para, cloned)
-				}
-			}
-
-			paragraphCount++
-			return ast.WalkSkipChildren, nil
-
-		case ast.KindHeading, ast.KindList, ast.KindBlockquote, ast.KindCodeBlock, ast.KindThematicBreak:
-			// Include these block elements if we haven't reached the limit
-			if paragraphCount >= n {
-				return ast.WalkStop, nil
-			}
-
-			cloned := ldr.cloneNode(node)
-			if cloned != nil {
-				currentContainer.AppendChild(currentContainer, cloned)
-
-				// For container nodes, we need to handle their children
-				if node.ChildCount() > 0 {
-					ldr.cloneChildren(node, cloned)
-				}
-			}
-
-			// Count block elements as paragraphs
-			paragraphCount++
-			return ast.WalkSkipChildren, nil
-
-		default:
-			// Skip other nodes at the top level
+		// Skip the document node itself
+		if node.Kind() == ast.KindDocument {
 			return ast.WalkContinue, nil
 		}
+
+		// Check for thematic break (--- in markdown) if cutLimit is set
+		if cutLimit > 0 && node.Kind() == ast.KindThematicBreak {
+			cutCount++
+			if cutCount >= cutLimit {
+				// Stop when we've reached the Nth cut
+				return ast.WalkStop, nil
+			}
+			// Don't render the --- itself, just count it and continue
+			return ast.WalkSkipChildren, nil
+		}
+
+		// Count and render paragraphs and block elements
+		switch node.Kind() {
+		case ast.KindParagraph, ast.KindHeading, ast.KindList, ast.KindBlockquote,
+			ast.KindCodeBlock, ast.KindFencedCodeBlock:
+
+			// Check if we've reached the paragraph limit
+			if paragraphLimit > 0 && paragraphCount >= paragraphLimit {
+				return ast.WalkStop, nil
+			}
+
+			// Render this node
+			err := renderer.Render(buf, source, node)
+			if err != nil {
+				return ast.WalkStop, fmt.Errorf("failed to render node: %w", err)
+			}
+
+			paragraphCount++
+			return ast.WalkSkipChildren, nil
+		}
+
+		// Continue walking for other node types
+		return ast.WalkContinue, nil
 	})
 
-	if err != nil {
-		return nil, err
-	}
-
-	return doc, nil
-}
-
-// cloneNode creates a deep copy of an AST node.
-func (ldr *loader) cloneNode(node ast.Node) ast.Node {
-	switch n := node.(type) {
-	case *ast.Text:
-		cloned := ast.NewTextSegment(n.Segment)
-		return cloned
-	case *ast.String:
-		cloned := ast.NewString(n.Value)
-		return cloned
-	case *ast.CodeSpan:
-		return ast.NewCodeSpan()
-	case *ast.Emphasis:
-		em := ast.NewEmphasis(n.Level)
-		return em
-	case *ast.Link:
-		link := ast.NewLink()
-		link.Destination = n.Destination
-		link.Title = n.Title
-		return link
-	case *ast.Image:
-		img := ast.NewImage(ast.NewLink())
-		img.Destination = n.Destination
-		img.Title = n.Title
-		return img
-	case *ast.Heading:
-		return ast.NewHeading(n.Level)
-	case *ast.Paragraph:
-		return ast.NewParagraph()
-	case *ast.List:
-		list := ast.NewList(n.Marker)
-		list.IsTight = n.IsTight
-		list.Start = n.Start
-		return list
-	case *ast.ListItem:
-		return ast.NewListItem(n.Offset)
-	case *ast.Blockquote:
-		return ast.NewBlockquote()
-	case *ast.CodeBlock:
-		return ast.NewCodeBlock()
-	case *ast.FencedCodeBlock:
-		fcb := ast.NewFencedCodeBlock(n.Info)
-		fcb.SetLines(n.Lines())
-		return fcb
-	case *ast.ThematicBreak:
-		return ast.NewThematicBreak()
-	default:
-		// For unknown types, return nil
-		return nil
-	}
-}
-
-// cloneChildren recursively clones all children of a node.
-func (ldr *loader) cloneChildren(source, dest ast.Node) {
-	for child := source.FirstChild(); child != nil; child = child.NextSibling() {
-		cloned := ldr.cloneNode(child)
-		if cloned != nil {
-			dest.AppendChild(dest, cloned)
-			if child.ChildCount() > 0 {
-				ldr.cloneChildren(child, cloned)
-			}
-		}
-	}
+	return err
 }
