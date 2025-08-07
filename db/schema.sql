@@ -234,12 +234,6 @@ CREATE TABLE tg_bot_chats (
   added_at datetime not null default current_timestamp,
   removed_at datetime null
 );
-CREATE TABLE tg_chat_members (
-  user_id int, -- tg id
-  chat_id int,
-  created_at datetime not null default current_timestamp,
-  primary key (user_id, chat_id)
-);
 CREATE TABLE tg_chat_subgraph_accesses (
   id integer primary key autoincrement,
   chat_id integer not null references tg_bot_chats(id) on delete cascade,
@@ -373,6 +367,12 @@ CREATE TABLE IF NOT EXISTS "note_assets" (
   size integer not null default 0
 );
 CREATE INDEX idx_note_assets_absolute_path_sha256_hash on note_assets (absolute_path, sha256_hash);
+CREATE TABLE tg_chat_members (
+  user_id integer not null, -- tg id
+  chat_id integer not null,
+  created_at datetime not null default current_timestamp,
+  primary key (user_id, chat_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),

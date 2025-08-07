@@ -330,9 +330,9 @@ type TgBotChat struct {
 }
 
 type TgChatMember struct {
-	UserID    sql.NullInt64 `json:"user_id"`
-	ChatID    sql.NullInt64 `json:"chat_id"`
-	CreatedAt time.Time     `json:"created_at"`
+	UserID    int64     `json:"user_id"`
+	ChatID    int64     `json:"chat_id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type TgChatSubgraphAccess struct {

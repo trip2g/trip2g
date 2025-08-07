@@ -2105,8 +2105,8 @@ on conflict(user_id, chat_id) do nothing
 `
 
 type InsertTgChatMemberParams struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	ChatID sql.NullInt64 `json:"chat_id"`
+	UserID int64 `json:"user_id"`
+	ChatID int64 `json:"chat_id"`
 }
 
 func (q *Queries) InsertTgChatMember(ctx context.Context, arg InsertTgChatMemberParams) error {
@@ -2734,7 +2734,7 @@ select distinct s.name
  order by s.name
 `
 
-func (q *Queries) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, userID sql.NullInt64) ([]string, error) {
+func (q *Queries) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, userID int64) ([]string, error) {
 	rows, err := q.db.QueryContext(ctx, listActiveTgChatSubgraphNamesByChatID, userID)
 	if err != nil {
 		return nil, err
@@ -3730,8 +3730,8 @@ where user_id = ? and chat_id = ?
 `
 
 type RemoveTgChatMemberParams struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	ChatID sql.NullInt64 `json:"chat_id"`
+	UserID int64 `json:"user_id"`
+	ChatID int64 `json:"chat_id"`
 }
 
 func (q *Queries) RemoveTgChatMember(ctx context.Context, arg RemoveTgChatMemberParams) error {
@@ -4038,8 +4038,8 @@ where user_id = ? and chat_id = ?
 `
 
 type TgChatMemberByUserIDAndChatIDParams struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	ChatID sql.NullInt64 `json:"chat_id"`
+	UserID int64 `json:"user_id"`
+	ChatID int64 `json:"chat_id"`
 }
 
 func (q *Queries) TgChatMemberByUserIDAndChatID(ctx context.Context, arg TgChatMemberByUserIDAndChatIDParams) (TgChatMember, error) {
@@ -4058,8 +4058,8 @@ order by m.created_at desc
 `
 
 type TgChatMembersByChatIDRow struct {
-	UserID      sql.NullInt64  `json:"user_id"`
-	ChatID      sql.NullInt64  `json:"chat_id"`
+	UserID      int64          `json:"user_id"`
+	ChatID      int64          `json:"chat_id"`
 	CreatedAt   time.Time      `json:"created_at"`
 	Sha256Hash  sql.NullString `json:"sha256_hash"`
 	ChatID_2    sql.NullInt64  `json:"chat_id_2"`
@@ -4070,7 +4070,7 @@ type TgChatMembersByChatIDRow struct {
 	Username    sql.NullString `json:"username"`
 }
 
-func (q *Queries) TgChatMembersByChatID(ctx context.Context, chatID sql.NullInt64) ([]TgChatMembersByChatIDRow, error) {
+func (q *Queries) TgChatMembersByChatID(ctx context.Context, chatID int64) ([]TgChatMembersByChatIDRow, error) {
 	rows, err := q.db.QueryContext(ctx, tgChatMembersByChatID, chatID)
 	if err != nil {
 		return nil, err
@@ -4110,7 +4110,7 @@ from tg_chat_members
 where chat_id = ?
 `
 
-func (q *Queries) TgChatMembersByChatIDCount(ctx context.Context, chatID sql.NullInt64) (int64, error) {
+func (q *Queries) TgChatMembersByChatIDCount(ctx context.Context, chatID int64) (int64, error) {
 	row := q.db.QueryRowContext(ctx, tgChatMembersByChatIDCount, chatID)
 	var count int64
 	err := row.Scan(&count)

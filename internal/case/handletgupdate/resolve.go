@@ -39,7 +39,7 @@ type Env interface {
 	BotLink() string
 
 	GenerateTgAuthURL(ctx context.Context, path string, data model.TgAuthToken) (string, error)
-	ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, id int64) ([]string, error)
+	ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, id sql.NullInt64) ([]string, error)
 	InsertWaitListTgBotRequest(ctx context.Context, arg db.InsertWaitListTgBotRequestParams) error
 }
 
