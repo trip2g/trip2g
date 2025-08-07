@@ -17,16 +17,6 @@ type AcmeCert struct {
 	UpdatedAt sql.NullTime `json:"updated_at"`
 }
 
-type ActiveOffer struct {
-	ID        int64           `json:"id"`
-	PublicID  string          `json:"public_id"`
-	CreatedAt time.Time       `json:"created_at"`
-	Lifetime  sql.NullString  `json:"lifetime"`
-	PriceUsd  sql.NullFloat64 `json:"price_usd"`
-	StartsAt  sql.NullTime    `json:"starts_at"`
-	EndsAt    sql.NullTime    `json:"ends_at"`
-}
-
 type Admin struct {
 	UserID    int64         `json:"user_id"`
 	GrantedAt time.Time     `json:"granted_at"`
@@ -358,9 +348,9 @@ type TgUserState struct {
 	UserID      sql.NullInt64 `json:"user_id"`
 	CreatedAt   time.Time     `json:"created_at"`
 	UpdatedAt   time.Time     `json:"updated_at"`
+	UpdateCount int64         `json:"update_count"`
 	Value       string        `json:"value"`
 	Data        string        `json:"data"`
-	UpdateCount int64         `json:"update_count"`
 }
 
 type User struct {

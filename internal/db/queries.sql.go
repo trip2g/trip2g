@@ -4250,7 +4250,7 @@ func (q *Queries) TgUserProfileBySha256Hash(ctx context.Context, sha256Hash stri
 }
 
 const tgUserStateByBotIDAndChatID = `-- name: TgUserStateByBotIDAndChatID :one
-select chat_id, bot_id, user_id, created_at, updated_at, value, data, update_count
+select chat_id, bot_id, user_id, created_at, updated_at, update_count, value, data
   from tg_user_states
  where bot_id = ?
    and chat_id = ?
@@ -4271,9 +4271,9 @@ func (q *Queries) TgUserStateByBotIDAndChatID(ctx context.Context, arg TgUserSta
 		&i.UserID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.UpdateCount,
 		&i.Value,
 		&i.Data,
-		&i.UpdateCount,
 	)
 	return i, err
 }

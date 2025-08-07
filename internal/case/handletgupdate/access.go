@@ -2,7 +2,6 @@ package handletgupdate
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
