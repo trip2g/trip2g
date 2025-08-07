@@ -25,6 +25,7 @@ type Env interface {
 	IncreaseUserNoteViewCount(ctx context.Context, userID int64) error
 	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
 	RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
+	LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
 }
 
 type Request struct {
@@ -56,6 +57,8 @@ type Response struct {
 	versionBanner *VersionBanner
 
 	DefaultVersion string
+
+	ViewedAt *time.Time
 }
 
 func (r *Response) NoteSubgraphsJSON() string {
@@ -166,6 +169,20 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 			bgCtx := context.Background()
 			env.RecordUserNoteView(bgCtx, userID, note, referrerVersionID)
 		}()
+
+		lastViewParams := db.LastUserNoteViewParams{
+			UserID: userID,
+			PathID: note.PathID,
+		}
+
+		lastView, err := env.LastUserNoteView(ctx, lastViewParams)
+		if err != nil {
+			if !db.IsNoFound(err) {
+				return &response, fmt.Errorf("failed to get last user note view: %w", err)
+			}
+		} else {
+			response.ViewedAt = &lastView.CreatedAt
+		}
 	}
 
 	hasAccess := len(response.Note.Subgraphs) == 0

@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 	"trip2g/internal/russkayalatinica"
 	"unicode"
 
@@ -48,6 +49,7 @@ type NoteView struct {
 
 	PathID    int64
 	VersionID int64
+	CreatedAt time.Time
 
 	Content []byte
 	HTML    template.HTML

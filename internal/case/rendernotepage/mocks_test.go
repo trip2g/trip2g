@@ -28,6 +28,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			InsertUserNoteViewFunc: func(ctx context.Context, params db.InsertUserNoteViewParams) error {
 //				panic("mock out the InsertUserNoteView method")
 //			},
+//			LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+//				panic("mock out the LastUserNoteView method")
+//			},
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
@@ -58,6 +61,9 @@ type EnvMock struct {
 
 	// InsertUserNoteViewFunc mocks the InsertUserNoteView method.
 	InsertUserNoteViewFunc func(ctx context.Context, params db.InsertUserNoteViewParams) error
+
+	// LastUserNoteViewFunc mocks the LastUserNoteView method.
+	LastUserNoteViewFunc func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
@@ -92,6 +98,13 @@ type EnvMock struct {
 			Ctx context.Context
 			// Params is the params argument value.
 			Params db.InsertUserNoteViewParams
+		}
+		// LastUserNoteView holds details about calls to the LastUserNoteView method.
+		LastUserNoteView []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.LastUserNoteViewParams
 		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
@@ -130,6 +143,7 @@ type EnvMock struct {
 	}
 	lockIncreaseUserNoteViewCount sync.RWMutex
 	lockInsertUserNoteView        sync.RWMutex
+	lockLastUserNoteView          sync.RWMutex
 	lockLatestNoteViews           sync.RWMutex
 	lockListActiveUserSubgraphs   sync.RWMutex
 	lockLiveNoteViews             sync.RWMutex
@@ -207,6 +221,42 @@ func (mock *EnvMock) InsertUserNoteViewCalls() []struct {
 	mock.lockInsertUserNoteView.RLock()
 	calls = mock.calls.InsertUserNoteView
 	mock.lockInsertUserNoteView.RUnlock()
+	return calls
+}
+
+// LastUserNoteView calls LastUserNoteViewFunc.
+func (mock *EnvMock) LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+	if mock.LastUserNoteViewFunc == nil {
+		panic("EnvMock.LastUserNoteViewFunc: method is nil but Env.LastUserNoteView was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.LastUserNoteViewParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockLastUserNoteView.Lock()
+	mock.calls.LastUserNoteView = append(mock.calls.LastUserNoteView, callInfo)
+	mock.lockLastUserNoteView.Unlock()
+	return mock.LastUserNoteViewFunc(ctx, arg)
+}
+
+// LastUserNoteViewCalls gets all the calls that were made to LastUserNoteView.
+// Check the length with:
+//
+//	len(mockedEnv.LastUserNoteViewCalls())
+func (mock *EnvMock) LastUserNoteViewCalls() []struct {
+	Ctx context.Context
+	Arg db.LastUserNoteViewParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.LastUserNoteViewParams
+	}
+	mock.lockLastUserNoteView.RLock()
+	calls = mock.calls.LastUserNoteView
+	mock.lockLastUserNoteView.RUnlock()
 	return calls
 }
 

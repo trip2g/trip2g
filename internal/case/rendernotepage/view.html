@@ -124,6 +124,18 @@
 
 {% func ReadingMeta(resp *Response) %}
 <div class="reading-meta">
+  <span class="reading-time">
+    <span class="reading-time__label">Создано:</span>
+    {%s resp.Note.CreatedAt.Format("2006-01-02 15:04")  %}
+  </span>
+
+  {% if resp.ViewedAt != nil %}
+  <span class="reading-time">
+    <span class="reading-time__label">Вы читали:</span>
+    {%s resp.ViewedAt.Format("2006-01-02 15:04")  %}
+  </span>
+  {% endif %}
+
   {% if resp.Note.ReadingTime >= 2 %}
   <span class="reading-time">
     <span class="reading-meta__label">Время чтения:</span>
