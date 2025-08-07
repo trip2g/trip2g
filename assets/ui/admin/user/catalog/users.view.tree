@@ -1,0 +1,41 @@
+$trip2g_admin_user_catalog $trip2g_admin_catalog
+	menu_title \Users
+	actions /
+		<= BansLink $mol_link
+			sub / <= BansIcon $mol_icon_bomb
+			arg * nav \userbans
+	menu_filter_enabled true
+	param \user_id
+	Empty $mol_status
+	Content* $mol_page
+		tools / <= Spread_close
+		sub / \Content
+	UserBan* $trip2g_admin_user_banuser
+		tools /
+			<= Close $mol_link
+				arg * ban_id null
+				sub / <= Spread_close_icon $mol_icon_close
+		user_id <= row_id_number* 0 
+	UserBanButton* $mol_link
+		title \Ban
+		arg * ban_id <= row_id* \
+	UserUnbanButton* $trip2g_admin_user_button_unban
+		user_id <= row_id_number*
+	menu_link_content* / <= NoteItem* $mol_view
+		sub /
+			<= Row* $mol_row
+				minimal_height 24
+				minimal_width 200
+				sub <= row_content* /
+					<= Row_id_labeler* $mol_labeler
+						title \ID
+						Content <= Row_id* $trip2g_admin_cell
+							content <= row_id* \
+					<= Row_email_labeler* $mol_labeler
+						title \Email
+						Content <= Row_email* $trip2g_admin_cell
+							content <= row_email* \email
+					<= Row_actions_labeler* $mol_labeler
+						title \Actions
+						Content <= Actions* $mol_view
+							sub / <= ban_button* $mol_view

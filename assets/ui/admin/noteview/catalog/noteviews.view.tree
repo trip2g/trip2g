@@ -1,0 +1,25 @@
+$trip2g_admin_noteview_catalog $trip2g_admin_catalog
+	menu_title \Note Views
+	menu_filter_enabled true
+	param \path
+	Empty $mol_status
+	Content* $trip2g_admin_noteview_show
+		noteview_id <= row_id* \
+	menu_link_content* / <= NoteItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Row_path_labeler* $mol_labeler
+						title \Path
+						Content <= Row_path* $trip2g_admin_cell
+							content <= row_path* \path
+					<= Row_title_labeler* $mol_labeler
+						title \Title
+						Content <= Row_title* $trip2g_admin_cell
+							content <= row_title* \title
+					<= Row_free_labeler* $mol_labeler
+						title \Free
+						Content <= Row_free* $trip2g_admin_cell
+							content <= row_free* \free
