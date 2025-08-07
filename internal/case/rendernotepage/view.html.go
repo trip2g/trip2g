@@ -671,143 +671,164 @@ func StreamPayWall(qw422016 *qt422016.Writer, resp *Response, err *PaywallError)
 //line view.html:181
 	qw422016.N().S(`
 
+
     `)
-//line view.html:183
-	if resp.Note.Description != nil {
-//line view.html:183
+//line view.html:184
+	if len(resp.Note.FreeHTML) > 0 {
+//line view.html:184
 		qw422016.N().S(`
-    <p class="noteview__description">`)
-//line view.html:184
-		qw422016.N().S(*resp.Note.Description)
-//line view.html:184
-		qw422016.N().S(`</p>
     `)
 //line view.html:185
-	}
+		qw422016.N().S(string(resp.Note.FreeHTML))
 //line view.html:185
+		qw422016.N().S(`
+    `)
+//line view.html:186
+	} else {
+//line view.html:186
+		qw422016.N().S(`
+      `)
+//line view.html:187
+		if resp.Note.Description != nil {
+//line view.html:187
+			qw422016.N().S(`
+      <p class="noteview__description">`)
+//line view.html:188
+			qw422016.N().S(*resp.Note.Description)
+//line view.html:188
+			qw422016.N().S(`</p>
+      `)
+//line view.html:189
+		}
+//line view.html:189
+		qw422016.N().S(`
+    `)
+//line view.html:190
+	}
+//line view.html:190
 	qw422016.N().S(`
 
     <div
       id="paywall"
       mol_view_root="$trip2g_user_paywall"
       data-subgraphs="`)
-//line view.html:190
+//line view.html:195
 	qw422016.E().S(resp.NoteSubgraphsJSON())
-//line view.html:190
+//line view.html:195
 	qw422016.N().S(`"
       data-path-id="`)
-//line view.html:191
+//line view.html:196
 	qw422016.N().DL(resp.Note.PathID)
-//line view.html:191
+//line view.html:196
 	qw422016.N().S(`"
     ></div>
   </div>
 </div>
 
 `)
-//line view.html:196
+//line view.html:201
 }
 
-//line view.html:196
+//line view.html:201
 func WritePayWall(qq422016 qtio422016.Writer, resp *Response, err *PaywallError) {
-//line view.html:196
+//line view.html:201
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.html:196
+//line view.html:201
 	StreamPayWall(qw422016, resp, err)
-//line view.html:196
+//line view.html:201
 	qt422016.ReleaseWriter(qw422016)
-//line view.html:196
+//line view.html:201
 }
 
-//line view.html:196
+//line view.html:201
 func PayWall(resp *Response, err *PaywallError) string {
-//line view.html:196
+//line view.html:201
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.html:196
+//line view.html:201
 	WritePayWall(qb422016, resp, err)
-//line view.html:196
+//line view.html:201
 	qs422016 := string(qb422016.B)
-//line view.html:196
+//line view.html:201
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.html:196
+//line view.html:201
 	return qs422016
-//line view.html:196
+//line view.html:201
 }
 
-//line view.html:198
+//line view.html:203
 func StreamTableOfContents(qw422016 *qt422016.Writer, resp *Response) {
-//line view.html:198
+//line view.html:203
 	qw422016.N().S(`
 `)
-//line view.html:199
+//line view.html:204
 	toc := resp.Note.TOC()
 
-//line view.html:199
+//line view.html:204
 	qw422016.N().S(`
 `)
-//line view.html:200
+//line view.html:205
 	if len(toc) > 0 {
-//line view.html:200
+//line view.html:205
 		qw422016.N().S(`
 <div class="noteview__toc toc" id="noteview-toc" id="noteview-toc">
   <h2 class="toc__title">Содержание</h2>
   `)
-//line view.html:203
+//line view.html:208
 		for _, item := range toc {
-//line view.html:203
+//line view.html:208
 			qw422016.N().S(`
     <div class="toc__item toc__item--level`)
-//line view.html:204
+//line view.html:209
 			qw422016.N().D(item.Level)
-//line view.html:204
+//line view.html:209
 			qw422016.N().S(`">
       <a href="#`)
-//line view.html:205
+//line view.html:210
 			qw422016.N().S(item.ID)
-//line view.html:205
+//line view.html:210
 			qw422016.N().S(`" class="toc__link">`)
-//line view.html:205
+//line view.html:210
 			qw422016.N().S(item.Text)
-//line view.html:205
+//line view.html:210
 			qw422016.N().S(`</a>
     </div>
   `)
-//line view.html:207
+//line view.html:212
 		}
-//line view.html:207
+//line view.html:212
 		qw422016.N().S(`
 </div>
 `)
-//line view.html:209
+//line view.html:214
 	}
-//line view.html:209
+//line view.html:214
 	qw422016.N().S(`
 `)
-//line view.html:210
+//line view.html:215
 }
 
-//line view.html:210
+//line view.html:215
 func WriteTableOfContents(qq422016 qtio422016.Writer, resp *Response) {
-//line view.html:210
+//line view.html:215
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.html:210
+//line view.html:215
 	StreamTableOfContents(qw422016, resp)
-//line view.html:210
+//line view.html:215
 	qt422016.ReleaseWriter(qw422016)
-//line view.html:210
+//line view.html:215
 }
 
-//line view.html:210
+//line view.html:215
 func TableOfContents(resp *Response) string {
-//line view.html:210
+//line view.html:215
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.html:210
+//line view.html:215
 	WriteTableOfContents(qb422016, resp)
-//line view.html:210
+//line view.html:215
 	qs422016 := string(qb422016.B)
-//line view.html:210
+//line view.html:215
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.html:210
+//line view.html:215
 	return qs422016
-//line view.html:210
+//line view.html:215
 }

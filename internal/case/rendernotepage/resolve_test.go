@@ -2,6 +2,7 @@ package rendernotepage_test
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"trip2g/internal/case/rendernotepage"
@@ -139,6 +140,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
 					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
 				}
 			},
 			wantErr: false,
@@ -185,6 +189,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
+					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
 				}
 			},
@@ -235,6 +242,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
+					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
 				}
 			},
@@ -366,6 +376,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
 					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
 				}
 			},
 			wantErr: false,
@@ -411,6 +424,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					},
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
+					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
 				}
 			},
@@ -458,6 +474,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
 					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
 				}
 			},
 			wantErr: false,
@@ -504,6 +523,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
 					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
 				}
 			},
 			wantErr: false,
@@ -546,6 +568,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					},
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
+					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
 				}
 			},
@@ -701,6 +726,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
 					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
 				}
 			},
 			wantErr:            false,
@@ -742,6 +770,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					},
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
+					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
 				}
 			},
@@ -812,6 +843,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
 					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
 				}
 			},
 			wantErr:      false,
@@ -849,6 +883,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					},
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
+					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
 				}
 			},
@@ -1126,6 +1163,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
 					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
 				}
 			},
 			expectErrNF: false,
@@ -1308,6 +1348,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
 					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
 				}
 			},
 			wantErr:       true,
@@ -1347,6 +1390,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					},
 					RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 						// Mock function - no-op for tests
+					},
+					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
+						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
 				}
 			},

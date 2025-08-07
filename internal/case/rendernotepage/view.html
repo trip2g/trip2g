@@ -180,8 +180,13 @@
 
     {%= ReadingMeta(resp) %}
 
-    {% if resp.Note.Description != nil %}
-    <p class="noteview__description">{%s= *resp.Note.Description %}</p>
+
+    {% if len(resp.Note.FreeHTML) > 0 %}
+    {%s= string(resp.Note.FreeHTML) %}
+    {% else %}
+      {% if resp.Note.Description != nil %}
+      <p class="noteview__description">{%s= *resp.Note.Description %}</p>
+      {% endif %}
     {% endif %}
 
     <div

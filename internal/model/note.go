@@ -55,6 +55,10 @@ type NoteView struct {
 	HTML    template.HTML
 	ast     ast.Node // hide from JSON
 
+	// If the field `free_paragraphs` is present, then thin field will
+	// includes the first rendered paragraphs equal to this number.
+	FreeHTML template.HTML
+
 	Permalink string
 
 	PermalinkOriginal string

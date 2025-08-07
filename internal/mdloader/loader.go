@@ -49,6 +49,7 @@ type loader struct {
 
 type Config struct {
 	AutoLowerWikilinks bool
+	FreeParagraphs     int // Default number of free paragraphs from config
 }
 
 type Options struct {
@@ -223,6 +224,13 @@ func (ldr *loader) generatePageHTML(p *model.NoteView) error {
 	}
 
 	p.HTML = template.HTML(buf.String()) //nolint:gosec // it's safe from admins
+
+	// Generate free HTML if needed
+	err = ldr.generateFreeHTML(p)
+	if err != nil {
+		ldr.log.Warn("failed to generate free HTML", "path", p.Path, "error", err)
+		// Don't fail the whole process if free HTML generation fails
+	}
 
 	return nil
 }
