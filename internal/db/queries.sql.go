@@ -327,17 +327,18 @@ func (q *Queries) AllLatestNoteAssets(ctx context.Context) ([]AllLatestNoteAsset
 }
 
 const allLatestNotes = `-- name: AllLatestNotes :many
-select value as path, p.id as path_id, v.id as version_id, content
+select value as path, p.id as path_id, v.id as version_id, content, v.created_at
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version
  where p.hidden_by is null
 `
 
 type AllLatestNotesRow struct {
-	Path      string `json:"path"`
-	PathID    int64  `json:"path_id"`
-	VersionID int64  `json:"version_id"`
-	Content   string `json:"content"`
+	Path      string    `json:"path"`
+	PathID    int64     `json:"path_id"`
+	VersionID int64     `json:"version_id"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func (q *Queries) AllLatestNotes(ctx context.Context) ([]AllLatestNotesRow, error) {
@@ -354,6 +355,7 @@ func (q *Queries) AllLatestNotes(ctx context.Context) ([]AllLatestNotesRow, erro
 			&i.PathID,
 			&i.VersionID,
 			&i.Content,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -431,7 +433,7 @@ func (q *Queries) AllLiveNoteAssets(ctx context.Context) ([]AllLiveNoteAssetsRow
 }
 
 const allLiveNotes = `-- name: AllLiveNotes :many
-select value as path, p.id as path_id, v.id as version_id, content
+select value as path, p.id as path_id, v.id as version_id, content, v.created_at
   from note_paths p
   join note_versions v on p.id = v.path_id
   join release_note_versions rnv on v.id = rnv.note_version_id
@@ -440,10 +442,11 @@ select value as path, p.id as path_id, v.id as version_id, content
 `
 
 type AllLiveNotesRow struct {
-	Path      string `json:"path"`
-	PathID    int64  `json:"path_id"`
-	VersionID int64  `json:"version_id"`
-	Content   string `json:"content"`
+	Path      string    `json:"path"`
+	PathID    int64     `json:"path_id"`
+	VersionID int64     `json:"version_id"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func (q *Queries) AllLiveNotes(ctx context.Context) ([]AllLiveNotesRow, error) {
@@ -460,6 +463,7 @@ func (q *Queries) AllLiveNotes(ctx context.Context) ([]AllLiveNotesRow, error) {
 			&i.PathID,
 			&i.VersionID,
 			&i.Content,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -2101,8 +2105,8 @@ on conflict(user_id, chat_id) do nothing
 `
 
 type InsertTgChatMemberParams struct {
-	UserID int64 `json:"user_id"`
-	ChatID int64 `json:"chat_id"`
+	UserID sql.NullInt64 `json:"user_id"`
+	ChatID sql.NullInt64 `json:"chat_id"`
 }
 
 func (q *Queries) InsertTgChatMember(ctx context.Context, arg InsertTgChatMemberParams) error {
@@ -2730,7 +2734,7 @@ select distinct s.name
  order by s.name
 `
 
-func (q *Queries) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, userID int64) ([]string, error) {
+func (q *Queries) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, userID sql.NullInt64) ([]string, error) {
 	rows, err := q.db.QueryContext(ctx, listActiveTgChatSubgraphNamesByChatID, userID)
 	if err != nil {
 		return nil, err
@@ -3726,8 +3730,8 @@ where user_id = ? and chat_id = ?
 `
 
 type RemoveTgChatMemberParams struct {
-	UserID int64 `json:"user_id"`
-	ChatID int64 `json:"chat_id"`
+	UserID sql.NullInt64 `json:"user_id"`
+	ChatID sql.NullInt64 `json:"chat_id"`
 }
 
 func (q *Queries) RemoveTgChatMember(ctx context.Context, arg RemoveTgChatMemberParams) error {
@@ -4034,8 +4038,8 @@ where user_id = ? and chat_id = ?
 `
 
 type TgChatMemberByUserIDAndChatIDParams struct {
-	UserID int64 `json:"user_id"`
-	ChatID int64 `json:"chat_id"`
+	UserID sql.NullInt64 `json:"user_id"`
+	ChatID sql.NullInt64 `json:"chat_id"`
 }
 
 func (q *Queries) TgChatMemberByUserIDAndChatID(ctx context.Context, arg TgChatMemberByUserIDAndChatIDParams) (TgChatMember, error) {
@@ -4054,8 +4058,8 @@ order by m.created_at desc
 `
 
 type TgChatMembersByChatIDRow struct {
-	UserID      int64          `json:"user_id"`
-	ChatID      int64          `json:"chat_id"`
+	UserID      sql.NullInt64  `json:"user_id"`
+	ChatID      sql.NullInt64  `json:"chat_id"`
 	CreatedAt   time.Time      `json:"created_at"`
 	Sha256Hash  sql.NullString `json:"sha256_hash"`
 	ChatID_2    sql.NullInt64  `json:"chat_id_2"`
@@ -4066,7 +4070,7 @@ type TgChatMembersByChatIDRow struct {
 	Username    sql.NullString `json:"username"`
 }
 
-func (q *Queries) TgChatMembersByChatID(ctx context.Context, chatID int64) ([]TgChatMembersByChatIDRow, error) {
+func (q *Queries) TgChatMembersByChatID(ctx context.Context, chatID sql.NullInt64) ([]TgChatMembersByChatIDRow, error) {
 	rows, err := q.db.QueryContext(ctx, tgChatMembersByChatID, chatID)
 	if err != nil {
 		return nil, err
@@ -4106,7 +4110,7 @@ from tg_chat_members
 where chat_id = ?
 `
 
-func (q *Queries) TgChatMembersByChatIDCount(ctx context.Context, chatID int64) (int64, error) {
+func (q *Queries) TgChatMembersByChatIDCount(ctx context.Context, chatID sql.NullInt64) (int64, error) {
 	row := q.db.QueryRowContext(ctx, tgChatMembersByChatIDCount, chatID)
 	var count int64
 	err := row.Scan(&count)
@@ -4246,7 +4250,7 @@ func (q *Queries) TgUserProfileBySha256Hash(ctx context.Context, sha256Hash stri
 }
 
 const tgUserStateByBotIDAndChatID = `-- name: TgUserStateByBotIDAndChatID :one
-select chat_id, bot_id, user_id, created_at, updated_at, update_count, value, data
+select chat_id, bot_id, user_id, created_at, updated_at, value, data, update_count
   from tg_user_states
  where bot_id = ?
    and chat_id = ?
@@ -4267,9 +4271,9 @@ func (q *Queries) TgUserStateByBotIDAndChatID(ctx context.Context, arg TgUserSta
 		&i.UserID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.UpdateCount,
 		&i.Value,
 		&i.Data,
+		&i.UpdateCount,
 	)
 	return i, err
 }

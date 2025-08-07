@@ -32,7 +32,7 @@ select * from note_versions
  order by version desc;
 
 -- name: AllLatestNotes :many
-select value as path, p.id as path_id, v.id as version_id, content
+select value as path, p.id as path_id, v.id as version_id, content, v.created_at
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version
  where p.hidden_by is null;
@@ -430,7 +430,7 @@ select *
  where id = ?;
 
 -- name: AllLiveNotes :many
-select value as path, p.id as path_id, v.id as version_id, content
+select value as path, p.id as path_id, v.id as version_id, content, v.created_at
   from note_paths p
   join note_versions v on p.id = v.path_id
   join release_note_versions rnv on v.id = rnv.note_version_id

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
@@ -15,6 +16,7 @@ type RawNote struct {
 	PathID    int64
 	VersionID int64
 	Content   string
+	CreatedAt time.Time
 }
 
 type RawAsset struct {
@@ -98,6 +100,7 @@ func (l *Loader) Load(ctx context.Context) error {
 			VersionID: note.VersionID,
 			Content:   []byte(note.Content),
 			Assets:    assetMap[note.VersionID],
+			CreatedAt: note.CreatedAt,
 		})
 	}
 

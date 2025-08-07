@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"path/filepath"
 	"strings"
+	"time"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
@@ -30,6 +31,7 @@ type SourceFile struct {
 	PathID    int64
 	VersionID int64
 	Content   []byte
+	CreatedAt time.Time
 	// local file path -> remote file path
 	// empty means the file is missing
 	Assets map[string]string
