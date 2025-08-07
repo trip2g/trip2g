@@ -1085,6 +1085,6 @@ select unv.version_id, unv.created_at
   join note_versions nv on unv.version_id = nv.id
  where unv.user_id = ?
    and nv.path_id = ?
-   and unv.created_at > datetime('now', '-10 minutes')
+   and unv.created_at < datetime('now', '-10 minutes')
  order by unv.created_at desc
  limit 1;
