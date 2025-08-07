@@ -519,12 +519,17 @@ input ViewerOffersFilter {
   pageId: Int64
 }
 
+input LastNoteReadAtInput {
+  pathId: Int64!
+}
+
 type Viewer {
   id: ID!
   role: Role!
   user: User
   offers(filter: ViewerOffersFilter!): ViewerOffers
   activePurchases: [Purchase!]!
+  lastNoteReadAt(input: LastNoteReadAtInput!): Time
 }
 
 type Offer {

@@ -206,4 +206,7 @@ type Env interface {
 	GetBoostyTiers(ctx context.Context) ([]db.BoostyTier, error)
 	GetBoostyMembers(ctx context.Context) ([]db.BoostyMember, error)
 	GetSubgraphsByBoostyTierID(ctx context.Context, tierID int64) ([]db.Subgraph, error)
+
+	// User note views
+	LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
 }

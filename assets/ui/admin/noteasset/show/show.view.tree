@@ -1,0 +1,15 @@
+$trip2g_admin_noteasset_show $mol_page
+	asset_id 0
+	title \Note Asset
+	style *
+		min-width \200px
+	ImagePreview $mol_view
+		dom_name \img
+		attr *
+			src <= url \
+	LinkPreview $mol_link
+		title \Open in the new tab
+		external true
+		uri <= url \
+	body /
+		<= preview $mol_view

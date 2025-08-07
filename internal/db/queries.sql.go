@@ -2261,6 +2261,34 @@ func (q *Queries) InsertWaitListTgBotRequest(ctx context.Context, arg InsertWait
 	return err
 }
 
+const lastUserNoteView = `-- name: LastUserNoteView :one
+select unv.version_id, unv.created_at
+  from user_note_views unv
+  join note_versions nv on unv.version_id = nv.id
+ where unv.user_id = ?
+   and nv.path_id = ?
+   and unv.created_at > datetime('now', '-10 minutes')
+ order by unv.created_at desc
+ limit 1
+`
+
+type LastUserNoteViewParams struct {
+	UserID int64 `json:"user_id"`
+	PathID int64 `json:"path_id"`
+}
+
+type LastUserNoteViewRow struct {
+	VersionID int64     `json:"version_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (q *Queries) LastUserNoteView(ctx context.Context, arg LastUserNoteViewParams) (LastUserNoteViewRow, error) {
+	row := q.db.QueryRowContext(ctx, lastUserNoteView, arg.UserID, arg.PathID)
+	var i LastUserNoteViewRow
+	err := row.Scan(&i.VersionID, &i.CreatedAt)
+	return i, err
+}
+
 const listAPIKeyLogsByAPIKeyID = `-- name: ListAPIKeyLogsByAPIKeyID :many
 select l.created_at, a.name as action_name, i.value as ip
   from api_key_logs l

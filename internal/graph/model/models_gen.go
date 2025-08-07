@@ -606,6 +606,10 @@ type HideNotesPayload struct {
 
 func (HideNotesPayload) IsHideNotesOrErrorPayload() {}
 
+type LastNoteReadAtInput struct {
+	PathID int64 `json:"pathId"`
+}
+
 type MakeReleaseLiveInput struct {
 	ID int64 `json:"id"`
 }

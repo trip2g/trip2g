@@ -844,6 +844,7 @@ type ComplexityRoot struct {
 	Viewer struct {
 		ActivePurchases func(childComplexity int) int
 		ID              func(childComplexity int) int
+		LastNoteReadAt  func(childComplexity int, input model.LastNoteReadAtInput) int
 		Offers          func(childComplexity int, filter model.ViewerOffersFilter) int
 		Role            func(childComplexity int) int
 		User            func(childComplexity int) int
@@ -1202,6 +1203,7 @@ type ViewerResolver interface {
 	User(ctx context.Context, obj *model1.Viewer) (*db.User, error)
 	Offers(ctx context.Context, obj *model1.Viewer, filter model.ViewerOffersFilter) (model.ViewerOffers, error)
 	ActivePurchases(ctx context.Context, obj *model1.Viewer) ([]db.Purchase, error)
+	LastNoteReadAt(ctx context.Context, obj *model1.Viewer, input model.LastNoteReadAtInput) (*time.Time, error)
 }
 
 type executableSchema struct {
@@ -4201,6 +4203,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Viewer.ID(childComplexity), true
 
+	case "Viewer.lastNoteReadAt":
+		if e.complexity.Viewer.LastNoteReadAt == nil {
+			break
+		}
+
+		args, err := ec.field_Viewer_lastNoteReadAt_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Viewer.LastNoteReadAt(childComplexity, args["input"].(model.LastNoteReadAtInput)), true
+
 	case "Viewer.offers":
 		if e.complexity.Viewer.Offers == nil {
 			break
@@ -4259,6 +4273,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDeleteRedirectInput,
 		ec.unmarshalInputDisableApiKeyInput,
 		ec.unmarshalInputHideNotesInput,
+		ec.unmarshalInputLastNoteReadAtInput,
 		ec.unmarshalInputMakeReleaseLiveInput,
 		ec.unmarshalInputNoteInput,
 		ec.unmarshalInputPushNoteInput,
@@ -5756,6 +5771,29 @@ func (ec *executionContext) field_Query_note_argsInput(
 	}
 
 	var zeroVal model.NoteInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Viewer_lastNoteReadAt_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Viewer_lastNoteReadAt_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Viewer_lastNoteReadAt_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.LastNoteReadAtInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNLastNoteReadAtInput2trip2gᚋinternalᚋgraphᚋmodelᚐLastNoteReadAtInput(ctx, tmp)
+	}
+
+	var zeroVal model.LastNoteReadAtInput
 	return zeroVal, nil
 }
 
@@ -22160,6 +22198,8 @@ func (ec *executionContext) fieldContext_Query_viewer(_ context.Context, field g
 				return ec.fieldContext_Viewer_offers(ctx, field)
 			case "activePurchases":
 				return ec.fieldContext_Viewer_activePurchases(ctx, field)
+			case "lastNoteReadAt":
+				return ec.fieldContext_Viewer_lastNoteReadAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -23465,6 +23505,8 @@ func (ec *executionContext) fieldContext_SignInPayload_viewer(_ context.Context,
 				return ec.fieldContext_Viewer_offers(ctx, field)
 			case "activePurchases":
 				return ec.fieldContext_Viewer_activePurchases(ctx, field)
+			case "lastNoteReadAt":
+				return ec.fieldContext_Viewer_lastNoteReadAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -23521,6 +23563,8 @@ func (ec *executionContext) fieldContext_SignOutPayload_viewer(_ context.Context
 				return ec.fieldContext_Viewer_offers(ctx, field)
 			case "activePurchases":
 				return ec.fieldContext_Viewer_activePurchases(ctx, field)
+			case "lastNoteReadAt":
+				return ec.fieldContext_Viewer_lastNoteReadAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -25415,6 +25459,58 @@ func (ec *executionContext) fieldContext_Viewer_activePurchases(_ context.Contex
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Purchase", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Viewer_lastNoteReadAt(ctx context.Context, field graphql.CollectedField, obj *model1.Viewer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Viewer_lastNoteReadAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Viewer().LastNoteReadAt(rctx, obj, fc.Args["input"].(model.LastNoteReadAtInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Viewer_lastNoteReadAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Viewer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Viewer_lastNoteReadAt_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -28138,6 +28234,33 @@ func (ec *executionContext) unmarshalInputHideNotesInput(ctx context.Context, ob
 				return it, err
 			}
 			it.Paths = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputLastNoteReadAtInput(ctx context.Context, obj any) (model.LastNoteReadAtInput, error) {
+	var it model.LastNoteReadAtInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"pathId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "pathId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pathId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PathID = data
 		}
 	}
 
@@ -41560,6 +41683,39 @@ func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, o
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "lastNoteReadAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Viewer_lastNoteReadAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -43981,6 +44137,11 @@ func (ec *executionContext) marshalNInt642ᚕint64ᚄ(ctx context.Context, sel a
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNLastNoteReadAtInput2trip2gᚋinternalᚋgraphᚋmodelᚐLastNoteReadAtInput(ctx context.Context, v any) (model.LastNoteReadAtInput, error) {
+	res, err := ec.unmarshalInputLastNoteReadAtInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNMakeReleaseLiveInput2trip2gᚋinternalᚋgraphᚋmodelᚐMakeReleaseLiveInput(ctx context.Context, v any) (model.MakeReleaseLiveInput, error) {

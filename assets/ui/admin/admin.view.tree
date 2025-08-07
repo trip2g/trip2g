@@ -25,6 +25,8 @@ $trip2g_admin_app $trip2g_admin_catalog
 			close_icon <= Spread_close
 		noteviews <= ListNoteviews $trip2g_admin_list_noteviews
 			close_icon <= Spread_close
+		noteassets <= ListNoteAssets $trip2g_admin_noteasset_catalog
+			close_icon <= Spread_close
 		apikeys <= ListApiKeys $trip2g_admin_apikey_catalog
 			close_icon <= Spread_close
 		releases <= ListReleases $trip2g_admin_release_catalog

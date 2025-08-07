@@ -1556,6 +1556,32 @@ func (r *viewerResolver) ActivePurchases(ctx context.Context, obj *appmodel.View
 	return r.env(ctx).ListActivePurchasesByIDs(ctx, ids)
 }
 
+// LastNoteReadAt is the resolver for the lastNoteReadAt field.
+func (r *viewerResolver) LastNoteReadAt(ctx context.Context, obj *appmodel.Viewer, input model.LastNoteReadAtInput) (*time.Time, error) {
+	// Return null for guests
+	if obj.UserID == nil {
+		return nil, nil
+	}
+
+	params := db.LastUserNoteViewParams{
+		UserID: *obj.UserID,
+		PathID: input.PathID,
+	}
+
+	// Get the last note view within the past 10 minutes
+	result, err := r.env(ctx).LastUserNoteView(ctx, params)
+	if err != nil {
+		// If no record found, return nil
+		if db.IsNoFound(err) {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("failed to get last note view: %w", err)
+	}
+
+	return &result.CreatedAt, nil
+}
+
 // Admin returns AdminResolver implementation.
 func (r *Resolver) Admin() AdminResolver { return &adminResolver{r} }
 
