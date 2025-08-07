@@ -154,13 +154,44 @@ func (req *request) handleMBTIAnswer(ctx context.Context, actionParts []string) 
 		return req.SendMessage("❌ Invalid question. Please try again.")
 	}
 
+	// Check if this question was already answered
+	_, alreadyAnswered := state.Answers[id]
+
 	// Store the answer
 	state.Answers[id] = score
 
 	// Update the state back to userState
 	req.userState.QuizStates["mbti"] = state
 
-	return req.sendNextQuestion(ctx)
+	// Update the current message to show the selected answer
+	err = req.updateCurrentQuestionAnswer(id, score)
+	if err != nil {
+		return fmt.Errorf("failed to update question answer: %w", err)
+	}
+
+	// Only send next question if this question wasn't answered before
+	if !alreadyAnswered {
+		return req.sendNextQuestion(ctx)
+	}
+
+	return nil
+}
+
+func (req *request) updateCurrentQuestionAnswer(questionID int, score int) error {
+	answerIdx := score + 3 // Convert score (-3 to 3) to index (0 to 6)
+
+	// Update the message with the selected answer marked
+	editMsg := tgbotapi.NewEditMessageReplyMarkup(
+		req.chatID, req.update.CallbackQuery.Message.MessageID,
+		*generateMBTIAnswerKeyboard(questionID, answerIdx),
+	)
+
+	_, err := req.env.Send(editMsg)
+	if err != nil {
+		return fmt.Errorf("failed to edit message reply markup: %w", err)
+	}
+
+	return nil
 }
 
 func generateMBTIAnswerKeyboard(questionID int, answerIdx int) *tgbotapi.InlineKeyboardMarkup {
