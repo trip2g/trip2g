@@ -312,12 +312,13 @@ type TgBot struct {
 }
 
 type TgBotChat struct {
-	ID        int64       `json:"id"`
-	ChatType  interface{} `json:"chat_type"`
-	ChatTitle interface{} `json:"chat_title"`
-	AddedAt   time.Time   `json:"added_at"`
-	RemovedAt interface{} `json:"removed_at"`
-	CanInvite bool        `json:"can_invite"`
+	ID         int64       `json:"id"`
+	TelegramID int64       `json:"telegram_id"`
+	ChatType   string      `json:"chat_type"`
+	ChatTitle  string      `json:"chat_title"`
+	AddedAt    time.Time   `json:"added_at"`
+	RemovedAt  interface{} `json:"removed_at"`
+	CanInvite  bool        `json:"can_invite"`
 }
 
 type TgBotChatSubgraphInvite struct {

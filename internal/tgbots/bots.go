@@ -345,22 +345,22 @@ func (io *TgBots) checkBotPermissionsInAllChats(ctx context.Context, handlerIO *
 
 	// Check permissions for each chat
 	for _, chat := range chats {
-		canInvite, checkErr := handlerIO.GetBotCanInvite(ctx, chat.ID)
+		canInvite, checkErr := handlerIO.GetBotCanInvite(ctx, chat.TelegramID)
 		if checkErr != nil {
-			logger.Error("failed to check bot permissions", "chat_id", chat.ID, "chat_title", chat.ChatTitle, "error", checkErr)
+			logger.Error("failed to check bot permissions", "telegram_id", chat.TelegramID, "chat_title", chat.ChatTitle, "error", checkErr)
 			continue
 		}
 
 		// Update the database if permissions have changed
 		if canInvite != chat.CanInvite {
 			updateErr := env.UpdateTgBotChatCanInvite(ctx, db.UpdateTgBotChatCanInviteParams{
-				CanInvite: canInvite,
-				ID:        chat.ID,
+				CanInvite:  canInvite,
+				TelegramID: chat.TelegramID,
 			})
 			if updateErr != nil {
-				logger.Error("failed to update chat permissions", "chat_id", chat.ID, "error", updateErr)
+				logger.Error("failed to update chat permissions", "telegram_id", chat.TelegramID, "error", updateErr)
 			} else {
-				logger.Info("updated chat permissions", "chat_id", chat.ID, "chat_title", chat.ChatTitle, "can_invite", canInvite)
+				logger.Info("updated chat permissions", "telegram_id", chat.TelegramID, "chat_title", chat.ChatTitle, "can_invite", canInvite)
 			}
 		}
 	}

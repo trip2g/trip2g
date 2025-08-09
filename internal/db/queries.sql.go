@@ -1071,8 +1071,8 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 }
 
 const filteredTgBotChats = `-- name: FilteredTgBotChats :many
-select distinct tbc.id, tbc.chat_type, tbc.chat_title, tbc.added_at, tbc.removed_at, tbc.can_invite from tg_bot_chats tbc
-left join tg_user_states tus on tbc.id = tus.chat_id
+select distinct tbc.id, tbc.telegram_id, tbc.chat_type, tbc.chat_title, tbc.added_at, tbc.removed_at, tbc.can_invite from tg_bot_chats tbc
+left join tg_user_states tus on tbc.telegram_id = tus.chat_id
 where 1=1
   and (?1 is null or ?1 = true or tbc.removed_at is null)
   and (?2 is null or tus.bot_id = ?2)
@@ -1097,6 +1097,7 @@ func (q *Queries) FilteredTgBotChats(ctx context.Context, arg FilteredTgBotChats
 		var i TgBotChat
 		if err := rows.Scan(
 			&i.ID,
+			&i.TelegramID,
 			&i.ChatType,
 			&i.ChatTitle,
 			&i.AddedAt,
@@ -3490,11 +3491,11 @@ func (q *Queries) MarkPatreonMembersAsMissed(ctx context.Context, campaignID int
 const markTgBotChatRemoved = `-- name: MarkTgBotChatRemoved :exec
 update tg_bot_chats
 set removed_at = current_timestamp
-where id = ?
+where telegram_id = ?
 `
 
-func (q *Queries) MarkTgBotChatRemoved(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, markTgBotChatRemoved, id)
+func (q *Queries) MarkTgBotChatRemoved(ctx context.Context, telegramID int64) error {
+	_, err := q.db.ExecContext(ctx, markTgBotChatRemoved, telegramID)
 	return err
 }
 
@@ -3997,7 +3998,7 @@ func (q *Queries) TgBot(ctx context.Context, id int64) (TgBot, error) {
 }
 
 const tgBotChat = `-- name: TgBotChat :one
-select id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
+select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
 where id = ?
 `
 
@@ -4006,6 +4007,27 @@ func (q *Queries) TgBotChat(ctx context.Context, id int64) (TgBotChat, error) {
 	var i TgBotChat
 	err := row.Scan(
 		&i.ID,
+		&i.TelegramID,
+		&i.ChatType,
+		&i.ChatTitle,
+		&i.AddedAt,
+		&i.RemovedAt,
+		&i.CanInvite,
+	)
+	return i, err
+}
+
+const tgBotChatByTelegramID = `-- name: TgBotChatByTelegramID :one
+select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
+where telegram_id = ?
+`
+
+func (q *Queries) TgBotChatByTelegramID(ctx context.Context, telegramID int64) (TgBotChat, error) {
+	row := q.db.QueryRowContext(ctx, tgBotChatByTelegramID, telegramID)
+	var i TgBotChat
+	err := row.Scan(
+		&i.ID,
+		&i.TelegramID,
 		&i.ChatType,
 		&i.ChatTitle,
 		&i.AddedAt,
@@ -4051,8 +4073,8 @@ func (q *Queries) TgBotChatSubgraphInvitesByChatID(ctx context.Context, chatID i
 }
 
 const tgBotChatsByBotID = `-- name: TgBotChatsByBotID :many
-select id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
-where id in (
+select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
+where telegram_id in (
   select distinct chat_id from tg_user_states where bot_id = ?
 )
   and (?2 = true or removed_at is null)
@@ -4075,6 +4097,7 @@ func (q *Queries) TgBotChatsByBotID(ctx context.Context, arg TgBotChatsByBotIDPa
 		var i TgBotChat
 		if err := rows.Scan(
 			&i.ID,
+			&i.TelegramID,
 			&i.ChatType,
 			&i.ChatTitle,
 			&i.AddedAt,
@@ -4096,7 +4119,7 @@ func (q *Queries) TgBotChatsByBotID(ctx context.Context, arg TgBotChatsByBotIDPa
 
 const tgBotChatsByBotIDCount = `-- name: TgBotChatsByBotIDCount :one
 select count(*) from tg_bot_chats
-where id in (
+where telegram_id in (
   select distinct chat_id from tg_user_states where bot_id = ?
 )
   and (?2 = true or removed_at is null)
@@ -4115,7 +4138,7 @@ func (q *Queries) TgBotChatsByBotIDCount(ctx context.Context, arg TgBotChatsByBo
 }
 
 const tgBotChatsCanInvite = `-- name: TgBotChatsCanInvite :many
-select id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
+select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
 where can_invite = true
   and removed_at is null
 order by chat_title
@@ -4132,6 +4155,7 @@ func (q *Queries) TgBotChatsCanInvite(ctx context.Context) ([]TgBotChat, error) 
 		var i TgBotChat
 		if err := rows.Scan(
 			&i.ID,
+			&i.TelegramID,
 			&i.ChatType,
 			&i.ChatTitle,
 			&i.AddedAt,
@@ -4822,16 +4846,16 @@ func (q *Queries) UpdateTgBot(ctx context.Context, arg UpdateTgBotParams) (TgBot
 const updateTgBotChatCanInvite = `-- name: UpdateTgBotChatCanInvite :exec
 update tg_bot_chats
 set can_invite = ?
-where id = ?
+where telegram_id = ?
 `
 
 type UpdateTgBotChatCanInviteParams struct {
-	CanInvite bool  `json:"can_invite"`
-	ID        int64 `json:"id"`
+	CanInvite  bool  `json:"can_invite"`
+	TelegramID int64 `json:"telegram_id"`
 }
 
 func (q *Queries) UpdateTgBotChatCanInvite(ctx context.Context, arg UpdateTgBotChatCanInviteParams) error {
-	_, err := q.db.ExecContext(ctx, updateTgBotChatCanInvite, arg.CanInvite, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateTgBotChatCanInvite, arg.CanInvite, arg.TelegramID)
 	return err
 }
 
@@ -5063,9 +5087,9 @@ func (q *Queries) UpsertPatreonTier(ctx context.Context, arg UpsertPatreonTierPa
 }
 
 const upsertTgBotChat = `-- name: UpsertTgBotChat :exec
-insert into tg_bot_chats (id, chat_type, chat_title, can_invite)
+insert into tg_bot_chats (telegram_id, chat_type, chat_title, can_invite)
 values (?, ?, ?, ?)
-on conflict(id) do update set
+on conflict(telegram_id) do update set
   chat_type = excluded.chat_type,
   chat_title = excluded.chat_title,
   can_invite = excluded.can_invite,
@@ -5073,15 +5097,15 @@ on conflict(id) do update set
 `
 
 type UpsertTgBotChatParams struct {
-	ID        int64       `json:"id"`
-	ChatType  interface{} `json:"chat_type"`
-	ChatTitle interface{} `json:"chat_title"`
-	CanInvite bool        `json:"can_invite"`
+	TelegramID int64  `json:"telegram_id"`
+	ChatType   string `json:"chat_type"`
+	ChatTitle  string `json:"chat_title"`
+	CanInvite  bool   `json:"can_invite"`
 }
 
 func (q *Queries) UpsertTgBotChat(ctx context.Context, arg UpsertTgBotChatParams) error {
 	_, err := q.db.ExecContext(ctx, upsertTgBotChat,
-		arg.ID,
+		arg.TelegramID,
 		arg.ChatType,
 		arg.ChatTitle,
 		arg.CanInvite,

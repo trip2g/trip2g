@@ -94,6 +94,16 @@ func TestResolve(t *testing.T) {
 					return "https://example.com/auth?token=test", nil
 				}
 
+				// TgBotChatByTelegramID for getting the autoincrement chat ID
+				env.TgBotChatByTelegramIDFunc = func(ctx context.Context, telegramID int64) (db.TgBotChat, error) {
+					return db.TgBotChat{
+						ID:         999, // Mock autoincrement ID
+						TelegramID: telegramID,
+						ChatType:   "supergroup",
+						ChatTitle:  "Test Group",
+					}, nil
+				}
+
 				// GetChatMemberStatus for group membership verification
 				env.GetChatMemberStatusFunc = func(ctx context.Context, chatID int64, userID int64) (string, error) {
 					// Mock successful group membership check

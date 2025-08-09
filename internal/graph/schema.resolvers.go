@@ -871,24 +871,12 @@ func (r *adminTgBotResolver) CreatedBy(ctx context.Context, obj *db.TgBot) (*db.
 
 // ChatType is the resolver for the chatType field.
 func (r *adminTgBotChatResolver) ChatType(ctx context.Context, obj *db.TgBotChat) (string, error) {
-	if obj.ChatType == nil {
-		return "", nil
-	}
-	if s, ok := obj.ChatType.(string); ok {
-		return s, nil
-	}
-	return fmt.Sprintf("%v", obj.ChatType), nil
+	return obj.ChatType, nil
 }
 
 // ChatTitle is the resolver for the chatTitle field.
 func (r *adminTgBotChatResolver) ChatTitle(ctx context.Context, obj *db.TgBotChat) (string, error) {
-	if obj.ChatTitle == nil {
-		return "", nil
-	}
-	if s, ok := obj.ChatTitle.(string); ok {
-		return s, nil
-	}
-	return fmt.Sprintf("%v", obj.ChatTitle), nil
+	return obj.ChatTitle, nil
 }
 
 // RemovedAt is the resolver for the removedAt field.

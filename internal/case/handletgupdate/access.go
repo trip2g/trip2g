@@ -52,9 +52,16 @@ func (req *request) handleGroupAccess(ctx context.Context, args string) error {
 	}
 
 	// User is verified as a member, now grant access
+	// First get the tg_bot_chat record to get the autoincrement id
+	chat, err := req.env.TgBotChatByTelegramID(ctx, groupID)
+	if err != nil {
+		req.env.Logger().Error("Failed to get bot chat record", "error", err, "group_id", groupID)
+		return req.SendMessage("❌ Group not found. Please try again later.")
+	}
+
 	params := db.InsertTgChatMemberParams{
 		UserID: userID,
-		ChatID: groupID,
+		ChatID: chat.ID,
 	}
 
 	err = req.env.InsertTgChatMember(ctx, params)
@@ -101,10 +108,10 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 		}
 
 		err := req.env.UpsertTgBotChat(ctx, db.UpsertTgBotChatParams{
-			ID:        chat.ID,
-			ChatType:  chat.Type,
-			ChatTitle: chat.Title,
-			CanInvite: canInvite,
+			TelegramID: chat.ID,
+			ChatType:   chat.Type,
+			ChatTitle:  chat.Title,
+			CanInvite:  canInvite,
 		})
 		if err != nil {
 			log.Error("failed to upsert bot chat", "error", err, "chat_id", chat.ID)
@@ -129,8 +136,8 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 		}
 
 		err := req.env.UpdateTgBotChatCanInvite(ctx, db.UpdateTgBotChatCanInviteParams{
-			CanInvite: canInvite,
-			ID:        chat.ID,
+			CanInvite:  canInvite,
+			TelegramID: chat.ID,
 		})
 		if err != nil {
 			log.Error("failed to update bot chat invite permissions", "error", err, "chat_id", chat.ID)
@@ -182,28 +189,42 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 	// User joined the chat
 	if (newStatus == statusMember || newStatus == statusAdministrator || newStatus == statusCreator) &&
 		(oldStatus == statusLeft || oldStatus == statusKicked || oldStatus == "") {
+		// Get the tg_bot_chat record to get the autoincrement id
+		chat, chatErr := req.env.TgBotChatByTelegramID(ctx, chatID)
+		if chatErr != nil {
+			log.Error("failed to get bot chat record", "error", chatErr, "chat_id", chatID)
+			return nil // Skip this user if we can't find the chat
+		}
+
 		err := req.env.InsertTgChatMember(ctx, db.InsertTgChatMemberParams{
 			UserID: userID,
-			ChatID: chatID,
+			ChatID: chat.ID,
 		})
 		if err != nil {
 			log.Error("failed to insert chat member", "error", err, "user_id", userID, "chat_id", chatID)
 		} else {
-			log.Info("user joined chat", "user_id", userID, "chat_id", chatID, "chat_title", chat.Title)
+			log.Info("user joined chat", "user_id", userID, "chat_id", chatID, "chat_title", chat.ChatTitle)
 		}
 	}
 
 	// User left the chat
 	if (newStatus == statusLeft || newStatus == statusKicked) &&
 		(oldStatus == statusMember || oldStatus == statusAdministrator || oldStatus == statusCreator) {
+		// Get the tg_bot_chat record to get the autoincrement id
+		chat, chatErr := req.env.TgBotChatByTelegramID(ctx, chatID)
+		if chatErr != nil {
+			log.Error("failed to get bot chat record", "error", chatErr, "chat_id", chatID)
+			return nil // Skip this user if we can't find the chat
+		}
+
 		err := req.env.RemoveTgChatMember(ctx, db.RemoveTgChatMemberParams{
 			UserID: userID,
-			ChatID: chatID,
+			ChatID: chat.ID,
 		})
 		if err != nil {
 			log.Error("failed to remove chat member", "error", err, "user_id", userID, "chat_id", chatID)
 		} else {
-			log.Info("user left chat", "user_id", userID, "chat_id", chatID, "chat_title", chat.Title)
+			log.Info("user left chat", "user_id", userID, "chat_id", chatID, "chat_title", chat.ChatTitle)
 		}
 	}
 

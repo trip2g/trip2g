@@ -182,6 +182,7 @@ type Env interface {
 	AllTgBots(ctx context.Context) ([]db.TgBot, error)
 	TgBot(ctx context.Context, id int64) (db.TgBot, error)
 	TgBotChat(ctx context.Context, id int64) (db.TgBotChat, error)
+	TgBotChatByTelegramID(ctx context.Context, telegramID int64) (db.TgBotChat, error)
 	TgBotChatsByBotID(ctx context.Context, arg db.TgBotChatsByBotIDParams) ([]db.TgBotChat, error)
 	FilteredTgBotChats(ctx context.Context, arg db.FilteredTgBotChatsParams) ([]db.TgBotChat, error)
 	TgChatMembersByChatID(ctx context.Context, chatID int64) ([]db.TgChatMembersByChatIDRow, error)

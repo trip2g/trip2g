@@ -43,10 +43,19 @@ func TestHandleGroupAccess(t *testing.T) {
 					// Mock successful group membership check
 					return "member", nil
 				}
+				env.TgBotChatByTelegramIDFunc = func(ctx context.Context, telegramID int64) (db.TgBotChat, error) {
+					require.Equal(t, int64(-1002529281698), telegramID)
+					return db.TgBotChat{
+						ID:         123, // Mock autoincrement ID
+						TelegramID: telegramID,
+						ChatType:   "supergroup",
+						ChatTitle:  "Test Group",
+					}, nil
+				}
 				env.InsertTgChatMemberFunc = func(ctx context.Context, arg db.InsertTgChatMemberParams) error {
 					// Verify correct parameters
 					expectedUserID := int64(7828312136)
-					expectedChatID := int64(-1002529281698)
+					expectedChatID := int64(123) // Now expects the autoincrement ID
 					require.Equal(t, expectedUserID, arg.UserID)
 					require.Equal(t, expectedChatID, arg.ChatID)
 					return nil
@@ -121,6 +130,14 @@ func TestHandleGroupAccess(t *testing.T) {
 				env.GetChatMemberStatusFunc = func(ctx context.Context, chatID, userID int64) (string, error) {
 					// Mock successful group membership check
 					return "member", nil
+				}
+				env.TgBotChatByTelegramIDFunc = func(ctx context.Context, telegramID int64) (db.TgBotChat, error) {
+					return db.TgBotChat{
+						ID:         123,
+						TelegramID: telegramID,
+						ChatType:   "supergroup",
+						ChatTitle:  "Test Group",
+					}, nil
 				}
 				env.InsertTgChatMemberFunc = func(ctx context.Context, arg db.InsertTgChatMemberParams) error {
 					return sql.ErrConnDone // Database error
@@ -281,7 +298,7 @@ func TestHandleMyChatMember(t *testing.T) {
 			},
 			setup: func(env *EnvMock) {
 				env.UpsertTgBotChatFunc = func(ctx context.Context, arg db.UpsertTgBotChatParams) error {
-					require.Equal(t, int64(-1002529281698), arg.ID)
+					require.Equal(t, int64(-1002529281698), arg.TelegramID)
 					require.Equal(t, "supergroup", arg.ChatType)
 					require.Equal(t, "Test Group", arg.ChatTitle)
 					return nil
@@ -420,9 +437,18 @@ func TestHandleChatMember(t *testing.T) {
 						Result: memberJSON,
 					}, nil
 				}
+				env.TgBotChatByTelegramIDFunc = func(ctx context.Context, telegramID int64) (db.TgBotChat, error) {
+					require.Equal(t, int64(-1002529281698), telegramID)
+					return db.TgBotChat{
+						ID:         456, // Mock autoincrement ID
+						TelegramID: telegramID,
+						ChatType:   "supergroup",
+						ChatTitle:  "Test Group",
+					}, nil
+				}
 				env.InsertTgChatMemberFunc = func(ctx context.Context, arg db.InsertTgChatMemberParams) error {
 					require.Equal(t, int64(7828312136), arg.UserID)
-					require.Equal(t, int64(-1002529281698), arg.ChatID)
+					require.Equal(t, int64(456), arg.ChatID) // Now expects autoincrement ID
 					return nil
 				}
 				env.LoggerFunc = func() logger.Logger {
@@ -456,9 +482,18 @@ func TestHandleChatMember(t *testing.T) {
 				},
 			},
 			setup: func(env *EnvMock) {
+				env.TgBotChatByTelegramIDFunc = func(ctx context.Context, telegramID int64) (db.TgBotChat, error) {
+					require.Equal(t, int64(-1002529281698), telegramID)
+					return db.TgBotChat{
+						ID:         789, // Mock autoincrement ID
+						TelegramID: telegramID,
+						ChatType:   "supergroup",
+						ChatTitle:  "Test Group",
+					}, nil
+				}
 				env.RemoveTgChatMemberFunc = func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
 					require.Equal(t, int64(7828312136), arg.UserID)
-					require.Equal(t, int64(-1002529281698), arg.ChatID)
+					require.Equal(t, int64(789), arg.ChatID) // Now expects autoincrement ID
 					return nil
 				}
 				env.LoggerFunc = func() logger.Logger {

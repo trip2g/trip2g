@@ -220,25 +220,6 @@ CREATE TABLE tg_user_profiles (
   username text
 );
 CREATE INDEX tg_user_profiles_chat_id_idx on tg_user_profiles(chat_id);
-CREATE TABLE tg_bot_chats (
-  id int primary key,
-  chat_type string not null, -- channel, group, supergroup
-  chat_title string not null,
-  added_at datetime not null default current_timestamp,
-  removed_at datetime null
-, can_invite boolean not null default false);
-CREATE TABLE tg_chat_members (
-  user_id integer not null, -- tg id
-  chat_id integer not null,
-  created_at datetime not null default current_timestamp,
-  primary key (user_id, chat_id)
-);
-CREATE TABLE tg_chat_subgraph_accesses (
-  id integer primary key autoincrement,
-  chat_id integer not null references tg_bot_chats(id) on delete cascade,
-  subgraph_id integer not null references subgraphs(id) on delete restrict,
-  created_at datetime not null default current_timestamp
-);
 CREATE TABLE IF NOT EXISTS "users" (
     id integer primary key,
     email text unique, -- nullable but unique for linked accounts
@@ -366,14 +347,38 @@ CREATE TABLE IF NOT EXISTS "note_assets" (
   size integer not null default 0
 );
 CREATE INDEX idx_note_assets_absolute_path_sha256_hash on note_assets (absolute_path, sha256_hash);
-CREATE TABLE tg_bot_chat_subgraph_invites (
-  chat_id integer not null references tg_bot_chats(id) on delete cascade,
+CREATE TABLE IF NOT EXISTS "tg_bot_chats" (
+  id integer primary key autoincrement,
+  telegram_id integer not null unique,
+  chat_type text not null, -- channel, group, supergroup
+  chat_title text not null,
+  added_at datetime not null default current_timestamp,
+  removed_at datetime null,
+  can_invite boolean not null default false
+);
+CREATE TABLE IF NOT EXISTS "tg_chat_subgraph_accesses" (
+  id integer primary key autoincrement,
+  chat_id integer not null,
+  subgraph_id integer not null references subgraphs(id) on delete restrict,
+  created_at datetime not null default current_timestamp
+);
+CREATE TABLE IF NOT EXISTS "tg_bot_chat_subgraph_invites" (
+  chat_id integer not null,
   subgraph_id integer not null references subgraphs(id) on delete restrict,
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete restrict,
-
   primary key(chat_id, subgraph_id)
 );
+CREATE TABLE IF NOT EXISTS "tg_chat_members" (
+  user_id integer not null, -- tg id
+  chat_id integer not null,
+  created_at datetime not null default current_timestamp,
+  primary key (user_id, chat_id)
+);
+CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
+CREATE INDEX idx_tg_chat_subgraph_accesses_chat_id on tg_chat_subgraph_accesses(chat_id);
+CREATE INDEX idx_tg_bot_chat_subgraph_invites_chat_id on tg_bot_chat_subgraph_invites(chat_id);
+CREATE INDEX idx_tg_chat_members_chat_id on tg_chat_members(chat_id);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -432,4 +437,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250806044332'),
   ('20250806153321'),
   ('20250807124754'),
-  ('20250809044217');
+  ('20250809044217'),
+  ('20250809093139');

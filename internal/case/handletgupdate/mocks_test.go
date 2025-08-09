@@ -73,6 +73,9 @@ var _ Env = &EnvMock{}
 //			SendFunc: func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 //				panic("mock out the Send method")
 //			},
+//			TgBotChatByTelegramIDFunc: func(ctx context.Context, telegramID int64) (db.TgBotChat, error) {
+//				panic("mock out the TgBotChatByTelegramID method")
+//			},
 //			TgUserStateByBotIDAndChatIDFunc: func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
 //				panic("mock out the TgUserStateByBotIDAndChatID method")
 //			},
@@ -142,6 +145,9 @@ type EnvMock struct {
 
 	// SendFunc mocks the Send method.
 	SendFunc func(msg tgbotapi.Chattable) (tgbotapi.Message, error)
+
+	// TgBotChatByTelegramIDFunc mocks the TgBotChatByTelegramID method.
+	TgBotChatByTelegramIDFunc func(ctx context.Context, telegramID int64) (db.TgBotChat, error)
 
 	// TgUserStateByBotIDAndChatIDFunc mocks the TgUserStateByBotIDAndChatID method.
 	TgUserStateByBotIDAndChatIDFunc func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error)
@@ -254,6 +260,13 @@ type EnvMock struct {
 			// Msg is the msg argument value.
 			Msg tgbotapi.Chattable
 		}
+		// TgBotChatByTelegramID holds details about calls to the TgBotChatByTelegramID method.
+		TgBotChatByTelegramID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// TelegramID is the telegramID argument value.
+			TelegramID int64
+		}
 		// TgUserStateByBotIDAndChatID holds details about calls to the TgUserStateByBotIDAndChatID method.
 		TgUserStateByBotIDAndChatID []struct {
 			// Ctx is the ctx argument value.
@@ -300,6 +313,7 @@ type EnvMock struct {
 	lockRemoveTgChatMember                    sync.RWMutex
 	lockRequest                               sync.RWMutex
 	lockSend                                  sync.RWMutex
+	lockTgBotChatByTelegramID                 sync.RWMutex
 	lockTgUserStateByBotIDAndChatID           sync.RWMutex
 	lockUpdateTgBotChatCanInvite              sync.RWMutex
 	lockUpsertTgBotChat                       sync.RWMutex
@@ -866,6 +880,42 @@ func (mock *EnvMock) SendCalls() []struct {
 	mock.lockSend.RLock()
 	calls = mock.calls.Send
 	mock.lockSend.RUnlock()
+	return calls
+}
+
+// TgBotChatByTelegramID calls TgBotChatByTelegramIDFunc.
+func (mock *EnvMock) TgBotChatByTelegramID(ctx context.Context, telegramID int64) (db.TgBotChat, error) {
+	if mock.TgBotChatByTelegramIDFunc == nil {
+		panic("EnvMock.TgBotChatByTelegramIDFunc: method is nil but Env.TgBotChatByTelegramID was just called")
+	}
+	callInfo := struct {
+		Ctx        context.Context
+		TelegramID int64
+	}{
+		Ctx:        ctx,
+		TelegramID: telegramID,
+	}
+	mock.lockTgBotChatByTelegramID.Lock()
+	mock.calls.TgBotChatByTelegramID = append(mock.calls.TgBotChatByTelegramID, callInfo)
+	mock.lockTgBotChatByTelegramID.Unlock()
+	return mock.TgBotChatByTelegramIDFunc(ctx, telegramID)
+}
+
+// TgBotChatByTelegramIDCalls gets all the calls that were made to TgBotChatByTelegramID.
+// Check the length with:
+//
+//	len(mockedEnv.TgBotChatByTelegramIDCalls())
+func (mock *EnvMock) TgBotChatByTelegramIDCalls() []struct {
+	Ctx        context.Context
+	TelegramID int64
+} {
+	var calls []struct {
+		Ctx        context.Context
+		TelegramID int64
+	}
+	mock.lockTgBotChatByTelegramID.RLock()
+	calls = mock.calls.TgBotChatByTelegramID
+	mock.lockTgBotChatByTelegramID.RUnlock()
 	return calls
 }
 

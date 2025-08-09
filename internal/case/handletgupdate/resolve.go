@@ -25,6 +25,7 @@ type Env interface {
 	InsertTgUserProfile(ctx context.Context, arg db.InsertTgUserProfileParams) error
 	UpsertTgUserState(ctx context.Context, arg db.UpsertTgUserStateParams) error
 	UpsertTgBotChat(ctx context.Context, arg db.UpsertTgBotChatParams) error
+	TgBotChatByTelegramID(ctx context.Context, telegramID int64) (db.TgBotChat, error)
 	MarkTgBotChatRemoved(ctx context.Context, id int64) error
 	UpdateTgBotChatCanInvite(ctx context.Context, arg db.UpdateTgBotChatCanInviteParams) error
 	InsertTgChatMember(ctx context.Context, arg db.InsertTgChatMemberParams) error

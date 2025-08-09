@@ -619,23 +619,27 @@ select *
  limit 1;
 
 -- name: UpsertTgBotChat :exec
-insert into tg_bot_chats (id, chat_type, chat_title, can_invite)
+insert into tg_bot_chats (telegram_id, chat_type, chat_title, can_invite)
 values (?, ?, ?, ?)
-on conflict(id) do update set
+on conflict(telegram_id) do update set
   chat_type = excluded.chat_type,
   chat_title = excluded.chat_title,
   can_invite = excluded.can_invite,
   removed_at = null;
 
+-- name: TgBotChatByTelegramID :one
+select * from tg_bot_chats
+where telegram_id = ?;
+
 -- name: MarkTgBotChatRemoved :exec
 update tg_bot_chats
 set removed_at = current_timestamp
-where id = ?;
+where telegram_id = ?;
 
 -- name: UpdateTgBotChatCanInvite :exec
 update tg_bot_chats
 set can_invite = ?
-where id = ?;
+where telegram_id = ?;
 
 -- name: InsertTgChatMember :exec
 insert into tg_chat_members (user_id, chat_id)
@@ -673,7 +677,7 @@ returning *;
 
 -- name: TgBotChatsByBotID :many
 select * from tg_bot_chats
-where id in (
+where telegram_id in (
   select distinct chat_id from tg_user_states where bot_id = ?
 )
   and (sqlc.arg(include_removed) = true or removed_at is null)
@@ -681,14 +685,14 @@ order by added_at desc;
 
 -- name: TgBotChatsByBotIDCount :one
 select count(*) from tg_bot_chats
-where id in (
+where telegram_id in (
   select distinct chat_id from tg_user_states where bot_id = ?
 )
   and (sqlc.arg(include_removed) = true or removed_at is null);
 
 -- name: FilteredTgBotChats :many
 select distinct tbc.* from tg_bot_chats tbc
-left join tg_user_states tus on tbc.id = tus.chat_id
+left join tg_user_states tus on tbc.telegram_id = tus.chat_id
 where 1=1
   and (sqlc.narg(include_removed) is null or sqlc.narg(include_removed) = true or tbc.removed_at is null)
   and (sqlc.narg(bot_id) is null or tus.bot_id = sqlc.narg(bot_id))
