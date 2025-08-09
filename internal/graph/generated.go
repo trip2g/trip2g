@@ -452,6 +452,7 @@ type ComplexityRoot struct {
 
 	AdminTgBotChat struct {
 		AddedAt          func(childComplexity int) int
+		CanInvite        func(childComplexity int) int
 		ChatTitle        func(childComplexity int) int
 		ChatType         func(childComplexity int) int
 		ID               func(childComplexity int) int
@@ -1060,6 +1061,7 @@ type AdminTgBotChatResolver interface {
 	ChatTitle(ctx context.Context, obj *db.TgBotChat) (string, error)
 
 	RemovedAt(ctx context.Context, obj *db.TgBotChat) (*time.Time, error)
+
 	MemberCount(ctx context.Context, obj *db.TgBotChat) (int32, error)
 	SubgraphAccesses(ctx context.Context, obj *db.TgBotChat) ([]db.TgChatSubgraphAccess, error)
 }
@@ -2946,6 +2948,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminTgBotChat.AddedAt(childComplexity), true
+
+	case "AdminTgBotChat.canInvite":
+		if e.complexity.AdminTgBotChat.CanInvite == nil {
+			break
+		}
+
+		return e.complexity.AdminTgBotChat.CanInvite(childComplexity), true
 
 	case "AdminTgBotChat.chatTitle":
 		if e.complexity.AdminTgBotChat.ChatTitle == nil {
@@ -16661,6 +16670,50 @@ func (ec *executionContext) fieldContext_AdminTgBotChat_removedAt(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminTgBotChat_canInvite(ctx context.Context, field graphql.CollectedField, obj *db.TgBotChat) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTgBotChat_canInvite(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CanInvite, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTgBotChat_canInvite(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTgBotChat",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminTgBotChat_memberCount(ctx context.Context, field graphql.CollectedField, obj *db.TgBotChat) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminTgBotChat_memberCount(ctx, field)
 	if err != nil {
@@ -16812,6 +16865,8 @@ func (ec *executionContext) fieldContext_AdminTgBotChatsConnection_nodes(_ conte
 				return ec.fieldContext_AdminTgBotChat_addedAt(ctx, field)
 			case "removedAt":
 				return ec.fieldContext_AdminTgBotChat_removedAt(ctx, field)
+			case "canInvite":
+				return ec.fieldContext_AdminTgBotChat_canInvite(ctx, field)
 			case "memberCount":
 				return ec.fieldContext_AdminTgBotChat_memberCount(ctx, field)
 			case "subgraphAccesses":
@@ -17349,6 +17404,8 @@ func (ec *executionContext) fieldContext_AdminTgChatSubgraphAccess_chat(_ contex
 				return ec.fieldContext_AdminTgBotChat_addedAt(ctx, field)
 			case "removedAt":
 				return ec.fieldContext_AdminTgBotChat_removedAt(ctx, field)
+			case "canInvite":
+				return ec.fieldContext_AdminTgBotChat_canInvite(ctx, field)
 			case "memberCount":
 				return ec.fieldContext_AdminTgBotChat_memberCount(ctx, field)
 			case "subgraphAccesses":
@@ -23357,6 +23414,8 @@ func (ec *executionContext) fieldContext_SetTgChatSubgraphsPayload_chat(_ contex
 				return ec.fieldContext_AdminTgBotChat_addedAt(ctx, field)
 			case "removedAt":
 				return ec.fieldContext_AdminTgBotChat_removedAt(ctx, field)
+			case "canInvite":
+				return ec.fieldContext_AdminTgBotChat_canInvite(ctx, field)
 			case "memberCount":
 				return ec.fieldContext_AdminTgBotChat_memberCount(ctx, field)
 			case "subgraphAccesses":
@@ -27554,7 +27613,7 @@ func (ec *executionContext) unmarshalInputAdminTgBotChatsFilterInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"botId", "includeRemoved"}
+	fieldsInOrder := [...]string{"botId", "canInvite", "includeRemoved"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -27568,6 +27627,13 @@ func (ec *executionContext) unmarshalInputAdminTgBotChatsFilterInput(ctx context
 				return it, err
 			}
 			it.BotID = data
+		case "canInvite":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("canInvite"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CanInvite = data
 		case "includeRemoved":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeRemoved"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -36544,6 +36610,11 @@ func (ec *executionContext) _AdminTgBotChat(ctx context.Context, sel ast.Selecti
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "canInvite":
+			out.Values[i] = ec._AdminTgBotChat_canInvite(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "memberCount":
 			field := field
 

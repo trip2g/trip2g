@@ -686,10 +686,14 @@ where id in (
 )
   and (sqlc.arg(include_removed) = true or removed_at is null);
 
--- name: AllTgBotChats :many
-select * from tg_bot_chats
-where (sqlc.arg(include_removed) = true or removed_at is null)
-order by added_at desc;
+-- name: FilteredTgBotChats :many
+select distinct tbc.* from tg_bot_chats tbc
+left join tg_user_states tus on tbc.id = tus.chat_id
+where 1=1
+  and (sqlc.narg(include_removed) is null or sqlc.narg(include_removed) = true or tbc.removed_at is null)
+  and (sqlc.narg(bot_id) is null or tus.bot_id = sqlc.narg(bot_id))
+  and (sqlc.narg(can_invite) is null or tbc.can_invite = sqlc.narg(can_invite))
+order by tbc.added_at desc;
 
 -- name: TgChatMembersByChatID :many
 select m.*, p.*

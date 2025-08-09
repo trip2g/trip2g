@@ -734,7 +734,7 @@ func (r *adminQueryResolver) AllTgBots(ctx context.Context, obj *appmodel.AdminQ
 
 // TgBotChats is the resolver for the tgBotChats field.
 func (r *adminQueryResolver) TgBotChats(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminTgBotChatsFilterInput) (*model.AdminTgBotChatsConnection, error) {
-	return &model.AdminTgBotChatsConnection{}, nil
+	return &model.AdminTgBotChatsConnection{Filter: filter}, nil
 }
 
 // TgChatSubgraphAccesses is the resolver for the tgChatSubgraphAccesses field.
@@ -919,8 +919,22 @@ func (r *adminTgBotChatResolver) SubgraphAccesses(ctx context.Context, obj *db.T
 
 // Nodes is the resolver for the nodes field.
 func (r *adminTgBotChatsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTgBotChatsConnection) ([]db.TgBotChat, error) {
-	// TODO: Implement filtering logic based on obj.Filter if needed
-	return r.env(ctx).AllTgBotChats(ctx, false)
+	filter := obj.Filter
+	params := db.FilteredTgBotChatsParams{}
+
+	if filter.IncludeRemoved != nil {
+		params.IncludeRemoved = *filter.IncludeRemoved
+	}
+
+	if filter.BotID != nil {
+		params.BotID = *filter.BotID
+	}
+
+	if filter.CanInvite != nil {
+		params.CanInvite = *filter.CanInvite
+	}
+
+	return r.env(ctx).FilteredTgBotChats(ctx, params)
 }
 
 // Nodes is the resolver for the nodes field.

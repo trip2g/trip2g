@@ -621,42 +621,6 @@ func (q *Queries) AllPatreonCredentials(ctx context.Context) ([]PatreonCredentia
 	return items, nil
 }
 
-const allTgBotChats = `-- name: AllTgBotChats :many
-select id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
-where (?1 = true or removed_at is null)
-order by added_at desc
-`
-
-func (q *Queries) AllTgBotChats(ctx context.Context, includeRemoved interface{}) ([]TgBotChat, error) {
-	rows, err := q.db.QueryContext(ctx, allTgBotChats, includeRemoved)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []TgBotChat
-	for rows.Next() {
-		var i TgBotChat
-		if err := rows.Scan(
-			&i.ID,
-			&i.ChatType,
-			&i.ChatTitle,
-			&i.AddedAt,
-			&i.RemovedAt,
-			&i.CanInvite,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const allTgBots = `-- name: AllTgBots :many
 select id, token, enabled, description, created_at, created_by, name from tg_bots
 order by created_at desc
@@ -1094,6 +1058,52 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 		&i.Description,
 	)
 	return i, err
+}
+
+const filteredTgBotChats = `-- name: FilteredTgBotChats :many
+select distinct tbc.id, tbc.chat_type, tbc.chat_title, tbc.added_at, tbc.removed_at, tbc.can_invite from tg_bot_chats tbc
+left join tg_user_states tus on tbc.id = tus.chat_id
+where 1=1
+  and (?1 is null or ?1 = true or tbc.removed_at is null)
+  and (?2 is null or tus.bot_id = ?2)
+  and (?3 is null or tbc.can_invite = ?3)
+order by tbc.added_at desc
+`
+
+type FilteredTgBotChatsParams struct {
+	IncludeRemoved interface{} `json:"include_removed"`
+	BotID          interface{} `json:"bot_id"`
+	CanInvite      interface{} `json:"can_invite"`
+}
+
+func (q *Queries) FilteredTgBotChats(ctx context.Context, arg FilteredTgBotChatsParams) ([]TgBotChat, error) {
+	rows, err := q.db.QueryContext(ctx, filteredTgBotChats, arg.IncludeRemoved, arg.BotID, arg.CanInvite)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBotChat
+	for rows.Next() {
+		var i TgBotChat
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChatType,
+			&i.ChatTitle,
+			&i.AddedAt,
+			&i.RemovedAt,
+			&i.CanInvite,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getBoostyMemberByEmail = `-- name: GetBoostyMemberByEmail :one

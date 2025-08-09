@@ -256,6 +256,7 @@ type AdminTgBotChat @goModel(model: "trip2g/internal/db.TgBotChat") {
   chatTitle: String!
   addedAt: Time!
   removedAt: Time
+  canInvite: Boolean!
   memberCount: Int! @goField(forceResolver: true)
   subgraphAccesses: [AdminTgChatSubgraphAccess!]! @goField(forceResolver: true)
 }
@@ -290,7 +291,7 @@ type AdminTgBotsConnection {
   nodes: [AdminTgBot!]! @goField(forceResolver: true)
 }
 
-type AdminTgBotChatsConnection {
+type AdminTgBotChatsConnection @goExtraField(name: "Filter", type: "trip2g/internal/graph/model.AdminTgBotChatsFilterInput"){
   nodes: [AdminTgBotChat!]! @goField(forceResolver: true)
 }
 
@@ -406,6 +407,7 @@ type AdminPatreonMembersConnection {
 
 input AdminTgBotChatsFilterInput {
   botId: Int64
+  canInvite: Boolean
   includeRemoved: Boolean # defaults to false
 }
 

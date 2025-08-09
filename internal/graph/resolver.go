@@ -181,7 +181,7 @@ type Env interface {
 	TgBot(ctx context.Context, id int64) (db.TgBot, error)
 	TgBotChat(ctx context.Context, id int64) (db.TgBotChat, error)
 	TgBotChatsByBotID(ctx context.Context, arg db.TgBotChatsByBotIDParams) ([]db.TgBotChat, error)
-	AllTgBotChats(ctx context.Context, includeRemoved interface{}) ([]db.TgBotChat, error)
+	FilteredTgBotChats(ctx context.Context, arg db.FilteredTgBotChatsParams) ([]db.TgBotChat, error)
 	TgChatMembersByChatID(ctx context.Context, chatID int64) ([]db.TgChatMembersByChatIDRow, error)
 	TgChatMembersByChatIDCount(ctx context.Context, chatID int64) (int64, error)
 	TgChatSubgraphAccessesByChatID(ctx context.Context, chatID int64) ([]db.TgChatSubgraphAccess, error)

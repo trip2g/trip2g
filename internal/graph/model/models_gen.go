@@ -277,11 +277,13 @@ type AdminSubgraphsConnection struct {
 }
 
 type AdminTgBotChatsConnection struct {
-	Nodes []db.TgBotChat `json:"nodes"`
+	Nodes  []db.TgBotChat             `json:"nodes"`
+	Filter AdminTgBotChatsFilterInput `json:"-"`
 }
 
 type AdminTgBotChatsFilterInput struct {
 	BotID          *int64 `json:"botId,omitempty"`
+	CanInvite      *bool  `json:"canInvite,omitempty"`
 	IncludeRemoved *bool  `json:"includeRemoved,omitempty"`
 }
 
