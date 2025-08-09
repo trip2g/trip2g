@@ -34,6 +34,9 @@ var _ Env = &EnvMock{}
 //			GenerateTgAuthURLFunc: func(ctx context.Context, path string, data model.TgAuthToken) (string, error) {
 //				panic("mock out the GenerateTgAuthURL method")
 //			},
+//			GetBotCanInviteFunc: func(ctx context.Context, chatID int64) (bool, error) {
+//				panic("mock out the GetBotCanInvite method")
+//			},
 //			GetChatMemberStatusFunc: func(ctx context.Context, chatID int64, userID int64) (string, error) {
 //				panic("mock out the GetChatMemberStatus method")
 //			},
@@ -73,6 +76,9 @@ var _ Env = &EnvMock{}
 //			TgUserStateByBotIDAndChatIDFunc: func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
 //				panic("mock out the TgUserStateByBotIDAndChatID method")
 //			},
+//			UpdateTgBotChatCanInviteFunc: func(ctx context.Context, arg db.UpdateTgBotChatCanInviteParams) error {
+//				panic("mock out the UpdateTgBotChatCanInvite method")
+//			},
 //			UpsertTgBotChatFunc: func(ctx context.Context, arg db.UpsertTgBotChatParams) error {
 //				panic("mock out the UpsertTgBotChat method")
 //			},
@@ -97,6 +103,9 @@ type EnvMock struct {
 
 	// GenerateTgAuthURLFunc mocks the GenerateTgAuthURL method.
 	GenerateTgAuthURLFunc func(ctx context.Context, path string, data model.TgAuthToken) (string, error)
+
+	// GetBotCanInviteFunc mocks the GetBotCanInvite method.
+	GetBotCanInviteFunc func(ctx context.Context, chatID int64) (bool, error)
 
 	// GetChatMemberStatusFunc mocks the GetChatMemberStatus method.
 	GetChatMemberStatusFunc func(ctx context.Context, chatID int64, userID int64) (string, error)
@@ -137,6 +146,9 @@ type EnvMock struct {
 	// TgUserStateByBotIDAndChatIDFunc mocks the TgUserStateByBotIDAndChatID method.
 	TgUserStateByBotIDAndChatIDFunc func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error)
 
+	// UpdateTgBotChatCanInviteFunc mocks the UpdateTgBotChatCanInvite method.
+	UpdateTgBotChatCanInviteFunc func(ctx context.Context, arg db.UpdateTgBotChatCanInviteParams) error
+
 	// UpsertTgBotChatFunc mocks the UpsertTgBotChat method.
 	UpsertTgBotChatFunc func(ctx context.Context, arg db.UpsertTgBotChatParams) error
 
@@ -164,6 +176,13 @@ type EnvMock struct {
 			Path string
 			// Data is the data argument value.
 			Data model.TgAuthToken
+		}
+		// GetBotCanInvite holds details about calls to the GetBotCanInvite method.
+		GetBotCanInvite []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ChatID is the chatID argument value.
+			ChatID int64
 		}
 		// GetChatMemberStatus holds details about calls to the GetChatMemberStatus method.
 		GetChatMemberStatus []struct {
@@ -242,6 +261,13 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.TgUserStateByBotIDAndChatIDParams
 		}
+		// UpdateTgBotChatCanInvite holds details about calls to the UpdateTgBotChatCanInvite method.
+		UpdateTgBotChatCanInvite []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpdateTgBotChatCanInviteParams
+		}
 		// UpsertTgBotChat holds details about calls to the UpsertTgBotChat method.
 		UpsertTgBotChat []struct {
 			// Ctx is the ctx argument value.
@@ -261,6 +287,7 @@ type EnvMock struct {
 	lockBotLink                               sync.RWMutex
 	lockCalculateSha256                       sync.RWMutex
 	lockGenerateTgAuthURL                     sync.RWMutex
+	lockGetBotCanInvite                       sync.RWMutex
 	lockGetChatMemberStatus                   sync.RWMutex
 	lockInsertTgChatMember                    sync.RWMutex
 	lockInsertTgUserProfile                   sync.RWMutex
@@ -274,6 +301,7 @@ type EnvMock struct {
 	lockRequest                               sync.RWMutex
 	lockSend                                  sync.RWMutex
 	lockTgUserStateByBotIDAndChatID           sync.RWMutex
+	lockUpdateTgBotChatCanInvite              sync.RWMutex
 	lockUpsertTgBotChat                       sync.RWMutex
 	lockUpsertTgUserState                     sync.RWMutex
 }
@@ -401,6 +429,42 @@ func (mock *EnvMock) GenerateTgAuthURLCalls() []struct {
 	mock.lockGenerateTgAuthURL.RLock()
 	calls = mock.calls.GenerateTgAuthURL
 	mock.lockGenerateTgAuthURL.RUnlock()
+	return calls
+}
+
+// GetBotCanInvite calls GetBotCanInviteFunc.
+func (mock *EnvMock) GetBotCanInvite(ctx context.Context, chatID int64) (bool, error) {
+	if mock.GetBotCanInviteFunc == nil {
+		panic("EnvMock.GetBotCanInviteFunc: method is nil but Env.GetBotCanInvite was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		ChatID int64
+	}{
+		Ctx:    ctx,
+		ChatID: chatID,
+	}
+	mock.lockGetBotCanInvite.Lock()
+	mock.calls.GetBotCanInvite = append(mock.calls.GetBotCanInvite, callInfo)
+	mock.lockGetBotCanInvite.Unlock()
+	return mock.GetBotCanInviteFunc(ctx, chatID)
+}
+
+// GetBotCanInviteCalls gets all the calls that were made to GetBotCanInvite.
+// Check the length with:
+//
+//	len(mockedEnv.GetBotCanInviteCalls())
+func (mock *EnvMock) GetBotCanInviteCalls() []struct {
+	Ctx    context.Context
+	ChatID int64
+} {
+	var calls []struct {
+		Ctx    context.Context
+		ChatID int64
+	}
+	mock.lockGetBotCanInvite.RLock()
+	calls = mock.calls.GetBotCanInvite
+	mock.lockGetBotCanInvite.RUnlock()
 	return calls
 }
 
@@ -838,6 +902,42 @@ func (mock *EnvMock) TgUserStateByBotIDAndChatIDCalls() []struct {
 	mock.lockTgUserStateByBotIDAndChatID.RLock()
 	calls = mock.calls.TgUserStateByBotIDAndChatID
 	mock.lockTgUserStateByBotIDAndChatID.RUnlock()
+	return calls
+}
+
+// UpdateTgBotChatCanInvite calls UpdateTgBotChatCanInviteFunc.
+func (mock *EnvMock) UpdateTgBotChatCanInvite(ctx context.Context, arg db.UpdateTgBotChatCanInviteParams) error {
+	if mock.UpdateTgBotChatCanInviteFunc == nil {
+		panic("EnvMock.UpdateTgBotChatCanInviteFunc: method is nil but Env.UpdateTgBotChatCanInvite was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpdateTgBotChatCanInviteParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpdateTgBotChatCanInvite.Lock()
+	mock.calls.UpdateTgBotChatCanInvite = append(mock.calls.UpdateTgBotChatCanInvite, callInfo)
+	mock.lockUpdateTgBotChatCanInvite.Unlock()
+	return mock.UpdateTgBotChatCanInviteFunc(ctx, arg)
+}
+
+// UpdateTgBotChatCanInviteCalls gets all the calls that were made to UpdateTgBotChatCanInvite.
+// Check the length with:
+//
+//	len(mockedEnv.UpdateTgBotChatCanInviteCalls())
+func (mock *EnvMock) UpdateTgBotChatCanInviteCalls() []struct {
+	Ctx context.Context
+	Arg db.UpdateTgBotChatCanInviteParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpdateTgBotChatCanInviteParams
+	}
+	mock.lockUpdateTgBotChatCanInvite.RLock()
+	calls = mock.calls.UpdateTgBotChatCanInvite
+	mock.lockUpdateTgBotChatCanInvite.RUnlock()
 	return calls
 }
 

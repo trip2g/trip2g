@@ -87,20 +87,57 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 		"new_status", newStatus,
 	)
 
-	// Bot was added to the chat
+	// Bot was added to the chat or status changed
 	if (newStatus == statusMember || newStatus == statusAdministrator) &&
 		(oldStatus == statusLeft || oldStatus == statusKicked) {
+		// Check if bot can invite users (only for administrators)
+		canInvite := false
+		if newStatus == statusAdministrator {
+			var checkErr error
+			canInvite, checkErr = req.env.GetBotCanInvite(ctx, chat.ID)
+			if checkErr != nil {
+				return fmt.Errorf("failed to check bot invite permissions: %w", checkErr)
+			}
+		}
+
 		err := req.env.UpsertTgBotChat(ctx, db.UpsertTgBotChatParams{
 			ID:        chat.ID,
 			ChatType:  chat.Type,
 			ChatTitle: chat.Title,
+			CanInvite: canInvite,
 		})
 		if err != nil {
 			log.Error("failed to upsert bot chat", "error", err, "chat_id", chat.ID)
 			return fmt.Errorf("failed to upsert bot chat: %w", err)
 		}
 
-		log.Info("bot added to chat", "chat_id", chat.ID, "chat_title", chat.Title)
+		log.Info("bot added to chat", "chat_id", chat.ID, "chat_title", chat.Title, "can_invite", canInvite)
+	}
+
+	// Bot status changed (e.g., member -> administrator)
+	if (newStatus == statusAdministrator || newStatus == statusMember) &&
+		(oldStatus == statusAdministrator || oldStatus == statusMember) &&
+		newStatus != oldStatus {
+		// Check if bot can invite users (only for administrators)
+		canInvite := false
+		if newStatus == statusAdministrator {
+			var checkErr error
+			canInvite, checkErr = req.env.GetBotCanInvite(ctx, chat.ID)
+			if checkErr != nil {
+				log.Error("failed to check bot invite permissions", "error", checkErr, "chat_id", chat.ID)
+			}
+		}
+
+		err := req.env.UpdateTgBotChatCanInvite(ctx, db.UpdateTgBotChatCanInviteParams{
+			CanInvite: canInvite,
+			ID:        chat.ID,
+		})
+		if err != nil {
+			log.Error("failed to update bot chat invite permissions", "error", err, "chat_id", chat.ID)
+			return fmt.Errorf("failed to update bot chat invite permissions: %w", err)
+		}
+
+		log.Info("bot permissions updated", "chat_id", chat.ID, "chat_title", chat.Title, "new_status", newStatus, "can_invite", canInvite)
 	}
 
 	// Bot was removed from the chat

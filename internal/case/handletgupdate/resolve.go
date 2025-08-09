@@ -26,6 +26,7 @@ type Env interface {
 	UpsertTgUserState(ctx context.Context, arg db.UpsertTgUserStateParams) error
 	UpsertTgBotChat(ctx context.Context, arg db.UpsertTgBotChatParams) error
 	MarkTgBotChatRemoved(ctx context.Context, id int64) error
+	UpdateTgBotChatCanInvite(ctx context.Context, arg db.UpdateTgBotChatCanInviteParams) error
 	InsertTgChatMember(ctx context.Context, arg db.InsertTgChatMemberParams) error
 	RemoveTgChatMember(ctx context.Context, arg db.RemoveTgChatMemberParams) error
 	CalculateSha256(s string) string
@@ -36,6 +37,7 @@ type Env interface {
 	Send(msg tgbotapi.Chattable) (tgbotapi.Message, error)
 	Request(c tgbotapi.Chattable) (*tgbotapi.APIResponse, error)
 	GetChatMemberStatus(ctx context.Context, chatID, userID int64) (string, error)
+	GetBotCanInvite(ctx context.Context, chatID int64) (bool, error)
 	BotLink() string
 
 	GenerateTgAuthURL(ctx context.Context, path string, data model.TgAuthToken) (string, error)

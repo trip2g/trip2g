@@ -45,6 +45,8 @@ type TgBots struct {
 type Env interface {
 	ListEnabledTgBots(ctx context.Context) ([]db.TgBot, error)
 	TgBot(ctx context.Context, id int64) (db.TgBot, error)
+	TgBotChatsByBotID(ctx context.Context, arg db.TgBotChatsByBotIDParams) ([]db.TgBotChat, error)
+	UpdateTgBotChatCanInvite(ctx context.Context, arg db.UpdateTgBotChatCanInviteParams) error
 	Logger() logger.Logger
 	PublicURL() string
 }
@@ -117,6 +119,9 @@ func (io *TgBots) StartTgBot(ctx context.Context, id int64) {
 	}
 
 	handlerIO := HandlerIO{bot: bot, dbBotID: id}
+
+	// Check bot permissions in all active chats
+	go io.checkBotPermissionsInAllChats(ctx, &handlerIO, env)
 
 	// Store bot instance in botMap
 	io.mu.Lock()
@@ -320,4 +325,45 @@ func (io *TgBots) removeAllWebhooks() {
 			io.logger.Info("webhook removed during shutdown", "botID", info.BotID())
 		}
 	}
+}
+
+func (io *TgBots) checkBotPermissionsInAllChats(ctx context.Context, handlerIO *HandlerIO, env Env) {
+	logger := logger.WithPrefix(io.logger, fmt.Sprintf("bot_%d:", handlerIO.dbBotID))
+	logger.Info("checking bot permissions in all active chats")
+
+	// Get all active chats for this bot
+	chats, err := env.TgBotChatsByBotID(ctx, db.TgBotChatsByBotIDParams{
+		BotID:          handlerIO.dbBotID,
+		IncludeRemoved: false,
+	})
+	if err != nil {
+		logger.Error("failed to get bot chats", "error", err)
+		return
+	}
+
+	logger.Info("found chats to check", "count", len(chats))
+
+	// Check permissions for each chat
+	for _, chat := range chats {
+		canInvite, checkErr := handlerIO.GetBotCanInvite(ctx, chat.ID)
+		if checkErr != nil {
+			logger.Error("failed to check bot permissions", "chat_id", chat.ID, "chat_title", chat.ChatTitle, "error", checkErr)
+			continue
+		}
+
+		// Update the database if permissions have changed
+		if canInvite != chat.CanInvite {
+			updateErr := env.UpdateTgBotChatCanInvite(ctx, db.UpdateTgBotChatCanInviteParams{
+				CanInvite: canInvite,
+				ID:        chat.ID,
+			})
+			if updateErr != nil {
+				logger.Error("failed to update chat permissions", "chat_id", chat.ID, "error", updateErr)
+			} else {
+				logger.Info("updated chat permissions", "chat_id", chat.ID, "chat_title", chat.ChatTitle, "can_invite", canInvite)
+			}
+		}
+	}
+
+	logger.Info("finished checking bot permissions in all active chats")
 }

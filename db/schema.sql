@@ -226,7 +226,7 @@ CREATE TABLE tg_bot_chats (
   chat_title string not null,
   added_at datetime not null default current_timestamp,
   removed_at datetime null
-);
+, can_invite boolean not null default false);
 CREATE TABLE tg_chat_members (
   user_id integer not null, -- tg id
   chat_id integer not null,
@@ -422,4 +422,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250801080226'),
   ('20250804051415'),
   ('20250806044332'),
-  ('20250806153321');
+  ('20250806153321'),
+  ('20250807124754');

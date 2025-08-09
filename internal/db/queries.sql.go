@@ -622,7 +622,7 @@ func (q *Queries) AllPatreonCredentials(ctx context.Context) ([]PatreonCredentia
 }
 
 const allTgBotChats = `-- name: AllTgBotChats :many
-select id, chat_type, chat_title, added_at, removed_at from tg_bot_chats
+select id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
 where (?1 = true or removed_at is null)
 order by added_at desc
 `
@@ -642,6 +642,7 @@ func (q *Queries) AllTgBotChats(ctx context.Context, includeRemoved interface{})
 			&i.ChatTitle,
 			&i.AddedAt,
 			&i.RemovedAt,
+			&i.CanInvite,
 		); err != nil {
 			return nil, err
 		}
@@ -2271,7 +2272,7 @@ select unv.version_id, unv.created_at
   join note_versions nv on unv.version_id = nv.id
  where unv.user_id = ?
    and nv.path_id = ?
-   and unv.created_at > datetime('now', '-10 minutes')
+   and unv.created_at < datetime('now', '-10 minutes')
  order by unv.created_at desc
  limit 1
 `
@@ -3951,7 +3952,7 @@ func (q *Queries) TgBot(ctx context.Context, id int64) (TgBot, error) {
 }
 
 const tgBotChat = `-- name: TgBotChat :one
-select id, chat_type, chat_title, added_at, removed_at from tg_bot_chats
+select id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
 where id = ?
 `
 
@@ -3964,12 +3965,13 @@ func (q *Queries) TgBotChat(ctx context.Context, id int64) (TgBotChat, error) {
 		&i.ChatTitle,
 		&i.AddedAt,
 		&i.RemovedAt,
+		&i.CanInvite,
 	)
 	return i, err
 }
 
 const tgBotChatsByBotID = `-- name: TgBotChatsByBotID :many
-select id, chat_type, chat_title, added_at, removed_at from tg_bot_chats
+select id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
 where id in (
   select distinct chat_id from tg_user_states where bot_id = ?
 )
@@ -3997,6 +3999,7 @@ func (q *Queries) TgBotChatsByBotID(ctx context.Context, arg TgBotChatsByBotIDPa
 			&i.ChatTitle,
 			&i.AddedAt,
 			&i.RemovedAt,
+			&i.CanInvite,
 		); err != nil {
 			return nil, err
 		}
@@ -4029,6 +4032,43 @@ func (q *Queries) TgBotChatsByBotIDCount(ctx context.Context, arg TgBotChatsByBo
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const tgBotChatsCanInvite = `-- name: TgBotChatsCanInvite :many
+select id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
+where can_invite = true
+  and removed_at is null
+order by chat_title
+`
+
+func (q *Queries) TgBotChatsCanInvite(ctx context.Context) ([]TgBotChat, error) {
+	rows, err := q.db.QueryContext(ctx, tgBotChatsCanInvite)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBotChat
+	for rows.Next() {
+		var i TgBotChat
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChatType,
+			&i.ChatTitle,
+			&i.AddedAt,
+			&i.RemovedAt,
+			&i.CanInvite,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const tgChatMemberByUserIDAndChatID = `-- name: TgChatMemberByUserIDAndChatID :one
@@ -4630,6 +4670,22 @@ func (q *Queries) UpdateTgBot(ctx context.Context, arg UpdateTgBotParams) (TgBot
 	return i, err
 }
 
+const updateTgBotChatCanInvite = `-- name: UpdateTgBotChatCanInvite :exec
+update tg_bot_chats
+set can_invite = ?
+where id = ?
+`
+
+type UpdateTgBotChatCanInviteParams struct {
+	CanInvite bool  `json:"can_invite"`
+	ID        int64 `json:"id"`
+}
+
+func (q *Queries) UpdateTgBotChatCanInvite(ctx context.Context, arg UpdateTgBotChatCanInviteParams) error {
+	_, err := q.db.ExecContext(ctx, updateTgBotChatCanInvite, arg.CanInvite, arg.ID)
+	return err
+}
+
 const updateUserSubgraphAccess = `-- name: UpdateUserSubgraphAccess :one
 update user_subgraph_accesses
    set expires_at = ?
@@ -4858,11 +4914,12 @@ func (q *Queries) UpsertPatreonTier(ctx context.Context, arg UpsertPatreonTierPa
 }
 
 const upsertTgBotChat = `-- name: UpsertTgBotChat :exec
-insert into tg_bot_chats (id, chat_type, chat_title)
-values (?, ?, ?)
+insert into tg_bot_chats (id, chat_type, chat_title, can_invite)
+values (?, ?, ?, ?)
 on conflict(id) do update set
   chat_type = excluded.chat_type,
   chat_title = excluded.chat_title,
+  can_invite = excluded.can_invite,
   removed_at = null
 `
 
@@ -4870,10 +4927,16 @@ type UpsertTgBotChatParams struct {
 	ID        int64       `json:"id"`
 	ChatType  interface{} `json:"chat_type"`
 	ChatTitle interface{} `json:"chat_title"`
+	CanInvite bool        `json:"can_invite"`
 }
 
 func (q *Queries) UpsertTgBotChat(ctx context.Context, arg UpsertTgBotChatParams) error {
-	_, err := q.db.ExecContext(ctx, upsertTgBotChat, arg.ID, arg.ChatType, arg.ChatTitle)
+	_, err := q.db.ExecContext(ctx, upsertTgBotChat,
+		arg.ID,
+		arg.ChatType,
+		arg.ChatTitle,
+		arg.CanInvite,
+	)
 	return err
 }
 

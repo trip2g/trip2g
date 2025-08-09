@@ -317,6 +317,7 @@ type TgBotChat struct {
 	ChatTitle interface{} `json:"chat_title"`
 	AddedAt   time.Time   `json:"added_at"`
 	RemovedAt interface{} `json:"removed_at"`
+	CanInvite bool        `json:"can_invite"`
 }
 
 type TgChatMember struct {

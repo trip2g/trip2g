@@ -619,16 +619,22 @@ select *
  limit 1;
 
 -- name: UpsertTgBotChat :exec
-insert into tg_bot_chats (id, chat_type, chat_title)
-values (?, ?, ?)
+insert into tg_bot_chats (id, chat_type, chat_title, can_invite)
+values (?, ?, ?, ?)
 on conflict(id) do update set
   chat_type = excluded.chat_type,
   chat_title = excluded.chat_title,
+  can_invite = excluded.can_invite,
   removed_at = null;
 
 -- name: MarkTgBotChatRemoved :exec
 update tg_bot_chats
 set removed_at = current_timestamp
+where id = ?;
+
+-- name: UpdateTgBotChatCanInvite :exec
+update tg_bot_chats
+set can_invite = ?
 where id = ?;
 
 -- name: InsertTgChatMember :exec
@@ -731,6 +737,12 @@ where chat_id = ?;
 -- name: TgBotChat :one
 select * from tg_bot_chats
 where id = ?;
+
+-- name: TgBotChatsCanInvite :many
+select * from tg_bot_chats
+where can_invite = true
+  and removed_at is null
+order by chat_title;
 
 -- name: TgUserProfileBySha256Hash :one
 select * from tg_user_profiles
