@@ -1,10 +1,10 @@
 namespace $.$$ {
-	export class $trip2g_admin_tgbot_show_chats_subgraphs extends $.$trip2g_admin_tgbot_show_chats_subgraphs {
+	export class $trip2g_admin_tgbot_show_invitechats_subgraphs extends $.$trip2g_admin_tgbot_show_invitechats_subgraphs {
 		@$mol_mem
 		data( reset?: null ) {
 			const res = $trip2g_graphql_request(
 				`
-					query AdminTgbotShowChatsSubgraphs {
+					query AdminTgbotShowInviteChatsSubgraphs {
 						admin {
 							allSubgraphs {
 								nodes {
@@ -22,10 +22,10 @@ namespace $.$$ {
 
 		save( subgraph_ids: number[] ) {
 			const res = $trip2g_graphql_request( `
-				mutation AdminTgbotsShowchatsSubgraphsSave($input: SetTgChatSubgraphsInput!) {
+				mutation AdminTgbotShowInviteChatsSubgraphsSave($input: SetTgChatSubgraphInvitesInput!) {
 					admin {
-						data: setTgChatSubgraphs(input: $input) {
-							... on SetTgChatSubgraphsPayload {
+						data: setTgChatSubgraphInvites(input: $input) {
+							... on SetTgChatSubgraphInvitesPayload {
 								success
 							}
 							... on ErrorPayload {
@@ -47,7 +47,7 @@ namespace $.$$ {
 				throw new Error( data.message )
 			}
 
-			if( data.__typename === 'SetTgChatSubgraphsPayload' && !data.success ) {
+			if( data.__typename === 'SetTgChatSubgraphInvitesPayload' && !data.success ) {
 				throw new Error( 'Unexpected response type from server' )
 			}
 		}

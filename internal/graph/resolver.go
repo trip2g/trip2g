@@ -25,6 +25,7 @@ import (
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
+	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
@@ -153,6 +154,7 @@ type Env interface {
 	createtgbot.Env
 	updatetgbot.Env
 	settgchatsubgraphs.Env
+	settgchatsubgraphinvites.Env
 	createpatreoncredentials.Env
 	deletepatreoncredentials.Env
 	refreshpatreondata.Env
@@ -185,6 +187,7 @@ type Env interface {
 	TgChatMembersByChatID(ctx context.Context, chatID int64) ([]db.TgChatMembersByChatIDRow, error)
 	TgChatMembersByChatIDCount(ctx context.Context, chatID int64) (int64, error)
 	TgChatSubgraphAccessesByChatID(ctx context.Context, chatID int64) ([]db.TgChatSubgraphAccess, error)
+	TgBotChatSubgraphInvitesByChatID(ctx context.Context, chatID int64) ([]db.TgBotChatSubgraphInvite, error)
 	TgChatSubgraphAccessesBySubgraphID(ctx context.Context, subgraphID int64) ([]db.TgChatSubgraphAccess, error)
 	AllTgChatSubgraphAccesses(ctx context.Context) ([]db.TgChatSubgraphAccess, error)
 	TgChatSubgraphAccess(ctx context.Context, id int64) (db.TgChatSubgraphAccess, error)

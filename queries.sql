@@ -708,9 +708,16 @@ from tg_chat_members
 where chat_id = ?;
 
 -- name: TgChatSubgraphAccessesByChatID :many
-select * from tg_chat_subgraph_accesses
-where chat_id = ?
-order by created_at desc;
+select *
+  from tg_chat_subgraph_accesses
+ where chat_id = ?
+ order by created_at desc;
+
+-- name: TgBotChatSubgraphInvitesByChatID :many
+select *
+  from tg_bot_chat_subgraph_invites
+ where chat_id = ?
+ order by created_at desc;
 
 -- name: TgChatSubgraphAccessesBySubgraphID :many
 select * from tg_chat_subgraph_accesses
@@ -736,6 +743,26 @@ where id = ?;
 
 -- name: DeleteTgChatSubgraphAccessesByChatID :exec
 delete from tg_chat_subgraph_accesses
+where chat_id = ?;
+
+-- name: TgChatSubgraphInvitesByChatID :many
+select * from tg_bot_chat_subgraph_invites
+where chat_id = ?
+order by created_at desc;
+
+-- name: TgChatSubgraphInvitesBySubgraphID :many
+select * from tg_bot_chat_subgraph_invites
+where subgraph_id = ?
+order by created_at desc;
+
+-- name: InsertTgChatSubgraphInvite :one
+insert into tg_bot_chat_subgraph_invites (chat_id, subgraph_id, created_by)
+values (?, ?, ?)
+on conflict (chat_id, subgraph_id) do update set created_at = current_timestamp
+returning *;
+
+-- name: DeleteTgChatSubgraphInvitesByChatID :exec
+delete from tg_bot_chat_subgraph_invites
 where chat_id = ?;
 
 -- name: TgBotChat :one

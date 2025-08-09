@@ -1018,6 +1018,16 @@ func (q *Queries) DeleteTgChatSubgraphAccessesByChatID(ctx context.Context, chat
 	return err
 }
 
+const deleteTgChatSubgraphInvitesByChatID = `-- name: DeleteTgChatSubgraphInvitesByChatID :exec
+delete from tg_bot_chat_subgraph_invites
+where chat_id = ?
+`
+
+func (q *Queries) DeleteTgChatSubgraphInvitesByChatID(ctx context.Context, chatID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTgChatSubgraphInvitesByChatID, chatID)
+	return err
+}
+
 const deleteUserFavoriteNote = `-- name: DeleteUserFavoriteNote :exec
 delete from user_favorite_notes
 where user_id = ? and note_version_id = ?
@@ -2144,6 +2154,31 @@ func (q *Queries) InsertTgChatSubgraphAccess(ctx context.Context, arg InsertTgCh
 		&i.ChatID,
 		&i.SubgraphID,
 		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const insertTgChatSubgraphInvite = `-- name: InsertTgChatSubgraphInvite :one
+insert into tg_bot_chat_subgraph_invites (chat_id, subgraph_id, created_by)
+values (?, ?, ?)
+on conflict (chat_id, subgraph_id) do update set created_at = current_timestamp
+returning chat_id, subgraph_id, created_at, created_by
+`
+
+type InsertTgChatSubgraphInviteParams struct {
+	ChatID     int64 `json:"chat_id"`
+	SubgraphID int64 `json:"subgraph_id"`
+	CreatedBy  int64 `json:"created_by"`
+}
+
+func (q *Queries) InsertTgChatSubgraphInvite(ctx context.Context, arg InsertTgChatSubgraphInviteParams) (TgBotChatSubgraphInvite, error) {
+	row := q.db.QueryRowContext(ctx, insertTgChatSubgraphInvite, arg.ChatID, arg.SubgraphID, arg.CreatedBy)
+	var i TgBotChatSubgraphInvite
+	err := row.Scan(
+		&i.ChatID,
+		&i.SubgraphID,
+		&i.CreatedAt,
+		&i.CreatedBy,
 	)
 	return i, err
 }
@@ -3980,6 +4015,41 @@ func (q *Queries) TgBotChat(ctx context.Context, id int64) (TgBotChat, error) {
 	return i, err
 }
 
+const tgBotChatSubgraphInvitesByChatID = `-- name: TgBotChatSubgraphInvitesByChatID :many
+select chat_id, subgraph_id, created_at, created_by
+  from tg_bot_chat_subgraph_invites
+ where chat_id = ?
+ order by created_at desc
+`
+
+func (q *Queries) TgBotChatSubgraphInvitesByChatID(ctx context.Context, chatID int64) ([]TgBotChatSubgraphInvite, error) {
+	rows, err := q.db.QueryContext(ctx, tgBotChatSubgraphInvitesByChatID, chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBotChatSubgraphInvite
+	for rows.Next() {
+		var i TgBotChatSubgraphInvite
+		if err := rows.Scan(
+			&i.ChatID,
+			&i.SubgraphID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const tgBotChatsByBotID = `-- name: TgBotChatsByBotID :many
 select id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
 where id in (
@@ -4185,9 +4255,10 @@ func (q *Queries) TgChatSubgraphAccess(ctx context.Context, id int64) (TgChatSub
 }
 
 const tgChatSubgraphAccessesByChatID = `-- name: TgChatSubgraphAccessesByChatID :many
-select id, chat_id, subgraph_id, created_at from tg_chat_subgraph_accesses
-where chat_id = ?
-order by created_at desc
+select id, chat_id, subgraph_id, created_at
+  from tg_chat_subgraph_accesses
+ where chat_id = ?
+ order by created_at desc
 `
 
 func (q *Queries) TgChatSubgraphAccessesByChatID(ctx context.Context, chatID int64) ([]TgChatSubgraphAccess, error) {
@@ -4238,6 +4309,74 @@ func (q *Queries) TgChatSubgraphAccessesBySubgraphID(ctx context.Context, subgra
 			&i.ChatID,
 			&i.SubgraphID,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const tgChatSubgraphInvitesByChatID = `-- name: TgChatSubgraphInvitesByChatID :many
+select chat_id, subgraph_id, created_at, created_by from tg_bot_chat_subgraph_invites
+where chat_id = ?
+order by created_at desc
+`
+
+func (q *Queries) TgChatSubgraphInvitesByChatID(ctx context.Context, chatID int64) ([]TgBotChatSubgraphInvite, error) {
+	rows, err := q.db.QueryContext(ctx, tgChatSubgraphInvitesByChatID, chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBotChatSubgraphInvite
+	for rows.Next() {
+		var i TgBotChatSubgraphInvite
+		if err := rows.Scan(
+			&i.ChatID,
+			&i.SubgraphID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const tgChatSubgraphInvitesBySubgraphID = `-- name: TgChatSubgraphInvitesBySubgraphID :many
+select chat_id, subgraph_id, created_at, created_by from tg_bot_chat_subgraph_invites
+where subgraph_id = ?
+order by created_at desc
+`
+
+func (q *Queries) TgChatSubgraphInvitesBySubgraphID(ctx context.Context, subgraphID int64) ([]TgBotChatSubgraphInvite, error) {
+	rows, err := q.db.QueryContext(ctx, tgChatSubgraphInvitesBySubgraphID, subgraphID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBotChatSubgraphInvite
+	for rows.Next() {
+		var i TgBotChatSubgraphInvite
+		if err := rows.Scan(
+			&i.ChatID,
+			&i.SubgraphID,
+			&i.CreatedAt,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}

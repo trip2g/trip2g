@@ -366,6 +366,14 @@ CREATE TABLE IF NOT EXISTS "note_assets" (
   size integer not null default 0
 );
 CREATE INDEX idx_note_assets_absolute_path_sha256_hash on note_assets (absolute_path, sha256_hash);
+CREATE TABLE tg_bot_chat_subgraph_invites (
+  chat_id integer not null references tg_bot_chats(id) on delete cascade,
+  subgraph_id integer not null references subgraphs(id) on delete restrict,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+
+  primary key(chat_id, subgraph_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -423,4 +431,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250804051415'),
   ('20250806044332'),
   ('20250806153321'),
-  ('20250807124754');
+  ('20250807124754'),
+  ('20250809044217');

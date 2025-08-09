@@ -250,6 +250,15 @@ type AdminTgBot @goModel(model: "trip2g/internal/db.TgBot") {
   createdBy: AdminUser! @goField(forceResolver: true)
 }
 
+type AdminTgBotChatSubgraphInvite @goModel(model: "trip2g/internal/db.TgBotChatSubgraphInvite") {
+  id: String! # chatId + subgraphId
+  chatId: Int64!
+  subgraphId: Int64!
+  createdAt: Time!
+  chat: AdminTgBotChat!
+  subgraph: AdminSubgraph!
+}
+
 type AdminTgBotChat @goModel(model: "trip2g/internal/db.TgBotChat") {
   id: Int64!
   chatType: String!
@@ -258,7 +267,9 @@ type AdminTgBotChat @goModel(model: "trip2g/internal/db.TgBotChat") {
   removedAt: Time
   canInvite: Boolean!
   memberCount: Int! @goField(forceResolver: true)
-  subgraphAccesses: [AdminTgChatSubgraphAccess!]! @goField(forceResolver: true)
+
+  subgraphAccesses: [AdminTgChatSubgraphAccess!]!
+  subgraphInvites: [AdminTgBotChatSubgraphInvite!]!
 }
 
 type AdminTgChatMember @goModel(model: "trip2g/internal/db.TgChatMember") {
@@ -1271,6 +1282,23 @@ type SetBoostyTierSubgraphsPayload {
 
 union SetBoostyTierSubgraphsOrErrorPayload = SetBoostyTierSubgraphsPayload | ErrorPayload
 
+#
+# setTgChatSubgraphInvites
+#
+
+input SetTgChatSubgraphInvitesInput {
+  chatId: Int64!
+  subgraphIds: [Int64!]!
+}
+
+type SetTgChatSubgraphInvitesPayload
+  @goExtraField(name: "ChatID", type: "int64") {
+  chat: AdminTgBotChat! @goField(forceResolver: true)
+  success: Boolean!
+}
+
+union SetTgChatSubgraphInvitesOrErrorPayload = SetTgChatSubgraphInvitesPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
@@ -1302,6 +1330,7 @@ type AdminMutation {
   createTgBot(input: CreateTgBotInput!): CreateTgBotOrErrorPayload!
   updateTgBot(input: UpdateTgBotInput!): UpdateTgBotOrErrorPayload!
   setTgChatSubgraphs(input: SetTgChatSubgraphsInput!): SetTgChatSubgraphsOrErrorPayload!
+  setTgChatSubgraphInvites(input: SetTgChatSubgraphInvitesInput!): SetTgChatSubgraphInvitesOrErrorPayload!
 
   # Patreon credentials mutations
   createPatreonCredentials(input: CreatePatreonCredentialsInput!): CreatePatreonCredentialsOrErrorPayload!

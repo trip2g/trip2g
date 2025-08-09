@@ -34,6 +34,7 @@ import (
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
+	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
@@ -348,6 +349,11 @@ func (r *adminMutationResolver) UpdateTgBot(ctx context.Context, obj *appmodel.A
 // SetTgChatSubgraphs is the resolver for the setTgChatSubgraphs field.
 func (r *adminMutationResolver) SetTgChatSubgraphs(ctx context.Context, obj *appmodel.AdminMutation, input model.SetTgChatSubgraphsInput) (model.SetTgChatSubgraphsOrErrorPayload, error) {
 	return settgchatsubgraphs.Resolve(ctx, r.env(ctx), input)
+}
+
+// SetTgChatSubgraphInvites is the resolver for the setTgChatSubgraphInvites field.
+func (r *adminMutationResolver) SetTgChatSubgraphInvites(ctx context.Context, obj *appmodel.AdminMutation, input model.SetTgChatSubgraphInvitesInput) (model.SetTgChatSubgraphInvitesOrErrorPayload, error) {
+	return settgchatsubgraphinvites.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatePatreonCredentials is the resolver for the createPatreonCredentials field.
@@ -917,6 +923,26 @@ func (r *adminTgBotChatResolver) SubgraphAccesses(ctx context.Context, obj *db.T
 	return r.env(ctx).TgChatSubgraphAccessesByChatID(ctx, obj.ID)
 }
 
+// SubgraphInvites is the resolver for the subgraphInvites field.
+func (r *adminTgBotChatResolver) SubgraphInvites(ctx context.Context, obj *db.TgBotChat) ([]db.TgBotChatSubgraphInvite, error) {
+	return r.env(ctx).TgBotChatSubgraphInvitesByChatID(ctx, obj.ID)
+}
+
+// ID is the resolver for the id field.
+func (r *adminTgBotChatSubgraphInviteResolver) ID(ctx context.Context, obj *db.TgBotChatSubgraphInvite) (string, error) {
+	return fmt.Sprintf("%d_%d", obj.ChatID, obj.SubgraphID), nil
+}
+
+// Chat is the resolver for the chat field.
+func (r *adminTgBotChatSubgraphInviteResolver) Chat(ctx context.Context, obj *db.TgBotChatSubgraphInvite) (*db.TgBotChat, error) {
+	return resolveOne[db.TgBotChat](ctx, obj.ChatID, r.env(ctx).TgBotChat)
+}
+
+// Subgraph is the resolver for the subgraph field.
+func (r *adminTgBotChatSubgraphInviteResolver) Subgraph(ctx context.Context, obj *db.TgBotChatSubgraphInvite) (*db.Subgraph, error) {
+	return resolveOne[db.Subgraph](ctx, obj.SubgraphID, r.env(ctx).SubgraphByID)
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminTgBotChatsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTgBotChatsConnection) ([]db.TgBotChat, error) {
 	filter := obj.Filter
@@ -1348,6 +1374,11 @@ func (r *refreshPatreonDataPayloadResolver) Credentials(ctx context.Context, obj
 }
 
 // Chat is the resolver for the chat field.
+func (r *setTgChatSubgraphInvitesPayloadResolver) Chat(ctx context.Context, obj *model.SetTgChatSubgraphInvitesPayload) (*db.TgBotChat, error) {
+	return resolveOne[db.TgBotChat](ctx, obj.ChatID, r.env(ctx).TgBotChat)
+}
+
+// Chat is the resolver for the chat field.
 func (r *setTgChatSubgraphsPayloadResolver) Chat(ctx context.Context, obj *model.SetTgChatSubgraphsPayload) (*db.TgBotChat, error) {
 	return resolveOne[db.TgBotChat](ctx, obj.ChatID, r.env(ctx).TgBotChat)
 }
@@ -1747,6 +1778,11 @@ func (r *Resolver) AdminTgBot() AdminTgBotResolver { return &adminTgBotResolver{
 // AdminTgBotChat returns AdminTgBotChatResolver implementation.
 func (r *Resolver) AdminTgBotChat() AdminTgBotChatResolver { return &adminTgBotChatResolver{r} }
 
+// AdminTgBotChatSubgraphInvite returns AdminTgBotChatSubgraphInviteResolver implementation.
+func (r *Resolver) AdminTgBotChatSubgraphInvite() AdminTgBotChatSubgraphInviteResolver {
+	return &adminTgBotChatSubgraphInviteResolver{r}
+}
+
 // AdminTgBotChatsConnection returns AdminTgBotChatsConnectionResolver implementation.
 func (r *Resolver) AdminTgBotChatsConnection() AdminTgBotChatsConnectionResolver {
 	return &adminTgBotChatsConnectionResolver{r}
@@ -1852,6 +1888,11 @@ func (r *Resolver) RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
 	return &refreshPatreonDataPayloadResolver{r}
 }
 
+// SetTgChatSubgraphInvitesPayload returns SetTgChatSubgraphInvitesPayloadResolver implementation.
+func (r *Resolver) SetTgChatSubgraphInvitesPayload() SetTgChatSubgraphInvitesPayloadResolver {
+	return &setTgChatSubgraphInvitesPayloadResolver{r}
+}
+
 // SetTgChatSubgraphsPayload returns SetTgChatSubgraphsPayloadResolver implementation.
 func (r *Resolver) SetTgChatSubgraphsPayload() SetTgChatSubgraphsPayloadResolver {
 	return &setTgChatSubgraphsPayloadResolver{r}
@@ -1923,6 +1964,7 @@ type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminTgBotResolver struct{ *Resolver }
 type adminTgBotChatResolver struct{ *Resolver }
+type adminTgBotChatSubgraphInviteResolver struct{ *Resolver }
 type adminTgBotChatsConnectionResolver struct{ *Resolver }
 type adminTgBotsConnectionResolver struct{ *Resolver }
 type adminTgChatMemberResolver struct{ *Resolver }
@@ -1948,6 +1990,7 @@ type pushedNoteResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type refreshBoostyDataPayloadResolver struct{ *Resolver }
 type refreshPatreonDataPayloadResolver struct{ *Resolver }
+type setTgChatSubgraphInvitesPayloadResolver struct{ *Resolver }
 type setTgChatSubgraphsPayloadResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
 type toggleFavoriteNotePayloadResolver struct{ *Resolver }

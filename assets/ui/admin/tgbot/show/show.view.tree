@@ -8,5 +8,13 @@ $trip2g_admin_tgbot_show $mol_page
 	UpdateForm $trip2g_admin_tgbot_update
 		tgbot_id <= tgbot_id
 	body /
-		<= Chats $trip2g_admin_tgbot_show_chats
-			bot_id <= tgbot_id
+		<= ChatsSection $mol_section
+			title \Chats that give access to subgraphs
+			content /
+				<= Chats $trip2g_admin_tgbot_show_chats
+					bot_id <= tgbot_id
+		<= InviteChatsSection $mol_section
+			title \Subgraph access gives invite to this chats
+			content /
+				<= InviteChats $trip2g_admin_tgbot_show_invitechats
+					bot_id <= tgbot_id

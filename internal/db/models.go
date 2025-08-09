@@ -320,6 +320,13 @@ type TgBotChat struct {
 	CanInvite bool        `json:"can_invite"`
 }
 
+type TgBotChatSubgraphInvite struct {
+	ChatID     int64     `json:"chat_id"`
+	SubgraphID int64     `json:"subgraph_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	CreatedBy  int64     `json:"created_by"`
+}
+
 type TgChatMember struct {
 	UserID    int64     `json:"user_id"`
 	ChatID    int64     `json:"chat_id"`
