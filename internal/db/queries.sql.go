@@ -998,6 +998,15 @@ func (q *Queries) DeleteSignInCodesByUserID(ctx context.Context, userID int64) e
 	return err
 }
 
+const deleteTgAttachCode = `-- name: DeleteTgAttachCode :exec
+delete from tg_attach_codes where code = ?
+`
+
+func (q *Queries) DeleteTgAttachCode(ctx context.Context, code string) error {
+	_, err := q.db.ExecContext(ctx, deleteTgAttachCode, code)
+	return err
+}
+
 const deleteTgChatSubgraphAccess = `-- name: DeleteTgChatSubgraphAccess :exec
 delete from tg_chat_subgraph_accesses
 where id = ?
@@ -1521,6 +1530,25 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 		return nil, err
 	}
 	return items, nil
+}
+
+const getTgAttachCodeByCode = `-- name: GetTgAttachCodeByCode :one
+select user_id, bot_id, created_at
+from tg_attach_codes
+where code = ?
+`
+
+type GetTgAttachCodeByCodeRow struct {
+	UserID    int64     `json:"user_id"`
+	BotID     int64     `json:"bot_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (q *Queries) GetTgAttachCodeByCode(ctx context.Context, code string) (GetTgAttachCodeByCodeRow, error) {
+	row := q.db.QueryRowContext(ctx, getTgAttachCodeByCode, code)
+	var i GetTgAttachCodeByCodeRow
+	err := row.Scan(&i.UserID, &i.BotID, &i.CreatedAt)
+	return i, err
 }
 
 const hideNotePath = `-- name: HideNotePath :exec
@@ -2084,6 +2112,22 @@ on conflict(name) do update set hidden = false
 
 func (q *Queries) InsertSubgraph(ctx context.Context, name string) error {
 	_, err := q.db.ExecContext(ctx, insertSubgraph, name)
+	return err
+}
+
+const insertTgAttachCode = `-- name: InsertTgAttachCode :exec
+insert into tg_attach_codes (user_id, bot_id, code)
+values (?, ?, ?)
+`
+
+type InsertTgAttachCodeParams struct {
+	UserID int64  `json:"user_id"`
+	BotID  int64  `json:"bot_id"`
+	Code   string `json:"code"`
+}
+
+func (q *Queries) InsertTgAttachCode(ctx context.Context, arg InsertTgAttachCodeParams) error {
+	_, err := q.db.ExecContext(ctx, insertTgAttachCode, arg.UserID, arg.BotID, arg.Code)
 	return err
 }
 
@@ -3379,6 +3423,41 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 			&i.Color,
 			&i.CreatedAt,
 			&i.Hidden,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTgBots = `-- name: ListTgBots :many
+select id, token, enabled, description, created_at, created_by, name from tg_bots order by description
+`
+
+func (q *Queries) ListTgBots(ctx context.Context) ([]TgBot, error) {
+	rows, err := q.db.QueryContext(ctx, listTgBots)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBot
+	for rows.Next() {
+		var i TgBot
+		if err := rows.Scan(
+			&i.ID,
+			&i.Token,
+			&i.Enabled,
+			&i.Description,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.Name,
 		); err != nil {
 			return nil, err
 		}
@@ -4894,6 +4973,20 @@ func (q *Queries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSu
 		&i.PurchaseID,
 	)
 	return i, err
+}
+
+const updateUserTgID = `-- name: UpdateUserTgID :exec
+update users set tg_user_id = ? where id = ?
+`
+
+type UpdateUserTgIDParams struct {
+	TgUserID sql.NullInt64 `json:"tg_user_id"`
+	ID       int64         `json:"id"`
+}
+
+func (q *Queries) UpdateUserTgID(ctx context.Context, arg UpdateUserTgIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserTgID, arg.TgUserID, arg.ID)
+	return err
 }
 
 const upsertAPIKeyLogAction = `-- name: UpsertAPIKeyLogAction :exec

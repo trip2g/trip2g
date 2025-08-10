@@ -379,6 +379,12 @@ CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
 CREATE INDEX idx_tg_chat_subgraph_accesses_chat_id on tg_chat_subgraph_accesses(chat_id);
 CREATE INDEX idx_tg_bot_chat_subgraph_invites_chat_id on tg_bot_chat_subgraph_invites(chat_id);
 CREATE INDEX idx_tg_chat_members_chat_id on tg_chat_members(chat_id);
+CREATE TABLE tg_attach_codes (
+  user_id integer not null references users(id) on delete cascade,
+  bot_id integer not null references tg_bots(id) on delete restrict,
+  code text not null unique,
+  created_at datetime not null default current_timestamp
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -439,4 +445,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250807124754'),
   ('20250809044217'),
   ('20250809093139'),
-  ('20250810022248');
+  ('20250810022248'),
+  ('20250810023112');

@@ -44,6 +44,9 @@ type Env interface {
 	GenerateTgAuthURL(ctx context.Context, path string, data model.TgAuthToken) (string, error)
 	ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, id int64) ([]string, error)
 	InsertWaitListTgBotRequest(ctx context.Context, arg db.InsertWaitListTgBotRequestParams) error
+	GetTgAttachCodeByCode(ctx context.Context, code string) (db.GetTgAttachCodeByCodeRow, error)
+	DeleteTgAttachCode(ctx context.Context, code string) error
+	UpdateUserTgID(ctx context.Context, arg db.UpdateUserTgIDParams) error
 }
 
 type UserStateData struct {
@@ -242,6 +245,9 @@ func (req *request) handleCommands(ctx context.Context) error {
 		if strings.HasPrefix(args, "wl_") {
 			return req.handleWaitListRequest(ctx, args)
 		}
+		if strings.HasPrefix(args, "attach_") {
+			return req.handleAttachCode(ctx, args)
+		}
 
 		questions, err := req.Questions(ctx)
 		if err != nil {
@@ -377,4 +383,57 @@ func (req *request) handleWaitListRequest(ctx context.Context, args string) erro
 	}
 
 	return req.SendMessage("✅ Thank you for your interest! You've been added to the wait list. We'll notify you when access becomes available.")
+}
+
+func (req *request) handleAttachCode(ctx context.Context, args string) error {
+	// Extract the code from "attach_XXXXXXXX"
+	if len(args) < 8 || !strings.HasPrefix(args, "attach_") {
+		return req.SendMessage("❌ Invalid attach code format.")
+	}
+
+	code := strings.TrimPrefix(args, "attach_")
+	if len(code) != 8 {
+		return req.SendMessage("❌ Invalid attach code format.")
+	}
+
+	// Get the attach code from database
+	attachCode, err := req.env.GetTgAttachCodeByCode(ctx, code)
+	if err != nil {
+		if db.IsNoFound(err) {
+			return req.SendMessage("❌ Attach code not found or expired.")
+		}
+		req.env.Logger().Error("failed to get attach code", "error", err, "code", code)
+		return req.SendMessage("❌ Failed to process attach code. Please try again.")
+	}
+
+	// Verify the bot ID matches
+	if attachCode.BotID != req.env.BotID() {
+		return req.SendMessage("❌ This attach code is for a different bot.")
+	}
+
+	// Get the telegram user ID from the message
+	if req.update.Message.From == nil {
+		return req.SendMessage("❌ Unable to identify your Telegram account.")
+	}
+
+	telegramUserID := req.update.Message.From.ID
+
+	// Update the user's telegram ID
+	err = req.env.UpdateUserTgID(ctx, db.UpdateUserTgIDParams{
+		TgUserID: sql.NullInt64{Int64: telegramUserID, Valid: true},
+		ID:       attachCode.UserID,
+	})
+	if err != nil {
+		req.env.Logger().Error("failed to update user telegram ID", "error", err, "userID", attachCode.UserID, "telegramUserID", telegramUserID)
+		return req.SendMessage("❌ Failed to link your account. Please try again.")
+	}
+
+	// Delete the used attach code
+	err = req.env.DeleteTgAttachCode(ctx, code)
+	if err != nil {
+		req.env.Logger().Error("failed to delete attach code", "error", err, "code", code)
+		// Don't return error here as the main operation succeeded
+	}
+
+	return req.SendMessage("✅ Successfully linked your Telegram account! You can now access your content through this bot.")
 }

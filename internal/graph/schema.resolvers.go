@@ -48,6 +48,7 @@ import (
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createemailwaitlistrequest"
 	"trip2g/internal/case/createpaymentlink"
+	"trip2g/internal/case/generatetgattachcode"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/refreshboostydata"
@@ -869,16 +870,6 @@ func (r *adminTgBotResolver) CreatedBy(ctx context.Context, obj *db.TgBot) (*db.
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
 }
 
-// ChatType is the resolver for the chatType field.
-func (r *adminTgBotChatResolver) ChatType(ctx context.Context, obj *db.TgBotChat) (string, error) {
-	return obj.ChatType, nil
-}
-
-// ChatTitle is the resolver for the chatTitle field.
-func (r *adminTgBotChatResolver) ChatTitle(ctx context.Context, obj *db.TgBotChat) (string, error) {
-	return obj.ChatTitle, nil
-}
-
 // RemovedAt is the resolver for the removedAt field.
 func (r *adminTgBotChatResolver) RemovedAt(ctx context.Context, obj *db.TgBotChat) (*time.Time, error) {
 	if obj.RemovedAt == nil {
@@ -1145,6 +1136,11 @@ func (r *mutationResolver) UploadNoteAsset(ctx context.Context, input model.Uplo
 	input.ApiKey = *apiKey
 
 	return uploadnoteasset.Resolve(ctx, r.env(ctx), input)
+}
+
+// GenerateTgAttachCode is the resolver for the generateTgAttachCode field.
+func (r *mutationResolver) GenerateTgAttachCode(ctx context.Context, input model.GenerateTgAttachCodeInput) (model.GenerateTgAttachCodeOrErrorPayload, error) {
+	return generatetgattachcode.Resolve(ctx, r.env(ctx), input)
 }
 
 // Admin is the resolver for the admin field.
@@ -1612,6 +1608,11 @@ func (r *viewerResolver) LastNoteReadAt(ctx context.Context, obj *appmodel.Viewe
 	}
 
 	return &result.CreatedAt, nil
+}
+
+// TgBots is the resolver for the tgBots field.
+func (r *viewerResolver) TgBots(ctx context.Context, obj *appmodel.Viewer) ([]db.TgBot, error) {
+	return r.env(ctx).AllTgBots(ctx)
 }
 
 // Admin returns AdminResolver implementation.

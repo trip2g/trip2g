@@ -536,6 +536,11 @@ input LastNoteReadAtInput {
   pathId: Int64!
 }
 
+type TgBot {
+  id: Int64!
+  description: String!
+}
+
 type Viewer {
   id: ID!
   role: Role!
@@ -543,6 +548,7 @@ type Viewer {
   offers(filter: ViewerOffersFilter!): ViewerOffers
   activePurchases: [Purchase!]!
   lastNoteReadAt(input: LastNoteReadAtInput!): Time
+  tgBots: [TgBot!]!
 }
 
 type Offer {
@@ -762,6 +768,21 @@ type ToggleFavoriteNotePayload @goExtraField(name: "UserID", type: "int64") {
 
 union ToggleFavoriteNoteOrErrorPayload = ToggleFavoriteNotePayload | ErrorPayload
 
+#
+# generateTgAttachCode
+#
+
+input GenerateTgAttachCodeInput {
+  botId: Int64!
+}
+
+type GenerateTgAttachCodePayload {
+  code: String!
+  url: String!
+}
+
+union GenerateTgAttachCodeOrErrorPayload = GenerateTgAttachCodePayload | ErrorPayload
+
 type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
@@ -775,6 +796,8 @@ type Mutation {
   pushNotes(input: PushNotesInput!): PushNotesOrErrorPayload!
   hideNotes(input: HideNotesInput!): HideNotesOrErrorPayload!
   uploadNoteAsset(input: UploadNoteAssetInput!): UploadNoteAssetOrErrorPayload!
+
+  generateTgAttachCode(input: GenerateTgAttachCodeInput!): GenerateTgAttachCodeOrErrorPayload!
 
   admin: AdminMutation!
 }

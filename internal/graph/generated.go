@@ -624,6 +624,11 @@ type ComplexityRoot struct {
 		Value func(childComplexity int) int
 	}
 
+	GenerateTgAttachCodePayload struct {
+		Code func(childComplexity int) int
+		URL  func(childComplexity int) int
+	}
+
 	HideNotesPayload struct {
 		Success func(childComplexity int) int
 	}
@@ -636,6 +641,7 @@ type ComplexityRoot struct {
 		Admin                      func(childComplexity int) int
 		CreateEmailWaitListRequest func(childComplexity int, input model.CreateEmailWaitListRequestInput) int
 		CreatePaymentLink          func(childComplexity int, input model.CreatePaymentLinkInput) int
+		GenerateTgAttachCode       func(childComplexity int, input model.GenerateTgAttachCodeInput) int
 		HideNotes                  func(childComplexity int, input model.HideNotesInput) int
 		PushNotes                  func(childComplexity int, input model.PushNotesInput) int
 		RequestEmailSignInCode     func(childComplexity int, input model.RequestEmailSignInCodeInput) int
@@ -787,6 +793,11 @@ type ComplexityRoot struct {
 		TgBotURL     func(childComplexity int) int
 	}
 
+	TgBot struct {
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+	}
+
 	ToggleFavoriteNotePayload struct {
 		FavoriteNotes func(childComplexity int) int
 		Success       func(childComplexity int) int
@@ -866,6 +877,7 @@ type ComplexityRoot struct {
 		LastNoteReadAt  func(childComplexity int, input model.LastNoteReadAtInput) int
 		Offers          func(childComplexity int, filter model.ViewerOffersFilter) int
 		Role            func(childComplexity int) int
+		TgBots          func(childComplexity int) int
 		User            func(childComplexity int) int
 	}
 }
@@ -1076,9 +1088,6 @@ type AdminTgBotResolver interface {
 	CreatedBy(ctx context.Context, obj *db.TgBot) (*db.User, error)
 }
 type AdminTgBotChatResolver interface {
-	ChatType(ctx context.Context, obj *db.TgBotChat) (string, error)
-	ChatTitle(ctx context.Context, obj *db.TgBotChat) (string, error)
-
 	RemovedAt(ctx context.Context, obj *db.TgBotChat) (*time.Time, error)
 
 	MemberCount(ctx context.Context, obj *db.TgBotChat) (int32, error)
@@ -1156,6 +1165,7 @@ type MutationResolver interface {
 	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
 	HideNotes(ctx context.Context, input model.HideNotesInput) (model.HideNotesOrErrorPayload, error)
 	UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error)
+	GenerateTgAttachCode(ctx context.Context, input model.GenerateTgAttachCodeInput) (model.GenerateTgAttachCodeOrErrorPayload, error)
 	Admin(ctx context.Context) (*model1.AdminMutation, error)
 }
 type NoteViewResolver interface {
@@ -1235,6 +1245,7 @@ type ViewerResolver interface {
 	Offers(ctx context.Context, obj *model1.Viewer, filter model.ViewerOffersFilter) (model.ViewerOffers, error)
 	ActivePurchases(ctx context.Context, obj *model1.Viewer) ([]db.Purchase, error)
 	LastNoteReadAt(ctx context.Context, obj *model1.Viewer, input model.LastNoteReadAtInput) (*time.Time, error)
+	TgBots(ctx context.Context, obj *model1.Viewer) ([]db.TgBot, error)
 }
 
 type executableSchema struct {
@@ -3508,6 +3519,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.FieldMessage.Value(childComplexity), true
 
+	case "GenerateTgAttachCodePayload.code":
+		if e.complexity.GenerateTgAttachCodePayload.Code == nil {
+			break
+		}
+
+		return e.complexity.GenerateTgAttachCodePayload.Code(childComplexity), true
+
+	case "GenerateTgAttachCodePayload.url":
+		if e.complexity.GenerateTgAttachCodePayload.URL == nil {
+			break
+		}
+
+		return e.complexity.GenerateTgAttachCodePayload.URL(childComplexity), true
+
 	case "HideNotesPayload.success":
 		if e.complexity.HideNotesPayload.Success == nil {
 			break
@@ -3552,6 +3577,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.CreatePaymentLink(childComplexity, args["input"].(model.CreatePaymentLinkInput)), true
+
+	case "Mutation.generateTgAttachCode":
+		if e.complexity.Mutation.GenerateTgAttachCode == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_generateTgAttachCode_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.GenerateTgAttachCode(childComplexity, args["input"].(model.GenerateTgAttachCodeInput)), true
 
 	case "Mutation.hideNotes":
 		if e.complexity.Mutation.HideNotes == nil {
@@ -4106,6 +4143,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SubgraphWaitList.TgBotURL(childComplexity), true
 
+	case "TgBot.description":
+		if e.complexity.TgBot.Description == nil {
+			break
+		}
+
+		return e.complexity.TgBot.Description(childComplexity), true
+
+	case "TgBot.id":
+		if e.complexity.TgBot.ID == nil {
+			break
+		}
+
+		return e.complexity.TgBot.ID(childComplexity), true
+
 	case "ToggleFavoriteNotePayload.favoriteNotes":
 		if e.complexity.ToggleFavoriteNotePayload.FavoriteNotes == nil {
 			break
@@ -4347,6 +4398,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Viewer.Role(childComplexity), true
 
+	case "Viewer.tgBots":
+		if e.complexity.Viewer.TgBots == nil {
+			break
+		}
+
+		return e.complexity.Viewer.TgBots(childComplexity), true
+
 	case "Viewer.user":
 		if e.complexity.Viewer.User == nil {
 			break
@@ -4385,6 +4443,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDeletePatreonCredentialsInput,
 		ec.unmarshalInputDeleteRedirectInput,
 		ec.unmarshalInputDisableApiKeyInput,
+		ec.unmarshalInputGenerateTgAttachCodeInput,
 		ec.unmarshalInputHideNotesInput,
 		ec.unmarshalInputLastNoteReadAtInput,
 		ec.unmarshalInputMakeReleaseLiveInput,
@@ -5724,6 +5783,29 @@ func (ec *executionContext) field_Mutation_createPaymentLink_argsInput(
 	}
 
 	var zeroVal model.CreatePaymentLinkInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_generateTgAttachCode_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_generateTgAttachCode_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_generateTgAttachCode_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.GenerateTgAttachCodeInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNGenerateTgAttachCodeInput2trip2gᚋinternalᚋgraphᚋmodelᚐGenerateTgAttachCodeInput(ctx, tmp)
+	}
+
+	var zeroVal model.GenerateTgAttachCodeInput
 	return zeroVal, nil
 }
 
@@ -16694,7 +16776,7 @@ func (ec *executionContext) _AdminTgBotChat_chatType(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminTgBotChat().ChatType(rctx, obj)
+		return obj.ChatType, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -16715,8 +16797,8 @@ func (ec *executionContext) fieldContext_AdminTgBotChat_chatType(_ context.Conte
 	fc = &graphql.FieldContext{
 		Object:     "AdminTgBotChat",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -16738,7 +16820,7 @@ func (ec *executionContext) _AdminTgBotChat_chatTitle(ctx context.Context, field
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminTgBotChat().ChatTitle(rctx, obj)
+		return obj.ChatTitle, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -16759,8 +16841,8 @@ func (ec *executionContext) fieldContext_AdminTgBotChat_chatTitle(_ context.Cont
 	fc = &graphql.FieldContext{
 		Object:     "AdminTgBotChat",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -20355,6 +20437,94 @@ func (ec *executionContext) fieldContext_FieldMessage_value(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _GenerateTgAttachCodePayload_code(ctx context.Context, field graphql.CollectedField, obj *model.GenerateTgAttachCodePayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GenerateTgAttachCodePayload_code(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Code, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GenerateTgAttachCodePayload_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GenerateTgAttachCodePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GenerateTgAttachCodePayload_url(ctx context.Context, field graphql.CollectedField, obj *model.GenerateTgAttachCodePayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_GenerateTgAttachCodePayload_url(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.URL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_GenerateTgAttachCodePayload_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GenerateTgAttachCodePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _HideNotesPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.HideNotesPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_HideNotesPayload_success(ctx, field)
 	if err != nil {
@@ -20937,6 +21107,61 @@ func (ec *executionContext) fieldContext_Mutation_uploadNoteAsset(ctx context.Co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_uploadNoteAsset_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_generateTgAttachCode(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_generateTgAttachCode(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().GenerateTgAttachCode(rctx, fc.Args["input"].(model.GenerateTgAttachCodeInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.GenerateTgAttachCodeOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNGenerateTgAttachCodeOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐGenerateTgAttachCodeOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_generateTgAttachCode(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type GenerateTgAttachCodeOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_generateTgAttachCode_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -22800,6 +23025,8 @@ func (ec *executionContext) fieldContext_Query_viewer(_ context.Context, field g
 				return ec.fieldContext_Viewer_activePurchases(ctx, field)
 			case "lastNoteReadAt":
 				return ec.fieldContext_Viewer_lastNoteReadAt(ctx, field)
+			case "tgBots":
+				return ec.fieldContext_Viewer_tgBots(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -24219,6 +24446,8 @@ func (ec *executionContext) fieldContext_SignInPayload_viewer(_ context.Context,
 				return ec.fieldContext_Viewer_activePurchases(ctx, field)
 			case "lastNoteReadAt":
 				return ec.fieldContext_Viewer_lastNoteReadAt(ctx, field)
+			case "tgBots":
+				return ec.fieldContext_Viewer_tgBots(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -24277,6 +24506,8 @@ func (ec *executionContext) fieldContext_SignOutPayload_viewer(_ context.Context
 				return ec.fieldContext_Viewer_activePurchases(ctx, field)
 			case "lastNoteReadAt":
 				return ec.fieldContext_Viewer_lastNoteReadAt(ctx, field)
+			case "tgBots":
+				return ec.fieldContext_Viewer_tgBots(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
 		},
@@ -24504,6 +24735,94 @@ func (ec *executionContext) fieldContext_SubgraphWaitList_emailAllowed(_ context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TgBot_id(ctx context.Context, field graphql.CollectedField, obj *db.TgBot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TgBot_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TgBot_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TgBot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TgBot_description(ctx context.Context, field graphql.CollectedField, obj *db.TgBot) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TgBot_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TgBot_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TgBot",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -26223,6 +26542,56 @@ func (ec *executionContext) fieldContext_Viewer_lastNoteReadAt(ctx context.Conte
 	if fc.Args, err = ec.field_Viewer_lastNoteReadAt_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Viewer_tgBots(ctx context.Context, field graphql.CollectedField, obj *model1.Viewer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Viewer_tgBots(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Viewer().TgBots(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.TgBot)
+	fc.Result = res
+	return ec.marshalNTgBot2ᚕtrip2gᚋinternalᚋdbᚐTgBotᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Viewer_tgBots(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Viewer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TgBot_id(ctx, field)
+			case "description":
+				return ec.fieldContext_TgBot_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TgBot", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -28932,6 +29301,33 @@ func (ec *executionContext) unmarshalInputDisableApiKeyInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputGenerateTgAttachCodeInput(ctx context.Context, obj any) (model.GenerateTgAttachCodeInput, error) {
+	var it model.GenerateTgAttachCodeInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"botId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "botId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("botId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BotID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputHideNotesInput(ctx context.Context, obj any) (model.HideNotesInput, error) {
 	var it model.HideNotesInput
 	asMap := map[string]any{}
@@ -30347,6 +30743,29 @@ func (ec *executionContext) _DisableApiKeyOrErrorPayload(ctx context.Context, se
 			return graphql.Null
 		}
 		return ec._DisableApiKeyPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _GenerateTgAttachCodeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.GenerateTgAttachCodeOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.GenerateTgAttachCodePayload:
+		return ec._GenerateTgAttachCodePayload(ctx, sel, &obj)
+	case *model.GenerateTgAttachCodePayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._GenerateTgAttachCodePayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -37247,77 +37666,15 @@ func (ec *executionContext) _AdminTgBotChat(ctx context.Context, sel ast.Selecti
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "chatType":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminTgBotChat_chatType(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._AdminTgBotChat_chatType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "chatTitle":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminTgBotChat_chatTitle(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._AdminTgBotChat_chatTitle(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "addedAt":
 			out.Values[i] = ec._AdminTgBotChat_addedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -39508,7 +39865,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -39601,6 +39958,50 @@ func (ec *executionContext) _FieldMessage(ctx context.Context, sel ast.Selection
 			}
 		case "value":
 			out.Values[i] = ec._FieldMessage_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var generateTgAttachCodePayloadImplementors = []string{"GenerateTgAttachCodePayload", "GenerateTgAttachCodeOrErrorPayload"}
+
+func (ec *executionContext) _GenerateTgAttachCodePayload(ctx context.Context, sel ast.SelectionSet, obj *model.GenerateTgAttachCodePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, generateTgAttachCodePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GenerateTgAttachCodePayload")
+		case "code":
+			out.Values[i] = ec._GenerateTgAttachCodePayload_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "url":
+			out.Values[i] = ec._GenerateTgAttachCodePayload_url(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -39783,6 +40184,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "uploadNoteAsset":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_uploadNoteAsset(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "generateTgAttachCode":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_generateTgAttachCode(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -41632,6 +42040,50 @@ func (ec *executionContext) _SubgraphWaitList(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var tgBotImplementors = []string{"TgBot"}
+
+func (ec *executionContext) _TgBot(ctx context.Context, sel ast.SelectionSet, obj *db.TgBot) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tgBotImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TgBot")
+		case "id":
+			out.Values[i] = ec._TgBot_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._TgBot_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var toggleFavoriteNotePayloadImplementors = []string{"ToggleFavoriteNotePayload", "ToggleFavoriteNoteOrErrorPayload"}
 
 func (ec *executionContext) _ToggleFavoriteNotePayload(ctx context.Context, sel ast.SelectionSet, obj *model.ToggleFavoriteNotePayload) graphql.Marshaler {
@@ -42778,6 +43230,42 @@ func (ec *executionContext) _Viewer(ctx context.Context, sel ast.SelectionSet, o
 					}
 				}()
 				res = ec._Viewer_lastNoteReadAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "tgBots":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Viewer_tgBots(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -45179,6 +45667,21 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
+func (ec *executionContext) unmarshalNGenerateTgAttachCodeInput2trip2gᚋinternalᚋgraphᚋmodelᚐGenerateTgAttachCodeInput(ctx context.Context, v any) (model.GenerateTgAttachCodeInput, error) {
+	res, err := ec.unmarshalInputGenerateTgAttachCodeInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNGenerateTgAttachCodeOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐGenerateTgAttachCodeOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.GenerateTgAttachCodeOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GenerateTgAttachCodeOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNHideNotesInput2trip2gᚋinternalᚋgraphᚋmodelᚐHideNotesInput(ctx context.Context, v any) (model.HideNotesInput, error) {
 	res, err := ec.unmarshalInputHideNotesInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -46087,6 +46590,54 @@ func (ec *executionContext) marshalNSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgrap
 		return graphql.Null
 	}
 	return ec._Subgraph(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTgBot2trip2gᚋinternalᚋdbᚐTgBot(ctx context.Context, sel ast.SelectionSet, v db.TgBot) graphql.Marshaler {
+	return ec._TgBot(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTgBot2ᚕtrip2gᚋinternalᚋdbᚐTgBotᚄ(ctx context.Context, sel ast.SelectionSet, v []db.TgBot) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTgBot2trip2gᚋinternalᚋdbᚐTgBot(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v any) (time.Time, error) {

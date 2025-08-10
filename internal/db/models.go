@@ -301,6 +301,13 @@ type Subgraph struct {
 	Hidden    bool           `json:"hidden"`
 }
 
+type TgAttachCode struct {
+	UserID    int64     `json:"user_id"`
+	BotID     int64     `json:"bot_id"`
+	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type TgBot struct {
 	ID          int64     `json:"id"`
 	Token       string    `json:"token"`

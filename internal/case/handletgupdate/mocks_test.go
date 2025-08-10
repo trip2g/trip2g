@@ -31,6 +31,9 @@ var _ Env = &EnvMock{}
 //			CalculateSha256Func: func(s string) string {
 //				panic("mock out the CalculateSha256 method")
 //			},
+//			DeleteTgAttachCodeFunc: func(ctx context.Context, code string) error {
+//				panic("mock out the DeleteTgAttachCode method")
+//			},
 //			GenerateTgAuthURLFunc: func(ctx context.Context, path string, data model.TgAuthToken) (string, error) {
 //				panic("mock out the GenerateTgAuthURL method")
 //			},
@@ -39,6 +42,9 @@ var _ Env = &EnvMock{}
 //			},
 //			GetChatMemberStatusFunc: func(ctx context.Context, chatID int64, userID int64) (string, error) {
 //				panic("mock out the GetChatMemberStatus method")
+//			},
+//			GetTgAttachCodeByCodeFunc: func(ctx context.Context, code string) (db.GetTgAttachCodeByCodeRow, error) {
+//				panic("mock out the GetTgAttachCodeByCode method")
 //			},
 //			InsertTgChatMemberFunc: func(ctx context.Context, arg db.InsertTgChatMemberParams) error {
 //				panic("mock out the InsertTgChatMember method")
@@ -82,6 +88,9 @@ var _ Env = &EnvMock{}
 //			UpdateTgBotChatCanInviteFunc: func(ctx context.Context, arg db.UpdateTgBotChatCanInviteParams) error {
 //				panic("mock out the UpdateTgBotChatCanInvite method")
 //			},
+//			UpdateUserTgIDFunc: func(ctx context.Context, arg db.UpdateUserTgIDParams) error {
+//				panic("mock out the UpdateUserTgID method")
+//			},
 //			UpsertTgBotChatFunc: func(ctx context.Context, arg db.UpsertTgBotChatParams) error {
 //				panic("mock out the UpsertTgBotChat method")
 //			},
@@ -104,6 +113,9 @@ type EnvMock struct {
 	// CalculateSha256Func mocks the CalculateSha256 method.
 	CalculateSha256Func func(s string) string
 
+	// DeleteTgAttachCodeFunc mocks the DeleteTgAttachCode method.
+	DeleteTgAttachCodeFunc func(ctx context.Context, code string) error
+
 	// GenerateTgAuthURLFunc mocks the GenerateTgAuthURL method.
 	GenerateTgAuthURLFunc func(ctx context.Context, path string, data model.TgAuthToken) (string, error)
 
@@ -112,6 +124,9 @@ type EnvMock struct {
 
 	// GetChatMemberStatusFunc mocks the GetChatMemberStatus method.
 	GetChatMemberStatusFunc func(ctx context.Context, chatID int64, userID int64) (string, error)
+
+	// GetTgAttachCodeByCodeFunc mocks the GetTgAttachCodeByCode method.
+	GetTgAttachCodeByCodeFunc func(ctx context.Context, code string) (db.GetTgAttachCodeByCodeRow, error)
 
 	// InsertTgChatMemberFunc mocks the InsertTgChatMember method.
 	InsertTgChatMemberFunc func(ctx context.Context, arg db.InsertTgChatMemberParams) error
@@ -155,6 +170,9 @@ type EnvMock struct {
 	// UpdateTgBotChatCanInviteFunc mocks the UpdateTgBotChatCanInvite method.
 	UpdateTgBotChatCanInviteFunc func(ctx context.Context, arg db.UpdateTgBotChatCanInviteParams) error
 
+	// UpdateUserTgIDFunc mocks the UpdateUserTgID method.
+	UpdateUserTgIDFunc func(ctx context.Context, arg db.UpdateUserTgIDParams) error
+
 	// UpsertTgBotChatFunc mocks the UpsertTgBotChat method.
 	UpsertTgBotChatFunc func(ctx context.Context, arg db.UpsertTgBotChatParams) error
 
@@ -173,6 +191,13 @@ type EnvMock struct {
 		CalculateSha256 []struct {
 			// S is the s argument value.
 			S string
+		}
+		// DeleteTgAttachCode holds details about calls to the DeleteTgAttachCode method.
+		DeleteTgAttachCode []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Code is the code argument value.
+			Code string
 		}
 		// GenerateTgAuthURL holds details about calls to the GenerateTgAuthURL method.
 		GenerateTgAuthURL []struct {
@@ -198,6 +223,13 @@ type EnvMock struct {
 			ChatID int64
 			// UserID is the userID argument value.
 			UserID int64
+		}
+		// GetTgAttachCodeByCode holds details about calls to the GetTgAttachCodeByCode method.
+		GetTgAttachCodeByCode []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Code is the code argument value.
+			Code string
 		}
 		// InsertTgChatMember holds details about calls to the InsertTgChatMember method.
 		InsertTgChatMember []struct {
@@ -281,6 +313,13 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.UpdateTgBotChatCanInviteParams
 		}
+		// UpdateUserTgID holds details about calls to the UpdateUserTgID method.
+		UpdateUserTgID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpdateUserTgIDParams
+		}
 		// UpsertTgBotChat holds details about calls to the UpsertTgBotChat method.
 		UpsertTgBotChat []struct {
 			// Ctx is the ctx argument value.
@@ -299,9 +338,11 @@ type EnvMock struct {
 	lockBotID                                 sync.RWMutex
 	lockBotLink                               sync.RWMutex
 	lockCalculateSha256                       sync.RWMutex
+	lockDeleteTgAttachCode                    sync.RWMutex
 	lockGenerateTgAuthURL                     sync.RWMutex
 	lockGetBotCanInvite                       sync.RWMutex
 	lockGetChatMemberStatus                   sync.RWMutex
+	lockGetTgAttachCodeByCode                 sync.RWMutex
 	lockInsertTgChatMember                    sync.RWMutex
 	lockInsertTgUserProfile                   sync.RWMutex
 	lockInsertWaitListTgBotRequest            sync.RWMutex
@@ -316,6 +357,7 @@ type EnvMock struct {
 	lockTgBotChatByTelegramID                 sync.RWMutex
 	lockTgUserStateByBotIDAndChatID           sync.RWMutex
 	lockUpdateTgBotChatCanInvite              sync.RWMutex
+	lockUpdateUserTgID                        sync.RWMutex
 	lockUpsertTgBotChat                       sync.RWMutex
 	lockUpsertTgUserState                     sync.RWMutex
 }
@@ -403,6 +445,42 @@ func (mock *EnvMock) CalculateSha256Calls() []struct {
 	mock.lockCalculateSha256.RLock()
 	calls = mock.calls.CalculateSha256
 	mock.lockCalculateSha256.RUnlock()
+	return calls
+}
+
+// DeleteTgAttachCode calls DeleteTgAttachCodeFunc.
+func (mock *EnvMock) DeleteTgAttachCode(ctx context.Context, code string) error {
+	if mock.DeleteTgAttachCodeFunc == nil {
+		panic("EnvMock.DeleteTgAttachCodeFunc: method is nil but Env.DeleteTgAttachCode was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Code string
+	}{
+		Ctx:  ctx,
+		Code: code,
+	}
+	mock.lockDeleteTgAttachCode.Lock()
+	mock.calls.DeleteTgAttachCode = append(mock.calls.DeleteTgAttachCode, callInfo)
+	mock.lockDeleteTgAttachCode.Unlock()
+	return mock.DeleteTgAttachCodeFunc(ctx, code)
+}
+
+// DeleteTgAttachCodeCalls gets all the calls that were made to DeleteTgAttachCode.
+// Check the length with:
+//
+//	len(mockedEnv.DeleteTgAttachCodeCalls())
+func (mock *EnvMock) DeleteTgAttachCodeCalls() []struct {
+	Ctx  context.Context
+	Code string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Code string
+	}
+	mock.lockDeleteTgAttachCode.RLock()
+	calls = mock.calls.DeleteTgAttachCode
+	mock.lockDeleteTgAttachCode.RUnlock()
 	return calls
 }
 
@@ -519,6 +597,42 @@ func (mock *EnvMock) GetChatMemberStatusCalls() []struct {
 	mock.lockGetChatMemberStatus.RLock()
 	calls = mock.calls.GetChatMemberStatus
 	mock.lockGetChatMemberStatus.RUnlock()
+	return calls
+}
+
+// GetTgAttachCodeByCode calls GetTgAttachCodeByCodeFunc.
+func (mock *EnvMock) GetTgAttachCodeByCode(ctx context.Context, code string) (db.GetTgAttachCodeByCodeRow, error) {
+	if mock.GetTgAttachCodeByCodeFunc == nil {
+		panic("EnvMock.GetTgAttachCodeByCodeFunc: method is nil but Env.GetTgAttachCodeByCode was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Code string
+	}{
+		Ctx:  ctx,
+		Code: code,
+	}
+	mock.lockGetTgAttachCodeByCode.Lock()
+	mock.calls.GetTgAttachCodeByCode = append(mock.calls.GetTgAttachCodeByCode, callInfo)
+	mock.lockGetTgAttachCodeByCode.Unlock()
+	return mock.GetTgAttachCodeByCodeFunc(ctx, code)
+}
+
+// GetTgAttachCodeByCodeCalls gets all the calls that were made to GetTgAttachCodeByCode.
+// Check the length with:
+//
+//	len(mockedEnv.GetTgAttachCodeByCodeCalls())
+func (mock *EnvMock) GetTgAttachCodeByCodeCalls() []struct {
+	Ctx  context.Context
+	Code string
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Code string
+	}
+	mock.lockGetTgAttachCodeByCode.RLock()
+	calls = mock.calls.GetTgAttachCodeByCode
+	mock.lockGetTgAttachCodeByCode.RUnlock()
 	return calls
 }
 
@@ -988,6 +1102,42 @@ func (mock *EnvMock) UpdateTgBotChatCanInviteCalls() []struct {
 	mock.lockUpdateTgBotChatCanInvite.RLock()
 	calls = mock.calls.UpdateTgBotChatCanInvite
 	mock.lockUpdateTgBotChatCanInvite.RUnlock()
+	return calls
+}
+
+// UpdateUserTgID calls UpdateUserTgIDFunc.
+func (mock *EnvMock) UpdateUserTgID(ctx context.Context, arg db.UpdateUserTgIDParams) error {
+	if mock.UpdateUserTgIDFunc == nil {
+		panic("EnvMock.UpdateUserTgIDFunc: method is nil but Env.UpdateUserTgID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpdateUserTgIDParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpdateUserTgID.Lock()
+	mock.calls.UpdateUserTgID = append(mock.calls.UpdateUserTgID, callInfo)
+	mock.lockUpdateUserTgID.Unlock()
+	return mock.UpdateUserTgIDFunc(ctx, arg)
+}
+
+// UpdateUserTgIDCalls gets all the calls that were made to UpdateUserTgID.
+// Check the length with:
+//
+//	len(mockedEnv.UpdateUserTgIDCalls())
+func (mock *EnvMock) UpdateUserTgIDCalls() []struct {
+	Ctx context.Context
+	Arg db.UpdateUserTgIDParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpdateUserTgIDParams
+	}
+	mock.lockUpdateUserTgID.RLock()
+	calls = mock.calls.UpdateUserTgID
+	mock.lockUpdateUserTgID.RUnlock()
 	return calls
 }
 

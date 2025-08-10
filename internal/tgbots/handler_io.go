@@ -27,6 +27,10 @@ func (io *HandlerIO) BotLink() string {
 	return fmt.Sprintf("https://t.me/%s", io.bot.Self.UserName)
 }
 
+func (io *HandlerIO) BotStartLink(param string) string {
+	return fmt.Sprintf("https://t.me/%s?start=%s", io.bot.Self.UserName, param)
+}
+
 func (io *HandlerIO) Send(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
 	return io.bot.Send(msg)
 }

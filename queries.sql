@@ -1135,3 +1135,21 @@ select unv.version_id, unv.created_at
    and unv.created_at < datetime('now', '-10 minutes')
  order by unv.created_at desc
  limit 1;
+
+-- name: InsertTgAttachCode :exec
+insert into tg_attach_codes (user_id, bot_id, code)
+values (?, ?, ?);
+
+-- name: GetTgAttachCodeByCode :one
+select user_id, bot_id, created_at
+from tg_attach_codes
+where code = ?;
+
+-- name: DeleteTgAttachCode :exec
+delete from tg_attach_codes where code = ?;
+
+-- name: ListTgBots :many
+select * from tg_bots order by description;
+
+-- name: UpdateUserTgID :exec
+update users set tg_user_id = ? where id = ?;

@@ -39,6 +39,7 @@ import (
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createemailwaitlistrequest"
 	"trip2g/internal/case/createpaymentlink"
+	"trip2g/internal/case/generatetgattachcode"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/refreshboostydata"
@@ -168,6 +169,7 @@ type Env interface {
 	restoreboostycredentials.Env
 	updateboostycredentials.Env
 	refreshboostydata.Env
+	generatetgattachcode.Env
 
 	ListUserFavoriteNotes(ctx context.Context, userID int64) ([]db.ListUserFavoriteNotesRow, error)
 

@@ -910,6 +910,14 @@ func generateSixDigitCode() (int64, error) {
 	return 0, ErrFailedGeneration
 }
 
+func generateEightCharCode() (string, error) {
+	var b [4]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", fmt.Errorf("failed to read random bytes: %w", err)
+	}
+	return hex.EncodeToString(b[:]), nil
+}
+
 func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error) {
 	code, err := generateSixDigitCode()
 	if err != nil {
@@ -931,6 +939,25 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error
 	}
 
 	return sCode, nil
+}
+
+func (a *app) GenerateTgAttachCode() string {
+	code, err := generateEightCharCode()
+	if err != nil {
+		// Log error and generate a fallback code
+		a.Logger().Error("failed to generate attach code", "error", err)
+		// Fallback to timestamp-based code if random generation fails
+		return fmt.Sprintf("%08x", time.Now().Unix()%0xFFFFFFFF)
+	}
+	return code
+}
+
+func (a *app) BotStartLink(botID int64, param string) (string, error) {
+	handlerIO := a.TgBots.GetHandlerIO(botID)
+	if handlerIO == nil {
+		return "", fmt.Errorf("bot with ID %d not found or not active", botID)
+	}
+	return handlerIO.BotStartLink(param), nil
 }
 
 func (a *app) NoteByPath(path string) *model.NoteView {

@@ -94,6 +94,12 @@ func (io *TgBots) SetHandler(handler HandlerFunc) {
 	io.handler = handler
 }
 
+func (io *TgBots) GetHandlerIO(botID int64) *HandlerIO {
+	io.mu.Lock()
+	defer io.mu.Unlock()
+	return io.handlerIOMap[botID]
+}
+
 func (io *TgBots) StartTgBot(ctx context.Context, id int64) {
 	env := io.env
 

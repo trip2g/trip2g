@@ -78,6 +78,10 @@ type DisableAPIKeyOrErrorPayload interface {
 	IsDisableAPIKeyOrErrorPayload()
 }
 
+type GenerateTgAttachCodeOrErrorPayload interface {
+	IsGenerateTgAttachCodeOrErrorPayload()
+}
+
 type HideNotesOrErrorPayload interface {
 	IsHideNotesOrErrorPayload()
 }
@@ -532,6 +536,8 @@ func (ErrorPayload) IsCreateEmailWaitListRequestOrErrorPayload() {}
 
 func (ErrorPayload) IsToggleFavoriteNoteOrErrorPayload() {}
 
+func (ErrorPayload) IsGenerateTgAttachCodeOrErrorPayload() {}
+
 func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
@@ -602,6 +608,17 @@ type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
+
+type GenerateTgAttachCodeInput struct {
+	BotID int64 `json:"botId"`
+}
+
+type GenerateTgAttachCodePayload struct {
+	Code string `json:"code"`
+	URL  string `json:"url"`
+}
+
+func (GenerateTgAttachCodePayload) IsGenerateTgAttachCodeOrErrorPayload() {}
 
 type HideNotesInput struct {
 	Paths  []string  `json:"paths"`
