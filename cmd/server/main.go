@@ -278,7 +278,11 @@ func (a *app) createOwnerIfNotExists(ctx context.Context) error {
 	user, err := a.Queries.UserByEmail(ctx, a.config.OwnerEmail)
 	if err != nil {
 		if db.IsNoFound(err) {
-			user, err = a.InsertUserWithEmail(ctx, a.config.OwnerEmail)
+			params := db.InsertUserWithEmailParams{
+				Email:      a.config.OwnerEmail,
+				CreatedVia: "bootstrap",
+			}
+			user, err = a.InsertUserWithEmail(ctx, params)
 			if err != nil {
 				return fmt.Errorf("failed to insert owner user: %w", err)
 			}

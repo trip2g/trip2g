@@ -125,8 +125,9 @@ func TestResolve_PatreonMemberWithoutUser_CreateNewUser(t *testing.T) {
 		UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 			return db.User{}, sql.ErrNoRows // User doesn't exist
 		},
-		InsertUserWithEmailFunc: func(ctx context.Context, email string) (db.User, error) {
-			require.Equal(t, "test@example.com", email)
+		InsertUserWithEmailFunc: func(ctx context.Context, params db.InsertUserWithEmailParams) (db.User, error) {
+			require.Equal(t, "test@example.com", params.Email)
+			require.Equal(t, "patreon", params.CreatedVia)
 			return newUser, nil
 		},
 		UpdatePatreonMemberUserIDFunc: func(ctx context.Context, args db.UpdatePatreonMemberUserIDParams) error {
@@ -204,7 +205,7 @@ func TestResolve_InsertUserError(t *testing.T) {
 		UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 			return db.User{}, sql.ErrNoRows
 		},
-		InsertUserWithEmailFunc: func(ctx context.Context, email string) (db.User, error) {
+		InsertUserWithEmailFunc: func(ctx context.Context, params db.InsertUserWithEmailParams) (db.User, error) {
 			return db.User{}, errors.New("insert error")
 		},
 	}

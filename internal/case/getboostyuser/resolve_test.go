@@ -106,8 +106,9 @@ func TestResolve(t *testing.T) {
 				env.UserByEmailFunc = func(ctx context.Context, email string) (db.User, error) {
 					return db.User{}, sql.ErrNoRows
 				}
-				env.InsertUserWithEmailFunc = func(ctx context.Context, email string) (db.User, error) {
-					require.Equal(t, "newuser@example.com", email)
+				env.InsertUserWithEmailFunc = func(ctx context.Context, args db.InsertUserWithEmailParams) (db.User, error) {
+					require.Equal(t, "newuser@example.com", args.Email)
+					require.Equal(t, "boosty", args.CreatedVia)
 					return db.User{
 						ID:    789,
 						Email: sql.NullString{Valid: true, String: "newuser@example.com"},

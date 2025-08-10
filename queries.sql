@@ -70,12 +70,12 @@ where rn = 1;
 select * from users where email = lower(?);
 
 -- name: InsertUserWithEmail :one
-insert into users (email) values (lower(?))
+insert into users (email, created_via) values (lower(sqlc.arg(email)), ?)
 returning *;
 
 -- name: InsertUserWithTgUserID :one
-insert into users (tg_user_id)
-values (?)
+insert into users (tg_user_id, created_via)
+values (?, 'telegram')
 returning *;
 
 -- name: UserByID :one

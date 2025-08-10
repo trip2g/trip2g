@@ -13,7 +13,7 @@ type Env interface {
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserByEmail(ctx context.Context, email string) (db.User, error)
-	InsertUserWithEmail(ctx context.Context, email string) (db.User, error)
+	InsertUserWithEmail(ctx context.Context, args db.InsertUserWithEmailParams) (db.User, error)
 }
 
 func Resolve(ctx context.Context, env Env, email string) (*db.User, error) {
@@ -38,7 +38,12 @@ func Resolve(ctx context.Context, env Env, email string) (*db.User, error) {
 	user, userErr := env.UserByEmail(ctx, email)
 	if userErr != nil {
 		if db.IsNoFound(userErr) {
-			user, userErr = env.InsertUserWithEmail(ctx, email)
+			insertParams := db.InsertUserWithEmailParams{
+				Email:      email,
+				CreatedVia: "boosty",
+			}
+
+			user, userErr = env.InsertUserWithEmail(ctx, insertParams)
 			if userErr != nil {
 				return nil, fmt.Errorf("failed to insert user with email: %w", userErr)
 			}

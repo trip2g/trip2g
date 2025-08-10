@@ -2242,12 +2242,17 @@ func (q *Queries) InsertUserNoteView(ctx context.Context, arg InsertUserNoteView
 }
 
 const insertUserWithEmail = `-- name: InsertUserWithEmail :one
-insert into users (email) values (lower(?))
-returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id
+insert into users (email, created_via) values (lower(?2), ?)
+returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via
 `
 
-func (q *Queries) InsertUserWithEmail(ctx context.Context, lower string) (User, error) {
-	row := q.db.QueryRowContext(ctx, insertUserWithEmail, lower)
+type InsertUserWithEmailParams struct {
+	Email      string `json:"email"`
+	CreatedVia string `json:"created_via"`
+}
+
+func (q *Queries) InsertUserWithEmail(ctx context.Context, arg InsertUserWithEmailParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, insertUserWithEmail, arg.Email, arg.CreatedVia)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -2256,14 +2261,15 @@ func (q *Queries) InsertUserWithEmail(ctx context.Context, lower string) (User, 
 		&i.LastSigninCodeSentAt,
 		&i.NoteViewCount,
 		&i.TgUserID,
+		&i.CreatedVia,
 	)
 	return i, err
 }
 
 const insertUserWithTgUserID = `-- name: InsertUserWithTgUserID :one
-insert into users (tg_user_id)
-values (?)
-returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id
+insert into users (tg_user_id, created_via)
+values (?, 'telegram')
+returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via
 `
 
 func (q *Queries) InsertUserWithTgUserID(ctx context.Context, tgUserID sql.NullInt64) (User, error) {
@@ -2276,6 +2282,7 @@ func (q *Queries) InsertUserWithTgUserID(ctx context.Context, tgUserID sql.NullI
 		&i.LastSigninCodeSentAt,
 		&i.NoteViewCount,
 		&i.TgUserID,
+		&i.CreatedVia,
 	)
 	return i, err
 }
@@ -3250,7 +3257,7 @@ func (q *Queries) ListAllUserSubgraphAccesses(ctx context.Context) ([]UserSubgra
 }
 
 const listAllUsers = `-- name: ListAllUsers :many
-select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id from users order by created_at desc
+select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via from users order by created_at desc
 `
 
 func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
@@ -3269,6 +3276,7 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.LastSigninCodeSentAt,
 			&i.NoteViewCount,
 			&i.TgUserID,
+			&i.CreatedVia,
 		); err != nil {
 			return nil, err
 		}
@@ -5162,7 +5170,7 @@ func (q *Queries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUserNot
 }
 
 const userByEmail = `-- name: UserByEmail :one
-select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id from users where email = lower(?)
+select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via from users where email = lower(?)
 `
 
 func (q *Queries) UserByEmail(ctx context.Context, lower string) (User, error) {
@@ -5175,12 +5183,13 @@ func (q *Queries) UserByEmail(ctx context.Context, lower string) (User, error) {
 		&i.LastSigninCodeSentAt,
 		&i.NoteViewCount,
 		&i.TgUserID,
+		&i.CreatedVia,
 	)
 	return i, err
 }
 
 const userByID = `-- name: UserByID :one
-select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id from users where id = ?
+select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via from users where id = ?
 `
 
 func (q *Queries) UserByID(ctx context.Context, id int64) (User, error) {
@@ -5193,12 +5202,13 @@ func (q *Queries) UserByID(ctx context.Context, id int64) (User, error) {
 		&i.LastSigninCodeSentAt,
 		&i.NoteViewCount,
 		&i.TgUserID,
+		&i.CreatedVia,
 	)
 	return i, err
 }
 
 const userByTgUserID = `-- name: UserByTgUserID :one
-select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id
+select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via
   from users
  where tg_user_id = ?
 limit 1
@@ -5214,6 +5224,7 @@ func (q *Queries) UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (U
 		&i.LastSigninCodeSentAt,
 		&i.NoteViewCount,
 		&i.TgUserID,
+		&i.CreatedVia,
 	)
 	return i, err
 }

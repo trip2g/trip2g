@@ -22,7 +22,7 @@ var _ Env = &EnvMock{}
 //			GetBoostyMemberByEmailFunc: func(ctx context.Context, email string) (db.BoostyMember, error) {
 //				panic("mock out the GetBoostyMemberByEmail method")
 //			},
-//			InsertUserWithEmailFunc: func(ctx context.Context, email string) (db.User, error) {
+//			InsertUserWithEmailFunc: func(ctx context.Context, args db.InsertUserWithEmailParams) (db.User, error) {
 //				panic("mock out the InsertUserWithEmail method")
 //			},
 //			UpdateBoostyMemberUserIDFunc: func(ctx context.Context, arg db.UpdateBoostyMemberUserIDParams) error {
@@ -45,7 +45,7 @@ type EnvMock struct {
 	GetBoostyMemberByEmailFunc func(ctx context.Context, email string) (db.BoostyMember, error)
 
 	// InsertUserWithEmailFunc mocks the InsertUserWithEmail method.
-	InsertUserWithEmailFunc func(ctx context.Context, email string) (db.User, error)
+	InsertUserWithEmailFunc func(ctx context.Context, args db.InsertUserWithEmailParams) (db.User, error)
 
 	// UpdateBoostyMemberUserIDFunc mocks the UpdateBoostyMemberUserID method.
 	UpdateBoostyMemberUserIDFunc func(ctx context.Context, arg db.UpdateBoostyMemberUserIDParams) error
@@ -69,8 +69,8 @@ type EnvMock struct {
 		InsertUserWithEmail []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// Email is the email argument value.
-			Email string
+			// Args is the args argument value.
+			Args db.InsertUserWithEmailParams
 		}
 		// UpdateBoostyMemberUserID holds details about calls to the UpdateBoostyMemberUserID method.
 		UpdateBoostyMemberUserID []struct {
@@ -138,21 +138,21 @@ func (mock *EnvMock) GetBoostyMemberByEmailCalls() []struct {
 }
 
 // InsertUserWithEmail calls InsertUserWithEmailFunc.
-func (mock *EnvMock) InsertUserWithEmail(ctx context.Context, email string) (db.User, error) {
+func (mock *EnvMock) InsertUserWithEmail(ctx context.Context, args db.InsertUserWithEmailParams) (db.User, error) {
 	if mock.InsertUserWithEmailFunc == nil {
 		panic("EnvMock.InsertUserWithEmailFunc: method is nil but Env.InsertUserWithEmail was just called")
 	}
 	callInfo := struct {
-		Ctx   context.Context
-		Email string
+		Ctx  context.Context
+		Args db.InsertUserWithEmailParams
 	}{
-		Ctx:   ctx,
-		Email: email,
+		Ctx:  ctx,
+		Args: args,
 	}
 	mock.lockInsertUserWithEmail.Lock()
 	mock.calls.InsertUserWithEmail = append(mock.calls.InsertUserWithEmail, callInfo)
 	mock.lockInsertUserWithEmail.Unlock()
-	return mock.InsertUserWithEmailFunc(ctx, email)
+	return mock.InsertUserWithEmailFunc(ctx, args)
 }
 
 // InsertUserWithEmailCalls gets all the calls that were made to InsertUserWithEmail.
@@ -160,12 +160,12 @@ func (mock *EnvMock) InsertUserWithEmail(ctx context.Context, email string) (db.
 //
 //	len(mockedEnv.InsertUserWithEmailCalls())
 func (mock *EnvMock) InsertUserWithEmailCalls() []struct {
-	Ctx   context.Context
-	Email string
+	Ctx  context.Context
+	Args db.InsertUserWithEmailParams
 } {
 	var calls []struct {
-		Ctx   context.Context
-		Email string
+		Ctx  context.Context
+		Args db.InsertUserWithEmailParams
 	}
 	mock.lockInsertUserWithEmail.RLock()
 	calls = mock.calls.InsertUserWithEmail

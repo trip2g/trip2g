@@ -228,7 +228,7 @@ CREATE TABLE IF NOT EXISTS "users" (
     note_view_count integer default 0,
     tg_user_id integer unique -- Also unique - one account per Telegram user
     -- Note: No FK constraint because tg_user_profiles.chat_id is not unique
-);
+, created_via text not null default 'unknown');
 CREATE TABLE wait_list_email_requests (
   email text primary key,
   created_at datetime not null default current_timestamp,
@@ -438,4 +438,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250806153321'),
   ('20250807124754'),
   ('20250809044217'),
-  ('20250809093139');
+  ('20250809093139'),
+  ('20250810022248');

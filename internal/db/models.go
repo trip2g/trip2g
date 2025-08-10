@@ -369,6 +369,7 @@ type User struct {
 	LastSigninCodeSentAt sql.NullTime   `json:"last_signin_code_sent_at"`
 	NoteViewCount        sql.NullInt64  `json:"note_view_count"`
 	TgUserID             sql.NullInt64  `json:"tg_user_id"`
+	CreatedVia           string         `json:"created_via"`
 }
 
 type UserBan struct {

@@ -22,7 +22,7 @@ type Env interface {
 	UpdatePurchaseStatus(ctx context.Context, params db.UpdatePurchaseStatusParams) error
 	ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]db.Subgraph, error)
 	UserByEmail(ctx context.Context, email string) (db.User, error)
-	InsertUserWithEmail(ctx context.Context, email string) (db.User, error)
+	InsertUserWithEmail(ctx context.Context, params db.InsertUserWithEmailParams) (db.User, error)
 	CountUserSubgraphAccessByPurchaseID(ctx context.Context, purchaseID string) (int64, error)
 	CreateUserSubgraphAccess(ctx context.Context, params db.CreateUserSubgraphAccessParams) (db.UserSubgraphAccess, error)
 	NotifyPuchaseUpdated(email string)
@@ -82,7 +82,11 @@ func grantAccesses(ctx context.Context, env Env, purchase *db.Purchase) error {
 		if db.IsNoFound(err) {
 			env.Logger().Info("user not found, creating new user", "email", purchase.Email)
 
-			user, err = env.InsertUserWithEmail(ctx, purchase.Email)
+			params := db.InsertUserWithEmailParams{
+				Email:      purchase.Email,
+				CreatedVia: "purchase",
+			}
+			user, err = env.InsertUserWithEmail(ctx, params)
 			if err != nil {
 				return fmt.Errorf("failed to insert user: %w", err)
 			}
