@@ -39,6 +39,7 @@ type Env interface {
 	Request(c tgbotapi.Chattable) (*tgbotapi.APIResponse, error)
 	GetChatMemberStatus(ctx context.Context, chatID, userID int64) (string, error)
 	GetBotCanInvite(ctx context.Context, chatID int64) (bool, error)
+	InviteUserToChat(ctx context.Context, chatID, userID int64) error
 	BotLink() string
 
 	GenerateTgAuthURL(ctx context.Context, path string, data model.TgAuthToken) (string, error)
@@ -227,6 +228,9 @@ func (req *request) handleCallbackQuery(ctx context.Context) error {
 
 	case "mbti_answer":
 		return req.handleMBTIAnswer(ctx, actionParts)
+
+	case "join_chat":
+		return req.handleJoinChat(ctx, actionParts)
 
 	default:
 		log.Info("unhandled callback query", "data", req.update.CallbackQuery.Data)
@@ -510,24 +514,17 @@ func (req *request) sendAvailableChats(ctx context.Context) error {
 		chatsBySubgraph[chat.SubgraphName] = append(chatsBySubgraph[chat.SubgraphName], chat)
 	}
 
-	// Build keyboard with chat links
+	// Build keyboard with join chat buttons
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for subgraph, subgraphChats := range chatsBySubgraph {
 		message.WriteString(fmt.Sprintf("*%s:*\n", subgraph))
 		for _, chat := range subgraphChats {
 			message.WriteString(fmt.Sprintf("• %s\n", chat.ChatTitle))
 			
-			// Create invite link
-			// For supergroups/channels, Telegram ID is negative and we need to remove the -100 prefix
-			chatID := chat.TelegramID
-			if chatID < -1000000000000 {
-				chatID = -chatID - 1000000000000
-			} else if chatID < 0 {
-				chatID = -chatID
-			}
-			inviteLink := fmt.Sprintf("https://t.me/c/%d", chatID)
+			// Create callback button to join chat
+			callbackData := fmt.Sprintf("join_chat:%d", chat.TelegramID)
 			rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonURL(chat.ChatTitle, inviteLink),
+				tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("🚀 Войти в %s", chat.ChatTitle), callbackData),
 			))
 		}
 		message.WriteString("\n")
@@ -545,4 +542,78 @@ func (req *request) sendAvailableChats(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (req *request) handleJoinChat(ctx context.Context, actionParts []string) error {
+	req.env.Logger().Info("handling join chat callback", "actionParts", actionParts)
+	
+	if len(actionParts) < 2 {
+		return req.SendCallbackMessage("❌ Неверный формат команды.")
+	}
+
+	// Parse chat ID
+	chatID, err := strconv.ParseInt(actionParts[1], 10, 64)
+	if err != nil {
+		req.env.Logger().Error("failed to parse chat ID", "error", err, "chatID", actionParts[1])
+		return req.SendCallbackMessage("❌ Неверный ID чата.")
+	}
+	
+	req.env.Logger().Info("parsed chat ID", "chatID", chatID)
+
+	// Check if user has Telegram ID linked
+	if req.update.CallbackQuery.From == nil {
+		return req.SendCallbackMessage("❌ Не удалось определить ваш Telegram аккаунт.")
+	}
+
+	telegramUserID := req.update.CallbackQuery.From.ID
+
+	// Get user by Telegram ID
+	user, err := req.env.UserByTgUserID(ctx, sql.NullInt64{Int64: telegramUserID, Valid: true})
+	if err != nil {
+		if db.IsNoFound(err) {
+			return req.SendCallbackMessage("❌ Ваш Telegram аккаунт не привязан. Используйте команду в веб-интерфейсе для привязки.")
+		}
+		req.env.Logger().Error("failed to get user by telegram ID", "error", err, "telegramID", telegramUserID)
+		return req.SendCallbackMessage("❌ Произошла ошибка. Попробуйте позже.")
+	}
+
+	// Get user's active subgraphs
+	activeSubgraphs, err := req.env.ListActiveUserSubgraphs(ctx, user.ID)
+	if err != nil {
+		req.env.Logger().Error("failed to get active user subgraphs", "error", err, "userID", user.ID)
+		return req.SendCallbackMessage("❌ Не удалось проверить доступ к группам.")
+	}
+
+	if len(activeSubgraphs) == 0 {
+		return req.SendCallbackMessage("❌ У вас нет активных подписок для доступа к групповым чатам.")
+	}
+
+	// Check if user has access to this specific chat
+	chats, err := req.env.TgBotChatsWithSubgraphInvites(ctx, activeSubgraphs)
+	if err != nil {
+		req.env.Logger().Error("failed to get chats with invites", "error", err, "subgraphs", activeSubgraphs)
+		return req.SendCallbackMessage("❌ Не удалось проверить доступ к чату.")
+	}
+
+	// Find the requested chat in available chats
+	var foundChat *db.TgBotChatsWithSubgraphInvitesRow
+	for _, chat := range chats {
+		if chat.TelegramID == chatID {
+			foundChat = &chat
+			break
+		}
+	}
+
+	if foundChat == nil {
+		return req.SendCallbackMessage("❌ У вас нет доступа к этому чату.")
+	}
+
+	// Try to invite user to the chat
+	err = req.env.InviteUserToChat(ctx, chatID, telegramUserID)
+	if err != nil {
+		req.env.Logger().Error("failed to invite user to chat", "error", err, "chatID", chatID, "userID", telegramUserID)
+		return req.SendCallbackMessage("❌ Не удалось добавить вас в группу. Возможно, вы уже участник или бот не имеет прав.")
+	}
+
+	return req.SendCallbackMessage(fmt.Sprintf("✅ Пригласительная ссылка для группы \"%s\" была отправлена вам в личные сообщения!", foundChat.ChatTitle))
 }

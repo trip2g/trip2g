@@ -97,3 +97,48 @@ func (io *HandlerIO) GetBotCanInvite(ctx context.Context, chatID int64) (bool, e
 	// Note: In Telegram Bot API, CanInviteUsers defaults to true for administrators
 	return chatMember.CanInviteUsers, nil
 }
+
+func (io *HandlerIO) InviteUserToChat(ctx context.Context, chatID, userID int64) error {
+	// For private groups/supergroups, we need to create an invite link and send it to the user
+	
+	// First, try to create a one-time invite link
+	createLinkConfig := tgbotapi.CreateChatInviteLinkConfig{
+		ChatConfig: tgbotapi.ChatConfig{
+			ChatID: chatID,
+		},
+		MemberLimit: 1, // One-time use link
+	}
+
+	resp, err := io.Request(createLinkConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create invite link: %w", err)
+	}
+
+	if !resp.Ok {
+		return fmt.Errorf("telegram API error when creating invite link: %s", resp.Description)
+	}
+
+	// Parse the invite link from response
+	var inviteLink tgbotapi.ChatInviteLink
+	err = json.Unmarshal(resp.Result, &inviteLink)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal invite link response: %w", err)
+	}
+
+	// Send the invite link to the user
+	message := fmt.Sprintf("🔗 Вот ваша пригласительная ссылка для входа в группу:\n\n%s\n\n⏰ Ссылка одноразовая и действует в течение ограниченного времени.", inviteLink.InviteLink)
+	
+	msg := tgbotapi.NewMessage(userID, message)
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("🚀 Войти в группу", inviteLink.InviteLink),
+		),
+	)
+
+	_, err = io.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send invite link to user: %w", err)
+	}
+
+	return nil
+}
