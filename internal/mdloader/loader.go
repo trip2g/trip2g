@@ -156,12 +156,16 @@ func (ldr *loader) findAssets() error {
 				}
 
 			// envclare replace KindImage by their own KindEnclave node
-			// case enclavecore.KindEnclave:
-			// 	e, ok := n.(*enclavecore.Enclave)
-			// 	if ok {
-			// 		fmt.Printf("Enclave found in %+v\n", id, e)
-			// 		p.Assets[string(e.Image.Destination)] = struct{}{}
-			// 	}
+			case enclavecore.KindEnclave:
+				e, ok := n.(*enclavecore.Enclave)
+				if ok {
+					target := string(e.Image.Destination)
+
+					// ignore youtube and other embeded links
+					if isImageExtension(target) {
+						p.Assets[string(e.Image.Destination)] = struct{}{}
+					}
+				}
 
 			case ast.KindImage:
 				i, ok := n.(*ast.Image)

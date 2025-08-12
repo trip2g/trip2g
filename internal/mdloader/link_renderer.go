@@ -206,21 +206,33 @@ func (r *linkRenderer) exit(w util.BufWriter, n *wikilink.Node) {
 	}
 }
 
+var imageExtensions = map[string]struct{}{
+	".apng":  {},
+	".avif":  {},
+	".gif":   {},
+	".jpg":   {},
+	".jpeg":  {},
+	".jfif":  {},
+	".pjpeg": {},
+	".pjp":   {},
+	".png":   {},
+	".svg":   {},
+	".webp":  {},
+}
+
+func isImageExtension(target string) bool {
+	ext := filepath.Ext(target)
+	_, ok := imageExtensions[ext]
+	return ok
+}
+
 // returns true if the wikilink should be resolved to an image node.
 func resolveAsImage(n *wikilink.Node) bool {
 	if !n.Embed {
 		return false
 	}
 
-	filename := string(n.Target)
-	switch ext := filepath.Ext(filename); ext {
-	// Common image file types taken from
-	// https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types
-	case ".apng", ".avif", ".gif", ".jpg", ".jpeg", ".jfif", ".pjpeg", ".pjp", ".png", ".svg", ".webp":
-		return true
-	default:
-		return false
-	}
+	return isImageExtension(string(n.Target))
 }
 
 func nodeText(src []byte, n ast.Node) []byte {
