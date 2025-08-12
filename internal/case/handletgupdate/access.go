@@ -2,6 +2,7 @@ package handletgupdate
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
@@ -166,9 +167,12 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 	log := req.env.Logger()
 	chatMember := req.update.ChatMember
 
+	log.Info("handleChatMember called", "chat_id", chatMember.Chat.ID, "user_id", chatMember.NewChatMember.User.ID)
+
 	// Only track channels, groups, and supergroups
 	chat := chatMember.Chat
 	if chat.Type != "channel" && chat.Type != "group" && chat.Type != "supergroup" {
+		log.Info("skipping chat member update - not a trackable chat type", "chat_type", chat.Type)
 		return nil
 	}
 
@@ -204,6 +208,43 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 			log.Error("failed to insert chat member", "error", err, "user_id", userID, "chat_id", chatID)
 		} else {
 			log.Info("user joined chat", "user_id", userID, "chat_id", chatID, "chat_title", chat.ChatTitle)
+		}
+
+		// Update joined_at timestamp for tg_bot_chat_subgraph_accesses if user has system account
+		log.Info("attempting to update access records for user", "tg_user_id", userID)
+		user, userErr := req.env.UserByTgUserID(ctx, sql.NullInt64{Int64: userID, Valid: true})
+		if userErr != nil {
+			if !db.IsNoFound(userErr) {
+				log.Error("failed to get user by telegram ID", "error", userErr, "tg_user_id", userID)
+			} else {
+				log.Info("no system account linked for telegram user", "tg_user_id", userID)
+			}
+			// No system account linked - skip access record update
+		} else {
+			log.Info("found system account for telegram user", "tg_user_id", userID, "system_user_id", user.ID)
+			// Get active subgraphs for this chat to update access records
+			subgraphs, subgraphErr := req.env.ListActiveTgChatSubgraphNamesByChatID(ctx, chat.ID)
+			if subgraphErr != nil {
+				log.Error("failed to get active subgraphs for chat", "error", subgraphErr, "chat_id", chat.ID)
+			} else {
+				log.Info("found active subgraphs for chat", "chat_id", chat.ID, "subgraphs", subgraphs, "count", len(subgraphs))
+				// Update joined_at for each subgraph access record
+				for _, subgraphName := range subgraphs {
+					// Update joined_at timestamp for this access record
+					updateErr := req.env.UpdateTgBotChatSubgraphAccessJoinedAt(ctx, db.UpdateTgBotChatSubgraphAccessJoinedAtParams{
+						ChatID: chat.ID,
+						UserID: user.ID,
+						Name:   subgraphName,
+					})
+					if updateErr != nil {
+						log.Error("failed to update joined_at for access record", "error", updateErr,
+							"user_id", user.ID, "chat_id", chat.ID, "subgraph", subgraphName, "tg_user_id", userID)
+					} else {
+						log.Info("updated joined_at for access record", 
+							"user_id", user.ID, "chat_id", chat.ID, "subgraph", subgraphName, "tg_user_id", userID)
+					}
+				}
+			}
 		}
 	}
 
@@ -316,6 +357,146 @@ func (req *request) sendContentMenu(ctx context.Context) error {
 	_, err = req.env.Send(msg)
 	if err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
+	}
+
+	return nil
+}
+
+func (req *request) handleMessageEvents(ctx context.Context) error {
+	log := req.env.Logger()
+	message := req.update.Message
+
+	// Handle new chat members (users joining)
+	if len(message.NewChatMembers) > 0 {
+		for _, newMember := range message.NewChatMembers {
+			// Skip bot additions (they are handled by MyChatMember events)
+			if newMember.IsBot {
+				continue
+			}
+
+			log.Info("user joined via new_chat_members", "user_id", newMember.ID, "chat_id", message.Chat.ID, "chat_title", message.Chat.Title)
+			
+			err := req.handleUserJoined(ctx, newMember.ID, message.Chat.ID)
+			if err != nil {
+				log.Error("failed to handle user joined", "error", err, "user_id", newMember.ID, "chat_id", message.Chat.ID)
+			}
+		}
+	}
+
+	// Handle user left chat
+	if message.LeftChatMember != nil {
+		leftMember := message.LeftChatMember
+		
+		// Skip bot removals (they are handled by MyChatMember events)
+		if leftMember.IsBot {
+			return nil
+		}
+
+		log.Info("user left via left_chat_member", "user_id", leftMember.ID, "chat_id", message.Chat.ID, "chat_title", message.Chat.Title)
+		
+		err := req.handleUserLeft(ctx, leftMember.ID, message.Chat.ID)
+		if err != nil {
+			log.Error("failed to handle user left", "error", err, "user_id", leftMember.ID, "chat_id", message.Chat.ID)
+		}
+	}
+
+	return nil
+}
+
+func (req *request) handleUserJoined(ctx context.Context, userID int64, chatID int64) error {
+	log := req.env.Logger()
+
+	// Only track channels, groups, and supergroups
+	chat := req.update.Message.Chat
+	if chat.Type != "channel" && chat.Type != "group" && chat.Type != "supergroup" {
+		log.Info("skipping user join - not a trackable chat type", "chat_type", chat.Type)
+		return nil
+	}
+
+	// Get the tg_bot_chat record to get the autoincrement id
+	botChat, chatErr := req.env.TgBotChatByTelegramID(ctx, chatID)
+	if chatErr != nil {
+		log.Error("failed to get bot chat record", "error", chatErr, "chat_id", chatID)
+		return nil // Skip this user if we can't find the chat
+	}
+
+	err := req.env.InsertTgChatMember(ctx, db.InsertTgChatMemberParams{
+		UserID: userID,
+		ChatID: botChat.ID,
+	})
+	if err != nil {
+		log.Error("failed to insert chat member", "error", err, "user_id", userID, "chat_id", chatID)
+	} else {
+		log.Info("user joined chat", "user_id", userID, "chat_id", chatID, "chat_title", botChat.ChatTitle)
+	}
+
+	// Update joined_at timestamp for tg_bot_chat_subgraph_accesses if user has system account
+	log.Info("attempting to update access records for user", "tg_user_id", userID)
+	user, userErr := req.env.UserByTgUserID(ctx, sql.NullInt64{Int64: userID, Valid: true})
+	if userErr != nil {
+		if !db.IsNoFound(userErr) {
+			log.Error("failed to get user by telegram ID", "error", userErr, "tg_user_id", userID)
+		} else {
+			log.Info("no system account linked for telegram user", "tg_user_id", userID)
+		}
+		// No system account linked - skip access record update
+		return nil
+	}
+
+	log.Info("found system account for telegram user", "tg_user_id", userID, "system_user_id", user.ID)
+	// Get active subgraphs for this chat to update access records
+	subgraphs, subgraphErr := req.env.ListActiveTgChatSubgraphNamesByChatID(ctx, botChat.ID)
+	if subgraphErr != nil {
+		log.Error("failed to get active subgraphs for chat", "error", subgraphErr, "chat_id", botChat.ID)
+		return subgraphErr
+	}
+
+	log.Info("found active subgraphs for chat", "chat_id", botChat.ID, "subgraphs", subgraphs, "count", len(subgraphs))
+	// Update joined_at for each subgraph access record
+	for _, subgraphName := range subgraphs {
+		// Update joined_at timestamp for this access record
+		updateErr := req.env.UpdateTgBotChatSubgraphAccessJoinedAt(ctx, db.UpdateTgBotChatSubgraphAccessJoinedAtParams{
+			ChatID: botChat.ID,
+			UserID: user.ID,
+			Name:   subgraphName,
+		})
+		if updateErr != nil {
+			log.Error("failed to update joined_at for access record", "error", updateErr,
+				"user_id", user.ID, "chat_id", botChat.ID, "subgraph", subgraphName, "tg_user_id", userID)
+		} else {
+			log.Info("updated joined_at for access record", 
+				"user_id", user.ID, "chat_id", botChat.ID, "subgraph", subgraphName, "tg_user_id", userID)
+		}
+	}
+
+	return nil
+}
+
+func (req *request) handleUserLeft(ctx context.Context, userID int64, chatID int64) error {
+	log := req.env.Logger()
+
+	// Only track channels, groups, and supergroups
+	chat := req.update.Message.Chat
+	if chat.Type != "channel" && chat.Type != "group" && chat.Type != "supergroup" {
+		log.Info("skipping user left - not a trackable chat type", "chat_type", chat.Type)
+		return nil
+	}
+
+	// Get the tg_bot_chat record to get the autoincrement id
+	botChat, chatErr := req.env.TgBotChatByTelegramID(ctx, chatID)
+	if chatErr != nil {
+		log.Error("failed to get bot chat record", "error", chatErr, "chat_id", chatID)
+		return nil // Skip this user if we can't find the chat
+	}
+
+	err := req.env.RemoveTgChatMember(ctx, db.RemoveTgChatMemberParams{
+		UserID: userID,
+		ChatID: botChat.ID,
+	})
+	if err != nil {
+		log.Error("failed to remove chat member", "error", err, "user_id", userID, "chat_id", chatID)
+	} else {
+		log.Info("user left chat", "user_id", userID, "chat_id", chatID, "chat_title", botChat.ChatTitle)
 	}
 
 	return nil

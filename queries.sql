@@ -134,12 +134,9 @@ select distinct s.name
 
 -- name: ListActiveTgChatSubgraphNamesByChatID :many
 select distinct s.name
-  from tg_bot_chats bc
-  join tg_chat_members m on bc.id = m.chat_id
-  join tg_chat_subgraph_accesses a on a.chat_id = bc.id
-  join subgraphs s on s.id = a.subgraph_id
- where m.user_id = ?
-   and bc.removed_at is null
+  from tg_bot_chat_subgraph_invites tbcsi
+  join subgraphs s on s.id = tbcsi.subgraph_id
+ where tbcsi.chat_id = ?
  order by s.name;
 
 -- name: ListActivePatreonSubgraphNamesByUserID :many
@@ -724,7 +721,7 @@ select *
  order by created_at desc;
 
 -- name: TgBotChatsWithSubgraphInvites :many
-select distinct tbc.telegram_id, tbc.chat_title, s.name as subgraph_name
+select distinct tbc.id as chat_id, tbc.telegram_id, tbc.chat_title, s.id as subgraph_id, s.name as subgraph_name
 from tg_bot_chats tbc
 join tg_bot_chat_subgraph_invites tbcsi on tbc.id = tbcsi.chat_id
 join subgraphs s on tbcsi.subgraph_id = s.id
@@ -1173,3 +1170,13 @@ update users set tg_user_id = ? where id = ?;
 
 -- name: ClearTgUserIDByTgUserID :exec
 update users set tg_user_id = null where tg_user_id = ?;
+
+-- name: InsertTgBotChatSubgraphAccess :exec
+insert into tg_bot_chat_subgraph_accesses (chat_id, user_id, subgraph_id)
+values (?, ?, (select id from subgraphs where name = ?))
+on conflict (chat_id, user_id, subgraph_id) do update set created_at = current_timestamp;
+
+-- name: UpdateTgBotChatSubgraphAccessJoinedAt :exec
+update tg_bot_chat_subgraph_accesses
+set joined_at = current_timestamp
+where chat_id = ? and user_id = ? and subgraph_id = (select id from subgraphs where name = ?);

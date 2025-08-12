@@ -1,5 +1,14 @@
 Read instructions of common patterns in docs/instructions.md
 
+## Database Schema
+
+### tg_bot_chat_subgraph_accesses
+
+Tracks when users request and actually join Telegram chats:
+- Insert record when user clicks "Join Chat" button (sets `created_at`)
+- Update `joined_at` when user actually joins the chat (`new_chat_members` event)
+- Cron job uses this to remove users from chats when their subgraph access expires
+
 ## Golang
 
 Don’t write

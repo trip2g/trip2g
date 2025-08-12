@@ -830,7 +830,7 @@ func (q *Queries) ClearPatreonCredentialsWebhookSecret(ctx context.Context, id i
 }
 
 const clearTgUserIDByTgUserID = `-- name: ClearTgUserIDByTgUserID :exec
-update users set tg_user_id = null where tg_user_id = ?1
+update users set tg_user_id = null where tg_user_id = ?
 `
 
 func (q *Queries) ClearTgUserIDByTgUserID(ctx context.Context, tgUserID sql.NullInt64) error {
@@ -2164,6 +2164,23 @@ func (q *Queries) InsertTgBot(ctx context.Context, arg InsertTgBotParams) (TgBot
 	return i, err
 }
 
+const insertTgBotChatSubgraphAccess = `-- name: InsertTgBotChatSubgraphAccess :exec
+insert into tg_bot_chat_subgraph_accesses (chat_id, user_id, subgraph_id)
+values (?, ?, (select id from subgraphs where name = ?))
+on conflict (chat_id, user_id, subgraph_id) do update set created_at = current_timestamp
+`
+
+type InsertTgBotChatSubgraphAccessParams struct {
+	ChatID int64  `json:"chat_id"`
+	UserID int64  `json:"user_id"`
+	Name   string `json:"name"`
+}
+
+func (q *Queries) InsertTgBotChatSubgraphAccess(ctx context.Context, arg InsertTgBotChatSubgraphAccessParams) error {
+	_, err := q.db.ExecContext(ctx, insertTgBotChatSubgraphAccess, arg.ChatID, arg.UserID, arg.Name)
+	return err
+}
+
 const insertTgChatMember = `-- name: InsertTgChatMember :exec
 insert into tg_chat_members (user_id, chat_id)
 values (?, ?)
@@ -2823,17 +2840,14 @@ func (q *Queries) ListActiveSubgraphsByUserID(ctx context.Context, userID int64)
 
 const listActiveTgChatSubgraphNamesByChatID = `-- name: ListActiveTgChatSubgraphNamesByChatID :many
 select distinct s.name
-  from tg_bot_chats bc
-  join tg_chat_members m on bc.id = m.chat_id
-  join tg_chat_subgraph_accesses a on a.chat_id = bc.id
-  join subgraphs s on s.id = a.subgraph_id
- where m.user_id = ?
-   and bc.removed_at is null
+  from tg_bot_chat_subgraph_invites tbcsi
+  join subgraphs s on s.id = tbcsi.subgraph_id
+ where tbcsi.chat_id = ?
  order by s.name
 `
 
-func (q *Queries) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, userID int64) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, listActiveTgChatSubgraphNamesByChatID, userID)
+func (q *Queries) ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, chatID int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveTgChatSubgraphNamesByChatID, chatID)
 	if err != nil {
 		return nil, err
 	}
@@ -4295,7 +4309,7 @@ func (q *Queries) TgBotChatsCanInvite(ctx context.Context) ([]TgBotChat, error) 
 }
 
 const tgBotChatsWithSubgraphInvites = `-- name: TgBotChatsWithSubgraphInvites :many
-select distinct tbc.telegram_id, tbc.chat_title, s.name as subgraph_name
+select distinct tbc.id as chat_id, tbc.telegram_id, tbc.chat_title, s.id as subgraph_id, s.name as subgraph_name
 from tg_bot_chats tbc
 join tg_bot_chat_subgraph_invites tbcsi on tbc.id = tbcsi.chat_id
 join subgraphs s on tbcsi.subgraph_id = s.id
@@ -4305,8 +4319,10 @@ order by tbc.chat_title
 `
 
 type TgBotChatsWithSubgraphInvitesRow struct {
+	ChatID       int64  `json:"chat_id"`
 	TelegramID   int64  `json:"telegram_id"`
 	ChatTitle    string `json:"chat_title"`
+	SubgraphID   int64  `json:"subgraph_id"`
 	SubgraphName string `json:"subgraph_name"`
 }
 
@@ -4329,7 +4345,13 @@ func (q *Queries) TgBotChatsWithSubgraphInvites(ctx context.Context, subgraphNam
 	var items []TgBotChatsWithSubgraphInvitesRow
 	for rows.Next() {
 		var i TgBotChatsWithSubgraphInvitesRow
-		if err := rows.Scan(&i.TelegramID, &i.ChatTitle, &i.SubgraphName); err != nil {
+		if err := rows.Scan(
+			&i.ChatID,
+			&i.TelegramID,
+			&i.ChatTitle,
+			&i.SubgraphID,
+			&i.SubgraphName,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -5024,6 +5046,23 @@ type UpdateTgBotChatCanInviteParams struct {
 
 func (q *Queries) UpdateTgBotChatCanInvite(ctx context.Context, arg UpdateTgBotChatCanInviteParams) error {
 	_, err := q.db.ExecContext(ctx, updateTgBotChatCanInvite, arg.CanInvite, arg.TelegramID)
+	return err
+}
+
+const updateTgBotChatSubgraphAccessJoinedAt = `-- name: UpdateTgBotChatSubgraphAccessJoinedAt :exec
+update tg_bot_chat_subgraph_accesses
+set joined_at = current_timestamp
+where chat_id = ? and user_id = ? and subgraph_id = (select id from subgraphs where name = ?)
+`
+
+type UpdateTgBotChatSubgraphAccessJoinedAtParams struct {
+	ChatID int64  `json:"chat_id"`
+	UserID int64  `json:"user_id"`
+	Name   string `json:"name"`
+}
+
+func (q *Queries) UpdateTgBotChatSubgraphAccessJoinedAt(ctx context.Context, arg UpdateTgBotChatSubgraphAccessJoinedAtParams) error {
+	_, err := q.db.ExecContext(ctx, updateTgBotChatSubgraphAccessJoinedAt, arg.ChatID, arg.UserID, arg.Name)
 	return err
 }
 

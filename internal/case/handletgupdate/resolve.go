@@ -52,6 +52,8 @@ type Env interface {
 	UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
 	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
 	TgBotChatsWithSubgraphInvites(ctx context.Context, subgraphNames []string) ([]db.TgBotChatsWithSubgraphInvitesRow, error)
+	InsertTgBotChatSubgraphAccess(ctx context.Context, arg db.InsertTgBotChatSubgraphAccessParams) error
+	UpdateTgBotChatSubgraphAccessJoinedAt(ctx context.Context, arg db.UpdateTgBotChatSubgraphAccessJoinedAtParams) error
 }
 
 type UserStateData struct {
@@ -120,6 +122,9 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 		}
 	}
 
+	rawJSON, _ := json.Marshal(update)
+	fmt.Println(string(rawJSON))
+
 	chatID := int64(0)
 	switch {
 	case update.Message != nil:
@@ -170,6 +175,10 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 
 	if update.Message != nil && update.Message.IsCommand() {
 		return req.handleCommands(ctx)
+	}
+
+	if update.Message != nil {
+		return req.handleMessageEvents(ctx)
 	}
 
 	return nil
@@ -432,9 +441,9 @@ func (req *request) handleAttachCode(ctx context.Context, args string) error {
 	// If the account already has a different Telegram user attached, notify the old user
 	if attachCode.CurrentTgUserID.Valid && attachCode.CurrentTgUserID.Int64 != telegramUserID {
 		// Send notification to the old Telegram user
-		oldUserMsg := tgbotapi.NewMessage(attachCode.CurrentTgUserID.Int64, 
+		oldUserMsg := tgbotapi.NewMessage(attachCode.CurrentTgUserID.Int64,
 			"⚠️ Ваш аккаунт был привязан к другому Telegram пользователю.\n\n" +
-			"Если это были не вы, обратитесь в поддержку.")
+				"Если это были не вы, обратитесь в поддержку.")
 		// Try to send but don't fail if we can't reach the old user
 		_, _ = req.env.Send(oldUserMsg)
 	}
@@ -520,7 +529,7 @@ func (req *request) sendAvailableChats(ctx context.Context) error {
 		message.WriteString(fmt.Sprintf("*%s:*\n", subgraph))
 		for _, chat := range subgraphChats {
 			message.WriteString(fmt.Sprintf("• %s\n", chat.ChatTitle))
-			
+
 			// Create callback button to join chat
 			callbackData := fmt.Sprintf("join_chat:%d", chat.TelegramID)
 			rows = append(rows, tgbotapi.NewInlineKeyboardRow(
@@ -546,7 +555,7 @@ func (req *request) sendAvailableChats(ctx context.Context) error {
 
 func (req *request) handleJoinChat(ctx context.Context, actionParts []string) error {
 	req.env.Logger().Info("handling join chat callback", "actionParts", actionParts)
-	
+
 	if len(actionParts) < 2 {
 		return req.SendCallbackMessage("❌ Неверный формат команды.")
 	}
@@ -557,7 +566,7 @@ func (req *request) handleJoinChat(ctx context.Context, actionParts []string) er
 		req.env.Logger().Error("failed to parse chat ID", "error", err, "chatID", actionParts[1])
 		return req.SendCallbackMessage("❌ Неверный ID чата.")
 	}
-	
+
 	req.env.Logger().Info("parsed chat ID", "chatID", chatID)
 
 	// Check if user has Telegram ID linked
@@ -606,6 +615,17 @@ func (req *request) handleJoinChat(ctx context.Context, actionParts []string) er
 
 	if foundChat == nil {
 		return req.SendCallbackMessage("❌ У вас нет доступа к этому чату.")
+	}
+
+	// Record access request in the database
+	err = req.env.InsertTgBotChatSubgraphAccess(ctx, db.InsertTgBotChatSubgraphAccessParams{
+		ChatID: foundChat.ChatID,
+		UserID: user.ID,
+		Name:   foundChat.SubgraphName,
+	})
+	if err != nil {
+		req.env.Logger().Error("failed to record chat access request", "error", err, "chatID", foundChat.ChatID, "userID", user.ID, "subgraphID", foundChat.SubgraphID)
+		// Don't return error - continue with invitation
 	}
 
 	// Try to invite user to the chat

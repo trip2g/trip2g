@@ -388,6 +388,15 @@ CREATE TABLE IF NOT EXISTS "user_subgraph_accesses" (
   purchase_id text references purchases(id) on delete restrict,
   created_by integer references admins(user_id) on delete restrict
 );
+CREATE TABLE tg_bot_chat_subgraph_accesses (
+  chat_id integer not null references tg_bot_chats(id) on delete cascade,
+  user_id integer not null references users(id) on delete restrict,
+  subgraph_id integer not null references subgraphs(id) on delete restrict,
+  created_at datetime not null default current_timestamp,
+  joined_at datetime,
+
+  primary key (chat_id, user_id, subgraph_id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -450,4 +459,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250809093139'),
   ('20250810022248'),
   ('20250810023112'),
-  ('20250812041450');
+  ('20250812041450'),
+  ('20250812095819');
