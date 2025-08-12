@@ -26,6 +26,9 @@ var _ Env = &EnvMock{}
 //			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentUserToken method")
 //			},
+//			DeleteTgAttachCodesByUserFunc: func(ctx context.Context, userID int64) error {
+//				panic("mock out the DeleteTgAttachCodesByUser method")
+//			},
 //			GenerateTgAttachCodeFunc: func() string {
 //				panic("mock out the GenerateTgAttachCode method")
 //			},
@@ -47,6 +50,9 @@ type EnvMock struct {
 
 	// CurrentUserTokenFunc mocks the CurrentUserToken method.
 	CurrentUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
+
+	// DeleteTgAttachCodesByUserFunc mocks the DeleteTgAttachCodesByUser method.
+	DeleteTgAttachCodesByUserFunc func(ctx context.Context, userID int64) error
 
 	// GenerateTgAttachCodeFunc mocks the GenerateTgAttachCode method.
 	GenerateTgAttachCodeFunc func() string
@@ -71,6 +77,13 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// DeleteTgAttachCodesByUser holds details about calls to the DeleteTgAttachCodesByUser method.
+		DeleteTgAttachCodesByUser []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// UserID is the userID argument value.
+			UserID int64
+		}
 		// GenerateTgAttachCode holds details about calls to the GenerateTgAttachCode method.
 		GenerateTgAttachCode []struct {
 		}
@@ -89,11 +102,12 @@ type EnvMock struct {
 			ID int64
 		}
 	}
-	lockBotStartLink         sync.RWMutex
-	lockCurrentUserToken     sync.RWMutex
-	lockGenerateTgAttachCode sync.RWMutex
-	lockInsertTgAttachCode   sync.RWMutex
-	lockTgBot                sync.RWMutex
+	lockBotStartLink              sync.RWMutex
+	lockCurrentUserToken          sync.RWMutex
+	lockDeleteTgAttachCodesByUser sync.RWMutex
+	lockGenerateTgAttachCode      sync.RWMutex
+	lockInsertTgAttachCode        sync.RWMutex
+	lockTgBot                     sync.RWMutex
 }
 
 // BotStartLink calls BotStartLinkFunc.
@@ -161,6 +175,42 @@ func (mock *EnvMock) CurrentUserTokenCalls() []struct {
 	mock.lockCurrentUserToken.RLock()
 	calls = mock.calls.CurrentUserToken
 	mock.lockCurrentUserToken.RUnlock()
+	return calls
+}
+
+// DeleteTgAttachCodesByUser calls DeleteTgAttachCodesByUserFunc.
+func (mock *EnvMock) DeleteTgAttachCodesByUser(ctx context.Context, userID int64) error {
+	if mock.DeleteTgAttachCodesByUserFunc == nil {
+		panic("EnvMock.DeleteTgAttachCodesByUserFunc: method is nil but Env.DeleteTgAttachCodesByUser was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		UserID int64
+	}{
+		Ctx:    ctx,
+		UserID: userID,
+	}
+	mock.lockDeleteTgAttachCodesByUser.Lock()
+	mock.calls.DeleteTgAttachCodesByUser = append(mock.calls.DeleteTgAttachCodesByUser, callInfo)
+	mock.lockDeleteTgAttachCodesByUser.Unlock()
+	return mock.DeleteTgAttachCodesByUserFunc(ctx, userID)
+}
+
+// DeleteTgAttachCodesByUserCalls gets all the calls that were made to DeleteTgAttachCodesByUser.
+// Check the length with:
+//
+//	len(mockedEnv.DeleteTgAttachCodesByUserCalls())
+func (mock *EnvMock) DeleteTgAttachCodesByUserCalls() []struct {
+	Ctx    context.Context
+	UserID int64
+} {
+	var calls []struct {
+		Ctx    context.Context
+		UserID int64
+	}
+	mock.lockDeleteTgAttachCodesByUser.RLock()
+	calls = mock.calls.DeleteTgAttachCodesByUser
+	mock.lockDeleteTgAttachCodesByUser.RUnlock()
 	return calls
 }
 

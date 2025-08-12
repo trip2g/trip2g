@@ -13,6 +13,7 @@ import (
 
 type Env interface {
 	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
+	DeleteTgAttachCodesByUser(ctx context.Context, userID int64) error
 	InsertTgAttachCode(ctx context.Context, arg db.InsertTgAttachCodeParams) error
 	TgBot(ctx context.Context, id int64) (db.TgBot, error)
 	GenerateTgAttachCode() string
@@ -55,6 +56,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 			return &model.ErrorPayload{Message: "Bot not found"}, nil
 		}
 		return nil, fmt.Errorf("failed to get bot: %w", err)
+	}
+
+	// Delete any existing attach codes for this user
+	err = env.DeleteTgAttachCodesByUser(ctx, int64(userToken.ID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete existing attach codes: %w", err)
 	}
 
 	// Generate random 8-character code via environment

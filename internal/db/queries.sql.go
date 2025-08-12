@@ -1007,6 +1007,15 @@ func (q *Queries) DeleteTgAttachCode(ctx context.Context, code string) error {
 	return err
 }
 
+const deleteTgAttachCodesByUser = `-- name: DeleteTgAttachCodesByUser :exec
+delete from tg_attach_codes where user_id = ?
+`
+
+func (q *Queries) DeleteTgAttachCodesByUser(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTgAttachCodesByUser, userID)
+	return err
+}
+
 const deleteTgChatSubgraphAccess = `-- name: DeleteTgChatSubgraphAccess :exec
 delete from tg_chat_subgraph_accesses
 where id = ?
@@ -1530,25 +1539,6 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 		return nil, err
 	}
 	return items, nil
-}
-
-const getTgAttachCodeByCode = `-- name: GetTgAttachCodeByCode :one
-select user_id, bot_id, created_at
-from tg_attach_codes
-where code = ?
-`
-
-type GetTgAttachCodeByCodeRow struct {
-	UserID    int64     `json:"user_id"`
-	BotID     int64     `json:"bot_id"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-func (q *Queries) GetTgAttachCodeByCode(ctx context.Context, code string) (GetTgAttachCodeByCodeRow, error) {
-	row := q.db.QueryRowContext(ctx, getTgAttachCodeByCode, code)
-	var i GetTgAttachCodeByCodeRow
-	err := row.Scan(&i.UserID, &i.BotID, &i.CreatedAt)
-	return i, err
 }
 
 const hideNotePath = `-- name: HideNotePath :exec
@@ -4060,6 +4050,36 @@ func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, er
 		&i.Color,
 		&i.CreatedAt,
 		&i.Hidden,
+	)
+	return i, err
+}
+
+const tgAttachCodeByCode = `-- name: TgAttachCodeByCode :one
+select 
+    tac.user_id,
+    tac.bot_id,
+    tac.created_at,
+    u.tg_user_id as current_tg_user_id
+from tg_attach_codes tac
+left join users u on tac.user_id = u.id
+where tac.code = ?
+`
+
+type TgAttachCodeByCodeRow struct {
+	UserID          int64         `json:"user_id"`
+	BotID           int64         `json:"bot_id"`
+	CreatedAt       time.Time     `json:"created_at"`
+	CurrentTgUserID sql.NullInt64 `json:"current_tg_user_id"`
+}
+
+func (q *Queries) TgAttachCodeByCode(ctx context.Context, code string) (TgAttachCodeByCodeRow, error) {
+	row := q.db.QueryRowContext(ctx, tgAttachCodeByCode, code)
+	var i TgAttachCodeByCodeRow
+	err := row.Scan(
+		&i.UserID,
+		&i.BotID,
+		&i.CreatedAt,
+		&i.CurrentTgUserID,
 	)
 	return i, err
 }

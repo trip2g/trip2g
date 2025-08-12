@@ -38,6 +38,10 @@ func TestResolve(t *testing.T) {
 						Name: "testbot",
 					}, nil
 				}
+				env.DeleteTgAttachCodesByUserFunc = func(ctx context.Context, userID int64) error {
+					require.Equal(t, int64(456), userID)
+					return nil
+				}
 				env.GenerateTgAttachCodeFunc = func() string {
 					return "testcode"
 				}
@@ -72,6 +76,10 @@ func TestResolve(t *testing.T) {
 				}
 				env.TgBotFunc = func(ctx context.Context, id int64) (db.TgBot, error) {
 					return db.TgBot{}, sql.ErrNoRows
+				}
+				env.DeleteTgAttachCodesByUserFunc = func(ctx context.Context, userID int64) error {
+					require.Equal(t, int64(456), userID)
+					return nil
 				}
 			},
 			wantErr: false,

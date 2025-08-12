@@ -1140,13 +1140,21 @@ select unv.version_id, unv.created_at
 insert into tg_attach_codes (user_id, bot_id, code)
 values (?, ?, ?);
 
--- name: GetTgAttachCodeByCode :one
-select user_id, bot_id, created_at
-from tg_attach_codes
-where code = ?;
+-- name: TgAttachCodeByCode :one
+select 
+    tac.user_id,
+    tac.bot_id,
+    tac.created_at,
+    u.tg_user_id as current_tg_user_id
+from tg_attach_codes tac
+left join users u on tac.user_id = u.id
+where tac.code = ?;
 
 -- name: DeleteTgAttachCode :exec
 delete from tg_attach_codes where code = ?;
+
+-- name: DeleteTgAttachCodesByUser :exec
+delete from tg_attach_codes where user_id = ?;
 
 -- name: ListTgBots :many
 select * from tg_bots order by description;

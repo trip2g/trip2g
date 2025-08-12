@@ -44,7 +44,7 @@ type Env interface {
 	GenerateTgAuthURL(ctx context.Context, path string, data model.TgAuthToken) (string, error)
 	ListActiveTgChatSubgraphNamesByChatID(ctx context.Context, id int64) ([]string, error)
 	InsertWaitListTgBotRequest(ctx context.Context, arg db.InsertWaitListTgBotRequestParams) error
-	GetTgAttachCodeByCode(ctx context.Context, code string) (db.GetTgAttachCodeByCodeRow, error)
+	TgAttachCodeByCode(ctx context.Context, code string) (db.TgAttachCodeByCodeRow, error)
 	DeleteTgAttachCode(ctx context.Context, code string) error
 	UpdateUserTgID(ctx context.Context, arg db.UpdateUserTgIDParams) error
 }
@@ -388,35 +388,45 @@ func (req *request) handleWaitListRequest(ctx context.Context, args string) erro
 func (req *request) handleAttachCode(ctx context.Context, args string) error {
 	// Extract the code from "attach_XXXXXXXX"
 	if len(args) < 8 || !strings.HasPrefix(args, "attach_") {
-		return req.SendMessage("❌ Invalid attach code format.")
+		return req.SendMessage("❌ Неверный формат кода привязки.")
 	}
 
 	code := strings.TrimPrefix(args, "attach_")
 	if len(code) != 8 {
-		return req.SendMessage("❌ Invalid attach code format.")
+		return req.SendMessage("❌ Неверный формат кода привязки.")
 	}
 
 	// Get the attach code from database
-	attachCode, err := req.env.GetTgAttachCodeByCode(ctx, code)
+	attachCode, err := req.env.TgAttachCodeByCode(ctx, code)
 	if err != nil {
 		if db.IsNoFound(err) {
-			return req.SendMessage("❌ Attach code not found or expired.")
+			return req.SendMessage("❌ Код привязки не найден или истёк.")
 		}
 		req.env.Logger().Error("failed to get attach code", "error", err, "code", code)
-		return req.SendMessage("❌ Failed to process attach code. Please try again.")
+		return req.SendMessage("❌ Не удалось обработать код привязки. Попробуйте снова.")
 	}
 
 	// Verify the bot ID matches
 	if attachCode.BotID != req.env.BotID() {
-		return req.SendMessage("❌ This attach code is for a different bot.")
+		return req.SendMessage("❌ Этот код привязки предназначен для другого бота.")
 	}
 
 	// Get the telegram user ID from the message
 	if req.update.Message.From == nil {
-		return req.SendMessage("❌ Unable to identify your Telegram account.")
+		return req.SendMessage("❌ Не удалось определить ваш Telegram аккаунт.")
 	}
 
 	telegramUserID := req.update.Message.From.ID
+
+	// If the account already has a different Telegram user attached, notify the old user
+	if attachCode.CurrentTgUserID.Valid && attachCode.CurrentTgUserID.Int64 != telegramUserID {
+		// Send notification to the old Telegram user
+		oldUserMsg := tgbotapi.NewMessage(attachCode.CurrentTgUserID.Int64, 
+			"⚠️ Ваш аккаунт был привязан к другому Telegram пользователю.\n\n" +
+			"Если это были не вы, обратитесь в поддержку.")
+		// Try to send but don't fail if we can't reach the old user
+		_, _ = req.env.Send(oldUserMsg)
+	}
 
 	// Update the user's telegram ID
 	err = req.env.UpdateUserTgID(ctx, db.UpdateUserTgIDParams{
@@ -425,7 +435,7 @@ func (req *request) handleAttachCode(ctx context.Context, args string) error {
 	})
 	if err != nil {
 		req.env.Logger().Error("failed to update user telegram ID", "error", err, "userID", attachCode.UserID, "telegramUserID", telegramUserID)
-		return req.SendMessage("❌ Failed to link your account. Please try again.")
+		return req.SendMessage("❌ Не удалось привязать аккаунт. Попробуйте снова.")
 	}
 
 	// Delete the used attach code
@@ -435,5 +445,5 @@ func (req *request) handleAttachCode(ctx context.Context, args string) error {
 		// Don't return error here as the main operation succeeded
 	}
 
-	return req.SendMessage("✅ Successfully linked your Telegram account! You can now access your content through this bot.")
+	return req.SendMessage("✅ Ваш Telegram аккаунт успешно привязан! Теперь вы можете получить доступ к контенту через этого бота.")
 }
