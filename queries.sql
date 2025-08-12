@@ -723,6 +723,15 @@ select *
  where chat_id = ?
  order by created_at desc;
 
+-- name: TgBotChatsWithSubgraphInvites :many
+select distinct tbc.telegram_id, tbc.chat_title, s.name as subgraph_name
+from tg_bot_chats tbc
+join tg_bot_chat_subgraph_invites tbcsi on tbc.id = tbcsi.chat_id
+join subgraphs s on tbcsi.subgraph_id = s.id
+where tbc.removed_at is null
+  and s.name in (sqlc.slice('subgraph_names'))
+order by tbc.chat_title;
+
 -- name: TgChatSubgraphAccessesBySubgraphID :many
 select * from tg_chat_subgraph_accesses
 where subgraph_id = ?
@@ -1161,3 +1170,6 @@ select * from tg_bots order by description;
 
 -- name: UpdateUserTgID :exec
 update users set tg_user_id = ? where id = ?;
+
+-- name: ClearTgUserIDByTgUserID :exec
+update users set tg_user_id = null where tg_user_id = ?;

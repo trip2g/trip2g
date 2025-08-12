@@ -47,13 +47,6 @@ CREATE TABLE subgraphs (
   color text,
   created_at datetime not null default current_timestamp
 , hidden boolean not null default false);
-CREATE TABLE user_subgraph_accesses (
-  id integer primary key autoincrement,
-  user_id integer not null references users(id) on delete cascade,
-  subgraph_id integer not null references subgraphs(id) on delete restrict,
-  created_at datetime not null default current_timestamp,
-  expires_at datetime
-, revoke_id int references revokes(id) on delete restrict, purchase_id text not null references purchases(id) on delete restrict);
 CREATE TABLE revokes (
   id integer primary key autoincrement,
   target_type text not null,
@@ -385,6 +378,16 @@ CREATE TABLE tg_attach_codes (
   code text not null unique,
   created_at datetime not null default current_timestamp
 );
+CREATE TABLE IF NOT EXISTS "user_subgraph_accesses" (
+  id integer primary key autoincrement,
+  user_id integer not null references users(id) on delete cascade,
+  subgraph_id integer not null references subgraphs(id) on delete restrict,
+  created_at datetime not null default current_timestamp,
+  expires_at datetime,
+  revoke_id int references revokes(id) on delete restrict,
+  purchase_id text references purchases(id) on delete restrict,
+  created_by integer references admins(user_id) on delete restrict
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -446,4 +449,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250809044217'),
   ('20250809093139'),
   ('20250810022248'),
-  ('20250810023112');
+  ('20250810023112'),
+  ('20250812041450');

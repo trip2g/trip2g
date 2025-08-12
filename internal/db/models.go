@@ -407,13 +407,14 @@ type UserNoteView struct {
 }
 
 type UserSubgraphAccess struct {
-	ID         int64         `json:"id"`
-	UserID     int64         `json:"user_id"`
-	SubgraphID int64         `json:"subgraph_id"`
-	CreatedAt  time.Time     `json:"created_at"`
-	ExpiresAt  sql.NullTime  `json:"expires_at"`
-	RevokeID   sql.NullInt64 `json:"revoke_id"`
-	PurchaseID string        `json:"purchase_id"`
+	ID         int64          `json:"id"`
+	UserID     int64          `json:"user_id"`
+	SubgraphID int64          `json:"subgraph_id"`
+	CreatedAt  time.Time      `json:"created_at"`
+	ExpiresAt  sql.NullTime   `json:"expires_at"`
+	RevokeID   sql.NullInt64  `json:"revoke_id"`
+	PurchaseID sql.NullString `json:"purchase_id"`
+	CreatedBy  sql.NullInt64  `json:"created_by"`
 }
 
 type WaitListEmailRequest struct {

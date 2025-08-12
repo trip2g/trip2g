@@ -47,6 +47,10 @@ type Env interface {
 	TgAttachCodeByCode(ctx context.Context, code string) (db.TgAttachCodeByCodeRow, error)
 	DeleteTgAttachCode(ctx context.Context, code string) error
 	UpdateUserTgID(ctx context.Context, arg db.UpdateUserTgIDParams) error
+	ClearTgUserIDByTgUserID(ctx context.Context, tgUserID sql.NullInt64) error
+	UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
+	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
+	TgBotChatsWithSubgraphInvites(ctx context.Context, subgraphNames []string) ([]db.TgBotChatsWithSubgraphInvitesRow, error)
 }
 
 type UserStateData struct {
@@ -279,6 +283,9 @@ func (req *request) handleCommands(ctx context.Context) error {
 
 		return req.sendContentMenu(ctx)
 
+	case "chats":
+		return req.sendAvailableChats(ctx)
+
 	default:
 		msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, "Unknown command")
 
@@ -428,6 +435,13 @@ func (req *request) handleAttachCode(ctx context.Context, args string) error {
 		_, _ = req.env.Send(oldUserMsg)
 	}
 
+	// Clear this Telegram ID from any other users first
+	err = req.env.ClearTgUserIDByTgUserID(ctx, sql.NullInt64{Int64: telegramUserID, Valid: true})
+	if err != nil {
+		req.env.Logger().Error("failed to clear telegram ID from other users", "error", err, "telegramUserID", telegramUserID)
+		return req.SendMessage("❌ Не удалось очистить предыдущие привязки. Попробуйте снова.")
+	}
+
 	// Update the user's telegram ID
 	err = req.env.UpdateUserTgID(ctx, db.UpdateUserTgIDParams{
 		TgUserID: sql.NullInt64{Int64: telegramUserID, Valid: true},
@@ -446,4 +460,89 @@ func (req *request) handleAttachCode(ctx context.Context, args string) error {
 	}
 
 	return req.SendMessage("✅ Ваш Telegram аккаунт успешно привязан! Теперь вы можете получить доступ к контенту через этого бота.")
+}
+
+func (req *request) sendAvailableChats(ctx context.Context) error {
+	// Check if user has Telegram ID linked
+	if req.update.Message.From == nil {
+		return req.SendMessage("❌ Не удалось определить ваш Telegram аккаунт.")
+	}
+
+	// Get user by Telegram ID
+	user, err := req.env.UserByTgUserID(ctx, sql.NullInt64{Int64: req.update.Message.From.ID, Valid: true})
+	if err != nil {
+		if db.IsNoFound(err) {
+			return req.SendMessage("❌ Ваш Telegram аккаунт не привязан. Используйте команду в веб-интерфейсе для привязки.")
+		}
+		req.env.Logger().Error("failed to get user by telegram ID", "error", err, "telegramID", req.update.Message.From.ID)
+		return req.SendMessage("❌ Произошла ошибка. Попробуйте позже.")
+	}
+
+	// Get user's active subgraphs
+	activeSubgraphs, err := req.env.ListActiveUserSubgraphs(ctx, user.ID)
+	if err != nil {
+		req.env.Logger().Error("failed to get active user subgraphs", "error", err, "userID", user.ID)
+		return req.SendMessage("❌ Не удалось получить список доступных групп.")
+	}
+
+	if len(activeSubgraphs) == 0 {
+		return req.SendMessage("У вас нет активных подписок с доступом к групповым чатам.")
+	}
+
+	// Get chats with invites for user's subgraphs
+	chats, err := req.env.TgBotChatsWithSubgraphInvites(ctx, activeSubgraphs)
+	if err != nil {
+		req.env.Logger().Error("failed to get chats with invites", "error", err, "subgraphs", activeSubgraphs)
+		return req.SendMessage("❌ Не удалось получить список чатов.")
+	}
+
+	if len(chats) == 0 {
+		return req.SendMessage("Нет доступных групповых чатов для ваших подписок.")
+	}
+
+	// Build message with chat links
+	var message strings.Builder
+	message.WriteString("📋 *Доступные групповые чаты:*\n\n")
+
+	// Group chats by subgraph
+	chatsBySubgraph := make(map[string][]db.TgBotChatsWithSubgraphInvitesRow)
+	for _, chat := range chats {
+		chatsBySubgraph[chat.SubgraphName] = append(chatsBySubgraph[chat.SubgraphName], chat)
+	}
+
+	// Build keyboard with chat links
+	var rows [][]tgbotapi.InlineKeyboardButton
+	for subgraph, subgraphChats := range chatsBySubgraph {
+		message.WriteString(fmt.Sprintf("*%s:*\n", subgraph))
+		for _, chat := range subgraphChats {
+			message.WriteString(fmt.Sprintf("• %s\n", chat.ChatTitle))
+			
+			// Create invite link
+			// For supergroups/channels, Telegram ID is negative and we need to remove the -100 prefix
+			chatID := chat.TelegramID
+			if chatID < -1000000000000 {
+				chatID = -chatID - 1000000000000
+			} else if chatID < 0 {
+				chatID = -chatID
+			}
+			inviteLink := fmt.Sprintf("https://t.me/c/%d", chatID)
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL(chat.ChatTitle, inviteLink),
+			))
+		}
+		message.WriteString("\n")
+	}
+
+	msg := tgbotapi.NewMessage(req.chatID, message.String())
+	msg.ParseMode = "Markdown"
+	if len(rows) > 0 {
+		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
+	}
+
+	_, err = req.env.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send chats message: %w", err)
+	}
+
+	return nil
 }

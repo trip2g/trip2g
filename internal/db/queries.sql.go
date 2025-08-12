@@ -829,6 +829,15 @@ func (q *Queries) ClearPatreonCredentialsWebhookSecret(ctx context.Context, id i
 	return err
 }
 
+const clearTgUserIDByTgUserID = `-- name: ClearTgUserIDByTgUserID :exec
+update users set tg_user_id = null where tg_user_id = ?1
+`
+
+func (q *Queries) ClearTgUserIDByTgUserID(ctx context.Context, tgUserID sql.NullInt64) error {
+	_, err := q.db.ExecContext(ctx, clearTgUserIDByTgUserID, tgUserID)
+	return err
+}
+
 const countActiveSignInCodes = `-- name: CountActiveSignInCodes :one
 select count(*) from sign_in_codes
  where user_id = ?
@@ -846,7 +855,7 @@ const countUserSubgraphAccessByPurchaseID = `-- name: CountUserSubgraphAccessByP
 select count(*) from user_subgraph_accesses where purchase_id = ?
 `
 
-func (q *Queries) CountUserSubgraphAccessByPurchaseID(ctx context.Context, purchaseID string) (int64, error) {
+func (q *Queries) CountUserSubgraphAccessByPurchaseID(ctx context.Context, purchaseID sql.NullString) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countUserSubgraphAccessByPurchaseID, purchaseID)
 	var count int64
 	err := row.Scan(&count)
@@ -881,14 +890,14 @@ func (q *Queries) CreateRevoke(ctx context.Context, arg CreateRevokeParams) (int
 const createUserSubgraphAccess = `-- name: CreateUserSubgraphAccess :one
 insert into user_subgraph_accesses (user_id, subgraph_id, purchase_id, expires_at)
 values (?, ?, ?, ?)
-returning id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id
+returning id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id, created_by
 `
 
 type CreateUserSubgraphAccessParams struct {
-	UserID     int64        `json:"user_id"`
-	SubgraphID int64        `json:"subgraph_id"`
-	PurchaseID string       `json:"purchase_id"`
-	ExpiresAt  sql.NullTime `json:"expires_at"`
+	UserID     int64          `json:"user_id"`
+	SubgraphID int64          `json:"subgraph_id"`
+	PurchaseID sql.NullString `json:"purchase_id"`
+	ExpiresAt  sql.NullTime   `json:"expires_at"`
 }
 
 func (q *Queries) CreateUserSubgraphAccess(ctx context.Context, arg CreateUserSubgraphAccessParams) (UserSubgraphAccess, error) {
@@ -907,6 +916,7 @@ func (q *Queries) CreateUserSubgraphAccess(ctx context.Context, arg CreateUserSu
 		&i.ExpiresAt,
 		&i.RevokeID,
 		&i.PurchaseID,
+		&i.CreatedBy,
 	)
 	return i, err
 }
@@ -2881,7 +2891,7 @@ func (q *Queries) ListActiveTgChatSubgraphNamesByUserID(ctx context.Context, id 
 }
 
 const listActiveUserSubgraphAccessesByUserID = `-- name: ListActiveUserSubgraphAccessesByUserID :many
-select a.id, a.user_id, a.subgraph_id, a.created_at, a.expires_at, a.revoke_id, a.purchase_id
+select a.id, a.user_id, a.subgraph_id, a.created_at, a.expires_at, a.revoke_id, a.purchase_id, a.created_by
   from user_subgraph_accesses a
   join subgraphs s on a.subgraph_id = s.id
  where user_id = ?
@@ -2907,6 +2917,7 @@ func (q *Queries) ListActiveUserSubgraphAccessesByUserID(ctx context.Context, us
 			&i.ExpiresAt,
 			&i.RevokeID,
 			&i.PurchaseID,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}
@@ -3256,7 +3267,7 @@ func (q *Queries) ListAllUserBans(ctx context.Context) ([]UserBan, error) {
 }
 
 const listAllUserSubgraphAccesses = `-- name: ListAllUserSubgraphAccesses :many
-select id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id from user_subgraph_accesses order by id desc
+select id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id, created_by from user_subgraph_accesses order by id desc
 `
 
 func (q *Queries) ListAllUserSubgraphAccesses(ctx context.Context) ([]UserSubgraphAccess, error) {
@@ -3276,6 +3287,7 @@ func (q *Queries) ListAllUserSubgraphAccesses(ctx context.Context) ([]UserSubgra
 			&i.ExpiresAt,
 			&i.RevokeID,
 			&i.PurchaseID,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}
@@ -4282,6 +4294,55 @@ func (q *Queries) TgBotChatsCanInvite(ctx context.Context) ([]TgBotChat, error) 
 	return items, nil
 }
 
+const tgBotChatsWithSubgraphInvites = `-- name: TgBotChatsWithSubgraphInvites :many
+select distinct tbc.telegram_id, tbc.chat_title, s.name as subgraph_name
+from tg_bot_chats tbc
+join tg_bot_chat_subgraph_invites tbcsi on tbc.id = tbcsi.chat_id
+join subgraphs s on tbcsi.subgraph_id = s.id
+where tbc.removed_at is null
+  and s.name in (/*SLICE:subgraph_names*/?)
+order by tbc.chat_title
+`
+
+type TgBotChatsWithSubgraphInvitesRow struct {
+	TelegramID   int64  `json:"telegram_id"`
+	ChatTitle    string `json:"chat_title"`
+	SubgraphName string `json:"subgraph_name"`
+}
+
+func (q *Queries) TgBotChatsWithSubgraphInvites(ctx context.Context, subgraphNames []string) ([]TgBotChatsWithSubgraphInvitesRow, error) {
+	query := tgBotChatsWithSubgraphInvites
+	var queryParams []interface{}
+	if len(subgraphNames) > 0 {
+		for _, v := range subgraphNames {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:subgraph_names*/?", strings.Repeat(",?", len(subgraphNames))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:subgraph_names*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBotChatsWithSubgraphInvitesRow
+	for rows.Next() {
+		var i TgBotChatsWithSubgraphInvitesRow
+		if err := rows.Scan(&i.TelegramID, &i.ChatTitle, &i.SubgraphName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const tgChatMemberByUserIDAndChatID = `-- name: TgChatMemberByUserIDAndChatID :one
 select user_id, chat_id, created_at
 from tg_chat_members
@@ -4971,7 +5032,7 @@ update user_subgraph_accesses
    set expires_at = ?
      , subgraph_id = ?
  where id = ?
-returning id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id
+returning id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id, created_by
 `
 
 type UpdateUserSubgraphAccessParams struct {
@@ -4991,6 +5052,7 @@ func (q *Queries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSu
 		&i.ExpiresAt,
 		&i.RevokeID,
 		&i.PurchaseID,
+		&i.CreatedBy,
 	)
 	return i, err
 }
@@ -5343,7 +5405,7 @@ func (q *Queries) UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (U
 }
 
 const userSubgraphAccessByID = `-- name: UserSubgraphAccessByID :one
-select id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id
+select id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id, created_by
   from user_subgraph_accesses
  where id = ?
 `
@@ -5359,6 +5421,7 @@ func (q *Queries) UserSubgraphAccessByID(ctx context.Context, id int64) (UserSub
 		&i.ExpiresAt,
 		&i.RevokeID,
 		&i.PurchaseID,
+		&i.CreatedBy,
 	)
 	return i, err
 }
