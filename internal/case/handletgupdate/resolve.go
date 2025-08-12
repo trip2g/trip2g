@@ -615,5 +615,8 @@ func (req *request) handleJoinChat(ctx context.Context, actionParts []string) er
 		return req.SendCallbackMessage("❌ Не удалось добавить вас в группу. Возможно, вы уже участник или бот не имеет прав.")
 	}
 
-	return req.SendCallbackMessage(fmt.Sprintf("✅ Пригласительная ссылка для группы \"%s\" была отправлена вам в личные сообщения!", foundChat.ChatTitle))
+	// Just acknowledge the callback without showing alert
+	callback := tgbotapi.NewCallback(req.update.CallbackQuery.ID, "")
+	_, err = req.env.Request(callback)
+	return err
 }
