@@ -357,6 +357,66 @@ func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotap
 	return nil
 }
 
+func (a *app) KickTelegramChatMember(ctx context.Context, chatID, userID int64) error {
+	// Get the user to find their Telegram ID
+	user, err := a.UserByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user by ID %d: %w", userID, err)
+	}
+
+	if !user.TgUserID.Valid {
+		return fmt.Errorf("user %d does not have a Telegram ID", userID)
+	}
+
+	chat, err := a.TgBotChat(ctx, chatID)
+	if err != nil {
+		return fmt.Errorf("failed to get Telegram chat: %w", err)
+	}
+
+	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
+
+	if handlerIO == nil {
+		return fmt.Errorf("Telegram bot handler IO not found for chat ID %d", chatID)
+	}
+
+	err = handlerIO.KickChatMember(ctx, chat.TelegramID, user.TgUserID.Int64, chat.ChatType)
+	if err != nil {
+		return fmt.Errorf("failed to kick Telegram chat member: %w", err)
+	}
+
+	return nil
+}
+
+func (a *app) UnbanTelegramChatMember(ctx context.Context, chatID, userID int64) error {
+	// Get the user to find their Telegram ID
+	user, err := a.UserByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user by ID %d: %w", userID, err)
+	}
+
+	if !user.TgUserID.Valid {
+		return fmt.Errorf("user %d does not have a Telegram ID", userID)
+	}
+
+	chat, err := a.TgBotChat(ctx, chatID)
+	if err != nil {
+		return fmt.Errorf("failed to get Telegram chat: %w", err)
+	}
+
+	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
+
+	if handlerIO == nil {
+		return fmt.Errorf("Telegram bot handler IO not found for chat ID %d", chatID)
+	}
+
+	err = handlerIO.UnbanChatMember(ctx, chat.TelegramID, user.TgUserID.Int64)
+	if err != nil {
+		return fmt.Errorf("failed to unban Telegram chat member: %w", err)
+	}
+
+	return nil
+}
+
 func (a *app) ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error) {
 	// TODO: add caching for this method
 	return listactiveusersubgraphs.Resolve(ctx, a, userID)

@@ -124,7 +124,7 @@ func (io *TgBots) StartTgBot(ctx context.Context, id int64) {
 		return
 	}
 
-	handlerIO := HandlerIO{bot: bot, dbBotID: id}
+	handlerIO := HandlerIO{bot: bot, dbBotID: id, logger: io.logger}
 
 	// Check bot permissions in all active chats
 	go io.checkBotPermissionsInAllChats(ctx, &handlerIO, env)

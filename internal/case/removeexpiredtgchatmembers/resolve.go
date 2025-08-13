@@ -17,6 +17,7 @@ type Env interface {
 	ListTgBotChatSubgraphAccesses(ctx context.Context, filter db.ListTgBotChatSubgraphAccessesParams) ([]accessRow, error)
 	DeleteTgBotChatSubgraphAccess(ctx context.Context, arg db.DeleteTgBotChatSubgraphAccessParams) error
 	RemoveTgChatMember(ctx context.Context, arg db.RemoveTgChatMemberParams) error
+	KickTelegramChatMember(ctx context.Context, chatID, userID int64) error
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
 }
@@ -109,6 +110,16 @@ func processExpiredAccess(ctx context.Context, env Env, user *db.User, access *d
 	// The access.TgBotChatSubgraphAccess.ChatID is already the internal chat ID
 	// We can use the chat info from the access row which includes the telegram ID
 	chat := access.TgBotChat
+
+	// First, permanently ban the user from the actual Telegram chat if they have a telegram ID
+	// They will be unbanned when they request new access via /chats command
+	if user.TgUserID.Valid {
+		err := env.KickTelegramChatMember(ctx, chat.ID, user.ID)
+		if err != nil {
+			return fmt.Errorf("failed to ban user from Telegram chat (userID: %d, chatID: %d): %w",
+				user.ID, chat.ID, err)
+		}
+	}
 
 	// Remove user from the chat database record
 	err := env.RemoveTgChatMember(ctx, db.RemoveTgChatMemberParams{

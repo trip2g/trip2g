@@ -299,6 +299,9 @@ func (req *request) handleCommands(ctx context.Context) error {
 	case "user":
 		return req.sendUserInfo(ctx)
 
+	case "id":
+		return req.sendIdInfo(ctx)
+
 	default:
 		msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, "Unknown command")
 
@@ -699,6 +702,28 @@ func (req *request) sendUserInfo(ctx context.Context) error {
 	_, err = req.env.Send(msg)
 	if err != nil {
 		return fmt.Errorf("failed to send user info message: %w", err)
+	}
+
+	return nil
+}
+
+func (req *request) sendIdInfo(ctx context.Context) error {
+	var message strings.Builder
+
+	// Chat ID
+	message.WriteString(fmt.Sprintf("Chat ID: `%d`\n", req.update.Message.Chat.ID))
+
+	// User ID who sent the command
+	if req.update.Message.From != nil {
+		message.WriteString(fmt.Sprintf("User ID: `%d`", req.update.Message.From.ID))
+	}
+
+	msg := tgbotapi.NewMessage(req.chatID, message.String())
+	msg.ParseMode = "Markdown"
+
+	_, err := req.env.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send ID info message: %w", err)
 	}
 
 	return nil

@@ -24,6 +24,9 @@ var _ Env = &EnvMock{}
 //			DeleteTgBotChatSubgraphAccessFunc: func(ctx context.Context, arg db.DeleteTgBotChatSubgraphAccessParams) error {
 //				panic("mock out the DeleteTgBotChatSubgraphAccess method")
 //			},
+//			KickTelegramChatMemberFunc: func(ctx context.Context, chatID int64, userID int64) error {
+//				panic("mock out the KickTelegramChatMember method")
+//			},
 //			ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
 //				panic("mock out the ListActiveUserSubgraphs method")
 //			},
@@ -52,6 +55,9 @@ type EnvMock struct {
 	// DeleteTgBotChatSubgraphAccessFunc mocks the DeleteTgBotChatSubgraphAccess method.
 	DeleteTgBotChatSubgraphAccessFunc func(ctx context.Context, arg db.DeleteTgBotChatSubgraphAccessParams) error
 
+	// KickTelegramChatMemberFunc mocks the KickTelegramChatMember method.
+	KickTelegramChatMemberFunc func(ctx context.Context, chatID int64, userID int64) error
+
 	// ListActiveUserSubgraphsFunc mocks the ListActiveUserSubgraphs method.
 	ListActiveUserSubgraphsFunc func(ctx context.Context, userID int64) ([]string, error)
 
@@ -78,6 +84,15 @@ type EnvMock struct {
 			Ctx context.Context
 			// Arg is the arg argument value.
 			Arg db.DeleteTgBotChatSubgraphAccessParams
+		}
+		// KickTelegramChatMember holds details about calls to the KickTelegramChatMember method.
+		KickTelegramChatMember []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ChatID is the chatID argument value.
+			ChatID int64
+			// UserID is the userID argument value.
+			UserID int64
 		}
 		// ListActiveUserSubgraphs holds details about calls to the ListActiveUserSubgraphs method.
 		ListActiveUserSubgraphs []struct {
@@ -121,6 +136,7 @@ type EnvMock struct {
 		}
 	}
 	lockDeleteTgBotChatSubgraphAccess sync.RWMutex
+	lockKickTelegramChatMember        sync.RWMutex
 	lockListActiveUserSubgraphs       sync.RWMutex
 	lockListTgBotChatSubgraphAccesses sync.RWMutex
 	lockLogger                        sync.RWMutex
@@ -162,6 +178,46 @@ func (mock *EnvMock) DeleteTgBotChatSubgraphAccessCalls() []struct {
 	mock.lockDeleteTgBotChatSubgraphAccess.RLock()
 	calls = mock.calls.DeleteTgBotChatSubgraphAccess
 	mock.lockDeleteTgBotChatSubgraphAccess.RUnlock()
+	return calls
+}
+
+// KickTelegramChatMember calls KickTelegramChatMemberFunc.
+func (mock *EnvMock) KickTelegramChatMember(ctx context.Context, chatID int64, userID int64) error {
+	if mock.KickTelegramChatMemberFunc == nil {
+		panic("EnvMock.KickTelegramChatMemberFunc: method is nil but Env.KickTelegramChatMember was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		ChatID int64
+		UserID int64
+	}{
+		Ctx:    ctx,
+		ChatID: chatID,
+		UserID: userID,
+	}
+	mock.lockKickTelegramChatMember.Lock()
+	mock.calls.KickTelegramChatMember = append(mock.calls.KickTelegramChatMember, callInfo)
+	mock.lockKickTelegramChatMember.Unlock()
+	return mock.KickTelegramChatMemberFunc(ctx, chatID, userID)
+}
+
+// KickTelegramChatMemberCalls gets all the calls that were made to KickTelegramChatMember.
+// Check the length with:
+//
+//	len(mockedEnv.KickTelegramChatMemberCalls())
+func (mock *EnvMock) KickTelegramChatMemberCalls() []struct {
+	Ctx    context.Context
+	ChatID int64
+	UserID int64
+} {
+	var calls []struct {
+		Ctx    context.Context
+		ChatID int64
+		UserID int64
+	}
+	mock.lockKickTelegramChatMember.RLock()
+	calls = mock.calls.KickTelegramChatMember
+	mock.lockKickTelegramChatMember.RUnlock()
 	return calls
 }
 

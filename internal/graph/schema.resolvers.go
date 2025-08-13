@@ -371,10 +371,10 @@ func (r *adminMutationResolver) RemoveExpiredTgChatMembers(ctx context.Context, 
 		return nil, err
 	}
 
-	errors := make([]string, 0, len(result.Errors))
+	errors := []string{}
 
-	for i, err := range result.Errors {
-		errors[i] = err.Error()
+	for _, err := range result.Errors {
+		errors = append(errors, err.Error())
 	}
 
 	payload := model.RemoveExpiredTgChatMembersPayload{

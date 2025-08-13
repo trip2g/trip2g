@@ -73,6 +73,12 @@ func TestResolve(t *testing.T) {
 					}, nil
 				}
 
+				env.KickTelegramChatMemberFunc = func(ctx context.Context, chatID, userID int64) error {
+					require.Equal(t, int64(1), chatID)
+					require.Equal(t, int64(123), userID)
+					return nil
+				}
+
 				env.RemoveTgChatMemberFunc = func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
 					require.Equal(t, int64(987654321), arg.UserID)
 					require.Equal(t, int64(-1001234567890), arg.ChatID)
@@ -263,6 +269,10 @@ func TestResolve(t *testing.T) {
 					}, nil
 				}
 
+				env.KickTelegramChatMemberFunc = func(ctx context.Context, chatID, userID int64) error {
+					return nil // Let the kick succeed, but the database removal will fail
+				}
+
 				env.RemoveTgChatMemberFunc = func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
 					return errors.New("failed to remove from telegram")
 				}
@@ -350,6 +360,10 @@ func TestProcessUser(t *testing.T) {
 					}, nil
 				}
 
+				env.KickTelegramChatMemberFunc = func(ctx context.Context, chatID, userID int64) error {
+					return nil
+				}
+
 				env.RemoveTgChatMemberFunc = func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
 					return nil
 				}
@@ -360,6 +374,10 @@ func TestProcessUser(t *testing.T) {
 
 				env.DeleteTgBotChatSubgraphAccessFunc = func(ctx context.Context, arg db.DeleteTgBotChatSubgraphAccessParams) error {
 					return nil
+				}
+
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
 				}
 			},
 			expectedCount: 1,
@@ -390,6 +408,10 @@ func TestProcessUser(t *testing.T) {
 						TgUserID: sql.NullInt64{Int64: 987654321, Valid: true},
 					}, nil
 				}
+
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
 			},
 			expectedCount: 0,
 		},
@@ -404,6 +426,10 @@ func TestProcessUser(t *testing.T) {
 			setup: func(env *EnvMock) {
 				env.ListActiveUserSubgraphsFunc = func(ctx context.Context, userID int64) ([]string, error) {
 					return nil, errors.New("database error")
+				}
+
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
 				}
 			},
 			expectedError: "database error",
@@ -423,6 +449,10 @@ func TestProcessUser(t *testing.T) {
 
 				env.UserByIDFunc = func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{}, errors.New("user not found")
+				}
+
+				env.LoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[TEST]"}
 				}
 			},
 			expectedError: "failed to get user by ID 123: user not found",
@@ -477,6 +507,12 @@ func TestProcessExpiredAccess(t *testing.T) {
 				},
 			},
 			setup: func(env *EnvMock) {
+				env.KickTelegramChatMemberFunc = func(ctx context.Context, chatID, userID int64) error {
+					require.Equal(t, int64(1), chatID)
+					require.Equal(t, int64(123), userID)
+					return nil
+				}
+
 				env.RemoveTgChatMemberFunc = func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
 					require.Equal(t, int64(987654321), arg.UserID)
 					require.Equal(t, int64(-1001234567890), arg.ChatID)
@@ -518,6 +554,9 @@ func TestProcessExpiredAccess(t *testing.T) {
 				},
 			},
 			setup: func(env *EnvMock) {
+				// KickTelegramChatMember should NOT be called since user has no telegram ID
+				// (the function checks user.TgUserID.Valid before calling)
+
 				env.RemoveTgChatMemberFunc = func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
 					require.Equal(t, int64(0), arg.UserID) // Should be 0 when no telegram ID
 					return nil
@@ -543,10 +582,17 @@ func TestProcessExpiredAccess(t *testing.T) {
 					SubgraphID: 10,
 				},
 				TgBotChat: db.TgBotChat{
+					ID:         1,
 					TelegramID: -1001234567890,
 				},
 			},
 			setup: func(env *EnvMock) {
+				env.KickTelegramChatMemberFunc = func(ctx context.Context, chatID, userID int64) error {
+					require.Equal(t, int64(1), chatID)
+					require.Equal(t, int64(123), userID)
+					return nil // Let kick succeed, database removal will fail
+				}
+
 				env.RemoveTgChatMemberFunc = func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
 					return errors.New("telegram API error")
 				}
@@ -575,6 +621,12 @@ func TestProcessExpiredAccess(t *testing.T) {
 				},
 			},
 			setup: func(env *EnvMock) {
+				env.KickTelegramChatMemberFunc = func(ctx context.Context, chatID, userID int64) error {
+					require.Equal(t, int64(1), chatID)
+					require.Equal(t, int64(123), userID)
+					return nil
+				}
+
 				env.RemoveTgChatMemberFunc = func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
 					return nil
 				}
@@ -607,6 +659,12 @@ func TestProcessExpiredAccess(t *testing.T) {
 				},
 			},
 			setup: func(env *EnvMock) {
+				env.KickTelegramChatMemberFunc = func(ctx context.Context, chatID, userID int64) error {
+					require.Equal(t, int64(1), chatID)
+					require.Equal(t, int64(123), userID)
+					return nil
+				}
+
 				env.RemoveTgChatMemberFunc = func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
 					return nil
 				}
