@@ -340,15 +340,6 @@ CREATE TABLE IF NOT EXISTS "note_assets" (
   size integer not null default 0
 );
 CREATE INDEX idx_note_assets_absolute_path_sha256_hash on note_assets (absolute_path, sha256_hash);
-CREATE TABLE IF NOT EXISTS "tg_bot_chats" (
-  id integer primary key autoincrement,
-  telegram_id integer not null unique,
-  chat_type text not null, -- channel, group, supergroup
-  chat_title text not null,
-  added_at datetime not null default current_timestamp,
-  removed_at datetime null,
-  can_invite boolean not null default false
-);
 CREATE TABLE IF NOT EXISTS "tg_chat_subgraph_accesses" (
   id integer primary key autoincrement,
   chat_id integer not null,
@@ -368,7 +359,6 @@ CREATE TABLE IF NOT EXISTS "tg_chat_members" (
   created_at datetime not null default current_timestamp,
   primary key (user_id, chat_id)
 );
-CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
 CREATE INDEX idx_tg_chat_subgraph_accesses_chat_id on tg_chat_subgraph_accesses(chat_id);
 CREATE INDEX idx_tg_bot_chat_subgraph_invites_chat_id on tg_bot_chat_subgraph_invites(chat_id);
 CREATE INDEX idx_tg_chat_members_chat_id on tg_chat_members(chat_id);
@@ -397,6 +387,25 @@ CREATE TABLE tg_bot_chat_subgraph_accesses (
 
   primary key (chat_id, user_id, subgraph_id)
 );
+CREATE TABLE audit_logs (
+  id integer primary key autoincrement,
+  created_at timestamp not null default current_timestamp,
+  level int not null default 0,
+  message text not null,
+  params text
+);
+CREATE INDEX idx_audit_logs_created_at on audit_logs (created_at);
+CREATE TABLE IF NOT EXISTS "tg_bot_chats" (
+  id integer primary key autoincrement,
+  telegram_id integer not null unique,
+  chat_type text not null,
+  chat_title text not null,
+  added_at datetime not null default current_timestamp,
+  removed_at datetime null,
+  can_invite boolean not null default false,
+  bot_id integer not null
+);
+CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -460,4 +469,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250810022248'),
   ('20250810023112'),
   ('20250812041450'),
-  ('20250812095819');
+  ('20250812095819'),
+  ('20250813034629'),
+  ('20250813052619');

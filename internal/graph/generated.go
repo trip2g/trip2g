@@ -232,6 +232,7 @@ type ComplexityRoot struct {
 		MakeReleaseLive              func(childComplexity int, input model.MakeReleaseLiveInput) int
 		RefreshBoostyData            func(childComplexity int, input model.RefreshBoostyDataInput) int
 		RefreshPatreonData           func(childComplexity int, input model.RefreshPatreonDataInput) int
+		RemoveExpiredTgChatMembers   func(childComplexity int, input model.RemoveExpiredTgChatMembersInput) int
 		ResetNotFoundPath            func(childComplexity int, input model.ResetNotFoundPathInput) int
 		RestoreBoostyCredentials     func(childComplexity int, input model.RestoreBoostyCredentialsInput) int
 		RestorePatreonCredentials    func(childComplexity int, input model.RestorePatreonCredentialsInput) int
@@ -372,6 +373,7 @@ type ComplexityRoot struct {
 
 	AdminQuery struct {
 		APIKeyLogs                 func(childComplexity int, filter model.APIKeyLogsFilterInput) int
+		ActiveUserSubgraphs        func(childComplexity int, id int64) int
 		AllAPIKeys                 func(childComplexity int) int
 		AllAdmins                  func(childComplexity int) int
 		AllBoostyCredentials       func(childComplexity int, filter *model.AdminBoostyCredentialsFilterInput) int
@@ -737,6 +739,11 @@ type ComplexityRoot struct {
 		Success       func(childComplexity int) int
 	}
 
+	RemoveExpiredTgChatMembersPayload struct {
+		Errors       func(childComplexity int) int
+		RemovedCount func(childComplexity int) int
+	}
+
 	RequestEmailSignInCodePayload struct {
 		Success func(childComplexity int) int
 	}
@@ -959,6 +966,7 @@ type AdminMutationResolver interface {
 	UpdateTgBot(ctx context.Context, obj *model1.AdminMutation, input model.UpdateTgBotInput) (model.UpdateTgBotOrErrorPayload, error)
 	SetTgChatSubgraphs(ctx context.Context, obj *model1.AdminMutation, input model.SetTgChatSubgraphsInput) (model.SetTgChatSubgraphsOrErrorPayload, error)
 	SetTgChatSubgraphInvites(ctx context.Context, obj *model1.AdminMutation, input model.SetTgChatSubgraphInvitesInput) (model.SetTgChatSubgraphInvitesOrErrorPayload, error)
+	RemoveExpiredTgChatMembers(ctx context.Context, obj *model1.AdminMutation, input model.RemoveExpiredTgChatMembersInput) (model.RemoveExpiredTgChatMembersOrErrorPayload, error)
 	CreatePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreatePatreonCredentialsInput) (model.CreatePatreonCredentialsOrErrorPayload, error)
 	DeletePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeletePatreonCredentialsInput) (model.DeletePatreonCredentialsOrErrorPayload, error)
 	RestorePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.RestorePatreonCredentialsInput) (model.RestorePatreonCredentialsOrErrorPayload, error)
@@ -1062,6 +1070,7 @@ type AdminQueryResolver interface {
 	Redirect(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Redirect, error)
 	TgBot(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.TgBot, error)
 	NoteAsset(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.NoteAsset, error)
+	ActiveUserSubgraphs(ctx context.Context, obj *model1.AdminQuery, id int64) ([]string, error)
 }
 type AdminRedirectResolver interface {
 	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
@@ -1800,6 +1809,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.RefreshPatreonData(childComplexity, args["input"].(model.RefreshPatreonDataInput)), true
 
+	case "AdminMutation.removeExpiredTgChatMembers":
+		if e.complexity.AdminMutation.RemoveExpiredTgChatMembers == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_removeExpiredTgChatMembers_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.RemoveExpiredTgChatMembers(childComplexity, args["input"].(model.RemoveExpiredTgChatMembersInput)), true
+
 	case "AdminMutation.resetNotFoundPath":
 		if e.complexity.AdminMutation.ResetNotFoundPath == nil {
 			break
@@ -2507,6 +2528,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.APIKeyLogs(childComplexity, args["filter"].(model.APIKeyLogsFilterInput)), true
+
+	case "AdminQuery.activeUserSubgraphs":
+		if e.complexity.AdminQuery.ActiveUserSubgraphs == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_activeUserSubgraphs_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.ActiveUserSubgraphs(childComplexity, args["id"].(int64)), true
 
 	case "AdminQuery.allApiKeys":
 		if e.complexity.AdminQuery.AllAPIKeys == nil {
@@ -4003,6 +4036,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.RefreshPatreonDataPayload.Success(childComplexity), true
 
+	case "RemoveExpiredTgChatMembersPayload.errors":
+		if e.complexity.RemoveExpiredTgChatMembersPayload.Errors == nil {
+			break
+		}
+
+		return e.complexity.RemoveExpiredTgChatMembersPayload.Errors(childComplexity), true
+
+	case "RemoveExpiredTgChatMembersPayload.removedCount":
+		if e.complexity.RemoveExpiredTgChatMembersPayload.RemovedCount == nil {
+			break
+		}
+
+		return e.complexity.RemoveExpiredTgChatMembersPayload.RemovedCount(childComplexity), true
+
 	case "RequestEmailSignInCodePayload.success":
 		if e.complexity.RequestEmailSignInCodePayload.Success == nil {
 			break
@@ -4452,6 +4499,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputPushNotesInput,
 		ec.unmarshalInputRefreshBoostyDataInput,
 		ec.unmarshalInputRefreshPatreonDataInput,
+		ec.unmarshalInputRemoveExpiredTgChatMembersInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
 		ec.unmarshalInputRestoreBoostyCredentialsInput,
@@ -4981,6 +5029,29 @@ func (ec *executionContext) field_AdminMutation_refreshPatreonData_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_removeExpiredTgChatMembers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_removeExpiredTgChatMembers_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_removeExpiredTgChatMembers_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.RemoveExpiredTgChatMembersInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRemoveExpiredTgChatMembersInput2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveExpiredTgChatMembersInput(ctx, tmp)
+	}
+
+	var zeroVal model.RemoveExpiredTgChatMembersInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_resetNotFoundPath_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -5346,6 +5417,29 @@ func (ec *executionContext) field_AdminMutation_updateUserSubgraphAccess_argsInp
 	}
 
 	var zeroVal updateusersubgraphaccess.Request
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_activeUserSubgraphs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_activeUserSubgraphs_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_activeUserSubgraphs_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int64, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNInt642int64(ctx, tmp)
+	}
+
+	var zeroVal int64
 	return zeroVal, nil
 }
 
@@ -9623,6 +9717,61 @@ func (ec *executionContext) fieldContext_AdminMutation_setTgChatSubgraphInvites(
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_setTgChatSubgraphInvites_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_removeExpiredTgChatMembers(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_removeExpiredTgChatMembers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().RemoveExpiredTgChatMembers(rctx, obj, fc.Args["input"].(model.RemoveExpiredTgChatMembersInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.RemoveExpiredTgChatMembersOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNRemoveExpiredTgChatMembersOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveExpiredTgChatMembersOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_removeExpiredTgChatMembers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RemoveExpiredTgChatMembersOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_removeExpiredTgChatMembers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -15385,6 +15534,61 @@ func (ec *executionContext) fieldContext_AdminQuery_noteAsset(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_noteAsset_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_activeUserSubgraphs(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_activeUserSubgraphs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().ActiveUserSubgraphs(rctx, obj, fc.Args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_activeUserSubgraphs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_activeUserSubgraphs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -21251,6 +21455,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_setTgChatSubgraphs(ctx, field)
 			case "setTgChatSubgraphInvites":
 				return ec.fieldContext_AdminMutation_setTgChatSubgraphInvites(ctx, field)
+			case "removeExpiredTgChatMembers":
+				return ec.fieldContext_AdminMutation_removeExpiredTgChatMembers(ctx, field)
 			case "createPatreonCredentials":
 				return ec.fieldContext_AdminMutation_createPatreonCredentials(ctx, field)
 			case "deletePatreonCredentials":
@@ -23185,6 +23391,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_tgBot(ctx, field)
 			case "noteAsset":
 				return ec.fieldContext_AdminQuery_noteAsset(ctx, field)
+			case "activeUserSubgraphs":
+				return ec.fieldContext_AdminQuery_activeUserSubgraphs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -23688,6 +23896,94 @@ func (ec *executionContext) fieldContext_RefreshPatreonDataPayload_credentials(_
 				return ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RemoveExpiredTgChatMembersPayload_removedCount(ctx context.Context, field graphql.CollectedField, obj *model.RemoveExpiredTgChatMembersPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RemoveExpiredTgChatMembersPayload_removedCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RemovedCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RemoveExpiredTgChatMembersPayload_removedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RemoveExpiredTgChatMembersPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RemoveExpiredTgChatMembersPayload_errors(ctx context.Context, field graphql.CollectedField, obj *model.RemoveExpiredTgChatMembersPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RemoveExpiredTgChatMembersPayload_errors(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Errors, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RemoveExpiredTgChatMembersPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RemoveExpiredTgChatMembersPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -29565,6 +29861,40 @@ func (ec *executionContext) unmarshalInputRefreshPatreonDataInput(ctx context.Co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputRemoveExpiredTgChatMembersInput(ctx context.Context, obj any) (model.RemoveExpiredTgChatMembersInput, error) {
+	var it model.RemoveExpiredTgChatMembersInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"chatId", "userId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "chatId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("chatId"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChatID = data
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRequestEmailSignInCodeInput(ctx context.Context, obj any) (model.RequestEmailSignInCodeInput, error) {
 	var it model.RequestEmailSignInCodeInput
 	asMap := map[string]any{}
@@ -30874,6 +31204,29 @@ func (ec *executionContext) _RefreshPatreonDataOrErrorPayload(ctx context.Contex
 			return graphql.Null
 		}
 		return ec._RefreshPatreonDataPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _RemoveExpiredTgChatMembersOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RemoveExpiredTgChatMembersOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RemoveExpiredTgChatMembersPayload:
+		return ec._RemoveExpiredTgChatMembersPayload(ctx, sel, &obj)
+	case *model.RemoveExpiredTgChatMembersPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RemoveExpiredTgChatMembersPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -33638,6 +33991,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_setTgChatSubgraphInvites(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "removeExpiredTgChatMembers":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_removeExpiredTgChatMembers(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -36978,6 +37367,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "activeUserSubgraphs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_activeUserSubgraphs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -39865,7 +40290,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -41388,6 +41813,50 @@ func (ec *executionContext) _RefreshPatreonDataPayload(ctx context.Context, sel 
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var removeExpiredTgChatMembersPayloadImplementors = []string{"RemoveExpiredTgChatMembersPayload", "RemoveExpiredTgChatMembersOrErrorPayload"}
+
+func (ec *executionContext) _RemoveExpiredTgChatMembersPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RemoveExpiredTgChatMembersPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, removeExpiredTgChatMembersPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RemoveExpiredTgChatMembersPayload")
+		case "removedCount":
+			out.Values[i] = ec._RemoveExpiredTgChatMembersPayload_removedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._RemoveExpiredTgChatMembersPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -46331,6 +46800,21 @@ func (ec *executionContext) marshalNRefreshPatreonDataOrErrorPayload2trip2gᚋin
 		return graphql.Null
 	}
 	return ec._RefreshPatreonDataOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRemoveExpiredTgChatMembersInput2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveExpiredTgChatMembersInput(ctx context.Context, v any) (model.RemoveExpiredTgChatMembersInput, error) {
+	res, err := ec.unmarshalInputRemoveExpiredTgChatMembersInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRemoveExpiredTgChatMembersOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveExpiredTgChatMembersOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RemoveExpiredTgChatMembersOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RemoveExpiredTgChatMembersOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNRequestEmailSignInCodeInput2trip2gᚋinternalᚋgraphᚋmodelᚐRequestEmailSignInCodeInput(ctx context.Context, v any) (model.RequestEmailSignInCodeInput, error) {

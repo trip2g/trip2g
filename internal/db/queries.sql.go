@@ -1026,6 +1026,22 @@ func (q *Queries) DeleteTgAttachCodesByUser(ctx context.Context, userID int64) e
 	return err
 }
 
+const deleteTgBotChatSubgraphAccess = `-- name: DeleteTgBotChatSubgraphAccess :exec
+delete from tg_bot_chat_subgraph_accesses
+where chat_id = ? and user_id = ? and subgraph_id = ?
+`
+
+type DeleteTgBotChatSubgraphAccessParams struct {
+	ChatID     int64 `json:"chat_id"`
+	UserID     int64 `json:"user_id"`
+	SubgraphID int64 `json:"subgraph_id"`
+}
+
+func (q *Queries) DeleteTgBotChatSubgraphAccess(ctx context.Context, arg DeleteTgBotChatSubgraphAccessParams) error {
+	_, err := q.db.ExecContext(ctx, deleteTgBotChatSubgraphAccess, arg.ChatID, arg.UserID, arg.SubgraphID)
+	return err
+}
+
 const deleteTgChatSubgraphAccess = `-- name: DeleteTgChatSubgraphAccess :exec
 delete from tg_chat_subgraph_accesses
 where id = ?
@@ -1099,13 +1115,13 @@ func (q *Queries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (A
 }
 
 const filteredTgBotChats = `-- name: FilteredTgBotChats :many
-select distinct tbc.id, tbc.telegram_id, tbc.chat_type, tbc.chat_title, tbc.added_at, tbc.removed_at, tbc.can_invite from tg_bot_chats tbc
-left join tg_user_states tus on tbc.telegram_id = tus.chat_id
+select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite, bot_id
+  from tg_bot_chats
 where 1=1
-  and (?1 = true or tbc.removed_at is null)
-  and (tus.bot_id = ?2 or ?2 = 0)
-  and (tbc.can_invite = ?3 or ?3 = -1)
-order by tbc.added_at desc
+  and (?1 = true or removed_at is null)
+  and (bot_id = ?2 or ?2 is null)
+  and (can_invite = ?3 or ?3 is null)
+order by added_at desc
 `
 
 type FilteredTgBotChatsParams struct {
@@ -1131,6 +1147,7 @@ func (q *Queries) FilteredTgBotChats(ctx context.Context, arg FilteredTgBotChats
 			&i.AddedAt,
 			&i.RemovedAt,
 			&i.CanInvite,
+			&i.BotID,
 		); err != nil {
 			return nil, err
 		}
@@ -3454,20 +3471,28 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 }
 
 const listTgBotChatSubgraphAccesses = `-- name: ListTgBotChatSubgraphAccesses :many
-select tg_bot_chat_subgraph_accesses.chat_id, tg_bot_chat_subgraph_accesses.user_id, tg_bot_chat_subgraph_accesses.subgraph_id, tg_bot_chat_subgraph_accesses.created_at, tg_bot_chat_subgraph_accesses.joined_at, subgraphs.id, subgraphs.name, subgraphs.color, subgraphs.created_at, subgraphs.hidden
+select tg_bot_chat_subgraph_accesses.chat_id, tg_bot_chat_subgraph_accesses.user_id, tg_bot_chat_subgraph_accesses.subgraph_id, tg_bot_chat_subgraph_accesses.created_at, tg_bot_chat_subgraph_accesses.joined_at, subgraphs.id, subgraphs.name, subgraphs.color, subgraphs.created_at, subgraphs.hidden, tg_bot_chats.id, tg_bot_chats.telegram_id, tg_bot_chats.chat_type, tg_bot_chats.chat_title, tg_bot_chats.added_at, tg_bot_chats.removed_at, tg_bot_chats.can_invite, tg_bot_chats.bot_id
   from tg_bot_chat_subgraph_accesses
   join subgraphs on tg_bot_chat_subgraph_accesses.subgraph_id = subgraphs.id
+  join tg_bot_chats on tg_bot_chat_subgraph_accesses.chat_id = tg_bot_chats.id
  where 1 = 1
-   and (user_id = ?1 or ?1 = 0)
+   and (user_id = ?1 or ?1 is null)
+   and (chat_id = ?2 or ?2 is null)
 `
+
+type ListTgBotChatSubgraphAccessesParams struct {
+	UserID sql.NullInt64 `json:"user_id"`
+	ChatID sql.NullInt64 `json:"chat_id"`
+}
 
 type ListTgBotChatSubgraphAccessesRow struct {
 	TgBotChatSubgraphAccess TgBotChatSubgraphAccess `json:"tg_bot_chat_subgraph_access"`
 	Subgraph                Subgraph                `json:"subgraph"`
+	TgBotChat               TgBotChat               `json:"tg_bot_chat"`
 }
 
-func (q *Queries) ListTgBotChatSubgraphAccesses(ctx context.Context, userID sql.NullInt64) ([]ListTgBotChatSubgraphAccessesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listTgBotChatSubgraphAccesses, userID)
+func (q *Queries) ListTgBotChatSubgraphAccesses(ctx context.Context, arg ListTgBotChatSubgraphAccessesParams) ([]ListTgBotChatSubgraphAccessesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listTgBotChatSubgraphAccesses, arg.UserID, arg.ChatID)
 	if err != nil {
 		return nil, err
 	}
@@ -3486,6 +3511,14 @@ func (q *Queries) ListTgBotChatSubgraphAccesses(ctx context.Context, userID sql.
 			&i.Subgraph.Color,
 			&i.Subgraph.CreatedAt,
 			&i.Subgraph.Hidden,
+			&i.TgBotChat.ID,
+			&i.TgBotChat.TelegramID,
+			&i.TgBotChat.ChatType,
+			&i.TgBotChat.ChatTitle,
+			&i.TgBotChat.AddedAt,
+			&i.TgBotChat.RemovedAt,
+			&i.TgBotChat.CanInvite,
+			&i.TgBotChat.BotID,
 		); err != nil {
 			return nil, err
 		}
@@ -4178,7 +4211,7 @@ func (q *Queries) TgBot(ctx context.Context, id int64) (TgBot, error) {
 }
 
 const tgBotChat = `-- name: TgBotChat :one
-select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
+select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite, bot_id from tg_bot_chats
 where id = ?
 `
 
@@ -4193,12 +4226,13 @@ func (q *Queries) TgBotChat(ctx context.Context, id int64) (TgBotChat, error) {
 		&i.AddedAt,
 		&i.RemovedAt,
 		&i.CanInvite,
+		&i.BotID,
 	)
 	return i, err
 }
 
 const tgBotChatByTelegramID = `-- name: TgBotChatByTelegramID :one
-select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
+select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite, bot_id from tg_bot_chats
 where telegram_id = ?
 `
 
@@ -4213,6 +4247,7 @@ func (q *Queries) TgBotChatByTelegramID(ctx context.Context, telegramID int64) (
 		&i.AddedAt,
 		&i.RemovedAt,
 		&i.CanInvite,
+		&i.BotID,
 	)
 	return i, err
 }
@@ -4253,12 +4288,9 @@ func (q *Queries) TgBotChatSubgraphInvitesByChatID(ctx context.Context, chatID i
 }
 
 const tgBotChatsByBotID = `-- name: TgBotChatsByBotID :many
-select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
-where telegram_id in (
-  select distinct chat_id from tg_user_states where bot_id = ?
-)
-  and (?2 = true or removed_at is null)
-order by added_at desc
+select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite, bot_id
+  from tg_bot_chats where bot_id = ?
+   and (?2 = true or removed_at is null)
 `
 
 type TgBotChatsByBotIDParams struct {
@@ -4283,6 +4315,7 @@ func (q *Queries) TgBotChatsByBotID(ctx context.Context, arg TgBotChatsByBotIDPa
 			&i.AddedAt,
 			&i.RemovedAt,
 			&i.CanInvite,
+			&i.BotID,
 		); err != nil {
 			return nil, err
 		}
@@ -4298,10 +4331,9 @@ func (q *Queries) TgBotChatsByBotID(ctx context.Context, arg TgBotChatsByBotIDPa
 }
 
 const tgBotChatsByBotIDCount = `-- name: TgBotChatsByBotIDCount :one
-select count(*) from tg_bot_chats
-where telegram_id in (
-  select distinct chat_id from tg_user_states where bot_id = ?
-)
+select count(*)
+  from tg_bot_chats
+ where bot_id = ?
   and (?2 = true or removed_at is null)
 `
 
@@ -4318,7 +4350,7 @@ func (q *Queries) TgBotChatsByBotIDCount(ctx context.Context, arg TgBotChatsByBo
 }
 
 const tgBotChatsCanInvite = `-- name: TgBotChatsCanInvite :many
-select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite from tg_bot_chats
+select id, telegram_id, chat_type, chat_title, added_at, removed_at, can_invite, bot_id from tg_bot_chats
 where can_invite = true
   and removed_at is null
 order by chat_title
@@ -4341,6 +4373,7 @@ func (q *Queries) TgBotChatsCanInvite(ctx context.Context) ([]TgBotChat, error) 
 			&i.AddedAt,
 			&i.RemovedAt,
 			&i.CanInvite,
+			&i.BotID,
 		); err != nil {
 			return nil, err
 		}
@@ -5356,8 +5389,8 @@ func (q *Queries) UpsertPatreonTier(ctx context.Context, arg UpsertPatreonTierPa
 }
 
 const upsertTgBotChat = `-- name: UpsertTgBotChat :exec
-insert into tg_bot_chats (telegram_id, chat_type, chat_title, can_invite)
-values (?, ?, ?, ?)
+insert into tg_bot_chats (telegram_id, chat_type, chat_title, can_invite, bot_id)
+values (?, ?, ?, ?, ?)
 on conflict(telegram_id) do update set
   chat_type = excluded.chat_type,
   chat_title = excluded.chat_title,
@@ -5370,6 +5403,7 @@ type UpsertTgBotChatParams struct {
 	ChatType   string `json:"chat_type"`
 	ChatTitle  string `json:"chat_title"`
 	CanInvite  bool   `json:"can_invite"`
+	BotID      int64  `json:"bot_id"`
 }
 
 func (q *Queries) UpsertTgBotChat(ctx context.Context, arg UpsertTgBotChatParams) error {
@@ -5378,6 +5412,7 @@ func (q *Queries) UpsertTgBotChat(ctx context.Context, arg UpsertTgBotChatParams
 		arg.ChatType,
 		arg.ChatTitle,
 		arg.CanInvite,
+		arg.BotID,
 	)
 	return err
 }

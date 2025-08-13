@@ -51,6 +51,14 @@ type ApiKeyLogIp struct {
 	Value     string    `json:"value"`
 }
 
+type AuditLog struct {
+	ID        int64          `json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	Level     int64          `json:"level"`
+	Message   string         `json:"message"`
+	Params    sql.NullString `json:"params"`
+}
+
 type BackliteTask struct {
 	ID             string        `json:"id"`
 	CreatedAt      int64         `json:"created_at"`
@@ -326,6 +334,7 @@ type TgBotChat struct {
 	AddedAt    time.Time   `json:"added_at"`
 	RemovedAt  interface{} `json:"removed_at"`
 	CanInvite  bool        `json:"can_invite"`
+	BotID      int64       `json:"bot_id"`
 }
 
 type TgBotChatSubgraphAccess struct {

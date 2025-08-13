@@ -41,9 +41,11 @@ import (
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/generatetgattachcode"
 	"trip2g/internal/case/hidenotes"
+	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/refreshboostydata"
 	"trip2g/internal/case/refreshpatreondata"
+	"trip2g/internal/case/removeexpiredtgchatmembers"
 	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
@@ -162,6 +164,8 @@ type Env interface {
 	restorepatreoncredentials.Env
 	setpatreontiersubgraphs.Env
 	setboostytiersubgraphs.Env
+	removeexpiredtgchatmembers.Env
+	listactiveusersubgraphs.Env
 
 	// Boosty credentials
 	createboostycredentials.Env

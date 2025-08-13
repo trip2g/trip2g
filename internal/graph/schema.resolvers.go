@@ -50,9 +50,11 @@ import (
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/generatetgattachcode"
 	"trip2g/internal/case/hidenotes"
+	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/refreshboostydata"
 	"trip2g/internal/case/refreshpatreondata"
+	"trip2g/internal/case/removeexpiredtgchatmembers"
 	"trip2g/internal/case/rendernotepage"
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
@@ -355,6 +357,32 @@ func (r *adminMutationResolver) SetTgChatSubgraphs(ctx context.Context, obj *app
 // SetTgChatSubgraphInvites is the resolver for the setTgChatSubgraphInvites field.
 func (r *adminMutationResolver) SetTgChatSubgraphInvites(ctx context.Context, obj *appmodel.AdminMutation, input model.SetTgChatSubgraphInvitesInput) (model.SetTgChatSubgraphInvitesOrErrorPayload, error) {
 	return settgchatsubgraphinvites.Resolve(ctx, r.env(ctx), input)
+}
+
+// RemoveExpiredTgChatMembers is the resolver for the removeExpiredTgChatMembers field.
+func (r *adminMutationResolver) RemoveExpiredTgChatMembers(ctx context.Context, obj *appmodel.AdminMutation, input model.RemoveExpiredTgChatMembersInput) (model.RemoveExpiredTgChatMembersOrErrorPayload, error) {
+	filter := removeexpiredtgchatmembers.Filter{
+		ChatID: input.ChatID,
+		UserID: input.UserID,
+	}
+
+	result, err := removeexpiredtgchatmembers.Resolve(ctx, r.env(ctx), filter)
+	if err != nil {
+		return nil, err
+	}
+
+	errors := make([]string, 0, len(result.Errors))
+
+	for i, err := range result.Errors {
+		errors[i] = err.Error()
+	}
+
+	payload := model.RemoveExpiredTgChatMembersPayload{
+		RemovedCount: int32(result.RemovedCount),
+		Errors:       errors,
+	}
+
+	return &payload, nil
 }
 
 // CreatePatreonCredentials is the resolver for the createPatreonCredentials field.
@@ -819,6 +847,11 @@ func (r *adminQueryResolver) TgBot(ctx context.Context, obj *appmodel.AdminQuery
 // NoteAsset is the resolver for the noteAsset field.
 func (r *adminQueryResolver) NoteAsset(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.NoteAsset, error) {
 	return resolveOne[db.NoteAsset](ctx, id, r.env(ctx).NoteAssetByID)
+}
+
+// ActiveUserSubgraphs is the resolver for the activeUserSubgraphs field.
+func (r *adminQueryResolver) ActiveUserSubgraphs(ctx context.Context, obj *appmodel.AdminQuery, id int64) ([]string, error) {
+	return listactiveusersubgraphs.Resolve(ctx, r.env(ctx), id)
 }
 
 // CreatedBy is the resolver for the createdBy field.

@@ -296,6 +296,9 @@ func (req *request) handleCommands(ctx context.Context) error {
 	case "chats":
 		return req.sendAvailableChats(ctx)
 
+	case "user":
+		return req.sendUserInfo(ctx)
+
 	default:
 		msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, "Unknown command")
 
@@ -636,4 +639,67 @@ func (req *request) handleJoinChat(ctx context.Context, actionParts []string) er
 	callback := tgbotapi.NewCallback(req.update.CallbackQuery.ID, "")
 	_, err = req.env.Request(callback)
 	return err
+}
+
+func (req *request) sendUserInfo(ctx context.Context) error {
+	// Check if user has Telegram ID linked
+	if req.update.Message.From == nil {
+		return req.SendMessage("❌ Не удалось определить ваш Telegram аккаунт.")
+	}
+
+	telegramUserID := req.update.Message.From.ID
+
+	// Get user by Telegram ID
+	user, err := req.env.UserByTgUserID(ctx, sql.NullInt64{Int64: telegramUserID, Valid: true})
+	if err != nil {
+		if db.IsNoFound(err) {
+			return req.SendMessage("❌ Ваш Telegram аккаунт не привязан к системе.\n\nИспользуйте веб-интерфейс для привязки аккаунта.")
+		}
+		req.env.Logger().Error("failed to get user by telegram ID", "error", err, "telegramID", telegramUserID)
+		return req.SendMessage("❌ Произошла ошибка при получении данных пользователя.")
+	}
+
+	// Build user info message
+	var message strings.Builder
+	message.WriteString("👤 *Информация о пользователе:*\n\n")
+	message.WriteString(fmt.Sprintf("🆔 ID: `%d`\n", user.ID))
+
+	if user.Email.Valid && user.Email.String != "" {
+		message.WriteString(fmt.Sprintf("📧 Email: `%s`\n", user.Email.String))
+	} else {
+		message.WriteString("📧 Email: не указан\n")
+	}
+
+	message.WriteString(fmt.Sprintf("📱 Telegram ID: `%d`\n", telegramUserID))
+	message.WriteString(fmt.Sprintf("📅 Создан: %s\n", user.CreatedAt.Format("02.01.2006 15:04")))
+
+	if user.CreatedVia != "" && user.CreatedVia != "unknown" {
+		message.WriteString(fmt.Sprintf("🔗 Источник: %s\n", user.CreatedVia))
+	}
+
+	// Get user's active subgraphs
+	activeSubgraphs, err := req.env.ListActiveUserSubgraphs(ctx, user.ID)
+	if err != nil {
+		req.env.Logger().Error("failed to get active user subgraphs", "error", err, "userID", user.ID)
+		message.WriteString("\n❌ Не удалось получить информацию о подписках.")
+	} else {
+		message.WriteString("\n📋 *Активные подписки:*\n")
+		if len(activeSubgraphs) == 0 {
+			message.WriteString("• Нет активных подписок\n")
+		} else {
+			for _, subgraph := range activeSubgraphs {
+				message.WriteString(fmt.Sprintf("• %s\n", subgraph))
+			}
+		}
+	}
+
+	msg := tgbotapi.NewMessage(req.chatID, message.String())
+	msg.ParseMode = "Markdown"
+
+	_, err = req.env.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send user info message: %w", err)
+	}
+
+	return nil
 }

@@ -117,6 +117,7 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 			ChatType:   chat.Type,
 			ChatTitle:  chat.Title,
 			CanInvite:  canInvite,
+			BotID:      req.env.BotID(),
 		})
 		if err != nil {
 			log.Error("failed to upsert bot chat", "error", err, "chat_id", chat.ID)

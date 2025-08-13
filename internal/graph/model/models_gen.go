@@ -102,6 +102,10 @@ type RefreshPatreonDataOrErrorPayload interface {
 	IsRefreshPatreonDataOrErrorPayload()
 }
 
+type RemoveExpiredTgChatMembersOrErrorPayload interface {
+	IsRemoveExpiredTgChatMembersOrErrorPayload()
+}
+
 type RequestEmailSignInCodeOrErrorPayload interface {
 	IsRequestEmailSignInCodeOrErrorPayload()
 }
@@ -604,6 +608,8 @@ func (ErrorPayload) IsSetBoostyTierSubgraphsOrErrorPayload() {}
 
 func (ErrorPayload) IsSetTgChatSubgraphInvitesOrErrorPayload() {}
 
+func (ErrorPayload) IsRemoveExpiredTgChatMembersOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -714,6 +720,18 @@ type RefreshPatreonDataPayload struct {
 }
 
 func (RefreshPatreonDataPayload) IsRefreshPatreonDataOrErrorPayload() {}
+
+type RemoveExpiredTgChatMembersInput struct {
+	ChatID *int64 `json:"chatId,omitempty"`
+	UserID *int64 `json:"userId,omitempty"`
+}
+
+type RemoveExpiredTgChatMembersPayload struct {
+	RemovedCount int32    `json:"removedCount"`
+	Errors       []string `json:"errors"`
+}
+
+func (RemoveExpiredTgChatMembersPayload) IsRemoveExpiredTgChatMembersOrErrorPayload() {}
 
 type RequestEmailSignInCodeInput struct {
 	Email string `json:"email"`

@@ -616,8 +616,8 @@ select *
  limit 1;
 
 -- name: UpsertTgBotChat :exec
-insert into tg_bot_chats (telegram_id, chat_type, chat_title, can_invite)
-values (?, ?, ?, ?)
+insert into tg_bot_chats (telegram_id, chat_type, chat_title, can_invite, bot_id)
+values (?, ?, ?, ?, ?)
 on conflict(telegram_id) do update set
   chat_type = excluded.chat_type,
   chat_title = excluded.chat_title,
@@ -673,28 +673,24 @@ where id = sqlc.arg(id)
 returning *;
 
 -- name: TgBotChatsByBotID :many
-select * from tg_bot_chats
-where telegram_id in (
-  select distinct chat_id from tg_user_states where bot_id = ?
-)
-  and (sqlc.arg(include_removed) = true or removed_at is null)
-order by added_at desc;
+select *
+  from tg_bot_chats where bot_id = ?
+   and (sqlc.arg(include_removed) = true or removed_at is null);
 
 -- name: TgBotChatsByBotIDCount :one
-select count(*) from tg_bot_chats
-where telegram_id in (
-  select distinct chat_id from tg_user_states where bot_id = ?
-)
+select count(*)
+  from tg_bot_chats
+ where bot_id = ?
   and (sqlc.arg(include_removed) = true or removed_at is null);
 
 -- name: FilteredTgBotChats :many
-select distinct tbc.* from tg_bot_chats tbc
-left join tg_user_states tus on tbc.telegram_id = tus.chat_id
+select *
+  from tg_bot_chats
 where 1=1
-  and (sqlc.narg(include_removed) = true or tbc.removed_at is null)
-  and (tus.bot_id = sqlc.narg(bot_id) or sqlc.narg(bot_id) = 0)
-  and (tbc.can_invite = sqlc.narg(can_invite) or sqlc.narg(can_invite) = -1)
-order by tbc.added_at desc;
+  and (sqlc.narg(include_removed) = true or removed_at is null)
+  and (bot_id = sqlc.narg(bot_id) or sqlc.narg(bot_id) is null)
+  and (can_invite = sqlc.narg(can_invite) or sqlc.narg(can_invite) is null)
+order by added_at desc;
 
 -- name: TgChatMembersByChatID :many
 select m.*, p.*
@@ -1181,9 +1177,15 @@ update tg_bot_chat_subgraph_accesses
 set joined_at = current_timestamp
 where chat_id = ? and user_id = ? and subgraph_id = (select id from subgraphs where name = ?);
 
+-- name: DeleteTgBotChatSubgraphAccess :exec
+delete from tg_bot_chat_subgraph_accesses
+where chat_id = ? and user_id = ? and subgraph_id = ?;
+
 -- name: ListTgBotChatSubgraphAccesses :many
-select sqlc.embed(tg_bot_chat_subgraph_accesses), sqlc.embed(subgraphs)
+select sqlc.embed(tg_bot_chat_subgraph_accesses), sqlc.embed(subgraphs), sqlc.embed(tg_bot_chats)
   from tg_bot_chat_subgraph_accesses
   join subgraphs on tg_bot_chat_subgraph_accesses.subgraph_id = subgraphs.id
+  join tg_bot_chats on tg_bot_chat_subgraph_accesses.chat_id = tg_bot_chats.id
  where 1 = 1
-   and (user_id = sqlc.narg(user_id) or sqlc.narg(user_id) = 0)
+   and (user_id = sqlc.narg(user_id) or sqlc.narg(user_id) is null)
+   and (chat_id = sqlc.narg(chat_id) or sqlc.narg(chat_id) is null)

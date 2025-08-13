@@ -509,6 +509,8 @@ type AdminQuery {
   redirect(id: Int64!): AdminRedirect
   tgBot(id: Int64!): AdminTgBot
   noteAsset(id: Int64!): AdminNoteAsset
+
+  activeUserSubgraphs(id: Int64!): [String!]!
 }
 
 enum Role {
@@ -1322,6 +1324,22 @@ type SetTgChatSubgraphInvitesPayload
 
 union SetTgChatSubgraphInvitesOrErrorPayload = SetTgChatSubgraphInvitesPayload | ErrorPayload
 
+#
+# removeExpiredTgChatMembers
+#
+
+input RemoveExpiredTgChatMembersInput {
+  chatId: Int64
+  userId: Int64
+}
+
+type RemoveExpiredTgChatMembersPayload {
+  removedCount: Int!
+  errors: [String!]!
+}
+
+union RemoveExpiredTgChatMembersOrErrorPayload = RemoveExpiredTgChatMembersPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
@@ -1354,6 +1372,7 @@ type AdminMutation {
   updateTgBot(input: UpdateTgBotInput!): UpdateTgBotOrErrorPayload!
   setTgChatSubgraphs(input: SetTgChatSubgraphsInput!): SetTgChatSubgraphsOrErrorPayload!
   setTgChatSubgraphInvites(input: SetTgChatSubgraphInvitesInput!): SetTgChatSubgraphInvitesOrErrorPayload!
+  removeExpiredTgChatMembers(input: RemoveExpiredTgChatMembersInput!): RemoveExpiredTgChatMembersOrErrorPayload!
 
   # Patreon credentials mutations
   createPatreonCredentials(input: CreatePatreonCredentialsInput!): CreatePatreonCredentialsOrErrorPayload!

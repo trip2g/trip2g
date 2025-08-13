@@ -337,6 +337,26 @@ func (a *app) BoostyClientByCredentialsID(ctx context.Context, credentialID int6
 	return a.boostyClientManager.Get(ctx, env, credentialID)
 }
 
+func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+	chat, err := a.TgBotChat(ctx, chatID)
+	if err != nil {
+		return fmt.Errorf("failed to get Telegram chat: %w", err)
+	}
+
+	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
+
+	if handlerIO == nil {
+		return fmt.Errorf("Telegram bot handler IO not found for chat ID %d", chatID)
+	}
+
+	_, err = handlerIO.Send(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send Telegram message: %w", err)
+	}
+
+	return nil
+}
+
 func (a *app) ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error) {
 	// TODO: add caching for this method
 	return listactiveusersubgraphs.Resolve(ctx, a, userID)

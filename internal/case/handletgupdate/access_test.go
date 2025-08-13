@@ -301,7 +301,11 @@ func TestHandleMyChatMember(t *testing.T) {
 					require.Equal(t, int64(-1002529281698), arg.TelegramID)
 					require.Equal(t, "supergroup", arg.ChatType)
 					require.Equal(t, "Test Group", arg.ChatTitle)
+					require.Equal(t, int64(1), arg.BotID) // Verify bot ID is included
 					return nil
+				}
+				env.BotIDFunc = func() int64 {
+					return 1
 				}
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
@@ -328,6 +332,9 @@ func TestHandleMyChatMember(t *testing.T) {
 				env.MarkTgBotChatRemovedFunc = func(ctx context.Context, id int64) error {
 					require.Equal(t, int64(-1002529281698), id)
 					return nil
+				}
+				env.BotIDFunc = func() int64 {
+					return 1
 				}
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
@@ -451,6 +458,24 @@ func TestHandleChatMember(t *testing.T) {
 					require.Equal(t, int64(456), arg.ChatID) // Now expects autoincrement ID
 					return nil
 				}
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+					require.Equal(t, int64(7828312136), tgUserID.Int64)
+					require.True(t, tgUserID.Valid)
+					return db.User{
+						ID:       123,
+						TgUserID: tgUserID,
+					}, nil
+				}
+				env.ListActiveTgChatSubgraphNamesByChatIDFunc = func(ctx context.Context, id int64) ([]string, error) {
+					require.Equal(t, int64(456), id) // Chat autoincrement ID
+					return []string{"premium", "vip"}, nil
+				}
+				env.UpdateTgBotChatSubgraphAccessJoinedAtFunc = func(ctx context.Context, arg db.UpdateTgBotChatSubgraphAccessJoinedAtParams) error {
+					require.Equal(t, int64(456), arg.ChatID)
+					require.Equal(t, int64(123), arg.UserID)
+					require.Contains(t, []string{"premium", "vip"}, arg.Name)
+					return nil
+				}
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
 				}
@@ -508,6 +533,11 @@ func TestHandleChatMember(t *testing.T) {
 					Chat: tgbotapi.Chat{
 						ID:   7828312136,
 						Type: "private",
+					},
+					NewChatMember: tgbotapi.ChatMember{
+						User: &tgbotapi.User{
+							ID: 7828312136,
+						},
 					},
 				},
 			},

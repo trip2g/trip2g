@@ -356,6 +356,99 @@ func TestResolve(t *testing.T) {
 			wantErr: true,
 			errMsg:  "failed to get user state: failed to unmarshal user state",
 		},
+		{
+			name: "/user command with attached user",
+			update: tgbotapi.Update{
+				Message: &tgbotapi.Message{
+					From: &tgbotapi.User{
+						ID:        7828312136,
+						FirstName: "Test User",
+					},
+					Chat: &tgbotapi.Chat{
+						ID: 7828312136,
+					},
+					Text: "/user",
+					Entities: []tgbotapi.MessageEntity{
+						{Type: "bot_command", Offset: 0, Length: 5},
+					},
+				},
+			},
+			setup: func(env *EnvMock) {
+				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
+					return db.TgUserState{}, sql.ErrNoRows
+				}
+				env.UpsertTgUserStateFunc = func(ctx context.Context, arg db.UpsertTgUserStateParams) error {
+					return nil
+				}
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+					require.Equal(t, int64(7828312136), tgUserID.Int64)
+					return db.User{
+						ID:        123,
+						Email:     sql.NullString{String: "test@example.com", Valid: true},
+						CreatedAt: time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
+						CreatedVia: "telegram",
+						TgUserID:  sql.NullInt64{Int64: 7828312136, Valid: true},
+					}, nil
+				}
+				env.ListActiveUserSubgraphsFunc = func(ctx context.Context, userID int64) ([]string, error) {
+					require.Equal(t, int64(123), userID)
+					return []string{"premium", "basic"}, nil
+				}
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
+					telegramMsg := msg.(tgbotapi.MessageConfig)
+					require.Contains(t, telegramMsg.Text, "ID: `123`")
+					require.Contains(t, telegramMsg.Text, "test@example.com")
+					require.Contains(t, telegramMsg.Text, "premium")
+					require.Contains(t, telegramMsg.Text, "basic")
+					require.Contains(t, telegramMsg.Text, "telegram")
+					return tgbotapi.Message{}, nil
+				}
+				env.BotIDFunc = func() int64 { return 1 }
+				env.CalculateSha256Func = func(s string) string { return "hash" }
+				env.InsertTgUserProfileFunc = func(ctx context.Context, arg db.InsertTgUserProfileParams) error {
+					return nil
+				}
+			},
+		},
+		{
+			name: "/user command with unattached user",
+			update: tgbotapi.Update{
+				Message: &tgbotapi.Message{
+					From: &tgbotapi.User{
+						ID:        7828312136,
+						FirstName: "Test User",
+					},
+					Chat: &tgbotapi.Chat{
+						ID: 7828312136,
+					},
+					Text: "/user",
+					Entities: []tgbotapi.MessageEntity{
+						{Type: "bot_command", Offset: 0, Length: 5},
+					},
+				},
+			},
+			setup: func(env *EnvMock) {
+				env.TgUserStateByBotIDAndChatIDFunc = func(ctx context.Context, arg db.TgUserStateByBotIDAndChatIDParams) (db.TgUserState, error) {
+					return db.TgUserState{}, sql.ErrNoRows
+				}
+				env.UpsertTgUserStateFunc = func(ctx context.Context, arg db.UpsertTgUserStateParams) error {
+					return nil
+				}
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+					return db.User{}, sql.ErrNoRows
+				}
+				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {
+					telegramMsg := msg.(tgbotapi.MessageConfig)
+					require.Contains(t, telegramMsg.Text, "не привязан к системе")
+					return tgbotapi.Message{}, nil
+				}
+				env.BotIDFunc = func() int64 { return 1 }
+				env.CalculateSha256Func = func(s string) string { return "hash" }
+				env.InsertTgUserProfileFunc = func(ctx context.Context, arg db.InsertTgUserProfileParams) error {
+					return nil
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
