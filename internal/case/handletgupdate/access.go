@@ -18,6 +18,10 @@ const (
 	statusCreator       = "creator"
 	statusLeft          = "left"
 	statusKicked        = "kicked"
+
+	chatTypeChannel    = "channel"
+	chatTypeGroup      = "group"
+	chatTypeSuperGroup = "supergroup"
 )
 
 func (req *request) handleGroupAccess(ctx context.Context, args string) error {
@@ -80,7 +84,7 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 
 	// Only track channels, groups, and supergroups
 	chat := chatMember.Chat
-	if chat.Type != "channel" && chat.Type != "group" && chat.Type != "supergroup" {
+	if chat.Type != chatTypeChannel && chat.Type != chatTypeGroup && chat.Type != chatTypeSuperGroup {
 		return nil
 	}
 
@@ -240,7 +244,7 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 						log.Error("failed to update joined_at for access record", "error", updateErr,
 							"user_id", user.ID, "chat_id", chat.ID, "subgraph", subgraphName, "tg_user_id", userID)
 					} else {
-						log.Info("updated joined_at for access record", 
+						log.Info("updated joined_at for access record",
 							"user_id", user.ID, "chat_id", chat.ID, "subgraph", subgraphName, "tg_user_id", userID)
 					}
 				}
@@ -375,7 +379,7 @@ func (req *request) handleMessageEvents(ctx context.Context) error {
 			}
 
 			log.Info("user joined via new_chat_members", "user_id", newMember.ID, "chat_id", message.Chat.ID, "chat_title", message.Chat.Title)
-			
+
 			err := req.handleUserJoined(ctx, newMember.ID, message.Chat.ID)
 			if err != nil {
 				log.Error("failed to handle user joined", "error", err, "user_id", newMember.ID, "chat_id", message.Chat.ID)
@@ -386,14 +390,14 @@ func (req *request) handleMessageEvents(ctx context.Context) error {
 	// Handle user left chat
 	if message.LeftChatMember != nil {
 		leftMember := message.LeftChatMember
-		
+
 		// Skip bot removals (they are handled by MyChatMember events)
 		if leftMember.IsBot {
 			return nil
 		}
 
 		log.Info("user left via left_chat_member", "user_id", leftMember.ID, "chat_id", message.Chat.ID, "chat_title", message.Chat.Title)
-		
+
 		err := req.handleUserLeft(ctx, leftMember.ID, message.Chat.ID)
 		if err != nil {
 			log.Error("failed to handle user left", "error", err, "user_id", leftMember.ID, "chat_id", message.Chat.ID)
@@ -408,7 +412,7 @@ func (req *request) handleUserJoined(ctx context.Context, userID int64, chatID i
 
 	// Only track channels, groups, and supergroups
 	chat := req.update.Message.Chat
-	if chat.Type != "channel" && chat.Type != "group" && chat.Type != "supergroup" {
+	if chat.Type != chatTypeChannel && chat.Type != chatTypeGroup && chat.Type != chatTypeSuperGroup {
 		log.Info("skipping user join - not a trackable chat type", "chat_type", chat.Type)
 		return nil
 	}
@@ -464,7 +468,7 @@ func (req *request) handleUserJoined(ctx context.Context, userID int64, chatID i
 			log.Error("failed to update joined_at for access record", "error", updateErr,
 				"user_id", user.ID, "chat_id", botChat.ID, "subgraph", subgraphName, "tg_user_id", userID)
 		} else {
-			log.Info("updated joined_at for access record", 
+			log.Info("updated joined_at for access record",
 				"user_id", user.ID, "chat_id", botChat.ID, "subgraph", subgraphName, "tg_user_id", userID)
 		}
 	}
@@ -477,7 +481,7 @@ func (req *request) handleUserLeft(ctx context.Context, userID int64, chatID int
 
 	// Only track channels, groups, and supergroups
 	chat := req.update.Message.Chat
-	if chat.Type != "channel" && chat.Type != "group" && chat.Type != "supergroup" {
+	if chat.Type != chatTypeChannel && chat.Type != chatTypeGroup && chat.Type != chatTypeSuperGroup {
 		log.Info("skipping user left - not a trackable chat type", "chat_type", chat.Type)
 		return nil
 	}

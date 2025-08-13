@@ -932,11 +932,11 @@ func (r *adminTgBotChatsConnectionResolver) Nodes(ctx context.Context, obj *mode
 	}
 
 	if filter.BotID != nil {
-		params.BotID = *filter.BotID
+		params.BotID = sql.NullInt64{Int64: *filter.BotID, Valid: true}
 	}
 
 	if filter.CanInvite != nil {
-		params.CanInvite = *filter.CanInvite
+		params.CanInvite = sql.NullBool{Bool: *filter.CanInvite, Valid: true}
 	}
 
 	return r.env(ctx).FilteredTgBotChats(ctx, params)

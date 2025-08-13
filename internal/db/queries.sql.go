@@ -1102,16 +1102,16 @@ const filteredTgBotChats = `-- name: FilteredTgBotChats :many
 select distinct tbc.id, tbc.telegram_id, tbc.chat_type, tbc.chat_title, tbc.added_at, tbc.removed_at, tbc.can_invite from tg_bot_chats tbc
 left join tg_user_states tus on tbc.telegram_id = tus.chat_id
 where 1=1
-  and (?1 is null or ?1 = true or tbc.removed_at is null)
-  and (?2 is null or tus.bot_id = ?2)
-  and (?3 is null or tbc.can_invite = ?3)
+  and (?1 = true or tbc.removed_at is null)
+  and (tus.bot_id = ?2 or ?2 = 0)
+  and (tbc.can_invite = ?3 or ?3 = -1)
 order by tbc.added_at desc
 `
 
 type FilteredTgBotChatsParams struct {
-	IncludeRemoved interface{} `json:"include_removed"`
-	BotID          interface{} `json:"bot_id"`
-	CanInvite      interface{} `json:"can_invite"`
+	IncludeRemoved interface{}   `json:"include_removed"`
+	BotID          sql.NullInt64 `json:"bot_id"`
+	CanInvite      sql.NullBool  `json:"can_invite"`
 }
 
 func (q *Queries) FilteredTgBotChats(ctx context.Context, arg FilteredTgBotChatsParams) ([]TgBotChat, error) {
@@ -3439,6 +3439,53 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 			&i.Color,
 			&i.CreatedAt,
 			&i.Hidden,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTgBotChatSubgraphAccesses = `-- name: ListTgBotChatSubgraphAccesses :many
+select tg_bot_chat_subgraph_accesses.chat_id, tg_bot_chat_subgraph_accesses.user_id, tg_bot_chat_subgraph_accesses.subgraph_id, tg_bot_chat_subgraph_accesses.created_at, tg_bot_chat_subgraph_accesses.joined_at, subgraphs.id, subgraphs.name, subgraphs.color, subgraphs.created_at, subgraphs.hidden
+  from tg_bot_chat_subgraph_accesses
+  join subgraphs on tg_bot_chat_subgraph_accesses.subgraph_id = subgraphs.id
+ where 1 = 1
+   and (user_id = ?1 or ?1 = 0)
+`
+
+type ListTgBotChatSubgraphAccessesRow struct {
+	TgBotChatSubgraphAccess TgBotChatSubgraphAccess `json:"tg_bot_chat_subgraph_access"`
+	Subgraph                Subgraph                `json:"subgraph"`
+}
+
+func (q *Queries) ListTgBotChatSubgraphAccesses(ctx context.Context, userID sql.NullInt64) ([]ListTgBotChatSubgraphAccessesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listTgBotChatSubgraphAccesses, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTgBotChatSubgraphAccessesRow
+	for rows.Next() {
+		var i ListTgBotChatSubgraphAccessesRow
+		if err := rows.Scan(
+			&i.TgBotChatSubgraphAccess.ChatID,
+			&i.TgBotChatSubgraphAccess.UserID,
+			&i.TgBotChatSubgraphAccess.SubgraphID,
+			&i.TgBotChatSubgraphAccess.CreatedAt,
+			&i.TgBotChatSubgraphAccess.JoinedAt,
+			&i.Subgraph.ID,
+			&i.Subgraph.Name,
+			&i.Subgraph.Color,
+			&i.Subgraph.CreatedAt,
+			&i.Subgraph.Hidden,
 		); err != nil {
 			return nil, err
 		}

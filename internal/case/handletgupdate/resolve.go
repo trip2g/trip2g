@@ -122,9 +122,6 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 		}
 	}
 
-	rawJSON, _ := json.Marshal(update)
-	fmt.Println(string(rawJSON))
-
 	chatID := int64(0)
 	switch {
 	case update.Message != nil:
@@ -442,7 +439,7 @@ func (req *request) handleAttachCode(ctx context.Context, args string) error {
 	if attachCode.CurrentTgUserID.Valid && attachCode.CurrentTgUserID.Int64 != telegramUserID {
 		// Send notification to the old Telegram user
 		oldUserMsg := tgbotapi.NewMessage(attachCode.CurrentTgUserID.Int64,
-			"⚠️ Ваш аккаунт был привязан к другому Telegram пользователю.\n\n" +
+			"⚠️ Ваш аккаунт был привязан к другому Telegram пользователю.\n\n"+
 				"Если это были не вы, обратитесь в поддержку.")
 		// Try to send but don't fail if we can't reach the old user
 		_, _ = req.env.Send(oldUserMsg)

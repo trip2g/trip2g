@@ -691,9 +691,9 @@ where telegram_id in (
 select distinct tbc.* from tg_bot_chats tbc
 left join tg_user_states tus on tbc.telegram_id = tus.chat_id
 where 1=1
-  and (sqlc.narg(include_removed) is null or sqlc.narg(include_removed) = true or tbc.removed_at is null)
-  and (sqlc.narg(bot_id) is null or tus.bot_id = sqlc.narg(bot_id))
-  and (sqlc.narg(can_invite) is null or tbc.can_invite = sqlc.narg(can_invite))
+  and (sqlc.narg(include_removed) = true or tbc.removed_at is null)
+  and (tus.bot_id = sqlc.narg(bot_id) or sqlc.narg(bot_id) = 0)
+  and (tbc.can_invite = sqlc.narg(can_invite) or sqlc.narg(can_invite) = -1)
 order by tbc.added_at desc;
 
 -- name: TgChatMembersByChatID :many
@@ -1180,3 +1180,10 @@ on conflict (chat_id, user_id, subgraph_id) do update set created_at = current_t
 update tg_bot_chat_subgraph_accesses
 set joined_at = current_timestamp
 where chat_id = ? and user_id = ? and subgraph_id = (select id from subgraphs where name = ?);
+
+-- name: ListTgBotChatSubgraphAccesses :many
+select sqlc.embed(tg_bot_chat_subgraph_accesses), sqlc.embed(subgraphs)
+  from tg_bot_chat_subgraph_accesses
+  join subgraphs on tg_bot_chat_subgraph_accesses.subgraph_id = subgraphs.id
+ where 1 = 1
+   and (user_id = sqlc.narg(user_id) or sqlc.narg(user_id) = 0)

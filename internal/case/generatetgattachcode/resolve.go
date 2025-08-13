@@ -24,7 +24,6 @@ type Env interface {
 type Input = model.GenerateTgAttachCodeInput
 type Payload = model.GenerateTgAttachCodeOrErrorPayload
 
-
 // validateRequest validates input and returns ErrorPayload if invalid.
 func validateRequest(r *Input) *model.ErrorPayload {
 	return model.NewOzzoError(ozzo.ValidateStruct(r,
