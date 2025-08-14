@@ -99,6 +99,10 @@ func TestResolve(t *testing.T) {
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
 				}
+
+				env.AuditLoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[AUDIT]"}
+				}
 			},
 			expectedResult: &Result{
 				RemovedCount: 1,
@@ -148,6 +152,10 @@ func TestResolve(t *testing.T) {
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
 				}
+
+				env.AuditLoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[AUDIT]"}
+				}
 			},
 			expectedResult: &Result{
 				RemovedCount: 0,
@@ -168,6 +176,10 @@ func TestResolve(t *testing.T) {
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
 				}
+
+				env.AuditLoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[AUDIT]"}
+				}
 			},
 			expectedResult: &Result{
 				RemovedCount: 0,
@@ -186,6 +198,10 @@ func TestResolve(t *testing.T) {
 
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+
+				env.AuditLoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[AUDIT]"}
 				}
 			},
 			expectedError: "failed to list tg bot chat subgraph accesses: database error",
@@ -219,6 +235,10 @@ func TestResolve(t *testing.T) {
 
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+
+				env.AuditLoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[AUDIT]"}
 				}
 			},
 			expectedResult: &Result{
@@ -278,6 +298,10 @@ func TestResolve(t *testing.T) {
 
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+
+				env.AuditLoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[AUDIT]"}
 				}
 			},
 			expectedResult: &Result{
@@ -380,6 +404,10 @@ func TestProcessUser(t *testing.T) {
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
 				}
+
+				env.AuditLoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[AUDIT]"}
+				}
 			},
 			expectedCount: 1,
 		},
@@ -413,6 +441,10 @@ func TestProcessUser(t *testing.T) {
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
 				}
+
+				env.AuditLoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[AUDIT]"}
+				}
 			},
 			expectedCount: 0,
 		},
@@ -431,6 +463,10 @@ func TestProcessUser(t *testing.T) {
 
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+
+				env.AuditLoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[AUDIT]"}
 				}
 			},
 			expectedError: "database error",
@@ -454,6 +490,10 @@ func TestProcessUser(t *testing.T) {
 
 				env.LoggerFunc = func() logger.Logger {
 					return &logger.TestLogger{Prefix: "[TEST]"}
+				}
+
+				env.AuditLoggerFunc = func() logger.Logger {
+					return &logger.TestLogger{Prefix: "[AUDIT]"}
 				}
 			},
 			expectedError: "failed to get user by ID 123: user not found",

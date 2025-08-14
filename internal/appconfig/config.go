@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"trip2g/internal/auditlogger"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
@@ -75,6 +76,8 @@ type Config struct {
 
 	PatreonJobsConfig patreonjobs.Config
 	BoostyJobsConfig  boostyjobs.Config
+
+	AuditLog auditlogger.Config
 }
 
 // Default values for configuration.
@@ -255,6 +258,9 @@ func (c *Config) defineFlags() {
 		boostyJobsDefaults.ImmediatelyGap,
 		"how old synced_at must be to trigger immediate refresh",
 	)
+
+	// Audit log configuration
+	flag.StringVar(&c.AuditLog.LogLevel, "audit-log-level", "info", "Audit log level")
 }
 
 // validate checks if the configuration is valid using ozzo validation.

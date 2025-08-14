@@ -24,17 +24,17 @@ const (
 	logLevelError = 4
 )
 
-type AuditLogger struct {
+type Logger struct {
 	env Env
 	log logger.Logger
 
 	logLevel int
 }
 
-var _ logger.Logger = (*AuditLogger)(nil)
+var _ logger.Logger = (*Logger)(nil)
 
-func New(env Env, config Config) *AuditLogger {
-	l := AuditLogger{
+func New(env Env, config Config) *Logger {
+	l := Logger{
 		env: env,
 		log: logger.WithPrefix(env.Logger(), "audit: "),
 	}
@@ -55,7 +55,7 @@ func New(env Env, config Config) *AuditLogger {
 	return &l
 }
 
-func (l *AuditLogger) write(level int, msg string, keysAndValues ...interface{}) {
+func (l *Logger) write(level int, msg string, keysAndValues ...interface{}) {
 	if level < l.logLevel {
 		return
 	}
@@ -83,22 +83,22 @@ func (l *AuditLogger) write(level int, msg string, keysAndValues ...interface{})
 	}
 }
 
-func (l *AuditLogger) Info(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Info(msg string, keysAndValues ...interface{}) {
 	l.log.Info(msg, keysAndValues...)
 	l.write(logLevelInfo, msg, keysAndValues...)
 }
 
-func (l *AuditLogger) Error(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Error(msg string, keysAndValues ...interface{}) {
 	l.log.Error(msg, keysAndValues...)
 	l.write(logLevelError, msg, keysAndValues...)
 }
 
-func (l *AuditLogger) Debug(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Debug(msg string, keysAndValues ...interface{}) {
 	l.log.Debug(msg, keysAndValues...)
 	l.write(logLevelDebug, msg, keysAndValues...)
 }
 
-func (l *AuditLogger) Warn(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Warn(msg string, keysAndValues ...interface{}) {
 	l.log.Warn(msg, keysAndValues...)
 	l.write(logLevelWarn, msg, keysAndValues...)
 }

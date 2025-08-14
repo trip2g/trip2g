@@ -21,6 +21,9 @@ var _ Env = &EnvMock{}
 //
 //		// make and configure a mocked Env
 //		mockedEnv := &EnvMock{
+//			AuditLoggerFunc: func() logger.Logger {
+//				panic("mock out the AuditLogger method")
+//			},
 //			DeleteTgBotChatSubgraphAccessFunc: func(ctx context.Context, arg db.DeleteTgBotChatSubgraphAccessParams) error {
 //				panic("mock out the DeleteTgBotChatSubgraphAccess method")
 //			},
@@ -52,6 +55,9 @@ var _ Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// AuditLoggerFunc mocks the AuditLogger method.
+	AuditLoggerFunc func() logger.Logger
+
 	// DeleteTgBotChatSubgraphAccessFunc mocks the DeleteTgBotChatSubgraphAccess method.
 	DeleteTgBotChatSubgraphAccessFunc func(ctx context.Context, arg db.DeleteTgBotChatSubgraphAccessParams) error
 
@@ -78,6 +84,9 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// AuditLogger holds details about calls to the AuditLogger method.
+		AuditLogger []struct {
+		}
 		// DeleteTgBotChatSubgraphAccess holds details about calls to the DeleteTgBotChatSubgraphAccess method.
 		DeleteTgBotChatSubgraphAccess []struct {
 			// Ctx is the ctx argument value.
@@ -135,6 +144,7 @@ type EnvMock struct {
 			ID int64
 		}
 	}
+	lockAuditLogger                   sync.RWMutex
 	lockDeleteTgBotChatSubgraphAccess sync.RWMutex
 	lockKickTelegramChatMember        sync.RWMutex
 	lockListActiveUserSubgraphs       sync.RWMutex
@@ -143,6 +153,33 @@ type EnvMock struct {
 	lockRemoveTgChatMember            sync.RWMutex
 	lockSendTelegramMessage           sync.RWMutex
 	lockUserByID                      sync.RWMutex
+}
+
+// AuditLogger calls AuditLoggerFunc.
+func (mock *EnvMock) AuditLogger() logger.Logger {
+	if mock.AuditLoggerFunc == nil {
+		panic("EnvMock.AuditLoggerFunc: method is nil but Env.AuditLogger was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockAuditLogger.Lock()
+	mock.calls.AuditLogger = append(mock.calls.AuditLogger, callInfo)
+	mock.lockAuditLogger.Unlock()
+	return mock.AuditLoggerFunc()
+}
+
+// AuditLoggerCalls gets all the calls that were made to AuditLogger.
+// Check the length with:
+//
+//	len(mockedEnv.AuditLoggerCalls())
+func (mock *EnvMock) AuditLoggerCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockAuditLogger.RLock()
+	calls = mock.calls.AuditLogger
+	mock.lockAuditLogger.RUnlock()
+	return calls
 }
 
 // DeleteTgBotChatSubgraphAccess calls DeleteTgBotChatSubgraphAccessFunc.

@@ -13,6 +13,7 @@ type accessRow = db.ListTgBotChatSubgraphAccessesRow
 
 type Env interface {
 	Logger() logger.Logger
+	AuditLogger() logger.Logger
 	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
 	ListTgBotChatSubgraphAccesses(ctx context.Context, filter db.ListTgBotChatSubgraphAccessesParams) ([]accessRow, error)
 	DeleteTgBotChatSubgraphAccess(ctx context.Context, arg db.DeleteTgBotChatSubgraphAccessParams) error
@@ -58,10 +59,17 @@ func Resolve(ctx context.Context, env Env, filter Filter) (*Result, error) {
 		removedCount, processErr := processUser(ctx, env, userID, accessRows)
 		if processErr != nil {
 			log.Error("failed to process user", "userID", userID, "error", processErr)
+			env.AuditLogger().Error("failed to remove expired tg chat member", "userID", userID, "error", processErr)
 			result.Errors = append(result.Errors, processErr)
 		}
 
+		if removedCount == 0 {
+			continue
+		}
+
 		result.RemovedCount += removedCount
+
+		env.AuditLogger().Info("remove expired tg chat member", "userID", userID)
 	}
 
 	return &result, nil

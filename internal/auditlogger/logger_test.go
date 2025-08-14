@@ -29,7 +29,7 @@ func TestAuditLogger(t *testing.T) {
 		name           string
 		config         Config
 		logLevel       string
-		logFunc        func(*AuditLogger)
+		logFunc        func(*Logger)
 		shouldLog      bool
 		expectedLevel  int64
 		expectedParams map[string]interface{}
@@ -38,7 +38,7 @@ func TestAuditLogger(t *testing.T) {
 			name:     "info log with params",
 			config:   Config{LogLevel: "info"},
 			logLevel: "info",
-			logFunc: func(l *AuditLogger) {
+			logFunc: func(l *Logger) {
 				l.Info("test message", "key1", "value1", "key2", 123)
 			},
 			shouldLog:      true,
@@ -49,7 +49,7 @@ func TestAuditLogger(t *testing.T) {
 			name:     "debug log when level is info - should not log",
 			config:   Config{LogLevel: "info"},
 			logLevel: "debug",
-			logFunc: func(l *AuditLogger) {
+			logFunc: func(l *Logger) {
 				l.Debug("debug message", "key", "value")
 			},
 			shouldLog: false,
@@ -58,7 +58,7 @@ func TestAuditLogger(t *testing.T) {
 			name:     "error log",
 			config:   Config{LogLevel: "error"},
 			logLevel: "error",
-			logFunc: func(l *AuditLogger) {
+			logFunc: func(l *Logger) {
 				l.Error("error occurred", "error", "test error", "code", 500)
 			},
 			shouldLog:      true,
@@ -69,7 +69,7 @@ func TestAuditLogger(t *testing.T) {
 			name:     "warn log",
 			config:   Config{LogLevel: "warn"},
 			logLevel: "warn",
-			logFunc: func(l *AuditLogger) {
+			logFunc: func(l *Logger) {
 				l.Warn("warning message", "threshold", 0.8, "current", 0.9)
 			},
 			shouldLog:      true,

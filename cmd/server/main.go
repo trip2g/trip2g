@@ -25,6 +25,7 @@ import (
 	"trip2g/internal/acmecache"
 	"trip2g/internal/appconfig"
 	"trip2g/internal/appreq"
+	"trip2g/internal/auditlogger"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/bqtask/sendsignincode"
@@ -87,6 +88,8 @@ type app struct {
 	conn    *sql.DB
 
 	log logger.Logger
+
+	auditLogger logger.Logger
 
 	// mail *mailyak.MailYak
 
@@ -188,6 +191,8 @@ func main() {
 
 		nowpaymentsClient: nowpaymentsClient,
 	}
+
+	a.auditLogger = auditlogger.New(a, a.config.AuditLog)
 
 	a.patreonClientManager = patreon.NewClientManager(a)
 	a.boostyClientManager = boosty.NewClientManager(a)
@@ -756,6 +761,10 @@ func (a *app) AllNotePaths(ctx context.Context) ([]db.NotePath, error) {
 
 func (a *app) Logger() logger.Logger {
 	return a.log
+}
+
+func (a *app) AuditLogger() logger.Logger {
+	return a.auditLogger
 }
 
 func (a *app) QueueRequestSignInEmail(ctx context.Context, email string, code string) error {
