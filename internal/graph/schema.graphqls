@@ -152,10 +152,18 @@ type AdminApiKeyLogsConnection
   nodes: [AdminApiKeyLog!]! @goField(forceResolver: true)
 }
 
+enum AuditLogLevelEnum {
+  UNKNOWN
+  DEBUG
+  INFO
+  WARNING
+  ERROR
+}
+
 type AdminAuditLog @goModel(model: "trip2g/internal/db.AuditLog") {
   id: Int64!
   createdAt: Time!
-  level: Int!
+  level: AuditLogLevelEnum!
   message: String!
   params: String!
 }
@@ -165,6 +173,8 @@ type AdminAuditLogsConnection @goExtraField(name: "Filter", type: "*trip2g/inter
 }
 
 input AdminAuditLogsFilterInput {
+  limit: Int64
+  offset: Int64
   createdAt: AdminAuditLogsDateFilter
 }
 

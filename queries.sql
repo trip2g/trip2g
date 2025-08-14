@@ -1197,7 +1197,7 @@ values (?, ?, ?);
 -- name: ListAuditLogs :many
 select id, created_at, level, message, params
 from audit_logs
-where (sqlc.narg(created_at_gte) is null or created_at >= sqlc.narg(created_at_gte))
-  and (sqlc.narg(created_at_lte) is null or created_at <= sqlc.narg(created_at_lte))
+where (created_at >= sqlc.narg(created_at_gte) or sqlc.narg(created_at_gte) is null)
+  and (created_at <= sqlc.narg(created_at_lte) or sqlc.narg(created_at_lte) is null)
 order by created_at desc
-limit ? offset ?;
+limit sqlc.arg(limit) offset sqlc.arg(offset);

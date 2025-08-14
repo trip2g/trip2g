@@ -3387,25 +3387,25 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 const listAuditLogs = `-- name: ListAuditLogs :many
 select id, created_at, level, message, params
 from audit_logs
-where (?3 is null or created_at >= ?3)
-  and (?4 is null or created_at <= ?4)
+where (created_at >= ?1 or ?1 is null)
+  and (created_at <= ?2 or ?2 is null)
 order by created_at desc
-limit ? offset ?
+limit ?4 offset ?3
 `
 
 type ListAuditLogsParams struct {
-	CreatedAtGte interface{} `json:"created_at_gte"`
-	CreatedAtLte interface{} `json:"created_at_lte"`
-	Limit        int64       `json:"limit"`
-	Offset       int64       `json:"offset"`
+	CreatedAtGte sql.NullTime `json:"created_at_gte"`
+	CreatedAtLte sql.NullTime `json:"created_at_lte"`
+	Offset       int64        `json:"offset"`
+	Limit        int64        `json:"limit"`
 }
 
 func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error) {
 	rows, err := q.db.QueryContext(ctx, listAuditLogs,
 		arg.CreatedAtGte,
 		arg.CreatedAtLte,
-		arg.Limit,
 		arg.Offset,
+		arg.Limit,
 	)
 	if err != nil {
 		return nil, err

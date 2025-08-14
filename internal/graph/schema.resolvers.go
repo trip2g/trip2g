@@ -125,8 +125,13 @@ func (r *adminApiKeysConnectionResolver) Nodes(ctx context.Context, obj *model.A
 }
 
 // Level is the resolver for the level field.
-func (r *adminAuditLogResolver) Level(ctx context.Context, obj *db.AuditLog) (int32, error) {
-	panic(errors.New("not implemented: Level - level"))
+func (r *adminAuditLogResolver) Level(ctx context.Context, obj *db.AuditLog) (model.AuditLogLevelEnum, error) {
+	level := int(obj.Level)
+	if level > len(model.AllAuditLogLevelEnum) {
+		level = 0
+	}
+
+	return model.AllAuditLogLevelEnum[level], nil
 }
 
 // Nodes is the resolver for the nodes field.
@@ -134,25 +139,25 @@ func (r *adminAuditLogsConnectionResolver) Nodes(ctx context.Context, obj *model
 	const limit = 100 // Default page size
 	const offset = 0  // For now, we'll start with basic pagination
 
-	// Set up filter parameters
-	var gteDate interface{}
-	var lteDate interface{}
-
-	if obj.Filter != nil && obj.Filter.CreatedAt != nil {
-		if obj.Filter.CreatedAt.Gte != nil {
-			gteDate = *obj.Filter.CreatedAt.Gte
-		}
-		if obj.Filter.CreatedAt.Lte != nil {
-			lteDate = *obj.Filter.CreatedAt.Lte
-		}
-	}
-
 	// Build query parameters
 	params := db.ListAuditLogsParams{
-		CreatedAtGte: gteDate,
-		CreatedAtLte: lteDate,
-		Limit:        limit,
-		Offset:       offset,
+		Limit:  limit,
+		Offset: offset,
+	}
+
+	if obj.Filter != nil {
+		if obj.Filter.CreatedAt != nil {
+			params.CreatedAtGte = db.ToNullableTime(obj.Filter.CreatedAt.Gte)
+			params.CreatedAtLte = db.ToNullableTime(obj.Filter.CreatedAt.Lte)
+		}
+
+		if obj.Filter.Offset != nil {
+			params.Offset = *obj.Filter.Offset
+		}
+
+		if obj.Filter.Limit != nil {
+			params.Limit = *obj.Filter.Limit
+		}
 	}
 
 	// Execute query

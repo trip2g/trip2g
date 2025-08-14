@@ -925,7 +925,7 @@ type AdminApiKeysConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminAPIKeysConnection) ([]db.ApiKey, error)
 }
 type AdminAuditLogResolver interface {
-	Level(ctx context.Context, obj *db.AuditLog) (int32, error)
+	Level(ctx context.Context, obj *db.AuditLog) (model.AuditLogLevelEnum, error)
 }
 type AdminAuditLogsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminAuditLogsConnection) ([]db.AuditLog, error)
@@ -7267,9 +7267,9 @@ func (ec *executionContext) _AdminAuditLog_level(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int32)
+	res := resTmp.(model.AuditLogLevelEnum)
 	fc.Result = res
-	return ec.marshalNInt2int32(ctx, field.Selections, res)
+	return ec.marshalNAuditLogLevelEnum2trip2gᚋinternalᚋgraphᚋmodelᚐAuditLogLevelEnum(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminAuditLog_level(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7279,7 +7279,7 @@ func (ec *executionContext) fieldContext_AdminAuditLog_level(_ context.Context, 
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
+			return nil, errors.New("field of type AuditLogLevelEnum does not have child fields")
 		},
 	}
 	return fc, nil
@@ -29322,13 +29322,27 @@ func (ec *executionContext) unmarshalInputAdminAuditLogsFilterInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"createdAt"}
+	fieldsInOrder := [...]string{"limit", "offset", "createdAt"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "limit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Limit = data
+		case "offset":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Offset = data
 		case "createdAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
 			data, err := ec.unmarshalOAdminAuditLogsDateFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminAuditLogsDateFilter(ctx, v)
@@ -46566,6 +46580,16 @@ func (ec *executionContext) marshalNAdminUsersConnection2ᚖtrip2gᚋinternalᚋ
 func (ec *executionContext) unmarshalNApiKeyLogsFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAPIKeyLogsFilterInput(ctx context.Context, v any) (model.APIKeyLogsFilterInput, error) {
 	res, err := ec.unmarshalInputApiKeyLogsFilterInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNAuditLogLevelEnum2trip2gᚋinternalᚋgraphᚋmodelᚐAuditLogLevelEnum(ctx context.Context, v any) (model.AuditLogLevelEnum, error) {
+	var res model.AuditLogLevelEnum
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAuditLogLevelEnum2trip2gᚋinternalᚋgraphᚋmodelᚐAuditLogLevelEnum(ctx context.Context, sel ast.SelectionSet, v model.AuditLogLevelEnum) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNBanUserInput2trip2gᚋinternalᚋgraphᚋmodelᚐBanUserInput(ctx context.Context, v any) (model.BanUserInput, error) {

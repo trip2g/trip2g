@@ -1,0 +1,35 @@
+$trip2g_admin_auditlog_catalog $mol_page
+	title @ \Audit Logs
+	sub /
+		<= List $mol_list
+			rows <= rows /$mol_view
+
+Row* $mol_view
+	minimal_height 50
+	sub /
+		<= Level_cell $mol_view
+			style *
+				width 80px
+				padding 10px
+			sub /
+				<= level* \
+		<= Message_cell $mol_view
+			style *
+				flex 1
+				padding 10px
+			sub /
+				<= message* \
+		<= Created_at_cell $mol_view
+			style *
+				width 200px
+				padding 10px
+			sub /
+				<= created_at* \
+		<= Params_cell $mol_view
+			style *
+				width 300px
+				padding 10px
+				font-size 12px
+				color \#666
+			sub /
+				<= params* \

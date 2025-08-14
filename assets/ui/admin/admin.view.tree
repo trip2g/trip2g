@@ -51,6 +51,8 @@ $trip2g_admin_app $trip2g_admin_catalog
 			close_icon <= Spread_close
 		boostycredentials <= ListBoostyCredentials $trip2g_admin_boostycredentials_catalog
 			close_icon <= Spread_close
+		auditlogs <= AuditLogs $trip2g_admin_auditlog_catalog
+			tools / <= Spread_close
 
 $trip2g_admin_cell $mol_view
 	content \No Content

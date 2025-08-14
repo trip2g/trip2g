@@ -224,6 +224,8 @@ type AdminAuditLogsDateFilter struct {
 }
 
 type AdminAuditLogsFilterInput struct {
+	Limit     *int64                    `json:"limit,omitempty"`
+	Offset    *int64                    `json:"offset,omitempty"`
 	CreatedAt *AdminAuditLogsDateFilter `json:"createdAt,omitempty"`
 }
 
@@ -1003,6 +1005,67 @@ type Vector2 struct {
 
 type ViewerOffersFilter struct {
 	PageID *int64 `json:"pageId,omitempty"`
+}
+
+type AuditLogLevelEnum string
+
+const (
+	AuditLogLevelEnumUnknown AuditLogLevelEnum = "UNKNOWN"
+	AuditLogLevelEnumDebug   AuditLogLevelEnum = "DEBUG"
+	AuditLogLevelEnumInfo    AuditLogLevelEnum = "INFO"
+	AuditLogLevelEnumWarning AuditLogLevelEnum = "WARNING"
+	AuditLogLevelEnumError   AuditLogLevelEnum = "ERROR"
+)
+
+var AllAuditLogLevelEnum = []AuditLogLevelEnum{
+	AuditLogLevelEnumUnknown,
+	AuditLogLevelEnumDebug,
+	AuditLogLevelEnumInfo,
+	AuditLogLevelEnumWarning,
+	AuditLogLevelEnumError,
+}
+
+func (e AuditLogLevelEnum) IsValid() bool {
+	switch e {
+	case AuditLogLevelEnumUnknown, AuditLogLevelEnumDebug, AuditLogLevelEnumInfo, AuditLogLevelEnumWarning, AuditLogLevelEnumError:
+		return true
+	}
+	return false
+}
+
+func (e AuditLogLevelEnum) String() string {
+	return string(e)
+}
+
+func (e *AuditLogLevelEnum) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AuditLogLevelEnum(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AuditLogLevelEnum", str)
+	}
+	return nil
+}
+
+func (e AuditLogLevelEnum) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *AuditLogLevelEnum) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e AuditLogLevelEnum) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type BoostyCredentialsStateEnum string
