@@ -31,24 +31,13 @@ func Resolve(ctx context.Context, env Env, userID int64) ([]string, error) {
 		return nil, nil //nolint:nilnil // User is banned, return nil
 	}
 
-	// Check if the user is an admin
-	_, err = env.AdminByUserID(ctx, userID)
+	adminSubgraphs, err := checkAdmin(ctx, env, userID)
 	if err != nil {
-		if !db.IsNoFound(err) {
-			return nil, fmt.Errorf("failed to get admin by user ID: %w", err)
-		}
-	} else {
-		allSubgraphs, allErr := env.ListAllSubgraphs(ctx)
-		if allErr != nil {
-			return nil, fmt.Errorf("failed to list all subgraphs: %w", allErr)
-		}
+		return nil, fmt.Errorf("failed to check admin status: %w", err)
+	}
 
-		result := make([]string, 0, len(allSubgraphs))
-		for _, subgraph := range allSubgraphs {
-			result = append(result, subgraph.Name)
-		}
-
-		return result, nil
+	if len(adminSubgraphs) > 0 {
+		return adminSubgraphs, nil // Return all subgraphs if the user is an admin
 	}
 
 	uniqMap := make(map[string]struct{})
@@ -96,4 +85,27 @@ func Resolve(ctx context.Context, env Env, userID int64) ([]string, error) {
 	}
 
 	return result, nil
+}
+
+func checkAdmin(ctx context.Context, env Env, userID int64) ([]string, error) {
+	_, err := env.AdminByUserID(ctx, userID)
+	if err != nil {
+		if !db.IsNoFound(err) {
+			return nil, fmt.Errorf("failed to get admin by user ID: %w", err)
+		}
+	} else {
+		allSubgraphs, allErr := env.ListAllSubgraphs(ctx)
+		if allErr != nil {
+			return nil, fmt.Errorf("failed to list all subgraphs: %w", allErr)
+		}
+
+		result := make([]string, 0, len(allSubgraphs))
+		for _, subgraph := range allSubgraphs {
+			result = append(result, subgraph.Name)
+		}
+
+		return result, nil
+	}
+
+	return nil, nil //nolint:nilnil // User is not an admin, return nil
 }
