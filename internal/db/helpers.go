@@ -112,7 +112,7 @@ func WithRetry(ctx context.Context, maxRetries int, operation func() error) erro
 			return nil
 		}
 
-		if !isSQLiteBusyError(err) {
+		if !IsSQLiteBusyError(err) {
 			return err
 		}
 
@@ -134,12 +134,3 @@ func WithRetry(ctx context.Context, maxRetries int, operation func() error) erro
 	return lastErr
 }
 
-func isSQLiteBusyError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errStr := strings.ToLower(err.Error())
-	return strings.Contains(errStr, "database is locked") ||
-		strings.Contains(errStr, "busy") ||
-		strings.Contains(errStr, "locked")
-}

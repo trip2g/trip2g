@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
+	"time"
 
 	"trip2g/internal/logger"
 
@@ -38,10 +39,9 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 	}
 
 	// TODO: do something with that... it breaks sign in
-	// conn.SetMaxOpenConns(1)
-	// conn.SetMaxIdleConns(1)
-	// conn.SetConnMaxLifetime(0)
-	// conn.SetConnMaxIdleTime(0)
+	conn.SetMaxOpenConns(10)
+	conn.SetMaxIdleConns(10)
+	conn.SetConnMaxLifetime(time.Hour)
 
 	// Enable SQLite pragmas
 	err = enablePragmas(conn)
@@ -88,9 +88,18 @@ func runMigrations(databaseFile string, skipDump bool) error {
 
 // openConnection opens a SQLite database connection with optimized settings.
 func openConnection(databaseFile string) (*sql.DB, error) {
-	connectionString := databaseFile + "?_journal=WAL&_timeout=10000"
+	// build url with params
+	url := &url.URL{Path: databaseFile}
+	q := url.Query()
+	q.Set("_journal", "WAL")
+	q.Set("_timeout", "10000")
+	q.Set("_busy_timeout", "10000")
+	q.Set("_cache_size", "-64000")
+	q.Set("_mmap_size", "268435456") // 256MB
+	q.Set("_txlock", "immediate")
+	url.RawQuery = q.Encode()
 
-	conn, err := sql.Open("sqlite", connectionString)
+	conn, err := sql.Open("sqlite", url.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to open SQLite connection: %w", err)
 	}
