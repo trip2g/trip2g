@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
-	"time"
 
 	"trip2g/internal/logger"
 
@@ -39,9 +38,10 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 	}
 
 	// TODO: do something with that... it breaks sign in
-	conn.SetMaxOpenConns(10)
-	conn.SetMaxIdleConns(10)
-	conn.SetConnMaxLifetime(time.Hour)
+	conn.SetMaxOpenConns(25)
+	conn.SetMaxIdleConns(25)
+	conn.SetConnMaxLifetime(0)
+	conn.SetConnMaxIdleTime(0)
 
 	// Enable SQLite pragmas
 	err = enablePragmas(conn)
@@ -92,11 +92,8 @@ func openConnection(databaseFile string) (*sql.DB, error) {
 	url := &url.URL{Path: databaseFile}
 	q := url.Query()
 	q.Set("_journal", "WAL")
-	q.Set("_timeout", "10000")
-	q.Set("_busy_timeout", "10000")
-	q.Set("_cache_size", "-64000")
-	q.Set("_mmap_size", "268435456") // 256MB
-	q.Set("_txlock", "immediate")
+	q.Set("_timeout", "20000")
+	q.Set("_busy_timeout", "20000")
 	url.RawQuery = q.Encode()
 
 	conn, err := sql.Open("sqlite", url.String())
@@ -118,13 +115,13 @@ func openConnection(databaseFile string) (*sql.DB, error) {
 func enablePragmas(db *sql.DB) error {
 	pragmas := `
 		PRAGMA foreign_keys = ON;
-		PRAGMA journal_mode = WAL;
 		PRAGMA synchronous = NORMAL;
-		PRAGMA busy_timeout = 10000;
 		PRAGMA strict = ON;
 		PRAGMA temp_store = MEMORY;
 		PRAGMA mmap_size = 268435456;
 		PRAGMA cache_size = -64000;
+		PRAGMA wal_autocheckpoint = 1000;
+		PRAGMA wal_checkpoint(TRUNCATE);
 	`
 
 	_, err := db.Exec(pragmas)

@@ -192,7 +192,7 @@ func main() {
 		nowpaymentsClient: nowpaymentsClient,
 	}
 
-	a.auditLogger = auditlogger.New(a, a.config.AuditLog)
+	a.auditLogger = auditlogger.New(ctx, a, a.config.AuditLog)
 
 	a.patreonClientManager = patreon.NewClientManager(a)
 	a.boostyClientManager = boosty.NewClientManager(a)

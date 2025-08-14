@@ -28,7 +28,7 @@ func (d *DBLogger) ExecContext(ctx context.Context, query string, args ...interf
 
 	res, err := d.db.ExecContext(ctx, query, args...)
 	if err != nil {
-		d.log.Error("ExecContext Error", "error", err)
+		d.log.Error("ExecContext Error", "error", err, "query", query, "args", args)
 	}
 
 	return res, err

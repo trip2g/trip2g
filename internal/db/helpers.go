@@ -18,6 +18,11 @@ func IsUniqueViolation(err error) bool {
 	return strings.Contains(err.Error(), "UNIQUE constraint failed")
 }
 
+func IsSQLiteBusyError(err error) bool {
+	return strings.Contains(err.Error(), "database is locked") ||
+		strings.Contains(err.Error(), "SQLITE_BUSY")
+}
+
 // ToNullableFloat64 converts a float64 pointer to sql.NullFloat64.
 func ToNullableFloat64(value *float64) sql.NullFloat64 {
 	if value == nil {
