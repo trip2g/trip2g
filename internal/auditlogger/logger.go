@@ -134,6 +134,10 @@ func (l *Logger) flushLoop(ctx context.Context) {
 	}
 }
 
+func (l *Logger) Flush() {
+	l.flush()
+}
+
 func (l *Logger) flush() {
 	l.bufferMu.Lock()
 	if len(l.buffer) == 0 {

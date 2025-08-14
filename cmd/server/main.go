@@ -272,6 +272,8 @@ func main() {
 		}
 	})
 
+	go a.startRemoveExpiredTgChatMembersJob()
+
 	a.startServer()
 }
 

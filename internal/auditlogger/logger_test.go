@@ -81,9 +81,15 @@ func TestAuditLogger(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := &mockEnv{}
-			logger := New(env, tt.config)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			logger := New(ctx, env, tt.config)
 
 			tt.logFunc(logger)
+
+			// Flush the buffer to ensure logs are written
+			logger.Flush()
 
 			if tt.shouldLog {
 				require.Len(t, env.insertedLogs, 1)
@@ -106,7 +112,9 @@ func TestAuditLogger(t *testing.T) {
 
 func TestAuditLoggerInvalidLogLevel(t *testing.T) {
 	env := &mockEnv{}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	require.Panics(t, func() {
-		New(env, Config{LogLevel: "invalid"})
+		New(ctx, env, Config{LogLevel: "invalid"})
 	})
 }
