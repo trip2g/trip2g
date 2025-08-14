@@ -14,14 +14,25 @@ type Env interface {
 
 	AdminByUserID(ctx context.Context, userID int64) (db.Admin, error)
 	ListAllSubgraphs(ctx context.Context) ([]db.Subgraph, error)
+
+	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
 }
 
 // TODO: maybe we need to add a cache for this function
 // or store results of this function in the user table.
 
 func Resolve(ctx context.Context, env Env, userID int64) ([]string, error) {
+	ban, err := env.UserBanByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user ban by user ID: %w", err)
+	}
+
+	if ban != nil {
+		return nil, nil //nolint:nilnil // User is banned, return nil
+	}
+
 	// Check if the user is an admin
-	_, err := env.AdminByUserID(ctx, userID)
+	_, err = env.AdminByUserID(ctx, userID)
 	if err != nil {
 		if !db.IsNoFound(err) {
 			return nil, fmt.Errorf("failed to get admin by user ID: %w", err)
