@@ -1,13 +1,20 @@
 package auditlogger
 
-import "trip2g/internal/logger"
+import (
+	"context"
+	"encoding/json"
+	"time"
+	"trip2g/internal/db"
+	"trip2g/internal/logger"
+)
 
 type Env interface {
 	Logger() logger.Logger
+	InsertAuditLog(ctx context.Context, arg db.InsertAuditLogParams) error
 }
 
 type Config struct {
-	logLevel string
+	LogLevel string
 }
 
 const (
@@ -32,7 +39,7 @@ func New(env Env, config Config) *AuditLogger {
 		log: logger.WithPrefix(env.Logger(), "audit: "),
 	}
 
-	switch config.logLevel {
+	switch config.LogLevel {
 	case "debug":
 		l.logLevel = logLevelDebug
 	case "info":
@@ -42,7 +49,7 @@ func New(env Env, config Config) *AuditLogger {
 	case "error":
 		l.logLevel = logLevelError
 	default:
-		panic("invalid log level: " + config.logLevel)
+		panic("invalid log level: " + config.LogLevel)
 	}
 
 	return &l
@@ -50,6 +57,28 @@ func New(env Env, config Config) *AuditLogger {
 
 func (l *AuditLogger) write(level int, msg string, keysAndValues ...interface{}) {
 	if level < l.logLevel {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	params := logger.ConvertToFields(keysAndValues)
+
+	jsonBytes, err := json.Marshal(params)
+	if err != nil {
+		l.log.Error("failed to marshal parameters to JSON", "error", err, "msg", msg)
+	}
+
+	arg := db.InsertAuditLogParams{
+		Level:   int64(level),
+		Message: msg,
+		Params:  string(jsonBytes),
+	}
+
+	err = l.env.InsertAuditLog(ctx, arg)
+	if err != nil {
+		l.log.Error("failed to insert audit log", "error", err, "msg", msg, "params", keysAndValues)
 		return
 	}
 }

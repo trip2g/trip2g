@@ -168,7 +168,7 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 	return nil
 }
 
-func (req *request) handleChatMember(ctx context.Context) error { //nolint:unparam // always returns nil for now
+func (req *request) handleChatMember(ctx context.Context) error { //nolint:unparam,gocognit // error return for consistency, complex chat member logic
 	log := req.env.Logger()
 	chatMember := req.update.ChatMember
 
@@ -196,6 +196,7 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 	)
 
 	// User joined the chat
+	//nolint:nestif // complex conditions needed for chat member status handling
 	if (newStatus == statusMember || newStatus == statusAdministrator || newStatus == statusCreator) &&
 		(oldStatus == statusLeft || oldStatus == statusKicked || oldStatus == "") {
 		// Get the tg_bot_chat record to get the autoincrement id
@@ -367,7 +368,7 @@ func (req *request) sendContentMenu(ctx context.Context) error {
 	return nil
 }
 
-func (req *request) handleMessageEvents(ctx context.Context) error {
+func (req *request) handleMessageEvents(ctx context.Context) error { //nolint:unparam // error return maintained for consistency
 	log := req.env.Logger()
 	message := req.update.Message
 
@@ -477,7 +478,7 @@ func (req *request) handleUserJoined(ctx context.Context, userID int64, chatID i
 	return nil
 }
 
-func (req *request) handleUserLeft(ctx context.Context, userID int64, chatID int64) error {
+func (req *request) handleUserLeft(ctx context.Context, userID int64, chatID int64) error { //nolint:unparam // error return maintained for consistency
 	log := req.env.Logger()
 
 	// Only track channels, groups, and supergroups

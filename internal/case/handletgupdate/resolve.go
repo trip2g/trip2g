@@ -15,6 +15,10 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+const (
+	parseMarkdown = "Markdown"
+)
+
 // var (
 // 	// Global rate limiter: 10 requests per minute per user
 // 	globalRateLimiter = NewRateLimiter(10, time.Minute)
@@ -300,7 +304,7 @@ func (req *request) handleCommands(ctx context.Context) error {
 		return req.sendUserInfo(ctx)
 
 	case "id":
-		return req.sendIdInfo(ctx)
+		return req.sendIDInfo(ctx)
 
 	default:
 		msg := tgbotapi.NewMessage(req.update.Message.Chat.ID, "Unknown command")
@@ -543,7 +547,7 @@ func (req *request) sendAvailableChats(ctx context.Context) error {
 	}
 
 	msg := tgbotapi.NewMessage(req.chatID, message.String())
-	msg.ParseMode = "Markdown"
+	msg.ParseMode = parseMarkdown
 	if len(rows) > 0 {
 		msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
 	}
@@ -627,7 +631,8 @@ func (req *request) handleJoinChat(ctx context.Context, actionParts []string) er
 		Name:   foundChat.SubgraphName,
 	})
 	if err != nil {
-		req.env.Logger().Error("failed to record chat access request", "error", err, "chatID", foundChat.ChatID, "userID", user.ID, "subgraphID", foundChat.SubgraphID)
+		req.env.Logger().Error("failed to record chat access request",
+			"error", err, "chatID", foundChat.ChatID, "userID", user.ID, "subgraphID", foundChat.SubgraphID)
 		// Don't return error - continue with invitation
 	}
 
@@ -697,7 +702,7 @@ func (req *request) sendUserInfo(ctx context.Context) error {
 	}
 
 	msg := tgbotapi.NewMessage(req.chatID, message.String())
-	msg.ParseMode = "Markdown"
+	msg.ParseMode = parseMarkdown
 
 	_, err = req.env.Send(msg)
 	if err != nil {
@@ -707,7 +712,7 @@ func (req *request) sendUserInfo(ctx context.Context) error {
 	return nil
 }
 
-func (req *request) sendIdInfo(ctx context.Context) error {
+func (req *request) sendIDInfo(_ context.Context) error {
 	var message strings.Builder
 
 	// Chat ID
@@ -719,7 +724,7 @@ func (req *request) sendIdInfo(ctx context.Context) error {
 	}
 
 	msg := tgbotapi.NewMessage(req.chatID, message.String())
-	msg.ParseMode = "Markdown"
+	msg.ParseMode = parseMarkdown
 
 	_, err := req.env.Send(msg)
 	if err != nil {

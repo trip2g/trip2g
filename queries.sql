@@ -1188,4 +1188,16 @@ select sqlc.embed(tg_bot_chat_subgraph_accesses), sqlc.embed(subgraphs), sqlc.em
   join tg_bot_chats on tg_bot_chat_subgraph_accesses.chat_id = tg_bot_chats.id
  where 1 = 1
    and (user_id = sqlc.narg(user_id) or sqlc.narg(user_id) is null)
-   and (chat_id = sqlc.narg(chat_id) or sqlc.narg(chat_id) is null)
+   and (chat_id = sqlc.narg(chat_id) or sqlc.narg(chat_id) is null);
+
+-- name: InsertAuditLog :exec
+insert into audit_logs (level, message, params)
+values (?, ?, ?);
+
+-- name: ListAuditLogs :many
+select id, created_at, level, message, params
+from audit_logs
+where (sqlc.narg(created_at_gte) is null or created_at >= sqlc.narg(created_at_gte))
+  and (sqlc.narg(created_at_lte) is null or created_at <= sqlc.narg(created_at_lte))
+order by created_at desc
+limit ? offset ?;

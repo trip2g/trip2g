@@ -346,7 +346,7 @@ func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotap
 	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
 
 	if handlerIO == nil {
-		return fmt.Errorf("Telegram bot handler IO not found for chat ID %d", chatID)
+		return fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
 	}
 
 	_, err = handlerIO.Send(msg)
@@ -376,7 +376,7 @@ func (a *app) KickTelegramChatMember(ctx context.Context, chatID, userID int64) 
 	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
 
 	if handlerIO == nil {
-		return fmt.Errorf("Telegram bot handler IO not found for chat ID %d", chatID)
+		return fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
 	}
 
 	err = handlerIO.KickChatMember(ctx, chat.TelegramID, user.TgUserID.Int64, chat.ChatType)
@@ -406,7 +406,7 @@ func (a *app) UnbanTelegramChatMember(ctx context.Context, chatID, userID int64)
 	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
 
 	if handlerIO == nil {
-		return fmt.Errorf("Telegram bot handler IO not found for chat ID %d", chatID)
+		return fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
 	}
 
 	err = handlerIO.UnbanChatMember(ctx, chat.TelegramID, user.TgUserID.Int64)

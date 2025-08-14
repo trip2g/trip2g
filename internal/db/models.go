@@ -52,11 +52,11 @@ type ApiKeyLogIp struct {
 }
 
 type AuditLog struct {
-	ID        int64          `json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	Level     int64          `json:"level"`
-	Message   string         `json:"message"`
-	Params    sql.NullString `json:"params"`
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	Level     int64     `json:"level"`
+	Message   string    `json:"message"`
+	Params    string    `json:"params"`
 }
 
 type BackliteTask struct {

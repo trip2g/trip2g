@@ -206,23 +206,25 @@ func (r *linkRenderer) exit(w util.BufWriter, n *wikilink.Node) {
 	}
 }
 
-var imageExtensions = map[string]struct{}{
-	".apng":  {},
-	".avif":  {},
-	".gif":   {},
-	".jpg":   {},
-	".jpeg":  {},
-	".jfif":  {},
-	".pjpeg": {},
-	".pjp":   {},
-	".png":   {},
-	".svg":   {},
-	".webp":  {},
+func getImageExtensions() map[string]struct{} {
+	return map[string]struct{}{
+		".apng":  {},
+		".avif":  {},
+		".gif":   {},
+		".jpg":   {},
+		".jpeg":  {},
+		".jfif":  {},
+		".pjpeg": {},
+		".pjp":   {},
+		".png":   {},
+		".svg":   {},
+		".webp":  {},
+	}
 }
 
 func isImageExtension(target string) bool {
 	ext := filepath.Ext(target)
-	_, ok := imageExtensions[ext]
+	_, ok := getImageExtensions()[ext]
 	return ok
 }
 

@@ -27,9 +27,9 @@ func Resolve(ctx context.Context, env Env, userID int64) ([]string, error) {
 			return nil, fmt.Errorf("failed to get admin by user ID: %w", err)
 		}
 	} else {
-		allSubgraphs, err := env.ListAllSubgraphs(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list all subgraphs: %w", err)
+		allSubgraphs, allErr := env.ListAllSubgraphs(ctx)
+		if allErr != nil {
+			return nil, fmt.Errorf("failed to list all subgraphs: %w", allErr)
 		}
 
 		result := make([]string, 0, len(allSubgraphs))

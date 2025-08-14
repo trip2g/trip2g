@@ -383,11 +383,11 @@ func TestResolve(t *testing.T) {
 				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
 					require.Equal(t, int64(7828312136), tgUserID.Int64)
 					return db.User{
-						ID:        123,
-						Email:     sql.NullString{String: "test@example.com", Valid: true},
-						CreatedAt: time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
+						ID:         123,
+						Email:      sql.NullString{String: "test@example.com", Valid: true},
+						CreatedAt:  time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 						CreatedVia: "telegram",
-						TgUserID:  sql.NullInt64{Int64: 7828312136, Valid: true},
+						TgUserID:   sql.NullInt64{Int64: 7828312136, Valid: true},
 					}, nil
 				}
 				env.ListActiveUserSubgraphsFunc = func(ctx context.Context, userID int64) ([]string, error) {

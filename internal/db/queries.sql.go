@@ -1694,6 +1694,22 @@ func (q *Queries) InsertAdmin(ctx context.Context, arg InsertAdminParams) (Admin
 	return i, err
 }
 
+const insertAuditLog = `-- name: InsertAuditLog :exec
+insert into audit_logs (level, message, params)
+values (?, ?, ?)
+`
+
+type InsertAuditLogParams struct {
+	Level   int64  `json:"level"`
+	Message string `json:"message"`
+	Params  string `json:"params"`
+}
+
+func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error {
+	_, err := q.db.ExecContext(ctx, insertAuditLog, arg.Level, arg.Message, arg.Params)
+	return err
+}
+
 const insertBoostyCredentials = `-- name: InsertBoostyCredentials :one
 insert into boosty_credentials (created_by, auth_data, device_id, blog_name)
 values (?, ?, ?, ?)
@@ -3354,6 +3370,56 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.NoteViewCount,
 			&i.TgUserID,
 			&i.CreatedVia,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAuditLogs = `-- name: ListAuditLogs :many
+select id, created_at, level, message, params
+from audit_logs
+where (?3 is null or created_at >= ?3)
+  and (?4 is null or created_at <= ?4)
+order by created_at desc
+limit ? offset ?
+`
+
+type ListAuditLogsParams struct {
+	CreatedAtGte interface{} `json:"created_at_gte"`
+	CreatedAtLte interface{} `json:"created_at_lte"`
+	Limit        int64       `json:"limit"`
+	Offset       int64       `json:"offset"`
+}
+
+func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error) {
+	rows, err := q.db.QueryContext(ctx, listAuditLogs,
+		arg.CreatedAtGte,
+		arg.CreatedAtLte,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AuditLog
+	for rows.Next() {
+		var i AuditLog
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.Level,
+			&i.Message,
+			&i.Params,
 		); err != nil {
 			return nil, err
 		}

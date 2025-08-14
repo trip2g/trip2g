@@ -1,7 +1,6 @@
 package zerologger
 
 import (
-	"fmt"
 	"io"
 	"os"
 
@@ -16,38 +15,22 @@ type zerologLogger struct {
 
 // Info ...
 func (zl *zerologLogger) Info(msg string, keysAndValues ...interface{}) {
-	zl.logger.Info().Fields(convertToFields(keysAndValues)).Msg(msg)
+	zl.logger.Info().Fields(logger.ConvertToFields(keysAndValues)).Msg(msg)
 }
 
 // Error ...
 func (zl *zerologLogger) Error(msg string, keysAndValues ...interface{}) {
-	zl.logger.Error().Fields(convertToFields(keysAndValues)).Msg(msg)
+	zl.logger.Error().Fields(logger.ConvertToFields(keysAndValues)).Msg(msg)
 }
 
 // Debug ...
 func (zl *zerologLogger) Debug(msg string, keysAndValues ...interface{}) {
-	zl.logger.Debug().Fields(convertToFields(keysAndValues)).Msg(msg)
+	zl.logger.Debug().Fields(logger.ConvertToFields(keysAndValues)).Msg(msg)
 }
 
 // Warn ...
 func (zl *zerologLogger) Warn(msg string, keysAndValues ...interface{}) {
-	zl.logger.Warn().Fields(convertToFields(keysAndValues)).Msg(msg)
-}
-
-// convertToFields converts key-value pairs into a map.
-func convertToFields(kv []interface{}) map[string]interface{} {
-	m := make(map[string]interface{})
-	for i := 0; i < len(kv); i += 2 {
-		if i+1 < len(kv) {
-			key, ok := kv[i].(string)
-			if !ok {
-				key = fmt.Sprintf("%v (non-string key)", kv[i])
-			}
-
-			m[key] = kv[i+1]
-		}
-	}
-	return m
+	zl.logger.Warn().Fields(logger.ConvertToFields(keysAndValues)).Msg(msg)
 }
 
 func New(logLevel string, prettyLogging bool) logger.Logger {

@@ -392,7 +392,7 @@ CREATE TABLE audit_logs (
   created_at timestamp not null default current_timestamp,
   level int not null default 0,
   message text not null,
-  params text
+  params text not null
 );
 CREATE INDEX idx_audit_logs_created_at on audit_logs (created_at);
 CREATE TABLE IF NOT EXISTS "tg_bot_chats" (

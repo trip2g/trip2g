@@ -15,7 +15,8 @@ import (
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
-func TestResolve(t *testing.T) {
+//nolint:gocognit // test complexity is acceptable for comprehensive testing
+func TestResolveSuccess(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {

@@ -213,6 +213,20 @@ type AdminAPIKeysConnection struct {
 	Nodes []db.ApiKey `json:"nodes"`
 }
 
+type AdminAuditLogsConnection struct {
+	Nodes  []db.AuditLog              `json:"nodes"`
+	Filter *AdminAuditLogsFilterInput `json:"-"`
+}
+
+type AdminAuditLogsDateFilter struct {
+	Gte *time.Time `json:"gte,omitempty"`
+	Lte *time.Time `json:"lte,omitempty"`
+}
+
+type AdminAuditLogsFilterInput struct {
+	CreatedAt *AdminAuditLogsDateFilter `json:"createdAt,omitempty"`
+}
+
 type AdminBoostyCredentialsConnection struct {
 	Nodes  []db.BoostyCredential              `json:"nodes"`
 	Filter *AdminBoostyCredentialsFilterInput `json:"-"`

@@ -137,7 +137,8 @@ func (io *HandlerIO) InviteUserToChat(ctx context.Context, chatID, userID int64)
 	}
 
 	// Send the invite link to the user
-	message := fmt.Sprintf("🔗 Вот ваша пригласительная ссылка для входа в группу:\n\n%s\n\n⏰ Ссылка одноразовая и действует в течение ограниченного времени.", inviteLink.InviteLink)
+	message := fmt.Sprintf("🔗 Вот ваша пригласительная ссылка для входа в группу:\n\n%s\n\n⏰ Ссылка одноразовая и действует в течение ограниченного времени.",
+		inviteLink.InviteLink)
 
 	msg := tgbotapi.NewMessage(userID, message)
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(

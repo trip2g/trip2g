@@ -152,6 +152,27 @@ type AdminApiKeyLogsConnection
   nodes: [AdminApiKeyLog!]! @goField(forceResolver: true)
 }
 
+type AdminAuditLog @goModel(model: "trip2g/internal/db.AuditLog") {
+  id: Int64!
+  createdAt: Time!
+  level: Int!
+  message: String!
+  params: String!
+}
+
+type AdminAuditLogsConnection @goExtraField(name: "Filter", type: "*trip2g/internal/graph/model.AdminAuditLogsFilterInput") {
+  nodes: [AdminAuditLog!]! @goField(forceResolver: true)
+}
+
+input AdminAuditLogsFilterInput {
+  createdAt: AdminAuditLogsDateFilter
+}
+
+input AdminAuditLogsDateFilter {
+  gte: Time  # greater than or equal (after this date)
+  lte: Time  # less than or equal (before this date)
+}
+
 type AdminRelease @goModel(model: "trip2g/internal/db.Release") {
   id: Int64!
   createdAt: Time!
@@ -500,6 +521,7 @@ type AdminQuery {
   boostyCredentials(id: Int64!): AdminBoostyCredentials
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
+  auditLogs(filter: AdminAuditLogsFilterInput!): AdminAuditLogsConnection!
 
   subgraph(id: Int64!): AdminSubgraph
   noteView(id: String!): NoteView

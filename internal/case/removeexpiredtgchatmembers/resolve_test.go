@@ -10,7 +10,6 @@ import (
 	"trip2g/internal/logger"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/kr/pretty"
 	"github.com/stretchr/testify/require"
 )
 
@@ -284,7 +283,9 @@ func TestResolve(t *testing.T) {
 			expectedResult: &Result{
 				RemovedCount: 0,
 				Errors: []error{
-					errors.New("failed to process expired access for user 123 in chat 1 (subgraph premium): failed to remove chat member from database (telegramUserID: 987654321, chatID: -1001234567890): failed to remove from telegram"),
+					errors.New("failed to process expired access for user 123 in chat 1 (subgraph premium): " +
+						"failed to remove chat member from database (telegramUserID: 987654321, chatID: -1001234567890): " +
+						"failed to remove from telegram"),
 				},
 			},
 		},
@@ -826,14 +827,7 @@ func TestSendExpirationNotification(t *testing.T) {
 	}
 }
 
-// Helper function to create a pointer to int64
+// Helper function to create a pointer to int64.
 func ptr(v int64) *int64 {
 	return &v
-}
-
-// Add some debug helpers if needed
-func debugResult(result *Result) {
-	if result != nil {
-		pretty.Printf("Result: %# v\n", result)
-	}
 }

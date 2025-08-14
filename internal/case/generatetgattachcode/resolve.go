@@ -20,7 +20,7 @@ type Env interface {
 	BotStartLink(botID int64, param string) (string, error)
 }
 
-// Type aliases for cleaner code.
+// Input is a type alias for cleaner code.
 type Input = model.GenerateTgAttachCodeInput
 type Payload = model.GenerateTgAttachCodeOrErrorPayload
 

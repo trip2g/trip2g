@@ -93,6 +93,7 @@ type Env interface {
 	ListAllNotFoundIgnoredPatterns(ctx context.Context) ([]db.NotFoundIgnoredPattern, error)
 	ListAllNotFoundPaths(ctx context.Context) ([]db.NotFoundPath, error)
 	ListEnabledTgBots(ctx context.Context) ([]db.TgBot, error)
+	ListAuditLogs(ctx context.Context, arg db.ListAuditLogsParams) ([]db.AuditLog, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)

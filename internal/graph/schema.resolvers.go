@@ -124,6 +124,41 @@ func (r *adminApiKeysConnectionResolver) Nodes(ctx context.Context, obj *model.A
 	return r.env(ctx).ListAllAPIKeys(ctx)
 }
 
+// Level is the resolver for the level field.
+func (r *adminAuditLogResolver) Level(ctx context.Context, obj *db.AuditLog) (int32, error) {
+	panic(errors.New("not implemented: Level - level"))
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminAuditLogsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminAuditLogsConnection) ([]db.AuditLog, error) {
+	const limit = 100 // Default page size
+	const offset = 0  // For now, we'll start with basic pagination
+
+	// Set up filter parameters
+	var gteDate interface{}
+	var lteDate interface{}
+
+	if obj.Filter != nil && obj.Filter.CreatedAt != nil {
+		if obj.Filter.CreatedAt.Gte != nil {
+			gteDate = *obj.Filter.CreatedAt.Gte
+		}
+		if obj.Filter.CreatedAt.Lte != nil {
+			lteDate = *obj.Filter.CreatedAt.Lte
+		}
+	}
+
+	// Build query parameters
+	params := db.ListAuditLogsParams{
+		CreatedAtGte: gteDate,
+		CreatedAtLte: lteDate,
+		Limit:        limit,
+		Offset:       offset,
+	}
+
+	// Execute query
+	return r.env(ctx).ListAuditLogs(ctx, params)
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminBoostyCredentialsResolver) CreatedBy(ctx context.Context, obj *db.BoostyCredential) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -378,8 +413,14 @@ func (r *adminMutationResolver) RemoveExpiredTgChatMembers(ctx context.Context, 
 	}
 
 	payload := model.RemoveExpiredTgChatMembersPayload{
-		RemovedCount: int32(result.RemovedCount),
-		Errors:       errors,
+		RemovedCount: func() int32 {
+			if result.RemovedCount > 2147483647 {
+				return 2147483647 // max int32
+			}
+			//nolint:gosec // overflow check above ensures safe conversion
+			return int32(result.RemovedCount)
+		}(),
+		Errors: errors,
 	}
 
 	return &payload, nil
@@ -805,6 +846,11 @@ func (r *adminQueryResolver) BoostyCredentials(ctx context.Context, obj *appmode
 // APIKeyLogs is the resolver for the apiKeyLogs field.
 func (r *adminQueryResolver) APIKeyLogs(ctx context.Context, obj *appmodel.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error) {
 	return &model.AdminAPIKeyLogsConnection{APIKeyID: filter.APIKeyID}, nil
+}
+
+// AuditLogs is the resolver for the auditLogs field.
+func (r *adminQueryResolver) AuditLogs(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminAuditLogsFilterInput) (*model.AdminAuditLogsConnection, error) {
+	return &model.AdminAuditLogsConnection{Filter: &filter}, nil
 }
 
 // Subgraph is the resolver for the subgraph field.
@@ -1669,6 +1715,14 @@ func (r *Resolver) AdminApiKeysConnection() AdminApiKeysConnectionResolver {
 	return &adminApiKeysConnectionResolver{r}
 }
 
+// AdminAuditLog returns AdminAuditLogResolver implementation.
+func (r *Resolver) AdminAuditLog() AdminAuditLogResolver { return &adminAuditLogResolver{r} }
+
+// AdminAuditLogsConnection returns AdminAuditLogsConnectionResolver implementation.
+func (r *Resolver) AdminAuditLogsConnection() AdminAuditLogsConnectionResolver {
+	return &adminAuditLogsConnectionResolver{r}
+}
+
 // AdminBoostyCredentials returns AdminBoostyCredentialsResolver implementation.
 func (r *Resolver) AdminBoostyCredentials() AdminBoostyCredentialsResolver {
 	return &adminBoostyCredentialsResolver{r}
@@ -1955,6 +2009,8 @@ type adminAdminsConnectionResolver struct{ *Resolver }
 type adminApiKeyResolver struct{ *Resolver }
 type adminApiKeyLogsConnectionResolver struct{ *Resolver }
 type adminApiKeysConnectionResolver struct{ *Resolver }
+type adminAuditLogResolver struct{ *Resolver }
+type adminAuditLogsConnectionResolver struct{ *Resolver }
 type adminBoostyCredentialsResolver struct{ *Resolver }
 type adminBoostyCredentialsConnectionResolver struct{ *Resolver }
 type adminBoostyMemberResolver struct{ *Resolver }
