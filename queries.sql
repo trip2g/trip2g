@@ -1204,7 +1204,41 @@ limit sqlc.arg(limit) offset sqlc.arg(offset);
 
 -- name: ActiveHTMLInjections :many
 select *
-  from html_injections
- where (active_from = sqlc.narg(active_from) or sqlc.narg(active_from) is null)
-   and (active_to = sqlc.narg(active_to) or sqlc.narg(active_to) is null)
- order by position;
+from html_injections
+where (active_from <= datetime('now') or active_from is null)
+  and (active_to >= datetime('now') or active_to is null)
+order by position;
+
+-- name: ListHTMLInjections :many
+select * from html_injections
+order by position, created_at desc;
+
+-- name: GetHTMLInjection :one
+select * from html_injections
+where id = ?;
+
+-- name: InsertHTMLInjection :one
+insert into html_injections (
+  description,
+  position,
+  placement,
+  content,
+  active_from,
+  active_to
+) values (?, ?, ?, ?, ?, ?)
+returning *;
+
+-- name: UpdateHTMLInjection :one
+update html_injections
+set description = ?,
+    position = ?,
+    placement = ?,
+    content = ?,
+    active_from = ?,
+    active_to = ?
+where id = ?
+returning *;
+
+-- name: DeleteHTMLInjection :exec
+delete from html_injections
+where id = ?;

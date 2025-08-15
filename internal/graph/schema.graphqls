@@ -503,6 +503,21 @@ type AdminLatestNoteAssetsConnection {
   nodes: [AdminNoteAsset!]! @goField(forceResolver: true)
 }
 
+type AdminHTMLInjection @goModel(model: "trip2g/internal/db.HtmlInjection") {
+  id: Int64!
+  createdAt: Time!
+  activeFrom: Time
+  activeTo: Time
+  description: String!
+  position: Int!
+  placement: String!
+  content: String!
+}
+
+type AdminHTMLInjectionsConnection {
+  nodes: [AdminHTMLInjection!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -518,6 +533,7 @@ type AdminQuery {
   allNotFoundPaths: AdminNotFoundPathsConnection!
   allNotFoundIgnoredPatterns: AdminNotFoundIgnoredPatternsConnection!
   allLatestNoteAssets: AdminLatestNoteAssetsConnection!
+  allHTMLInjections: AdminHTMLInjectionsConnection!
 
   allTgBots: AdminTgBotsConnection!
   tgBotChats(filter: AdminTgBotChatsFilterInput!): AdminTgBotChatsConnection!
@@ -541,6 +557,7 @@ type AdminQuery {
   redirect(id: Int64!): AdminRedirect
   tgBot(id: Int64!): AdminTgBot
   noteAsset(id: Int64!): AdminNoteAsset
+  htmlInjection(id: Int64!): AdminHTMLInjection
 
   activeUserSubgraphs(id: Int64!): [String!]!
 }
@@ -1372,6 +1389,59 @@ type RemoveExpiredTgChatMembersPayload {
 
 union RemoveExpiredTgChatMembersOrErrorPayload = RemoveExpiredTgChatMembersPayload | ErrorPayload
 
+#
+# createHTMLInjection
+#
+
+input CreateHTMLInjectionInput {
+  description: String!
+  position: Int!
+  placement: String!
+  content: String!
+  activeFrom: Time
+  activeTo: Time
+}
+
+type CreateHTMLInjectionPayload {
+  htmlInjection: AdminHTMLInjection!
+}
+
+union CreateHTMLInjectionOrErrorPayload = CreateHTMLInjectionPayload | ErrorPayload
+
+#
+# updateHTMLInjection
+#
+
+input UpdateHTMLInjectionInput {
+  id: Int64!
+  description: String!
+  position: Int!
+  placement: String!
+  content: String!
+  activeFrom: Time
+  activeTo: Time
+}
+
+type UpdateHTMLInjectionPayload {
+  htmlInjection: AdminHTMLInjection!
+}
+
+union UpdateHTMLInjectionOrErrorPayload = UpdateHTMLInjectionPayload | ErrorPayload
+
+#
+# deleteHTMLInjection
+#
+
+input DeleteHTMLInjectionInput {
+  id: Int64!
+}
+
+type DeleteHTMLInjectionPayload {
+  deletedId: Int64!
+}
+
+union DeleteHTMLInjectionOrErrorPayload = DeleteHTMLInjectionPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
@@ -1420,4 +1490,9 @@ type AdminMutation {
   updateBoostyCredentials(input: UpdateBoostyCredentialsInput!): UpdateBoostyCredentialsOrErrorPayload!
   refreshBoostyData(input: RefreshBoostyDataInput!): RefreshBoostyDataOrErrorPayload!
   setBoostyTierSubgraphs(input: SetBoostyTierSubgraphsInput!): SetBoostyTierSubgraphsOrErrorPayload!
+
+  # HTML Injection mutations
+  createHTMLInjection(input: CreateHTMLInjectionInput!): CreateHTMLInjectionOrErrorPayload!
+  updateHTMLInjection(input: UpdateHTMLInjectionInput!): UpdateHTMLInjectionOrErrorPayload!
+  deleteHTMLInjection(input: DeleteHTMLInjectionInput!): DeleteHTMLInjectionOrErrorPayload!
 }

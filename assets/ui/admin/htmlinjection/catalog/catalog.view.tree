@@ -1,0 +1,45 @@
+$trip2g_admin_htmlinjection_catalog $trip2g_admin_catalog
+	menu_title \HTML Injections
+	param \id
+	Empty $mol_status
+	actions /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+	ShowPage* $trip2g_admin_htmlinjection_show
+		htmlinjection_id <= row_id* 0
+	CreateForm $trip2g_admin_htmlinjection_create
+	menu_link_content* / <= HtmlInjectionItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Row_id_labeler* $mol_labeler
+						title \ID
+						Content <= Row_id* $trip2g_admin_cell
+							content <= row_id_string* \
+					<= Row_description_labeler* $mol_labeler
+						title \Description
+						Content <= Row_description* $trip2g_admin_cell
+							content <= row_description* \description
+					<= Row_placement_labeler* $mol_labeler
+						title \Placement
+						Content <= Row_placement* $trip2g_admin_cell
+							content <= row_placement* \placement
+					<= Row_position_labeler* $mol_labeler
+						title \Position
+						Content <= Row_position* $trip2g_admin_cell
+							content <= row_position* \position
+					<= Row_active_from_labeler* $mol_labeler
+						title \Active From
+						Content <= Row_active_from* $trip2g_admin_cell
+							content <= row_active_from* \active_from
+					<= Row_active_to_labeler* $mol_labeler
+						title \Active To
+						Content <= Row_active_to* $trip2g_admin_cell
+							content <= row_active_to* \active_to
+					<= Row_created_at_labeler* $mol_labeler
+						title \Created At
+						Content <= Row_created_at* $trip2g_admin_cell
+							content <= row_created_at* \created_at

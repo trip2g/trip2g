@@ -27,19 +27,14 @@ func (q *Queries) AcmeCertByKey(ctx context.Context, key string) ([]byte, error)
 
 const activeHTMLInjections = `-- name: ActiveHTMLInjections :many
 select id, created_at, active_from, active_to, description, position, placement, content
-  from html_injections
- where (active_from = ?1 or ?1 is null)
-   and (active_to = ?2 or ?2 is null)
- order by position
+from html_injections
+where (active_from <= datetime('now') or active_from is null)
+  and (active_to >= datetime('now') or active_to is null)
+order by position
 `
 
-type ActiveHTMLInjectionsParams struct {
-	ActiveFrom sql.NullTime `json:"active_from"`
-	ActiveTo   sql.NullTime `json:"active_to"`
-}
-
-func (q *Queries) ActiveHTMLInjections(ctx context.Context, arg ActiveHTMLInjectionsParams) ([]HtmlInjection, error) {
-	rows, err := q.db.QueryContext(ctx, activeHTMLInjections, arg.ActiveFrom, arg.ActiveTo)
+func (q *Queries) ActiveHTMLInjections(ctx context.Context) ([]HtmlInjection, error) {
+	rows, err := q.db.QueryContext(ctx, activeHTMLInjections)
 	if err != nil {
 		return nil, err
 	}
@@ -984,6 +979,16 @@ func (q *Queries) DeleteBoostyTierSubgraphsByTierID(ctx context.Context, tierID 
 	return err
 }
 
+const deleteHTMLInjection = `-- name: DeleteHTMLInjection :exec
+delete from html_injections
+where id = ?
+`
+
+func (q *Queries) DeleteHTMLInjection(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteHTMLInjection, id)
+	return err
+}
+
 const deleteNotFoundIgnoredPattern = `-- name: DeleteNotFoundIgnoredPattern :exec
 delete from not_found_ignored_patterns where id = ?
 `
@@ -1348,6 +1353,27 @@ func (q *Queries) GetBoostyTiers(ctx context.Context) ([]BoostyTier, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getHTMLInjection = `-- name: GetHTMLInjection :one
+select id, created_at, active_from, active_to, description, position, placement, content from html_injections
+where id = ?
+`
+
+func (q *Queries) GetHTMLInjection(ctx context.Context, id int64) (HtmlInjection, error) {
+	row := q.db.QueryRowContext(ctx, getHTMLInjection, id)
+	var i HtmlInjection
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.ActiveFrom,
+		&i.ActiveTo,
+		&i.Description,
+		&i.Position,
+		&i.Placement,
+		&i.Content,
+	)
+	return i, err
 }
 
 const getPatreonCampaignsByCredentialsID = `-- name: GetPatreonCampaignsByCredentialsID :many
@@ -1849,6 +1875,50 @@ type InsertBoostyTierSubgraphParams struct {
 func (q *Queries) InsertBoostyTierSubgraph(ctx context.Context, arg InsertBoostyTierSubgraphParams) error {
 	_, err := q.db.ExecContext(ctx, insertBoostyTierSubgraph, arg.TierID, arg.SubgraphID, arg.CreatedBy)
 	return err
+}
+
+const insertHTMLInjection = `-- name: InsertHTMLInjection :one
+insert into html_injections (
+  description,
+  position,
+  placement,
+  content,
+  active_from,
+  active_to
+) values (?, ?, ?, ?, ?, ?)
+returning id, created_at, active_from, active_to, description, position, placement, content
+`
+
+type InsertHTMLInjectionParams struct {
+	Description string       `json:"description"`
+	Position    int64        `json:"position"`
+	Placement   string       `json:"placement"`
+	Content     string       `json:"content"`
+	ActiveFrom  sql.NullTime `json:"active_from"`
+	ActiveTo    sql.NullTime `json:"active_to"`
+}
+
+func (q *Queries) InsertHTMLInjection(ctx context.Context, arg InsertHTMLInjectionParams) (HtmlInjection, error) {
+	row := q.db.QueryRowContext(ctx, insertHTMLInjection,
+		arg.Description,
+		arg.Position,
+		arg.Placement,
+		arg.Content,
+		arg.ActiveFrom,
+		arg.ActiveTo,
+	)
+	var i HtmlInjection
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.ActiveFrom,
+		&i.ActiveTo,
+		&i.Description,
+		&i.Position,
+		&i.Placement,
+		&i.Content,
+	)
+	return i, err
 }
 
 const insertNotFoundIgnoredPattern = `-- name: InsertNotFoundIgnoredPattern :one
@@ -3514,6 +3584,43 @@ func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
 	return items, nil
 }
 
+const listHTMLInjections = `-- name: ListHTMLInjections :many
+select id, created_at, active_from, active_to, description, position, placement, content from html_injections
+order by position, created_at desc
+`
+
+func (q *Queries) ListHTMLInjections(ctx context.Context) ([]HtmlInjection, error) {
+	rows, err := q.db.QueryContext(ctx, listHTMLInjections)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []HtmlInjection
+	for rows.Next() {
+		var i HtmlInjection
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.ActiveFrom,
+			&i.ActiveTo,
+			&i.Description,
+			&i.Position,
+			&i.Placement,
+			&i.Content,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSubgraphIDsByOfferID = `-- name: ListSubgraphIDsByOfferID :many
 select subgraph_id
   from offer_subgraphs
@@ -5012,6 +5119,52 @@ type UpdateBoostyMemberUserIDParams struct {
 func (q *Queries) UpdateBoostyMemberUserID(ctx context.Context, arg UpdateBoostyMemberUserIDParams) error {
 	_, err := q.db.ExecContext(ctx, updateBoostyMemberUserID, arg.UserID, arg.ID)
 	return err
+}
+
+const updateHTMLInjection = `-- name: UpdateHTMLInjection :one
+update html_injections
+set description = ?,
+    position = ?,
+    placement = ?,
+    content = ?,
+    active_from = ?,
+    active_to = ?
+where id = ?
+returning id, created_at, active_from, active_to, description, position, placement, content
+`
+
+type UpdateHTMLInjectionParams struct {
+	Description string       `json:"description"`
+	Position    int64        `json:"position"`
+	Placement   string       `json:"placement"`
+	Content     string       `json:"content"`
+	ActiveFrom  sql.NullTime `json:"active_from"`
+	ActiveTo    sql.NullTime `json:"active_to"`
+	ID          int64        `json:"id"`
+}
+
+func (q *Queries) UpdateHTMLInjection(ctx context.Context, arg UpdateHTMLInjectionParams) (HtmlInjection, error) {
+	row := q.db.QueryRowContext(ctx, updateHTMLInjection,
+		arg.Description,
+		arg.Position,
+		arg.Placement,
+		arg.Content,
+		arg.ActiveFrom,
+		arg.ActiveTo,
+		arg.ID,
+	)
+	var i HtmlInjection
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.ActiveFrom,
+		&i.ActiveTo,
+		&i.Description,
+		&i.Position,
+		&i.Placement,
+		&i.Content,
+	)
+	return i, err
 }
 
 const updateNotFoundIgnoredPattern = `-- name: UpdateNotFoundIgnoredPattern :one

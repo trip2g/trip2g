@@ -1,0 +1,47 @@
+$trip2g_admin_htmlinjection_update $mol_page
+	htmlinjection_id? 0
+	title \Update HTML Injection
+	body /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Description_field $mol_form_field
+					name \Description
+					bid <= description_bid \
+					Content <= description_control $mol_string
+						value? <=> description? \
+				<= Placement_field $mol_form_field
+					name \Placement
+					bid <= placement_bid \
+					Content <= placement_control $mol_select
+						value? <=> placement? \head
+						dictionary *
+							head \Head
+							body_start \Body Start
+							body_end \Body End
+							footer \Footer
+				<= Position_field $mol_form_field
+					name \Position
+					bid <= position_bid \
+					Content <= position_control $mol_number
+						value? <=> position? 0
+				<= Content_field $mol_form_field
+					name \HTML Content
+					bid <= content_bid \
+					Content <= content_control $mol_textarea
+						value? <=> content? \
+				<= ActiveFrom_field $mol_form_field
+					name \Active From
+					Content <= active_from_control $mol_date
+						value_moment? <=> active_from_moment? null
+				<= ActiveTo_field $mol_form_field
+					name \Active To
+					Content <= active_to_control $mol_date
+						value_moment? <=> active_to_moment? null
+			buttons /
+				<= Submit $mol_button_major
+					title \Update
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

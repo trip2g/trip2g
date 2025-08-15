@@ -28,7 +28,7 @@ type Env interface {
 	UserJSURLs() []string
 	UserCSSURLs() []string
 	IsDevMode() bool
-	ActiveHTMLInjections(ctx context.Context, params db.ActiveHTMLInjectionsParams) ([]db.HtmlInjection, error)
+	ActiveHTMLInjections(ctx context.Context) ([]db.HtmlInjection, error)
 }
 
 var ErrMissingEnv = errors.New("missing env")
@@ -37,11 +37,6 @@ const (
 	injectionPlaceholderHead    = "head"
 	injectionPlaceholderBodyEnd = "body_end"
 )
-
-var injectionPlaceholders = []string{
-	injectionPlaceholderHead,
-	injectionPlaceholderBodyEnd,
-}
 
 func Handle(req *appreq.Request, params Params, renderContent func()) (interface{}, error) {
 	env, ok := req.Env.(Env)
@@ -63,9 +58,7 @@ func Handle(req *appreq.Request, params Params, renderContent func()) (interface
 		params.CSSURLs = env.UserCSSURLs()
 	}
 
-	htmlInjectionsParams := db.ActiveHTMLInjectionsParams{}
-
-	htmlInjections, err := env.ActiveHTMLInjections(req.Req, htmlInjectionsParams)
+	htmlInjections, err := env.ActiveHTMLInjections(req.Req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get active HTML injections: %w", err)
 	}

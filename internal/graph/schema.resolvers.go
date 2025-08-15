@@ -17,6 +17,7 @@ import (
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
+	"trip2g/internal/case/admin/createhtmlinjection"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
 	"trip2g/internal/case/admin/createpatreoncredentials"
@@ -24,6 +25,7 @@ import (
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/deleteboostycredentials"
+	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
@@ -38,6 +40,7 @@ import (
 	"trip2g/internal/case/admin/settgchatsubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
+	"trip2g/internal/case/admin/updatehtmlinjection"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
 	"trip2g/internal/case/admin/updateoffer"
@@ -245,6 +248,29 @@ func (r *adminBoostyTierResolver) Subgraphs(ctx context.Context, obj *db.BoostyT
 // Nodes is the resolver for the nodes field.
 func (r *adminBoostyTiersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminBoostyTiersConnection) ([]db.BoostyTier, error) {
 	return r.env(ctx).GetBoostyTiers(ctx)
+}
+
+// ActiveFrom is the resolver for the activeFrom field.
+func (r *adminHTMLInjectionResolver) ActiveFrom(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
+	return db.ToTimePtr(obj.ActiveFrom), nil
+}
+
+// ActiveTo is the resolver for the activeTo field.
+func (r *adminHTMLInjectionResolver) ActiveTo(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
+	return db.ToTimePtr(obj.ActiveTo), nil
+}
+
+// Position is the resolver for the position field.
+func (r *adminHTMLInjectionResolver) Position(ctx context.Context, obj *db.HtmlInjection) (int32, error) {
+	if obj.Position > math.MaxInt32 {
+		return 0, fmt.Errorf("position value %d exceeds int32 max", obj.Position)
+	}
+	return int32(obj.Position), nil //nolint:gosec // bounds checked above
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminHTMLInjectionsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminHTMLInjectionsConnection) ([]db.HtmlInjection, error) {
+	return r.env(ctx).ListHTMLInjections(ctx)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -494,6 +520,21 @@ func (r *adminMutationResolver) RefreshBoostyData(ctx context.Context, obj *appm
 // SetBoostyTierSubgraphs is the resolver for the setBoostyTierSubgraphs field.
 func (r *adminMutationResolver) SetBoostyTierSubgraphs(ctx context.Context, obj *appmodel.AdminMutation, input model.SetBoostyTierSubgraphsInput) (model.SetBoostyTierSubgraphsOrErrorPayload, error) {
 	return setboostytiersubgraphs.Resolve(ctx, r.env(ctx), input)
+}
+
+// CreateHTMLInjection is the resolver for the createHTMLInjection field.
+func (r *adminMutationResolver) CreateHTMLInjection(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateHTMLInjectionInput) (model.CreateHTMLInjectionOrErrorPayload, error) {
+	return createhtmlinjection.Resolve(ctx, r.env(ctx), input)
+}
+
+// UpdateHTMLInjection is the resolver for the updateHTMLInjection field.
+func (r *adminMutationResolver) UpdateHTMLInjection(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateHTMLInjectionInput) (model.UpdateHTMLInjectionOrErrorPayload, error) {
+	return updatehtmlinjection.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteHTMLInjection is the resolver for the deleteHTMLInjection field.
+func (r *adminMutationResolver) DeleteHTMLInjection(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteHTMLInjectionInput) (model.DeleteHTMLInjectionOrErrorPayload, error) {
+	return deletehtmlinjection.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -808,6 +849,11 @@ func (r *adminQueryResolver) AllLatestNoteAssets(ctx context.Context, obj *appmo
 	return &model.AdminLatestNoteAssetsConnection{}, nil
 }
 
+// AllHTMLInjections is the resolver for the allHTMLInjections field.
+func (r *adminQueryResolver) AllHTMLInjections(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminHTMLInjectionsConnection, error) {
+	return &model.AdminHTMLInjectionsConnection{}, nil
+}
+
 // AllTgBots is the resolver for the allTgBots field.
 func (r *adminQueryResolver) AllTgBots(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminTgBotsConnection, error) {
 	return &model.AdminTgBotsConnection{}, nil
@@ -898,6 +944,19 @@ func (r *adminQueryResolver) TgBot(ctx context.Context, obj *appmodel.AdminQuery
 // NoteAsset is the resolver for the noteAsset field.
 func (r *adminQueryResolver) NoteAsset(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.NoteAsset, error) {
 	return resolveOne[db.NoteAsset](ctx, id, r.env(ctx).NoteAssetByID)
+}
+
+// HTMLInjection is the resolver for the htmlInjection field.
+func (r *adminQueryResolver) HTMLInjection(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.HtmlInjection, error) {
+	env := r.env(ctx)
+	injection, err := env.GetHTMLInjection(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get HTML injection: %w", err)
+	}
+	return &injection, nil
 }
 
 // ActiveUserSubgraphs is the resolver for the activeUserSubgraphs field.
@@ -1756,6 +1815,16 @@ func (r *Resolver) AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolv
 	return &adminBoostyTiersConnectionResolver{r}
 }
 
+// AdminHTMLInjection returns AdminHTMLInjectionResolver implementation.
+func (r *Resolver) AdminHTMLInjection() AdminHTMLInjectionResolver {
+	return &adminHTMLInjectionResolver{r}
+}
+
+// AdminHTMLInjectionsConnection returns AdminHTMLInjectionsConnectionResolver implementation.
+func (r *Resolver) AdminHTMLInjectionsConnection() AdminHTMLInjectionsConnectionResolver {
+	return &adminHTMLInjectionsConnectionResolver{r}
+}
+
 // AdminLatestNoteAssetsConnection returns AdminLatestNoteAssetsConnectionResolver implementation.
 func (r *Resolver) AdminLatestNoteAssetsConnection() AdminLatestNoteAssetsConnectionResolver {
 	return &adminLatestNoteAssetsConnectionResolver{r}
@@ -2022,6 +2091,8 @@ type adminBoostyMemberResolver struct{ *Resolver }
 type adminBoostyMembersConnectionResolver struct{ *Resolver }
 type adminBoostyTierResolver struct{ *Resolver }
 type adminBoostyTiersConnectionResolver struct{ *Resolver }
+type adminHTMLInjectionResolver struct{ *Resolver }
+type adminHTMLInjectionsConnectionResolver struct{ *Resolver }
 type adminLatestNoteAssetsConnectionResolver struct{ *Resolver }
 type adminLatestNoteViewsConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }

@@ -30,6 +30,10 @@ type CreateEmailWaitListRequestOrErrorPayload interface {
 	IsCreateEmailWaitListRequestOrErrorPayload()
 }
 
+type CreateHTMLInjectionOrErrorPayload interface {
+	IsCreateHTMLInjectionOrErrorPayload()
+}
+
 type CreateNotFoundIgnoredPatternOrErrorPayload interface {
 	IsCreateNotFoundIgnoredPatternOrErrorPayload()
 }
@@ -60,6 +64,10 @@ type CreateTgBotOrErrorPayload interface {
 
 type DeleteBoostyCredentialsOrErrorPayload interface {
 	IsDeleteBoostyCredentialsOrErrorPayload()
+}
+
+type DeleteHTMLInjectionOrErrorPayload interface {
+	IsDeleteHTMLInjectionOrErrorPayload()
 }
 
 type DeleteNotFoundIgnoredPatternOrErrorPayload interface {
@@ -158,6 +166,10 @@ type UpdateBoostyCredentialsOrErrorPayload interface {
 	IsUpdateBoostyCredentialsOrErrorPayload()
 }
 
+type UpdateHTMLInjectionOrErrorPayload interface {
+	IsUpdateHTMLInjectionOrErrorPayload()
+}
+
 type UpdateNotFoundIgnoredPatternOrErrorPayload interface {
 	IsUpdateNotFoundIgnoredPatternOrErrorPayload()
 }
@@ -244,6 +256,10 @@ type AdminBoostyMembersConnection struct {
 
 type AdminBoostyTiersConnection struct {
 	Nodes []db.BoostyTier `json:"nodes"`
+}
+
+type AdminHTMLInjectionsConnection struct {
+	Nodes []db.HtmlInjection `json:"nodes"`
 }
 
 type AdminLatestNoteAssetsConnection struct {
@@ -398,6 +414,21 @@ type CreateEmailWaitListRequestPayload struct {
 
 func (CreateEmailWaitListRequestPayload) IsCreateEmailWaitListRequestOrErrorPayload() {}
 
+type CreateHTMLInjectionInput struct {
+	Description string     `json:"description"`
+	Position    int32      `json:"position"`
+	Placement   string     `json:"placement"`
+	Content     string     `json:"content"`
+	ActiveFrom  *time.Time `json:"activeFrom,omitempty"`
+	ActiveTo    *time.Time `json:"activeTo,omitempty"`
+}
+
+type CreateHTMLInjectionPayload struct {
+	HTMLInjection *db.HtmlInjection `json:"htmlInjection"`
+}
+
+func (CreateHTMLInjectionPayload) IsCreateHTMLInjectionOrErrorPayload() {}
+
 type CreateNotFoundIgnoredPatternInput struct {
 	Pattern string `json:"pattern"`
 }
@@ -491,6 +522,16 @@ type DeleteBoostyCredentialsPayload struct {
 }
 
 func (DeleteBoostyCredentialsPayload) IsDeleteBoostyCredentialsOrErrorPayload() {}
+
+type DeleteHTMLInjectionInput struct {
+	ID int64 `json:"id"`
+}
+
+type DeleteHTMLInjectionPayload struct {
+	DeletedID int64 `json:"deletedId"`
+}
+
+func (DeleteHTMLInjectionPayload) IsDeleteHTMLInjectionOrErrorPayload() {}
 
 type DeleteNotFoundIgnoredPatternInput struct {
 	ID int64 `json:"id"`
@@ -625,6 +666,12 @@ func (ErrorPayload) IsSetBoostyTierSubgraphsOrErrorPayload() {}
 func (ErrorPayload) IsSetTgChatSubgraphInvitesOrErrorPayload() {}
 
 func (ErrorPayload) IsRemoveExpiredTgChatMembersOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateHTMLInjectionOrErrorPayload() {}
+
+func (ErrorPayload) IsUpdateHTMLInjectionOrErrorPayload() {}
+
+func (ErrorPayload) IsDeleteHTMLInjectionOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`
@@ -900,6 +947,22 @@ type UpdateBoostyCredentialsPayload struct {
 }
 
 func (UpdateBoostyCredentialsPayload) IsUpdateBoostyCredentialsOrErrorPayload() {}
+
+type UpdateHTMLInjectionInput struct {
+	ID          int64      `json:"id"`
+	Description string     `json:"description"`
+	Position    int32      `json:"position"`
+	Placement   string     `json:"placement"`
+	Content     string     `json:"content"`
+	ActiveFrom  *time.Time `json:"activeFrom,omitempty"`
+	ActiveTo    *time.Time `json:"activeTo,omitempty"`
+}
+
+type UpdateHTMLInjectionPayload struct {
+	HTMLInjection *db.HtmlInjection `json:"htmlInjection"`
+}
+
+func (UpdateHTMLInjectionPayload) IsUpdateHTMLInjectionOrErrorPayload() {}
 
 type UpdateNotFoundIgnoredPatternInput struct {
 	ID      int64  `json:"id"`

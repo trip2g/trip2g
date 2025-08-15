@@ -81,6 +81,16 @@ Do not add co-author comments or generated signatures unless specifically reques
 **Frontend:**
 - [$mol framework](https://github.com/hyoo-ru/mam_mol) with TypeScript
 
+## Admin Authorization
+
+**IMPORTANT**: All admin mutation cases must verify admin authorization at the start:
+```go
+token, err := env.CurrentAdminUserToken(ctx)
+if err != nil {
+    return nil, fmt.Errorf("failed to get current user token: %w", err)
+}
+```
+
 ## Development Workflow
 
 ### Database Migrations

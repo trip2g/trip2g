@@ -8,6 +8,7 @@ import (
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
+	"trip2g/internal/case/admin/createhtmlinjection"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
 	"trip2g/internal/case/admin/createpatreoncredentials"
@@ -15,6 +16,7 @@ import (
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/deleteboostycredentials"
+	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
@@ -29,6 +31,7 @@ import (
 	"trip2g/internal/case/admin/settgchatsubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
+	"trip2g/internal/case/admin/updatehtmlinjection"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
 	"trip2g/internal/case/admin/updateoffer"
@@ -175,6 +178,9 @@ type Env interface {
 	updateboostycredentials.Env
 	refreshboostydata.Env
 	generatetgattachcode.Env
+	createhtmlinjection.Env
+	updatehtmlinjection.Env
+	deletehtmlinjection.Env
 
 	ListUserFavoriteNotes(ctx context.Context, userID int64) ([]db.ListUserFavoriteNotesRow, error)
 
@@ -220,4 +226,8 @@ type Env interface {
 
 	// User note views
 	LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
+
+	// HTML Injections
+	ListHTMLInjections(ctx context.Context) ([]db.HtmlInjection, error)
+	GetHTMLInjection(ctx context.Context, id int64) (db.HtmlInjection, error)
 }

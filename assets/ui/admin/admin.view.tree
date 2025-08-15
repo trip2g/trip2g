@@ -45,6 +45,8 @@ $trip2g_admin_app $trip2g_admin_catalog
 			close_icon <= Spread_close
 		notfoundpatterns <= ListNotFoundPatterns $trip2g_admin_notfoundpattern_catalog
 			close_icon <= Spread_close
+		htmlinjections <= ListHTMLInjections $trip2g_admin_htmlinjection_catalog
+			close_icon <= Spread_close
 		tgbots <= ListTgBots $trip2g_admin_tgbot_catalog
 			close_icon <= Spread_close
 		patreoncredentials <= ListPatreonCredentials $trip2g_admin_patreoncredentials_catalog
