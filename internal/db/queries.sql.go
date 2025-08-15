@@ -25,6 +25,51 @@ func (q *Queries) AcmeCertByKey(ctx context.Context, key string) ([]byte, error)
 	return value, err
 }
 
+const activeHTMLInjections = `-- name: ActiveHTMLInjections :many
+select id, created_at, active_from, active_to, description, position, placement, content
+  from html_injections
+ where (active_from = ?1 or ?1 is null)
+   and (active_to = ?2 or ?2 is null)
+ order by position
+`
+
+type ActiveHTMLInjectionsParams struct {
+	ActiveFrom sql.NullTime `json:"active_from"`
+	ActiveTo   sql.NullTime `json:"active_to"`
+}
+
+func (q *Queries) ActiveHTMLInjections(ctx context.Context, arg ActiveHTMLInjectionsParams) ([]HtmlInjection, error) {
+	rows, err := q.db.QueryContext(ctx, activeHTMLInjections, arg.ActiveFrom, arg.ActiveTo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []HtmlInjection
+	for rows.Next() {
+		var i HtmlInjection
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.ActiveFrom,
+			&i.ActiveTo,
+			&i.Description,
+			&i.Position,
+			&i.Placement,
+			&i.Content,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const activeOfferByPublicID = `-- name: ActiveOfferByPublicID :one
 select o.id, o.public_id, o.created_at, o.lifetime, o.price_usd, o.starts_at, o.ends_at
   from offers o

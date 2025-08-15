@@ -126,6 +126,17 @@ type BoostyTierSubgraph struct {
 	CreatedBy  int64     `json:"created_by"`
 }
 
+type HtmlInjection struct {
+	ID          int64        `json:"id"`
+	CreatedAt   time.Time    `json:"created_at"`
+	ActiveFrom  sql.NullTime `json:"active_from"`
+	ActiveTo    sql.NullTime `json:"active_to"`
+	Description string       `json:"description"`
+	Position    int64        `json:"position"`
+	Placement   string       `json:"placement"`
+	Content     string       `json:"content"`
+}
+
 type NotFoundIgnoredPattern struct {
 	ID        int64     `json:"id"`
 	Pattern   string    `json:"pattern"`

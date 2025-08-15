@@ -1201,3 +1201,10 @@ where (created_at >= sqlc.narg(created_at_gte) or sqlc.narg(created_at_gte) is n
   and (created_at <= sqlc.narg(created_at_lte) or sqlc.narg(created_at_lte) is null)
 order by created_at desc
 limit sqlc.arg(limit) offset sqlc.arg(offset);
+
+-- name: ActiveHTMLInjections :many
+select *
+  from html_injections
+ where (active_from = sqlc.narg(active_from) or sqlc.narg(active_from) is null)
+   and (active_to = sqlc.narg(active_to) or sqlc.narg(active_to) is null)
+ order by position;

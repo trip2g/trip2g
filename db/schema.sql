@@ -406,6 +406,16 @@ CREATE TABLE IF NOT EXISTS "tg_bot_chats" (
   bot_id integer not null
 );
 CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
+CREATE TABLE html_injections (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  active_from datetime,
+  active_to datetime,
+  description text not null,
+  position integer not null default 0,
+  placement text not null, -- head / body_end
+  content text not null
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -471,4 +481,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250812041450'),
   ('20250812095819'),
   ('20250813034629'),
-  ('20250813052619');
+  ('20250813052619'),
+  ('20250815035326');

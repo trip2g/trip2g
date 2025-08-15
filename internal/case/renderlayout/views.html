@@ -33,6 +33,10 @@ window.__trip2g_settings = {
 <link href="{%s url %}" rel="stylesheet">
 {% endfor %}
 
+{% for _, injection := range params.HTMLInjections[injectionPlaceholderHead] %}
+{%s= injection.Content %}
+{% endfor %}
+
 </head>
 
 <div id="all-content">
@@ -48,6 +52,10 @@ window.__trip2g_settings = {
 
 {% for _, url := range params.JSURLs %}
 <script src="{%s= url %}"></script>
+{% endfor %}
+
+{% for _, injection := range params.HTMLInjections[injectionPlaceholderBodyEnd] %}
+{%s= injection.Content %}
 {% endfor %}
 
 {% endfunc %}
