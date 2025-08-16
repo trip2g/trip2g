@@ -1242,3 +1242,43 @@ returning *;
 -- name: DeleteHTMLInjection :exec
 delete from html_injections
 where id = ?;
+
+-- name: ListActiveCronJobs :many
+select *
+  from cron_jobs
+ where enabled = true;
+
+-- name: UpsertCronJob :exec
+insert into cron_jobs (name, expression)
+values (?, ?)
+on conflict(name) do nothing;
+
+-- name: InsertCronJobExecution :one
+insert into cron_job_executions (job_id)
+values ((select id from cron_jobs where name = ?))
+returning *;
+
+-- name: UpdateCronJobExecution :exec
+update cron_job_executions
+set finished_at = datetime('now'),
+    status = ?,
+    report_data = ?,
+    error_message = ?
+where id = ?;
+
+-- name: UpdateCronJobLastExec :exec
+update cron_jobs
+set last_exec_at = datetime('now')
+where id = ?;
+
+-- name: CronJobByID :one
+select * from cron_jobs where id = ?;
+
+-- name: CronJobByName :one
+select * from cron_jobs where name = ?;
+
+-- name: UpdateRunningCronJobExecutionsByName :exec
+update cron_job_executions
+  set status = ?, error_message = ?
+where job_id = (select id from cron_jobs where name = ?)
+  and status = 'running';

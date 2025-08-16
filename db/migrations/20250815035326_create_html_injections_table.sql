@@ -13,4 +13,4 @@ create table html_injections (
 
 -- migrate:down
 
-drop table js_scripts;
+drop table html_injections;

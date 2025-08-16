@@ -416,6 +416,22 @@ CREATE TABLE html_injections (
   placement text not null, -- head / body_end
   content text not null
 );
+CREATE TABLE cron_jobs (
+  id integer primary key autoincrement,
+  name text not null unique,
+  enabled boolean not null default true,
+  expression text not null,
+  last_exec_at datetime
+);
+CREATE TABLE cron_job_executions (
+  id integer primary key autoincrement,
+  job_id int not null references cron_jobs(id) on delete cascade,
+  started_at datetime not null default current_timestamp,
+  finished_at datetime,
+  status int not null default 0,
+  report_data text,
+  error_message text
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -482,4 +498,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250812095819'),
   ('20250813034629'),
   ('20250813052619'),
-  ('20250815035326');
+  ('20250815035326'),
+  ('20250815092446');

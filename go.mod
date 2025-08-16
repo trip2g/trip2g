@@ -18,6 +18,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/quailyquaily/goldmark-enclave v0.1.9
 	github.com/resend/resend-go/v2 v2.20.0
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasthttp v1.60.0
@@ -201,6 +202,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mattn/go-sqlite3 v1.14.28 // indirect
+	github.com/mattn/goreman v0.3.16 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mgechev/revive v1.9.0 // indirect
 	github.com/minio/crc64nvme v1.0.1 // indirect
@@ -346,6 +348,7 @@ tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/mailru/easyjson/easyjson
 	github.com/matryer/moq
+	github.com/mattn/goreman
 	github.com/sqlc-dev/sqlc/cmd/sqlc
 	github.com/valyala/quicktemplate/qtc
 )

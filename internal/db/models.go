@@ -126,6 +126,24 @@ type BoostyTierSubgraph struct {
 	CreatedBy  int64     `json:"created_by"`
 }
 
+type CronJob struct {
+	ID         int64        `json:"id"`
+	Name       string       `json:"name"`
+	Enabled    bool         `json:"enabled"`
+	Expression string       `json:"expression"`
+	LastExecAt sql.NullTime `json:"last_exec_at"`
+}
+
+type CronJobExecution struct {
+	ID           string         `json:"id"`
+	JobID        int64          `json:"job_id"`
+	StartedAt    time.Time      `json:"started_at"`
+	FinishedAt   sql.NullTime   `json:"finished_at"`
+	Status       int64          `json:"status"`
+	ReportData   sql.NullString `json:"report_data"`
+	ErrorMessage sql.NullString `json:"error_message"`
+}
+
 type HtmlInjection struct {
 	ID          int64        `json:"id"`
 	CreatedAt   time.Time    `json:"created_at"`

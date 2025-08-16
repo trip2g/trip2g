@@ -961,6 +961,40 @@ func (q *Queries) CreateUserSubgraphAccess(ctx context.Context, arg CreateUserSu
 	return i, err
 }
 
+const cronJobByID = `-- name: CronJobByID :one
+select id, name, enabled, expression, last_exec_at from cron_jobs where id = ?
+`
+
+func (q *Queries) CronJobByID(ctx context.Context, id int64) (CronJob, error) {
+	row := q.db.QueryRowContext(ctx, cronJobByID, id)
+	var i CronJob
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Enabled,
+		&i.Expression,
+		&i.LastExecAt,
+	)
+	return i, err
+}
+
+const cronJobByName = `-- name: CronJobByName :one
+select id, name, enabled, expression, last_exec_at from cron_jobs where name = ?
+`
+
+func (q *Queries) CronJobByName(ctx context.Context, name string) (CronJob, error) {
+	row := q.db.QueryRowContext(ctx, cronJobByName, name)
+	var i CronJob
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Enabled,
+		&i.Expression,
+		&i.LastExecAt,
+	)
+	return i, err
+}
+
 const deleteAcmeCert = `-- name: DeleteAcmeCert :exec
 delete from acme_certs where key = ?
 `
@@ -1877,6 +1911,27 @@ func (q *Queries) InsertBoostyTierSubgraph(ctx context.Context, arg InsertBoosty
 	return err
 }
 
+const insertCronJobExecution = `-- name: InsertCronJobExecution :one
+insert into cron_job_executions (job_id)
+values ((select id from cron_jobs where name = ?))
+returning id, job_id, started_at, finished_at, status, report_data, error_message
+`
+
+func (q *Queries) InsertCronJobExecution(ctx context.Context, name string) (CronJobExecution, error) {
+	row := q.db.QueryRowContext(ctx, insertCronJobExecution, name)
+	var i CronJobExecution
+	err := row.Scan(
+		&i.ID,
+		&i.JobID,
+		&i.StartedAt,
+		&i.FinishedAt,
+		&i.Status,
+		&i.ReportData,
+		&i.ErrorMessage,
+	)
+	return i, err
+}
+
 const insertHTMLInjection = `-- name: InsertHTMLInjection :one
 insert into html_injections (
   description,
@@ -2618,6 +2673,41 @@ func (q *Queries) ListActiveBoostySubgraphNamesByUserID(ctx context.Context, id 
 			return nil, err
 		}
 		items = append(items, name)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveCronJobs = `-- name: ListActiveCronJobs :many
+select id, name, enabled, expression, last_exec_at
+  from cron_jobs
+ where enabled = true
+`
+
+func (q *Queries) ListActiveCronJobs(ctx context.Context) ([]CronJob, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveCronJobs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CronJob
+	for rows.Next() {
+		var i CronJob
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Enabled,
+			&i.Expression,
+			&i.LastExecAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -5121,6 +5211,43 @@ func (q *Queries) UpdateBoostyMemberUserID(ctx context.Context, arg UpdateBoosty
 	return err
 }
 
+const updateCronJobExecution = `-- name: UpdateCronJobExecution :exec
+update cron_job_executions
+set finished_at = datetime('now'),
+    status = ?,
+    report_data = ?,
+    error_message = ?
+where id = ?
+`
+
+type UpdateCronJobExecutionParams struct {
+	Status       int64          `json:"status"`
+	ReportData   sql.NullString `json:"report_data"`
+	ErrorMessage sql.NullString `json:"error_message"`
+	ID           string         `json:"id"`
+}
+
+func (q *Queries) UpdateCronJobExecution(ctx context.Context, arg UpdateCronJobExecutionParams) error {
+	_, err := q.db.ExecContext(ctx, updateCronJobExecution,
+		arg.Status,
+		arg.ReportData,
+		arg.ErrorMessage,
+		arg.ID,
+	)
+	return err
+}
+
+const updateCronJobLastExec = `-- name: UpdateCronJobLastExec :exec
+update cron_jobs
+set last_exec_at = datetime('now')
+where id = ?
+`
+
+func (q *Queries) UpdateCronJobLastExec(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, updateCronJobLastExec, id)
+	return err
+}
+
 const updateHTMLInjection = `-- name: UpdateHTMLInjection :one
 update html_injections
 set description = ?,
@@ -5348,6 +5475,24 @@ func (q *Queries) UpdateRedirect(ctx context.Context, arg UpdateRedirectParams) 
 	return i, err
 }
 
+const updateRunningCronJobExecutionsByName = `-- name: UpdateRunningCronJobExecutionsByName :exec
+update cron_job_executions
+  set status = ?, error_message = ?
+where job_id = (select id from cron_jobs where name = ?)
+  and status = 'running'
+`
+
+type UpdateRunningCronJobExecutionsByNameParams struct {
+	Status       int64          `json:"status"`
+	ErrorMessage sql.NullString `json:"error_message"`
+	Name         string         `json:"name"`
+}
+
+func (q *Queries) UpdateRunningCronJobExecutionsByName(ctx context.Context, arg UpdateRunningCronJobExecutionsByNameParams) error {
+	_, err := q.db.ExecContext(ctx, updateRunningCronJobExecutionsByName, arg.Status, arg.ErrorMessage, arg.Name)
+	return err
+}
+
 const updateTgBot = `-- name: UpdateTgBot :one
 update tg_bots
 set description = coalesce(?1, description),
@@ -5531,6 +5676,22 @@ func (q *Queries) UpsertBoostyTier(ctx context.Context, arg UpsertBoostyTierPara
 		arg.Name,
 		arg.Data,
 	)
+	return err
+}
+
+const upsertCronJob = `-- name: UpsertCronJob :exec
+insert into cron_jobs (name, expression)
+values (?, ?)
+on conflict(name) do nothing
+`
+
+type UpsertCronJobParams struct {
+	Name       string `json:"name"`
+	Expression string `json:"expression"`
+}
+
+func (q *Queries) UpsertCronJob(ctx context.Context, arg UpsertCronJobParams) error {
+	_, err := q.db.ExecContext(ctx, upsertCronJob, arg.Name, arg.Expression)
 	return err
 }
 

@@ -29,12 +29,14 @@ import (
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/bqtask/sendsignincode"
+	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/handletgupdate"
 	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
+	"trip2g/internal/cronjobs"
 	"trip2g/internal/db"
 	"trip2g/internal/graph"
 	"trip2g/internal/hotauthtoken"
@@ -81,6 +83,7 @@ type app struct {
 	*patreonjobs.PatreonJobs
 	*boostyjobs.BoostyJobs
 	*tgbots.TgBots
+	*cronjobs.CronJobs
 
 	graphTxs *graphTransactions
 
@@ -224,6 +227,15 @@ func main() {
 		return handletgupdate.Resolve(ctx, be, update)
 	})
 
+	cronJobConfigs := []cronjobs.Job{
+		&removeexpiredtgchatmembers.Job{},
+	}
+
+	a.CronJobs, err = cronjobs.New(ctx, a, cronJobConfigs)
+	if err != nil {
+		panic(fmt.Errorf("failed to create cron jobs: %w", err))
+	}
+
 	a.redirectManager, err = redirectmanager.New(ctx, a)
 	if err != nil {
 		panic(fmt.Errorf("failed to create redirect manager: %w", err))
@@ -271,8 +283,6 @@ func main() {
 			log.Error("failed to reload all notes", "error", loadErr)
 		}
 	})
-
-	go a.startRemoveExpiredTgChatMembersJob()
 
 	a.startServer()
 }
