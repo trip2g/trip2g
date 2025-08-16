@@ -13,6 +13,9 @@ import (
 	"slices"
 	"strings"
 	"time"
+	
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
@@ -248,6 +251,62 @@ func (r *adminBoostyTierResolver) Subgraphs(ctx context.Context, obj *db.BoostyT
 // Nodes is the resolver for the nodes field.
 func (r *adminBoostyTiersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminBoostyTiersConnection) ([]db.BoostyTier, error) {
 	return r.env(ctx).GetBoostyTiers(ctx)
+}
+
+// Executions is the resolver for the executions field.
+func (r *adminCronJobResolver) Executions(ctx context.Context, obj *model.AdminCronJob) ([]model.AdminCronJobExecution, error) {
+	executions, err := r.env(ctx).ListCronJobExecutionsByJobID(ctx, obj.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cron job executions: %w", err)
+	}
+
+	result := make([]model.AdminCronJobExecution, len(executions))
+	for i, exec := range executions {
+		result[i] = model.AdminCronJobExecution{
+			ID:        int64(exec.ID),
+			JobID:     exec.JobID,
+			StartedAt: exec.StartedAt,
+			Status:    exec.Status,
+		}
+
+		if exec.FinishedAt.Valid {
+			result[i].FinishedAt = &exec.FinishedAt.Time
+		}
+
+		if exec.ReportData.Valid {
+			result[i].ReportData = &exec.ReportData.String
+		}
+
+		if exec.ErrorMessage.Valid {
+			result[i].ErrorMessage = &exec.ErrorMessage.String
+		}
+	}
+
+	return result, nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminCronJobsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminCronJobsConnection) ([]model.AdminCronJob, error) {
+	cronJobs, err := r.env(ctx).ListAllCronJobs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list cron jobs: %w", err)
+	}
+
+	result := make([]model.AdminCronJob, len(cronJobs))
+	for i, job := range cronJobs {
+		result[i] = model.AdminCronJob{
+			ID:         job.ID,
+			Name:       job.Name,
+			Enabled:    job.Enabled,
+			Expression: job.Expression,
+		}
+
+		if job.LastExecAt.Valid {
+			result[i].LastExecAt = &job.LastExecAt.Time
+		}
+	}
+
+	return result, nil
 }
 
 // ActiveFrom is the resolver for the activeFrom field.
@@ -535,6 +594,93 @@ func (r *adminMutationResolver) UpdateHTMLInjection(ctx context.Context, obj *ap
 // DeleteHTMLInjection is the resolver for the deleteHTMLInjection field.
 func (r *adminMutationResolver) DeleteHTMLInjection(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteHTMLInjectionInput) (model.DeleteHTMLInjectionOrErrorPayload, error) {
 	return deletehtmlinjection.Resolve(ctx, r.env(ctx), input)
+}
+
+// UpdateCronJob is the resolver for the updateCronJob field.
+func (r *adminMutationResolver) UpdateCronJob(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateCronJobInput) (model.UpdateCronJobOrErrorPayload, error) {
+	env := r.env(ctx)
+	
+	// Check admin authorization
+	_, err := env.CurrentAdminUserToken(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current user token: %w", err)
+	}
+
+	// Validate input
+	errPayload := model.NewOzzoError(ozzo.ValidateStruct(&input,
+		ozzo.Field(&input.ID, ozzo.Required),
+		ozzo.Field(&input.Expression, ozzo.Required, is.PrintableASCII),
+	))
+	if errPayload != nil {
+		return errPayload, nil
+	}
+
+	// Update the cron job
+	params := db.UpdateCronJobParams{
+		ID:         input.ID,
+		Enabled:    input.Enabled,
+		Expression: input.Expression,
+	}
+
+	updatedJob, err := env.UpdateCronJob(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update cron job: %w", err)
+	}
+
+	// Convert to GraphQL model
+	cronJob := &model.AdminCronJob{
+		ID:         updatedJob.ID,
+		Name:       updatedJob.Name,
+		Enabled:    updatedJob.Enabled,
+		Expression: updatedJob.Expression,
+	}
+
+	if updatedJob.LastExecAt.Valid {
+		cronJob.LastExecAt = &updatedJob.LastExecAt.Time
+	}
+
+	payload := &model.UpdateCronJobPayload{
+		CronJob: cronJob,
+	}
+
+	return payload, nil
+}
+
+// RunCronJob is the resolver for the runCronJob field.
+func (r *adminMutationResolver) RunCronJob(ctx context.Context, obj *appmodel.AdminMutation, input model.RunCronJobInput) (model.RunCronJobOrErrorPayload, error) {
+	env := r.env(ctx)
+	
+	// Check admin authorization
+	_, err := env.CurrentAdminUserToken(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current user token: %w", err)
+	}
+
+	// Validate input
+	errPayload := model.NewOzzoError(ozzo.ValidateStruct(&input,
+		ozzo.Field(&input.Name, ozzo.Required, is.PrintableASCII),
+	))
+	if errPayload != nil {
+		return errPayload, nil
+	}
+
+	// Get cron jobs manager
+	cronJobsManager := env.CronJobs()
+	if cronJobsManager == nil {
+		return &model.ErrorPayload{Message: "Cron jobs manager not available"}, nil
+	}
+
+	// Manually trigger the job
+	err = cronJobsManager.ExecuteJobManually(input.Name)
+	if err != nil {
+		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to run cron job: %v", err)}, nil
+	}
+
+	payload := &model.RunCronJobPayload{
+		Success: true,
+	}
+
+	return payload, nil
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -852,6 +998,11 @@ func (r *adminQueryResolver) AllLatestNoteAssets(ctx context.Context, obj *appmo
 // AllHTMLInjections is the resolver for the allHTMLInjections field.
 func (r *adminQueryResolver) AllHTMLInjections(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminHTMLInjectionsConnection, error) {
 	return &model.AdminHTMLInjectionsConnection{}, nil
+}
+
+// AllCronJobs is the resolver for the allCronJobs field.
+func (r *adminQueryResolver) AllCronJobs(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminCronJobsConnection, error) {
+	return &model.AdminCronJobsConnection{}, nil
 }
 
 // AllTgBots is the resolver for the allTgBots field.
@@ -1815,6 +1966,14 @@ func (r *Resolver) AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolv
 	return &adminBoostyTiersConnectionResolver{r}
 }
 
+// AdminCronJob returns AdminCronJobResolver implementation.
+func (r *Resolver) AdminCronJob() AdminCronJobResolver { return &adminCronJobResolver{r} }
+
+// AdminCronJobsConnection returns AdminCronJobsConnectionResolver implementation.
+func (r *Resolver) AdminCronJobsConnection() AdminCronJobsConnectionResolver {
+	return &adminCronJobsConnectionResolver{r}
+}
+
 // AdminHTMLInjection returns AdminHTMLInjectionResolver implementation.
 func (r *Resolver) AdminHTMLInjection() AdminHTMLInjectionResolver {
 	return &adminHTMLInjectionResolver{r}
@@ -2091,6 +2250,8 @@ type adminBoostyMemberResolver struct{ *Resolver }
 type adminBoostyMembersConnectionResolver struct{ *Resolver }
 type adminBoostyTierResolver struct{ *Resolver }
 type adminBoostyTiersConnectionResolver struct{ *Resolver }
+type adminCronJobResolver struct{ *Resolver }
+type adminCronJobsConnectionResolver struct{ *Resolver }
 type adminHTMLInjectionResolver struct{ *Resolver }
 type adminHTMLInjectionsConnectionResolver struct{ *Resolver }
 type adminLatestNoteAssetsConnectionResolver struct{ *Resolver }

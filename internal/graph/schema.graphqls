@@ -518,6 +518,30 @@ type AdminHTMLInjectionsConnection {
   nodes: [AdminHTMLInjection!]! @goField(forceResolver: true)
 }
 
+# Cron Jobs
+type AdminCronJob {
+  id: Int64!
+  name: String!
+  enabled: Boolean!
+  expression: String!
+  lastExecAt: Time
+  executions: [AdminCronJobExecution!]! @goField(forceResolver: true)
+}
+
+type AdminCronJobExecution {
+  id: Int64!
+  jobId: Int64!
+  startedAt: Time!
+  finishedAt: Time
+  status: Int64!
+  reportData: String
+  errorMessage: String
+}
+
+type AdminCronJobsConnection {
+  nodes: [AdminCronJob!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -534,6 +558,7 @@ type AdminQuery {
   allNotFoundIgnoredPatterns: AdminNotFoundIgnoredPatternsConnection!
   allLatestNoteAssets: AdminLatestNoteAssetsConnection!
   allHTMLInjections: AdminHTMLInjectionsConnection!
+  allCronJobs: AdminCronJobsConnection!
 
   allTgBots: AdminTgBotsConnection!
   tgBotChats(filter: AdminTgBotChatsFilterInput!): AdminTgBotChatsConnection!
@@ -1442,6 +1467,36 @@ type DeleteHTMLInjectionPayload {
 
 union DeleteHTMLInjectionOrErrorPayload = DeleteHTMLInjectionPayload | ErrorPayload
 
+#
+# updateCronJob
+#
+
+input UpdateCronJobInput {
+  id: Int64!
+  enabled: Boolean!
+  expression: String!
+}
+
+type UpdateCronJobPayload {
+  cronJob: AdminCronJob!
+}
+
+union UpdateCronJobOrErrorPayload = UpdateCronJobPayload | ErrorPayload
+
+#
+# runCronJob
+#
+
+input RunCronJobInput {
+  name: String!
+}
+
+type RunCronJobPayload {
+  success: Boolean!
+}
+
+union RunCronJobOrErrorPayload = RunCronJobPayload | ErrorPayload
+
 type AdminMutation {
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
@@ -1495,4 +1550,8 @@ type AdminMutation {
   createHTMLInjection(input: CreateHTMLInjectionInput!): CreateHTMLInjectionOrErrorPayload!
   updateHTMLInjection(input: UpdateHTMLInjectionInput!): UpdateHTMLInjectionOrErrorPayload!
   deleteHTMLInjection(input: DeleteHTMLInjectionInput!): DeleteHTMLInjectionOrErrorPayload!
+
+  # Cron Job mutations
+  updateCronJob(input: UpdateCronJobInput!): UpdateCronJobOrErrorPayload!
+  runCronJob(input: RunCronJobInput!): RunCronJobOrErrorPayload!
 }

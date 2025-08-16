@@ -130,6 +130,10 @@ type RestorePatreonCredentialsOrErrorPayload interface {
 	IsRestorePatreonCredentialsOrErrorPayload()
 }
 
+type RunCronJobOrErrorPayload interface {
+	IsRunCronJobOrErrorPayload()
+}
+
 type SetBoostyTierSubgraphsOrErrorPayload interface {
 	IsSetBoostyTierSubgraphsOrErrorPayload()
 }
@@ -164,6 +168,10 @@ type UnbanUserOrErrorPayload interface {
 
 type UpdateBoostyCredentialsOrErrorPayload interface {
 	IsUpdateBoostyCredentialsOrErrorPayload()
+}
+
+type UpdateCronJobOrErrorPayload interface {
+	IsUpdateCronJobOrErrorPayload()
 }
 
 type UpdateHTMLInjectionOrErrorPayload interface {
@@ -256,6 +264,29 @@ type AdminBoostyMembersConnection struct {
 
 type AdminBoostyTiersConnection struct {
 	Nodes []db.BoostyTier `json:"nodes"`
+}
+
+type AdminCronJob struct {
+	ID         int64                   `json:"id"`
+	Name       string                  `json:"name"`
+	Enabled    bool                    `json:"enabled"`
+	Expression string                  `json:"expression"`
+	LastExecAt *time.Time              `json:"lastExecAt,omitempty"`
+	Executions []AdminCronJobExecution `json:"executions"`
+}
+
+type AdminCronJobExecution struct {
+	ID           int64      `json:"id"`
+	JobID        int64      `json:"jobId"`
+	StartedAt    time.Time  `json:"startedAt"`
+	FinishedAt   *time.Time `json:"finishedAt,omitempty"`
+	Status       int64      `json:"status"`
+	ReportData   *string    `json:"reportData,omitempty"`
+	ErrorMessage *string    `json:"errorMessage,omitempty"`
+}
+
+type AdminCronJobsConnection struct {
+	Nodes []AdminCronJob `json:"nodes"`
 }
 
 type AdminHTMLInjectionsConnection struct {
@@ -673,6 +704,10 @@ func (ErrorPayload) IsUpdateHTMLInjectionOrErrorPayload() {}
 
 func (ErrorPayload) IsDeleteHTMLInjectionOrErrorPayload() {}
 
+func (ErrorPayload) IsUpdateCronJobOrErrorPayload() {}
+
+func (ErrorPayload) IsRunCronJobOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -836,6 +871,16 @@ type RestorePatreonCredentialsPayload struct {
 
 func (RestorePatreonCredentialsPayload) IsRestorePatreonCredentialsOrErrorPayload() {}
 
+type RunCronJobInput struct {
+	Name string `json:"name"`
+}
+
+type RunCronJobPayload struct {
+	Success bool `json:"success"`
+}
+
+func (RunCronJobPayload) IsRunCronJobOrErrorPayload() {}
+
 type SetBoostyTierSubgraphsInput struct {
 	TierID      int64   `json:"tierId"`
 	SubgraphIds []int64 `json:"subgraphIds"`
@@ -947,6 +992,18 @@ type UpdateBoostyCredentialsPayload struct {
 }
 
 func (UpdateBoostyCredentialsPayload) IsUpdateBoostyCredentialsOrErrorPayload() {}
+
+type UpdateCronJobInput struct {
+	ID         int64  `json:"id"`
+	Enabled    bool   `json:"enabled"`
+	Expression string `json:"expression"`
+}
+
+type UpdateCronJobPayload struct {
+	CronJob *AdminCronJob `json:"cronJob"`
+}
+
+func (UpdateCronJobPayload) IsUpdateCronJobOrErrorPayload() {}
 
 type UpdateHTMLInjectionInput struct {
 	ID          int64      `json:"id"`

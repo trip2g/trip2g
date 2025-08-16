@@ -3246,6 +3246,40 @@ func (q *Queries) ListAllAdmins(ctx context.Context) ([]Admin, error) {
 	return items, nil
 }
 
+const listAllCronJobs = `-- name: ListAllCronJobs :many
+select id, name, enabled, expression, last_exec_at from cron_jobs
+order by name
+`
+
+func (q *Queries) ListAllCronJobs(ctx context.Context) ([]CronJob, error) {
+	rows, err := q.db.QueryContext(ctx, listAllCronJobs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CronJob
+	for rows.Next() {
+		var i CronJob
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Enabled,
+			&i.Expression,
+			&i.LastExecAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllNotFoundIgnoredPatterns = `-- name: ListAllNotFoundIgnoredPatterns :many
 select id, pattern, created_at, created_by from not_found_ignored_patterns
 `
@@ -3625,6 +3659,44 @@ func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([
 			&i.Level,
 			&i.Message,
 			&i.Params,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCronJobExecutionsByJobID = `-- name: ListCronJobExecutionsByJobID :many
+select id, job_id, started_at, finished_at, status, report_data, error_message from cron_job_executions
+where job_id = ?
+order by started_at desc
+limit 50
+`
+
+func (q *Queries) ListCronJobExecutionsByJobID(ctx context.Context, jobID int64) ([]CronJobExecution, error) {
+	rows, err := q.db.QueryContext(ctx, listCronJobExecutionsByJobID, jobID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CronJobExecution
+	for rows.Next() {
+		var i CronJobExecution
+		if err := rows.Scan(
+			&i.ID,
+			&i.JobID,
+			&i.StartedAt,
+			&i.FinishedAt,
+			&i.Status,
+			&i.ReportData,
+			&i.ErrorMessage,
 		); err != nil {
 			return nil, err
 		}
@@ -5211,6 +5283,32 @@ func (q *Queries) UpdateBoostyMemberUserID(ctx context.Context, arg UpdateBoosty
 	return err
 }
 
+const updateCronJob = `-- name: UpdateCronJob :one
+update cron_jobs
+set enabled = ?, expression = ?
+where id = ?
+returning id, name, enabled, expression, last_exec_at
+`
+
+type UpdateCronJobParams struct {
+	Enabled    bool   `json:"enabled"`
+	Expression string `json:"expression"`
+	ID         int64  `json:"id"`
+}
+
+func (q *Queries) UpdateCronJob(ctx context.Context, arg UpdateCronJobParams) (CronJob, error) {
+	row := q.db.QueryRowContext(ctx, updateCronJob, arg.Enabled, arg.Expression, arg.ID)
+	var i CronJob
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Enabled,
+		&i.Expression,
+		&i.LastExecAt,
+	)
+	return i, err
+}
+
 const updateCronJobExecution = `-- name: UpdateCronJobExecution :exec
 update cron_job_executions
 set finished_at = datetime('now'),
@@ -5224,7 +5322,7 @@ type UpdateCronJobExecutionParams struct {
 	Status       int64          `json:"status"`
 	ReportData   sql.NullString `json:"report_data"`
 	ErrorMessage sql.NullString `json:"error_message"`
-	ID           string         `json:"id"`
+	ID           int64          `json:"id"`
 }
 
 func (q *Queries) UpdateCronJobExecution(ctx context.Context, arg UpdateCronJobExecutionParams) error {

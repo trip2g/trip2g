@@ -57,6 +57,8 @@ type ResolverRoot interface {
 	AdminBoostyMembersConnection() AdminBoostyMembersConnectionResolver
 	AdminBoostyTier() AdminBoostyTierResolver
 	AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolver
+	AdminCronJob() AdminCronJobResolver
+	AdminCronJobsConnection() AdminCronJobsConnectionResolver
 	AdminHTMLInjection() AdminHTMLInjectionResolver
 	AdminHTMLInjectionsConnection() AdminHTMLInjectionsConnectionResolver
 	AdminLatestNoteAssetsConnection() AdminLatestNoteAssetsConnectionResolver
@@ -222,6 +224,29 @@ type ComplexityRoot struct {
 		Nodes func(childComplexity int) int
 	}
 
+	AdminCronJob struct {
+		Enabled    func(childComplexity int) int
+		Executions func(childComplexity int) int
+		Expression func(childComplexity int) int
+		ID         func(childComplexity int) int
+		LastExecAt func(childComplexity int) int
+		Name       func(childComplexity int) int
+	}
+
+	AdminCronJobExecution struct {
+		ErrorMessage func(childComplexity int) int
+		FinishedAt   func(childComplexity int) int
+		ID           func(childComplexity int) int
+		JobID        func(childComplexity int) int
+		ReportData   func(childComplexity int) int
+		StartedAt    func(childComplexity int) int
+		Status       func(childComplexity int) int
+	}
+
+	AdminCronJobsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
 	AdminHTMLInjection struct {
 		ActiveFrom  func(childComplexity int) int
 		ActiveTo    func(childComplexity int) int
@@ -269,12 +294,14 @@ type ComplexityRoot struct {
 		ResetNotFoundPath            func(childComplexity int, input model.ResetNotFoundPathInput) int
 		RestoreBoostyCredentials     func(childComplexity int, input model.RestoreBoostyCredentialsInput) int
 		RestorePatreonCredentials    func(childComplexity int, input model.RestorePatreonCredentialsInput) int
+		RunCronJob                   func(childComplexity int, input model.RunCronJobInput) int
 		SetBoostyTierSubgraphs       func(childComplexity int, input model.SetBoostyTierSubgraphsInput) int
 		SetPatreonTierSubgraphs      func(childComplexity int, input model.SetPatreonTierSubgraphsInput) int
 		SetTgChatSubgraphInvites     func(childComplexity int, input model.SetTgChatSubgraphInvitesInput) int
 		SetTgChatSubgraphs           func(childComplexity int, input model.SetTgChatSubgraphsInput) int
 		UnbanUser                    func(childComplexity int, input model.UnbanUserInput) int
 		UpdateBoostyCredentials      func(childComplexity int, input model.UpdateBoostyCredentialsInput) int
+		UpdateCronJob                func(childComplexity int, input model.UpdateCronJobInput) int
 		UpdateHTMLInjection          func(childComplexity int, input model.UpdateHTMLInjectionInput) int
 		UpdateNotFoundIgnoredPattern func(childComplexity int, input model.UpdateNotFoundIgnoredPatternInput) int
 		UpdateNoteGraphPositions     func(childComplexity int, input model.UpdateNoteGraphPositionsInput) int
@@ -411,6 +438,7 @@ type ComplexityRoot struct {
 		AllAPIKeys                 func(childComplexity int) int
 		AllAdmins                  func(childComplexity int) int
 		AllBoostyCredentials       func(childComplexity int, filter *model.AdminBoostyCredentialsFilterInput) int
+		AllCronJobs                func(childComplexity int) int
 		AllHTMLInjections          func(childComplexity int) int
 		AllLatestNoteAssets        func(childComplexity int) int
 		AllLatestNoteViews         func(childComplexity int, filter *model.AdminLatestNoteViewsFilter) int
@@ -805,6 +833,10 @@ type ComplexityRoot struct {
 		PatreonCredentials func(childComplexity int) int
 	}
 
+	RunCronJobPayload struct {
+		Success func(childComplexity int) int
+	}
+
 	SetBoostyTierSubgraphsPayload struct {
 		Success func(childComplexity int) int
 		Tier    func(childComplexity int) int
@@ -862,6 +894,10 @@ type ComplexityRoot struct {
 
 	UpdateBoostyCredentialsPayload struct {
 		BoostyCredentials func(childComplexity int) int
+	}
+
+	UpdateCronJobPayload struct {
+		CronJob func(childComplexity int) int
 	}
 
 	UpdateHTMLInjectionPayload struct {
@@ -992,6 +1028,12 @@ type AdminBoostyTierResolver interface {
 type AdminBoostyTiersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminBoostyTiersConnection) ([]db.BoostyTier, error)
 }
+type AdminCronJobResolver interface {
+	Executions(ctx context.Context, obj *model.AdminCronJob) ([]model.AdminCronJobExecution, error)
+}
+type AdminCronJobsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminCronJobsConnection) ([]model.AdminCronJob, error)
+}
 type AdminHTMLInjectionResolver interface {
 	ActiveFrom(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error)
 	ActiveTo(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error)
@@ -1045,6 +1087,8 @@ type AdminMutationResolver interface {
 	CreateHTMLInjection(ctx context.Context, obj *model1.AdminMutation, input model.CreateHTMLInjectionInput) (model.CreateHTMLInjectionOrErrorPayload, error)
 	UpdateHTMLInjection(ctx context.Context, obj *model1.AdminMutation, input model.UpdateHTMLInjectionInput) (model.UpdateHTMLInjectionOrErrorPayload, error)
 	DeleteHTMLInjection(ctx context.Context, obj *model1.AdminMutation, input model.DeleteHTMLInjectionInput) (model.DeleteHTMLInjectionOrErrorPayload, error)
+	UpdateCronJob(ctx context.Context, obj *model1.AdminMutation, input model.UpdateCronJobInput) (model.UpdateCronJobOrErrorPayload, error)
+	RunCronJob(ctx context.Context, obj *model1.AdminMutation, input model.RunCronJobInput) (model.RunCronJobOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -1121,6 +1165,7 @@ type AdminQueryResolver interface {
 	AllNotFoundIgnoredPatterns(ctx context.Context, obj *model1.AdminQuery) (*model.AdminNotFoundIgnoredPatternsConnection, error)
 	AllLatestNoteAssets(ctx context.Context, obj *model1.AdminQuery) (*model.AdminLatestNoteAssetsConnection, error)
 	AllHTMLInjections(ctx context.Context, obj *model1.AdminQuery) (*model.AdminHTMLInjectionsConnection, error)
+	AllCronJobs(ctx context.Context, obj *model1.AdminQuery) (*model.AdminCronJobsConnection, error)
 	AllTgBots(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTgBotsConnection, error)
 	TgBotChats(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgBotChatsFilterInput) (*model.AdminTgBotChatsConnection, error)
 	TgChatSubgraphAccesses(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgChatSubgraphAccessesFilterInput) (*model.AdminTgChatSubgraphAccessesConnection, error)
@@ -1703,6 +1748,104 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminBoostyTiersConnection.Nodes(childComplexity), true
 
+	case "AdminCronJob.enabled":
+		if e.complexity.AdminCronJob.Enabled == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJob.Enabled(childComplexity), true
+
+	case "AdminCronJob.executions":
+		if e.complexity.AdminCronJob.Executions == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJob.Executions(childComplexity), true
+
+	case "AdminCronJob.expression":
+		if e.complexity.AdminCronJob.Expression == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJob.Expression(childComplexity), true
+
+	case "AdminCronJob.id":
+		if e.complexity.AdminCronJob.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJob.ID(childComplexity), true
+
+	case "AdminCronJob.lastExecAt":
+		if e.complexity.AdminCronJob.LastExecAt == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJob.LastExecAt(childComplexity), true
+
+	case "AdminCronJob.name":
+		if e.complexity.AdminCronJob.Name == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJob.Name(childComplexity), true
+
+	case "AdminCronJobExecution.errorMessage":
+		if e.complexity.AdminCronJobExecution.ErrorMessage == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJobExecution.ErrorMessage(childComplexity), true
+
+	case "AdminCronJobExecution.finishedAt":
+		if e.complexity.AdminCronJobExecution.FinishedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJobExecution.FinishedAt(childComplexity), true
+
+	case "AdminCronJobExecution.id":
+		if e.complexity.AdminCronJobExecution.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJobExecution.ID(childComplexity), true
+
+	case "AdminCronJobExecution.jobId":
+		if e.complexity.AdminCronJobExecution.JobID == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJobExecution.JobID(childComplexity), true
+
+	case "AdminCronJobExecution.reportData":
+		if e.complexity.AdminCronJobExecution.ReportData == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJobExecution.ReportData(childComplexity), true
+
+	case "AdminCronJobExecution.startedAt":
+		if e.complexity.AdminCronJobExecution.StartedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJobExecution.StartedAt(childComplexity), true
+
+	case "AdminCronJobExecution.status":
+		if e.complexity.AdminCronJobExecution.Status == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJobExecution.Status(childComplexity), true
+
+	case "AdminCronJobsConnection.nodes":
+		if e.complexity.AdminCronJobsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJobsConnection.Nodes(childComplexity), true
+
 	case "AdminHTMLInjection.activeFrom":
 		if e.complexity.AdminHTMLInjection.ActiveFrom == nil {
 			break
@@ -2056,6 +2199,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.RestorePatreonCredentials(childComplexity, args["input"].(model.RestorePatreonCredentialsInput)), true
 
+	case "AdminMutation.runCronJob":
+		if e.complexity.AdminMutation.RunCronJob == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_runCronJob_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.RunCronJob(childComplexity, args["input"].(model.RunCronJobInput)), true
+
 	case "AdminMutation.setBoostyTierSubgraphs":
 		if e.complexity.AdminMutation.SetBoostyTierSubgraphs == nil {
 			break
@@ -2127,6 +2282,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.UpdateBoostyCredentials(childComplexity, args["input"].(model.UpdateBoostyCredentialsInput)), true
+
+	case "AdminMutation.updateCronJob":
+		if e.complexity.AdminMutation.UpdateCronJob == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_updateCronJob_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.UpdateCronJob(childComplexity, args["input"].(model.UpdateCronJobInput)), true
 
 	case "AdminMutation.updateHTMLInjection":
 		if e.complexity.AdminMutation.UpdateHTMLInjection == nil {
@@ -2777,6 +2944,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AllBoostyCredentials(childComplexity, args["filter"].(*model.AdminBoostyCredentialsFilterInput)), true
+
+	case "AdminQuery.allCronJobs":
+		if e.complexity.AdminQuery.AllCronJobs == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllCronJobs(childComplexity), true
 
 	case "AdminQuery.allHTMLInjections":
 		if e.complexity.AdminQuery.AllHTMLInjections == nil {
@@ -4334,6 +4508,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.RestorePatreonCredentialsPayload.PatreonCredentials(childComplexity), true
 
+	case "RunCronJobPayload.success":
+		if e.complexity.RunCronJobPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.RunCronJobPayload.Success(childComplexity), true
+
 	case "SetBoostyTierSubgraphsPayload.success":
 		if e.complexity.SetBoostyTierSubgraphsPayload.Success == nil {
 			break
@@ -4494,6 +4675,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.UpdateBoostyCredentialsPayload.BoostyCredentials(childComplexity), true
+
+	case "UpdateCronJobPayload.cronJob":
+		if e.complexity.UpdateCronJobPayload.CronJob == nil {
+			break
+		}
+
+		return e.complexity.UpdateCronJobPayload.CronJob(childComplexity), true
 
 	case "UpdateHTMLInjectionPayload.htmlInjection":
 		if e.complexity.UpdateHTMLInjectionPayload.HTMLInjection == nil {
@@ -4771,6 +4959,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputResetNotFoundPathInput,
 		ec.unmarshalInputRestoreBoostyCredentialsInput,
 		ec.unmarshalInputRestorePatreonCredentialsInput,
+		ec.unmarshalInputRunCronJobInput,
 		ec.unmarshalInputSetBoostyTierSubgraphsInput,
 		ec.unmarshalInputSetPatreonTierSubgraphsInput,
 		ec.unmarshalInputSetTgChatSubgraphInvitesInput,
@@ -4779,6 +4968,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputToggleFavoriteNoteInput,
 		ec.unmarshalInputUnbanUserInput,
 		ec.unmarshalInputUpdateBoostyCredentialsInput,
+		ec.unmarshalInputUpdateCronJobInput,
 		ec.unmarshalInputUpdateHTMLInjectionInput,
 		ec.unmarshalInputUpdateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputUpdateNoteGraphPositionInput,
@@ -5435,6 +5625,29 @@ func (ec *executionContext) field_AdminMutation_restorePatreonCredentials_argsIn
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_runCronJob_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_runCronJob_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_runCronJob_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.RunCronJobInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNRunCronJobInput2trip2gᚋinternalᚋgraphᚋmodelᚐRunCronJobInput(ctx, tmp)
+	}
+
+	var zeroVal model.RunCronJobInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminMutation_setBoostyTierSubgraphs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -5570,6 +5783,29 @@ func (ec *executionContext) field_AdminMutation_updateBoostyCredentials_argsInpu
 	}
 
 	var zeroVal model.UpdateBoostyCredentialsInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_updateCronJob_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_updateCronJob_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_updateCronJob_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateCronJobInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateCronJobInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateCronJobInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateCronJobInput
 	return zeroVal, nil
 }
 
@@ -9040,6 +9276,640 @@ func (ec *executionContext) fieldContext_AdminBoostyTiersConnection_nodes(_ cont
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminCronJob_id(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJob_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJob_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJob_name(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJob_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJob_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJob_enabled(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJob_enabled(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Enabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJob_enabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJob_expression(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJob_expression(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Expression, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJob_expression(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJob_lastExecAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJob_lastExecAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastExecAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJob_lastExecAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJob_executions(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJob) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJob_executions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminCronJob().Executions(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.AdminCronJobExecution)
+	fc.Result = res
+	return ec.marshalNAdminCronJobExecution2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJobExecutionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJob_executions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJob",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminCronJobExecution_id(ctx, field)
+			case "jobId":
+				return ec.fieldContext_AdminCronJobExecution_jobId(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_AdminCronJobExecution_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_AdminCronJobExecution_finishedAt(ctx, field)
+			case "status":
+				return ec.fieldContext_AdminCronJobExecution_status(ctx, field)
+			case "reportData":
+				return ec.fieldContext_AdminCronJobExecution_reportData(ctx, field)
+			case "errorMessage":
+				return ec.fieldContext_AdminCronJobExecution_errorMessage(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminCronJobExecution", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJobExecution_id(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJobExecution) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJobExecution_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJobExecution_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJobExecution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJobExecution_jobId(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJobExecution) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJobExecution_jobId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.JobID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJobExecution_jobId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJobExecution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJobExecution_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJobExecution) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJobExecution_startedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StartedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJobExecution_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJobExecution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJobExecution_finishedAt(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJobExecution) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJobExecution_finishedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FinishedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJobExecution_finishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJobExecution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJobExecution_status(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJobExecution) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJobExecution_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJobExecution_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJobExecution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJobExecution_reportData(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJobExecution) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJobExecution_reportData(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ReportData, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJobExecution_reportData(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJobExecution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJobExecution_errorMessage(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJobExecution) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJobExecution_errorMessage(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorMessage, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJobExecution_errorMessage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJobExecution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJobsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminCronJobsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJobsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminCronJobsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.AdminCronJob)
+	fc.Result = res
+	return ec.marshalNAdminCronJob2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJobᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJobsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJobsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminCronJob_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminCronJob_name(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminCronJob_enabled(ctx, field)
+			case "expression":
+				return ec.fieldContext_AdminCronJob_expression(ctx, field)
+			case "lastExecAt":
+				return ec.fieldContext_AdminCronJob_lastExecAt(ctx, field)
+			case "executions":
+				return ec.fieldContext_AdminCronJob_executions(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminCronJob", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminHTMLInjection_id(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminHTMLInjection_id(ctx, field)
 	if err != nil {
@@ -11609,6 +12479,116 @@ func (ec *executionContext) fieldContext_AdminMutation_deleteHTMLInjection(ctx c
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_deleteHTMLInjection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_updateCronJob(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_updateCronJob(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().UpdateCronJob(rctx, obj, fc.Args["input"].(model.UpdateCronJobInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.UpdateCronJobOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNUpdateCronJobOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateCronJobOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_updateCronJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UpdateCronJobOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_updateCronJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_runCronJob(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_runCronJob(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().RunCronJob(rctx, obj, fc.Args["input"].(model.RunCronJobInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.RunCronJobOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNRunCronJobOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRunCronJobOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_runCronJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RunCronJobOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_runCronJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -15705,6 +16685,54 @@ func (ec *executionContext) fieldContext_AdminQuery_allHTMLInjections(_ context.
 				return ec.fieldContext_AdminHTMLInjectionsConnection_nodes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminHTMLInjectionsConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allCronJobs(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allCronJobs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllCronJobs(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminCronJobsConnection)
+	fc.Result = res
+	return ec.marshalNAdminCronJobsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJobsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allCronJobs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminCronJobsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminCronJobsConnection", field.Name)
 		},
 	}
 	return fc, nil
@@ -23000,6 +24028,10 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_updateHTMLInjection(ctx, field)
 			case "deleteHTMLInjection":
 				return ec.fieldContext_AdminMutation_deleteHTMLInjection(ctx, field)
+			case "updateCronJob":
+				return ec.fieldContext_AdminMutation_updateCronJob(ctx, field)
+			case "runCronJob":
+				return ec.fieldContext_AdminMutation_runCronJob(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -24880,6 +25912,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allLatestNoteAssets(ctx, field)
 			case "allHTMLInjections":
 				return ec.fieldContext_AdminQuery_allHTMLInjections(ctx, field)
+			case "allCronJobs":
+				return ec.fieldContext_AdminQuery_allCronJobs(ctx, field)
 			case "allTgBots":
 				return ec.fieldContext_AdminQuery_allTgBots(ctx, field)
 			case "tgBotChats":
@@ -25741,6 +26775,50 @@ func (ec *executionContext) fieldContext_RestorePatreonCredentialsPayload_patreo
 				return ec.fieldContext_AdminPatreonCredentials_members(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminPatreonCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RunCronJobPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.RunCronJobPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RunCronJobPayload_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RunCronJobPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RunCronJobPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -26908,6 +27986,64 @@ func (ec *executionContext) fieldContext_UpdateBoostyCredentialsPayload_boostyCr
 				return ec.fieldContext_AdminBoostyCredentials_members(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateCronJobPayload_cronJob(ctx context.Context, field graphql.CollectedField, obj *model.UpdateCronJobPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpdateCronJobPayload_cronJob(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CronJob, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminCronJob)
+	fc.Result = res
+	return ec.marshalNAdminCronJob2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpdateCronJobPayload_cronJob(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateCronJobPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminCronJob_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminCronJob_name(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminCronJob_enabled(ctx, field)
+			case "expression":
+				return ec.fieldContext_AdminCronJob_expression(ctx, field)
+			case "lastExecAt":
+				return ec.fieldContext_AdminCronJob_lastExecAt(ctx, field)
+			case "executions":
+				return ec.fieldContext_AdminCronJob_executions(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminCronJob", field.Name)
 		},
 	}
 	return fc, nil
@@ -31756,6 +32892,33 @@ func (ec *executionContext) unmarshalInputRestorePatreonCredentialsInput(ctx con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputRunCronJobInput(ctx context.Context, obj any) (model.RunCronJobInput, error) {
+	var it model.RunCronJobInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSetBoostyTierSubgraphsInput(ctx context.Context, obj any) (model.SetBoostyTierSubgraphsInput, error) {
 	var it model.SetBoostyTierSubgraphsInput
 	asMap := map[string]any{}
@@ -32029,6 +33192,47 @@ func (ec *executionContext) unmarshalInputUpdateBoostyCredentialsInput(ctx conte
 				return it, err
 			}
 			it.BlogName = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateCronJobInput(ctx context.Context, obj any) (model.UpdateCronJobInput, error) {
+	var it model.UpdateCronJobInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "enabled", "expression"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "enabled":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("enabled"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Enabled = data
+		case "expression":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("expression"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Expression = data
 		}
 	}
 
@@ -33199,6 +34403,29 @@ func (ec *executionContext) _RestorePatreonCredentialsOrErrorPayload(ctx context
 	}
 }
 
+func (ec *executionContext) _RunCronJobOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.RunCronJobOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.RunCronJobPayload:
+		return ec._RunCronJobPayload(ctx, sel, &obj)
+	case *model.RunCronJobPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._RunCronJobPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _SetBoostyTierSubgraphsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SetBoostyTierSubgraphsOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -33394,6 +34621,29 @@ func (ec *executionContext) _UpdateBoostyCredentialsOrErrorPayload(ctx context.C
 			return graphql.Null
 		}
 		return ec._UpdateBoostyCredentialsPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _UpdateCronJobOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateCronJobOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UpdateCronJobPayload:
+		return ec._UpdateCronJobPayload(ctx, sel, &obj)
+	case *model.UpdateCronJobPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateCronJobPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -35076,6 +36326,228 @@ func (ec *executionContext) _AdminBoostyTiersConnection(ctx context.Context, sel
 					}
 				}()
 				res = ec._AdminBoostyTiersConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminCronJobImplementors = []string{"AdminCronJob"}
+
+func (ec *executionContext) _AdminCronJob(ctx context.Context, sel ast.SelectionSet, obj *model.AdminCronJob) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminCronJobImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminCronJob")
+		case "id":
+			out.Values[i] = ec._AdminCronJob_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._AdminCronJob_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "enabled":
+			out.Values[i] = ec._AdminCronJob_enabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "expression":
+			out.Values[i] = ec._AdminCronJob_expression(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "lastExecAt":
+			out.Values[i] = ec._AdminCronJob_lastExecAt(ctx, field, obj)
+		case "executions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminCronJob_executions(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminCronJobExecutionImplementors = []string{"AdminCronJobExecution"}
+
+func (ec *executionContext) _AdminCronJobExecution(ctx context.Context, sel ast.SelectionSet, obj *model.AdminCronJobExecution) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminCronJobExecutionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminCronJobExecution")
+		case "id":
+			out.Values[i] = ec._AdminCronJobExecution_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "jobId":
+			out.Values[i] = ec._AdminCronJobExecution_jobId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "startedAt":
+			out.Values[i] = ec._AdminCronJobExecution_startedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "finishedAt":
+			out.Values[i] = ec._AdminCronJobExecution_finishedAt(ctx, field, obj)
+		case "status":
+			out.Values[i] = ec._AdminCronJobExecution_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reportData":
+			out.Values[i] = ec._AdminCronJobExecution_reportData(ctx, field, obj)
+		case "errorMessage":
+			out.Values[i] = ec._AdminCronJobExecution_errorMessage(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminCronJobsConnectionImplementors = []string{"AdminCronJobsConnection"}
+
+func (ec *executionContext) _AdminCronJobsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminCronJobsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminCronJobsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminCronJobsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminCronJobsConnection_nodes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -36813,6 +38285,78 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_deleteHTMLInjection(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "updateCronJob":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_updateCronJob(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "runCronJob":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_runCronJob(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -39185,6 +40729,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_allHTMLInjections(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allCronJobs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allCronJobs(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -42863,7 +44443,7 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHTMLInjectionOrErrorPayload", "UpdateHTMLInjectionOrErrorPayload", "DeleteHTMLInjectionOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHTMLInjectionOrErrorPayload", "UpdateHTMLInjectionOrErrorPayload", "DeleteHTMLInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -44609,6 +46189,45 @@ func (ec *executionContext) _RestorePatreonCredentialsPayload(ctx context.Contex
 	return out
 }
 
+var runCronJobPayloadImplementors = []string{"RunCronJobPayload", "RunCronJobOrErrorPayload"}
+
+func (ec *executionContext) _RunCronJobPayload(ctx context.Context, sel ast.SelectionSet, obj *model.RunCronJobPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, runCronJobPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RunCronJobPayload")
+		case "success":
+			out.Values[i] = ec._RunCronJobPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var setBoostyTierSubgraphsPayloadImplementors = []string{"SetBoostyTierSubgraphsPayload", "SetBoostyTierSubgraphsOrErrorPayload"}
 
 func (ec *executionContext) _SetBoostyTierSubgraphsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SetBoostyTierSubgraphsPayload) graphql.Marshaler {
@@ -45289,6 +46908,45 @@ func (ec *executionContext) _UpdateBoostyCredentialsPayload(ctx context.Context,
 			out.Values[i] = graphql.MarshalString("UpdateBoostyCredentialsPayload")
 		case "boostyCredentials":
 			out.Values[i] = ec._UpdateBoostyCredentialsPayload_boostyCredentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var updateCronJobPayloadImplementors = []string{"UpdateCronJobPayload", "UpdateCronJobOrErrorPayload"}
+
+func (ec *executionContext) _UpdateCronJobPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateCronJobPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateCronJobPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateCronJobPayload")
+		case "cronJob":
+			out.Values[i] = ec._UpdateCronJobPayload_cronJob(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -47195,6 +48853,126 @@ func (ec *executionContext) marshalNAdminBoostyTiersConnection2ᚖtrip2gᚋinter
 		return graphql.Null
 	}
 	return ec._AdminBoostyTiersConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminCronJob2trip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJob(ctx context.Context, sel ast.SelectionSet, v model.AdminCronJob) graphql.Marshaler {
+	return ec._AdminCronJob(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminCronJob2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJobᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminCronJob) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminCronJob2trip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJob(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminCronJob2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJob(ctx context.Context, sel ast.SelectionSet, v *model.AdminCronJob) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminCronJob(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminCronJobExecution2trip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJobExecution(ctx context.Context, sel ast.SelectionSet, v model.AdminCronJobExecution) graphql.Marshaler {
+	return ec._AdminCronJobExecution(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminCronJobExecution2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJobExecutionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminCronJobExecution) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminCronJobExecution2trip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJobExecution(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminCronJobsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJobsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminCronJobsConnection) graphql.Marshaler {
+	return ec._AdminCronJobsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminCronJobsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminCronJobsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminCronJobsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminCronJobsConnection(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNAdminHTMLInjection2trip2gᚋinternalᚋdbᚐHtmlInjection(ctx context.Context, sel ast.SelectionSet, v db.HtmlInjection) graphql.Marshaler {
@@ -49678,6 +51456,21 @@ func (ec *executionContext) marshalNRole2trip2gᚋinternalᚋgraphᚋmodelᚐRol
 	return v
 }
 
+func (ec *executionContext) unmarshalNRunCronJobInput2trip2gᚋinternalᚋgraphᚋmodelᚐRunCronJobInput(ctx context.Context, v any) (model.RunCronJobInput, error) {
+	res, err := ec.unmarshalInputRunCronJobInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRunCronJobOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRunCronJobOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.RunCronJobOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RunCronJobOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNSetBoostyTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetBoostyTierSubgraphsInput(ctx context.Context, v any) (model.SetBoostyTierSubgraphsInput, error) {
 	res, err := ec.unmarshalInputSetBoostyTierSubgraphsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -49974,6 +51767,21 @@ func (ec *executionContext) marshalNUpdateBoostyCredentialsOrErrorPayload2trip2g
 		return graphql.Null
 	}
 	return ec._UpdateBoostyCredentialsOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateCronJobInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateCronJobInput(ctx context.Context, v any) (model.UpdateCronJobInput, error) {
+	res, err := ec.unmarshalInputUpdateCronJobInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateCronJobOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateCronJobOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateCronJobOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateCronJobOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateHTMLInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateHTMLInjectionInput(ctx context.Context, v any) (model.UpdateHTMLInjectionInput, error) {

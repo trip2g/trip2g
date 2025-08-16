@@ -227,6 +227,15 @@ func (cj *CronJobs) RefreshCronJob(dbJob *db.CronJob) error {
 	return nil
 }
 
+func (cj *CronJobs) ExecuteJobManually(jobName string) error {
+	if _, ok := cj.jobs[jobName]; !ok {
+		return fmt.Errorf("job %s not found", jobName)
+	}
+
+	go cj.executeJobWithLog(jobName)
+	return nil
+}
+
 func (cj *CronJobs) StopCronJobs() {
 	if cj.cron != nil {
 		cj.cron.Stop()

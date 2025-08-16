@@ -39,6 +39,7 @@ import (
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updatetgbot"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
+	"trip2g/internal/cronjobs"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createemailwaitlistrequest"
 	"trip2g/internal/case/createpaymentlink"
@@ -230,4 +231,11 @@ type Env interface {
 	// HTML Injections
 	ListHTMLInjections(ctx context.Context) ([]db.HtmlInjection, error)
 	GetHTMLInjection(ctx context.Context, id int64) (db.HtmlInjection, error)
+
+	// Cron Jobs
+	ListAllCronJobs(ctx context.Context) ([]db.CronJob, error)
+	UpdateCronJob(ctx context.Context, arg db.UpdateCronJobParams) (db.CronJob, error)
+	CronJobByID(ctx context.Context, id int64) (db.CronJob, error)
+	ListCronJobExecutionsByJobID(ctx context.Context, jobID int64) ([]db.CronJobExecution, error)
+	CronJobs() *cronjobs.CronJobs
 }

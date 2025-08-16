@@ -1282,3 +1282,19 @@ update cron_job_executions
   set status = ?, error_message = ?
 where job_id = (select id from cron_jobs where name = ?)
   and status = 'running';
+
+-- name: ListAllCronJobs :many
+select * from cron_jobs
+order by name;
+
+-- name: UpdateCronJob :one
+update cron_jobs
+set enabled = ?, expression = ?
+where id = ?
+returning *;
+
+-- name: ListCronJobExecutionsByJobID :many
+select * from cron_job_executions
+where job_id = ?
+order by started_at desc
+limit 50;

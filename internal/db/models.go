@@ -135,7 +135,7 @@ type CronJob struct {
 }
 
 type CronJobExecution struct {
-	ID           string         `json:"id"`
+	ID           int64          `json:"id"`
 	JobID        int64          `json:"job_id"`
 	StartedAt    time.Time      `json:"started_at"`
 	FinishedAt   sql.NullTime   `json:"finished_at"`
