@@ -29,7 +29,6 @@ import (
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/bqtask/sendsignincode"
-	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/handletgupdate"
@@ -227,11 +226,7 @@ func main() {
 		return handletgupdate.Resolve(ctx, be, update)
 	})
 
-	cronJobConfigs := []cronjobs.Job{
-		&removeexpiredtgchatmembers.Job{},
-	}
-
-	a.CronJobs, err = cronjobs.New(ctx, a, cronJobConfigs)
+	a.CronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
 	if err != nil {
 		panic(fmt.Errorf("failed to create cron jobs: %w", err))
 	}
