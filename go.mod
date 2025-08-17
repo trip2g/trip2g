@@ -29,6 +29,7 @@ require (
 	github.com/yuin/goldmark-meta v1.1.0
 	go.abhg.dev/goldmark/wikilink v0.6.0
 	golang.org/x/crypto v0.38.0
+	maragu.dev/goqite v0.3.1
 	modernc.org/sqlite v1.37.0
 )
 

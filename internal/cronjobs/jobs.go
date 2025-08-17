@@ -6,10 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 
 	"github.com/robfig/cron/v3"
+	"maragu.dev/goqite"
+	"maragu.dev/goqite/jobs"
 )
 
 var (
@@ -34,6 +37,7 @@ type Env interface {
 	UpdateCronJobLastExec(ctx context.Context, id int64) error
 	UpdateRunningCronJobExecutionsByName(ctx context.Context, params db.UpdateRunningCronJobExecutionsByNameParams) error
 	Logger() logger.Logger
+	DBConnection() *sql.DB
 }
 
 type CronJobs struct {
@@ -45,6 +49,9 @@ type CronJobs struct {
 	runningMux sync.RWMutex
 	running    map[string]bool
 	log        logger.Logger
+
+	queue  *goqite.Queue
+	runner *jobs.Runner
 }
 
 func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
@@ -55,8 +62,36 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 		jobs:     make(map[string]Job),
 		entryIDs: make(map[string]cron.EntryID),
 		running:  make(map[string]bool),
-		log:      logger.WithPrefix(env.Logger(), "logger:"),
+		log:      logger.WithPrefix(env.Logger(), "cronjobs:"),
 	}
+
+	cj.queue = goqite.New(goqite.NewOpts{
+		DB:   env.DBConnection(),
+		Name: "cron_jobs",
+	})
+
+	cj.runner = jobs.NewRunner(jobs.NewRunnerOpts{
+		Limit:        1,
+		Log:          logger.WithPrefix(cj.log, "jobs:"),
+		PollInterval: time.Second,
+		Queue:        cj.queue,
+	})
+
+	cj.runner.Register("execute", func(ctx context.Context, m []byte) error {
+		cj.log.Info("Executing job", "message", string(m))
+		return cj.executeJob(string(m))
+	})
+
+	go cj.runner.Start(ctx)
+
+	env.Logger().Info("create test")
+
+	err := jobs.Create(ctx, cj.queue, "execute", []byte("remove_expired_tg_chat_members"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create test job: %w", err)
+	}
+
+	env.Logger().Info("done")
 
 	// Register all jobs
 	for _, job := range jobConfigs {
@@ -83,10 +118,6 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 			err = cj.register(job)
 			if err != nil {
 				return nil, fmt.Errorf("failed to register cron job %s: %w", dbJob.Name, err)
-			}
-
-			if dbJob.Enabled {
-				go cj.executeJobWithLog(job.Name())
 			}
 		}
 	}

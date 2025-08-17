@@ -282,6 +282,10 @@ func main() {
 	a.startServer()
 }
 
+func (a *app) DBConnection() *sql.DB {
+	return a.conn
+}
+
 func (a *app) createOwnerIfNotExists(ctx context.Context) error {
 	if a.config.OwnerEmail == "" {
 		return nil // No owner email configured
