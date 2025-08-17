@@ -22,6 +22,8 @@ var (
 	JobStatusFailed    int64 = 3
 )
 
+const executeJobName = "e"
+
 type Job interface {
 	Name() string
 	Schedule() string
@@ -30,92 +32,97 @@ type Job interface {
 }
 
 type Env interface {
-	ListActiveCronJobs(ctx context.Context) ([]db.CronJob, error)
 	UpsertCronJob(ctx context.Context, arg db.UpsertCronJobParams) error
-	InsertCronJobExecution(ctx context.Context, jobID string) (db.CronJobExecution, error)
+	InsertCronJobExecution(ctx context.Context, jobID int64) (db.CronJobExecution, error)
 	UpdateCronJobExecution(ctx context.Context, arg db.UpdateCronJobExecutionParams) error
 	UpdateCronJobLastExec(ctx context.Context, id int64) error
-	UpdateRunningCronJobExecutionsByName(ctx context.Context, params db.UpdateRunningCronJobExecutionsByNameParams) error
+	UpdateRunningCronJobExecutions(ctx context.Context, params db.UpdateRunningCronJobExecutionsParams) error
+	CronJobByName(ctx context.Context, name string) (db.CronJob, error)
 	Logger() logger.Logger
 	DBConnection() *sql.DB
 }
 
-type CronJobs struct {
-	env        Env
-	ctx        context.Context
-	cron       *cron.Cron
-	jobs       map[string]Job
-	entryIDs   map[string]cron.EntryID
-	runningMux sync.RWMutex
-	running    map[string]bool
-	log        logger.Logger
-
+type jobItem struct {
+	job    Job
+	config db.CronJob
+	cronID cron.EntryID
 	queue  *goqite.Queue
 	runner *jobs.Runner
 }
 
+type CronJobs struct {
+	env  Env
+	ctx  context.Context
+	cron *cron.Cron
+
+	log logger.Logger
+
+	mu   sync.Mutex
+	jobs map[int64]*jobItem
+
+	queues  map[int64]*goqite.Queue
+	runners map[int64]*jobs.Runner
+}
+
 func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 	cj := &CronJobs{
-		ctx:      ctx,
-		env:      env,
-		cron:     cron.New(cron.WithSeconds()),
-		jobs:     make(map[string]Job),
-		entryIDs: make(map[string]cron.EntryID),
-		running:  make(map[string]bool),
-		log:      logger.WithPrefix(env.Logger(), "cronjobs:"),
+		ctx:     ctx,
+		env:     env,
+		cron:    cron.New(cron.WithSeconds()),
+		runners: make(map[int64]*jobs.Runner),
+		log:     logger.WithPrefix(env.Logger(), "cronjobs:"),
+
+		mu:   sync.Mutex{},
+		jobs: make(map[int64]*jobItem),
 	}
-
-	cj.queue = goqite.New(goqite.NewOpts{
-		DB:   env.DBConnection(),
-		Name: "cron_jobs",
-	})
-
-	cj.runner = jobs.NewRunner(jobs.NewRunnerOpts{
-		Limit:        1,
-		Log:          logger.WithPrefix(cj.log, "jobs:"),
-		PollInterval: time.Second,
-		Queue:        cj.queue,
-	})
-
-	cj.runner.Register("execute", func(ctx context.Context, m []byte) error {
-		cj.log.Info("Executing job", "message", string(m))
-		return cj.executeJob(string(m))
-	})
-
-	go cj.runner.Start(ctx)
-
-	env.Logger().Info("create test")
-
-	err := jobs.Create(ctx, cj.queue, "execute", []byte("remove_expired_tg_chat_members"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create test job: %w", err)
-	}
-
-	env.Logger().Info("done")
 
 	// Register all jobs
 	for _, job := range jobConfigs {
 		name := job.Name()
-		cj.jobs[name] = job
 
-		err := env.UpsertCronJob(ctx, db.UpsertCronJobParams{
+		upsertParams := db.UpsertCronJobParams{
 			Name:       name,
 			Expression: job.Schedule(),
-		})
+		}
+
+		err := env.UpsertCronJob(ctx, upsertParams)
 		if err != nil {
 			return nil, fmt.Errorf("failed to upsert cron job %s: %w", name, err)
 		}
-	}
 
-	// Load enabled jobs from database
-	enabledJobs, err := env.ListActiveCronJobs(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list active cron jobs: %w", err)
-	}
+		// get current cron job settings
+		dbJob, err := env.CronJobByName(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get cron job %s from database: %w", name, err)
+		}
 
-	for _, dbJob := range enabledJobs {
-		if job, ok := cj.jobs[dbJob.Name]; ok {
-			err = cj.register(job)
+		queue := goqite.New(goqite.NewOpts{
+			DB:   env.DBConnection(),
+			Name: name,
+		})
+
+		runner := jobs.NewRunner(jobs.NewRunnerOpts{
+			Limit:        1, // limit to one job at a time
+			Log:          logger.WithPrefix(cj.log, fmt.Sprintf("jobs:%s:", name)),
+			PollInterval: time.Second,
+			Queue:        queue,
+		})
+
+		runner.Register(executeJobName, func(ctx context.Context, m []byte) error {
+			return cj.executeJob(dbJob.ID)
+		})
+
+		cj.jobs[dbJob.ID] = &jobItem{
+			job:    job,
+			config: dbJob,
+			queue:  queue,
+			runner: runner,
+		}
+
+		go runner.Start(ctx)
+
+		if dbJob.Enabled {
+			err = cj.register(dbJob.ID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to register cron job %s: %w", dbJob.Name, err)
 			}
@@ -128,49 +135,42 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 	return cj, nil
 }
 
-func (cj *CronJobs) register(job Job) error {
-	entryID, err := cj.cron.AddFunc(job.Schedule(), func() {
-		cj.executeJobWithLog(job.Name())
+func (cj *CronJobs) scheduleJob(jobID int64) {
+	q := cj.queues[jobID]
+
+	err := jobs.Create(cj.ctx, q, executeJobName, nil)
+	if err != nil {
+		cj.log.Error("failed to create test job", "job_id", jobID, "error", err)
+	}
+}
+
+func (cj *CronJobs) register(jobID int64) error {
+	cj.mu.Lock()
+	defer cj.mu.Unlock()
+
+	job := cj.jobs[jobID]
+
+	entryID, err := cj.cron.AddFunc(job.config.Expression, func() {
+		cj.scheduleJob(jobID)
 	})
 	if err != nil {
-		return fmt.Errorf("failed to AddFunc %s: %w", job.Name(), err)
+		return fmt.Errorf("failed to AddFunc %s: %w", job.job.Name(), err)
 	}
 
-	cj.entryIDs[job.Name()] = entryID
+	cj.jobs[jobID].cronID = entryID
+
 	return nil
 }
 
-func (cj *CronJobs) executeJobWithLog(jobID string) {
-	err := cj.executeJob(jobID)
-	if err != nil {
-		cj.log.Error("failed to execute cron job", "job_id", jobID, "error", err)
-	}
-}
-
-func (cj *CronJobs) executeJob(jobID string) error {
-	// Check if job is already running
-	cj.runningMux.Lock()
-	if cj.running[jobID] {
-		cj.runningMux.Unlock()
-		return nil
-	}
-	cj.running[jobID] = true
-	cj.runningMux.Unlock()
-
-	defer func() {
-		cj.runningMux.Lock()
-		delete(cj.running, jobID)
-		cj.runningMux.Unlock()
-	}()
-
+func (cj *CronJobs) executeJob(jobID int64) error {
 	job, ok := cj.jobs[jobID]
 	if !ok {
 		return fmt.Errorf("job %s not found", jobID)
 	}
 
-	err := cj.env.UpdateRunningCronJobExecutionsByName(cj.ctx, db.UpdateRunningCronJobExecutionsByNameParams{
-		Name:   jobID,
-		Status: 2,
+	err := cj.env.UpdateRunningCronJobExecutions(cj.ctx, db.UpdateRunningCronJobExecutionsParams{
+		JobID:  jobID,
+		Status: JobStatusRunning,
 		ErrorMessage: sql.NullString{
 			Valid:  true,
 			String: "died",
@@ -193,7 +193,7 @@ func (cj *CronJobs) executeJob(jobID string) error {
 	}
 
 	// Execute the job
-	report, jobErr := job.Execute(cj.ctx, cj.env)
+	report, jobErr := job.job.Execute(cj.ctx, cj.env)
 
 	// Update execution status
 	status := JobStatusCompleted
@@ -238,37 +238,31 @@ func (cj *CronJobs) executeJob(jobID string) error {
 	return nil
 }
 
-func (cj *CronJobs) RefreshCronJob(dbJob *db.CronJob) error {
-	job, ok := cj.jobs[dbJob.Name]
-	if !ok {
-		return fmt.Errorf("job %s not found", dbJob.ID)
+func (cj *CronJobs) RefreshCronJob(job db.CronJob) error {
+	// Remove existing entry if exists
+	jobItem, exists := cj.jobs[job.ID]
+	if !exists {
+		return fmt.Errorf("job %s not found", job.Name)
 	}
 
-	// Remove existing entry if exists
-	if entryID, exists := cj.entryIDs[dbJob.Name]; exists {
-		cj.cron.Remove(entryID)
-		delete(cj.entryIDs, dbJob.Name)
-	}
+	cj.cron.Remove(jobItem.cronID)
 
 	// Register again if enabled
-	if dbJob.Enabled {
-		return cj.register(job)
+	if job.Enabled {
+		return cj.register(job.ID)
 	}
 
 	return nil
 }
 
-func (cj *CronJobs) ExecuteJobManually(jobName string) error {
-	if _, ok := cj.jobs[jobName]; !ok {
-		return fmt.Errorf("job %s not found", jobName)
+func (cj *CronJobs) ExecuteCronJobJobManually(jobID int64) error {
+	if _, ok := cj.jobs[jobID]; !ok {
+		return fmt.Errorf("job %d not found", jobID)
 	}
 
-	go cj.executeJobWithLog(jobName)
-	return nil
+	return cj.executeJob(jobID)
 }
 
 func (cj *CronJobs) StopCronJobs() {
-	if cj.cron != nil {
-		cj.cron.Stop()
-	}
+	cj.cron.Stop()
 }

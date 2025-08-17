@@ -1488,7 +1488,7 @@ union UpdateCronJobOrErrorPayload = UpdateCronJobPayload | ErrorPayload
 #
 
 input RunCronJobInput {
-  name: String!
+  id: Int64!
 }
 
 type RunCronJobPayload {

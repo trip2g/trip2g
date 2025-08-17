@@ -82,7 +82,7 @@ type app struct {
 	*patreonjobs.PatreonJobs
 	*boostyjobs.BoostyJobs
 	*tgbots.TgBots
-	cronJobs *cronjobs.CronJobs
+	*cronjobs.CronJobs
 
 	graphTxs *graphTransactions
 
@@ -226,7 +226,7 @@ func main() {
 		return handletgupdate.Resolve(ctx, be, update)
 	})
 
-	a.cronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
+	a.CronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
 	if err != nil {
 		panic(fmt.Errorf("failed to create cron jobs: %w", err))
 	}
@@ -1192,10 +1192,6 @@ func (a *app) handleCors(ctx *fasthttp.RequestCtx) bool {
 	}
 
 	return false
-}
-
-func (a *app) CronJobs() *cronjobs.CronJobs {
-	return a.cronJobs
 }
 
 func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {

@@ -1243,11 +1243,6 @@ returning *;
 delete from html_injections
 where id = ?;
 
--- name: ListActiveCronJobs :many
-select *
-  from cron_jobs
- where enabled = true;
-
 -- name: UpsertCronJob :exec
 insert into cron_jobs (name, expression)
 values (?, ?)
@@ -1255,7 +1250,7 @@ on conflict(name) do nothing;
 
 -- name: InsertCronJobExecution :one
 insert into cron_job_executions (job_id)
-values ((select id from cron_jobs where name = ?))
+values (?)
 returning *;
 
 -- name: UpdateCronJobExecution :exec
@@ -1277,10 +1272,10 @@ select * from cron_jobs where id = ?;
 -- name: CronJobByName :one
 select * from cron_jobs where name = ?;
 
--- name: UpdateRunningCronJobExecutionsByName :exec
+-- name: UpdateRunningCronJobExecutions :exec
 update cron_job_executions
   set status = ?, error_message = ?
-where job_id = (select id from cron_jobs where name = ?)
+where job_id = ?
   and status = 'running';
 
 -- name: ListAllCronJobs :many

@@ -144,6 +144,17 @@ type CronJobExecution struct {
 	ErrorMessage sql.NullString `json:"error_message"`
 }
 
+type Goqite struct {
+	ID       string `json:"id"`
+	Created  string `json:"created"`
+	Updated  string `json:"updated"`
+	Queue    string `json:"queue"`
+	Body     []byte `json:"body"`
+	Timeout  string `json:"timeout"`
+	Received int64  `json:"received"`
+	Priority int64  `json:"priority"`
+}
+
 type HtmlInjection struct {
 	ID          int64        `json:"id"`
 	CreatedAt   time.Time    `json:"created_at"`

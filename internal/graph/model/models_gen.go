@@ -872,7 +872,7 @@ type RestorePatreonCredentialsPayload struct {
 func (RestorePatreonCredentialsPayload) IsRestorePatreonCredentialsOrErrorPayload() {}
 
 type RunCronJobInput struct {
-	Name string `json:"name"`
+	ID int64 `json:"id"`
 }
 
 type RunCronJobPayload struct {

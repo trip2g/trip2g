@@ -13,9 +13,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-	
-	ozzo "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
@@ -71,6 +68,9 @@ import (
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/nowpayments"
+
+	ozzo "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
 // ID is the resolver for the id field.
@@ -599,7 +599,7 @@ func (r *adminMutationResolver) DeleteHTMLInjection(ctx context.Context, obj *ap
 // UpdateCronJob is the resolver for the updateCronJob field.
 func (r *adminMutationResolver) UpdateCronJob(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateCronJobInput) (model.UpdateCronJobOrErrorPayload, error) {
 	env := r.env(ctx)
-	
+
 	// Check admin authorization
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
@@ -649,29 +649,15 @@ func (r *adminMutationResolver) UpdateCronJob(ctx context.Context, obj *appmodel
 // RunCronJob is the resolver for the runCronJob field.
 func (r *adminMutationResolver) RunCronJob(ctx context.Context, obj *appmodel.AdminMutation, input model.RunCronJobInput) (model.RunCronJobOrErrorPayload, error) {
 	env := r.env(ctx)
-	
+
 	// Check admin authorization
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}
 
-	// Validate input
-	errPayload := model.NewOzzoError(ozzo.ValidateStruct(&input,
-		ozzo.Field(&input.Name, ozzo.Required, is.PrintableASCII),
-	))
-	if errPayload != nil {
-		return errPayload, nil
-	}
-
-	// Get cron jobs manager
-	cronJobsManager := env.CronJobs()
-	if cronJobsManager == nil {
-		return &model.ErrorPayload{Message: "Cron jobs manager not available"}, nil
-	}
-
 	// Manually trigger the job
-	err = cronJobsManager.ExecuteJobManually(input.Name)
+	err = env.ExecuteCronJobJobManually(input.ID)
 	if err != nil {
 		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to run cron job: %v", err)}, nil
 	}

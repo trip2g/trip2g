@@ -1913,12 +1913,12 @@ func (q *Queries) InsertBoostyTierSubgraph(ctx context.Context, arg InsertBoosty
 
 const insertCronJobExecution = `-- name: InsertCronJobExecution :one
 insert into cron_job_executions (job_id)
-values ((select id from cron_jobs where name = ?))
+values (?)
 returning id, job_id, started_at, finished_at, status, report_data, error_message
 `
 
-func (q *Queries) InsertCronJobExecution(ctx context.Context, name string) (CronJobExecution, error) {
-	row := q.db.QueryRowContext(ctx, insertCronJobExecution, name)
+func (q *Queries) InsertCronJobExecution(ctx context.Context, jobID int64) (CronJobExecution, error) {
+	row := q.db.QueryRowContext(ctx, insertCronJobExecution, jobID)
 	var i CronJobExecution
 	err := row.Scan(
 		&i.ID,
@@ -2673,41 +2673,6 @@ func (q *Queries) ListActiveBoostySubgraphNamesByUserID(ctx context.Context, id 
 			return nil, err
 		}
 		items = append(items, name)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listActiveCronJobs = `-- name: ListActiveCronJobs :many
-select id, name, enabled, expression, last_exec_at
-  from cron_jobs
- where enabled = true
-`
-
-func (q *Queries) ListActiveCronJobs(ctx context.Context) ([]CronJob, error) {
-	rows, err := q.db.QueryContext(ctx, listActiveCronJobs)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []CronJob
-	for rows.Next() {
-		var i CronJob
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Enabled,
-			&i.Expression,
-			&i.LastExecAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -5573,21 +5538,21 @@ func (q *Queries) UpdateRedirect(ctx context.Context, arg UpdateRedirectParams) 
 	return i, err
 }
 
-const updateRunningCronJobExecutionsByName = `-- name: UpdateRunningCronJobExecutionsByName :exec
+const updateRunningCronJobExecutions = `-- name: UpdateRunningCronJobExecutions :exec
 update cron_job_executions
   set status = ?, error_message = ?
-where job_id = (select id from cron_jobs where name = ?)
+where job_id = ?
   and status = 'running'
 `
 
-type UpdateRunningCronJobExecutionsByNameParams struct {
+type UpdateRunningCronJobExecutionsParams struct {
 	Status       int64          `json:"status"`
 	ErrorMessage sql.NullString `json:"error_message"`
-	Name         string         `json:"name"`
+	JobID        int64          `json:"job_id"`
 }
 
-func (q *Queries) UpdateRunningCronJobExecutionsByName(ctx context.Context, arg UpdateRunningCronJobExecutionsByNameParams) error {
-	_, err := q.db.ExecContext(ctx, updateRunningCronJobExecutionsByName, arg.Status, arg.ErrorMessage, arg.Name)
+func (q *Queries) UpdateRunningCronJobExecutions(ctx context.Context, arg UpdateRunningCronJobExecutionsParams) error {
+	_, err := q.db.ExecContext(ctx, updateRunningCronJobExecutions, arg.Status, arg.ErrorMessage, arg.JobID)
 	return err
 }
 
