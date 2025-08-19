@@ -25,12 +25,14 @@ import (
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
+	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
+	"trip2g/internal/case/admin/updatecronjob"
 	"trip2g/internal/case/admin/updatehtmlinjection"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
@@ -170,6 +172,8 @@ type Env interface {
 	setboostytiersubgraphs.Env
 	removeexpiredtgchatmembers.Env
 	listactiveusersubgraphs.Env
+	updatecronjob.Env
+	runcronjob.Env
 
 	// Boosty credentials
 	createboostycredentials.Env
@@ -233,8 +237,6 @@ type Env interface {
 
 	// Cron Jobs
 	ListAllCronJobs(ctx context.Context) ([]db.CronJob, error)
-	UpdateCronJob(ctx context.Context, arg db.UpdateCronJobParams) (db.CronJob, error)
 	CronJobByID(ctx context.Context, id int64) (db.CronJob, error)
 	ListCronJobExecutionsByJobID(ctx context.Context, jobID int64) ([]db.CronJobExecution, error)
-	ExecuteCronJobJobManually(jobID int64) error
 }

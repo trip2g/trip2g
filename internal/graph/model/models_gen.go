@@ -266,15 +266,6 @@ type AdminBoostyTiersConnection struct {
 	Nodes []db.BoostyTier `json:"nodes"`
 }
 
-type AdminCronJob struct {
-	ID         int64                   `json:"id"`
-	Name       string                  `json:"name"`
-	Enabled    bool                    `json:"enabled"`
-	Expression string                  `json:"expression"`
-	LastExecAt *time.Time              `json:"lastExecAt,omitempty"`
-	Executions []AdminCronJobExecution `json:"executions"`
-}
-
 type AdminCronJobExecution struct {
 	ID           int64      `json:"id"`
 	JobID        int64      `json:"jobId"`
@@ -286,7 +277,7 @@ type AdminCronJobExecution struct {
 }
 
 type AdminCronJobsConnection struct {
-	Nodes []AdminCronJob `json:"nodes"`
+	Nodes []db.CronJob `json:"nodes"`
 }
 
 type AdminHTMLInjectionsConnection struct {
@@ -1000,7 +991,7 @@ type UpdateCronJobInput struct {
 }
 
 type UpdateCronJobPayload struct {
-	CronJob *AdminCronJob `json:"cronJob"`
+	CronJob *db.CronJob `json:"cronJob"`
 }
 
 func (UpdateCronJobPayload) IsUpdateCronJobOrErrorPayload() {}

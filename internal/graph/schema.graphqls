@@ -518,8 +518,7 @@ type AdminHTMLInjectionsConnection {
   nodes: [AdminHTMLInjection!]! @goField(forceResolver: true)
 }
 
-# Cron Jobs
-type AdminCronJob {
+type AdminCronJob @goModel(model: "trip2g/internal/db.CronJob") {
   id: Int64!
   name: String!
   enabled: Boolean!
@@ -583,6 +582,7 @@ type AdminQuery {
   tgBot(id: Int64!): AdminTgBot
   noteAsset(id: Int64!): AdminNoteAsset
   htmlInjection(id: Int64!): AdminHTMLInjection
+  cronJob(id: Int64!): AdminCronJob
 
   activeUserSubgraphs(id: Int64!): [String!]!
 }

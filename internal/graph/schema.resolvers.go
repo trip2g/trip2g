@@ -34,12 +34,14 @@ import (
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
+	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
+	"trip2g/internal/case/admin/updatecronjob"
 	"trip2g/internal/case/admin/updatehtmlinjection"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
@@ -68,9 +70,6 @@ import (
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/nowpayments"
-
-	ozzo "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
 // ID is the resolver for the id field.
@@ -253,8 +252,16 @@ func (r *adminBoostyTiersConnectionResolver) Nodes(ctx context.Context, obj *mod
 	return r.env(ctx).GetBoostyTiers(ctx)
 }
 
+// LastExecAt is the resolver for the lastExecAt field.
+func (r *adminCronJobResolver) LastExecAt(ctx context.Context, obj *db.CronJob) (*time.Time, error) {
+	if obj.LastExecAt.Valid {
+		return &obj.LastExecAt.Time, nil
+	}
+	return nil, nil
+}
+
 // Executions is the resolver for the executions field.
-func (r *adminCronJobResolver) Executions(ctx context.Context, obj *model.AdminCronJob) ([]model.AdminCronJobExecution, error) {
+func (r *adminCronJobResolver) Executions(ctx context.Context, obj *db.CronJob) ([]model.AdminCronJobExecution, error) {
 	executions, err := r.env(ctx).ListCronJobExecutionsByJobID(ctx, obj.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cron job executions: %w", err)
@@ -286,27 +293,13 @@ func (r *adminCronJobResolver) Executions(ctx context.Context, obj *model.AdminC
 }
 
 // Nodes is the resolver for the nodes field.
-func (r *adminCronJobsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminCronJobsConnection) ([]model.AdminCronJob, error) {
+func (r *adminCronJobsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminCronJobsConnection) ([]db.CronJob, error) {
 	cronJobs, err := r.env(ctx).ListAllCronJobs(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list cron jobs: %w", err)
 	}
 
-	result := make([]model.AdminCronJob, len(cronJobs))
-	for i, job := range cronJobs {
-		result[i] = model.AdminCronJob{
-			ID:         job.ID,
-			Name:       job.Name,
-			Enabled:    job.Enabled,
-			Expression: job.Expression,
-		}
-
-		if job.LastExecAt.Valid {
-			result[i].LastExecAt = &job.LastExecAt.Time
-		}
-	}
-
-	return result, nil
+	return cronJobs, nil
 }
 
 // ActiveFrom is the resolver for the activeFrom field.
@@ -598,75 +591,12 @@ func (r *adminMutationResolver) DeleteHTMLInjection(ctx context.Context, obj *ap
 
 // UpdateCronJob is the resolver for the updateCronJob field.
 func (r *adminMutationResolver) UpdateCronJob(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateCronJobInput) (model.UpdateCronJobOrErrorPayload, error) {
-	env := r.env(ctx)
-
-	// Check admin authorization
-	_, err := env.CurrentAdminUserToken(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current user token: %w", err)
-	}
-
-	// Validate input
-	errPayload := model.NewOzzoError(ozzo.ValidateStruct(&input,
-		ozzo.Field(&input.ID, ozzo.Required),
-		ozzo.Field(&input.Expression, ozzo.Required, is.PrintableASCII),
-	))
-	if errPayload != nil {
-		return errPayload, nil
-	}
-
-	// Update the cron job
-	params := db.UpdateCronJobParams{
-		ID:         input.ID,
-		Enabled:    input.Enabled,
-		Expression: input.Expression,
-	}
-
-	updatedJob, err := env.UpdateCronJob(ctx, params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update cron job: %w", err)
-	}
-
-	// Convert to GraphQL model
-	cronJob := &model.AdminCronJob{
-		ID:         updatedJob.ID,
-		Name:       updatedJob.Name,
-		Enabled:    updatedJob.Enabled,
-		Expression: updatedJob.Expression,
-	}
-
-	if updatedJob.LastExecAt.Valid {
-		cronJob.LastExecAt = &updatedJob.LastExecAt.Time
-	}
-
-	payload := &model.UpdateCronJobPayload{
-		CronJob: cronJob,
-	}
-
-	return payload, nil
+	return updatecronjob.Resolve(ctx, r.env(ctx), input)
 }
 
 // RunCronJob is the resolver for the runCronJob field.
 func (r *adminMutationResolver) RunCronJob(ctx context.Context, obj *appmodel.AdminMutation, input model.RunCronJobInput) (model.RunCronJobOrErrorPayload, error) {
-	env := r.env(ctx)
-
-	// Check admin authorization
-	_, err := env.CurrentAdminUserToken(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current user token: %w", err)
-	}
-
-	// Manually trigger the job
-	err = env.ExecuteCronJobJobManually(input.ID)
-	if err != nil {
-		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to run cron job: %v", err)}, nil
-	}
-
-	payload := &model.RunCronJobPayload{
-		Success: true,
-	}
-
-	return payload, nil
+	return runcronjob.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -1085,15 +1015,12 @@ func (r *adminQueryResolver) NoteAsset(ctx context.Context, obj *appmodel.AdminQ
 
 // HTMLInjection is the resolver for the htmlInjection field.
 func (r *adminQueryResolver) HTMLInjection(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.HtmlInjection, error) {
-	env := r.env(ctx)
-	injection, err := env.GetHTMLInjection(ctx, id)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to get HTML injection: %w", err)
-	}
-	return &injection, nil
+	return resolveOne[db.HtmlInjection](ctx, id, r.env(ctx).GetHTMLInjection)
+}
+
+// CronJob is the resolver for the cronJob field.
+func (r *adminQueryResolver) CronJob(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.CronJob, error) {
+	return resolveOne[db.CronJob](ctx, id, r.env(ctx).CronJobByID)
 }
 
 // ActiveUserSubgraphs is the resolver for the activeUserSubgraphs field.

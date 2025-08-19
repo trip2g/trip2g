@@ -242,6 +242,8 @@ func (cj *CronJobs) executeJob(jobID int64) error {
 }
 
 func (cj *CronJobs) RefreshCronJob(job db.CronJob) error {
+	cj.log.Info("refreshing", "job_id", job.ID, "name", job.Name)
+
 	// Remove existing entry if exists
 	jobItem, exists := cj.jobs[job.ID]
 	if !exists {
@@ -268,4 +270,16 @@ func (cj *CronJobs) ExecuteCronJobJobManually(jobID int64) error {
 
 func (cj *CronJobs) StopCronJobs() {
 	cj.cron.Stop()
+}
+
+func (cj *CronJobs) CheckCronjobExpression(val string) bool {
+	id, err := cj.cron.AddFunc(val, func() {})
+	if err != nil {
+		cj.log.Error("failed to test cron job expression", "expression", val, "error", err)
+		return false
+	}
+
+	cj.cron.Remove(id)
+
+	return true
 }

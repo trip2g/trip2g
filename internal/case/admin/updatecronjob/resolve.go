@@ -16,6 +16,8 @@ type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	UpdateCronJob(ctx context.Context, arg db.UpdateCronJobParams) (db.CronJob, error)
 	CronJobByID(ctx context.Context, id int64) (db.CronJob, error)
+	RefreshCronJob(job db.CronJob) error
+	CheckCronjobExpression(val string) bool
 }
 
 type Input = model.UpdateCronJobInput
@@ -41,6 +43,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return errPayload, nil
 	}
 
+	if !env.CheckCronjobExpression(input.Expression) {
+		return &model.ErrorPayload{Message: "Invalid cron expression"}, nil
+	}
+
 	// Update the cron job
 	params := db.UpdateCronJobParams{
 		ID:         input.ID,
@@ -53,20 +59,13 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to update cron job: %w", err)
 	}
 
-	// Convert to GraphQL model
-	cronJob := &model.AdminCronJob{
-		ID:         updatedJob.ID,
-		Name:       updatedJob.Name,
-		Enabled:    updatedJob.Enabled,
-		Expression: updatedJob.Expression,
-	}
-
-	if updatedJob.LastExecAt.Valid {
-		cronJob.LastExecAt = &updatedJob.LastExecAt.Time
+	err = env.RefreshCronJob(updatedJob)
+	if err != nil {
+		return nil, fmt.Errorf("failed to refresh cron job: %w", err)
 	}
 
 	payload := &model.UpdateCronJobPayload{
-		CronJob: cronJob,
+		CronJob: &updatedJob,
 	}
 
 	return payload, nil
