@@ -1,0 +1,44 @@
+$trip2g_admin_cronjob_show $mol_page
+	cronjob_id? 0
+	title \Cron Job
+	tools /
+		<= EditLink $mol_link
+			arg * action \update
+			title \Edit
+		<= RunButton $mol_button_major
+			title \Run
+			click? <=> run_click? null
+	UpdateForm $trip2g_admin_cronjob_update
+		cronjob_id <= cronjob_id
+	body /
+		<= CronJobDetails $mol_view
+			sub /
+				<= Details_labeler $mol_labeler
+					title \Cron Job Details
+					Content <= Details $mol_view
+						sub /
+							<= Id_labeler $mol_labeler
+								title \ID
+								Content <= Id $trip2g_admin_cell
+									content <= cronjob_id_string \
+							<= Name_labeler $mol_labeler
+								title \Name
+								Content <= Name $trip2g_admin_cell
+									content <= cronjob_name_value \
+							<= Expression_labeler $mol_labeler
+								title \Cron Expression
+								Content <= Expression $trip2g_admin_cell
+									content <= cronjob_expression \
+							<= Enabled_labeler $mol_labeler
+								title \Enabled
+								Content <= Enabled $trip2g_admin_cell
+									content <= cronjob_enabled_status \
+							<= LastExecAt_labeler $mol_labeler
+								title \Last Executed
+								Content <= LastExecAt $trip2g_admin_cell
+									content <= cronjob_last_exec_at \
+		<= ExecutionsSection $mol_section
+			title \Execution History
+			content /
+				<= Executions $trip2g_admin_cronjob_show_executions
+					cronjob_id <= cronjob_id

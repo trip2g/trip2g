@@ -1,0 +1,26 @@
+$trip2g_admin_cronjob_show_executions $mol_view
+	cronjob_id 0
+	data? null
+	sub /
+		<= Rows $mol_list
+			item_width_min* 200
+			item_height_min* 120
+			rows <= data_rows /$mol_view
+				<= Row*0 $mol_row
+					sub <= row_content* /
+						<= StartedAt_labeler* $mol_labeler
+							title \Started At
+							Content <= StartedAt* $trip2g_admin_cell
+								content <= row_started_at*? \
+						<= FinishedAt_labeler* $mol_labeler
+							title \Finished At
+							Content <= FinishedAt* $trip2g_admin_cell
+								content <= row_finished_at*? \
+						<= Status_labeler* $mol_labeler
+							title \Status
+							Content <= Status* $trip2g_admin_cell
+								content <= row_status*? \
+						<= ErrorMessage_labeler* $mol_labeler
+							title \Error Message
+							Content <= ErrorMessage* $trip2g_admin_cell
+								content <= row_error_message*? \

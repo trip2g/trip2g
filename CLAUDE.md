@@ -9,6 +9,134 @@ Tracks when users request and actually join Telegram chats:
 - Update `joined_at` when user actually joins the chat (`new_chat_members` event)
 - Cron job uses this to remove users from chats when their subgraph access expires
 
+## Cron Jobs
+
+The application uses a robust cron job system for scheduled tasks. Cron jobs are implemented in the `internal/case/cronjob/` directory and managed by the `internal/cronjobs` package.
+
+### Creating a New Cron Job
+
+1. **Create the case directory**:
+   ```bash
+   mkdir -p internal/case/cronjob/yourcronjobname
+   ```
+
+2. **Create `resolve.go`** with the business logic:
+   ```go
+   package yourcronjobname
+
+   import (
+       "context"
+       "trip2g/internal/logger"
+   )
+
+   type Env interface {
+       Logger() logger.Logger
+       AuditLogger() logger.Logger
+       // Add required database methods
+   }
+
+   type Filter struct {
+       // Add any filtering options
+   }
+
+   type Result struct {
+       // Add result fields
+   }
+
+   func Resolve(ctx context.Context, env Env, filter Filter) (*Result, error) {
+       log := logger.WithPrefix(env.Logger(), "yourcronjobname:")
+       
+       // Implementation here
+       
+       return &Result{}, nil
+   }
+   ```
+
+3. **Create `job.go`** to define the job schedule:
+   ```go
+   package yourcronjobname
+
+   import "context"
+
+   type Job struct{}
+
+   func (j *Job) Name() string {
+       return "your_cron_job_name"
+   }
+
+   func (j *Job) Schedule() string {
+       // Cron expression (seconds, minutes, hours, day of month, month, day of week)
+       return "0 0 0 * * *" // daily at midnight
+   }
+
+   func (j *Job) ExecuteAfterStart() bool {
+       return false // set to true if job should run immediately on startup
+   }
+
+   func (j *Job) Execute(ctx context.Context, env any) (any, error) {
+       return Resolve(ctx, env.(Env), Filter{})
+   }
+   ```
+
+4. **Add to `cmd/server/cronjobs.go`**:
+   ```go
+   import (
+       "trip2g/internal/case/cronjob/yourcronjobname"
+   )
+
+   func getCronJobConfigs(app *app) []cronjobs.Job {
+       // Compile-time interface checks
+       var (
+           _ yourcronjobname.Env = app
+       )
+
+       return []cronjobs.Job{
+           &yourcronjobname.Job{},
+       }
+   }
+   ```
+
+### Existing Cron Jobs
+
+**`remove_expired_tg_chat_members`**:
+- **Schedule**: Every hour (`0 0 * * * *`)
+- **Purpose**: Remove users from Telegram chats when their subgraph access expires
+- **Location**: `internal/case/cronjob/removeexpiredtgchatmembers/`
+
+**`clear_cronjob_execution_history`**:
+- **Schedule**: Daily at midnight (`0 0 0 * * *`)
+- **Purpose**: Clean up cron job execution history older than 7 days
+- **Location**: `internal/case/cronjob/clearcronjobexecutionhistory/`
+
+### Cron Expression Format
+
+The system uses 6-field cron expressions (with seconds):
+```
+┌───────────── second (0 - 59)
+│ ┌───────────── minute (0 - 59)
+│ │ ┌───────────── hour (0 - 23)
+│ │ │ ┌───────────── day of month (1 - 31)
+│ │ │ │ ┌───────────── month (1 - 12)
+│ │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
+│ │ │ │ │ │
+* * * * * *
+```
+
+**Examples**:
+- `0 0 * * * *` - Every hour at the top of the hour
+- `0 0 0 * * *` - Every day at midnight
+- `0 30 2 * * *` - Every day at 2:30 AM
+- `0 0 0 * * 0` - Every Sunday at midnight
+- `0 0 0 1 * *` - First day of every month at midnight
+
+### Job Management
+
+- Jobs are automatically registered in the database on startup
+- Jobs can be enabled/disabled via the GraphQL admin API
+- Job schedules can be updated via the GraphQL admin API
+- Job execution history is tracked and can be viewed via GraphQL
+- Failed jobs are logged with error details
+
 ## Golang
 
 Don’t write
@@ -364,6 +492,418 @@ When you need new database operations:
 
 8. **Add Methods to Main Server** (if needed) in `cmd/server/main.go`:
    - Only if the case requires methods not available in standard `*Queries`
+
+## Admin CRUD Pages
+
+The admin interface follows a consistent CRUD (Create, Read, Update, Delete) pattern for managing entities. Each entity has a standardized structure with catalog, show, and update pages.
+
+### Directory Structure
+
+Admin entities are organized under `assets/ui/admin/[entity]/` with these subdirectories:
+
+```
+assets/ui/admin/[entity]/
+├── catalog/                 # List view of all entities
+│   ├── catalog.view.tree   # UI structure
+│   └── catalog.view.ts     # Business logic
+├── show/                   # Detail view of single entity
+│   ├── show.view.tree      # UI structure  
+│   ├── show.view.ts        # Business logic
+│   ├── show.view.css.ts    # Styling (optional)
+│   └── [related]/          # Sub-components (optional)
+├── update/                 # Edit form for entity
+│   ├── update.view.tree    # UI structure
+│   └── update.view.ts      # Business logic
+└── create/                 # Creation form (optional)
+    ├── create.view.tree    # UI structure
+    └── create.view.ts      # Business logic
+```
+
+### Catalog Page Pattern
+
+**Purpose**: List all entities in a table format with links to detail pages.
+
+**Key Features**:
+- Extends `$trip2g_admin_catalog` which provides table layout
+- Uses `$trip2g_graphql_request` to fetch data
+- Converts data to map with `$trip2g_graphql_make_map` 
+- Links to show pages via `ShowPage*` components
+- Includes filtering via `spread_ids_filtered()`
+
+**Example Structure** (`catalog.view.tree`):
+```tree
+$trip2g_admin_[entity]_catalog $trip2g_admin_catalog
+	menu_title \[Entity Name]
+	param \id
+	Empty $mol_status
+	ShowPage* $trip2g_admin_[entity]_show
+		[entity]_id <= row_id* 0
+	menu_link_content* / <= [Entity]Item* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Row_id_labeler* $mol_labeler
+						title \ID
+						Content <= Row_id* $trip2g_admin_cell
+							content <= row_id_string* \
+					<= Row_name_labeler* $mol_labeler
+						title \Name
+						Content <= Row_name* $trip2g_admin_cell
+							content <= row_name* \name
+```
+
+**Business Logic** (`catalog.view.ts`):
+```typescript
+namespace $.$$ {
+	export class $trip2g_admin_[entity]_catalog extends $.$trip2g_admin_[entity]_catalog {
+		@$mol_mem
+		data( reset?: null ) {
+			const res = $trip2g_graphql_request( `
+				query Admin[Entities] {
+					admin {
+						all[Entities] {
+							nodes {
+								id
+								name
+								// other fields
+							}
+						}
+					}
+				}
+			`)
+
+			return $trip2g_graphql_make_map( res.admin.all[Entities].nodes )
+		}
+
+		@$mol_mem
+		spreads(): any {
+			return {
+				...this.data().mapKeys( key => this.ShowPage( key ) ),
+			}
+		}
+
+		row( id: any ) {
+			return this.data().get( id )
+		}
+
+		override row_id( id: any ): number {
+			return this.row( id ).id
+		}
+
+		override row_name( id: any ): string {
+			return this.row( id ).name || '-'
+		}
+	}
+}
+```
+
+### Show Page Pattern
+
+**Purpose**: Display detailed information about a single entity with edit/action buttons.
+
+**Key Features**:
+- Extends `$mol_page` for standard page layout
+- Uses `$mol_labeler` components to display field details
+- Supports edit mode via `action()` parameter
+- Can include related data components
+- Uses `$trip2g_admin_cell` for consistent field display
+
+**Example Structure** (`show.view.tree`):
+```tree
+$trip2g_admin_[entity]_show $mol_page
+	[entity]_id? 0
+	title \[Entity Name]
+	tools /
+		<= EditLink $mol_link
+			arg * action \update
+			title \Edit
+		<= ActionButton $mol_button_major
+			title \Action
+			click? <=> action_click? null
+	UpdateForm $trip2g_admin_[entity]_update
+		[entity]_id <= [entity]_id
+	body /
+		<= [Entity]Details $mol_view
+			sub /
+				<= Details_labeler $mol_labeler
+					title \[Entity] Details
+					Content <= Details $mol_view
+						sub /
+							<= Id_labeler $mol_labeler
+								title \ID
+								Content <= Id $trip2g_admin_cell
+									content <= [entity]_id_string \
+							<= Name_labeler $mol_labeler
+								title \Name
+								Content <= Name $trip2g_admin_cell
+									content <= [entity]_name_value \
+```
+
+**Business Logic** (`show.view.ts`):
+```typescript
+namespace $.$$ {
+	export class $trip2g_admin_[entity]_show extends $.$trip2g_admin_[entity]_show {
+		action() {
+			return this.$.$mol_state_arg.value( 'action' ) || 'view'
+		}
+
+		override body() {
+			if( this.action() === 'update' ) {
+				return [ this.UpdateForm() ]
+			}
+			return super.body()
+		}
+
+		@$mol_mem
+		[entity]_data( reset?: null ) {
+			const res = $trip2g_graphql_request( `
+				query Admin[Entity]Show($id: Int64!) {
+					admin {
+						[entity](id: $id) {
+							id
+							name
+							// other fields
+						}
+					}
+				}
+			`, {
+				id: this.[entity]_id()
+			})
+
+			return res.admin.[entity]
+		}
+
+		override title(): string {
+			const data = this.[entity]_data()
+			return data ? `[Entity]: ${data.name}` : '[Entity]'
+		}
+
+		[entity]_id_string(): string {
+			const data = this.[entity]_data()
+			return data ? data.id.toString() : '-'
+		}
+
+		[entity]_name_value(): string {
+			const data = this.[entity]_data()
+			return data ? data.name : '-'
+		}
+	}
+}
+```
+
+### Update Form Pattern
+
+**Purpose**: Provide form interface for editing entity properties.
+
+**Key Features**:
+- Extends `$mol_view` for flexible layout
+- Uses `$mol_form` with validation
+- Implements `submit_allowed()` for form validation
+- Uses form controls like `$mol_string`, `$mol_textarea`, `$mol_check_box`
+- Provides success/error feedback via `$mol_status`
+
+**Example Structure** (`update.view.tree`):
+```tree
+$trip2g_admin_[entity]_update $mol_view
+	[entity]_id 0
+	sub /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Name_labeler $mol_labeler
+					title \Name
+					Content <= Name $trip2g_admin_cell
+						content <= [entity]_name \
+				<= Field_field $mol_form_field
+					name \Field
+					bid <= field_bid \
+					Content <= field_control $mol_string
+						value? <=> field? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \
+```
+
+**Business Logic** (`update.view.ts`):
+```typescript
+namespace $.$$ {
+	export class $trip2g_admin_[entity]_update extends $.$trip2g_admin_[entity]_update {
+		@$mol_mem
+		data(reset?: null) {
+			const res = $trip2g_graphql_request(
+				`
+					query Admin[Entity]Update($id: Int64!) {
+						admin {
+							[entity](id: $id) {
+								id
+								name
+								field
+							}
+						}
+					}
+				`,
+				{ id: this.[entity]_id() }
+			)
+
+			return res.admin.[entity]
+		}
+
+		[entity]_name(): string {
+			return this.data().name
+		}
+
+		@$mol_mem
+		field(next?: string): string {
+			if (next !== undefined) {
+				return next
+			}
+			return this.data().field || ''
+		}
+
+		field_bid(): string {
+			const field = this.field()
+			if (!field) return 'Field is required'
+			return ''
+		}
+
+		submit_allowed(): boolean {
+			return this.field_bid() === ''
+		}
+
+		submit() {
+			const res = $trip2g_graphql_request(
+				`
+					mutation AdminUpdate[Entity]($input: Update[Entity]Input!) {
+						admin {
+							update[Entity](input: $input) {
+								... on Update[Entity]Payload {
+									[entity] {
+										id
+										field
+									}
+								}
+								... on ErrorPayload {
+									message
+								}
+							}
+						}
+					}
+				`,
+				{
+					input: {
+						id: this.[entity]_id(),
+						field: this.field()
+					},
+				}
+			)
+
+			const result = res.admin.update[Entity]
+			if (result.__typename === 'ErrorPayload') {
+				this.result(result.message)
+				return
+			}
+
+			if (result.__typename === 'Update[Entity]Payload') {
+				this.result('[Entity] updated successfully')
+				this.data(null) // Reset data to refresh
+				return
+			}
+
+			this.result('Unexpected response type')
+		}
+	}
+}
+```
+
+### Sub-Components Pattern
+
+For complex entities, create sub-components in the show directory:
+
+**Example**: `show/[related]/[related].view.tree` and `[related].view.ts`
+
+**Purpose**: Display related data using separate GraphQL queries for better performance.
+
+**Pattern**:
+- Extends `$mol_view` with `$mol_list` for tabular data
+- Uses separate GraphQL query focusing on the relationship
+- Takes parent entity ID as parameter
+- Can include inline editing capabilities
+
+### CSS Styling
+
+**Catalog CSS**: Add `catalog/catalog.view.css.ts` to define column widths for proper table layout:
+
+```typescript
+namespace $.$$ {
+	const { rem } = $mol_style_unit
+
+	$mol_style_define($trip2g_admin_[entity]_catalog, {
+		Rows: {
+			flex: {
+				grow: 1,
+			},
+		},
+		Row_id_labeler: {
+			flex: {
+				basis: rem(3),  // Small width for ID column
+			},
+		},
+		Row_name_labeler: {
+			flex: {
+				basis: rem(12), // Medium width for name column
+			},
+		},
+		Row_description_labeler: {
+			flex: {
+				basis: rem(15), // Larger width for description
+			},
+		},
+		Row_created_at_labeler: {
+			flex: {
+				basis: rem(8),  // Standard width for dates
+			},
+		},
+	})
+}
+```
+
+**Show CSS**: Add `show/show.view.css.ts` for detail page styling:
+
+```typescript
+namespace $.$$ {
+	$mol_style_define( $trip2g_admin_[entity]_show, {
+		Details: {
+			flexDirection: 'column',
+		},
+	} )
+}
+```
+
+**Column Width Guidelines**:
+- **ID columns**: `rem(3)` - Just enough for numeric IDs
+- **Short text/status**: `rem(5)` - For status, position, short codes
+- **Dates/timestamps**: `rem(8)` - Standard for date/time display
+- **Names/titles**: `rem(12)` - Medium width for entity names
+- **Descriptions/long text**: `rem(15)` - Wider for descriptive content
+- **Email addresses**: `rem(12)` - Standard width for emails
+
+**IMPORTANT**: Always add CSS file for catalog pages to ensure proper column alignment and prevent layout issues.
+
+### Navigation Integration
+
+Add entity to main admin navigation in `admin.view.tree`:
+
+```tree
+spreads *
+	[entities] <= List[Entities] $trip2g_admin_[entity]_catalog
+		close_icon <= Spread_close
+```
 
 ### Frontend Components
 - **Naming**: `$trip2g_admin_entity_action` format

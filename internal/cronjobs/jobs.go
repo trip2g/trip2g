@@ -34,7 +34,7 @@ type Job interface {
 type Env interface {
 	UpsertCronJob(ctx context.Context, arg db.UpsertCronJobParams) error
 	InsertCronJobExecution(ctx context.Context, jobID int64) (db.CronJobExecution, error)
-	UpdateCronJobExecution(ctx context.Context, arg db.UpdateCronJobExecutionParams) error
+	UpdateCronJobExecution(ctx context.Context, arg db.UpdateCronJobExecutionParams) (db.CronJobExecution, error)
 	UpdateCronJobLastExec(ctx context.Context, id int64) error
 	UpdateRunningCronJobExecutions(ctx context.Context, params db.UpdateRunningCronJobExecutionsParams) error
 	CronJobByName(ctx context.Context, name string) (db.CronJob, error)
@@ -109,7 +109,8 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 		})
 
 		runner.Register(executeJobName, func(ctx context.Context, m []byte) error {
-			return cj.executeJob(dbJob.ID)
+			_, execErr := cj.executeJob(dbJob.ID)
+			return execErr
 		})
 
 		cj.jobs[dbJob.ID] = &jobItem{
@@ -162,10 +163,10 @@ func (cj *CronJobs) register(jobID int64) error {
 	return nil
 }
 
-func (cj *CronJobs) executeJob(jobID int64) error {
+func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 	job, ok := cj.jobs[jobID]
 	if !ok {
-		return fmt.Errorf("job %d not found", jobID)
+		return nil, fmt.Errorf("job %d not found", jobID)
 	}
 
 	updateErr := cj.env.UpdateRunningCronJobExecutions(cj.ctx, db.UpdateRunningCronJobExecutionsParams{
@@ -183,16 +184,16 @@ func (cj *CronJobs) executeJob(jobID int64) error {
 	// Insert execution record
 	exec, err := cj.env.InsertCronJobExecution(cj.ctx, jobID)
 	if err != nil {
-		return fmt.Errorf("failed to insert cron job execution for %d: %w", jobID, err)
+		return nil, fmt.Errorf("failed to insert cron job execution for %d: %w", jobID, err)
 	}
 
 	// Update status to running
-	err = cj.env.UpdateCronJobExecution(cj.ctx, db.UpdateCronJobExecutionParams{
+	_, err = cj.env.UpdateCronJobExecution(cj.ctx, db.UpdateCronJobExecutionParams{
 		ID:     exec.ID,
 		Status: JobStatusRunning,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to update cron job execution status for %d: %w", jobID, err)
+		return nil, fmt.Errorf("failed to update cron job execution status for %d: %w", jobID, err)
 	}
 
 	// Execute the job
@@ -215,30 +216,30 @@ func (cj *CronJobs) executeJob(jobID int64) error {
 	} else {
 		reportDataRaw, marshalErr := json.Marshal(report)
 		if marshalErr != nil {
-			return fmt.Errorf("failed to marshal report data for job %d: %w", jobID, marshalErr)
+			return nil, fmt.Errorf("failed to marshal report data for job %d: %w", jobID, marshalErr)
 		}
 
 		reportData.String = string(reportDataRaw)
 		reportData.Valid = true
 	}
 
-	err = cj.env.UpdateCronJobExecution(cj.ctx, db.UpdateCronJobExecutionParams{
+	execution, err := cj.env.UpdateCronJobExecution(cj.ctx, db.UpdateCronJobExecutionParams{
 		ID:           exec.ID,
 		Status:       status,
 		ErrorMessage: errorMessage,
 		ReportData:   reportData,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to update cron job execution for %d: %w", jobID, err)
+		return nil, fmt.Errorf("failed to update cron job execution for %d: %w", jobID, err)
 	}
 
 	// Update last execution time
 	err = cj.env.UpdateCronJobLastExec(cj.ctx, exec.JobID)
 	if err != nil {
-		return fmt.Errorf("failed to update last execution time for cron job %d: %w", jobID, err)
+		return nil, fmt.Errorf("failed to update last execution time for cron job %d: %w", jobID, err)
 	}
 
-	return nil
+	return &execution, nil
 }
 
 func (cj *CronJobs) RefreshCronJob(job db.CronJob) error {
@@ -260,9 +261,9 @@ func (cj *CronJobs) RefreshCronJob(job db.CronJob) error {
 	return nil
 }
 
-func (cj *CronJobs) ExecuteCronJobJobManually(jobID int64) error {
+func (cj *CronJobs) ExecuteCronJobJobManually(jobID int64) (*db.CronJobExecution, error) {
 	if _, ok := cj.jobs[jobID]; !ok {
-		return fmt.Errorf("job %d not found", jobID)
+		return nil, fmt.Errorf("job %d not found", jobID)
 	}
 
 	return cj.executeJob(jobID)

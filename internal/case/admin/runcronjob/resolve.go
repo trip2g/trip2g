@@ -6,13 +6,14 @@ import (
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 
+	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/usertoken"
 )
 
 type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
-	ExecuteCronJobJobManually(jobID int64) error
+	ExecuteCronJobJobManually(jobID int64) (*db.CronJobExecution, error)
 }
 
 type Input = model.RunCronJobInput
@@ -38,13 +39,13 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	// Manually trigger the job
-	err = env.ExecuteCronJobJobManually(input.ID)
+	execution, err := env.ExecuteCronJobJobManually(input.ID)
 	if err != nil {
 		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to run cron job: %v", err)}, nil
 	}
 
 	payload := &model.RunCronJobPayload{
-		Success: true,
+		Execution: execution,
 	}
 
 	return payload, nil

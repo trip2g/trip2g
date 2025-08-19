@@ -5,7 +5,7 @@ namespace $.$$ {
 			e.preventDefault()
 
 			const res = $trip2g_graphql_request(`
-				mutation AdminDeleteHtmlInjection($input: DeleteHTMLInjectionInput!) {
+				mutation AdminDeleteHTMLInjection($input: DeleteHTMLInjectionInput!) {
 					admin {
 						data: deleteHTMLInjection(input: $input) {
 							... on DeleteHTMLInjectionPayload {

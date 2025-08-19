@@ -261,35 +261,23 @@ func (r *adminCronJobResolver) LastExecAt(ctx context.Context, obj *db.CronJob) 
 }
 
 // Executions is the resolver for the executions field.
-func (r *adminCronJobResolver) Executions(ctx context.Context, obj *db.CronJob) ([]model.AdminCronJobExecution, error) {
-	executions, err := r.env(ctx).ListCronJobExecutionsByJobID(ctx, obj.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get cron job executions: %w", err)
-	}
+func (r *adminCronJobResolver) Executions(ctx context.Context, obj *db.CronJob) ([]db.CronJobExecution, error) {
+	return r.env(ctx).ListCronJobExecutionsByJobID(ctx, obj.ID)
+}
 
-	result := make([]model.AdminCronJobExecution, len(executions))
-	for i, exec := range executions {
-		result[i] = model.AdminCronJobExecution{
-			ID:        exec.ID,
-			JobID:     exec.JobID,
-			StartedAt: exec.StartedAt,
-			Status:    exec.Status,
-		}
+// FinishedAt is the resolver for the finishedAt field.
+func (r *adminCronJobExecutionResolver) FinishedAt(ctx context.Context, obj *db.CronJobExecution) (*time.Time, error) {
+	return db.ToTimePtr(obj.FinishedAt), nil
+}
 
-		if exec.FinishedAt.Valid {
-			result[i].FinishedAt = &exec.FinishedAt.Time
-		}
+// ReportData is the resolver for the reportData field.
+func (r *adminCronJobExecutionResolver) ReportData(ctx context.Context, obj *db.CronJobExecution) (*string, error) {
+	return db.ToStringPtr(obj.ReportData), nil
+}
 
-		if exec.ReportData.Valid {
-			result[i].ReportData = &exec.ReportData.String
-		}
-
-		if exec.ErrorMessage.Valid {
-			result[i].ErrorMessage = &exec.ErrorMessage.String
-		}
-	}
-
-	return result, nil
+// ErrorMessage is the resolver for the errorMessage field.
+func (r *adminCronJobExecutionResolver) ErrorMessage(ctx context.Context, obj *db.CronJobExecution) (*string, error) {
+	return db.ToStringPtr(obj.ErrorMessage), nil
 }
 
 // Nodes is the resolver for the nodes field.
@@ -1882,6 +1870,11 @@ func (r *Resolver) AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolv
 // AdminCronJob returns AdminCronJobResolver implementation.
 func (r *Resolver) AdminCronJob() AdminCronJobResolver { return &adminCronJobResolver{r} }
 
+// AdminCronJobExecution returns AdminCronJobExecutionResolver implementation.
+func (r *Resolver) AdminCronJobExecution() AdminCronJobExecutionResolver {
+	return &adminCronJobExecutionResolver{r}
+}
+
 // AdminCronJobsConnection returns AdminCronJobsConnectionResolver implementation.
 func (r *Resolver) AdminCronJobsConnection() AdminCronJobsConnectionResolver {
 	return &adminCronJobsConnectionResolver{r}
@@ -2164,6 +2157,7 @@ type adminBoostyMembersConnectionResolver struct{ *Resolver }
 type adminBoostyTierResolver struct{ *Resolver }
 type adminBoostyTiersConnectionResolver struct{ *Resolver }
 type adminCronJobResolver struct{ *Resolver }
+type adminCronJobExecutionResolver struct{ *Resolver }
 type adminCronJobsConnectionResolver struct{ *Resolver }
 type adminHTMLInjectionResolver struct{ *Resolver }
 type adminHTMLInjectionsConnectionResolver struct{ *Resolver }

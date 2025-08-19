@@ -1253,13 +1253,14 @@ insert into cron_job_executions (job_id)
 values (?)
 returning *;
 
--- name: UpdateCronJobExecution :exec
+-- name: UpdateCronJobExecution :one
 update cron_job_executions
 set finished_at = datetime('now'),
     status = ?,
     report_data = ?,
     error_message = ?
-where id = ?;
+where id = ?
+returning *;
 
 -- name: UpdateCronJobLastExec :exec
 update cron_jobs
@@ -1293,3 +1294,7 @@ select * from cron_job_executions
 where job_id = ?
 order by started_at desc
 limit 50;
+
+-- name: DeleteOldCronJobExecutions :execrows
+delete from cron_job_executions
+where started_at < datetime('now', '-7 days');

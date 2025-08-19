@@ -1,0 +1,28 @@
+$trip2g_admin_cronjob_update $mol_view
+	cronjob_id 0
+	sub /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Name_labeler $mol_labeler
+					title \Name
+					Content <= Name $trip2g_admin_cell
+						content <= cronjob_name \
+				<= Expression_field $mol_form_field
+					name \Cron Expression
+					bid <= expression_bid \
+					Content <= expression_control $mol_string
+						value? <=> expression? \
+						hint \e.g., 0 */5 * * * * (every 5 minutes)
+				<= Enabled_field $mol_form_field
+					name \Enabled
+					bid <= enabled_bid \
+					Content <= enabled_control $mol_check_box
+						checked? <=> enabled? false
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

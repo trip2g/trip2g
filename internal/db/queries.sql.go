@@ -1063,6 +1063,19 @@ func (q *Queries) DeleteOfferSubgraphs(ctx context.Context, offerID int64) error
 	return err
 }
 
+const deleteOldCronJobExecutions = `-- name: DeleteOldCronJobExecutions :execrows
+delete from cron_job_executions
+where started_at < datetime('now', '-7 days')
+`
+
+func (q *Queries) DeleteOldCronJobExecutions(ctx context.Context) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteOldCronJobExecutions)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const deletePatreonTierSubgraphsByTierID = `-- name: DeletePatreonTierSubgraphsByTierID :exec
 delete from patreon_tier_subgraphs
 where tier_id = ?
@@ -5274,13 +5287,14 @@ func (q *Queries) UpdateCronJob(ctx context.Context, arg UpdateCronJobParams) (C
 	return i, err
 }
 
-const updateCronJobExecution = `-- name: UpdateCronJobExecution :exec
+const updateCronJobExecution = `-- name: UpdateCronJobExecution :one
 update cron_job_executions
 set finished_at = datetime('now'),
     status = ?,
     report_data = ?,
     error_message = ?
 where id = ?
+returning id, job_id, started_at, finished_at, status, report_data, error_message
 `
 
 type UpdateCronJobExecutionParams struct {
@@ -5290,14 +5304,24 @@ type UpdateCronJobExecutionParams struct {
 	ID           int64          `json:"id"`
 }
 
-func (q *Queries) UpdateCronJobExecution(ctx context.Context, arg UpdateCronJobExecutionParams) error {
-	_, err := q.db.ExecContext(ctx, updateCronJobExecution,
+func (q *Queries) UpdateCronJobExecution(ctx context.Context, arg UpdateCronJobExecutionParams) (CronJobExecution, error) {
+	row := q.db.QueryRowContext(ctx, updateCronJobExecution,
 		arg.Status,
 		arg.ReportData,
 		arg.ErrorMessage,
 		arg.ID,
 	)
-	return err
+	var i CronJobExecution
+	err := row.Scan(
+		&i.ID,
+		&i.JobID,
+		&i.StartedAt,
+		&i.FinishedAt,
+		&i.Status,
+		&i.ReportData,
+		&i.ErrorMessage,
+	)
+	return i, err
 }
 
 const updateCronJobLastExec = `-- name: UpdateCronJobLastExec :exec

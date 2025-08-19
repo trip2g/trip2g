@@ -527,7 +527,7 @@ type AdminCronJob @goModel(model: "trip2g/internal/db.CronJob") {
   executions: [AdminCronJobExecution!]! @goField(forceResolver: true)
 }
 
-type AdminCronJobExecution {
+type AdminCronJobExecution @goModel(model: "trip2g/internal/db.CronJobExecution") {
   id: Int64!
   jobId: Int64!
   startedAt: Time!
@@ -1492,7 +1492,7 @@ input RunCronJobInput {
 }
 
 type RunCronJobPayload {
-  success: Boolean!
+  execution: AdminCronJobExecution!
 }
 
 union RunCronJobOrErrorPayload = RunCronJobPayload | ErrorPayload

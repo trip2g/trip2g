@@ -266,16 +266,6 @@ type AdminBoostyTiersConnection struct {
 	Nodes []db.BoostyTier `json:"nodes"`
 }
 
-type AdminCronJobExecution struct {
-	ID           int64      `json:"id"`
-	JobID        int64      `json:"jobId"`
-	StartedAt    time.Time  `json:"startedAt"`
-	FinishedAt   *time.Time `json:"finishedAt,omitempty"`
-	Status       int64      `json:"status"`
-	ReportData   *string    `json:"reportData,omitempty"`
-	ErrorMessage *string    `json:"errorMessage,omitempty"`
-}
-
 type AdminCronJobsConnection struct {
 	Nodes []db.CronJob `json:"nodes"`
 }
@@ -867,7 +857,7 @@ type RunCronJobInput struct {
 }
 
 type RunCronJobPayload struct {
-	Success bool `json:"success"`
+	Execution *db.CronJobExecution `json:"execution"`
 }
 
 func (RunCronJobPayload) IsRunCronJobOrErrorPayload() {}
