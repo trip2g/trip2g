@@ -127,7 +127,7 @@ namespace $ {
 	}
 
 	type RequestOptions = {
-		resetCache?: boolean
+		resetCache?: boolean // true by default
 	}
 
 	export function $trip2g_graphql_raw_request(query: string, variables?: any, opts?: RequestOptions): any {
@@ -146,7 +146,7 @@ namespace $ {
 
 		const isMutation = !!query.match(/^\s+mutation/)
 
-		if (opts?.resetCache) {
+		if (opts?.resetCache !== false) {
 			cacheInstance.markTypenames(res.data, isMutation)
 		}
 

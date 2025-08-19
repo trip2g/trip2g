@@ -535,6 +535,7 @@ type AdminCronJobExecution @goModel(model: "trip2g/internal/db.CronJobExecution"
   status: Int64!
   reportData: String
   errorMessage: String
+  job: AdminCronJob!
 }
 
 type AdminCronJobsConnection {

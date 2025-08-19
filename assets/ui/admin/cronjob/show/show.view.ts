@@ -76,6 +76,9 @@ namespace $.$$ {
 							... on RunCronJobPayload {
 								execution {
 									id
+									job {
+										id
+									}
 								}
 							}
 							... on ErrorPayload {
@@ -94,8 +97,6 @@ namespace $.$$ {
 			if (result.__typename === 'ErrorPayload') {
 				throw new Error(result.message)
 			}
-
-			this.Executions().data(null)
 			
 			return null
 		}

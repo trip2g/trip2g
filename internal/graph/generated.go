@@ -238,6 +238,7 @@ type ComplexityRoot struct {
 		ErrorMessage func(childComplexity int) int
 		FinishedAt   func(childComplexity int) int
 		ID           func(childComplexity int) int
+		Job          func(childComplexity int) int
 		JobID        func(childComplexity int) int
 		ReportData   func(childComplexity int) int
 		StartedAt    func(childComplexity int) int
@@ -1039,6 +1040,7 @@ type AdminCronJobExecutionResolver interface {
 
 	ReportData(ctx context.Context, obj *db.CronJobExecution) (*string, error)
 	ErrorMessage(ctx context.Context, obj *db.CronJobExecution) (*string, error)
+	Job(ctx context.Context, obj *db.CronJobExecution) (*db.CronJob, error)
 }
 type AdminCronJobsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminCronJobsConnection) ([]db.CronJob, error)
@@ -1820,6 +1822,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminCronJobExecution.ID(childComplexity), true
+
+	case "AdminCronJobExecution.job":
+		if e.complexity.AdminCronJobExecution.Job == nil {
+			break
+		}
+
+		return e.complexity.AdminCronJobExecution.Job(childComplexity), true
 
 	case "AdminCronJobExecution.jobId":
 		if e.complexity.AdminCronJobExecution.JobID == nil {
@@ -9591,6 +9600,8 @@ func (ec *executionContext) fieldContext_AdminCronJob_executions(_ context.Conte
 				return ec.fieldContext_AdminCronJobExecution_reportData(ctx, field)
 			case "errorMessage":
 				return ec.fieldContext_AdminCronJobExecution_errorMessage(ctx, field)
+			case "job":
+				return ec.fieldContext_AdminCronJobExecution_job(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminCronJobExecution", field.Name)
 		},
@@ -9892,6 +9903,64 @@ func (ec *executionContext) fieldContext_AdminCronJobExecution_errorMessage(_ co
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminCronJobExecution_job(ctx context.Context, field graphql.CollectedField, obj *db.CronJobExecution) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminCronJobExecution_job(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminCronJobExecution().Job(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.CronJob)
+	fc.Result = res
+	return ec.marshalNAdminCronJob2ᚖtrip2gᚋinternalᚋdbᚐCronJob(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminCronJobExecution_job(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminCronJobExecution",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminCronJob_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminCronJob_name(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminCronJob_enabled(ctx, field)
+			case "expression":
+				return ec.fieldContext_AdminCronJob_expression(ctx, field)
+			case "lastExecAt":
+				return ec.fieldContext_AdminCronJob_lastExecAt(ctx, field)
+			case "executions":
+				return ec.fieldContext_AdminCronJob_executions(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminCronJob", field.Name)
 		},
 	}
 	return fc, nil
@@ -26946,6 +27015,8 @@ func (ec *executionContext) fieldContext_RunCronJobPayload_execution(_ context.C
 				return ec.fieldContext_AdminCronJobExecution_reportData(ctx, field)
 			case "errorMessage":
 				return ec.fieldContext_AdminCronJobExecution_errorMessage(ctx, field)
+			case "job":
+				return ec.fieldContext_AdminCronJobExecution_job(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminCronJobExecution", field.Name)
 		},
@@ -36734,6 +36805,42 @@ func (ec *executionContext) _AdminCronJobExecution(ctx context.Context, sel ast.
 					}
 				}()
 				res = ec._AdminCronJobExecution_errorMessage(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "job":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminCronJobExecution_job(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 

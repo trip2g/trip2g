@@ -280,14 +280,14 @@ func (r *adminCronJobExecutionResolver) ErrorMessage(ctx context.Context, obj *d
 	return db.ToStringPtr(obj.ErrorMessage), nil
 }
 
+// Job is the resolver for the job field.
+func (r *adminCronJobExecutionResolver) Job(ctx context.Context, obj *db.CronJobExecution) (*db.CronJob, error) {
+	return resolveOne[db.CronJob](ctx, obj.JobID, r.env(ctx).CronJobByID)
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminCronJobsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminCronJobsConnection) ([]db.CronJob, error) {
-	cronJobs, err := r.env(ctx).ListAllCronJobs(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list cron jobs: %w", err)
-	}
-
-	return cronJobs, nil
+	return r.env(ctx).ListAllCronJobs(ctx)
 }
 
 // ActiveFrom is the resolver for the activeFrom field.
