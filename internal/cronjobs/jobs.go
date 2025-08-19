@@ -15,7 +15,7 @@ import (
 	"maragu.dev/goqite/jobs"
 )
 
-var (
+const (
 	JobStatusPending   int64 = 0
 	JobStatusRunning   int64 = 1
 	JobStatusCompleted int64 = 2
@@ -165,10 +165,10 @@ func (cj *CronJobs) register(jobID int64) error {
 func (cj *CronJobs) executeJob(jobID int64) error {
 	job, ok := cj.jobs[jobID]
 	if !ok {
-		return fmt.Errorf("job %s not found", jobID)
+		return fmt.Errorf("job %d not found", jobID)
 	}
 
-	err := cj.env.UpdateRunningCronJobExecutions(cj.ctx, db.UpdateRunningCronJobExecutionsParams{
+	updateErr := cj.env.UpdateRunningCronJobExecutions(cj.ctx, db.UpdateRunningCronJobExecutionsParams{
 		JobID:  jobID,
 		Status: JobStatusRunning,
 		ErrorMessage: sql.NullString{
@@ -176,11 +176,14 @@ func (cj *CronJobs) executeJob(jobID int64) error {
 			String: "died",
 		},
 	})
+	if updateErr != nil {
+		cj.log.Error("failed to update running cron job executions", "job_id", jobID, "error", updateErr)
+	}
 
 	// Insert execution record
 	exec, err := cj.env.InsertCronJobExecution(cj.ctx, jobID)
 	if err != nil {
-		return fmt.Errorf("failed to insert cron job execution for %s: %w", jobID, err)
+		return fmt.Errorf("failed to insert cron job execution for %d: %w", jobID, err)
 	}
 
 	// Update status to running
@@ -189,7 +192,7 @@ func (cj *CronJobs) executeJob(jobID int64) error {
 		Status: JobStatusRunning,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to update cron job execution status for %s: %w", jobID, err)
+		return fmt.Errorf("failed to update cron job execution status for %d: %w", jobID, err)
 	}
 
 	// Execute the job
@@ -210,9 +213,9 @@ func (cj *CronJobs) executeJob(jobID int64) error {
 			Valid:  true,
 		}
 	} else {
-		reportDataRaw, err := json.Marshal(report)
-		if err != nil {
-			return fmt.Errorf("failed to marshal report data for job %s: %w", jobID, err)
+		reportDataRaw, marshalErr := json.Marshal(report)
+		if marshalErr != nil {
+			return fmt.Errorf("failed to marshal report data for job %d: %w", jobID, marshalErr)
 		}
 
 		reportData.String = string(reportDataRaw)
@@ -226,13 +229,13 @@ func (cj *CronJobs) executeJob(jobID int64) error {
 		ReportData:   reportData,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to update cron job execution for %s: %w", jobID, err)
+		return fmt.Errorf("failed to update cron job execution for %d: %w", jobID, err)
 	}
 
 	// Update last execution time
 	err = cj.env.UpdateCronJobLastExec(cj.ctx, exec.JobID)
 	if err != nil {
-		return fmt.Errorf("failed to update last execution time for cron job %s: %w", jobID, err)
+		return fmt.Errorf("failed to update last execution time for cron job %d: %w", jobID, err)
 	}
 
 	return nil

@@ -263,7 +263,7 @@ func (r *adminCronJobResolver) Executions(ctx context.Context, obj *model.AdminC
 	result := make([]model.AdminCronJobExecution, len(executions))
 	for i, exec := range executions {
 		result[i] = model.AdminCronJobExecution{
-			ID:        int64(exec.ID),
+			ID:        exec.ID,
 			JobID:     exec.JobID,
 			StartedAt: exec.StartedAt,
 			Status:    exec.Status,

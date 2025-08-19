@@ -1,6 +1,8 @@
 package removeexpiredtgchatmembers
 
-import "context"
+import (
+	"context"
+)
 
 type Job struct {
 }
@@ -18,5 +20,5 @@ func (j *Job) ExecuteAfterStart() bool {
 }
 
 func (j *Job) Execute(ctx context.Context, env any) (any, error) {
-	return Resolve(ctx, env.(Env), Filter{})
+	return Resolve(ctx, env.(Env), Filter{}) //nolint:errcheck // will checked in cmd/server/cronjobs.go
 }
