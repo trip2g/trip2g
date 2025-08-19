@@ -65,41 +65,6 @@ namespace $.$$ {
 			return m.toString('YYYY-MM-DD HH:mm:ss')
 		}
 
-		@$mol_mem
-		run_click( next?: any ): any {
-			if ( next === undefined ) return null
-
-			const res = $trip2g_graphql_request( `
-				mutation AdminRunCronJob($input: RunCronJobInput!) {
-					admin {
-						runCronJob(input: $input) {
-							... on RunCronJobPayload {
-								execution {
-									id
-									job {
-										id
-									}
-								}
-							}
-							... on ErrorPayload {
-								message
-							}
-						}
-					}
-				}
-			`, {
-				input: {
-					id: this.cronjob_id()
-				}
-			})
-
-			const result = res.admin.runCronJob
-			if (result.__typename === 'ErrorPayload') {
-				throw new Error(result.message)
-			}
-			
-			return null
-		}
 
 	}
 }

@@ -835,6 +835,97 @@ For complex entities, create sub-components in the show directory:
 - Takes parent entity ID as parameter
 - Can include inline editing capabilities
 
+### Action Button Pattern
+
+**IMPORTANT**: All action buttons (Run, Delete, Refresh, etc.) must be separated into their own button components under `button/[action]/`.
+
+**Directory Structure**:
+```
+assets/ui/admin/[entity]/
+└── button/
+    ├── run/
+    │   ├── run.view.tree
+    │   └── run.view.ts
+    ├── delete/
+    │   ├── delete.view.tree
+    │   └── delete.view.ts
+    └── refresh/
+        ├── refresh.view.tree
+        └── refresh.view.ts
+```
+
+**Button Component Structure** (`button/[action]/[action].view.tree`):
+```tree
+$trip2g_admin_[entity]_button_[action] $mol_button_major
+	[entity]_id 0
+	title <= status_title? \[Action]
+	click? <=> [action]? null
+```
+
+**Button Logic** (`button/[action]/[action].view.ts`):
+```typescript
+namespace $.$$ {
+	export class $trip2g_admin_[entity]_button_[action] extends $.$trip2g_admin_[entity]_button_[action] {
+		[action]( event?: Event ) {
+			const res = $trip2g_graphql_request(
+				`
+					mutation Admin[Action][Entity]($input: [Action][Entity]Input!) {
+						admin {
+							[action][Entity](input: $input) {
+								... on [Action][Entity]Payload {
+									success
+									// return fields
+								}
+								... on ErrorPayload {
+									message
+								}
+							}
+						}
+					}
+				`,
+				{
+					input: {
+						id: this.[entity]_id()
+					}
+				}
+			)
+
+			if( res.admin.[action][Entity].__typename === 'ErrorPayload' ) {
+				throw new Error( res.admin.[action][Entity].message )
+			}
+
+			if( res.admin.[action][Entity].__typename === '[Action][Entity]Payload' ) {
+				this.status_title( '[Action]: Success' )
+				return
+			}
+
+			throw new Error( 'Unexpected response type' )
+		}
+
+		@$mol_mem
+		override status_title(next?: string) {
+			return next || '[Action]'
+		}
+	}
+}
+```
+
+**Usage in Show Page**:
+```tree
+tools /
+	<= EditLink $mol_link
+		arg * action \update
+		title \Edit
+	<= [Action]Button $trip2g_admin_[entity]_button_[action]
+		[entity]_id <= [entity]_id
+```
+
+**Benefits**:
+- **Separation of Concerns**: Each action has its own component
+- **Reusability**: Buttons can be used in multiple places
+- **Status Feedback**: Built-in success/error status display
+- **Consistency**: Standardized action button pattern
+
 ### CSS Styling
 
 **Catalog CSS**: Add `catalog/catalog.view.css.ts` to define column widths for proper table layout:

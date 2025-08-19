@@ -5,9 +5,8 @@ $trip2g_admin_cronjob_show $mol_page
 		<= EditLink $mol_link
 			arg * action \update
 			title \Edit
-		<= RunButton $mol_button_major
-			title \Run
-			click? <=> run_click? null
+		<= RunButton $trip2g_admin_cronjob_button_run
+			cronjob_id <= cronjob_id
 	UpdateForm $trip2g_admin_cronjob_update
 		cronjob_id <= cronjob_id
 	body /

@@ -1,0 +1,4 @@
+$trip2g_admin_cronjob_button_run $mol_button_major
+	cronjob_id 0
+	title <= status_title? \Run
+	click? <=> run? null
