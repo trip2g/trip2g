@@ -77,7 +77,7 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 	}
 
 	// Register all jobs
-	for _, job := range jobConfigs {
+	for idx, job := range jobConfigs {
 		name := job.Name()
 
 		upsertParams := db.UpsertCronJobParams{
@@ -120,7 +120,10 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 			runner: runner,
 		}
 
-		go runner.Start(ctx)
+		go func() {
+			time.Sleep(time.Second * time.Duration(idx))
+			runner.Start(ctx)
+		}()
 
 		if dbJob.Enabled {
 			err = cj.register(dbJob.ID)

@@ -122,6 +122,7 @@ func enablePragmas(db *sql.DB) error {
 		PRAGMA cache_size = -64000;
 		PRAGMA wal_autocheckpoint = 1000;
 		PRAGMA wal_checkpoint(TRUNCATE);
+		PRAGMA busy_timeout = 20000;
 	`
 
 	_, err := db.Exec(pragmas)

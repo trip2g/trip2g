@@ -30,24 +30,15 @@ The application uses a robust cron job system for scheduled tasks. Cron jobs are
    )
 
    type Env interface {
-       Logger() logger.Logger
-       AuditLogger() logger.Logger
        // Add required database methods
-   }
-
-   type Filter struct {
-       // Add any filtering options
    }
 
    type Result struct {
        // Add result fields
    }
 
-   func Resolve(ctx context.Context, env Env, filter Filter) (*Result, error) {
-       log := logger.WithPrefix(env.Logger(), "yourcronjobname:")
-       
+   func Resolve(ctx context.Context, env Env) (*Result, error) {
        // Implementation here
-       
        return &Result{}, nil
    }
    ```

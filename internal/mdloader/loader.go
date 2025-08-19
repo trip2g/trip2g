@@ -360,7 +360,7 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		return nil, fmt.Errorf("failed to extract metadata: %w", err)
 	}
 
-	ldr.log.Debug("read page", "path", pp.Path)
+	// ldr.log.Debug("read page", "path", pp.Path)
 
 	return &pp, nil
 }

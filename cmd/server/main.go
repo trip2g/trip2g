@@ -26,9 +26,9 @@ import (
 	"trip2g/internal/appconfig"
 	"trip2g/internal/appreq"
 	"trip2g/internal/auditlogger"
+	"trip2g/internal/backjobs"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
-	"trip2g/internal/bqtask/sendsignincode"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/handletgupdate"
@@ -83,6 +83,7 @@ type app struct {
 	*boostyjobs.BoostyJobs
 	*tgbots.TgBots
 	*cronjobs.CronJobs
+	*backjobs.BackJobs
 
 	graphTxs *graphTransactions
 
@@ -230,6 +231,8 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to create cron jobs: %w", err))
 	}
+
+	a.BackJobs = backjobs.New(a)
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)
 	if err != nil {
@@ -776,24 +779,6 @@ func (a *app) Logger() logger.Logger {
 
 func (a *app) AuditLogger() logger.Logger {
 	return a.auditLogger
-}
-
-func (a *app) QueueRequestSignInEmail(ctx context.Context, email string, code string) error {
-	params := sendsignincode.Params{
-		Email: email,
-		Code:  code,
-	}
-
-	// TODO: add a background jobs
-	go func() {
-		err := sendsignincode.Resolve(ctx, a, params)
-		if err != nil {
-			a.log.Error("failed to send sign-in code", "error", err, "email", email)
-			return
-		}
-	}()
-
-	return nil
 }
 
 func (a *app) RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
