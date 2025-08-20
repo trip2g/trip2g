@@ -35,7 +35,7 @@ type Env interface {
 	CronJobByName(ctx context.Context, name string) (db.CronJob, error)
 	Logger() logger.Logger
 
-	EnqueueJob(ctx context.Context, jobID string, data []byte) error
+	EnqueueJob(ctx context.Context, jobID string, data any) error
 	RegisterJob(id string, handler func(ctx context.Context, m []byte) error)
 }
 

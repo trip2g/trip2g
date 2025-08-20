@@ -1037,7 +1037,7 @@ type AdminCronJobResolver interface {
 }
 type AdminCronJobExecutionResolver interface {
 	FinishedAt(ctx context.Context, obj *db.CronJobExecution) (*time.Time, error)
-
+	Status(ctx context.Context, obj *db.CronJobExecution) (model.CronJobExecutionStatus, error)
 	ReportData(ctx context.Context, obj *db.CronJobExecution) (*string, error)
 	ErrorMessage(ctx context.Context, obj *db.CronJobExecution) (*string, error)
 	Job(ctx context.Context, obj *db.CronJobExecution) (*db.CronJob, error)
@@ -9796,7 +9796,7 @@ func (ec *executionContext) _AdminCronJobExecution_status(ctx context.Context, f
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Status, nil
+		return ec.resolvers.AdminCronJobExecution().Status(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9808,19 +9808,19 @@ func (ec *executionContext) _AdminCronJobExecution_status(ctx context.Context, f
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int64)
+	res := resTmp.(model.CronJobExecutionStatus)
 	fc.Result = res
-	return ec.marshalNInt642int64(ctx, field.Selections, res)
+	return ec.marshalNCronJobExecutionStatus2trip2gᚋinternalᚋgraphᚋmodelᚐCronJobExecutionStatus(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminCronJobExecution_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminCronJobExecution",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int64 does not have child fields")
+			return nil, errors.New("field of type CronJobExecutionStatus does not have child fields")
 		},
 	}
 	return fc, nil
@@ -36758,10 +36758,41 @@ func (ec *executionContext) _AdminCronJobExecution(ctx context.Context, sel ast.
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "status":
-			out.Values[i] = ec._AdminCronJobExecution_status(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminCronJobExecution_status(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "reportData":
 			field := field
 
@@ -50952,6 +50983,16 @@ func (ec *executionContext) marshalNCreateTgBotOrErrorPayload2trip2gᚋinternal�
 		return graphql.Null
 	}
 	return ec._CreateTgBotOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCronJobExecutionStatus2trip2gᚋinternalᚋgraphᚋmodelᚐCronJobExecutionStatus(ctx context.Context, v any) (model.CronJobExecutionStatus, error) {
+	var res model.CronJobExecutionStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCronJobExecutionStatus2trip2gᚋinternalᚋgraphᚋmodelᚐCronJobExecutionStatus(ctx context.Context, sel ast.SelectionSet, v model.CronJobExecutionStatus) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNDeleteBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteBoostyCredentialsInput(ctx context.Context, v any) (model.DeleteBoostyCredentialsInput, error) {

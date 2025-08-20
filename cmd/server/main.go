@@ -26,9 +26,9 @@ import (
 	"trip2g/internal/appconfig"
 	"trip2g/internal/appreq"
 	"trip2g/internal/auditlogger"
-	"trip2g/internal/backjobs"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
+	"trip2g/internal/case/backjob/sendsignincode"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/handletgupdate"
@@ -85,7 +85,7 @@ type app struct {
 	*boostyjobs.BoostyJobs
 	*tgbots.TgBots
 	*cronjobs.CronJobs
-	*backjobs.BackJobs
+	*sendsignincode.SendSignInCodeJob
 
 	graphTxs *graphTransactions
 
@@ -255,7 +255,7 @@ func main() {
 		panic(fmt.Errorf("failed to create cron jobs: %w", err))
 	}
 
-	a.BackJobs = backjobs.New(a)
+	a.SendSignInCodeJob = sendsignincode.New(a)
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)
 	if err != nil {
@@ -308,7 +308,12 @@ func main() {
 	a.startServer()
 }
 
-func (a *app) EnqueueJob(ctx context.Context, jobID string, data []byte) error {
+func (a *app) EnqueueJob(ctx context.Context, jobID string, data any) error {
+	rawData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal job data: %w", err)
+	}
+
 	req, err := appreq.FromCtx(ctx)
 	if err != nil && !errors.Is(err, appreq.ErrNotFound) {
 		return fmt.Errorf("failed to get request from context: %w", err)
@@ -317,15 +322,15 @@ func (a *app) EnqueueJob(ctx context.Context, jobID string, data []byte) error {
 	if req != nil {
 		env, ok := req.Env.(*app)
 		if ok && env.CurrentTx() != nil {
-			a.log.Debug("enqueueing job in request env", "job_id", jobID, "data", string(data))
+			a.log.Debug("enqueueing job in request env", "job_id", jobID, "data", string(rawData))
 
-			return jobs.CreateTx(ctx, env.currentTx, env.goqiteQueue, jobID, data)
+			return jobs.CreateTx(ctx, env.currentTx, env.goqiteQueue, jobID, rawData)
 		}
 	}
 
-	a.log.Debug("enqueueing job in global env", "job_id", jobID, "data", string(data))
+	a.log.Debug("enqueueing job in global env", "job_id", jobID, "data", string(rawData))
 
-	return jobs.Create(ctx, a.goqiteQueue, jobID, data)
+	return jobs.Create(ctx, a.goqiteQueue, jobID, rawData)
 }
 
 func (a *app) RegisterJob(id string, handler func(ctx context.Context, m []byte) error) {

@@ -1224,6 +1224,65 @@ func (e BoostyCredentialsStateEnum) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type CronJobExecutionStatus string
+
+const (
+	CronJobExecutionStatusPending   CronJobExecutionStatus = "PENDING"
+	CronJobExecutionStatusRunning   CronJobExecutionStatus = "RUNNING"
+	CronJobExecutionStatusCompleted CronJobExecutionStatus = "COMPLETED"
+	CronJobExecutionStatusFailed    CronJobExecutionStatus = "FAILED"
+)
+
+var AllCronJobExecutionStatus = []CronJobExecutionStatus{
+	CronJobExecutionStatusPending,
+	CronJobExecutionStatusRunning,
+	CronJobExecutionStatusCompleted,
+	CronJobExecutionStatusFailed,
+}
+
+func (e CronJobExecutionStatus) IsValid() bool {
+	switch e {
+	case CronJobExecutionStatusPending, CronJobExecutionStatusRunning, CronJobExecutionStatusCompleted, CronJobExecutionStatusFailed:
+		return true
+	}
+	return false
+}
+
+func (e CronJobExecutionStatus) String() string {
+	return string(e)
+}
+
+func (e *CronJobExecutionStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = CronJobExecutionStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid CronJobExecutionStatus", str)
+	}
+	return nil
+}
+
+func (e CronJobExecutionStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *CronJobExecutionStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e CronJobExecutionStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 type NoteWarningLevelEnum string
 
 const (

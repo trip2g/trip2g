@@ -270,6 +270,22 @@ func (r *adminCronJobExecutionResolver) FinishedAt(ctx context.Context, obj *db.
 	return db.ToTimePtr(obj.FinishedAt), nil
 }
 
+// Status is the resolver for the status field.
+func (r *adminCronJobExecutionResolver) Status(ctx context.Context, obj *db.CronJobExecution) (model.CronJobExecutionStatus, error) {
+	switch obj.Status {
+	case 0:
+		return model.CronJobExecutionStatusPending, nil
+	case 1:
+		return model.CronJobExecutionStatusRunning, nil
+	case 2:
+		return model.CronJobExecutionStatusCompleted, nil
+	case 3:
+		return model.CronJobExecutionStatusFailed, nil
+	default:
+		return "", fmt.Errorf("unknown cron job execution status: %d", obj.Status)
+	}
+}
+
 // ReportData is the resolver for the reportData field.
 func (r *adminCronJobExecutionResolver) ReportData(ctx context.Context, obj *db.CronJobExecution) (*string, error) {
 	return db.ToStringPtr(obj.ReportData), nil

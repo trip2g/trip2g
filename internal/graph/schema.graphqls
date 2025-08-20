@@ -532,7 +532,7 @@ type AdminCronJobExecution @goModel(model: "trip2g/internal/db.CronJobExecution"
   jobId: Int64!
   startedAt: Time!
   finishedAt: Time
-  status: Int64!
+  status: CronJobExecutionStatus! @goField(forceResolver: true)
   reportData: String
   errorMessage: String
   job: AdminCronJob!
@@ -592,6 +592,13 @@ enum Role {
   GUEST
   USER
   ADMIN
+}
+
+enum CronJobExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
 }
 
 type ActiveOffers {

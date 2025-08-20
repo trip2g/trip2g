@@ -10,8 +10,6 @@ import (
 
 //go:generate go tool github.com/valyala/quicktemplate/qtc -dir=.
 
-const ID = "send_sign_in_code"
-
 type Params struct {
 	Email string
 	Code  string
