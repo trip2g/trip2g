@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"time"
+	"trip2g/internal/appreq"
 	"trip2g/internal/backjobs/sendsignincode"
 	"trip2g/internal/logger"
 
@@ -15,18 +16,20 @@ import (
 
 type Env interface {
 	Logger() logger.Logger
-	DBConnection() *sql.DB
+	GoqiteQueue() *goqite.Queue
+	GoqiteRunner() *jobs.Runner
 
 	// don't forget to embed all env interfaces here
 	sendsignincode.Env
 }
 
+type RequestEnv interface {
+	CurrentTx() *sql.Tx
+}
+
 type BackJobs struct {
 	env Env
 	log logger.Logger
-
-	queue  *goqite.Queue
-	runner *jobs.Runner
 }
 
 func New(env Env) *BackJobs {
@@ -37,30 +40,39 @@ func New(env Env) *BackJobs {
 		log: log,
 	}
 
-	tasks.queue = goqite.New(goqite.NewOpts{
-		DB:   env.DBConnection(),
-		Name: "back_jobs",
-	})
-
-	tasks.runner = jobs.NewRunner(jobs.NewRunnerOpts{
-		Limit:        2,
-		Log:          logger.WithPrefix(log, "runner:"),
-		PollInterval: time.Second,
-		Queue:        tasks.queue,
-	})
-
-	registerJob(&tasks, sendsignincode.ID, sendsignincode.Resolve)
+	// Register jobs with backjobs prefix
+	registerJob(&tasks, fmt.Sprintf("backjobs:%s", sendsignincode.ID), sendsignincode.Resolve)
 
 	return &tasks
 }
 
-func (t *BackJobs) queueJob(ctx context.Context, id string, params interface{}) error {
+func (t *BackJobs) queueJob(ctx context.Context, jobID string, params interface{}) error {
+	queueID := jobQueueID(jobID)
+
+	req, err := appreq.FromCtx(ctx)
+	if err != nil && !errors.Is(err, appreq.ErrNotFound) {
+		return fmt.Errorf("failed to get request from context: %w", err)
+	}
+
 	data, err := json.Marshal(params)
 	if err != nil {
 		return fmt.Errorf("failed to marshal params: %w", err)
 	}
 
-	return jobs.Create(ctx, t.queue, id, data)
+	q := t.env.GoqiteQueue()
+
+	if req != nil {
+		env, ok := req.Env.(RequestEnv)
+		if ok && env.CurrentTx() != nil {
+			return jobs.CreateTx(ctx, env.CurrentTx(), q, jobID, data)
+		}
+	}
+
+	return jobs.Create(ctx, q, queueID, data)
+}
+
+func jobQueueID(id string) string {
+	return fmt.Sprintf("backjobs:%s", id)
 }
 
 func (t *BackJobs) QueueRequestSignInEmail(ctx context.Context, email string, code string) error {
@@ -70,7 +82,9 @@ func (t *BackJobs) QueueRequestSignInEmail(ctx context.Context, email string, co
 // registerJob is a generic helper function to register background jobs.
 // T is the parameter type for the job.
 func registerJob[T any, P any](tasks *BackJobs, jobID string, resolveFunc func(context.Context, T, P) error) {
-	tasks.runner.Register(jobID, func(ctx context.Context, m []byte) error {
+	id := jobQueueID(jobID)
+
+	tasks.env.GoqiteRunner().Register(id, func(ctx context.Context, m []byte) error {
 		var params P
 
 		err := json.Unmarshal(m, &params)

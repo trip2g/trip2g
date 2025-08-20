@@ -62,6 +62,8 @@ import (
 	"github.com/vektah/gqlparser/gqlerror"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
+	"maragu.dev/goqite"
+	"maragu.dev/goqite/jobs"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/resend/resend-go/v2"
@@ -90,9 +92,14 @@ type app struct {
 	queries *db.Queries
 	conn    *sql.DB
 
+	currentTx *sql.Tx
+
 	log logger.Logger
 
 	auditLogger logger.Logger
+
+	goqiteQueue  *goqite.Queue
+	goqiteRunner *jobs.Runner
 
 	// mail *mailyak.MailYak
 
@@ -227,6 +234,22 @@ func main() {
 		return handletgupdate.Resolve(ctx, be, update)
 	})
 
+	// Create shared queue and runner to prevent SQLITE_BUSY issues
+	a.goqiteQueue = goqite.New(goqite.NewOpts{
+		DB:   conn,
+		Name: "jobs",
+	})
+
+	a.goqiteRunner = jobs.NewRunner(jobs.NewRunnerOpts{
+		Limit:        5, // Allow more concurrent jobs across all types
+		Log:          logger.WithPrefix(log, "shared-runner:"),
+		PollInterval: time.Second,
+		Queue:        a.goqiteQueue,
+	})
+
+	// Start the shared runner
+	go a.goqiteRunner.Start(ctx)
+
 	a.CronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
 	if err != nil {
 		panic(fmt.Errorf("failed to create cron jobs: %w", err))
@@ -287,6 +310,14 @@ func main() {
 
 func (a *app) DBConnection() *sql.DB {
 	return a.conn
+}
+
+func (a *app) GoqiteQueue() *goqite.Queue {
+	return a.goqiteQueue
+}
+
+func (a *app) GoqiteRunner() *jobs.Runner {
+	return a.goqiteRunner
 }
 
 func (a *app) createOwnerIfNotExists(ctx context.Context) error {
@@ -490,6 +521,10 @@ func (a *app) loadAllNotes(ctx context.Context) error {
 	return nil
 }
 
+func (a *app) CurrentTx() *sql.Tx {
+	return a.currentTx
+}
+
 func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {
@@ -507,6 +542,7 @@ func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
 	newEnv := *a //nolint:govet // I will fix this later (copy mutex)
 	newEnv.queries = queries
 	newEnv.Queries = queries
+	newEnv.currentTx = tx
 
 	// override the context with the new tx env
 	req.Env = &newEnv
