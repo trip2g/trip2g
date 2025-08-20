@@ -123,6 +123,7 @@ func enablePragmas(db *sql.DB) error {
 		PRAGMA wal_autocheckpoint = 1000;
 		PRAGMA wal_checkpoint(TRUNCATE);
 		PRAGMA busy_timeout = 20000;
+		PRAGMA journal_mode = wal;
 	`
 
 	_, err := db.Exec(pragmas)
