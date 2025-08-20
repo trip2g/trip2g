@@ -1,0 +1,25 @@
+$trip2g_admin_waitlisttgbotrequest_catalog $mol_page
+	menu_title \Telegram Waitlist Requests
+	body /
+		<= Items $mol_list
+			rows <= rows /$mol_view
+				<= Row*0 $mol_row
+					minimal_height 24
+					minimal_width 600
+					sub <= row_content* /
+						<= Row_chat_id_labeler* $mol_labeler
+							title \Chat ID
+							Content <= Row_chat_id* $trip2g_admin_cell
+								content <= row_chat_id* \chat_id
+						<= Row_bot_name_labeler* $mol_labeler
+							title \Bot Name
+							Content <= Row_bot_name* $trip2g_admin_cell
+								content <= row_bot_name* \bot_name
+						<= Row_created_at_labeler* $mol_labeler
+							title \Created At
+							Content <= Row_created_at* $trip2g_admin_cell
+								content <= row_created_at* \created_at
+						<= Row_note_path_labeler* $mol_labeler
+							title \Note Path
+							Content <= Row_note_path* $trip2g_admin_cell
+								content <= row_note_path* \note_path

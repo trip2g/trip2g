@@ -55,6 +55,10 @@ $trip2g_admin_app $trip2g_admin_catalog
 			close_icon <= Spread_close
 		auditlogs <= AuditLogs $trip2g_admin_auditlog_catalog
 			tools / <= Spread_close
+		waitlistemailrequests <= WaitListEmailRequests $trip2g_admin_waitlistemailrequest_catalog
+			close_icon <= Spread_close
+		waitlisttgbotrequests <= WaitListTgBotRequests $trip2g_admin_waitlisttgbotrequest_catalog
+			close_icon <= Spread_close
 		cronjobs <= ListCronJobs $trip2g_admin_cronjob_catalog
 			close_icon <= Spread_close
 

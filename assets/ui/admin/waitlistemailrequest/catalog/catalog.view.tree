@@ -1,0 +1,25 @@
+$trip2g_admin_waitlistemailrequest_catalog $mol_page
+	menu_title \Email Waitlist Requests
+	body /
+		<= Items $mol_list
+			rows <= rows /$mol_view
+				<= Row*0 $mol_row
+					minimal_height 24
+					minimal_width 600
+					sub <= row_content* /
+						<= Row_email_labeler* $mol_labeler
+							title \Email
+							Content <= Row_email* $trip2g_admin_cell
+								content <= row_email* \email
+						<= Row_created_at_labeler* $mol_labeler
+							title \Created At
+							Content <= Row_created_at* $trip2g_admin_cell
+								content <= row_created_at* \created_at
+						<= Row_ip_labeler* $mol_labeler
+							title \IP Address
+							Content <= Row_ip* $trip2g_admin_cell
+								content <= row_ip* \ip
+						<= Row_note_path_labeler* $mol_labeler
+							title \Note Path
+							Content <= Row_note_path* $trip2g_admin_cell
+								content <= row_note_path* \note_path

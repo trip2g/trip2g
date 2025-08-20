@@ -165,7 +165,7 @@ export type AdminCronJobExecution = {
   jobId: Scalars['Int64']['output'];
   reportData?: Maybe<Scalars['String']['output']>;
   startedAt: Scalars['Time']['output'];
-  status: Scalars['Int64']['output'];
+  status: CronJobExecutionStatus;
 };
 
 export type AdminCronJobsConnection = {
@@ -604,6 +604,8 @@ export type AdminQuery = {
   allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection;
   allUserUserBans: AdminUserBansConnection;
   allUsers: AdminUsersConnection;
+  allWaitListEmailRequests: AdminWaitListEmailRequestsConnection;
+  allWaitListTgBotRequests: AdminWaitListTgBotRequestsConnection;
   apiKeyLogs: AdminApiKeyLogsConnection;
   auditLogs: AdminAuditLogsConnection;
   boostyCredentials?: Maybe<AdminBoostyCredentials>;
@@ -905,6 +907,33 @@ export type AdminUsersConnection = {
   nodes: Array<AdminUser>;
 };
 
+export type AdminWaitListEmailRequest = {
+  __typename?: 'AdminWaitListEmailRequest';
+  createdAt: Scalars['Time']['output'];
+  email: Scalars['String']['output'];
+  ip?: Maybe<Scalars['String']['output']>;
+  notePath: Scalars['String']['output'];
+};
+
+export type AdminWaitListEmailRequestsConnection = {
+  __typename?: 'AdminWaitListEmailRequestsConnection';
+  nodes: Array<AdminWaitListEmailRequest>;
+};
+
+export type AdminWaitListTgBotRequest = {
+  __typename?: 'AdminWaitListTgBotRequest';
+  botName: Scalars['String']['output'];
+  chatId: Scalars['Int64']['output'];
+  createdAt: Scalars['Time']['output'];
+  notePath: Scalars['String']['output'];
+  notePathId: Scalars['Int64']['output'];
+};
+
+export type AdminWaitListTgBotRequestsConnection = {
+  __typename?: 'AdminWaitListTgBotRequestsConnection';
+  nodes: Array<AdminWaitListTgBotRequest>;
+};
+
 export type ApiKeyLogsFilterInput = {
   apiKeyId?: InputMaybe<Scalars['Int64']['input']>;
 };
@@ -1077,6 +1106,13 @@ export type CreateTgBotPayload = {
   __typename?: 'CreateTgBotPayload';
   tgBot: AdminTgBot;
 };
+
+export enum CronJobExecutionStatus {
+  Completed = 'COMPLETED',
+  Failed = 'FAILED',
+  Pending = 'PENDING',
+  Running = 'RUNNING'
+}
 
 export type DeleteBoostyCredentialsInput = {
   id: Scalars['Int64']['input'];
@@ -1902,6 +1938,13 @@ export type AdminBoostycredentialsShowSubgraphsSaveMutationVariables = Exact<{
 
 export type AdminBoostycredentialsShowSubgraphsSaveMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', data: { __typename?: 'ErrorPayload', message: string } | { __typename?: 'SetBoostyTierSubgraphsPayload', success: boolean } } };
 
+export type AdminRunCronJobMutationVariables = Exact<{
+  input: RunCronJobInput;
+}>;
+
+
+export type AdminRunCronJobMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', runCronJob: { __typename?: 'ErrorPayload', message: string } | { __typename?: 'RunCronJobPayload', execution: { __typename?: 'AdminCronJobExecution', id: any, job: { __typename?: 'AdminCronJob', id: any } } } } };
+
 export type AdminAllCronJobsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1912,7 +1955,7 @@ export type AdminCronJobExecutionsQueryVariables = Exact<{
 }>;
 
 
-export type AdminCronJobExecutionsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', cronJob?: { __typename?: 'AdminCronJob', id: any, executions: Array<{ __typename?: 'AdminCronJobExecution', id: any, startedAt: any, finishedAt?: any | null, status: any, errorMessage?: string | null }> } | null } };
+export type AdminCronJobExecutionsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', cronJob?: { __typename?: 'AdminCronJob', id: any, executions: Array<{ __typename?: 'AdminCronJobExecution', id: any, startedAt: any, finishedAt?: any | null, status: CronJobExecutionStatus, errorMessage?: string | null }> } | null } };
 
 export type AdminCronJobShowQueryVariables = Exact<{
   id: Scalars['Int64']['input'];
@@ -1920,13 +1963,6 @@ export type AdminCronJobShowQueryVariables = Exact<{
 
 
 export type AdminCronJobShowQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', cronJob?: { __typename?: 'AdminCronJob', id: any, name: string, enabled: boolean, expression: string, lastExecAt?: any | null } | null } };
-
-export type AdminRunCronJobMutationVariables = Exact<{
-  input: RunCronJobInput;
-}>;
-
-
-export type AdminRunCronJobMutation = { __typename?: 'Mutation', admin: { __typename?: 'AdminMutation', runCronJob: { __typename?: 'ErrorPayload', message: string } | { __typename?: 'RunCronJobPayload', execution: { __typename?: 'AdminCronJobExecution', id: any, job: { __typename?: 'AdminCronJob', id: any } } } } };
 
 export type AdminCronJobUpdateQueryVariables = Exact<{
   id: Scalars['Int64']['input'];
@@ -2365,6 +2401,16 @@ export type AdminListUserSubgraphAccessesQueryVariables = Exact<{ [key: string]:
 
 export type AdminListUserSubgraphAccessesQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', data: { __typename?: 'AdminUserSubgraphAccessesConnection', nodes: Array<{ __typename: 'AdminUserSubgraphAccess', id: any, createdAt: any, expiresAt?: any | null, subgraph: { __typename?: 'AdminSubgraph', name: string }, user: { __typename?: 'AdminUser', id: any, email?: string | null } }> } } };
 
+export type AdminWaitListEmailRequestsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminWaitListEmailRequestsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allWaitListEmailRequests: { __typename?: 'AdminWaitListEmailRequestsConnection', nodes: Array<{ __typename?: 'AdminWaitListEmailRequest', email: string, createdAt: any, ip?: string | null, notePath: string }> } } };
+
+export type AdminWaitListTgBotRequestsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AdminWaitListTgBotRequestsQuery = { __typename?: 'Query', admin: { __typename?: 'AdminQuery', allWaitListTgBotRequests: { __typename?: 'AdminWaitListTgBotRequestsConnection', nodes: Array<{ __typename?: 'AdminWaitListTgBotRequest', chatId: any, createdAt: any, notePathId: any, notePath: string, botName: string }> } } };
+
 export type SignOutMutationVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2467,13 +2513,13 @@ export function $trip2g_graphql_request(query: '\n\t\t\t\t\tquery AdminBoostycre
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tmutation AdminBoostycredentialsShowSubgraphsSave($input: SetBoostyTierSubgraphsInput!) {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tdata: setBoostyTierSubgraphs(input: $input) {\n\t\t\t\t\t\t\t... on SetBoostyTierSubgraphsPayload {\n\t\t\t\t\t\t\t\tsuccess\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: AdminBoostycredentialsShowSubgraphsSaveMutationVariables): AdminBoostycredentialsShowSubgraphsSaveMutation
 
+export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation AdminRunCronJob($input: RunCronJobInput!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\trunCronJob(input: $input) {\n\t\t\t\t\t\t\t\t... on RunCronJobPayload {\n\t\t\t\t\t\t\t\t\texecution {\n\t\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\t\tjob {\n\t\t\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminRunCronJobMutationVariables): AdminRunCronJobMutation
+
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminAllCronJobs {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallCronJobs {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\tenabled\n\t\t\t\t\t\t\t\texpression\n\t\t\t\t\t\t\t\tlastExecAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminAllCronJobsQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminCronJobExecutions($id: Int64!) {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tcronJob(id: $id) {\n\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\texecutions {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tstartedAt\n\t\t\t\t\t\t\t\tfinishedAt\n\t\t\t\t\t\t\t\tstatus\n\t\t\t\t\t\t\t\terrorMessage\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: AdminCronJobExecutionsQueryVariables): AdminCronJobExecutionsQuery
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminCronJobShow($id: Int64!) {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tcronJob(id: $id) {\n\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\tenabled\n\t\t\t\t\t\t\texpression\n\t\t\t\t\t\t\tlastExecAt\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: AdminCronJobShowQueryVariables): AdminCronJobShowQuery
-
-export function $trip2g_graphql_request(query: '\n\t\t\t\tmutation AdminRunCronJob($input: RunCronJobInput!) {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\trunCronJob(input: $input) {\n\t\t\t\t\t\t\t... on RunCronJobPayload {\n\t\t\t\t\t\t\t\texecution {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\tjob {\n\t\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t', variables: AdminRunCronJobMutationVariables): AdminRunCronJobMutation
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\t\tquery AdminCronJobUpdate($id: Int64!) {\n\t\t\t\t\t\tadmin {\n\t\t\t\t\t\t\tcronJob(id: $id) {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\tenabled\n\t\t\t\t\t\t\t\texpression\n\t\t\t\t\t\t\t\tlastExecAt\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: AdminCronJobUpdateQueryVariables): AdminCronJobUpdateQuery
 
@@ -2613,6 +2659,10 @@ export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation AdminUpdate
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminListUserSubgraphAccesses {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tdata: allUserSubgraphAccesses {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\texpiresAt\n\t\t\t\t\t\t\t\tsubgraph {\n\t\t\t\t\t\t\t\t\tname\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\tuser {\n\t\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminListUserSubgraphAccessesQuery
 
+export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminWaitListEmailRequests {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallWaitListEmailRequests {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\temail\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\tip\n\t\t\t\t\t\t\t\tnotePath\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminWaitListEmailRequestsQuery
+
+export function $trip2g_graphql_request(query: '\n\t\t\t\tquery AdminWaitListTgBotRequests {\n\t\t\t\t\tadmin {\n\t\t\t\t\t\tallWaitListTgBotRequests {\n\t\t\t\t\t\t\tnodes {\n\t\t\t\t\t\t\t\tchatId\n\t\t\t\t\t\t\t\tcreatedAt\n\t\t\t\t\t\t\t\tnotePathId\n\t\t\t\t\t\t\t\tnotePath\n\t\t\t\t\t\t\t\tbotName\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): AdminWaitListTgBotRequestsQuery
+
 export function $trip2g_graphql_request(query: '\n\t\t\t\tmutation SignOut {\n\t\t\t\t\tdata: signOut {\n\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t}\n\t\t\t\t\t\t... on SignOutPayload {\n\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\tviewer {\n\t\t\t\t\t\t\t\tid\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t'): SignOutMutation
 
 export function $trip2g_graphql_request(query: '\n\t\t\t\t\tmutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {\n\t\t\t\t\t\tdata: requestEmailSignInCode(input: $input) {\n\t\t\t\t\t\t\t... on ErrorPayload {\n\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\tmessage\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t... on RequestEmailSignInCodePayload {\n\t\t\t\t\t\t\t\t__typename\n\t\t\t\t\t\t\t\tsuccess\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t', variables: RequestEmailSignInCodeMutationVariables): RequestEmailSignInCodeMutation
@@ -2643,11 +2693,13 @@ export function $trip2g_graphql_subscription(query: any, variables?: any) { retu
 
 
 
-export const $trip2g_graphql_persist_queries = {"Admins":"7b9f99a6b0b785b43488198eb4dec442d88e4abda7c516677a0611d76878d904","DisableApiKey":"a5852655edeb09cf7db15b0a196cc53cc005b3f8ef7fe7d7d3cdc032087b8b6b","AdminListApiKeys":"1baa27852f59c95f35fe5f35635ad6a617fca6312411bd6cae7cd377d681a52d","AdminCreateApiKey":"c9c10cfb6fa133ac380870427e9b9cdebbc1e9e9b92e6a6313c97f52b537d66f","AdminApiKeyShowQuery":"2f8b56fce14a35ac51fd315e919a352048a118b036a0368f2a66a85c7156c24b","AdminAuditLogs":"251e081abfd9050031942d836a888fa457a7de884f159f7e530f336111bce56d","AdminDeleteBoostyCredentials":"b5b95823f1ca72f823a7e5d185985c7866cfdd4e3e047df82df3e874fd4ded9f","RefreshBoostyData":"6f56dc12aa5527c4b3d9a258d6edbc419df8f5d363e5fef8d6fff9ee2fbada97","AdminRestoreBoostyCredentials":"c4c8090f6a9d499fc2af881e74bafe9311cef92a6d27d9d5d4f77c71a9a7e578","AdminBoostyCredentials":"d85c51db210ba2829aa9f078929fc8b35fab8b93ff4e65ea3cfe4899239c33aa","AdminCreateBoostyCreds":"f4b60eb1f2085c4177c50fd13d76afda3386af6ac3265a223b1b4e25f6fc6eff","AdminBoostyCredentialsById":"b6299c8cfea9f51bdfa87c8d889b099cc2ce517eeed41d852b8e572c35784c0d","AdminBoostycredentialsShowSubgraphs":"91b4086778db021cd991ba8d0b9244077f217e0fd9912857ee8207d19b3597e1","AdminBoostycredentialsShowSubgraphsSave":"1b95680f24795df02b1da6ad640ca527a88b2fbf6cdaa6928bdab79d4472a85d","AdminAllCronJobs":"0e50d55f53402a77bb5a185380b641fdd66604683dce96b8de08befc06b19a6b","AdminCronJobExecutions":"c04fad5f2f4ad89e1c012836ed834121ce953acac0fc71f5c8054efb1e5438b0","AdminCronJobShow":"e7471195bab0e06bae299bbcff32e309cc19467484a3a2736b7dc504ad54c935","AdminRunCronJob":"9d8b8d0aa5da7eb34ef9ad02c9b3550b0d991cd64d326c228d076974ed2319b3","AdminCronJobUpdate":"da5483a3b6c6a60616f56abfb0c6813bdf4014a0912138ce99c15f1d4c6fb10c","AdminUpdateCronJob":"f311e28036dc03e8a0731f5d4ea3fe2483e93a5fe1cce0c0c04f20094e330731","AdminDeleteHTMLInjection":"3c0ab8c70b388f248beff08bbc4eabd2a6e97f9fdc8afa127c776f16cc8aaf6a","AdminHtmlInjections":"3d34dcc3975ddab2237f696d4127338fc0482006d0e6a0473ea0c9f91867a0e7","AdminCreateHtmlInjectionMutation":"c559800a776b98b622cdd2372cd1ac04710c8ee504cc3b5664d71e77dc26c2f7","AdminShowHTMLInjection":"9c8a82d46b6f1fe09d573db702dcc98ee056ceacae481a984e0eaa7e13647748","AdminDeleteHTMLInjectionMutation":"2a397296b7171e41e86f68d9d2b2e7d1712897340dd60a0575f232f2885aa394","AdminUpdateDataHtmlInjection":"7e026712958f44a9d3ccb42471ae5ac436109632cff5315be929c23b9e7a1492","AdminUpdateHtmlInjection":"159cd41399eef55ff19fa5e0a3314201ba3c68e7e4e0a327f9589ca5b2297146","AdminNoteAssets":"b53a13670b8997ac529ee159a089fa153e0762929dfed8c789110afeed524e06","AdminNoteAsset":"9b140a245510b14d054ffc047dbe014cc8b25e6fa5fb22634ae97296e021c931","AdminListNoteViews":"08631c2621fdb1e1265d238476428a5a108673be31c9fa3823233984adaee8ea","AdminGraph":"39e949dd3c2f89603f0d09f5e348c2f46ee78f28d2412ff6efa9279ab68e457b","AdminUpdateNoteGraphPositions":"79055eb93ba30f15dc82d77bdce102ad7d30a32b24e57ebf3339507d9fc66fee","AdminSelectNoteView":"d158e0da61a2cbad548f8ada69595f5f5534f15275a06ef95b969d89a7edb3ad","AdminNoteView":"71287b914ef21187cc102872ffec82d7d3dbe8f1c7583391227f3829c627cc0d","AdminNoteWarnings":"e1626da4e2828f1a95a9a55f70528b7074352fe80ea42e51a74bd6c695c01d37","AdminResetNotFoundPath":"1f10e8c2c12124d4932f5545eccbe0a2dede0dbb988cf0871f847d8d4e067d1a","AdminNotFoundPaths":"5cf3ec8aa2cf4d233d95d80889f90bd4d8cca6d0f4ea18f149dfbc1ff4fd3281","AdminShowNotFoundPath":"8ebf2f3ec53e223c367e1f99010372c46035e12533946751b5a63abf9bea4fd5","AdminDeleteNotFoundIgnoredPattern":"920a973936047b6abbe9e08334afc4334d661edda95a0bea16925a22524ad6a8","AdminNotFoundIgnoredPatterns":"429f371229ee3f9f65a6bd832b98d12ac2672d4b621c560399c89d30d0f605f0","AdminCreateNotFoundIgnoredPatternMutation":"9748b51ba96309a4b5b2905313c2fc9a8e75f7cdbb0b67a1b4c29884d23ec8c0","AdminShowNotFoundIgnoredPattern":"d2f0732335182b898725504e1f9b01cb043034a550686d13e0c1e5c6ab863344","AdminDeleteNotFoundIgnoredPatternMutation":"55537b7c7f93d3c0b32751d112c5545ca2b45c93261aa804fa154997e9ad2f8e","AdminUpdateNotFoundIgnoredPatternMutation":"f4e434af1218ee8662ed41a5ddee1043ea4fd46858cce1b9d03b87456a5d26be","AdminOffers":"b2fc36437eb7fc9ce54ed7fe52c5d6357eb56c1a2a739e52ed5a355499a817ce","AdminCreateOfferMutation":"54bfc14494b6645090140ee5379fef55991e303aa9bd6df0a022bb6b7285297f","AdminShowOffer":"644549579b7660594fa585b864956004f5a0ff8117877656f5089df760c1d79d","AdminUpdateOfferMutation":"bad9b0a25d99a5b3c45ca5116f543b11b7911d1c8e086ff532efd53f29908ca6","AdminDeletePatreonCredentials":"0e64c279c079b1d77334115113bde43b3fb67c87f2910e3ec78b665711f8e3a9","RefreshPatreonData":"7f0600138abbc345fe5bc1fc3b9b3baab2c1cc26f7aa93adee98bdc3155c5b7d","AdminRestorePatreonCredentials":"5d13761fba27efff289309ffd9a8b5db017c28f87955b985a8c9db1aa9601690","AdminPatreonCredentials":"a4529aa3cd3083e2e27d709dc6b6fa1844d29af82b0d32c29796d920ee3c3f31","AdminCreatePatreonCreds":"591e7cf39ea6e450420cba98196e4442ec0a00116f882fa7f66517b5020ec326","AdminPatreonCredentialsById":"d6d6fd3be69e967017988eb4800eeaba94baafc50e33e35269e8a934dd1313c0","AdminPatreoncredentialsShowSubgraphs":"7907df65e3705a5dee8f06f52c156f65730954cc8a95dd0d07f0d0b98599a548","AdminPatreoncredentialsShowSubgraphsSave":"8190946c3f0341dd41e84850004aa19d425d4aed98ea5984063bb700a46183a6","AdminPurchases":"47a76a00baca079d6e46244a8ba7bf75daf8063fdf530c5a8d46a876fdc00900","AdminRedirects":"2a97bb424ba31abc5de22378e2989fc7c0c4b383de50be424f6f849e831e9311","AdminCreateRedirectMutation":"fb48605b011a659f8c8764b08da9bdadd90cbd5e6bbdf74b1b03d25a58fca89c","AdminShowRedirect":"300e47bb2bb87540db90e9c808e2ddf209f84219236abc6796417bf8bba3fbc0","AdminDeleteRedirectMutation":"b0d9e5d6b48166fd7422947a0b43bf3a93827fb5da666ac04449209b8a8a660c","AdminUpdateRedirectMutation":"70ce4af2a2b9bf672e94cf16d78952c56827591f6c0efb64e1c8e359050da36d","AdminMakeReleaseLive":"d0a1f7de2a4ea212ad0f7b80fd591943f26ca638c29e46acb604f47828db4204","AdminReleases":"a8954143d0ddc89b0a4d8ea0dfc63f3514e085d616d1089f8a0099adc9576993","AdminCreateRelease":"8fa0c84f61a4546c22ab6ccdafb6b18367eaae11e64dd35afeabdcaa9f19ee20","AdminListSubgraphs":"4e45ae80a24576cab70fdbb4790a0a7acbde1171823623ed8d7a00e495b596cd","AdminSelectSubgraphList":"bb432284d1aa05d873a33069ba3848e54368d1f8f98ee05fd948722f9a53f92d","AdminSelectSubgraph":"a801d4b303ea060e27e22011e2d7cc74c9a17a95e0877622e55e4012640c11a7","AdminShowSubgraph":"48c888d8117410ffb10f18fb6676ab2da2a4c9e6a4a83e201a589807632022c6","UpdateSubgraph":"a1ed76b00109cb6eac864a2c57d63d956d4c34676eb519e8d0a33abcd8c8945b","AdminTgBots":"06d210ef2397927fc72a502eb3b74feb72e597821fe1c34225a805aaf3a29d9f","AdminCreateTgBotMutation":"9748fa61fe26e6ae99458cf44e989e723783cd2fc15f15b24cd6fd93270949fa","AdminTgBotChats":"30356ff3696684472ba47034278875cb8b2f3e70b3ca28fa8891695b6c0af067","AdminTgbotShowChatsSubgraphs":"bbb27b77bcd7bb421f02df2dae89b376ffb48f07de515d49ba54f39e162ec702","AdminTgbotsShowchatsSubgraphsSave":"8e1228ade3dd23797937a932335450709f34730a7f0c65c9a9ecc30f34b92954","AdminTgBotInviteChats":"ef193c3dc330d6cb33b3e110e19dbc4d9306044b2d4d1dd2be9bbd48f9450da5","AdminTgbotShowInviteChatsSubgraphs":"bd7b2e4e30ed3c36c23931a18de9383332aa37d9eb0b199528f289a492dc90ac","AdminTgbotShowInviteChatsSubgraphsSave":"44f34387d8ca522fdabe1d92f6a8c1a1224145544fc5d58fbd015dc4057525c9","AdminShowTgBot":"b19db79f571bd11a7ef34fcf55468b5475f00de5ee50426eb09ee71c866af16b","AdminUpdateTgBotMutation":"b52a6b067bf30fd17261a67bc90b1c1805f256483df958579a150b76daddad6b","AdminListUserBans":"69e1b4b4cb152647fa3474d44d1fccc7e5bfdc9bfa95d60b9726d4e52c94b3b4","AdminBanUser":"b7eaca2436a0420749fd9818239ddaaf03cf39d13fb051af54e1ddfc16b0a376","AdminUnbanUser":"9512bb945535dd9ef2fe1dacc60073ce01fc8d8f3e93fec6583ab2dc455d1309","AdminListUsers":"6f4fcb27423e59a080c8c0ba8cc8b69628bf9f961bdfbce5c62bf60c19db4075","AdminUserSubgraphAccess":"a624b706534097050759fc343d7335c36f60b7fd8cb7eac35979d2c2e0b166da","AdminUpdateUserSubgraphAccess":"1f5c1a927c82b86a3d0e0313744fe51f023ed479f955e6846225bff4ab75a91d","AdminListUserSubgraphAccesses":"79ca5aafd82b91a579c3ea6232fa7a32773f2b74846785a00e0f0deee9854eca","SignOut":"8e1a898d776a103a20b7dbdfbeb8196fce0175ffe38fa7af9da2848cefdadedf","RequestEmailSignInCode":"cc5a33407c1a3cca08dbcba6847a88298eec84b10f18449244cf13e458449ef9","SignInByEmail":"5678d2ca29b77529e0b9942845dcea2c941c6b5a234863dc86ac2ffaad668614","Viewer":"11c2c89ff045bd18461fa0409d26dcf4acbb063202aa8e74615fcd74d21db756","ReaderQuery":"e4f119366f8ce54fa07ce2fbe933f6dbc5a11e8340e7027ec038c290057bdfc6","FavoriteNotes":"b5507792a81883ed9e746531a025992ccb774f3fb57772cbc9ad59c509c3cc60","ToggleFavoriteNote":"798c4a621133d47a0766371d708e19ca3fa24053dd43a71ea98106715cb1ac53","PaywallActivePurchaseQuery":"49eef6eeabb08d2251039c9b3ca67cade0c7af866c29300712400aa44d34d15b","CreateEmailWaitListRequestMutation":"3239c9d8b52c7fc53db7844e5a7c8c5ee4f262e374d421a695bda48072395718","PaywallQuery":"efbb99141e50ca0ffbc3d9ab51ba259b45601c696bd77ca7334dc6579f88195d","CreatePaymentLink":"3c4ea8c746c573dc9a48a303c13f2b6f7ac3ccad23045f8e989105ea0df98b7a","UserSubscriptions":"1e67f2ab803afe77d6859c2130b2fede9f9edce8c9d841e14ce552c3ecf40115"}
+export const $trip2g_graphql_persist_queries = {"Admins":"7b9f99a6b0b785b43488198eb4dec442d88e4abda7c516677a0611d76878d904","DisableApiKey":"a5852655edeb09cf7db15b0a196cc53cc005b3f8ef7fe7d7d3cdc032087b8b6b","AdminListApiKeys":"1baa27852f59c95f35fe5f35635ad6a617fca6312411bd6cae7cd377d681a52d","AdminCreateApiKey":"c9c10cfb6fa133ac380870427e9b9cdebbc1e9e9b92e6a6313c97f52b537d66f","AdminApiKeyShowQuery":"2f8b56fce14a35ac51fd315e919a352048a118b036a0368f2a66a85c7156c24b","AdminAuditLogs":"251e081abfd9050031942d836a888fa457a7de884f159f7e530f336111bce56d","AdminDeleteBoostyCredentials":"b5b95823f1ca72f823a7e5d185985c7866cfdd4e3e047df82df3e874fd4ded9f","RefreshBoostyData":"6f56dc12aa5527c4b3d9a258d6edbc419df8f5d363e5fef8d6fff9ee2fbada97","AdminRestoreBoostyCredentials":"c4c8090f6a9d499fc2af881e74bafe9311cef92a6d27d9d5d4f77c71a9a7e578","AdminBoostyCredentials":"d85c51db210ba2829aa9f078929fc8b35fab8b93ff4e65ea3cfe4899239c33aa","AdminCreateBoostyCreds":"f4b60eb1f2085c4177c50fd13d76afda3386af6ac3265a223b1b4e25f6fc6eff","AdminBoostyCredentialsById":"b6299c8cfea9f51bdfa87c8d889b099cc2ce517eeed41d852b8e572c35784c0d","AdminBoostycredentialsShowSubgraphs":"91b4086778db021cd991ba8d0b9244077f217e0fd9912857ee8207d19b3597e1","AdminBoostycredentialsShowSubgraphsSave":"1b95680f24795df02b1da6ad640ca527a88b2fbf6cdaa6928bdab79d4472a85d","AdminRunCronJob":"e110068a82f9250e81623cadb453b0cb79a06eda600cab90fe16451a0cca7942","AdminAllCronJobs":"0e50d55f53402a77bb5a185380b641fdd66604683dce96b8de08befc06b19a6b","AdminCronJobExecutions":"c04fad5f2f4ad89e1c012836ed834121ce953acac0fc71f5c8054efb1e5438b0","AdminCronJobShow":"e7471195bab0e06bae299bbcff32e309cc19467484a3a2736b7dc504ad54c935","AdminCronJobUpdate":"da5483a3b6c6a60616f56abfb0c6813bdf4014a0912138ce99c15f1d4c6fb10c","AdminUpdateCronJob":"f311e28036dc03e8a0731f5d4ea3fe2483e93a5fe1cce0c0c04f20094e330731","AdminDeleteHTMLInjection":"3c0ab8c70b388f248beff08bbc4eabd2a6e97f9fdc8afa127c776f16cc8aaf6a","AdminHtmlInjections":"3d34dcc3975ddab2237f696d4127338fc0482006d0e6a0473ea0c9f91867a0e7","AdminCreateHtmlInjectionMutation":"c559800a776b98b622cdd2372cd1ac04710c8ee504cc3b5664d71e77dc26c2f7","AdminShowHTMLInjection":"9c8a82d46b6f1fe09d573db702dcc98ee056ceacae481a984e0eaa7e13647748","AdminDeleteHTMLInjectionMutation":"2a397296b7171e41e86f68d9d2b2e7d1712897340dd60a0575f232f2885aa394","AdminUpdateDataHtmlInjection":"7e026712958f44a9d3ccb42471ae5ac436109632cff5315be929c23b9e7a1492","AdminUpdateHtmlInjection":"159cd41399eef55ff19fa5e0a3314201ba3c68e7e4e0a327f9589ca5b2297146","AdminNoteAssets":"b53a13670b8997ac529ee159a089fa153e0762929dfed8c789110afeed524e06","AdminNoteAsset":"9b140a245510b14d054ffc047dbe014cc8b25e6fa5fb22634ae97296e021c931","AdminListNoteViews":"08631c2621fdb1e1265d238476428a5a108673be31c9fa3823233984adaee8ea","AdminGraph":"39e949dd3c2f89603f0d09f5e348c2f46ee78f28d2412ff6efa9279ab68e457b","AdminUpdateNoteGraphPositions":"79055eb93ba30f15dc82d77bdce102ad7d30a32b24e57ebf3339507d9fc66fee","AdminSelectNoteView":"d158e0da61a2cbad548f8ada69595f5f5534f15275a06ef95b969d89a7edb3ad","AdminNoteView":"71287b914ef21187cc102872ffec82d7d3dbe8f1c7583391227f3829c627cc0d","AdminNoteWarnings":"e1626da4e2828f1a95a9a55f70528b7074352fe80ea42e51a74bd6c695c01d37","AdminResetNotFoundPath":"1f10e8c2c12124d4932f5545eccbe0a2dede0dbb988cf0871f847d8d4e067d1a","AdminNotFoundPaths":"5cf3ec8aa2cf4d233d95d80889f90bd4d8cca6d0f4ea18f149dfbc1ff4fd3281","AdminShowNotFoundPath":"8ebf2f3ec53e223c367e1f99010372c46035e12533946751b5a63abf9bea4fd5","AdminDeleteNotFoundIgnoredPattern":"920a973936047b6abbe9e08334afc4334d661edda95a0bea16925a22524ad6a8","AdminNotFoundIgnoredPatterns":"429f371229ee3f9f65a6bd832b98d12ac2672d4b621c560399c89d30d0f605f0","AdminCreateNotFoundIgnoredPatternMutation":"9748b51ba96309a4b5b2905313c2fc9a8e75f7cdbb0b67a1b4c29884d23ec8c0","AdminShowNotFoundIgnoredPattern":"d2f0732335182b898725504e1f9b01cb043034a550686d13e0c1e5c6ab863344","AdminDeleteNotFoundIgnoredPatternMutation":"55537b7c7f93d3c0b32751d112c5545ca2b45c93261aa804fa154997e9ad2f8e","AdminUpdateNotFoundIgnoredPatternMutation":"f4e434af1218ee8662ed41a5ddee1043ea4fd46858cce1b9d03b87456a5d26be","AdminOffers":"b2fc36437eb7fc9ce54ed7fe52c5d6357eb56c1a2a739e52ed5a355499a817ce","AdminCreateOfferMutation":"54bfc14494b6645090140ee5379fef55991e303aa9bd6df0a022bb6b7285297f","AdminShowOffer":"644549579b7660594fa585b864956004f5a0ff8117877656f5089df760c1d79d","AdminUpdateOfferMutation":"bad9b0a25d99a5b3c45ca5116f543b11b7911d1c8e086ff532efd53f29908ca6","AdminDeletePatreonCredentials":"0e64c279c079b1d77334115113bde43b3fb67c87f2910e3ec78b665711f8e3a9","RefreshPatreonData":"7f0600138abbc345fe5bc1fc3b9b3baab2c1cc26f7aa93adee98bdc3155c5b7d","AdminRestorePatreonCredentials":"5d13761fba27efff289309ffd9a8b5db017c28f87955b985a8c9db1aa9601690","AdminPatreonCredentials":"a4529aa3cd3083e2e27d709dc6b6fa1844d29af82b0d32c29796d920ee3c3f31","AdminCreatePatreonCreds":"591e7cf39ea6e450420cba98196e4442ec0a00116f882fa7f66517b5020ec326","AdminPatreonCredentialsById":"d6d6fd3be69e967017988eb4800eeaba94baafc50e33e35269e8a934dd1313c0","AdminPatreoncredentialsShowSubgraphs":"7907df65e3705a5dee8f06f52c156f65730954cc8a95dd0d07f0d0b98599a548","AdminPatreoncredentialsShowSubgraphsSave":"8190946c3f0341dd41e84850004aa19d425d4aed98ea5984063bb700a46183a6","AdminPurchases":"47a76a00baca079d6e46244a8ba7bf75daf8063fdf530c5a8d46a876fdc00900","AdminRedirects":"2a97bb424ba31abc5de22378e2989fc7c0c4b383de50be424f6f849e831e9311","AdminCreateRedirectMutation":"fb48605b011a659f8c8764b08da9bdadd90cbd5e6bbdf74b1b03d25a58fca89c","AdminShowRedirect":"300e47bb2bb87540db90e9c808e2ddf209f84219236abc6796417bf8bba3fbc0","AdminDeleteRedirectMutation":"b0d9e5d6b48166fd7422947a0b43bf3a93827fb5da666ac04449209b8a8a660c","AdminUpdateRedirectMutation":"70ce4af2a2b9bf672e94cf16d78952c56827591f6c0efb64e1c8e359050da36d","AdminMakeReleaseLive":"d0a1f7de2a4ea212ad0f7b80fd591943f26ca638c29e46acb604f47828db4204","AdminReleases":"a8954143d0ddc89b0a4d8ea0dfc63f3514e085d616d1089f8a0099adc9576993","AdminCreateRelease":"8fa0c84f61a4546c22ab6ccdafb6b18367eaae11e64dd35afeabdcaa9f19ee20","AdminListSubgraphs":"4e45ae80a24576cab70fdbb4790a0a7acbde1171823623ed8d7a00e495b596cd","AdminSelectSubgraphList":"bb432284d1aa05d873a33069ba3848e54368d1f8f98ee05fd948722f9a53f92d","AdminSelectSubgraph":"a801d4b303ea060e27e22011e2d7cc74c9a17a95e0877622e55e4012640c11a7","AdminShowSubgraph":"48c888d8117410ffb10f18fb6676ab2da2a4c9e6a4a83e201a589807632022c6","UpdateSubgraph":"a1ed76b00109cb6eac864a2c57d63d956d4c34676eb519e8d0a33abcd8c8945b","AdminTgBots":"06d210ef2397927fc72a502eb3b74feb72e597821fe1c34225a805aaf3a29d9f","AdminCreateTgBotMutation":"9748fa61fe26e6ae99458cf44e989e723783cd2fc15f15b24cd6fd93270949fa","AdminTgBotChats":"30356ff3696684472ba47034278875cb8b2f3e70b3ca28fa8891695b6c0af067","AdminTgbotShowChatsSubgraphs":"bbb27b77bcd7bb421f02df2dae89b376ffb48f07de515d49ba54f39e162ec702","AdminTgbotsShowchatsSubgraphsSave":"8e1228ade3dd23797937a932335450709f34730a7f0c65c9a9ecc30f34b92954","AdminTgBotInviteChats":"ef193c3dc330d6cb33b3e110e19dbc4d9306044b2d4d1dd2be9bbd48f9450da5","AdminTgbotShowInviteChatsSubgraphs":"bd7b2e4e30ed3c36c23931a18de9383332aa37d9eb0b199528f289a492dc90ac","AdminTgbotShowInviteChatsSubgraphsSave":"44f34387d8ca522fdabe1d92f6a8c1a1224145544fc5d58fbd015dc4057525c9","AdminShowTgBot":"b19db79f571bd11a7ef34fcf55468b5475f00de5ee50426eb09ee71c866af16b","AdminUpdateTgBotMutation":"b52a6b067bf30fd17261a67bc90b1c1805f256483df958579a150b76daddad6b","AdminListUserBans":"69e1b4b4cb152647fa3474d44d1fccc7e5bfdc9bfa95d60b9726d4e52c94b3b4","AdminBanUser":"b7eaca2436a0420749fd9818239ddaaf03cf39d13fb051af54e1ddfc16b0a376","AdminUnbanUser":"9512bb945535dd9ef2fe1dacc60073ce01fc8d8f3e93fec6583ab2dc455d1309","AdminListUsers":"6f4fcb27423e59a080c8c0ba8cc8b69628bf9f961bdfbce5c62bf60c19db4075","AdminUserSubgraphAccess":"a624b706534097050759fc343d7335c36f60b7fd8cb7eac35979d2c2e0b166da","AdminUpdateUserSubgraphAccess":"1f5c1a927c82b86a3d0e0313744fe51f023ed479f955e6846225bff4ab75a91d","AdminListUserSubgraphAccesses":"79ca5aafd82b91a579c3ea6232fa7a32773f2b74846785a00e0f0deee9854eca","AdminWaitListEmailRequests":"88e921b281ef500844b5b658cf81af29224da427fd488f3307f4fd78c528545c","AdminWaitListTgBotRequests":"76e6d7dffbe33175788df26a9be00abaf68e1be37417e369892ac8c1ddaaf4cb","SignOut":"8e1a898d776a103a20b7dbdfbeb8196fce0175ffe38fa7af9da2848cefdadedf","RequestEmailSignInCode":"cc5a33407c1a3cca08dbcba6847a88298eec84b10f18449244cf13e458449ef9","SignInByEmail":"5678d2ca29b77529e0b9942845dcea2c941c6b5a234863dc86ac2ffaad668614","Viewer":"11c2c89ff045bd18461fa0409d26dcf4acbb063202aa8e74615fcd74d21db756","ReaderQuery":"e4f119366f8ce54fa07ce2fbe933f6dbc5a11e8340e7027ec038c290057bdfc6","FavoriteNotes":"b5507792a81883ed9e746531a025992ccb774f3fb57772cbc9ad59c509c3cc60","ToggleFavoriteNote":"798c4a621133d47a0766371d708e19ca3fa24053dd43a71ea98106715cb1ac53","PaywallActivePurchaseQuery":"49eef6eeabb08d2251039c9b3ca67cade0c7af866c29300712400aa44d34d15b","CreateEmailWaitListRequestMutation":"3239c9d8b52c7fc53db7844e5a7c8c5ee4f262e374d421a695bda48072395718","PaywallQuery":"efbb99141e50ca0ffbc3d9ab51ba259b45601c696bd77ca7334dc6579f88195d","CreatePaymentLink":"3c4ea8c746c573dc9a48a303c13f2b6f7ac3ccad23045f8e989105ea0df98b7a","UserSubscriptions":"1e67f2ab803afe77d6859c2130b2fede9f9edce8c9d841e14ce552c3ecf40115"}
 
 export const $trip2g_graphql_audit_log_level_enum = AuditLogLevelEnum;
 
 export const $trip2g_graphql_boosty_credentials_state_enum = BoostyCredentialsStateEnum;
+
+export const $trip2g_graphql_cron_job_execution_status = CronJobExecutionStatus;
 
 export const $trip2g_graphql_note_warning_level_enum = NoteWarningLevelEnum;
 
