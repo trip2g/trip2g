@@ -46,6 +46,7 @@ func (c fullData) Validate() error {
 type Manager struct {
 	cookieName string
 	secret     []byte
+	insecure   bool
 
 	// will call this function after parsing the token
 	// for example for check banned users.
@@ -63,6 +64,10 @@ func NewManager(cookieName string, secret []byte) *Manager {
 		cookieName: cookieName,
 		secret:     secret,
 	}
+}
+
+func (e *Manager) SetInsecure(v bool) {
+	e.insecure = v
 }
 
 func (e *Manager) AddValidator(v Validator) {
@@ -141,7 +146,7 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error)
 	c.SetValue(signed)
 	c.SetPath("/")
 	c.SetHTTPOnly(true)
-	c.SetSecure(true)
+	c.SetSecure(!e.insecure)
 	c.SetExpire(exp)
 	c.SetMaxAge(int(exp.Sub(now).Seconds()))
 
@@ -161,7 +166,7 @@ func (e *Manager) Delete(ctx *fasthttp.RequestCtx) error {
 	c.SetKey(e.cookieName)
 	c.SetPath("/")
 	c.SetHTTPOnly(true)
-	c.SetSecure(true)
+	c.SetSecure(!e.insecure)
 	c.SetExpire(fasthttp.CookieExpireDelete)
 
 	ctx.Response.Header.SetCookie(c)

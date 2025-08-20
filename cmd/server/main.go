@@ -149,6 +149,7 @@ func main() {
 	}
 
 	tokenManager := usertoken.NewManager("trip2g_token", []byte("secret"))
+	tokenManager.SetInsecure(config.DevMode) // for k6
 
 	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "no tx:")))
 
