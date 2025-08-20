@@ -1925,13 +1925,18 @@ func (q *Queries) InsertBoostyTierSubgraph(ctx context.Context, arg InsertBoosty
 }
 
 const insertCronJobExecution = `-- name: InsertCronJobExecution :one
-insert into cron_job_executions (job_id)
-values (?)
+insert into cron_job_executions (job_id, status)
+values (?, ?)
 returning id, job_id, started_at, finished_at, status, report_data, error_message
 `
 
-func (q *Queries) InsertCronJobExecution(ctx context.Context, jobID int64) (CronJobExecution, error) {
-	row := q.db.QueryRowContext(ctx, insertCronJobExecution, jobID)
+type InsertCronJobExecutionParams struct {
+	JobID  int64 `json:"job_id"`
+	Status int64 `json:"status"`
+}
+
+func (q *Queries) InsertCronJobExecution(ctx context.Context, arg InsertCronJobExecutionParams) (CronJobExecution, error) {
+	row := q.db.QueryRowContext(ctx, insertCronJobExecution, arg.JobID, arg.Status)
 	var i CronJobExecution
 	err := row.Scan(
 		&i.ID,

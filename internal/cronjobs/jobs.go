@@ -28,7 +28,7 @@ type Job interface {
 
 type Env interface {
 	UpsertCronJob(ctx context.Context, arg db.UpsertCronJobParams) error
-	InsertCronJobExecution(ctx context.Context, jobID int64) (db.CronJobExecution, error)
+	InsertCronJobExecution(ctx context.Context, arg db.InsertCronJobExecutionParams) (db.CronJobExecution, error)
 	UpdateCronJobExecution(ctx context.Context, arg db.UpdateCronJobExecutionParams) (db.CronJobExecution, error)
 	UpdateCronJobLastExec(ctx context.Context, id int64) error
 	UpdateRunningCronJobExecutions(ctx context.Context, params db.UpdateRunningCronJobExecutionsParams) error
@@ -52,8 +52,11 @@ type CronJobs struct {
 
 	log logger.Logger
 
-	mu   sync.Mutex
-	jobs map[int64]*jobItem
+	jobsMU sync.Mutex
+	jobs   map[int64]*jobItem
+
+	runningMU   sync.Mutex
+	runningJobs map[int64]db.CronJobExecution
 }
 
 func jobQueueID(id string) string {
@@ -67,8 +70,9 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 		cron: cron.New(cron.WithSeconds()),
 		log:  logger.WithPrefix(env.Logger(), "cronjobs:"),
 
-		mu:   sync.Mutex{},
 		jobs: make(map[int64]*jobItem),
+
+		runningJobs: make(map[int64]db.CronJobExecution),
 	}
 
 	// Register all jobs
@@ -132,8 +136,8 @@ func (cj *CronJobs) scheduleJob(jobID int64) {
 }
 
 func (cj *CronJobs) register(jobID int64) error {
-	cj.mu.Lock()
-	defer cj.mu.Unlock()
+	cj.jobsMU.Lock()
+	defer cj.jobsMU.Unlock()
 
 	job := cj.jobs[jobID]
 
@@ -155,6 +159,20 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 		return nil, fmt.Errorf("job %d not found", jobID)
 	}
 
+	cj.runningMU.Lock()
+	exec, exists := cj.runningJobs[jobID]
+
+	if exists {
+		cj.runningMU.Unlock()
+		return &exec, nil
+	}
+
+	defer func() {
+		cj.runningMU.Lock()
+		delete(cj.runningJobs, jobID)
+		cj.runningMU.Unlock()
+	}()
+
 	updateErr := cj.env.UpdateRunningCronJobExecutions(cj.ctx, db.UpdateRunningCronJobExecutionsParams{
 		JobID:  jobID,
 		Status: JobStatusRunning,
@@ -168,19 +186,18 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 	}
 
 	// Insert execution record
-	exec, err := cj.env.InsertCronJobExecution(cj.ctx, jobID)
+	insertParams := db.InsertCronJobExecutionParams{
+		JobID:  jobID,
+		Status: JobStatusRunning,
+	}
+
+	exec, err := cj.env.InsertCronJobExecution(cj.ctx, insertParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert cron job execution for %d: %w", jobID, err)
 	}
 
-	// Update status to running
-	_, err = cj.env.UpdateCronJobExecution(cj.ctx, db.UpdateCronJobExecutionParams{
-		ID:     exec.ID,
-		Status: JobStatusRunning,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to update cron job execution status for %d: %w", jobID, err)
-	}
+	cj.runningJobs[jobID] = exec
+	cj.runningMU.Unlock()
 
 	// Execute the job
 	report, jobErr := job.job.Execute(cj.ctx, cj.env)

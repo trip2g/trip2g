@@ -1249,8 +1249,8 @@ values (?, ?)
 on conflict(name) do nothing;
 
 -- name: InsertCronJobExecution :one
-insert into cron_job_executions (job_id)
-values (?)
+insert into cron_job_executions (job_id, status)
+values (?, ?)
 returning *;
 
 -- name: UpdateCronJobExecution :one
