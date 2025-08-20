@@ -100,6 +100,9 @@ type ResolverRoot interface {
 	AdminUserSubgraphAccess() AdminUserSubgraphAccessResolver
 	AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver
 	AdminUsersConnection() AdminUsersConnectionResolver
+	AdminWaitListEmailRequest() AdminWaitListEmailRequestResolver
+	AdminWaitListEmailRequestsConnection() AdminWaitListEmailRequestsConnectionResolver
+	AdminWaitListTgBotRequestsConnection() AdminWaitListTgBotRequestsConnectionResolver
 	BanUserPayload() BanUserPayloadResolver
 	DeleteBoostyCredentialsPayload() DeleteBoostyCredentialsPayloadResolver
 	DeletePatreonCredentialsPayload() DeletePatreonCredentialsPayloadResolver
@@ -456,6 +459,8 @@ type ComplexityRoot struct {
 		AllUserSubgraphAccesses    func(childComplexity int) int
 		AllUserUserBans            func(childComplexity int) int
 		AllUsers                   func(childComplexity int) int
+		AllWaitListEmailRequests   func(childComplexity int) int
+		AllWaitListTgBotRequests   func(childComplexity int) int
 		AuditLogs                  func(childComplexity int, filter model.AdminAuditLogsFilterInput) int
 		BoostyCredentials          func(childComplexity int, id int64) int
 		CronJob                    func(childComplexity int, id int64) int
@@ -612,6 +617,29 @@ type ComplexityRoot struct {
 	}
 
 	AdminUsersConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminWaitListEmailRequest struct {
+		CreatedAt func(childComplexity int) int
+		Email     func(childComplexity int) int
+		IP        func(childComplexity int) int
+		NotePath  func(childComplexity int) int
+	}
+
+	AdminWaitListEmailRequestsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminWaitListTgBotRequest struct {
+		BotName    func(childComplexity int) int
+		ChatID     func(childComplexity int) int
+		CreatedAt  func(childComplexity int) int
+		NotePath   func(childComplexity int) int
+		NotePathID func(childComplexity int) int
+	}
+
+	AdminWaitListTgBotRequestsConnection struct {
 		Nodes func(childComplexity int) int
 	}
 
@@ -1177,6 +1205,8 @@ type AdminQueryResolver interface {
 	AllLatestNoteAssets(ctx context.Context, obj *model1.AdminQuery) (*model.AdminLatestNoteAssetsConnection, error)
 	AllHTMLInjections(ctx context.Context, obj *model1.AdminQuery) (*model.AdminHTMLInjectionsConnection, error)
 	AllCronJobs(ctx context.Context, obj *model1.AdminQuery) (*model.AdminCronJobsConnection, error)
+	AllWaitListEmailRequests(ctx context.Context, obj *model1.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error)
+	AllWaitListTgBotRequests(ctx context.Context, obj *model1.AdminQuery) (*model.AdminWaitListTgBotRequestsConnection, error)
 	AllTgBots(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTgBotsConnection, error)
 	TgBotChats(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgBotChatsFilterInput) (*model.AdminTgBotChatsConnection, error)
 	TgChatSubgraphAccesses(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTgChatSubgraphAccessesFilterInput) (*model.AdminTgChatSubgraphAccessesConnection, error)
@@ -1278,6 +1308,15 @@ type AdminUserSubgraphAccessesConnectionResolver interface {
 }
 type AdminUsersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error)
+}
+type AdminWaitListEmailRequestResolver interface {
+	IP(ctx context.Context, obj *db.AllWaitListEmailRequestsRow) (*string, error)
+}
+type AdminWaitListEmailRequestsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminWaitListEmailRequestsConnection) ([]db.AllWaitListEmailRequestsRow, error)
+}
+type AdminWaitListTgBotRequestsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminWaitListTgBotRequestsConnection) ([]db.AllWaitListTgBotRequestsRow, error)
 }
 type BanUserPayloadResolver interface {
 	User(ctx context.Context, obj *model.BanUserPayload) (*db.User, error)
@@ -3086,6 +3125,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminQuery.AllUsers(childComplexity), true
 
+	case "AdminQuery.allWaitListEmailRequests":
+		if e.complexity.AdminQuery.AllWaitListEmailRequests == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllWaitListEmailRequests(childComplexity), true
+
+	case "AdminQuery.allWaitListTgBotRequests":
+		if e.complexity.AdminQuery.AllWaitListTgBotRequests == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllWaitListTgBotRequests(childComplexity), true
+
 	case "AdminQuery.auditLogs":
 		if e.complexity.AdminQuery.AuditLogs == nil {
 			break
@@ -3823,6 +3876,83 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminUsersConnection.Nodes(childComplexity), true
+
+	case "AdminWaitListEmailRequest.createdAt":
+		if e.complexity.AdminWaitListEmailRequest.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminWaitListEmailRequest.CreatedAt(childComplexity), true
+
+	case "AdminWaitListEmailRequest.email":
+		if e.complexity.AdminWaitListEmailRequest.Email == nil {
+			break
+		}
+
+		return e.complexity.AdminWaitListEmailRequest.Email(childComplexity), true
+
+	case "AdminWaitListEmailRequest.ip":
+		if e.complexity.AdminWaitListEmailRequest.IP == nil {
+			break
+		}
+
+		return e.complexity.AdminWaitListEmailRequest.IP(childComplexity), true
+
+	case "AdminWaitListEmailRequest.notePath":
+		if e.complexity.AdminWaitListEmailRequest.NotePath == nil {
+			break
+		}
+
+		return e.complexity.AdminWaitListEmailRequest.NotePath(childComplexity), true
+
+	case "AdminWaitListEmailRequestsConnection.nodes":
+		if e.complexity.AdminWaitListEmailRequestsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminWaitListEmailRequestsConnection.Nodes(childComplexity), true
+
+	case "AdminWaitListTgBotRequest.botName":
+		if e.complexity.AdminWaitListTgBotRequest.BotName == nil {
+			break
+		}
+
+		return e.complexity.AdminWaitListTgBotRequest.BotName(childComplexity), true
+
+	case "AdminWaitListTgBotRequest.chatId":
+		if e.complexity.AdminWaitListTgBotRequest.ChatID == nil {
+			break
+		}
+
+		return e.complexity.AdminWaitListTgBotRequest.ChatID(childComplexity), true
+
+	case "AdminWaitListTgBotRequest.createdAt":
+		if e.complexity.AdminWaitListTgBotRequest.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminWaitListTgBotRequest.CreatedAt(childComplexity), true
+
+	case "AdminWaitListTgBotRequest.notePath":
+		if e.complexity.AdminWaitListTgBotRequest.NotePath == nil {
+			break
+		}
+
+		return e.complexity.AdminWaitListTgBotRequest.NotePath(childComplexity), true
+
+	case "AdminWaitListTgBotRequest.notePathId":
+		if e.complexity.AdminWaitListTgBotRequest.NotePathID == nil {
+			break
+		}
+
+		return e.complexity.AdminWaitListTgBotRequest.NotePathID(childComplexity), true
+
+	case "AdminWaitListTgBotRequestsConnection.nodes":
+		if e.complexity.AdminWaitListTgBotRequestsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminWaitListTgBotRequestsConnection.Nodes(childComplexity), true
 
 	case "BanUserPayload.user":
 		if e.complexity.BanUserPayload.User == nil {
@@ -16852,6 +16982,102 @@ func (ec *executionContext) fieldContext_AdminQuery_allCronJobs(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_allWaitListEmailRequests(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allWaitListEmailRequests(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllWaitListEmailRequests(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminWaitListEmailRequestsConnection)
+	fc.Result = res
+	return ec.marshalNAdminWaitListEmailRequestsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminWaitListEmailRequestsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allWaitListEmailRequests(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminWaitListEmailRequestsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminWaitListEmailRequestsConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allWaitListTgBotRequests(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allWaitListTgBotRequests(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllWaitListTgBotRequests(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminWaitListTgBotRequestsConnection)
+	fc.Result = res
+	return ec.marshalNAdminWaitListTgBotRequestsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminWaitListTgBotRequestsConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allWaitListTgBotRequests(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminWaitListTgBotRequestsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminWaitListTgBotRequestsConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_allTgBots(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminQuery_allTgBots(ctx, field)
 	if err != nil {
@@ -21953,6 +22179,509 @@ func (ec *executionContext) fieldContext_AdminUsersConnection_nodes(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminWaitListEmailRequest_email(ctx context.Context, field graphql.CollectedField, obj *db.AllWaitListEmailRequestsRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminWaitListEmailRequest_email(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Email, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminWaitListEmailRequest_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminWaitListEmailRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminWaitListEmailRequest_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.AllWaitListEmailRequestsRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminWaitListEmailRequest_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminWaitListEmailRequest_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminWaitListEmailRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminWaitListEmailRequest_ip(ctx context.Context, field graphql.CollectedField, obj *db.AllWaitListEmailRequestsRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminWaitListEmailRequest_ip(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminWaitListEmailRequest().IP(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminWaitListEmailRequest_ip(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminWaitListEmailRequest",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminWaitListEmailRequest_notePath(ctx context.Context, field graphql.CollectedField, obj *db.AllWaitListEmailRequestsRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminWaitListEmailRequest_notePath(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NotePath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminWaitListEmailRequest_notePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminWaitListEmailRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminWaitListEmailRequestsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminWaitListEmailRequestsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminWaitListEmailRequestsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminWaitListEmailRequestsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.AllWaitListEmailRequestsRow)
+	fc.Result = res
+	return ec.marshalNAdminWaitListEmailRequest2ᚕtrip2gᚋinternalᚋdbᚐAllWaitListEmailRequestsRowᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminWaitListEmailRequestsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminWaitListEmailRequestsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "email":
+				return ec.fieldContext_AdminWaitListEmailRequest_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminWaitListEmailRequest_createdAt(ctx, field)
+			case "ip":
+				return ec.fieldContext_AdminWaitListEmailRequest_ip(ctx, field)
+			case "notePath":
+				return ec.fieldContext_AdminWaitListEmailRequest_notePath(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminWaitListEmailRequest", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminWaitListTgBotRequest_chatId(ctx context.Context, field graphql.CollectedField, obj *db.AllWaitListTgBotRequestsRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminWaitListTgBotRequest_chatId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ChatID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminWaitListTgBotRequest_chatId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminWaitListTgBotRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminWaitListTgBotRequest_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.AllWaitListTgBotRequestsRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminWaitListTgBotRequest_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminWaitListTgBotRequest_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminWaitListTgBotRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminWaitListTgBotRequest_notePathId(ctx context.Context, field graphql.CollectedField, obj *db.AllWaitListTgBotRequestsRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminWaitListTgBotRequest_notePathId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NotePathID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminWaitListTgBotRequest_notePathId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminWaitListTgBotRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminWaitListTgBotRequest_notePath(ctx context.Context, field graphql.CollectedField, obj *db.AllWaitListTgBotRequestsRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminWaitListTgBotRequest_notePath(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NotePath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminWaitListTgBotRequest_notePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminWaitListTgBotRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminWaitListTgBotRequest_botName(ctx context.Context, field graphql.CollectedField, obj *db.AllWaitListTgBotRequestsRow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminWaitListTgBotRequest_botName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BotName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminWaitListTgBotRequest_botName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminWaitListTgBotRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminWaitListTgBotRequestsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminWaitListTgBotRequestsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminWaitListTgBotRequestsConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminWaitListTgBotRequestsConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.AllWaitListTgBotRequestsRow)
+	fc.Result = res
+	return ec.marshalNAdminWaitListTgBotRequest2ᚕtrip2gᚋinternalᚋdbᚐAllWaitListTgBotRequestsRowᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminWaitListTgBotRequestsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminWaitListTgBotRequestsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "chatId":
+				return ec.fieldContext_AdminWaitListTgBotRequest_chatId(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminWaitListTgBotRequest_createdAt(ctx, field)
+			case "notePathId":
+				return ec.fieldContext_AdminWaitListTgBotRequest_notePathId(ctx, field)
+			case "notePath":
+				return ec.fieldContext_AdminWaitListTgBotRequest_notePath(ctx, field)
+			case "botName":
+				return ec.fieldContext_AdminWaitListTgBotRequest_botName(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminWaitListTgBotRequest", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _BanUserPayload_userId(ctx context.Context, field graphql.CollectedField, obj *model.BanUserPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_BanUserPayload_userId(ctx, field)
 	if err != nil {
@@ -26094,6 +26823,10 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allHTMLInjections(ctx, field)
 			case "allCronJobs":
 				return ec.fieldContext_AdminQuery_allCronJobs(ctx, field)
+			case "allWaitListEmailRequests":
+				return ec.fieldContext_AdminQuery_allWaitListEmailRequests(ctx, field)
+			case "allWaitListTgBotRequests":
+				return ec.fieldContext_AdminQuery_allWaitListTgBotRequests(ctx, field)
 			case "allTgBots":
 				return ec.fieldContext_AdminQuery_allTgBots(ctx, field)
 			case "tgBotChats":
@@ -41182,6 +41915,78 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allWaitListEmailRequests":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allWaitListEmailRequests(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allWaitListTgBotRequests":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allWaitListTgBotRequests(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "allTgBots":
 			field := field
 
@@ -44001,6 +44806,287 @@ func (ec *executionContext) _AdminUsersConnection(ctx context.Context, sel ast.S
 					}
 				}()
 				res = ec._AdminUsersConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminWaitListEmailRequestImplementors = []string{"AdminWaitListEmailRequest"}
+
+func (ec *executionContext) _AdminWaitListEmailRequest(ctx context.Context, sel ast.SelectionSet, obj *db.AllWaitListEmailRequestsRow) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminWaitListEmailRequestImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminWaitListEmailRequest")
+		case "email":
+			out.Values[i] = ec._AdminWaitListEmailRequest_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminWaitListEmailRequest_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "ip":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminWaitListEmailRequest_ip(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "notePath":
+			out.Values[i] = ec._AdminWaitListEmailRequest_notePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminWaitListEmailRequestsConnectionImplementors = []string{"AdminWaitListEmailRequestsConnection"}
+
+func (ec *executionContext) _AdminWaitListEmailRequestsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminWaitListEmailRequestsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminWaitListEmailRequestsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminWaitListEmailRequestsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminWaitListEmailRequestsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminWaitListTgBotRequestImplementors = []string{"AdminWaitListTgBotRequest"}
+
+func (ec *executionContext) _AdminWaitListTgBotRequest(ctx context.Context, sel ast.SelectionSet, obj *db.AllWaitListTgBotRequestsRow) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminWaitListTgBotRequestImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminWaitListTgBotRequest")
+		case "chatId":
+			out.Values[i] = ec._AdminWaitListTgBotRequest_chatId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminWaitListTgBotRequest_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "notePathId":
+			out.Values[i] = ec._AdminWaitListTgBotRequest_notePathId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "notePath":
+			out.Values[i] = ec._AdminWaitListTgBotRequest_notePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "botName":
+			out.Values[i] = ec._AdminWaitListTgBotRequest_botName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminWaitListTgBotRequestsConnectionImplementors = []string{"AdminWaitListTgBotRequestsConnection"}
+
+func (ec *executionContext) _AdminWaitListTgBotRequestsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminWaitListTgBotRequestsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminWaitListTgBotRequestsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminWaitListTgBotRequestsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminWaitListTgBotRequestsConnection_nodes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -50762,6 +51848,130 @@ func (ec *executionContext) marshalNAdminUsersConnection2ᚖtrip2gᚋinternalᚋ
 		return graphql.Null
 	}
 	return ec._AdminUsersConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminWaitListEmailRequest2trip2gᚋinternalᚋdbᚐAllWaitListEmailRequestsRow(ctx context.Context, sel ast.SelectionSet, v db.AllWaitListEmailRequestsRow) graphql.Marshaler {
+	return ec._AdminWaitListEmailRequest(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminWaitListEmailRequest2ᚕtrip2gᚋinternalᚋdbᚐAllWaitListEmailRequestsRowᚄ(ctx context.Context, sel ast.SelectionSet, v []db.AllWaitListEmailRequestsRow) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminWaitListEmailRequest2trip2gᚋinternalᚋdbᚐAllWaitListEmailRequestsRow(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminWaitListEmailRequestsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminWaitListEmailRequestsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminWaitListEmailRequestsConnection) graphql.Marshaler {
+	return ec._AdminWaitListEmailRequestsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminWaitListEmailRequestsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminWaitListEmailRequestsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminWaitListEmailRequestsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminWaitListEmailRequestsConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminWaitListTgBotRequest2trip2gᚋinternalᚋdbᚐAllWaitListTgBotRequestsRow(ctx context.Context, sel ast.SelectionSet, v db.AllWaitListTgBotRequestsRow) graphql.Marshaler {
+	return ec._AdminWaitListTgBotRequest(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminWaitListTgBotRequest2ᚕtrip2gᚋinternalᚋdbᚐAllWaitListTgBotRequestsRowᚄ(ctx context.Context, sel ast.SelectionSet, v []db.AllWaitListTgBotRequestsRow) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminWaitListTgBotRequest2trip2gᚋinternalᚋdbᚐAllWaitListTgBotRequestsRow(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminWaitListTgBotRequestsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminWaitListTgBotRequestsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminWaitListTgBotRequestsConnection) graphql.Marshaler {
+	return ec._AdminWaitListTgBotRequestsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminWaitListTgBotRequestsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminWaitListTgBotRequestsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminWaitListTgBotRequestsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminWaitListTgBotRequestsConnection(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNApiKeyLogsFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAPIKeyLogsFilterInput(ctx context.Context, v any) (model.APIKeyLogsFilterInput, error) {

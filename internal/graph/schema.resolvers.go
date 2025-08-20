@@ -925,6 +925,16 @@ func (r *adminQueryResolver) AllCronJobs(ctx context.Context, obj *appmodel.Admi
 	return &model.AdminCronJobsConnection{}, nil
 }
 
+// AllWaitListEmailRequests is the resolver for the allWaitListEmailRequests field.
+func (r *adminQueryResolver) AllWaitListEmailRequests(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error) {
+	return &model.AdminWaitListEmailRequestsConnection{}, nil
+}
+
+// AllWaitListTgBotRequests is the resolver for the allWaitListTgBotRequests field.
+func (r *adminQueryResolver) AllWaitListTgBotRequests(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminWaitListTgBotRequestsConnection, error) {
+	return &model.AdminWaitListTgBotRequestsConnection{}, nil
+}
+
 // AllTgBots is the resolver for the allTgBots field.
 func (r *adminQueryResolver) AllTgBots(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminTgBotsConnection, error) {
 	return &model.AdminTgBotsConnection{}, nil
@@ -1247,6 +1257,24 @@ func (r *adminUserSubgraphAccessesConnectionResolver) Nodes(ctx context.Context,
 // Nodes is the resolver for the nodes field.
 func (r *adminUsersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error) {
 	return r.env(ctx).ListAllUsers(ctx)
+}
+
+// IP is the resolver for the ip field.
+func (r *adminWaitListEmailRequestResolver) IP(ctx context.Context, obj *db.AllWaitListEmailRequestsRow) (*string, error) {
+	if obj.Ip.Valid {
+		return &obj.Ip.String, nil
+	}
+	return nil, nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminWaitListEmailRequestsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminWaitListEmailRequestsConnection) ([]db.AllWaitListEmailRequestsRow, error) {
+	return r.env(ctx).AllWaitListEmailRequests(ctx)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminWaitListTgBotRequestsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminWaitListTgBotRequestsConnection) ([]db.AllWaitListTgBotRequestsRow, error) {
+	return r.env(ctx).AllWaitListTgBotRequests(ctx)
 }
 
 // User is the resolver for the user field.
@@ -1750,7 +1778,16 @@ func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, filte
 		return nil, nil
 	}
 
-	offers, err := r.env(ctx).ListActiveOffersBySubgraphNames(ctx, note.SubgraphNames)
+	subgraphNames := note.SubgraphNames
+	if len(subgraphNames) == 0 {
+		subgraphs := r.env(ctx).LiveNoteViews().Subgraphs
+
+		for name := range subgraphs {
+			subgraphNames = append(subgraphNames, name)
+		}
+	}
+
+	offers, err := r.env(ctx).ListActiveOffersBySubgraphNames(ctx, subgraphNames)
 	if err != nil {
 		return nil, err
 	}
@@ -2072,6 +2109,21 @@ func (r *Resolver) AdminUsersConnection() AdminUsersConnectionResolver {
 	return &adminUsersConnectionResolver{r}
 }
 
+// AdminWaitListEmailRequest returns AdminWaitListEmailRequestResolver implementation.
+func (r *Resolver) AdminWaitListEmailRequest() AdminWaitListEmailRequestResolver {
+	return &adminWaitListEmailRequestResolver{r}
+}
+
+// AdminWaitListEmailRequestsConnection returns AdminWaitListEmailRequestsConnectionResolver implementation.
+func (r *Resolver) AdminWaitListEmailRequestsConnection() AdminWaitListEmailRequestsConnectionResolver {
+	return &adminWaitListEmailRequestsConnectionResolver{r}
+}
+
+// AdminWaitListTgBotRequestsConnection returns AdminWaitListTgBotRequestsConnectionResolver implementation.
+func (r *Resolver) AdminWaitListTgBotRequestsConnection() AdminWaitListTgBotRequestsConnectionResolver {
+	return &adminWaitListTgBotRequestsConnectionResolver{r}
+}
+
 // BanUserPayload returns BanUserPayloadResolver implementation.
 func (r *Resolver) BanUserPayload() BanUserPayloadResolver { return &banUserPayloadResolver{r} }
 
@@ -2215,6 +2267,9 @@ type adminUserBansConnectionResolver struct{ *Resolver }
 type adminUserSubgraphAccessResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
+type adminWaitListEmailRequestResolver struct{ *Resolver }
+type adminWaitListEmailRequestsConnectionResolver struct{ *Resolver }
+type adminWaitListTgBotRequestsConnectionResolver struct{ *Resolver }
 type banUserPayloadResolver struct{ *Resolver }
 type deleteBoostyCredentialsPayloadResolver struct{ *Resolver }
 type deletePatreonCredentialsPayloadResolver struct{ *Resolver }

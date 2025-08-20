@@ -376,6 +376,14 @@ type AdminUsersConnection struct {
 	Nodes []db.User `json:"nodes"`
 }
 
+type AdminWaitListEmailRequestsConnection struct {
+	Nodes []db.AllWaitListEmailRequestsRow `json:"nodes"`
+}
+
+type AdminWaitListTgBotRequestsConnection struct {
+	Nodes []db.AllWaitListTgBotRequestsRow `json:"nodes"`
+}
+
 type APIKeyLogsFilterInput struct {
 	APIKeyID *int64 `json:"apiKeyId,omitempty"`
 }

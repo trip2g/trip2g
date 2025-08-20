@@ -805,6 +805,28 @@ values (?, ?, ?);
 insert into wait_list_tg_bot_requests (bot_id, chat_id, note_path_id)
 values (?, ?, ?);
 
+-- name: AllWaitListEmailRequests :many
+select 
+    wler.email,
+    wler.created_at,
+    wler.ip,
+    np.value as note_path
+from wait_list_email_requests wler
+join note_paths np on wler.note_path_id = np.id
+order by wler.created_at desc;
+
+-- name: AllWaitListTgBotRequests :many
+select 
+    wltr.chat_id,
+    wltr.created_at,
+    wltr.note_path_id,
+    np.value as note_path,
+    tb.name as bot_name
+from wait_list_tg_bot_requests wltr
+join note_paths np on wltr.note_path_id = np.id
+join tg_bots tb on wltr.bot_id = tb.id
+order by wltr.created_at desc;
+
 -- name: AllPatreonCredentials :many
 select * from patreon_credentials
 order by created_at desc;

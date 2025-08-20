@@ -770,6 +770,102 @@ func (q *Queries) AllVisibleNotePaths(ctx context.Context) ([]NotePath, error) {
 	return items, nil
 }
 
+const allWaitListEmailRequests = `-- name: AllWaitListEmailRequests :many
+select 
+    wler.email,
+    wler.created_at,
+    wler.ip,
+    np.value as note_path
+from wait_list_email_requests wler
+join note_paths np on wler.note_path_id = np.id
+order by wler.created_at desc
+`
+
+type AllWaitListEmailRequestsRow struct {
+	Email     string         `json:"email"`
+	CreatedAt time.Time      `json:"created_at"`
+	Ip        sql.NullString `json:"ip"`
+	NotePath  string         `json:"note_path"`
+}
+
+func (q *Queries) AllWaitListEmailRequests(ctx context.Context) ([]AllWaitListEmailRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, allWaitListEmailRequests)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllWaitListEmailRequestsRow
+	for rows.Next() {
+		var i AllWaitListEmailRequestsRow
+		if err := rows.Scan(
+			&i.Email,
+			&i.CreatedAt,
+			&i.Ip,
+			&i.NotePath,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allWaitListTgBotRequests = `-- name: AllWaitListTgBotRequests :many
+select 
+    wltr.chat_id,
+    wltr.created_at,
+    wltr.note_path_id,
+    np.value as note_path,
+    tb.name as bot_name
+from wait_list_tg_bot_requests wltr
+join note_paths np on wltr.note_path_id = np.id
+join tg_bots tb on wltr.bot_id = tb.id
+order by wltr.created_at desc
+`
+
+type AllWaitListTgBotRequestsRow struct {
+	ChatID     int64     `json:"chat_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	NotePathID int64     `json:"note_path_id"`
+	NotePath   string    `json:"note_path"`
+	BotName    string    `json:"bot_name"`
+}
+
+func (q *Queries) AllWaitListTgBotRequests(ctx context.Context) ([]AllWaitListTgBotRequestsRow, error) {
+	rows, err := q.db.QueryContext(ctx, allWaitListTgBotRequests)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllWaitListTgBotRequestsRow
+	for rows.Next() {
+		var i AllWaitListTgBotRequestsRow
+		if err := rows.Scan(
+			&i.ChatID,
+			&i.CreatedAt,
+			&i.NotePathID,
+			&i.NotePath,
+			&i.BotName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const apiKeyByValue = `-- name: ApiKeyByValue :one
 select id, value, created_at, created_by, disabled_at, disabled_by, description from api_keys where value = ? and disabled_at is null limit 1
 `

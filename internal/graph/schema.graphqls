@@ -345,6 +345,29 @@ type AdminTgChatMembersConnection {
   nodes: [AdminTgChatMember!]! @goField(forceResolver: true)
 }
 
+type AdminWaitListEmailRequest @goModel(model: "trip2g/internal/db.AllWaitListEmailRequestsRow") {
+  email: String!
+  createdAt: Time!
+  ip: String
+  notePath: String!
+}
+
+type AdminWaitListEmailRequestsConnection {
+  nodes: [AdminWaitListEmailRequest!]! @goField(forceResolver: true)
+}
+
+type AdminWaitListTgBotRequest @goModel(model: "trip2g/internal/db.AllWaitListTgBotRequestsRow") {
+  chatId: Int64!
+  createdAt: Time!
+  notePathId: Int64!
+  notePath: String!
+  botName: String!
+}
+
+type AdminWaitListTgBotRequestsConnection {
+  nodes: [AdminWaitListTgBotRequest!]! @goField(forceResolver: true)
+}
+
 type AdminPatreonCredentials @goModel(model: "trip2g/internal/db.PatreonCredential") {
   id: Int64!
   createdAt: Time!
@@ -559,6 +582,9 @@ type AdminQuery {
   allLatestNoteAssets: AdminLatestNoteAssetsConnection!
   allHTMLInjections: AdminHTMLInjectionsConnection!
   allCronJobs: AdminCronJobsConnection!
+  
+  allWaitListEmailRequests: AdminWaitListEmailRequestsConnection!
+  allWaitListTgBotRequests: AdminWaitListTgBotRequestsConnection!
 
   allTgBots: AdminTgBotsConnection!
   tgBotChats(filter: AdminTgBotChatsFilterInput!): AdminTgBotChatsConnection!
