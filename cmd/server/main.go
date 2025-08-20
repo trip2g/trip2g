@@ -308,16 +308,29 @@ func main() {
 	a.startServer()
 }
 
-func (a *app) DBConnection() *sql.DB {
-	return a.conn
+func (a *app) EnqueueJob(ctx context.Context, jobID string, data []byte) error {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil && !errors.Is(err, appreq.ErrNotFound) {
+		return fmt.Errorf("failed to get request from context: %w", err)
+	}
+
+	if req != nil {
+		env, ok := req.Env.(*app)
+		if ok && env.CurrentTx() != nil {
+			a.log.Debug("enqueueing job in request env", "job_id", jobID, "data", string(data))
+
+			return jobs.CreateTx(ctx, env.currentTx, env.goqiteQueue, jobID, data)
+		}
+	}
+
+	a.log.Debug("enqueueing job in global env", "job_id", jobID, "data", string(data))
+
+	return jobs.Create(ctx, a.goqiteQueue, jobID, data)
 }
 
-func (a *app) GoqiteQueue() *goqite.Queue {
-	return a.goqiteQueue
-}
-
-func (a *app) GoqiteRunner() *jobs.Runner {
-	return a.goqiteRunner
+func (a *app) RegisterJob(id string, handler func(ctx context.Context, m []byte) error) {
+	a.log.Info("registering job handler", "id", id)
+	a.goqiteRunner.Register(id, handler)
 }
 
 func (a *app) createOwnerIfNotExists(ctx context.Context) error {

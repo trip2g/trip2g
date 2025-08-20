@@ -4,20 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"trip2g/internal/appreq"
 	"trip2g/internal/backjobs/sendsignincode"
 	"trip2g/internal/logger"
-
-	"maragu.dev/goqite"
-	"maragu.dev/goqite/jobs"
 )
 
 type Env interface {
 	Logger() logger.Logger
-	GoqiteQueue() *goqite.Queue
-	GoqiteRunner() *jobs.Runner
+	EnqueueJob(ctx context.Context, jobID string, data []byte) error
+	RegisterJob(id string, handler func(ctx context.Context, m []byte) error)
 
 	// don't forget to embed all env interfaces here
 	sendsignincode.Env
@@ -41,34 +36,18 @@ func New(env Env) *BackJobs {
 	}
 
 	// Register jobs with backjobs prefix
-	registerJob(&tasks, fmt.Sprintf("backjobs:%s", sendsignincode.ID), sendsignincode.Resolve)
+	registerJob(&tasks, sendsignincode.ID, sendsignincode.Resolve)
 
 	return &tasks
 }
 
 func (t *BackJobs) queueJob(ctx context.Context, jobID string, params interface{}) error {
-	queueID := jobQueueID(jobID)
-
-	req, err := appreq.FromCtx(ctx)
-	if err != nil && !errors.Is(err, appreq.ErrNotFound) {
-		return fmt.Errorf("failed to get request from context: %w", err)
-	}
-
 	data, err := json.Marshal(params)
 	if err != nil {
 		return fmt.Errorf("failed to marshal params: %w", err)
 	}
 
-	q := t.env.GoqiteQueue()
-
-	if req != nil {
-		env, ok := req.Env.(RequestEnv)
-		if ok && env.CurrentTx() != nil {
-			return jobs.CreateTx(ctx, env.CurrentTx(), q, jobID, data)
-		}
-	}
-
-	return jobs.Create(ctx, q, queueID, data)
+	return t.env.EnqueueJob(ctx, jobQueueID(jobID), data)
 }
 
 func jobQueueID(id string) string {
@@ -84,7 +63,7 @@ func (t *BackJobs) QueueRequestSignInEmail(ctx context.Context, email string, co
 func registerJob[T any, P any](tasks *BackJobs, jobID string, resolveFunc func(context.Context, T, P) error) {
 	id := jobQueueID(jobID)
 
-	tasks.env.GoqiteRunner().Register(id, func(ctx context.Context, m []byte) error {
+	tasks.env.RegisterJob(id, func(ctx context.Context, m []byte) error {
 		var params P
 
 		err := json.Unmarshal(m, &params)

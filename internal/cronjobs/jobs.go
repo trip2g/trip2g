@@ -10,8 +10,6 @@ import (
 	"trip2g/internal/logger"
 
 	"github.com/robfig/cron/v3"
-	"maragu.dev/goqite"
-	"maragu.dev/goqite/jobs"
 )
 
 const (
@@ -37,8 +35,8 @@ type Env interface {
 	CronJobByName(ctx context.Context, name string) (db.CronJob, error)
 	Logger() logger.Logger
 
-	GoqiteQueue() *goqite.Queue
-	GoqiteRunner() *jobs.Runner
+	EnqueueJob(ctx context.Context, jobID string, data []byte) error
+	RegisterJob(id string, handler func(ctx context.Context, m []byte) error)
 }
 
 type jobItem struct {
@@ -56,6 +54,10 @@ type CronJobs struct {
 
 	mu   sync.Mutex
 	jobs map[int64]*jobItem
+}
+
+func jobQueueID(id string) string {
+	return fmt.Sprintf("cronjobs:%s", id)
 }
 
 func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
@@ -90,8 +92,8 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 		}
 
 		// Register job with cronjobs prefix
-		jobName := fmt.Sprintf("cronjobs:%s", name)
-		cj.env.GoqiteRunner().Register(jobName, func(ctx context.Context, m []byte) error {
+		jobName := jobQueueID(name)
+		cj.env.RegisterJob(jobName, func(ctx context.Context, m []byte) error {
 			_, execErr := cj.executeJob(dbJob.ID)
 			return execErr
 		})
@@ -122,8 +124,8 @@ func (cj *CronJobs) scheduleJob(jobID int64) {
 		return
 	}
 
-	jobName := fmt.Sprintf("cronjobs:%s", job.job.Name())
-	err := jobs.Create(cj.ctx, cj.env.GoqiteQueue(), jobName, nil)
+	jobName := jobQueueID(job.job.Name())
+	err := cj.env.EnqueueJob(cj.ctx, jobName, nil)
 	if err != nil {
 		cj.log.Error("failed to create job", "job_id", jobID, "job_name", jobName, "error", err)
 	}
