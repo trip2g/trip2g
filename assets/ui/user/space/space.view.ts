@@ -4,10 +4,9 @@ namespace $.$$ {
 			return this.$.$trip2g_auth_viewer.current()
 		}
 
-		override open_title(): string {
+		override open_button() {
 			const viewer = this.viewer()
-
-			return viewer.user ? 'Личный кабинет' : 'Войти'
+			return viewer.user ? this.OpenButton() : this.SignInButton()
 		}
 
 		dialog_dom() {

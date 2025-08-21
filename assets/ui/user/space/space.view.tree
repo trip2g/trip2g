@@ -4,13 +4,17 @@ $trip2g_user_space $mol_view
 	plugins /
 		<= Theme $mol_theme_auto
 		<= SiteTheme $trip2g_theme
+	SignInButton $mol_button_minor
+		click <= open null
+		sub / <= SignInIcon $mol_icon_login
+	OpenButton $mol_button_major
+		title \Личнный кабинет
+		click <= open null
 	sub /
 		<= Name $trip2g_user_space_name
 			value <= user_email \
 		<= AdminLink $trip2g_admin_link
-		<= Open $mol_button_major
-			title <= open_title \
-			click <= open null
+		<= open_button null $mol_view
 		<= Lighter $mol_lights_toggle
 		<= Dialog $mol_view
 			dom_name \dialog
