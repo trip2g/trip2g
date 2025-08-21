@@ -138,9 +138,8 @@ func (ldr *loader) findAssets() error {
 
 			switch n.Kind() {
 			case wikilink.Kind:
-
 				wl, ok := n.(*wikilink.Node)
-				if ok && wl.Embed {
+				if ok && wl.Embed && isImageExtension(string(wl.Target)) {
 					p.Assets[string(wl.Target)] = struct{}{}
 				}
 
