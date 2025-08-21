@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Forma';
+  src: url('/assets/forma.woff') format('woff'), url('/assets/forma.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Forma';
+  font-weight: bold;
+  font-style: normal;
+  src: url('/assets/forma.woff') format('woff'), url('/assets/forma.woff2') format('woff2');
+}
+
+@theme {
+  --font-sans: forma-djr-display, 'Forma', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @plugin "@tailwindcss/typography";
@@ -18,6 +34,7 @@ a {
   @apply text-gray-500 align-middle text-sm no-underline;
 }
 
+/*
 .wip::before {
   content: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgc3R5bGU9ImZpbGwtcnVsZTpldmVub2RkO2NsaXAtcnVsZTpldmVub2RkO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDoyIiB2aWV3Qm94PSIwIDAgNjQgNjQiPjxwYXRoIGQ9Ik0tODk2LTE5MkgzODR2ODAwSC04OTZ6IiBzdHlsZT0iZmlsbDpub25lIi8+PHBhdGggZD0iTTU1LjgyMSA0NC43NDNhOTg4IDk4OCAwIDAgMS04LjU0NyA4Ljc2NEwzMy45OTEgMzkuMzFsNy45NTMtNy45NTN6bS0yNC42ODItOC4yODQgNy45NTMtNy45NTNzLTQuMDM5LTMuMDgyLTMuNjY3LTUuMDA3IDEuMjEyLTQuNjQ3IDcuMDYyLTcuMDYyYzUuODQ5LTIuNDE0IDExLjMwNi0yLjYzMiAxMS4zMDYtMi42MzJsLjE5Ni0yLjYzN3MtMTMuNDQ0LTIuMDMxLTIwLjU0Ni40OTItMTUuMTM1IDEyLjAyMS0xNS4xMzUgMTIuMDIxIDEuNDAxIDQuNTkzLS45OTkgNi45OTQtNS42MjgtLjM2Ny01LjYyOC0uMzY3TDggMzQuOTgybDkuMjg5IDkuMjg4IDQuNjY1LTMuNjg5cy0yLjIwOC0zLjMwNy0uMDI2LTUuMjg3YzQuNjk1LTQuMjYxIDkuMjExIDEuMTY1IDkuMjExIDEuMTY1Ii8+PC9zdmc+Cg==");
   @apply text-gray-500 align-middle text-sm no-underline;
@@ -25,6 +42,11 @@ a {
 
 .dark .wip {
   filter: invert(1);
+}
+*/
+
+.wip {
+  @apply no-underline;
 }
 
 body:has(dialog[open]) {
@@ -82,6 +104,10 @@ html {
 
 :root {
   --color-base-content: #000;
+}
+
+.prose a {
+  color: var(--color-base-content);
 }
 
 .dark .prose {
@@ -206,7 +232,7 @@ html {
 }
 
 .toc__title {
-  @apply text-lg font-bold mb-4 text-secondary;
+  @apply text-lg font-bold mb-4;
 }
 
 .toc__item {

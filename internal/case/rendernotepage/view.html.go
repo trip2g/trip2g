@@ -192,7 +192,7 @@ func StreamNoteContent(qw422016 *qt422016.Writer, resp *Response) {
 
     <div class="noteview__container">
       <div class="noteview__left-column">
-        <div class="noteview__markup prose prose-stone">
+        <div class="noteview__markup prose prose-stone prose-lg">
         `)
 //line view.html:52
 	qw422016.N().S(string(resp.Note.HTML))

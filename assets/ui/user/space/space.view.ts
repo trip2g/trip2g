@@ -7,7 +7,7 @@ namespace $.$$ {
 		override open_title(): string {
 			const viewer = this.viewer()
 
-			return viewer.user ? 'Личный кабинет' : 'Sign in'
+			return viewer.user ? 'Личный кабинет' : 'Войти'
 		}
 
 		dialog_dom() {
