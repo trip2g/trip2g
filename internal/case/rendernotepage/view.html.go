@@ -128,7 +128,11 @@ func StreamNoteContent(qw422016 *qt422016.Writer, resp *Response) {
 //line view.html:25
 	qw422016.N().S(`
 
-  <div class="noteview__content" id="noteview-content">
+  <div class="noteview__content noteview--`)
+//line view.html:27
+	qw422016.E().S(resp.UserRole)
+//line view.html:27
+	qw422016.N().S(`" id="noteview-content">
 
     <style type="text/css">
       `)

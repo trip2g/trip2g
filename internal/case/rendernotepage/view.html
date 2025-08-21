@@ -24,7 +24,7 @@
 
 {% func NoteContent(resp *Response) %}
 
-  <div class="noteview__content" id="noteview-content">
+  <div class="noteview__content noteview--{%s resp.UserRole %}" id="noteview-content">
 
     <style type="text/css">
       {% if resp.UserToken != nil %}

@@ -1,10 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./internal/case/**/*.qtpl"],
-  plugins: [
-    require('@tailwindcss/typography'),
-    require('daisyui'),
-  ],
+  // plugins: [
+  //   require('@tailwindcss/typography'),
+  //   require('daisyui'),
+  // ],
   theme: {
     extend: {
       colors: {
@@ -47,6 +47,33 @@ module.exports = {
         md: `calc(var(--radius) - 2px)`,
         sm: "calc(var(--radius) - 4px)",
       },
+      typography: () => ({
+        DEFAULT: {
+          css: {
+          },
+        },
+        lg: {
+          css: {
+            h3: {
+              fontSize: '21px',
+              lineHeight: '26px',
+              fontWeight: 'bold',
+            },
+            'ul ul, ul ol, ol ul, ol ol': {
+              marginTop: '0.2rem',
+              marginBottom: '0.2rem',
+            },
+            ul: {
+              marginTop: '0.2rem',
+              marginBottom: '0.2rem',
+            },
+            li: {
+              marginTop: '0.2rem',
+              marginBottom: '0.2rem',
+            },
+          },
+        },
+      }),
     },
   },
 }

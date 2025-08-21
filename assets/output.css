@@ -1,4 +1,4 @@
-/*! tailwindcss v4.1.6 | MIT License | https://tailwindcss.com */
+/*! tailwindcss v4.1.12 | MIT License | https://tailwindcss.com */
 @layer properties;
 @layer theme, base, components, utilities;
 @layer theme {
@@ -169,6 +169,9 @@
   }
   ::-webkit-datetime-edit, ::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field, ::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-second-field, ::-webkit-datetime-edit-millisecond-field, ::-webkit-datetime-edit-meridiem-field {
     padding-block: 0;
+  }
+  ::-webkit-calendar-picker-indicator {
+    line-height: 1;
   }
   :-moz-ui-invalid {
     box-shadow: none;
@@ -1607,10 +1610,11 @@
       line-height: 1.3333333;
     }
     :where(h3):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
-      font-size: 1.3333333em;
+      font-size: 21px;
       margin-top: 1.6666667em;
       margin-bottom: 0.6666667em;
-      line-height: 1.5;
+      line-height: 26px;
+      font-weight: bold;
     }
     :where(h4):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
       margin-top: 1.7777778em;
@@ -1667,13 +1671,13 @@
       padding-inline-start: 1.5555556em;
     }
     :where(ul):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
-      margin-top: 1.3333333em;
-      margin-bottom: 1.3333333em;
+      margin-top: 0.2rem;
+      margin-bottom: 0.2rem;
       padding-inline-start: 1.5555556em;
     }
     :where(li):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
-      margin-top: 0.6666667em;
-      margin-bottom: 0.6666667em;
+      margin-top: 0.2rem;
+      margin-bottom: 0.2rem;
     }
     :where(ol > li):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
       padding-inline-start: 0.4444444em;
@@ -1698,8 +1702,8 @@
       margin-bottom: 1.3333333em;
     }
     :where(ul ul, ul ol, ol ul, ol ol):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
-      margin-top: 0.8888889em;
-      margin-bottom: 0.8888889em;
+      margin-top: 0.2rem;
+      margin-bottom: 0.2rem;
     }
     :where(dl):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
       margin-top: 1.3333333em;
@@ -2122,7 +2126,7 @@
   font-family: 'Forma';
   font-weight: bold;
   font-style: normal;
-  src: url('/assets/forma.woff') format('woff'), url('/assets/forma.woff2') format('woff2');
+  src: url('/assets/forma_bold.woff') format('woff'), url('/assets/forma_bold.woff2') format('woff2');
 }
 a {
   color: var(--color-blue-500);
@@ -2131,13 +2135,26 @@ a {
 .dark a {
   color: var(--color-blue-400);
 }
-.paywall::before {
+.paywall::after {
   content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='gray' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a5 5 0 00-5 5v3H6a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1V11a1 1 0 00-1-1h-1V7a5 5 0 00-5-5zm-3 5a3 3 0 016 0v3H9V7zm9 5v8H6v-8h12z'/%3E%3C/svg%3E");
   vertical-align: middle;
   font-size: var(--text-sm);
   line-height: var(--tw-leading, var(--text-sm--line-height));
   color: var(--color-gray-500);
   text-decoration-line: none;
+  vertical-align: -15%;
+}
+.wip::after {
+  content: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbDpzcGFjZT0icHJlc2VydmUiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgc3R5bGU9ImZpbGwtcnVsZTpldmVub2RkO2NsaXAtcnVsZTpldmVub2RkO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDoyIiB2aWV3Qm94PSIwIDAgNjQgNjQiPjxwYXRoIGQ9Ik0tODk2LTE5MkgzODR2ODAwSC04OTZ6IiBzdHlsZT0iZmlsbDpub25lIi8+PHBhdGggZD0iTTU1LjgyMSA0NC43NDNhOTg4IDk4OCAwIDAgMS04LjU0NyA4Ljc2NEwzMy45OTEgMzkuMzFsNy45NTMtNy45NTN6bS0yNC42ODItOC4yODQgNy45NTMtNy45NTNzLTQuMDM5LTMuMDgyLTMuNjY3LTUuMDA3IDEuMjEyLTQuNjQ3IDcuMDYyLTcuMDYyYzUuODQ5LTIuNDE0IDExLjMwNi0yLjYzMiAxMS4zMDYtMi42MzJsLjE5Ni0yLjYzN3MtMTMuNDQ0LTIuMDMxLTIwLjU0Ni40OTItMTUuMTM1IDEyLjAyMS0xNS4xMzUgMTIuMDIxIDEuNDAxIDQuNTkzLS45OTkgNi45OTQtNS42MjgtLjM2Ny01LjYyOC0uMzY3TDggMzQuOTgybDkuMjg5IDkuMjg4IDQuNjY1LTMuNjg5cy0yLjIwOC0zLjMwNy0uMDI2LTUuMjg3YzQuNjk1LTQuMjYxIDkuMjExIDEuMTY1IDkuMjExIDEuMTY1Ii8+PC9zdmc+Cg==");
+  vertical-align: middle;
+  font-size: var(--text-sm);
+  line-height: var(--tw-leading, var(--text-sm--line-height));
+  color: var(--color-gray-500);
+  text-decoration-line: none;
+  vertical-align: -15%;
+}
+.dark .wip {
+  filter: invert(1);
 }
 .wip {
   text-decoration-line: none;
@@ -2216,7 +2233,8 @@ html {
   --color-base-content: #000;
 }
 .prose a {
-  color: var(--color-base-content);
+  color: inherit;
+  font-weight: inherit;
 }
 .dark .prose {
   --tw-prose-body: var(--tw-prose-invert-body);

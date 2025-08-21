@@ -52,6 +52,7 @@ type Response struct {
 	UserSubgraphs []string
 
 	UserToken *usertoken.Data
+	UserRole  string
 	Time      int
 
 	versionBanner *VersionBanner
@@ -87,6 +88,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	response := Response{
 		DefaultVersion: "live",
+		UserRole:       "guest",
 	}
 
 	// only admins can access the latest version
@@ -151,6 +153,8 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	}
 
 	if request.UserToken != nil {
+		response.UserRole = request.UserToken.Role
+
 		err := handleUserToken(ctx, env, request.UserToken, &response, note, notes, request.Referrer)
 		if err != nil {
 			return &response, err
