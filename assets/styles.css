@@ -215,7 +215,8 @@ html {
 
 .noteview__sidebar {
   flex: 1;
-  @apply pl-32;
+  @apply pl-24;
+  margin-top: -44px;
 }
 
 .toc {
@@ -239,13 +240,16 @@ html {
 }
 
 .toc__item {
-  @apply mb-2 text-sm;
+  @apply text-lg;
+  line-height: 1.7777777;
+  display: list-item;
 }
 
 .toc__link {
   @apply text-gray-600 dark:text-gray-400 no-underline transition-colors duration-200;
   @apply hover:text-gray-900 dark:hover:text-gray-100;
-  @apply border-l-2 border-transparent pl-3 -ml-[2px] block;
+  @apply border-l-2 border-transparent block
+  @apply underline;
 }
 
 .toc__link.active {
@@ -254,26 +258,27 @@ html {
 }
 
 .toc__item--level1 {
+  display: block;
 }
 
 .toc__item--level2 {
-  @apply pl-4;
+  @apply ml-4;
 }
 
 .toc__item--level3 {
-  @apply pl-8;
+  @apply ml-8;
 }
 
 .toc__item--level4 {
-  @apply pl-12;
+  @apply ml-12;
 }
 
 .toc__item--level5 {
-  @apply pl-16;
+  @apply ml-16;
 }
 
 .toc__item--level6 {
-  @apply pl-20;
+  @apply ml-20;
 }
 
 .embedded-note__alert {
