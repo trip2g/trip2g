@@ -2153,11 +2153,8 @@ a {
   text-decoration-line: none;
   vertical-align: -15%;
 }
-.dark .wip {
+.dark .wip::after {
   filter: invert(1);
-}
-.wip {
-  text-decoration-line: none;
 }
 body:has(dialog[open]) {
   overflow: hidden;

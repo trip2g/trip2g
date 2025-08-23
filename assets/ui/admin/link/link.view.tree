@@ -1,4 +1,0 @@
-$trip2g_admin_link $mol_link
-	uri \/admin
-	target \_blank
-	title @ \Admin Panel

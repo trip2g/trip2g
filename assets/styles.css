@@ -43,12 +43,8 @@ a {
   vertical-align: -15%;
 }
 
-.dark .wip {
+.dark .wip::after {
   filter: invert(1);
-}
-
-.wip {
-  @apply no-underline;
 }
 
 body:has(dialog[open]) {
@@ -249,7 +245,6 @@ html {
   @apply text-gray-600 dark:text-gray-400 no-underline transition-colors duration-200;
   @apply hover:text-gray-900 dark:hover:text-gray-100;
   @apply border-l-2 border-transparent block
-  @apply underline;
 }
 
 .toc__link.active {

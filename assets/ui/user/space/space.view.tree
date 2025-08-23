@@ -10,10 +10,14 @@ $trip2g_user_space $mol_view
 	OpenButton $mol_button_major
 		title \Личнный кабинет
 		click <= open null
+	AdminLink $mol_link
+		uri \/admin
+		target \_blank
+		title @ \Admin Panel
 	sub /
 		<= Name $trip2g_user_space_name
 			value <= user_email \
-		<= AdminLink $trip2g_admin_link
+		<= admin_link null $mol_view
 		<= open_button null $mol_view
 		<= Lighter $mol_lights_toggle
 		<= Dialog $mol_view

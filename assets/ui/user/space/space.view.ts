@@ -9,6 +9,16 @@ namespace $.$$ {
 			return viewer.user ? this.OpenButton() : this.SignInButton()
 		}
 
+		override admin_link() {
+			const viewer = this.viewer()
+
+			if (viewer.role === $trip2g_graphql_role.Admin) {
+				return this.AdminLink()
+			}
+
+			return null
+		}
+
 		dialog_dom() {
 			return this.Dialog().dom_node() as HTMLDialogElement
 		}
