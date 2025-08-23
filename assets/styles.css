@@ -24,11 +24,11 @@
 @config "../tailwind.config.js";
 
 a {
-  @apply text-blue-500 underline;
+  @apply underline;
 }
 
 .dark a {
-  @apply text-blue-400;
+  /* @apply text-blue-400; */
 }
 
 .paywall::after {
@@ -142,6 +142,7 @@ html {
 
 /* Sidebar components */
 .sidebar {
+  opacity: 0.8;
 }
 
 .sidebar__menus {
@@ -153,7 +154,7 @@ html {
 }
 
 .sidebar__homepage a {
-  @apply no-underline text-xl font-bold mb-4 block;
+  @apply no-underline text-2xl font-bold mb-4 block;
 }
 
 .sidebar__block {
@@ -176,12 +177,14 @@ html {
 }
 
 .sidebar__menu ul {
+  height: 56px;
   @apply relative;
+  @apply flex items-center;
 }
 
 .sidebar__menu li {
-  @apply inline-block;
-  margin: 0.5rem;
+  @apply inline-block flex-wrap;
+  margin: 1rem;
   margin-left: 0;
 }
 
