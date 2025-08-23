@@ -28,10 +28,10 @@
 
     <style type="text/css">
       {% if resp.UserToken != nil %}
-      .paywall\:core::before { display: none }
+      .paywall\:core::after { display: none }
       {% endif %}
       {% for _, k := range resp.UserSubgraphs %}
-      .paywall-{%s k %}::before { display: none }
+      .paywall-{%s k %}::after { display: none }
       {% endfor %}
     </style>
 

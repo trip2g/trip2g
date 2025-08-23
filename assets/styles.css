@@ -105,7 +105,7 @@ html {
 
 /* Note view */
 .noteview {
-  @apply my-16 relative;
+  @apply my-4 relative;
 }
 
 .noteview__content {
@@ -151,6 +151,10 @@ html {
 
 .sidebar__homepages {
   @apply flex;
+}
+
+.sidebar__homepage {
+  @apply mt-4;
 }
 
 .sidebar__homepage a {

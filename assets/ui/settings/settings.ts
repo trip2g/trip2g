@@ -1,9 +1,15 @@
 namespace $ {
+	const default_settings = {
+		is_dev_mode: true,
+	}
+
+	const page_settings = typeof window !== 'undefined' && (window as any).__trip2g_settings || {}
+
 	export class $trip2g_settings extends $mol_object {
 		static settings(): any {
-			// @ts-ignore
-			return typeof window !== 'undefined' && window.$trip2g || {
-				is_dev_mode: true,
+			return {
+				...default_settings,
+				...page_settings,
 			}
 		}
 

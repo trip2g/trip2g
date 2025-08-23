@@ -2257,7 +2257,7 @@ html {
 }
 .noteview {
   position: relative;
-  margin-block: calc(var(--spacing) * 16);
+  margin-block: calc(var(--spacing) * 4);
 }
 .noteview__content {
   flex: 1;
@@ -2304,6 +2304,9 @@ html {
 }
 .sidebar__homepages {
   display: flex;
+}
+.sidebar__homepage {
+  margin-top: calc(var(--spacing) * 4);
 }
 .sidebar__homepage a {
   margin-bottom: calc(var(--spacing) * 4);
