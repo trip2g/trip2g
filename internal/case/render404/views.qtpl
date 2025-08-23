@@ -1,10 +1,20 @@
 {% func Content(params *Params) %}
-<div mol_view_root="$trip2g_user_space"></div>
-<div>
-  Страница не найдена.
-  {% if params.UserToken == nil %}
-  Ее не существует или она доступна только после авторизации.
-  {% endif %}
+
+<div class="noteview__header">
+  <div class="noteview__header-space"></div>
+  <div>
+    <div mol_view_root="$trip2g_user_space"></div>
+  </div>
 </div>
-<a href="/">Home</a>
+
+<div class="notfound">
+  <div class="notfound__content">
+    Страница не найдена.
+    {% if params.UserToken == nil %}
+    Ее не существует или она доступна только после авторизации.
+    {% endif %}
+  </div>
+  Вернуться на <a href="/">главную страницу</a>.
+</div>
+
 {% endfunc %}

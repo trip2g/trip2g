@@ -279,3 +279,11 @@ html {
 .embedded-note__alert {
   @apply px-4 border rounded;
 }
+
+.notfound {
+  @apply my-8;
+}
+
+.notfound__content {
+  @apply mb-4;
+}
