@@ -62,30 +62,15 @@ html {
 
 /* Reading meta information */
 .reading-meta {
-  @apply flex items-center gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400;
+  @apply md:flex items-center gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400;
 }
 
 .reading-meta__label {
-  @apply font-medium text-gray-700 dark:text-gray-300;
+  @apply font-medium text-gray-600 dark:text-gray-400;
 }
 
 .reading-time {
   @apply flex items-center gap-2;
-}
-
-.reading-time::before {
-  content: "";
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z'/%3E%3Cpath d='M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center;
-  margin-right: 4px;
-}
-
-.dark .reading-time::before {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z'/%3E%3Cpath d='M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5z'/%3E%3C/svg%3E");
 }
 
 .reading-complexity {
@@ -132,7 +117,11 @@ html {
 }
 
 .noteview__main-title {
-  @apply text-2xl font-bold mb-4 md:text-3xl;
+  @apply text-2xl font-bold md:text-3xl;
+}
+
+.noteview__favorite {
+  vertical-align: 5px;
 }
 
 .noteview__header {

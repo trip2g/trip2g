@@ -175,7 +175,7 @@ func StreamNoteContent(qw422016 *qt422016.Writer, resp *Response) {
 		qw422016.E().S(resp.Note.Title)
 //line view.html:41
 		qw422016.N().S(`
-        <span mol_view_root="$trip2g_user_favoritenote" data-pid="`)
+        <span mol_view_root="$trip2g_user_favoritenote" class="noteview__favorite" data-pid="`)
 //line view.html:42
 		qw422016.N().DL(resp.Note.PathID)
 //line view.html:42

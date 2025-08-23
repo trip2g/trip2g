@@ -39,7 +39,7 @@
       {% if !resp.Note.IsHomePage() %}
       <h1 class="noteview__main-title">
         {%s resp.Note.Title %}
-        <span mol_view_root="$trip2g_user_favoritenote" data-pid="{%dl resp.Note.PathID %}"></span>
+        <span mol_view_root="$trip2g_user_favoritenote" class="noteview__favorite" data-pid="{%dl resp.Note.PathID %}"></span>
       </h1>
       {% endif %}
 
