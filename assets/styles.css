@@ -276,3 +276,13 @@ html {
 .notfound__content {
   @apply mb-4;
 }
+
+.prose pre {
+  background: #ccc;
+  color: #000;
+}
+
+.dark .prose pre {
+  color: var(--tw-prose-pre-code);
+  background-color: var(--tw-prose-pre-bg);
+}

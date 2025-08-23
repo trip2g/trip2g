@@ -2460,6 +2460,14 @@ html {
 .notfound__content {
   margin-bottom: calc(var(--spacing) * 4);
 }
+.prose pre {
+  background: #ccc;
+  color: #000;
+}
+.dark .prose pre {
+  color: var(--tw-prose-pre-code);
+  background-color: var(--tw-prose-pre-bg);
+}
 @layer base {
   :where(:root),:root:has(input.theme-controller[value=light]:checked),[data-theme=light] {
     color-scheme: light;
