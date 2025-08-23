@@ -2468,6 +2468,14 @@ html {
   color: var(--tw-prose-pre-code);
   background-color: var(--tw-prose-pre-bg);
 }
+.prose blockquote {
+  border: none;
+  font-style: normal;
+  margin-left: calc(var(--spacing) * 4);
+}
+.prose p:before, .prose p.after {
+  content: '';
+}
 @layer base {
   :where(:root),:root:has(input.theme-controller[value=light]:checked),[data-theme=light] {
     color-scheme: light;

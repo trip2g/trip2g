@@ -286,3 +286,13 @@ html {
   color: var(--tw-prose-pre-code);
   background-color: var(--tw-prose-pre-bg);
 }
+
+.prose blockquote {
+  border: none;
+  font-style: normal;
+  @apply ml-4;
+}
+
+.prose p:before, .prose p.after {
+  content: '';
+}
