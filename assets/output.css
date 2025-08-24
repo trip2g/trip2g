@@ -2072,7 +2072,7 @@
   }
   .prose-stone {
     --tw-prose-body: oklch(37.4% 0.01 67.558);
-    --tw-prose-headings: oklch(21.6% 0.006 56.043);
+    --tw-prose-headings: var(--tw-prose-body);
     --tw-prose-lead: oklch(44.4% 0.011 73.639);
     --tw-prose-links: oklch(21.6% 0.006 56.043);
     --tw-prose-bold: oklch(21.6% 0.006 56.043);
@@ -2090,7 +2090,7 @@
     --tw-prose-th-borders: oklch(86.9% 0.005 56.366);
     --tw-prose-td-borders: oklch(92.3% 0.003 48.717);
     --tw-prose-invert-body: oklch(86.9% 0.005 56.366);
-    --tw-prose-invert-headings: #fff;
+    --tw-prose-invert-headings: var(--tw-prose-body);
     --tw-prose-invert-lead: oklch(70.9% 0.01 56.259);
     --tw-prose-invert-links: #fff;
     --tw-prose-invert-bold: #fff;
@@ -2392,6 +2392,9 @@ html {
   line-height: 1.7777777;
   display: list-item;
 }
+.toc__item::marker {
+  color: var(--color-gray-400);
+}
 .toc__link {
   color: var(--color-gray-600);
   text-decoration-line: none;
@@ -2436,6 +2439,7 @@ html {
 }
 .toc__item--level1 {
   display: block;
+  margin-top: calc(var(--spacing) * 4);
 }
 .toc__item--level2 {
   margin-left: calc(var(--spacing) * 4);

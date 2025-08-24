@@ -237,6 +237,10 @@ html {
   display: list-item;
 }
 
+.toc__item::marker {
+  color: var(--color-gray-400);
+}
+
 .toc__link {
   @apply text-gray-600 dark:text-gray-400 no-underline transition-colors duration-200;
   @apply hover:text-gray-900 dark:hover:text-gray-100;
@@ -250,6 +254,7 @@ html {
 
 .toc__item--level1 {
   display: block;
+  @apply mt-4;
 }
 
 .toc__item--level2 {

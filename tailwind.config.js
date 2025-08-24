@@ -48,8 +48,10 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       typography: () => ({
-        DEFAULT: {
+        stone: {
           css: {
+            '--tw-prose-headings': 'var(--tw-prose-body)',
+            '--tw-prose-invert-headings': 'var(--tw-prose-body)',
           },
         },
         lg: {
