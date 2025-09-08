@@ -2214,6 +2214,9 @@ html {
   color: inherit;
   font-weight: inherit;
 }
+.prose img {
+  border-radius: 0.25rem;
+}
 .dark .prose {
   --tw-prose-body: var(--tw-prose-invert-body);
   --tw-prose-headings: var(--tw-prose-invert-headings);

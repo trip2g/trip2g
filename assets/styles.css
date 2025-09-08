@@ -94,6 +94,10 @@ html {
   font-weight: inherit;
 }
 
+.prose img {
+  @apply rounded;
+}
+
 .dark .prose {
   @apply prose-invert;
 }
