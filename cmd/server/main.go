@@ -276,19 +276,6 @@ func main() {
 	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 
-	tokenManager.AddValidator(func(ctx context.Context, data *usertoken.Data) error {
-		ban, banErr := a.UserBanByUserID(ctx, int64(data.ID))
-		if banErr != nil {
-			return fmt.Errorf("failed to get user ban: %w", banErr)
-		}
-
-		if ban != nil {
-			return gqlerror.Errorf("%s", ban.Reason)
-		}
-
-		return nil
-	})
-
 	err = a.createOwnerIfNotExists(ctx)
 	if err != nil {
 		panic(err)
@@ -300,18 +287,37 @@ func main() {
 	}
 
 	a.setupAssets()
+	a.setTokenValidator()
+	a.setFileStorageExpiringCallback(ctx)
 
-	fileStorage.OnURLExpiring(func() {
+	a.startServer()
+}
+
+func (a *app) setTokenValidator() {
+	a.tokenManager.AddValidator(func(ctx context.Context, data *usertoken.Data) error {
+		ban, banErr := a.UserBanByUserID(ctx, int64(data.ID))
+		if banErr != nil {
+			return fmt.Errorf("failed to get user ban: %w", banErr)
+		}
+
+		if ban != nil {
+			return gqlerror.Errorf("%s", ban.Reason)
+		}
+
+		return nil
+	})
+}
+
+func (a *app) setFileStorageExpiringCallback(ctx context.Context) {
+	a.FileStorage.OnURLExpiring(func() {
 		reloadCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 
 		loadErr := a.loadAllNotes(reloadCtx)
 		if loadErr != nil {
-			log.Error("failed to reload all notes", "error", loadErr)
+			a.log.Error("failed to reload all notes", "error", loadErr)
 		}
 	})
-
-	a.startServer()
 }
 
 func (a *app) InsertNote(ctx context.Context, note model.RawNote) error {

@@ -31,19 +31,7 @@ func (a *UserBans) UserBanByUserID(ctx context.Context, userID int64) (*db.UserB
 	defer a.Unlock()
 
 	if a.banMap == nil {
-		env := a.env
-
-		req, err := appreq.FromCtx(ctx)
-		if err != nil && err != appreq.ErrNotFound {
-			return nil, fmt.Errorf("failed to get appreq from context: %w", err)
-		}
-
-		ctxEnv, ok := req.Env.(Env)
-		if ok {
-			env = ctxEnv
-		}
-
-		userBans, err := env.ListAllUserBans(ctx)
+		userBans, err := appreq.CtxEnv(ctx, a.env).ListAllUserBans(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user bans from the db: %w", err)
 		}

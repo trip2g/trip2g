@@ -55,11 +55,11 @@ func FromCtx(ctx context.Context) (*Request, error) {
 func CtxEnv[T any](ctx context.Context, defaultValue T) T {
 	req, err := FromCtx(ctx)
 	if err != nil {
-		if err == ErrNotFound {
+		if errors.Is(err, ErrNotFound) {
 			return defaultValue
 		}
 
-		panic(fmt.Sprintf("unexpected error: %w", err))
+		panic(fmt.Sprintf("unexpected error: %v", err))
 	}
 
 	val, ok := req.Env.(T)
