@@ -35,6 +35,7 @@ db-down:
 	go tool github.com/amacneil/dbmate/v2 down
 
 lint:
+	./internal/db/list_queries.sh
 	go tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint run
 
 docker-deps:
