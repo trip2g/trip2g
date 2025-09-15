@@ -20,6 +20,7 @@ type SetupConfig struct {
 	SkipDump     bool
 	DatabaseFile string
 	Logger       logger.Logger
+	ReadOnly     bool
 }
 
 // Setup initializes the database with migrations, pragmas, and validation.
@@ -38,8 +39,14 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 	}
 
 	// TODO: do something with that... it breaks sign in
-	conn.SetMaxOpenConns(25)
-	conn.SetMaxIdleConns(25)
+	if config.ReadOnly {
+		conn.SetMaxOpenConns(25)
+		conn.SetMaxIdleConns(25)
+	} else {
+		conn.SetMaxOpenConns(1)
+		conn.SetMaxIdleConns(1)
+	}
+
 	conn.SetConnMaxLifetime(0)
 	conn.SetConnMaxIdleTime(0)
 

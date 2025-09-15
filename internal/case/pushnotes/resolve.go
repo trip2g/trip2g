@@ -3,7 +3,6 @@ package pushnotes
 import (
 	"context"
 	"fmt"
-	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 
@@ -12,7 +11,7 @@ import (
 
 type Env interface {
 	Logger() logger.Logger
-	InsertNote(ctx context.Context, update db.Note) error
+	InsertNote(ctx context.Context, update appmodel.RawNote) error
 	InsertSubgraph(ctx context.Context, name string) error
 	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
 	UnhideNotePath(ctx context.Context, value string) error
@@ -25,7 +24,7 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	// }
 
 	for _, update := range input.Updates {
-		note := db.Note{
+		note := appmodel.RawNote{
 			Path: update.Path,
 			// TODO: remove it
 			Content: update.Content, // + fmt.Sprintf("%d", time.Now().Unix()),

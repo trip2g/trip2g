@@ -23,6 +23,7 @@ graphqlgen: gqlgen
 
 sqlc:
 	go tool github.com/sqlc-dev/sqlc/cmd/sqlc generate
+	./internal/db/fix_write_queries.sh
 
 db-new:
 	go tool github.com/amacneil/dbmate/v2 new $(name)

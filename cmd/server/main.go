@@ -32,6 +32,7 @@ import (
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/handletgupdate"
+	"trip2g/internal/case/insertnote"
 	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
@@ -80,6 +81,8 @@ type graphTransactions struct {
 
 type app struct {
 	*db.Queries
+	*db.WriteQueries
+
 	*miniostorage.FileStorage
 	*patreonjobs.PatreonJobs
 	*boostyjobs.BoostyJobs
@@ -151,7 +154,8 @@ func main() {
 	tokenManager := usertoken.NewManager("trip2g_token", []byte("secret"))
 	tokenManager.SetInsecure(config.DevMode) // for k6
 
-	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "no tx:")))
+	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "read: no tx:")))
+	writeQueries := db.NewWriteQueries(db.WithLogger(conn, logger.WithPrefix(log, "write: no tx:")))
 
 	nowpaymentsClient, err := nowpayments.NewClient(config.NowpaymentsAPIKey)
 	if err != nil {
@@ -176,7 +180,8 @@ func main() {
 	jwtSecret := []byte("secret")
 
 	a := &app{
-		Queries: queries,
+		Queries:      queries,
+		WriteQueries: writeQueries,
 
 		FileStorage: fileStorage,
 
@@ -309,6 +314,10 @@ func main() {
 	a.startServer()
 }
 
+func (a *app) InsertNote(ctx context.Context, note model.RawNote) error {
+	return insertnote.Resolve(ctx, a, note)
+}
+
 func (a *app) EnqueueJob(ctx context.Context, jobID string, data any) error {
 	rawData, err := json.Marshal(data)
 	if err != nil {
@@ -394,7 +403,7 @@ func (a *app) PatreonClientByID(ctx context.Context, credentialsID int64) (patre
 func (a *app) UpdateBoostyCredentials(ctx context.Context, args db.UpdateBoostyCredentialsParams) (db.BoostyCredential, error) {
 	a.boostyClientManager.Reset(ctx, args.ID)
 
-	return a.Queries.UpdateBoostyCredentials(ctx, args)
+	return a.WriteQueries.UpdateBoostyCredentials(ctx, args)
 }
 
 func (a *app) BoostyClientByCredentialsID(ctx context.Context, credentialID int64) (boosty.Client, error) {
@@ -556,11 +565,12 @@ func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
 	}
 
 	logLabel := fmt.Sprintf("tx %s", label+":")
-	queries := db.New(db.WithLogger(tx, logger.WithPrefix(a.log, logLabel)))
+	queries := db.NewWriteQueries(db.WithLogger(tx, logger.WithPrefix(a.log, logLabel)))
 
 	newEnv := *a //nolint:govet // I will fix this later (copy mutex)
-	newEnv.queries = queries
-	newEnv.Queries = queries
+	newEnv.queries = queries.Queries
+	newEnv.Queries = queries.Queries
+	newEnv.WriteQueries = queries
 	newEnv.currentTx = tx
 
 	// override the context with the new tx env
@@ -820,10 +830,6 @@ func (a *app) Now() time.Time {
 	return time.Now()
 }
 
-func (a *app) InsertNote(ctx context.Context, data db.Note) error {
-	return a.queries.InsertNote(ctx, data)
-}
-
 func (a *app) AllNotePaths(ctx context.Context) ([]db.NotePath, error) {
 	return a.queries.AllNotePaths(ctx)
 }
@@ -859,7 +865,7 @@ func (a *app) doRecordUserNoteView(ctx context.Context, userID int64, note *mode
 		return fmt.Errorf("failed to begin RecordUserNoteView transaction: %w", err)
 	}
 
-	queries := db.New(db.WithLogger(tx, logger.WithPrefix(a.log, "tx RecordUserNoteView:")))
+	queries := db.NewWriteQueries(db.WithLogger(tx, logger.WithPrefix(a.log, "tx RecordUserNoteView:")))
 
 	err = a.recordUserNoteViewTx(ctx, queries, userID, note, referrerVersionID)
 	if err != nil {
@@ -881,7 +887,7 @@ func (a *app) doRecordUserNoteView(ctx context.Context, userID int64, note *mode
 
 func (a *app) recordUserNoteViewTx(
 	ctx context.Context,
-	queries *db.Queries,
+	queries *db.WriteQueries,
 	userID int64,
 	note *model.NoteView,
 	referrerVersionID *int64,
@@ -1070,7 +1076,7 @@ func (a *app) CreateSignInCode(ctx context.Context, userID int64) (string, error
 
 	sCode := strconv.Itoa(int(code))
 
-	err = a.InsertSignInCode(ctx, db.InsertSignInCodeParams{
+	err = appreq.CtxEnv(ctx, a).InsertSignInCode(ctx, db.InsertSignInCodeParams{
 		UserID: userID,
 		Code:   sCode,
 	})

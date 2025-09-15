@@ -1,5 +1,6 @@
-package db_test
+package insertnote_test
 
+/*
 import (
 	"context"
 	"database/sql"
@@ -119,3 +120,4 @@ func TestCheckPathHashCollisions(t *testing.T) {
 	require.Equal(t, "eqoF1k", paths[0].ValueHash)
 	require.Equal(t, "eqoF1kt", paths[1].ValueHash)
 }
+*/

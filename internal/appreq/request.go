@@ -3,6 +3,7 @@ package appreq
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"trip2g/internal/usertoken"
 
@@ -49,6 +50,25 @@ func FromCtx(ctx context.Context) (*Request, error) {
 	}
 
 	return c, nil
+}
+
+func CtxEnv[T any](ctx context.Context, defaultValue T) T {
+	req, err := FromCtx(ctx)
+	if err != nil {
+		if err == ErrNotFound {
+			return defaultValue
+		}
+
+		panic(fmt.Sprintf("unexpected error: %w", err))
+	}
+
+	val, ok := req.Env.(T)
+	if !ok {
+		var zero T
+		panic(fmt.Sprintf("req.Env(%T) not implemented: %T", req.Env, zero))
+	}
+
+	return val
 }
 
 func (c *Request) SetUserToken(token *usertoken.Data) {

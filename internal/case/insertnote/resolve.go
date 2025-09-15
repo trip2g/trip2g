@@ -1,4 +1,4 @@
-package db
+package insertnote
 
 import (
 	"context"
@@ -7,17 +7,20 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"trip2g/internal/db"
+	"trip2g/internal/model"
 )
-
-type Note struct {
-	Path    string
-	Content string
-}
 
 var ErrNotePathHashUnresolvedCollision = errors.New("note path hash unresolved collision")
 var ErrNoteVersionAlreadyExists = errors.New("note version already exists")
 
-func (q *Queries) InsertNote(ctx context.Context, arg Note) error {
+type Env interface {
+	InsertNotePath(ctx context.Context, arg db.InsertNotePathParams) (db.InsertNotePathRow, error)
+	IncrementNoteVersionCount(ctx context.Context, arg db.IncrementNoteVersionCountParams) (int64, error)
+	InsertNoteVersion(ctx context.Context, arg db.InsertNoteVersionParams) error
+}
+
+func Resolve(ctx context.Context, env Env, arg model.RawNote) error {
 	sha := sha256.New()
 
 	sha.Write([]byte(arg.Path))
@@ -27,17 +30,17 @@ func (q *Queries) InsertNote(ctx context.Context, arg Note) error {
 	sha.Write([]byte(arg.Content))
 	contentHash := base64.URLEncoding.EncodeToString(sha.Sum(nil))
 
-	var notePath *InsertNotePathRow
+	var notePath *db.InsertNotePathRow
 
 	for i := 6; i < len(pathHash); i++ {
-		notePathParams := InsertNotePathParams{
+		notePathParams := db.InsertNotePathParams{
 			Value:     arg.Path,
 			ValueHash: pathHash[:i],
 
 			LatestContentHash: contentHash,
 		}
 
-		insertedRow, insertErr := q.InsertNotePath(ctx, notePathParams)
+		insertedRow, insertErr := env.InsertNotePath(ctx, notePathParams)
 		if insertErr != nil {
 			// check if the error is a unique constraint violation
 			if strings.Contains(insertErr.Error(), "note_paths.value_hash") {
@@ -60,24 +63,24 @@ func (q *Queries) InsertNote(ctx context.Context, arg Note) error {
 		return ErrNoteVersionAlreadyExists
 	}
 
-	increaseParams := IncrementNoteVersionCountParams{
+	increaseParams := db.IncrementNoteVersionCountParams{
 		ID: notePath.ID,
 
 		LatestContentHash: contentHash,
 	}
 
-	version, err := q.IncrementNoteVersionCount(ctx, increaseParams)
+	version, err := env.IncrementNoteVersionCount(ctx, increaseParams)
 	if err != nil {
 		return fmt.Errorf("failed to IncrementNoteVersionCount: %w", err)
 	}
 
-	noteVersion := InsertNoteVersionParams{
+	noteVersion := db.InsertNoteVersionParams{
 		PathID:  notePath.ID,
 		Version: version,
 		Content: arg.Content,
 	}
 
-	err = q.InsertNoteVersion(ctx, noteVersion)
+	err = env.InsertNoteVersion(ctx, noteVersion)
 	if err != nil {
 		return fmt.Errorf("failed to InsertNoteVersion: %w", err)
 	}

@@ -1,15 +1,25 @@
 version: "2"
 sql:
   - engine: "sqlite"
-    queries: "queries.sql"
+    queries: "queries.read.sql"
     schema: "db/schema.sql"
     gen:
       go:
         package: "db"
         out: "internal/db"
         emit_json_tags: true
-        overrides:
+        overrides: &overrides
           - column: "purchases.payment_data"
             go_type: "string"
           - column: "offers.lifetime"
             go_type: "*trip2g/internal/model.Lifetime"
+
+  - engine: "sqlite"
+    queries: "queries.write.sql"
+    schema: "db/schema.sql"
+    gen:
+      go:
+        package: "db"
+        out: "internal/db"
+        emit_json_tags: true
+        overrides: *overrides

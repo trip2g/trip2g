@@ -7,6 +7,8 @@ description: "Home page"
 
 This is a demo.
 
+v2
+
 [[first]]
 [[second]]
 [[secondbrain|Second Brain Course]]
