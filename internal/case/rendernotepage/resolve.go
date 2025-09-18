@@ -161,7 +161,15 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		}
 	}
 
-	hasAccess := len(response.Note.Subgraphs) == 0
+	hasAccess := false
+
+	// non-subgraph notes are opened if the user have a subscription to
+	// a graph with show_unsubgraph_notes_for_paid_users
+	if len(response.Note.Subgraphs) == 0 {
+		// TODO: check show_unsubgraph_notes_for_paid_users
+		// it's work for claude.
+		hasAccess = true
+	}
 
 	if response.Note.Free {
 		hasAccess = true

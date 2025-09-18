@@ -342,11 +342,12 @@ type SignInCode struct {
 }
 
 type Subgraph struct {
-	ID        int64          `json:"id"`
-	Name      string         `json:"name"`
-	Color     sql.NullString `json:"color"`
-	CreatedAt time.Time      `json:"created_at"`
-	Hidden    bool           `json:"hidden"`
+	ID                              int64          `json:"id"`
+	Name                            string         `json:"name"`
+	Color                           sql.NullString `json:"color"`
+	CreatedAt                       time.Time      `json:"created_at"`
+	Hidden                          bool           `json:"hidden"`
+	ShowUnsubgraphNotesForPaidUsers sql.NullBool   `json:"show_unsubgraph_notes_for_paid_users"`
 }
 
 type TgAttachCode struct {

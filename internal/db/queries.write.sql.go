@@ -1520,19 +1520,25 @@ func (q *WriteQueries) UnhideNotePath(ctx context.Context, value string) error {
 
 const updateAdminSubgraph = `-- name: UpdateAdminSubgraph :one
 update subgraphs
-   set color = ?, hidden = ?
+   set color = ?, hidden = ?, show_unsubgraph_notes_for_paid_users = ?
  where id = ?
-returning id, name, color, created_at, hidden
+returning id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_users
 `
 
 type UpdateAdminSubgraphParams struct {
-	Color  sql.NullString `json:"color"`
-	Hidden bool           `json:"hidden"`
-	ID     int64          `json:"id"`
+	Color                           sql.NullString `json:"color"`
+	Hidden                          bool           `json:"hidden"`
+	ShowUnsubgraphNotesForPaidUsers sql.NullBool   `json:"show_unsubgraph_notes_for_paid_users"`
+	ID                              int64          `json:"id"`
 }
 
 func (q *WriteQueries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminSubgraphParams) (Subgraph, error) {
-	row := q.db.QueryRowContext(ctx, updateAdminSubgraph, arg.Color, arg.Hidden, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateAdminSubgraph,
+		arg.Color,
+		arg.Hidden,
+		arg.ShowUnsubgraphNotesForPaidUsers,
+		arg.ID,
+	)
 	var i Subgraph
 	err := row.Scan(
 		&i.ID,
@@ -1540,6 +1546,7 @@ func (q *WriteQueries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminS
 		&i.Color,
 		&i.CreatedAt,
 		&i.Hidden,
+		&i.ShowUnsubgraphNotesForPaidUsers,
 	)
 	return i, err
 }
