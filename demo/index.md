@@ -9,6 +9,10 @@ This is a demo.
 
 v2
 
+[[sub/index]]
+[[sub]]
+[[sub/content]]
+
 [[first]]
 [[second]]
 [[secondbrain|Second Brain Course]]
