@@ -129,6 +129,16 @@ func Load(options Options) (*model.NoteViews, error) {
 	return ldr.nvs, nil
 }
 
+func (ldr *loader) markAsset(p *model.NoteView, dest []byte) {
+	d := string(dest)
+
+	p.Assets[d] = struct{}{}
+
+	if p.FirstImage == nil && isImageExtension(d) {
+		p.FirstImage = &d
+	}
+}
+
 func (ldr *loader) findAssets() error {
 	for id, p := range ldr.nvs.Map {
 		err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -140,7 +150,7 @@ func (ldr *loader) findAssets() error {
 			case wikilink.Kind:
 				wl, ok := n.(*wikilink.Node)
 				if ok && wl.Embed && isImageExtension(string(wl.Target)) {
-					p.Assets[string(wl.Target)] = struct{}{}
+					ldr.markAsset(p, wl.Target)
 				}
 
 			case ast.KindLink:
@@ -150,7 +160,7 @@ func (ldr *loader) findAssets() error {
 
 					// not sure if this is the right way to check for a file link
 					if !strings.HasSuffix(url, ".md") {
-						p.Assets[string(l.Destination)] = struct{}{}
+						ldr.markAsset(p, l.Destination)
 					}
 				}
 
@@ -162,14 +172,14 @@ func (ldr *loader) findAssets() error {
 
 					// ignore youtube and other embeded links
 					if isImageExtension(target) {
-						p.Assets[string(e.Image.Destination)] = struct{}{}
+						ldr.markAsset(p, e.Image.Destination)
 					}
 				}
 
 			case ast.KindImage:
 				i, ok := n.(*ast.Image)
 				if ok && i.Destination != nil {
-					p.Assets[string(i.Destination)] = struct{}{}
+					ldr.markAsset(p, i.Destination)
 				}
 			}
 

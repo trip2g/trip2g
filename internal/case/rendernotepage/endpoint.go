@@ -44,6 +44,13 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"og:url":  "https://demo.trip2g.com" + resp.Note.Permalink,
 			"og:type": "article",
 		}
+
+		if resp.Note.FirstImage != nil {
+			url, ok := resp.Note.AssetReplaces[*resp.Note.FirstImage]
+			if ok {
+				layoutParams.OGTags["og:image"] = url
+			}
+		}
 	}
 
 	if err != nil {

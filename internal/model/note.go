@@ -92,6 +92,8 @@ type NoteView struct {
 	EmbededClass string
 
 	Warnings []NoteWarning
+
+	FirstImage *string
 }
 
 type NoteSubgraph struct {
