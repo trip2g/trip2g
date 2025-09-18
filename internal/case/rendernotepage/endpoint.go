@@ -39,6 +39,11 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	if resp != nil && resp.Note != nil {
 		layoutParams.Title = resp.Note.Title
 		layoutParams.MetaDescription = resp.Note.Description
+
+		layoutParams.OGTags = map[string]string{
+			"og:url":  "https://demo.trip2g.com" + resp.Note.Permalink,
+			"og:type": "article",
+		}
 	}
 
 	if err != nil {

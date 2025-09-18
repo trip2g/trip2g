@@ -79,7 +79,7 @@ func (l *Loader) Load(ctx context.Context) error {
 		}
 
 		if !exists {
-			noteMap[asset.Path] = ""
+			noteMap[asset.Path] = "/assets/missed_image.png"
 			continue
 		}
 

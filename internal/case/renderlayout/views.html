@@ -21,6 +21,12 @@
 <meta property="og:description" content="{%s= *params.MetaDescription %}">
 {% endif %}
 
+{% if params.OGTags != nil %}
+{% for property, value := range params.OGTags %}
+<meta property="{%s= property %}" content="{%s= value %}">
+{% endfor %}
+{% endif %}
+
 <script>
 window.__trip2g_settings = {
   is_dev_mode: {%s= params.DevMode %}

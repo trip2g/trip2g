@@ -19,6 +19,8 @@ type Params struct {
 	MetaDescription *string
 	MetaRobots      string
 
+	OGTags map[string]string
+
 	Client string
 
 	HTMLInjections map[string][]db.HtmlInjection
