@@ -72,7 +72,14 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 
 	log.Info("notes indexed", "count", len(notes), "took", time.Now().Sub(startedAt).Seconds())
 
-	query := bleve.NewMatchQuery(input.Query)
+	queryString := strings.TrimSpace(input.Query)
+	conn := model.SearchConnection{}
+
+	if len(queryString) < 3 {
+		return &conn, nil
+	}
+
+	query := bleve.NewMatchQuery(queryString)
 
 	highlight := bleve.NewHighlightWithStyle(htmlFilter.Name)
 	highlight.AddField("Title")
@@ -88,8 +95,6 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 	if err != nil {
 		panic(err)
 	}
-
-	conn := model.SearchConnection{}
 
 	for _, hit := range searchResult.Hits {
 		note, ok := nvs.Map[hit.ID]

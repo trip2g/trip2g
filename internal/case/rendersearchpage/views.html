@@ -1,0 +1,30 @@
+{%- func Page(resp *Response) -%}
+
+<div>
+  <a href="/">Главная</a>
+</div>
+
+<div>
+  <form method="get">
+    <input type="text" name="q" placeholder="Search..." value="{%s resp.Query %}">
+    <button type="submit">Search</button>
+  <form>
+</div>
+
+{% for _, item := range resp.Result.Nodes %}
+
+<div class="search-result">
+  {% if item.HighlightedTitle != nil %}
+  <h2 class="search-result__title">
+    <a href="{%s= item.URL %}">{%s= *item.HighlightedTitle %}</a>
+  </h2>
+  {% endif %}
+
+  {% for _, content := range item.HighlightedContent %}
+  <p class="search-result__content">{%s= content %}</p>
+  {% endfor %}
+</div>
+
+{% endfor %}
+
+{%- endfunc -%}

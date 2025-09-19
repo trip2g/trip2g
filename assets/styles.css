@@ -312,3 +312,19 @@ html {
 .prose p:before, .prose p.after {
   content: '';
 }
+
+.search-result {
+  @apply my-8;
+}
+
+.search-result mark {
+  @apply bg-yellow-200 dark:bg-yellow-600;
+}
+
+.search-result__title {
+  @apply text-2xl font-bold mb-4;
+}
+
+.search-result__content {
+  @apply my-4
+}
