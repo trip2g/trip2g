@@ -788,6 +788,20 @@ func extractSubgraphs(target map[string]struct{}, val interface{}) error {
 	return nil
 }
 
+func (nv NoteViews) VisibleList() []*NoteView {
+	views := []*NoteView{}
+
+	for _, note := range nv.List {
+		if strings.Contains(note.Permalink, "/_") {
+			continue
+		}
+
+		views = append(views, note)
+	}
+
+	return views
+}
+
 func (nv NoteViews) IDMap() map[int64]*NoteView {
 	idMap := make(map[int64]*NoteView, len(nv.Map))
 

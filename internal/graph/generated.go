@@ -874,6 +874,13 @@ type ComplexityRoot struct {
 		TotalCount func(childComplexity int) int
 	}
 
+	SearchResult struct {
+		Document           func(childComplexity int) int
+		HighlightedContent func(childComplexity int) int
+		HighlightedTitle   func(childComplexity int) int
+		URL                func(childComplexity int) int
+	}
+
 	SetBoostyTierSubgraphsPayload struct {
 		Success func(childComplexity int) int
 		Tier    func(childComplexity int) int
@@ -4708,6 +4715,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SearchConnection.TotalCount(childComplexity), true
+
+	case "SearchResult.document":
+		if e.complexity.SearchResult.Document == nil {
+			break
+		}
+
+		return e.complexity.SearchResult.Document(childComplexity), true
+
+	case "SearchResult.highlightedContent":
+		if e.complexity.SearchResult.HighlightedContent == nil {
+			break
+		}
+
+		return e.complexity.SearchResult.HighlightedContent(childComplexity), true
+
+	case "SearchResult.highlightedTitle":
+		if e.complexity.SearchResult.HighlightedTitle == nil {
+			break
+		}
+
+		return e.complexity.SearchResult.HighlightedTitle(childComplexity), true
+
+	case "SearchResult.url":
+		if e.complexity.SearchResult.URL == nil {
+			break
+		}
+
+		return e.complexity.SearchResult.URL(childComplexity), true
 
 	case "SetBoostyTierSubgraphsPayload.success":
 		if e.complexity.SetBoostyTierSubgraphsPayload.Success == nil {
@@ -27957,7 +27992,190 @@ func (ec *executionContext) fieldContext_SearchConnection_nodes(_ context.Contex
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type SearchResult does not have child fields")
+			switch field.Name {
+			case "highlightedTitle":
+				return ec.fieldContext_SearchResult_highlightedTitle(ctx, field)
+			case "highlightedContent":
+				return ec.fieldContext_SearchResult_highlightedContent(ctx, field)
+			case "url":
+				return ec.fieldContext_SearchResult_url(ctx, field)
+			case "document":
+				return ec.fieldContext_SearchResult_document(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SearchResult", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchResult_highlightedTitle(ctx context.Context, field graphql.CollectedField, obj *model.SearchResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SearchResult_highlightedTitle(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HighlightedTitle, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SearchResult_highlightedTitle(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchResult_highlightedContent(ctx context.Context, field graphql.CollectedField, obj *model.SearchResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SearchResult_highlightedContent(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HighlightedContent, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SearchResult_highlightedContent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchResult_url(ctx context.Context, field graphql.CollectedField, obj *model.SearchResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SearchResult_url(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.URL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SearchResult_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchResult_document(ctx context.Context, field graphql.CollectedField, obj *model.SearchResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SearchResult_document(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Document, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SearchResultDocument)
+	fc.Result = res
+	return ec.marshalNSearchResultDocument2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResultDocument(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SearchResult_document(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SearchResultDocument does not have child fields")
 		},
 	}
 	return fc, nil
@@ -35592,7 +35810,7 @@ func (ec *executionContext) _RunCronJobOrErrorPayload(ctx context.Context, sel a
 	}
 }
 
-func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.SelectionSet, obj model.SearchResult) graphql.Marshaler {
+func (ec *executionContext) _SearchResultDocument(ctx context.Context, sel ast.SelectionSet, obj model.SearchResultDocument) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
@@ -47128,7 +47346,7 @@ func (ec *executionContext) _Offer(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
-var publicNoteImplementors = []string{"PublicNote", "SearchResult"}
+var publicNoteImplementors = []string{"PublicNote", "SearchResultDocument"}
 
 func (ec *executionContext) _PublicNote(ctx context.Context, sel ast.SelectionSet, obj *model.PublicNote) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, publicNoteImplementors)
@@ -48027,6 +48245,57 @@ func (ec *executionContext) _SearchConnection(ctx context.Context, sel ast.Selec
 			}
 		case "nodes":
 			out.Values[i] = ec._SearchConnection_nodes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var searchResultImplementors = []string{"SearchResult"}
+
+func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.SelectionSet, obj *model.SearchResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, searchResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SearchResult")
+		case "highlightedTitle":
+			out.Values[i] = ec._SearchResult_highlightedTitle(ctx, field, obj)
+		case "highlightedContent":
+			out.Values[i] = ec._SearchResult_highlightedContent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "url":
+			out.Values[i] = ec._SearchResult_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "document":
+			out.Values[i] = ec._SearchResult_document(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -53460,13 +53729,7 @@ func (ec *executionContext) unmarshalNSearchInput2trip2gᚋinternalᚋgraphᚋmo
 }
 
 func (ec *executionContext) marshalNSearchResult2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResult(ctx context.Context, sel ast.SelectionSet, v model.SearchResult) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._SearchResult(ctx, sel, v)
+	return ec._SearchResult(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNSearchResult2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐSearchResultᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SearchResult) graphql.Marshaler {
@@ -53511,6 +53774,16 @@ func (ec *executionContext) marshalNSearchResult2ᚕtrip2gᚋinternalᚋgraphᚋ
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNSearchResultDocument2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResultDocument(ctx context.Context, sel ast.SelectionSet, v model.SearchResultDocument) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SearchResultDocument(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSetBoostyTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetBoostyTierSubgraphsInput(ctx context.Context, v any) (model.SetBoostyTierSubgraphsInput, error) {

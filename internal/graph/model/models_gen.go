@@ -134,8 +134,8 @@ type RunCronJobOrErrorPayload interface {
 	IsRunCronJobOrErrorPayload()
 }
 
-type SearchResult interface {
-	IsSearchResult()
+type SearchResultDocument interface {
+	IsSearchResultDocument()
 }
 
 type SetBoostyTierSubgraphsOrErrorPayload interface {
@@ -764,7 +764,7 @@ type PublicNote struct {
 	Toc    []NoteTocItem `json:"toc"`
 }
 
-func (PublicNote) IsSearchResult() {}
+func (PublicNote) IsSearchResultDocument() {}
 
 type PushNoteInput struct {
 	Path    string `json:"path"`
@@ -884,6 +884,13 @@ type SearchConnection struct {
 
 type SearchInput struct {
 	Query string `json:"query"`
+}
+
+type SearchResult struct {
+	HighlightedTitle   *string              `json:"highlightedTitle,omitempty"`
+	HighlightedContent []string             `json:"highlightedContent"`
+	URL                string               `json:"url"`
+	Document           SearchResultDocument `json:"document"`
 }
 
 type SetBoostyTierSubgraphsInput struct {

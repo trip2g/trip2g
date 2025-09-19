@@ -705,10 +705,18 @@ type PublicNote {
   toc: [NoteTocItem!]!
 }
 
-union SearchResult = PublicNote
+union SearchResultDocument = PublicNote
 
 input SearchInput {
   query: String!
+}
+
+type SearchResult {
+  highlightedTitle: String
+  highlightedContent: [String!]!
+  url: String!
+
+  document: SearchResultDocument!
 }
 
 type SearchConnection @goExtraField(name: "Input", type: "*trip2g/internal/graph/model.SearchInput"){

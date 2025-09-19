@@ -4,6 +4,8 @@ import (
 	"errors"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
+
+	"trip2g/internal/model"
 )
 
 func NewFieldError(field string, message string) *ErrorPayload {
@@ -32,4 +34,30 @@ func NewOzzoError(err error) *ErrorPayload {
 	}
 
 	return &payload
+}
+
+func ConvertNoteToPublic(note *model.NoteView) *PublicNote {
+	return &PublicNote{
+		PathID: note.PathID,
+		Title:  note.Title,
+		HTML:   string(note.HTML),
+		Toc:    prepareTOC(note),
+	}
+}
+
+func prepareTOC(note *model.NoteView) []NoteTocItem {
+	toc := make([]NoteTocItem, 0, len(note.TOC()))
+	for _, heading := range note.TOC() {
+		level := heading.Level
+		if level > 2147483647 {
+			level = 2147483647 // Cap at max int32 value
+		}
+		toc = append(toc, NoteTocItem{
+			ID:    heading.ID,
+			Title: heading.Text,
+			Level: int32(level), //nolint:gosec // heading level is always a small positive number
+		})
+	}
+
+	return toc
 }

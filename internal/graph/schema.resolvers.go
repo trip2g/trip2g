@@ -1580,11 +1580,7 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 		return nil, nil
 	}
 
-	return &model.PublicNote{
-		Title: response.Note.Title,
-		HTML:  string(response.Note.HTML),
-		Toc:   prepareTOC(response.Note),
-	}, nil
+	return model.ConvertNoteToPublic(response.Note), nil
 }
 
 // Search is the resolver for the search field.
@@ -1679,12 +1675,9 @@ func (r *userResolver) FavoriteNotes(ctx context.Context, obj *db.User) ([]model
 			continue
 		}
 
-		favoriteNotes[i] = model.PublicNote{
-			PathID: row.PathID,
-			Title:  note.Title,
-			HTML:   string(note.HTML),
-			Toc:    prepareTOC(note),
-		}
+		publicNote := model.ConvertNoteToPublic(note)
+
+		favoriteNotes[i] = *publicNote
 	}
 
 	return favoriteNotes, nil
