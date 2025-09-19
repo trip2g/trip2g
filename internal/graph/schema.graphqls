@@ -705,11 +705,23 @@ type PublicNote {
   toc: [NoteTocItem!]!
 }
 
+union SearchResult = PublicNote
+
+input SearchInput {
+  query: String!
+}
+
+type SearchConnection @goExtraField(name: "Input", type: "*trip2g/internal/graph/model.SearchInput"){
+  totalCount: Int64!
+  nodes: [SearchResult!]!
+}
+
 type Query {
   viewer: Viewer!
   notePaths: [NotePath!]!
   admin: AdminQuery!
   note(input: NoteInput!): PublicNote
+  search(input: SearchInput!): SearchConnection!
 }
 
 type FieldMessage {

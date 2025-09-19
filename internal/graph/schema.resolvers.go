@@ -64,6 +64,7 @@ import (
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
+	"trip2g/internal/case/sitesearch"
 	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/db"
@@ -1584,6 +1585,11 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 		HTML:  string(response.Note.HTML),
 		Toc:   prepareTOC(response.Note),
 	}, nil
+}
+
+// Search is the resolver for the search field.
+func (r *queryResolver) Search(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error) {
+	return sitesearch.Resolve(ctx, r.env(ctx), input)
 }
 
 // Credentials is the resolver for the credentials field.

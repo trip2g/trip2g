@@ -134,6 +134,10 @@ type RunCronJobOrErrorPayload interface {
 	IsRunCronJobOrErrorPayload()
 }
 
+type SearchResult interface {
+	IsSearchResult()
+}
+
 type SetBoostyTierSubgraphsOrErrorPayload interface {
 	IsSetBoostyTierSubgraphsOrErrorPayload()
 }
@@ -760,6 +764,8 @@ type PublicNote struct {
 	Toc    []NoteTocItem `json:"toc"`
 }
 
+func (PublicNote) IsSearchResult() {}
+
 type PushNoteInput struct {
 	Path    string `json:"path"`
 	Content string `json:"content"`
@@ -869,6 +875,16 @@ type RunCronJobPayload struct {
 }
 
 func (RunCronJobPayload) IsRunCronJobOrErrorPayload() {}
+
+type SearchConnection struct {
+	TotalCount int64          `json:"totalCount"`
+	Nodes      []SearchResult `json:"nodes"`
+	Input      *SearchInput   `json:"-"`
+}
+
+type SearchInput struct {
+	Query string `json:"query"`
+}
 
 type SetBoostyTierSubgraphsInput struct {
 	TierID      int64   `json:"tierId"`

@@ -828,6 +828,7 @@ type ComplexityRoot struct {
 		Admin     func(childComplexity int) int
 		Note      func(childComplexity int, input model.NoteInput) int
 		NotePaths func(childComplexity int) int
+		Search    func(childComplexity int, input model.SearchInput) int
 		Viewer    func(childComplexity int) int
 	}
 
@@ -866,6 +867,11 @@ type ComplexityRoot struct {
 
 	RunCronJobPayload struct {
 		Execution func(childComplexity int) int
+	}
+
+	SearchConnection struct {
+		Nodes      func(childComplexity int) int
+		TotalCount func(childComplexity int) int
 	}
 
 	SetBoostyTierSubgraphsPayload struct {
@@ -1372,6 +1378,7 @@ type QueryResolver interface {
 	NotePaths(ctx context.Context) ([]db.NotePath, error)
 	Admin(ctx context.Context) (*model1.AdminQuery, error)
 	Note(ctx context.Context, input model.NoteInput) (*model.PublicNote, error)
+	Search(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error)
 }
 type RefreshBoostyDataPayloadResolver interface {
 	Credentials(ctx context.Context, obj *model.RefreshBoostyDataPayload) (*db.BoostyCredential, error)
@@ -4578,6 +4585,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.NotePaths(childComplexity), true
 
+	case "Query.search":
+		if e.complexity.Query.Search == nil {
+			break
+		}
+
+		args, err := ec.field_Query_search_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Search(childComplexity, args["input"].(model.SearchInput)), true
+
 	case "Query.viewer":
 		if e.complexity.Query.Viewer == nil {
 			break
@@ -4675,6 +4694,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.RunCronJobPayload.Execution(childComplexity), true
+
+	case "SearchConnection.nodes":
+		if e.complexity.SearchConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.SearchConnection.Nodes(childComplexity), true
+
+	case "SearchConnection.totalCount":
+		if e.complexity.SearchConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.SearchConnection.TotalCount(childComplexity), true
 
 	case "SetBoostyTierSubgraphsPayload.success":
 		if e.complexity.SetBoostyTierSubgraphsPayload.Success == nil {
@@ -5121,6 +5154,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRestoreBoostyCredentialsInput,
 		ec.unmarshalInputRestorePatreonCredentialsInput,
 		ec.unmarshalInputRunCronJobInput,
+		ec.unmarshalInputSearchInput,
 		ec.unmarshalInputSetBoostyTierSubgraphsInput,
 		ec.unmarshalInputSetPatreonTierSubgraphsInput,
 		ec.unmarshalInputSetTgChatSubgraphInvitesInput,
@@ -6887,6 +6921,29 @@ func (ec *executionContext) field_Query_note_argsInput(
 	}
 
 	var zeroVal model.NoteInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_search_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_search_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_search_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.SearchInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNSearchInput2trip2gᚋinternalᚋgraphᚋmodelᚐSearchInput(ctx, tmp)
+	}
+
+	var zeroVal model.SearchInput
 	return zeroVal, nil
 }
 
@@ -26938,6 +26995,67 @@ func (ec *executionContext) fieldContext_Query_note(ctx context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_search(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_search(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Search(rctx, fc.Args["input"].(model.SearchInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SearchConnection)
+	fc.Result = res
+	return ec.marshalNSearchConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐSearchConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_search(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "totalCount":
+				return ec.fieldContext_SearchConnection_totalCount(ctx, field)
+			case "nodes":
+				return ec.fieldContext_SearchConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SearchConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_search_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query___type(ctx, field)
 	if err != nil {
@@ -27752,6 +27870,94 @@ func (ec *executionContext) fieldContext_RunCronJobPayload_execution(_ context.C
 				return ec.fieldContext_AdminCronJobExecution_job(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminCronJobExecution", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *model.SearchConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SearchConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SearchConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.SearchConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SearchConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Nodes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.SearchResult)
+	fc.Result = res
+	return ec.marshalNSearchResult2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐSearchResultᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SearchConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SearchResult does not have child fields")
 		},
 	}
 	return fc, nil
@@ -33852,6 +34058,33 @@ func (ec *executionContext) unmarshalInputRunCronJobInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSearchInput(ctx context.Context, obj any) (model.SearchInput, error) {
+	var it model.SearchInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"query"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "query":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Query = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSetBoostyTierSubgraphsInput(ctx context.Context, obj any) (model.SetBoostyTierSubgraphsInput, error) {
 	var it model.SetBoostyTierSubgraphsInput
 	asMap := map[string]any{}
@@ -35354,6 +35587,22 @@ func (ec *executionContext) _RunCronJobOrErrorPayload(ctx context.Context, sel a
 			return graphql.Null
 		}
 		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.SelectionSet, obj model.SearchResult) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.PublicNote:
+		return ec._PublicNote(ctx, sel, &obj)
+	case *model.PublicNote:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._PublicNote(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -46879,7 +47128,7 @@ func (ec *executionContext) _Offer(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
-var publicNoteImplementors = []string{"PublicNote"}
+var publicNoteImplementors = []string{"PublicNote", "SearchResult"}
 
 func (ec *executionContext) _PublicNote(ctx context.Context, sel ast.SelectionSet, obj *model.PublicNote) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, publicNoteImplementors)
@@ -47308,6 +47557,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "search":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_search(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -47712,6 +47983,50 @@ func (ec *executionContext) _RunCronJobPayload(ctx context.Context, sel ast.Sele
 			out.Values[i] = graphql.MarshalString("RunCronJobPayload")
 		case "execution":
 			out.Values[i] = ec._RunCronJobPayload_execution(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var searchConnectionImplementors = []string{"SearchConnection"}
+
+func (ec *executionContext) _SearchConnection(ctx context.Context, sel ast.SelectionSet, obj *model.SearchConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, searchConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SearchConnection")
+		case "totalCount":
+			out.Values[i] = ec._SearchConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "nodes":
+			out.Values[i] = ec._SearchConnection_nodes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -53123,6 +53438,79 @@ func (ec *executionContext) marshalNRunCronJobOrErrorPayload2trip2gᚋinternal�
 		return graphql.Null
 	}
 	return ec._RunCronJobOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSearchConnection2trip2gᚋinternalᚋgraphᚋmodelᚐSearchConnection(ctx context.Context, sel ast.SelectionSet, v model.SearchConnection) graphql.Marshaler {
+	return ec._SearchConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSearchConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐSearchConnection(ctx context.Context, sel ast.SelectionSet, v *model.SearchConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SearchConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSearchInput2trip2gᚋinternalᚋgraphᚋmodelᚐSearchInput(ctx context.Context, v any) (model.SearchInput, error) {
+	res, err := ec.unmarshalInputSearchInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSearchResult2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResult(ctx context.Context, sel ast.SelectionSet, v model.SearchResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SearchResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSearchResult2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐSearchResultᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SearchResult) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSearchResult2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResult(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNSetBoostyTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetBoostyTierSubgraphsInput(ctx context.Context, v any) (model.SetBoostyTierSubgraphsInput, error) {
