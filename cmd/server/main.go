@@ -177,8 +177,6 @@ func main() {
 	// 	config.SMTPHost,
 	// )
 
-	jwtSecret := []byte("secret")
-
 	a := &app{
 		Queries:      queries,
 		WriteQueries: writeQueries,
@@ -193,8 +191,8 @@ func main() {
 			EnvMap: make(map[*app]*sql.Tx),
 		},
 
-		hotAuthTokenManager: hotauthtoken.NewManager(jwtSecret),
-		tgAuthTokenManager:  tgauthtoken.NewManager(jwtSecret),
+		hotAuthTokenManager: hotauthtoken.NewManager(config.HotAuthToken),
+		tgAuthTokenManager:  tgauthtoken.NewManager(config.TgAuthToken),
 
 		purchaseTokenManager: purchasetoken.NewManager(config.PurchaseToken),
 

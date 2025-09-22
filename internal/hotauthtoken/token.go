@@ -14,7 +14,13 @@ type fullData struct {
 	jwt.RegisteredClaims
 }
 
+type Config struct {
+	Secret    string
+	ExpiresIn time.Duration
+}
+
 type Manager struct {
+	config Config
 	secret []byte
 }
 
@@ -27,15 +33,23 @@ func (c fullData) Validate() error {
 	return nil
 }
 
-func NewManager(secret []byte) *Manager {
+func DefaultConfig() Config {
+	return Config{
+		Secret:    "change_me_please",
+		ExpiresIn: 30 * time.Minute,
+	}
+}
+
+func NewManager(config Config) *Manager {
 	return &Manager{
-		secret: secret,
+		secret: []byte(config.Secret),
+		config: config,
 	}
 }
 
 func (m *Manager) NewToken(data model.HotAuthToken) (string, error) {
 	now := time.Now()
-	exp := now.Add(24 * time.Hour) // TODO: change to 30 minutes
+	exp := now.Add(m.config.ExpiresIn) // TODO: change to 30 minutes
 
 	claims := fullData{
 		HotAuthToken: data,

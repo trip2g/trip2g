@@ -12,11 +12,13 @@ import (
 
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boostyjobs"
+	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/miniostorage"
 	"trip2g/internal/patreonjobs"
 	"trip2g/internal/purchasetoken"
+	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/usertoken"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
@@ -84,6 +86,10 @@ type Config struct {
 	UserToken usertoken.Config
 
 	PurchaseToken purchasetoken.Config
+
+	HotAuthToken hotauthtoken.Config
+
+	TgAuthToken tgauthtoken.Config
 }
 
 // Default values for configuration.
@@ -311,10 +317,32 @@ func (c *Config) defineFlags() {
 		purchaseTokenDefaults.ExpiresIn,
 		"purchase token expiration duration",
 	)
+
+	// Hot Auth Token
+	hotAuthTokenDefaults := hotauthtoken.DefaultConfig()
+
+	flag.DurationVar(
+		&c.HotAuthToken.ExpiresIn,
+		"hot-auth-token-expires-in",
+		hotAuthTokenDefaults.ExpiresIn,
+		"hot auth token expiration duration",
+	)
+
+	// Telegram Auth Token
+	tgAuthTokenDefaults := tgauthtoken.DefaultConfig()
+
+	flag.DurationVar(
+		&c.TgAuthToken.ExpiresIn,
+		"tg-auth-token-expires-in",
+		tgAuthTokenDefaults.ExpiresIn,
+		"telegram auth token expiration duration",
+	)
 }
 
 func (c *Config) Prepare() {
 	c.PurchaseToken.Secret = c.UserToken.Secret
+	c.HotAuthToken.Secret = c.UserToken.Secret
+	c.TgAuthToken.Secret = c.UserToken.Secret
 }
 
 // validate checks if the configuration is valid using ozzo validation.
