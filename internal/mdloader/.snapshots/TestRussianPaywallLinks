@@ -1,4 +1,5 @@
-(map[string]string) (len=3) {
+(map[string]string) (len=4) {
+  (string) (len=1) "/": (string) (len=135) "<p>Hello <a class=\"paywall paywall:core\" data-pid=\"0\" href=\"/ponedeljnik_9_iyunya_2025\">Понедельник 9 июня 2025</a></p>\n",
   (string) (len=6) "/index": (string) (len=135) "<p>Hello <a class=\"paywall paywall:core\" data-pid=\"0\" href=\"/ponedeljnik_9_iyunya_2025\">Понедельник 9 июня 2025</a></p>\n",
   (string) (len=26) "/ponedeljnik_9_iyunya_2025": (string) (len=21) "<p>Payed content</p>\n",
   (string) (len=39) "/понедельник_9_июня_2025": (string) (len=21) "<p>Payed content</p>\n"

@@ -4,6 +4,9 @@ test:
 build-amd64: test
 	GOOS=linux GOARCH=amd64 go build -o ./tmp/amd64 -ldflags="-s -w" ./cmd/server
 
+build: test
+	go build -o ./tmp/server -ldflags="-s -w" ./cmd/server
+
 build-docker:
 	docker build -t trip2g .
 	docker save trip2g | bzip2 > ./tmp/app.tar.bz2

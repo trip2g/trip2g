@@ -860,7 +860,11 @@ func (nv *NoteViews) RegisterNote(note *NoteView) {
 	nv.PathMap[note.Path] = note
 
 	if note.IsIndex {
-		nv.Map[note.Permalink+"/index"] = note
+		if note.Permalink == "/" {
+			nv.Map["/index"] = note
+		} else {
+			nv.Map[note.Permalink+"/index"] = note
+		}
 	}
 }
 

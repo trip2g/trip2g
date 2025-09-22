@@ -33,15 +33,16 @@ First. Second [[second]] [[dead]]`),
 		Log:     &log,
 	})
 	require.NoError(t, err)
-	require.Len(t, pages.Map, 3)
+	require.Len(t, pages.Map, 4)
 
+	require.Equal(t, "index", pages.Map["/"].Title)
 	require.Equal(t, "index", pages.Map["/index"].Title)
 	require.Equal(t, "First", pages.Map["/first"].Title)
 	require.Equal(t, "second", pages.Map["/second"].Title)
 
 	require.Equal(t, map[string]struct{}{}, pages.Map["/index"].InLinks)
-	require.Equal(t, map[string]struct{}{"/index": {}}, pages.Map["/first"].InLinks)
-	require.Equal(t, map[string]struct{}{"/index": {}, "/first": {}}, pages.Map["/second"].InLinks)
+	require.Equal(t, map[string]struct{}{"/": {}}, pages.Map["/first"].InLinks)
+	require.Equal(t, map[string]struct{}{"/": {}, "/first": {}}, pages.Map["/second"].InLinks)
 
 	// Check if there's a warning about broken link
 	hasBrokenLinkWarning := false
