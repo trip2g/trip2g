@@ -42,11 +42,18 @@ func (c fullData) Validate() error {
 	return nil
 }
 
+type Config struct {
+	CookieName string
+	Secret     string
+	ExpiresIn  time.Duration
+}
+
 // Manager handles signing and parsing user tokens.
 type Manager struct {
-	cookieName string
-	secret     []byte
-	insecure   bool
+	config Config
+
+	secret   []byte
+	insecure bool
 
 	// will call this function after parsing the token
 	// for example for check banned users.
@@ -58,11 +65,19 @@ var (
 	ErrInvalidToken = errors.New("invalid or expired JWT")
 )
 
+func DefaultConfig() Config {
+	return Config{
+		CookieName: "trip2g_token",
+		Secret:     "please-change-me-to-something-secret",
+		ExpiresIn:  30 * 24 * time.Hour,
+	}
+}
+
 // NewManager creates a new Manager instance.
-func NewManager(cookieName string, secret []byte) *Manager {
+func NewManager(config Config) *Manager {
 	return &Manager{
-		cookieName: cookieName,
-		secret:     secret,
+		config: config,
+		secret: []byte(config.Secret),
 	}
 }
 
@@ -76,7 +91,7 @@ func (e *Manager) AddValidator(v Validator) {
 
 // Extract reads cookie, verifies JWT, parses Token.
 func (e *Manager) Extract(ctx *fasthttp.RequestCtx) (*Data, error) {
-	raw := ctx.Request.Header.Cookie(e.cookieName)
+	raw := ctx.Request.Header.Cookie(e.config.CookieName)
 	if len(raw) == 0 {
 		return nil, ErrTokenMissing
 	}
@@ -125,7 +140,7 @@ type StoreData struct {
 // Store serializes Token as JWT and sets it as a secure httpOnly cookie.
 func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error) {
 	now := time.Now()
-	exp := now.Add(24 * time.Hour)
+	exp := now.Add(e.config.ExpiresIn)
 
 	claims := fullData{
 		ID:   data.ID,
@@ -142,7 +157,7 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error)
 	}
 
 	c := fasthttp.AcquireCookie()
-	c.SetKey(e.cookieName)
+	c.SetKey(e.config.CookieName)
 	c.SetValue(signed)
 	c.SetPath("/")
 	c.SetHTTPOnly(true)
@@ -163,7 +178,7 @@ func (e *Manager) Store(ctx *fasthttp.RequestCtx, data Data) (*StoreData, error)
 
 func (e *Manager) Delete(ctx *fasthttp.RequestCtx) error {
 	c := fasthttp.AcquireCookie()
-	c.SetKey(e.cookieName)
+	c.SetKey(e.config.CookieName)
 	c.SetPath("/")
 	c.SetHTTPOnly(true)
 	c.SetSecure(!e.insecure)

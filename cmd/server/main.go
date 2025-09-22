@@ -151,7 +151,7 @@ func main() {
 		panic(fmt.Errorf("failed to setup database: %w", err))
 	}
 
-	tokenManager := usertoken.NewManager("trip2g_token", []byte("secret"))
+	tokenManager := usertoken.NewManager(config.UserToken)
 	tokenManager.SetInsecure(config.DevMode) // for k6
 
 	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "read: no tx:")))

@@ -16,6 +16,7 @@ import (
 	"trip2g/internal/mdloader"
 	"trip2g/internal/miniostorage"
 	"trip2g/internal/patreonjobs"
+	"trip2g/internal/usertoken"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -78,6 +79,8 @@ type Config struct {
 	BoostyJobsConfig  boostyjobs.Config
 
 	AuditLog auditlogger.Config
+
+	UserToken usertoken.Config
 }
 
 // Default values for configuration.
@@ -261,10 +264,42 @@ func (c *Config) defineFlags() {
 
 	// Audit log configuration
 	flag.StringVar(&c.AuditLog.LogLevel, "audit-log-level", "info", "Audit log level")
+
+	// User Token
+	userTokenDefaults := usertoken.DefaultConfig()
+
+	flag.StringVar(
+		&c.UserToken.CookieName,
+		"user-token-cookie-name",
+		userTokenDefaults.CookieName,
+		"User token cookie name",
+	)
+
+	flag.StringVar(
+		&c.UserToken.Secret,
+		"user-token-secret",
+		userTokenDefaults.Secret,
+		"jwt secret for user tokens",
+	)
+
+	flag.DurationVar(
+		&c.UserToken.ExpiresIn,
+		"user-token-expires-in",
+		userTokenDefaults.ExpiresIn,
+		"user token expiration duration",
+	)
 }
 
 // validate checks if the configuration is valid using ozzo validation.
 func (c *Config) validate() error {
+	if !c.DevMode {
+		if c.UserToken.Secret == usertoken.DefaultConfig().Secret {
+			panic("in production, user token secret must be changed from default")
+		}
+
+		// TODO: other production checks
+	}
+
 	return ozzo.ValidateStruct(c,
 		// Server configuration
 		ozzo.Field(&c.ListenAddr, ozzo.Required),
