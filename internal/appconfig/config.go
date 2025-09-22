@@ -16,6 +16,7 @@ import (
 	"trip2g/internal/mdloader"
 	"trip2g/internal/miniostorage"
 	"trip2g/internal/patreonjobs"
+	"trip2g/internal/purchasetoken"
 	"trip2g/internal/usertoken"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
@@ -81,6 +82,8 @@ type Config struct {
 	AuditLog auditlogger.Config
 
 	UserToken usertoken.Config
+
+	PurchaseToken purchasetoken.Config
 }
 
 // Default values for configuration.
@@ -163,6 +166,8 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse configuration: %w", err)
 	}
+
+	cfg.Prepare()
 
 	// Validate configuration
 	err = cfg.validate()
@@ -272,12 +277,13 @@ func (c *Config) defineFlags() {
 		&c.UserToken.CookieName,
 		"user-token-cookie-name",
 		userTokenDefaults.CookieName,
-		"User token cookie name",
+		"user token cookie name",
 	)
 
+	// secret for all jwt tokens
 	flag.StringVar(
 		&c.UserToken.Secret,
-		"user-token-secret",
+		"jwt-secret",
 		userTokenDefaults.Secret,
 		"jwt secret for user tokens",
 	)
@@ -288,6 +294,27 @@ func (c *Config) defineFlags() {
 		userTokenDefaults.ExpiresIn,
 		"user token expiration duration",
 	)
+
+	// Purchase Token
+	purchaseTokenDefaults := purchasetoken.DefaultConfig()
+
+	flag.StringVar(
+		&c.PurchaseToken.CookieName,
+		"purchase-token-cookie-name",
+		purchaseTokenDefaults.CookieName,
+		"purchase token cookie name",
+	)
+
+	flag.DurationVar(
+		&c.PurchaseToken.ExpiresIn,
+		"purchase-token-expires-in",
+		purchaseTokenDefaults.ExpiresIn,
+		"purchase token expiration duration",
+	)
+}
+
+func (c *Config) Prepare() {
+	c.PurchaseToken.Secret = c.UserToken.Secret
 }
 
 // validate checks if the configuration is valid using ozzo validation.

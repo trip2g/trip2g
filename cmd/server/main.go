@@ -196,7 +196,7 @@ func main() {
 		hotAuthTokenManager: hotauthtoken.NewManager(jwtSecret),
 		tgAuthTokenManager:  tgauthtoken.NewManager(jwtSecret),
 
-		purchaseTokenManager: purchasetoken.NewManager("trip2g_purchase_token", []byte("secret")),
+		purchaseTokenManager: purchasetoken.NewManager(config.PurchaseToken),
 
 		log:     log,
 		queries: queries,

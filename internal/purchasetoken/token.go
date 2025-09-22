@@ -16,9 +16,15 @@ type fullData struct {
 	jwt.RegisteredClaims
 }
 
+type Config struct {
+	CookieName string
+	Secret     string
+	ExpiresIn  time.Duration
+}
+
 type Manager struct {
-	secret     []byte
-	cookieName string
+	config Config
+	secret []byte
 }
 
 var _ jwt.ClaimsValidator = (*fullData)(nil)
@@ -32,16 +38,24 @@ func (c fullData) Validate() error {
 	return nil
 }
 
-func NewManager(cookieName string, secret []byte) *Manager {
+func DefaultConfig() Config {
+	return Config{
+		CookieName: "trip2g_purchase_token",
+		Secret:     "change_me_please",
+		ExpiresIn:  30 * time.Minute,
+	}
+}
+
+func NewManager(config Config) *Manager {
 	return &Manager{
-		secret:     secret,
-		cookieName: cookieName,
+		config: config,
+		secret: []byte(config.Secret),
 	}
 }
 
 func (m *Manager) NewToken(data model.PurchaseToken) (string, error) {
 	now := time.Now()
-	exp := now.Add(24 * time.Hour) // TODO: change to 30 minutes
+	exp := now.Add(m.config.ExpiresIn)
 
 	claims := fullData{
 		PurchaseToken: data,
@@ -73,7 +87,7 @@ func (m *Manager) ParseToken(tokenString string) (*model.PurchaseToken, error) {
 }
 
 func (e *Manager) rawTokens(ctx *fasthttp.RequestCtx) []string {
-	raw := string(ctx.Request.Header.Cookie(e.cookieName))
+	raw := string(ctx.Request.Header.Cookie(e.config.CookieName))
 	if len(raw) == 0 {
 		return nil
 	}
@@ -120,16 +134,16 @@ func (e *Manager) Delete(ctx *fasthttp.RequestCtx) error {
 }
 
 func (e *Manager) setCookie(ctx *fasthttp.RequestCtx, tokens []string) {
-	current := ctx.Request.Header.Cookie(e.cookieName)
+	current := ctx.Request.Header.Cookie(e.config.CookieName)
 	if len(current) == 0 && len(tokens) == 0 {
 		return
 	}
 
 	now := time.Now()
-	exp := now.Add(24 * time.Hour) // TODO: change to 30 minutes
+	exp := now.Add(e.config.ExpiresIn)
 
 	c := fasthttp.AcquireCookie()
-	c.SetKey(e.cookieName)
+	c.SetKey(e.config.CookieName)
 
 	if len(tokens) > 0 {
 		c.SetValue(strings.Join(tokens, tokenDelimiter))
