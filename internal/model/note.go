@@ -60,6 +60,7 @@ type NoteView struct {
 	FreeHTML template.HTML
 
 	Permalink string
+	IsIndex   bool
 
 	PermalinkOriginal string
 
@@ -171,16 +172,24 @@ func (n *NoteView) PreparePermalink() {
 	parts := strings.Split(link, "/")
 	newParts := make([]string, 0, len(parts))
 
-	for _, part := range parts {
+	for idx, part := range parts {
 		if part == "" {
 			continue
 		}
 
 		// Normalize each part of the path
 		np := normalizeURLPart(part)
-		if np != "" {
-			newParts = append(newParts, np)
+		if np == "" {
+			continue
 		}
+
+		isLast := idx == len(parts)-1
+		if isLast && (np == "index" || np == "_index") {
+			n.IsIndex = true
+			break
+		}
+
+		newParts = append(newParts, np)
 	}
 
 	n.PermalinkOriginal = "/" + strings.Join(newParts, "/")
@@ -843,6 +852,16 @@ func (nv *NoteViews) Warnings() map[string][]NoteWarning {
 	}
 
 	return res
+}
+
+func (nv *NoteViews) RegisterNote(note *NoteView) {
+	nv.Map[note.Permalink] = note
+	nv.Map[note.PermalinkOriginal] = note
+	nv.PathMap[note.Path] = note
+
+	if note.IsIndex {
+		nv.Map[note.Permalink+"/index"] = note
+	}
 }
 
 // removeMarkdownSyntax removes common markdown syntax for more accurate word counting.

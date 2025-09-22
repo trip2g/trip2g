@@ -113,9 +113,6 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	}
 
 	path := request.Path
-	if path == "/" {
-		path = "/index"
-	}
 
 	if systemRE.MatchString(path) {
 		return &response, ErrNotFound

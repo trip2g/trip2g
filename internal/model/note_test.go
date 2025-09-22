@@ -23,6 +23,19 @@ func TestPerparePermalink(t *testing.T) {
 	n.PreparePermalink()
 
 	require.Equal(t, "/_banner", n.Permalink)
+	require.False(t, n.IsIndex)
+
+	n.Path = "/nested/index.md"
+	n.PreparePermalink()
+
+	require.Equal(t, "/nested", n.Permalink)
+	require.True(t, n.IsIndex)
+
+	n.Path = "/nested/_index.md"
+	n.PreparePermalink()
+
+	require.Equal(t, "/nested", n.Permalink)
+	require.True(t, n.IsIndex)
 }
 
 func TestExtractReadingTime(t *testing.T) {
@@ -369,4 +382,45 @@ func TestNoteViewHeadings_Normalize(t *testing.T) {
 			require.Equal(t, tt.expected, input)
 		})
 	}
+}
+
+func TestNoteViewsRegisterRegularNote(t *testing.T) {
+	nv := NoteViews{
+		Map:     map[string]*NoteView{},
+		PathMap: map[string]*NoteView{},
+	}
+
+	note := &NoteView{
+		Path:              "hello world.md",
+		Permalink:         "/hello_world",
+		PermalinkOriginal: "/hello world",
+	}
+
+	nv.RegisterNote(note)
+
+	require.Equal(t, map[string]*NoteView{"/hello_world": note, "/hello world": note}, nv.Map)
+	require.Equal(t, map[string]*NoteView{"hello world.md": note}, nv.PathMap)
+}
+
+func TestNoteViewsRegisterIndexNote(t *testing.T) {
+	nv := NoteViews{
+		Map:     map[string]*NoteView{},
+		PathMap: map[string]*NoteView{},
+	}
+
+	note := &NoteView{
+		IsIndex:           true,
+		Path:              "hello world/index.md",
+		Permalink:         "/hello_world",
+		PermalinkOriginal: "/hello world",
+	}
+
+	nv.RegisterNote(note)
+
+	require.Equal(t, map[string]*NoteView{"hello world/index.md": note}, nv.PathMap)
+	require.Equal(t, map[string]*NoteView{
+		"/hello_world":       note,
+		"/hello world":       note,
+		"/hello_world/index": note,
+	}, nv.Map)
 }
