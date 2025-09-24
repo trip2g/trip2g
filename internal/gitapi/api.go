@@ -2,7 +2,10 @@ package gitapi
 
 import (
 	"bytes"
+	"compress/gzip"
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -17,6 +20,7 @@ type handler func(ctx *fasthttp.RequestCtx) error
 
 type Env interface {
 	Logger() logger.Logger
+	PutPrivateObject(ctx context.Context, reader io.Reader, objectID string) error
 }
 
 type Config struct {
@@ -52,6 +56,18 @@ func New(config Config, env Env) (*API, error) {
 	err := os.MkdirAll(config.RepoPath, os.ModePerm)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repo path: %w", err)
+	}
+
+	requiredBins := []string{
+		"git",
+		"git-upload-pack",
+		"git-receive-pack",
+		"tar",
+	}
+
+	err = checkBins(requiredBins)
+	if err != nil {
+		return nil, err
 	}
 
 	api := API{
@@ -266,10 +282,52 @@ func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
 
 	api.logger.Info("files changed", "files", changedFiles)
 
+	err = api.uploadRepo()
+	if err != nil {
+		return fmt.Errorf("failed to upload repo: %w", err)
+	}
+
+	return nil
+}
+
+func (api *API) uploadRepo() error {
+	objectID := "repo.tar.gz"
+
+	api.logger.Info("uploading repo", "objectID", objectID)
+
+	var buf bytes.Buffer
+	gzipWriter := gzip.NewWriter(&buf)
+
+	cmd := exec.Command("tar", "-cz", "-C", api.config.RepoPath, ".")
+	cmd.Stdout = gzipWriter
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to create tar.gz: %w", err)
+	}
+
+	gzipWriter.Close()
+
+	err = api.env.PutPrivateObject(context.Background(), &buf, objectID)
+	if err != nil {
+		return fmt.Errorf("failed to put private object: %w", err)
+	}
+
 	return nil
 }
 
 func pktLine(s string) []byte {
 	totalLen := len(s) + 4
 	return []byte(fmt.Sprintf("%04x%s", totalLen, s))
+}
+
+func checkBins(bins []string) error {
+	for _, bin := range bins {
+		_, err := exec.LookPath(bin)
+		if err != nil {
+			return fmt.Errorf("required binary not found: %s", bin)
+		}
+	}
+
+	return nil
 }

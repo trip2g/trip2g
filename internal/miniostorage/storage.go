@@ -186,3 +186,17 @@ func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, asse
 
 	return nil
 }
+
+// PutPrivateObject uploads a private object that is not publicly accessible.
+func (a *FileStorage) PutPrivateObject(ctx context.Context, reader io.Reader, objectID string) error {
+	options := minio.PutObjectOptions{
+		ContentType: "application/octet-stream",
+	}
+
+	_, err := a.minioClient.PutObject(context.Background(), a.config.Bucket, objectID, reader, -1, options)
+	if err != nil {
+		return fmt.Errorf("failed to put private object: %w", err)
+	}
+
+	return nil
+}
