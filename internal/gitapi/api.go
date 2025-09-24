@@ -171,25 +171,35 @@ func (api *API) handleInfoRefs(ctx *fasthttp.RequestCtx) error {
 	}
 
 	cmd.Stderr = os.Stderr
+	cmd.Stdout = ctx
 
 	// set content-type
 	ctx.Response.Header.Set("Content-Type", fmt.Sprintf("application/x-%s-advertisement", service))
 
 	// write smart headre
-	ctx.Write([]byte(fmt.Sprintf("001f# service=%s\n", service)))
+	ctx.Write(pktLine(fmt.Sprintf("# service=%s\n", service)))
 	ctx.Write([]byte("0000"))
 
-	output, err := cmd.Output()
+	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("failed to run git command: %w", err)
+		return fmt.Errorf("failed to run %s: %w", service, err)
 	}
-
-	ctx.Write(output)
 
 	return nil
 }
 
 func (api *API) handleGitUploadPack(ctx *fasthttp.RequestCtx) error {
+	cmd := exec.Command("git-upload-pack", "--stateless-rpc", api.config.RepoPath)
+	cmd.Stdin = bytes.NewReader(ctx.PostBody())
+	cmd.Stdout = ctx
+
+	ctx.Response.Header.Set("Content-Type", "application/x-git-upload-pack-result")
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to run git-upload-pack: %w", err)
+	}
+
 	return nil
 }
 
@@ -219,4 +229,9 @@ func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
 	api.logger.Info("files changed", "files", changedFiles)
 
 	return nil
+}
+
+func pktLine(s string) []byte {
+	totalLen := len(s) + 4
+	return []byte(fmt.Sprintf("%04x%s", totalLen, s))
 }
