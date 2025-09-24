@@ -2,10 +2,10 @@ test:
 	go test ./...
 
 build-amd64: test
-	GOOS=linux GOARCH=amd64 go build -o ./tmp/amd64 -ldflags="-s -w" ./cmd/server
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./tmp/amd64 -ldflags="-s -w" ./cmd/server
 
-build: test
-	go build -o ./tmp/server -ldflags="-s -w" ./cmd/server
+build:
+	CGO_ENABLED=0 go build -o ./tmp/server -ldflags="-s -w" ./cmd/server
 
 build-docker:
 	docker build -t trip2g .

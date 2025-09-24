@@ -16,7 +16,7 @@ insert into note_versions (path_id, version, content)
 values (?, ?, ?);
 
 -- name: InsertUserWithEmail :one
-insert into users (email, created_via) values (lower(sqlc.arg(email)), ?)
+insert into users (email, created_via) values (lower(sqlc.arg(email)), sqlc.arg(created_via))
 returning *;
 
 -- name: InsertUserWithTgUserID :one

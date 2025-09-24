@@ -1171,7 +1171,7 @@ func (q *WriteQueries) InsertUserNoteView(ctx context.Context, arg InsertUserNot
 }
 
 const insertUserWithEmail = `-- name: InsertUserWithEmail :one
-insert into users (email, created_via) values (lower(?2), ?)
+insert into users (email, created_via) values (lower(?1), ?2)
 returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via
 `
 

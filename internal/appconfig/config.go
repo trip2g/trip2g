@@ -51,6 +51,10 @@ type Config struct {
 	AdminJSURL string
 	LogLevel   string
 
+	ShutdownGracePeriod time.Duration
+	ShutdownTimeout     time.Duration
+	InternalListenAddr  string
+
 	// TLS/ACME configuration
 	AcmeDomains ArrayFlags
 
@@ -193,6 +197,9 @@ func (c *Config) defineFlags() {
 	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Log level")
 	flag.BoolVar(&c.DevMode, "dev", c.DevMode, "Development mode")
 	flag.BoolVar(&c.LatestLive, "latest-live", c.LatestLive, "Use latest release as live version")
+	flag.DurationVar(&c.ShutdownGracePeriod, "shutdown-grace-period", 50*time.Millisecond, "Shutdown grace period")
+	flag.DurationVar(&c.ShutdownTimeout, "shutdown-timeout", 1*time.Second, "Shutdown timeout")
+	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 
 	// MinIO storage flags
 	flag.StringVar(&c.Storage.Endpoint, "minio-endpoint", c.Storage.Endpoint, "MinIO endpoint")

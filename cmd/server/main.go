@@ -16,9 +16,13 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"trip2g/assets"
@@ -89,6 +93,10 @@ type app struct {
 	*tgbots.TgBots
 	*cronjobs.CronJobs
 	*sendsignincode.SendSignInCodeJob
+
+	sigChan chan os.Signal
+	stopped atomic.Bool
+	ctx     context.Context
 
 	graphTxs *graphTransactions
 
@@ -162,7 +170,8 @@ func main() {
 		panic(err)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	fileStorage, err := miniostorage.New(ctx, config.Storage)
 	if err != nil {
@@ -205,6 +214,10 @@ func main() {
 
 		nowpaymentsClient: nowpaymentsClient,
 	}
+
+	a.ctx = ctx
+	a.sigChan = make(chan os.Signal, 1)
+	signal.Notify(a.sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	a.auditLogger = auditlogger.New(ctx, a, a.config.AuditLog)
 
@@ -354,6 +367,7 @@ func (a *app) RegisterJob(id string, handler func(ctx context.Context, m []byte)
 
 func (a *app) createOwnerIfNotExists(ctx context.Context) error {
 	if a.config.OwnerEmail == "" {
+		a.log.Warn("no owner email configured, skipping owner creation")
 		return nil // No owner email configured
 	}
 
@@ -1408,16 +1422,62 @@ func (a *app) startServer() {
 		},
 	}
 
-	if len(a.config.AcmeDomains) == 0 {
-		err := s.ListenAndServe(a.config.ListenAddr)
-		if err != nil {
-			panic(err)
+	go func() {
+		if len(a.config.AcmeDomains) == 0 {
+			err := s.ListenAndServe(a.config.ListenAddr)
+			if err != nil {
+				panic(err)
+			}
+
+			return
 		}
 
+		a.startACMEServer(s)
+	}()
+
+	go a.startInternalServer()
+
+	a.waitForShutdown(s)
+}
+
+func (a *app) waitForShutdown(s *fasthttp.Server) {
+	<-a.sigChan
+
+	a.stopped.Store(true)
+	a.log.Info("shutting down in", "grace_period", a.config.ShutdownGracePeriod)
+
+	time.Sleep(a.config.ShutdownGracePeriod)
+
+	a.log.Info("shutting down server", "timeout", a.config.ShutdownTimeout)
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), a.config.ShutdownTimeout)
+	defer shutdownCancel()
+
+	err := s.ShutdownWithContext(shutdownCtx)
+	if err != nil {
+		a.log.Error("failed to shutdown server gracefully", "error", err)
 		return
 	}
 
-	a.startACMEServer(s)
+	a.log.Info("server stopped")
+}
+
+func (a *app) startInternalServer() {
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		if a.stopped.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte("shutting down"))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
+
+	err := http.ListenAndServe(a.config.InternalListenAddr, nil)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (a *app) startACMEServer(s *fasthttp.Server) {
