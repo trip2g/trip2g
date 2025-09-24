@@ -22,6 +22,8 @@ type Env interface {
 type Config struct {
 	BasePath string
 	RepoPath string
+
+	MasterBranch string
 }
 
 type API struct {
@@ -33,13 +35,16 @@ type API struct {
 
 	mu sync.Mutex
 
-	repoCreated bool
+	repoCreated           bool
+	preReceiveHookSetuped bool
 }
 
 func DefaultConfig() Config {
 	return Config{
 		BasePath: "/_system/git",
 		RepoPath: "tmp/git",
+
+		MasterBranch: "master",
 	}
 }
 
@@ -72,6 +77,39 @@ func (api *API) initRepo() error {
 	err := api.ensureBareRepo()
 	if err != nil {
 		return err
+	}
+
+	err = api.setupPreReceiveHook()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (api *API) setupPreReceiveHook() error {
+	if api.preReceiveHookSetuped {
+		return nil
+	}
+
+	api.preReceiveHookSetuped = true
+
+	hookPath := path.Join(api.config.RepoPath, "hooks", "pre-receive")
+
+	script := []byte(fmt.Sprintf(`#!/bin/sh
+
+while read oldrev newrev refname
+do
+  if [ "$refname" != "refs/heads/%s" ]; then
+    echo "ERROR: Only '%s' branch can be updated"
+    exit 1
+  fi
+done
+`, api.config.MasterBranch, api.config.MasterBranch))
+
+	err := os.WriteFile(hookPath, script, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to write pre-receive hook: %w", err)
 	}
 
 	return nil
