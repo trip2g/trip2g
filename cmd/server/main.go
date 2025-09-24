@@ -42,6 +42,7 @@ import (
 	"trip2g/internal/case/signinbytgauthtoken"
 	"trip2g/internal/cronjobs"
 	"trip2g/internal/db"
+	"trip2g/internal/gitapi"
 	"trip2g/internal/graph"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
@@ -140,6 +141,8 @@ type app struct {
 
 	patreonClientManager *patreon.ClientManager
 	boostyClientManager  *boosty.ClientManager
+
+	gitAPI *gitapi.API
 }
 
 func main() {
@@ -286,6 +289,11 @@ func main() {
 
 	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
+
+	a.gitAPI, err = gitapi.New(gitapi.DefaultConfig(), a)
+	if err != nil {
+		panic(err)
+	}
 
 	err = a.createOwnerIfNotExists(ctx)
 	if err != nil {
@@ -1203,6 +1211,10 @@ func (a *app) RefreshNotFoundTracker(ctx context.Context) error {
 }
 
 func (a *app) TrackNotFound(path string, ip string) {
+	if a.config.DevMode {
+		a.log.Warn("page not found", "path", path)
+	}
+
 	err := a.notFoundTracker.Track(path, ip)
 	if err != nil {
 		a.log.Error("failed to track not found", "path", path, "error", err)
@@ -1332,6 +1344,10 @@ func (a *app) startServer() {
 			}
 
 			if a.handleDebugAPI(ctx) {
+				return
+			}
+
+			if a.gitAPI.HandleRequest(ctx) {
 				return
 			}
 
