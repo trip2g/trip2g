@@ -446,6 +446,17 @@ CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
   update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
 end;
 CREATE INDEX goqite_queue_priority_created_idx on goqite (queue, priority desc, created);
+CREATE TABLE git_tokens (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  last_used_at datetime not null default current_timestamp,
+  admin_id integer references admins(user_id) on delete restrict,
+  value_sha256 text not null unique,
+  description text not null default '',
+  can_pull boolean default false,
+  can_push boolean default true,
+  usage_count integer default 0
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -516,4 +527,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250815092446'),
   ('20250816081838'),
   ('20250816144659'),
-  ('20250918140112');
+  ('20250918140112'),
+  ('20250925035301');

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"os"
@@ -12,18 +13,26 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"trip2g/internal/db"
 	"trip2g/internal/logger"
 
 	"github.com/valyala/fasthttp"
 )
 
+var ErrNoAuth = fmt.Errorf("no auth provided")
+
 type handler func(ctx *fasthttp.RequestCtx) error
 
 type Env interface {
 	Logger() logger.Logger
+
 	PutPrivateObject(ctx context.Context, reader io.Reader, objectID string) error
 	GetPrivateObject(ctx context.Context, objectID string) (io.ReadCloser, error)
 	PrivateObjectExists(ctx context.Context, objectID string) (bool, error)
+
+	AllVisibleNotePaths(ctx context.Context) ([]db.NotePath, error)
+	// pushnotes
+	// upload assets
 }
 
 type Config struct {
@@ -194,6 +203,17 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 		return false
 	}
 
+	err := api.checkAuth(ctx)
+	if err != nil {
+		api.logger.Warn("auth failed", "error", err)
+
+		ctx.Response.Header.Set("WWW-Authenticate", `Basic realm="Git Repository"`)
+		ctx.SetStatusCode(fasthttp.StatusUnauthorized)
+		ctx.WriteString(err.Error())
+
+		return true
+	}
+
 	handlers, ok := api.handlers[method]
 	if !ok {
 		api.logger.Warn("unsupported method", "method", method)
@@ -208,7 +228,7 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 
-	err := api.initRepo()
+	err = api.initRepo()
 	if err != nil {
 		api.logger.Error("failed to init repo", "error", err)
 		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
@@ -224,6 +244,45 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 	}
 
 	return true
+}
+
+func (api *API) checkAuth(ctx *fasthttp.RequestCtx) error {
+	auth := strings.TrimSpace(string(ctx.Request.Header.Peek("Authorization")))
+	if auth == "" {
+		ctx.Request.Header.VisitAll(func(key, value []byte) {
+			api.logger.Debug("header", "key", string(key), "value", string(value))
+		})
+
+		api.logger.Debug("no auth header")
+		return ErrNoAuth
+	}
+
+	const prefix = "Basic "
+	if len(auth) <= len(prefix) || auth[:len(prefix)] != prefix {
+		api.logger.Debug("invalid auth header", "auth", auth)
+		return ErrNoAuth
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
+	if err != nil {
+		return fmt.Errorf("failed to decode auth: %w", err)
+	}
+
+	parts := strings.SplitN(string(decoded), ":", 2)
+	if len(parts) != 2 {
+		api.logger.Debug("invalid auth format", "decoded", string(decoded))
+		return ErrNoAuth
+	}
+
+	if parts[0] != "user" {
+		api.logger.Debug("invalid username", "username", parts[0])
+		return ErrNoAuth
+	}
+
+	// TODO: check password
+	api.logger.Info("auth success", "token", parts[1])
+
+	return nil
 }
 
 func (api *API) handleInfoRefs(ctx *fasthttp.RequestCtx) error {
