@@ -290,7 +290,7 @@ func main() {
 	a.liveNoteLoader = noteloader.New("live", makeLiveNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 
-	a.gitAPI, err = gitapi.New(gitapi.DefaultConfig(), a)
+	a.gitAPI, err = gitapi.New(ctx, gitapi.DefaultConfig(), a)
 	if err != nil {
 		panic(err)
 	}

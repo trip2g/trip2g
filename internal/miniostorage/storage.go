@@ -200,3 +200,31 @@ func (a *FileStorage) PutPrivateObject(ctx context.Context, reader io.Reader, ob
 
 	return nil
 }
+
+func (a *FileStorage) PrivateObjectExists(ctx context.Context, objectID string) (bool, error) {
+	stats, err := a.minioClient.StatObject(
+		ctx,
+		a.config.Bucket,
+		objectID,
+		minio.StatObjectOptions{},
+	)
+
+	if err != nil {
+		if minio.ToErrorResponse(err).Code == "NoSuchKey" {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("failed to check if private object exists: %w", err)
+	}
+
+	return stats.Size > 0, nil
+}
+
+func (a *FileStorage) GetPrivateObject(ctx context.Context, objectID string) (io.ReadCloser, error) {
+	object, err := a.minioClient.GetObject(ctx, a.config.Bucket, objectID, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get private object: %w", err)
+	}
+
+	return object, nil
+}

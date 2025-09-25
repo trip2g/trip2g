@@ -11,6 +11,7 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 	"trip2g/internal/logger"
 
 	"github.com/valyala/fasthttp"
@@ -21,6 +22,8 @@ type handler func(ctx *fasthttp.RequestCtx) error
 type Env interface {
 	Logger() logger.Logger
 	PutPrivateObject(ctx context.Context, reader io.Reader, objectID string) error
+	GetPrivateObject(ctx context.Context, objectID string) (io.ReadCloser, error)
+	PrivateObjectExists(ctx context.Context, objectID string) (bool, error)
 }
 
 type Config struct {
@@ -32,6 +35,7 @@ type Config struct {
 
 type API struct {
 	config Config
+	ctx    context.Context
 	env    Env
 	logger logger.Logger
 
@@ -52,7 +56,7 @@ func DefaultConfig() Config {
 	}
 }
 
-func New(config Config, env Env) (*API, error) {
+func New(ctx context.Context, config Config, env Env) (*API, error) {
 	err := os.MkdirAll(config.RepoPath, os.ModePerm)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repo path: %w", err)
@@ -74,6 +78,7 @@ func New(config Config, env Env) (*API, error) {
 		config: config,
 		logger: logger.WithPrefix(env.Logger(), "git:"),
 		env:    env,
+		ctx:    ctx,
 	}
 
 	api.handlers = map[string]map[string]handler{
@@ -143,6 +148,26 @@ func (api *API) ensureBareRepo() error {
 		api.repoCreated = true
 		api.logger.Info("bare repo already exists", "path", api.config.RepoPath)
 		return nil // already exists
+	}
+
+	ctx, cancel := context.WithTimeout(api.ctx, 5*time.Second)
+	defer cancel()
+
+	exists, err := api.env.PrivateObjectExists(ctx, api.repoStorageObjectID())
+	if err != nil {
+		return fmt.Errorf("failed to check private object: %w", err)
+	}
+
+	if exists {
+		downloadErr := api.downloadRepo()
+		if downloadErr != nil {
+			return fmt.Errorf("failed to download repo: %w", downloadErr)
+		}
+
+		api.repoCreated = true
+		api.logger.Info("bare repo restored from storage", "path", api.config.RepoPath)
+
+		return nil
 	}
 
 	api.logger.Info("initializing bare repo", "path", api.config.RepoPath)
@@ -227,10 +252,9 @@ func (api *API) handleInfoRefs(ctx *fasthttp.RequestCtx) error {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = ctx
 
-	// set content-type
-	ctx.Response.Header.Set("Content-Type", fmt.Sprintf("application/x-%s-advertisement", service))
+	contentType := fmt.Sprintf("application/x-%s-advertisement", service)
 
-	// write smart headre
+	ctx.Response.Header.Set("Content-Type", contentType)
 	ctx.Write(pktLine(fmt.Sprintf("# service=%s\n", service)))
 	ctx.Write([]byte("0000"))
 
@@ -282,6 +306,7 @@ func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
 
 	api.logger.Info("files changed", "files", changedFiles)
 
+	// todo: run in background
 	err = api.uploadRepo()
 	if err != nil {
 		return fmt.Errorf("failed to upload repo: %w", err)
@@ -290,8 +315,12 @@ func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
 	return nil
 }
 
+func (api *API) repoStorageObjectID() string {
+	return "repo.tar.gz"
+}
+
 func (api *API) uploadRepo() error {
-	objectID := "repo.tar.gz"
+	objectID := api.repoStorageObjectID()
 
 	api.logger.Info("uploading repo", "objectID", objectID)
 
@@ -311,6 +340,36 @@ func (api *API) uploadRepo() error {
 	err = api.env.PutPrivateObject(context.Background(), &buf, objectID)
 	if err != nil {
 		return fmt.Errorf("failed to put private object: %w", err)
+	}
+
+	return nil
+}
+
+func (api *API) downloadRepo() error {
+	objectID := api.repoStorageObjectID()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	reader, err := api.env.GetPrivateObject(ctx, objectID)
+	if err != nil {
+		return fmt.Errorf("failed to get private object: %w", err)
+	}
+	defer reader.Close()
+
+	gzipReader, err := gzip.NewReader(reader)
+	if err != nil {
+		return fmt.Errorf("failed to create gzip reader: %w", err)
+	}
+	defer gzipReader.Close()
+
+	cmd := exec.Command("tar", "-xz", "-C", api.config.RepoPath)
+	cmd.Stdin = gzipReader
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to extract tar.gz: %w", err)
 	}
 
 	return nil
