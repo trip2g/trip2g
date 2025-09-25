@@ -38,12 +38,15 @@ import (
 	"trip2g/internal/case/handletgupdate"
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/case/listactiveusersubgraphs"
+	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
+	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/cronjobs"
 	"trip2g/internal/db"
 	"trip2g/internal/gitapi"
 	"trip2g/internal/graph"
+	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
@@ -337,6 +340,14 @@ func (a *app) setFileStorageExpiringCallback(ctx context.Context) {
 			a.log.Error("failed to reload all notes", "error", loadErr)
 		}
 	})
+}
+
+func (a *app) PushNotes(ctx context.Context, input graphmodel.PushNotesInput) (graphmodel.PushNotesOrErrorPayload, error) {
+	return pushnotes.Resolve(ctx, a, input)
+}
+
+func (a *app) UploadNoteAsset(ctx context.Context, input graphmodel.UploadNoteAssetInput) (graphmodel.UploadNoteAssetOrErrorPayload, error) {
+	return uploadnoteasset.Resolve(ctx, a, input)
 }
 
 func (a *app) InsertNote(ctx context.Context, note model.RawNote) error {

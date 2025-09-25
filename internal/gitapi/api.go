@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"sync"
 	"time"
 	"trip2g/internal/db"
+	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 
 	"github.com/valyala/fasthttp"
@@ -30,9 +32,10 @@ type Env interface {
 	GetPrivateObject(ctx context.Context, objectID string) (io.ReadCloser, error)
 	PrivateObjectExists(ctx context.Context, objectID string) (bool, error)
 
+	// process notes
 	AllVisibleNotePaths(ctx context.Context) ([]db.NotePath, error)
-	// pushnotes
-	// upload assets
+	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
+	UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error)
 }
 
 type Config struct {
@@ -351,24 +354,92 @@ func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
 		return fmt.Errorf("failed to run git-receive-pack: %w", err)
 	}
 
-	// git diff --name-only HEAD^1 HEAD
-	cmd = exec.Command("git", "diff", "--name-only", "HEAD^1", "HEAD")
-	cmd.Dir = api.config.RepoPath
-	cmd.Stderr = os.Stderr
-
-	output, err := cmd.Output()
+	err = api.applyChanges()
 	if err != nil {
-		return fmt.Errorf("failed to get changed files: %w", err)
+		return fmt.Errorf("failed to apply changes: %w", err)
 	}
-
-	changedFiles := strings.Split(strings.TrimSpace(string(output)), "\n")
-
-	api.logger.Info("files changed", "files", changedFiles)
 
 	// todo: run in background
 	err = api.uploadRepo()
 	if err != nil {
 		return fmt.Errorf("failed to upload repo: %w", err)
+	}
+
+	return nil
+}
+
+func (api *API) preparePushNotesInput() (*model.PushNotesInput, error) {
+	notePaths, err := api.env.AllVisibleNotePaths(api.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get note paths: %w", err)
+	}
+
+	hashes := map[string]string{}
+
+	for _, notePath := range notePaths {
+		hashes[notePath.Value] = notePath.LatestContentHash
+	}
+
+	// git diff --name-only HEAD^1 HEAD
+	cmd := exec.Command("git", "diff", "--name-only", "HEAD^1", "HEAD")
+	cmd.Dir = api.config.RepoPath
+	cmd.Stderr = os.Stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get changed files: %w", err)
+	}
+
+	changedFiles := strings.Split(strings.TrimSpace(string(output)), "\n")
+	pushInput := model.PushNotesInput{}
+
+	for _, file := range changedFiles {
+		// read content
+		readCmd := exec.Command("git", "--git-dir", api.config.RepoPath, "show", fmt.Sprintf("HEAD:%s", file))
+		readCmd.Stderr = os.Stderr
+
+		content, err := readCmd.Output()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read file %s: %w", file, err)
+		}
+
+		sha := sha256.New()
+		sha.Write(content)
+
+		contentHash := base64.URLEncoding.EncodeToString(sha.Sum(nil))
+
+		expectedHash, ok := hashes[file]
+		if ok && expectedHash == contentHash {
+			continue // already processed
+		}
+
+		pushInput.Updates = append(pushInput.Updates, model.PushNoteInput{
+			Path:    file,
+			Content: string(content),
+		})
+	}
+
+	return &pushInput, nil
+}
+
+func (api *API) applyChanges() error {
+	pushInput, err := api.preparePushNotesInput()
+	if err != nil {
+		return fmt.Errorf("failed to prepare push notes input: %w", err)
+	}
+
+	pushPayload, err := api.env.PushNotes(api.ctx, *pushInput)
+	if err != nil {
+		return fmt.Errorf("failed to push notes: %w", err)
+	}
+
+	switch payload := pushPayload.(type) {
+	case *model.ErrorPayload:
+		return fmt.Errorf("failed to push notes: %s", payload.Message)
+	case *model.PushNotesPayload:
+		api.logger.Info("notes pushed", "count", len(payload.Notes))
+	default:
+		return fmt.Errorf("unknown push payload type: %T", payload)
 	}
 
 	return nil
