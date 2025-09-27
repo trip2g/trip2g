@@ -6,11 +6,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -18,7 +20,10 @@ import (
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/valyala/fasthttp"
+
+	appmodel "trip2g/internal/model"
 )
 
 var ErrNoAuth = fmt.Errorf("no auth provided")
@@ -368,7 +373,7 @@ func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
 	return nil
 }
 
-func (api *API) preparePushNotesInput() (*model.PushNotesInput, error) {
+func (api *API) preparePushNotesInput(changedFiles []string) (*model.PushNotesInput, error) {
 	notePaths, err := api.env.AllVisibleNotePaths(api.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get note paths: %w", err)
@@ -380,20 +385,14 @@ func (api *API) preparePushNotesInput() (*model.PushNotesInput, error) {
 		hashes[notePath.Value] = notePath.LatestContentHash
 	}
 
-	// git diff --name-only HEAD^1 HEAD
-	cmd := exec.Command("git", "diff", "--name-only", "HEAD^1", "HEAD")
-	cmd.Dir = api.config.RepoPath
-	cmd.Stderr = os.Stderr
-
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get changed files: %w", err)
-	}
-
-	changedFiles := strings.Split(strings.TrimSpace(string(output)), "\n")
 	pushInput := model.PushNotesInput{}
 
 	for _, file := range changedFiles {
+		ext := strings.ToLower(filepath.Ext(file))
+		if ext != ".md" {
+			continue // only process markdown files
+		}
+
 		// read content
 		readCmd := exec.Command("git", "--git-dir", api.config.RepoPath, "show", fmt.Sprintf("HEAD:%s", file))
 		readCmd.Stderr = os.Stderr
@@ -422,8 +421,28 @@ func (api *API) preparePushNotesInput() (*model.PushNotesInput, error) {
 	return &pushInput, nil
 }
 
+func (api *API) getChangedFiles() ([]string, error) {
+	// TODO: track the last processed commit
+	// git diff --name-only HEAD^1 HEAD
+	cmd := exec.Command("git", "diff", "--name-only", "HEAD^1", "HEAD")
+	cmd.Dir = api.config.RepoPath
+	cmd.Stderr = os.Stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get changed files: %w", err)
+	}
+
+	return strings.Split(strings.TrimSpace(string(output)), "\n"), nil
+}
+
 func (api *API) applyChanges() error {
-	pushInput, err := api.preparePushNotesInput()
+	changedFiles, err := api.getChangedFiles()
+	if err != nil {
+		return fmt.Errorf("failed to get changed files: %w", err)
+	}
+
+	pushInput, err := api.preparePushNotesInput(changedFiles)
 	if err != nil {
 		return fmt.Errorf("failed to prepare push notes input: %w", err)
 	}
@@ -438,11 +457,155 @@ func (api *API) applyChanges() error {
 		return fmt.Errorf("failed to push notes: %s", payload.Message)
 	case *model.PushNotesPayload:
 		api.logger.Info("notes pushed", "count", len(payload.Notes))
+
+		for _, note := range payload.Notes {
+			uploadErr := api.uploadNoteAssets(note, changedFiles)
+			if uploadErr != nil {
+				return fmt.Errorf("failed to upload note assets %s: %w", uploadErr, note.Path)
+			}
+		}
+
 	default:
 		return fmt.Errorf("unknown push payload type: %T", payload)
 	}
 
 	return nil
+}
+
+func (api *API) uploadNoteAssets(note *appmodel.NoteView, changedFiles []string) error {
+	for relativePath := range note.Assets {
+		var existHash *string
+
+		replace, ok := note.AssetReplaces[relativePath]
+		if ok && replace != nil {
+			existHash = &replace.Hash
+		}
+
+		assetPath := api.resolveAssetPath(note.Path, relativePath)
+
+		api.logger.Info("resolved asset path", "note", note.Path, "relative", relativePath, "asset", assetPath)
+
+		content, err := api.readContent(assetPath)
+		if err != nil {
+			return fmt.Errorf("failed to calculate hash for asset %s: %w", assetPath, err)
+		}
+
+		// empty or not exists
+		if len(content) == 0 {
+			continue
+		}
+
+		sha := sha256.New()
+		sha.Write([]byte(content))
+
+		hash := hex.EncodeToString(sha.Sum(nil))
+
+		api.logger.Info("hashed asset", "path", assetPath, "hash", hash, "replaces", note.AssetReplaces)
+		if existHash != nil {
+			api.logger.Info("existing asset hash", "path", assetPath, "hash", *existHash)
+		}
+
+		if existHash != nil && *existHash == hash {
+			continue // already uploaded
+		}
+
+		input := model.UploadNoteAssetInput{
+			NoteID:       note.VersionID,
+			Path:         relativePath,
+			Sha256Hash:   hash,
+			AbsolutePath: "/" + assetPath,
+			File: graphql.Upload{
+				File:        bytes.NewReader(content),
+				Filename:    filepath.Base(note.Path),
+				Size:        int64(len(content)),
+				ContentType: "text/plain",
+			},
+		}
+
+		api.logger.Info("upload asset", "input", input)
+
+		payload, err := api.env.UploadNoteAsset(api.ctx, input)
+		if err != nil {
+			return fmt.Errorf("failed to upload note asset %s: %w", assetPath, err)
+		}
+
+		switch p := payload.(type) {
+		case *model.ErrorPayload:
+			return fmt.Errorf("failed to upload note asset %s: %s", assetPath, p.Message)
+
+		case *model.UploadNoteAssetPayload:
+			// success
+
+		default:
+			return fmt.Errorf("unknown upload payload type: %T", p)
+		}
+	}
+
+	return nil
+}
+
+func (api *API) readContent(path string) ([]byte, error) {
+	cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "show", fmt.Sprintf("HEAD:%s", path))
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stdout pipe: %w", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return nil, fmt.Errorf("failed to start command: %w", err)
+	}
+
+	// limit to 1MB
+	const maxSize = 1 << 20 // 1 MB
+	limited := io.LimitReader(stdout, maxSize+1)
+
+	content, err := io.ReadAll(limited)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read output: %w", err)
+	}
+
+	if len(content) > maxSize {
+		_ = cmd.Process.Kill() // kill process if still running
+		return nil, fmt.Errorf("file too large (>1MB)")
+	}
+
+	if err := cmd.Wait(); err != nil {
+		errOutput := stderr.String()
+		if strings.Contains(errOutput, "does not exist in") {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to read file %s: %w | %s", path, err, errOutput)
+	}
+
+	return content, nil
+}
+
+func (api *API) resolveAssetPath(notePath, relativePath string) string {
+	if strings.HasPrefix(relativePath, "/") {
+		return relativePath[1:]
+	}
+
+	noteDirParts := strings.Split(filepath.Dir(notePath), string(filepath.Separator))
+
+	for i := len(noteDirParts) - 1; i >= 0; i-- {
+		noteDir := filepath.Join(noteDirParts[:i]...)
+		assetPath := filepath.Join(noteDir, relativePath)
+
+		// check exists in git
+		cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "ls-files", "--error-unmatch", assetPath)
+		cmd.Stderr = os.Stderr
+
+		err := cmd.Run()
+		if err == nil {
+			return assetPath
+		}
+	}
+
+	return relativePath
 }
 
 func (api *API) repoStorageObjectID() string {

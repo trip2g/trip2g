@@ -34,7 +34,7 @@ type SourceFile struct {
 	CreatedAt time.Time
 	// local file path -> remote file path
 	// empty means the file is missing
-	Assets map[string]string
+	Assets map[string]*model.NoteAssetReplace
 }
 
 type loader struct {
@@ -344,7 +344,7 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 	}
 
 	for k, v := range src.Assets {
-		if v == "" {
+		if v == nil {
 			pp.AddWarning(model.NoteWarningInfo, "asset %s is missing in the storage", k)
 			// TODO: add a placeholder
 		}

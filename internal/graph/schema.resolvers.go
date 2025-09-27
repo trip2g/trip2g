@@ -1493,8 +1493,16 @@ func (r *pushedNoteResolver) Assets(ctx context.Context, obj *appmodel.NoteView)
 	assets := []model.PushedNoteAsset{}
 
 	for relativePath := range obj.Assets {
+		var hash *string
+
+		replace, ok := obj.AssetReplaces[relativePath]
+		if ok && replace != nil {
+			hash = &replace.Hash
+		}
+
 		assets = append(assets, model.PushedNoteAsset{
-			Path: relativePath,
+			Path:       relativePath,
+			Sha256Hash: hash,
 		})
 	}
 

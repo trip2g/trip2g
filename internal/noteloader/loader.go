@@ -30,6 +30,7 @@ type Env interface {
 	RawAssets(ctx context.Context) ([]RawAsset, error)
 	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
 	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (string, error)
+	NoteAssetPath(asset db.NoteAsset) string
 	Logger() logger.Logger
 }
 
@@ -64,12 +65,12 @@ func (l *Loader) Load(ctx context.Context) error {
 		return fmt.Errorf("failed to get note assets: %w", err)
 	}
 
-	assetMap := make(map[int64]map[string]string)
+	assetMap := make(map[int64]map[string]*model.NoteAssetReplace)
 
 	for _, asset := range assets {
 		noteMap, ok := assetMap[asset.VersionID]
 		if !ok {
-			noteMap = make(map[string]string)
+			noteMap = make(map[string]*model.NoteAssetReplace)
 			assetMap[asset.VersionID] = noteMap
 		}
 
@@ -79,7 +80,13 @@ func (l *Loader) Load(ctx context.Context) error {
 		}
 
 		if !exists {
-			noteMap[asset.Path] = "/assets/missed_image.png"
+			l.log.Warn("note asset not exists", "asset", asset, "object_id", l.env.NoteAssetPath(asset.NoteAsset))
+
+			noteMap[asset.Path] = &model.NoteAssetReplace{
+				URL:  "/assets/missed_image.png",
+				Hash: fmt.Sprintf("%+v", asset),
+			}
+
 			continue
 		}
 
@@ -88,7 +95,10 @@ func (l *Loader) Load(ctx context.Context) error {
 			return fmt.Errorf("failed to get note asset URL: %w", assetErr)
 		}
 
-		noteMap[asset.Path] = assetURL
+		noteMap[asset.Path] = &model.NoteAssetReplace{
+			URL:  assetURL,
+			Hash: asset.NoteAsset.Sha256Hash,
+		}
 	}
 
 	sources := []mdloader.SourceFile{}

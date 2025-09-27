@@ -46,9 +46,9 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		}
 
 		if resp.Note.FirstImage != nil {
-			url, ok := resp.Note.AssetReplaces[*resp.Note.FirstImage]
-			if ok {
-				layoutParams.OGTags["og:image"] = url
+			assetReplace, ok := resp.Note.AssetReplaces[*resp.Note.FirstImage]
+			if ok && assetReplace != nil {
+				layoutParams.OGTags["og:image"] = assetReplace.URL
 			}
 		}
 	}

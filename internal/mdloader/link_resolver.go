@@ -27,9 +27,9 @@ const _hash = "#"
 const DefaultVersion = "live"
 
 func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
-	assetPath, ok := r.currentPage.AssetReplaces[string(n.Target)]
-	if ok {
-		return []byte(assetPath), nil
+	assetReplace, ok := r.currentPage.AssetReplaces[string(n.Target)]
+	if ok && assetReplace != nil {
+		return []byte(assetReplace.URL), nil
 	}
 
 	// Remove .html extension if present in the target

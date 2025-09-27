@@ -43,6 +43,11 @@ type NoteWarning struct {
 	Message string
 }
 
+type NoteAssetReplace struct {
+	URL  string
+	Hash string
+}
+
 type NoteView struct {
 	Path  string
 	Title string
@@ -79,7 +84,7 @@ type NoteView struct {
 
 	Assets map[string]struct{}
 
-	AssetReplaces map[string]string
+	AssetReplaces map[string]*NoteAssetReplace
 
 	ReadingTime       int // in minutes
 	ReadingComplexity int // 0 - easy, 1 - medium, 2 - hard

@@ -8,6 +8,7 @@ import (
 	"io"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
@@ -40,7 +41,15 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	_, exists := assetPaths[input.Path]
 	if !exists {
-		return &model.ErrorPayload{Message: "unknown asset path"}, nil
+		names := []string{}
+
+		for name := range assetPaths {
+			names = append(names, name)
+		}
+
+		assets := strings.Join(names, ", ")
+
+		return &model.ErrorPayload{Message: "unknown asset path. Assets: " + assets}, nil
 	}
 
 	findAssetParams := db.NoteAssetByPathAndHashParams{

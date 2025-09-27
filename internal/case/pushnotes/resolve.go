@@ -3,6 +3,9 @@ package pushnotes
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"path/filepath"
+	"strings"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 
@@ -24,10 +27,20 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	// }
 
 	for _, update := range input.Updates {
+		if strings.ToLower(filepath.Ext(update.Path)) != ".md" {
+			return &model.ErrorPayload{Message: "Only .md files are supported"}, nil
+		}
+
+		// Once I accidentally pushed an image as content and the system accepted it.
+		// This is just a small safeguard check.
+		contentType := http.DetectContentType([]byte(update.Content))
+		if contentType != "text/plain; charset=utf-8" {
+			return &model.ErrorPayload{Message: "Only markdown content is supported"}, nil
+		}
+
 		note := appmodel.RawNote{
-			Path: update.Path,
-			// TODO: remove it
-			Content: update.Content, // + fmt.Sprintf("%d", time.Now().Unix()),
+			Path:    update.Path,
+			Content: update.Content,
 		}
 
 		insertErr := env.InsertNote(ctx, note)
@@ -47,7 +60,7 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}
 
-	env.Logger().Info("insert subgraphs", "subgraphs", nvs.Subgraphs)
+	// env.Logger().Info("insert subgraphs", "subgraphs", nvs.Subgraphs)
 
 	for _, subgraph := range nvs.Subgraphs {
 		insertErr := env.InsertSubgraph(ctx, subgraph.Name)

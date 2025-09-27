@@ -308,15 +308,6 @@ CREATE TABLE user_favorite_notes (
 
   primary key (user_id, note_version_id)
 );
-CREATE TABLE IF NOT EXISTS "note_assets" (
-  id integer primary key autoincrement,
-  absolute_path text not null,
-  file_name text not null,
-  sha256_hash text not null unique,
-  created_at datetime not null default current_timestamp,
-  size integer not null default 0
-);
-CREATE INDEX idx_note_assets_absolute_path_sha256_hash on note_assets (absolute_path, sha256_hash);
 CREATE TABLE IF NOT EXISTS "tg_chat_subgraph_accesses" (
   id integer primary key autoincrement,
   chat_id integer not null,
@@ -457,6 +448,15 @@ CREATE TABLE git_tokens (
   can_push boolean default true,
   usage_count integer default 0
 );
+CREATE TABLE IF NOT EXISTS "note_assets" (
+  id integer primary key autoincrement,
+  absolute_path text not null,
+  file_name text not null,
+  sha256_hash text not null,
+  created_at datetime not null default current_timestamp,
+  size integer not null default 0,
+  unique (absolute_path, sha256_hash)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -528,4 +528,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250816081838'),
   ('20250816144659'),
   ('20250918140112'),
-  ('20250925035301');
+  ('20250925035301'),
+  ('20250927035933');
