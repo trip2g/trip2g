@@ -7,6 +7,7 @@ import (
 	"mime"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"time"
 	"trip2g/internal/db"
 
@@ -24,6 +25,7 @@ type Config struct {
 	Bucket    string
 	Region    string
 	UseSSL    bool
+	Prefix    string
 
 	URLExpiresIn time.Duration
 
@@ -43,7 +45,7 @@ func (c *Config) ValidateConfig() error {
 }
 
 type FileStorage struct {
-	config *Config
+	config Config
 
 	minioClient *minio.Client
 }
@@ -84,8 +86,13 @@ func New(ctx context.Context, config Config) (*FileStorage, error) {
 		}
 	}
 
+	config.Prefix = strings.Trim(config.Prefix, "/")
+	if len(config.Prefix) > 0 {
+		config.Prefix += "/"
+	}
+
 	s := FileStorage{
-		config: &config,
+		config: config,
 
 		minioClient: minioClient,
 	}
@@ -94,7 +101,7 @@ func New(ctx context.Context, config Config) (*FileStorage, error) {
 }
 
 func (a *FileStorage) NoteAssetPath(asset db.NoteAsset) string {
-	return fmt.Sprintf("na/%d/%s", asset.ID, asset.FileName)
+	return fmt.Sprintf("%sna/%d/%s", a.config.Prefix, asset.ID, asset.FileName)
 }
 
 // OnURLExpiring sets up a callback to be called when the URL is about to expire.
@@ -115,10 +122,12 @@ func (a *FileStorage) OnURLExpiring(callback func()) {
 }
 
 func (a *FileStorage) NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error) {
+	objectID := a.NoteAssetPath(asset)
+
 	stats, err := a.minioClient.StatObject(
 		ctx,
 		a.config.Bucket,
-		a.NoteAssetPath(asset),
+		objectID,
 		minio.StatObjectOptions{},
 	)
 
@@ -127,7 +136,7 @@ func (a *FileStorage) NoteAssetExists(ctx context.Context, asset db.NoteAsset) (
 			return false, nil
 		}
 
-		return false, fmt.Errorf("failed to check if asset exists: %w", err)
+		return false, fmt.Errorf("failed to check if asset exists: %w %s", err, objectID)
 	}
 
 	return stats.Size > 0, nil
@@ -189,6 +198,8 @@ func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, asse
 
 // PutPrivateObject uploads a private object that is not publicly accessible.
 func (a *FileStorage) PutPrivateObject(ctx context.Context, reader io.Reader, objectID string) error {
+	objectID = a.config.Prefix + objectID
+
 	options := minio.PutObjectOptions{
 		ContentType: "application/octet-stream",
 	}
@@ -202,6 +213,8 @@ func (a *FileStorage) PutPrivateObject(ctx context.Context, reader io.Reader, ob
 }
 
 func (a *FileStorage) PrivateObjectExists(ctx context.Context, objectID string) (bool, error) {
+	objectID = a.config.Prefix + objectID
+
 	stats, err := a.minioClient.StatObject(
 		ctx,
 		a.config.Bucket,
@@ -221,6 +234,8 @@ func (a *FileStorage) PrivateObjectExists(ctx context.Context, objectID string) 
 }
 
 func (a *FileStorage) GetPrivateObject(ctx context.Context, objectID string) (io.ReadCloser, error) {
+	objectID = a.config.Prefix + objectID
+
 	object, err := a.minioClient.GetObject(ctx, a.config.Bucket, objectID, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get private object: %w", err)

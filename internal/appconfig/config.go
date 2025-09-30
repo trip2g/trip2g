@@ -207,6 +207,7 @@ func (c *Config) defineFlags() {
 	flag.StringVar(&c.Storage.SecretKey, "minio-secret-key", c.Storage.SecretKey, "MinIO secret key")
 	flag.StringVar(&c.Storage.Bucket, "minio-bucket", c.Storage.Bucket, "MinIO bucket name")
 	flag.StringVar(&c.Storage.Region, "minio-region", c.Storage.Region, "MinIO region")
+	flag.StringVar(&c.Storage.Prefix, "minio-prefix", c.Storage.Prefix, "MinIO object key prefix")
 	flag.BoolVar(&c.Storage.UseSSL, "minio-use-ssl", c.Storage.UseSSL, "Use SSL for MinIO")
 	flag.DurationVar(
 		&c.Storage.InitTimeout,
