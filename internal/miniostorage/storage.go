@@ -243,3 +243,36 @@ func (a *FileStorage) GetPrivateObject(ctx context.Context, objectID string) (io
 
 	return object, nil
 }
+
+// PutLock creates a lock file atomically.
+// Returns error if lock already exists.
+func (a *FileStorage) PutLock(ctx context.Context, objectID string) error {
+	objectID = a.config.Prefix + objectID
+
+	options := minio.PutObjectOptions{
+		ContentType: "text/plain",
+	}
+
+	options.SetMatchETagExcept("*")
+
+	content := strings.NewReader("locked")
+
+	_, err := a.minioClient.PutObject(ctx, a.config.Bucket, objectID, content, int64(content.Len()), options)
+	if err != nil {
+		return fmt.Errorf("failed to create lock: %w", err)
+	}
+
+	return nil
+}
+
+// RemoveLock removes the lock file.
+func (a *FileStorage) RemoveLock(ctx context.Context, objectID string) error {
+	objectID = a.config.Prefix + objectID
+
+	err := a.minioClient.RemoveObject(ctx, a.config.Bucket, objectID, minio.RemoveObjectOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to remove lock: %w", err)
+	}
+
+	return nil
+}

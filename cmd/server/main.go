@@ -60,6 +60,7 @@ import (
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/redirectmanager"
 	"trip2g/internal/router"
+	"trip2g/internal/storagelocker"
 	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/tgbots"
 	"trip2g/internal/userbans"
@@ -146,6 +147,8 @@ type app struct {
 	boostyClientManager  *boosty.ClientManager
 
 	gitAPI *gitapi.API
+
+	storageLocker *storagelocker.Locker
 }
 
 func main() {
@@ -184,6 +187,11 @@ func main() {
 		panic(err)
 	}
 
+	storageLocker, err := storagelocker.New(ctx, config.StorageLocker, fileStorage)
+	if err != nil {
+		panic(err)
+	}
+
 	// mailAddr := fmt.Sprintf("%s:%d", config.SMTPHost, config.SMTPPort)
 	// mailAuth := smtp.PlainAuth(
 	// 	"",
@@ -201,6 +209,8 @@ func main() {
 		config: config,
 
 		tokenManager: tokenManager,
+
+		storageLocker: storageLocker,
 
 		graphTxs: &graphTransactions{
 			EnvMap: make(map[*app]*sql.Tx),
@@ -1479,6 +1489,16 @@ func (a *app) waitForShutdown(s *fasthttp.Server) {
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), a.config.ShutdownTimeout)
 	defer shutdownCancel()
+
+	// Release storage lock before shutting down server
+	if a.storageLocker != nil {
+		err := a.storageLocker.Unlock(shutdownCtx)
+		if err != nil {
+			a.log.Error("failed to release storage lock", "error", err)
+		} else {
+			a.log.Info("storage lock released")
+		}
+	}
 
 	err := s.ShutdownWithContext(shutdownCtx)
 	if err != nil {
