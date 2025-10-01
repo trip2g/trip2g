@@ -2,6 +2,7 @@ package storagelocker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -30,6 +31,8 @@ func DefaultConfig() Config {
 	}
 }
 
+var ErrStorageNotSupportLock = errors.New("storage does not support locking")
+
 // New creates a new storage locker and immediately acquires the lock if enabled.
 // It panics if the lock already exists, ensuring only one instance can run.
 // If disabled, returns a no-op locker.
@@ -49,6 +52,12 @@ func New(ctx context.Context, config Config, env Env) (*Locker, error) {
 	err := env.PutLock(ctx, objectID)
 	if err != nil {
 		return nil, fmt.Errorf("storage lock already exists or failed to acquire: %w", err)
+	}
+
+	// Check if the storage supports locking by attempting to put the lock again.
+	err = env.PutLock(ctx, objectID)
+	if err == nil {
+		return nil, ErrStorageNotSupportLock
 	}
 
 	locker.objectID = objectID
