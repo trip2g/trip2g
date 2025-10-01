@@ -137,6 +137,21 @@ type AdminApiKeysConnection {
   nodes: [AdminApiKey!]! @goField(forceResolver: true)
 }
 
+type AdminGitToken @goModel(model: "trip2g/internal/db.GitToken") {
+  id: Int64!
+  createdAt: Time!
+  description: String!
+  canPull: Boolean!
+  canPush: Boolean!
+  createdBy: AdminUser! @goField(forceResolver: true)
+  disabledBy: AdminUser @goField(forceResolver: true)
+  disabledAt: Time
+}
+
+type AdminGitTokensConnection {
+  nodes: [AdminGitToken!]! @goField(forceResolver: true)
+}
+
 input ApiKeyLogsFilterInput {
   apiKeyId: Int64
 }
@@ -572,6 +587,7 @@ type AdminQuery {
   allLatestNoteViews(filter: AdminLatestNoteViewsFilter): AdminLatestNoteViewsConnection!
   allUserUserBans: AdminUserBansConnection!
   allApiKeys: AdminApiKeysConnection!
+  allGitTokens: AdminGitTokensConnection!
   allReleases: AdminReleasesConnection!
   allAdmins: AdminAdminsConnection!
   allOffers: AdminOffersConnection!
@@ -1023,6 +1039,37 @@ type DisableApiKeyPayload {
 }
 
 union DisableApiKeyOrErrorPayload = DisableApiKeyPayload | ErrorPayload
+
+#
+# createGitToken
+#
+
+input CreateGitTokenInput {
+  description: String!
+  canPull: Boolean!
+  canPush: Boolean!
+}
+
+type CreateGitTokenPayload {
+  value: String!
+  gitToken: AdminGitToken!
+}
+
+union CreateGitTokenOrErrorPayload = CreateGitTokenPayload | ErrorPayload
+
+#
+# disableGitToken
+#
+
+input DisableGitTokenInput {
+  id: Int64!
+}
+
+type DisableGitTokenPayload {
+  gitToken: AdminGitToken!
+}
+
+union DisableGitTokenOrErrorPayload = DisableGitTokenPayload | ErrorPayload
 
 #
 # createRelease
@@ -1572,6 +1619,9 @@ type AdminMutation {
 
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
   disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!
+
+  createGitToken(input: CreateGitTokenInput!): CreateGitTokenOrErrorPayload!
+  disableGitToken(input: DisableGitTokenInput!): DisableGitTokenOrErrorPayload!
 
   createRelease(input: CreateReleaseInput!): CreateReleaseOrErrorPayload!
   makeReleaseLive(input: MakeReleaseLiveInput!): MakeReleaseLiveOrErrorPayload!

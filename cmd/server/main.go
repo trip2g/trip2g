@@ -1043,6 +1043,24 @@ func (a *app) GenerateAPIKey() string {
 	return string(result)
 }
 
+func (a *app) GenerateGitToken() string {
+	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const length = 64
+
+	result := make([]byte, length)
+
+	for i := range length {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(alphabet))))
+		if err != nil {
+			panic(err)
+		}
+
+		result[i] = alphabet[n.Int64()]
+	}
+
+	return string(result)
+}
+
 const purchaseAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func (a *app) GeneratePurchaseID() string {

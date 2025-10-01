@@ -30,6 +30,10 @@ type CreateEmailWaitListRequestOrErrorPayload interface {
 	IsCreateEmailWaitListRequestOrErrorPayload()
 }
 
+type CreateGitTokenOrErrorPayload interface {
+	IsCreateGitTokenOrErrorPayload()
+}
+
 type CreateHTMLInjectionOrErrorPayload interface {
 	IsCreateHTMLInjectionOrErrorPayload()
 }
@@ -84,6 +88,10 @@ type DeleteRedirectOrErrorPayload interface {
 
 type DisableAPIKeyOrErrorPayload interface {
 	IsDisableAPIKeyOrErrorPayload()
+}
+
+type DisableGitTokenOrErrorPayload interface {
+	IsDisableGitTokenOrErrorPayload()
 }
 
 type GenerateTgAttachCodeOrErrorPayload interface {
@@ -274,6 +282,10 @@ type AdminCronJobsConnection struct {
 	Nodes []db.CronJob `json:"nodes"`
 }
 
+type AdminGitTokensConnection struct {
+	Nodes []db.GitToken `json:"nodes"`
+}
+
 type AdminHTMLInjectionsConnection struct {
 	Nodes []db.HtmlInjection `json:"nodes"`
 }
@@ -438,6 +450,19 @@ type CreateEmailWaitListRequestPayload struct {
 
 func (CreateEmailWaitListRequestPayload) IsCreateEmailWaitListRequestOrErrorPayload() {}
 
+type CreateGitTokenInput struct {
+	Description string `json:"description"`
+	CanPull     bool   `json:"canPull"`
+	CanPush     bool   `json:"canPush"`
+}
+
+type CreateGitTokenPayload struct {
+	Value    string       `json:"value"`
+	GitToken *db.GitToken `json:"gitToken"`
+}
+
+func (CreateGitTokenPayload) IsCreateGitTokenOrErrorPayload() {}
+
 type CreateHTMLInjectionInput struct {
 	Description string     `json:"description"`
 	Position    int32      `json:"position"`
@@ -598,6 +623,16 @@ type DisableAPIKeyPayload struct {
 
 func (DisableAPIKeyPayload) IsDisableAPIKeyOrErrorPayload() {}
 
+type DisableGitTokenInput struct {
+	ID int64 `json:"id"`
+}
+
+type DisableGitTokenPayload struct {
+	GitToken *db.GitToken `json:"gitToken"`
+}
+
+func (DisableGitTokenPayload) IsDisableGitTokenOrErrorPayload() {}
+
 type ErrorPayload struct {
 	Message  string         `json:"message"`
 	ByFields []FieldMessage `json:"byFields"`
@@ -634,6 +669,10 @@ func (ErrorPayload) IsBanUserOrErrorPayload() {}
 func (ErrorPayload) IsCreateAPIKeyOrErrorPayload() {}
 
 func (ErrorPayload) IsDisableAPIKeyOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateGitTokenOrErrorPayload() {}
+
+func (ErrorPayload) IsDisableGitTokenOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateReleaseOrErrorPayload() {}
 

@@ -144,6 +144,20 @@ type CronJobExecution struct {
 	ErrorMessage sql.NullString `json:"error_message"`
 }
 
+type GitToken struct {
+	ID          int64         `json:"id"`
+	CreatedAt   time.Time     `json:"created_at"`
+	LastUsedAt  time.Time     `json:"last_used_at"`
+	AdminID     sql.NullInt64 `json:"admin_id"`
+	ValueSha256 string        `json:"value_sha256"`
+	Description string        `json:"description"`
+	CanPull     sql.NullBool  `json:"can_pull"`
+	CanPush     sql.NullBool  `json:"can_push"`
+	UsageCount  sql.NullInt64 `json:"usage_count"`
+	DisabledAt  sql.NullTime  `json:"disabled_at"`
+	DisabledBy  sql.NullInt64 `json:"disabled_by"`
+}
+
 type Goqite struct {
 	ID       string `json:"id"`
 	Created  string `json:"created"`

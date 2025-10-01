@@ -447,7 +447,7 @@ CREATE TABLE git_tokens (
   can_pull boolean default false,
   can_push boolean default true,
   usage_count integer default 0
-);
+, disabled_at datetime, disabled_by integer references admins(user_id) on delete restrict);
 CREATE TABLE IF NOT EXISTS "note_assets" (
   id integer primary key autoincrement,
   absolute_path text not null,
@@ -529,4 +529,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250816144659'),
   ('20250918140112'),
   ('20250925035301'),
-  ('20250927035933');
+  ('20250927035933'),
+  ('20251001113550');

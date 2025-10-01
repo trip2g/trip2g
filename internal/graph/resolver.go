@@ -7,6 +7,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
+	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createhtmlinjection"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
@@ -21,6 +22,7 @@ import (
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
+	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restoreboostycredentials"
@@ -89,6 +91,7 @@ type Env interface {
 	ListActiveOffersBySubgraphNames(ctx context.Context, subgraphNames []string) ([]db.Offer, error)
 	ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]db.Subgraph, error)
 	ListAllAPIKeys(ctx context.Context) ([]db.ApiKey, error)
+	ListAllGitTokens(ctx context.Context) ([]db.GitToken, error)
 	ListAllReleases(ctx context.Context) ([]db.Release, error)
 	ListAllAdmins(ctx context.Context) ([]db.Admin, error)
 	ListAllOffers(ctx context.Context) ([]db.Offer, error)
@@ -149,6 +152,8 @@ type Env interface {
 	unbanuser.Env
 	createapikey.Env
 	disableapikey.Env
+	creategittoken.Env
+	disablegittoken.Env
 	createrelease.Env
 	makereleaselive.Env
 	updatenotegraphpositions.Env

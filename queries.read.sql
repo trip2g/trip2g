@@ -248,6 +248,12 @@ select * from api_keys where value = ? and disabled_at is null limit 1;
 -- name: ListAllAPIKeys :many
 select * from api_keys order by created_by, created_at desc;
 
+-- name: ListAllGitTokens :many
+select * from git_tokens order by admin_id, created_at desc;
+
+-- name: GitTokenByValueSHA256 :one
+select * from git_tokens where value_sha256 = ? and disabled_at is null limit 1;
+
 -- name: ListAPIKeyLogsByAPIKeyID :many
 select l.created_at, a.name as action_name, i.value as ip
   from api_key_logs l

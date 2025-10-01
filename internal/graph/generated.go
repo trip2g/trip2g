@@ -60,6 +60,8 @@ type ResolverRoot interface {
 	AdminCronJob() AdminCronJobResolver
 	AdminCronJobExecution() AdminCronJobExecutionResolver
 	AdminCronJobsConnection() AdminCronJobsConnectionResolver
+	AdminGitToken() AdminGitTokenResolver
+	AdminGitTokensConnection() AdminGitTokensConnectionResolver
 	AdminHTMLInjection() AdminHTMLInjectionResolver
 	AdminHTMLInjectionsConnection() AdminHTMLInjectionsConnectionResolver
 	AdminLatestNoteAssetsConnection() AdminLatestNoteAssetsConnectionResolver
@@ -252,6 +254,21 @@ type ComplexityRoot struct {
 		Nodes func(childComplexity int) int
 	}
 
+	AdminGitToken struct {
+		CanPull     func(childComplexity int) int
+		CanPush     func(childComplexity int) int
+		CreatedAt   func(childComplexity int) int
+		CreatedBy   func(childComplexity int) int
+		Description func(childComplexity int) int
+		DisabledAt  func(childComplexity int) int
+		DisabledBy  func(childComplexity int) int
+		ID          func(childComplexity int) int
+	}
+
+	AdminGitTokensConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
 	AdminHTMLInjection struct {
 		ActiveFrom  func(childComplexity int) int
 		ActiveTo    func(childComplexity int) int
@@ -279,6 +296,7 @@ type ComplexityRoot struct {
 		BanUser                      func(childComplexity int, input model.BanUserInput) int
 		CreateAPIKey                 func(childComplexity int, input model.CreateAPIKeyInput) int
 		CreateBoostyCredentials      func(childComplexity int, input model.CreateBoostyCredentialsInput) int
+		CreateGitToken               func(childComplexity int, input model.CreateGitTokenInput) int
 		CreateHTMLInjection          func(childComplexity int, input model.CreateHTMLInjectionInput) int
 		CreateNotFoundIgnoredPattern func(childComplexity int, input model.CreateNotFoundIgnoredPatternInput) int
 		CreateOffer                  func(childComplexity int, input model.CreateOfferInput) int
@@ -292,6 +310,7 @@ type ComplexityRoot struct {
 		DeletePatreonCredentials     func(childComplexity int, input model.DeletePatreonCredentialsInput) int
 		DeleteRedirect               func(childComplexity int, input model.DeleteRedirectInput) int
 		DisableAPIKey                func(childComplexity int, input model.DisableAPIKeyInput) int
+		DisableGitToken              func(childComplexity int, input model.DisableGitTokenInput) int
 		MakeReleaseLive              func(childComplexity int, input model.MakeReleaseLiveInput) int
 		RefreshBoostyData            func(childComplexity int, input model.RefreshBoostyDataInput) int
 		RefreshPatreonData           func(childComplexity int, input model.RefreshPatreonDataInput) int
@@ -444,6 +463,7 @@ type ComplexityRoot struct {
 		AllAdmins                  func(childComplexity int) int
 		AllBoostyCredentials       func(childComplexity int, filter *model.AdminBoostyCredentialsFilterInput) int
 		AllCronJobs                func(childComplexity int) int
+		AllGitTokens               func(childComplexity int) int
 		AllHTMLInjections          func(childComplexity int) int
 		AllLatestNoteAssets        func(childComplexity int) int
 		AllLatestNoteViews         func(childComplexity int, filter *model.AdminLatestNoteViewsFilter) int
@@ -661,6 +681,11 @@ type ComplexityRoot struct {
 		Success func(childComplexity int) int
 	}
 
+	CreateGitTokenPayload struct {
+		GitToken func(childComplexity int) int
+		Value    func(childComplexity int) int
+	}
+
 	CreateHTMLInjectionPayload struct {
 		HTMLInjection func(childComplexity int) int
 	}
@@ -718,6 +743,10 @@ type ComplexityRoot struct {
 
 	DisableApiKeyPayload struct {
 		APIKey func(childComplexity int) int
+	}
+
+	DisableGitTokenPayload struct {
+		GitToken func(childComplexity int) int
 	}
 
 	ErrorPayload struct {
@@ -1086,6 +1115,16 @@ type AdminCronJobExecutionResolver interface {
 type AdminCronJobsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminCronJobsConnection) ([]db.CronJob, error)
 }
+type AdminGitTokenResolver interface {
+	CanPull(ctx context.Context, obj *db.GitToken) (bool, error)
+	CanPush(ctx context.Context, obj *db.GitToken) (bool, error)
+	CreatedBy(ctx context.Context, obj *db.GitToken) (*db.User, error)
+	DisabledBy(ctx context.Context, obj *db.GitToken) (*db.User, error)
+	DisabledAt(ctx context.Context, obj *db.GitToken) (*time.Time, error)
+}
+type AdminGitTokensConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminGitTokensConnection) ([]db.GitToken, error)
+}
 type AdminHTMLInjectionResolver interface {
 	ActiveFrom(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error)
 	ActiveTo(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error)
@@ -1117,6 +1156,8 @@ type AdminMutationResolver interface {
 	BanUser(ctx context.Context, obj *model1.AdminMutation, input model.BanUserInput) (model.BanUserOrErrorPayload, error)
 	CreateAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.CreateAPIKeyInput) (model.CreateAPIKeyOrErrorPayload, error)
 	DisableAPIKey(ctx context.Context, obj *model1.AdminMutation, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error)
+	CreateGitToken(ctx context.Context, obj *model1.AdminMutation, input model.CreateGitTokenInput) (model.CreateGitTokenOrErrorPayload, error)
+	DisableGitToken(ctx context.Context, obj *model1.AdminMutation, input model.DisableGitTokenInput) (model.DisableGitTokenOrErrorPayload, error)
 	CreateRelease(ctx context.Context, obj *model1.AdminMutation, input model.CreateReleaseInput) (model.CreateReleaseOrErrorPayload, error)
 	MakeReleaseLive(ctx context.Context, obj *model1.AdminMutation, input model.MakeReleaseLiveInput) (model.MakeReleaseLiveOrErrorPayload, error)
 	UpdateNoteGraphPositions(ctx context.Context, obj *model1.AdminMutation, input model.UpdateNoteGraphPositionsInput) (model.UpdateNoteGraphPositionsOrErrorPayload, error)
@@ -1208,6 +1249,7 @@ type AdminQueryResolver interface {
 	AllLatestNoteViews(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminLatestNoteViewsFilter) (*model.AdminLatestNoteViewsConnection, error)
 	AllUserUserBans(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUserBansConnection, error)
 	AllAPIKeys(ctx context.Context, obj *model1.AdminQuery) (*model.AdminAPIKeysConnection, error)
+	AllGitTokens(ctx context.Context, obj *model1.AdminQuery) (*model.AdminGitTokensConnection, error)
 	AllReleases(ctx context.Context, obj *model1.AdminQuery) (*model.AdminReleasesConnection, error)
 	AllAdmins(ctx context.Context, obj *model1.AdminQuery) (*model.AdminAdminsConnection, error)
 	AllOffers(ctx context.Context, obj *model1.AdminQuery) (*model.AdminOffersConnection, error)
@@ -1918,6 +1960,69 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminCronJobsConnection.Nodes(childComplexity), true
 
+	case "AdminGitToken.canPull":
+		if e.complexity.AdminGitToken.CanPull == nil {
+			break
+		}
+
+		return e.complexity.AdminGitToken.CanPull(childComplexity), true
+
+	case "AdminGitToken.canPush":
+		if e.complexity.AdminGitToken.CanPush == nil {
+			break
+		}
+
+		return e.complexity.AdminGitToken.CanPush(childComplexity), true
+
+	case "AdminGitToken.createdAt":
+		if e.complexity.AdminGitToken.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminGitToken.CreatedAt(childComplexity), true
+
+	case "AdminGitToken.createdBy":
+		if e.complexity.AdminGitToken.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.AdminGitToken.CreatedBy(childComplexity), true
+
+	case "AdminGitToken.description":
+		if e.complexity.AdminGitToken.Description == nil {
+			break
+		}
+
+		return e.complexity.AdminGitToken.Description(childComplexity), true
+
+	case "AdminGitToken.disabledAt":
+		if e.complexity.AdminGitToken.DisabledAt == nil {
+			break
+		}
+
+		return e.complexity.AdminGitToken.DisabledAt(childComplexity), true
+
+	case "AdminGitToken.disabledBy":
+		if e.complexity.AdminGitToken.DisabledBy == nil {
+			break
+		}
+
+		return e.complexity.AdminGitToken.DisabledBy(childComplexity), true
+
+	case "AdminGitToken.id":
+		if e.complexity.AdminGitToken.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminGitToken.ID(childComplexity), true
+
+	case "AdminGitTokensConnection.nodes":
+		if e.complexity.AdminGitTokensConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminGitTokensConnection.Nodes(childComplexity), true
+
 	case "AdminHTMLInjection.activeFrom":
 		if e.complexity.AdminHTMLInjection.ActiveFrom == nil {
 			break
@@ -2030,6 +2135,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.CreateBoostyCredentials(childComplexity, args["input"].(model.CreateBoostyCredentialsInput)), true
+
+	case "AdminMutation.createGitToken":
+		if e.complexity.AdminMutation.CreateGitToken == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_createGitToken_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.CreateGitToken(childComplexity, args["input"].(model.CreateGitTokenInput)), true
 
 	case "AdminMutation.createHTMLInjection":
 		if e.complexity.AdminMutation.CreateHTMLInjection == nil {
@@ -2186,6 +2303,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.DisableAPIKey(childComplexity, args["input"].(model.DisableAPIKeyInput)), true
+
+	case "AdminMutation.disableGitToken":
+		if e.complexity.AdminMutation.DisableGitToken == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_disableGitToken_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.DisableGitToken(childComplexity, args["input"].(model.DisableGitTokenInput)), true
 
 	case "AdminMutation.makeReleaseLive":
 		if e.complexity.AdminMutation.MakeReleaseLive == nil {
@@ -3023,6 +3152,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AllCronJobs(childComplexity), true
+
+	case "AdminQuery.allGitTokens":
+		if e.complexity.AdminQuery.AllGitTokens == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllGitTokens(childComplexity), true
 
 	case "AdminQuery.allHTMLInjections":
 		if e.complexity.AdminQuery.AllHTMLInjections == nil {
@@ -4010,6 +4146,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.CreateEmailWaitListRequestPayload.Success(childComplexity), true
 
+	case "CreateGitTokenPayload.gitToken":
+		if e.complexity.CreateGitTokenPayload.GitToken == nil {
+			break
+		}
+
+		return e.complexity.CreateGitTokenPayload.GitToken(childComplexity), true
+
+	case "CreateGitTokenPayload.value":
+		if e.complexity.CreateGitTokenPayload.Value == nil {
+			break
+		}
+
+		return e.complexity.CreateGitTokenPayload.Value(childComplexity), true
+
 	case "CreateHTMLInjectionPayload.htmlInjection":
 		if e.complexity.CreateHTMLInjectionPayload.HTMLInjection == nil {
 			break
@@ -4128,6 +4278,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DisableApiKeyPayload.APIKey(childComplexity), true
+
+	case "DisableGitTokenPayload.gitToken":
+		if e.complexity.DisableGitTokenPayload.GitToken == nil {
+			break
+		}
+
+		return e.complexity.DisableGitTokenPayload.GitToken(childComplexity), true
 
 	case "ErrorPayload.byFields":
 		if e.complexity.ErrorPayload.ByFields == nil {
@@ -5160,6 +5317,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateApiKeyInput,
 		ec.unmarshalInputCreateBoostyCredentialsInput,
 		ec.unmarshalInputCreateEmailWaitListRequestInput,
+		ec.unmarshalInputCreateGitTokenInput,
 		ec.unmarshalInputCreateHTMLInjectionInput,
 		ec.unmarshalInputCreateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputCreateOfferInput,
@@ -5174,6 +5332,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputDeletePatreonCredentialsInput,
 		ec.unmarshalInputDeleteRedirectInput,
 		ec.unmarshalInputDisableApiKeyInput,
+		ec.unmarshalInputDisableGitTokenInput,
 		ec.unmarshalInputGenerateTgAttachCodeInput,
 		ec.unmarshalInputHideNotesInput,
 		ec.unmarshalInputLastNoteReadAtInput,
@@ -5392,6 +5551,29 @@ func (ec *executionContext) field_AdminMutation_createBoostyCredentials_argsInpu
 	}
 
 	var zeroVal model.CreateBoostyCredentialsInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_createGitToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_createGitToken_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_createGitToken_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateGitTokenInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateGitTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGitTokenInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateGitTokenInput
 	return zeroVal, nil
 }
 
@@ -5691,6 +5873,29 @@ func (ec *executionContext) field_AdminMutation_disableApiKey_argsInput(
 	}
 
 	var zeroVal model.DisableAPIKeyInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_disableGitToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_disableGitToken_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_disableGitToken_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.DisableGitTokenInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNDisableGitTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐDisableGitTokenInput(ctx, tmp)
+	}
+
+	var zeroVal model.DisableGitTokenInput
 	return zeroVal, nil
 }
 
@@ -10246,6 +10451,434 @@ func (ec *executionContext) fieldContext_AdminCronJobsConnection_nodes(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminGitToken_id(ctx context.Context, field graphql.CollectedField, obj *db.GitToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminGitToken_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminGitToken_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitToken_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.GitToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminGitToken_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminGitToken_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitToken_description(ctx context.Context, field graphql.CollectedField, obj *db.GitToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminGitToken_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminGitToken_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitToken",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitToken_canPull(ctx context.Context, field graphql.CollectedField, obj *db.GitToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminGitToken_canPull(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminGitToken().CanPull(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminGitToken_canPull(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitToken",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitToken_canPush(ctx context.Context, field graphql.CollectedField, obj *db.GitToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminGitToken_canPush(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminGitToken().CanPush(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminGitToken_canPush(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitToken",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitToken_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.GitToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminGitToken_createdBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminGitToken().CreatedBy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminGitToken_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitToken",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitToken_disabledBy(ctx context.Context, field graphql.CollectedField, obj *db.GitToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminGitToken_disabledBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminGitToken().DisabledBy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalOAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminGitToken_disabledBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitToken",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitToken_disabledAt(ctx context.Context, field graphql.CollectedField, obj *db.GitToken) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminGitToken_disabledAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminGitToken().DisabledAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminGitToken_disabledAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitToken",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitTokensConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminGitTokensConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminGitTokensConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminGitTokensConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.GitToken)
+	fc.Result = res
+	return ec.marshalNAdminGitToken2ᚕtrip2gᚋinternalᚋdbᚐGitTokenᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminGitTokensConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitTokensConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminGitToken_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminGitToken_createdAt(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminGitToken_description(ctx, field)
+			case "canPull":
+				return ec.fieldContext_AdminGitToken_canPull(ctx, field)
+			case "canPush":
+				return ec.fieldContext_AdminGitToken_canPush(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminGitToken_createdBy(ctx, field)
+			case "disabledBy":
+				return ec.fieldContext_AdminGitToken_disabledBy(ctx, field)
+			case "disabledAt":
+				return ec.fieldContext_AdminGitToken_disabledAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGitToken", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminHTMLInjection_id(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminHTMLInjection_id(ctx, field)
 	if err != nil {
@@ -11605,6 +12238,116 @@ func (ec *executionContext) fieldContext_AdminMutation_disableApiKey(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_disableApiKey_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_createGitToken(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_createGitToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().CreateGitToken(rctx, obj, fc.Args["input"].(model.CreateGitTokenInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CreateGitTokenOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNCreateGitTokenOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGitTokenOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createGitToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateGitTokenOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createGitToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_disableGitToken(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_disableGitToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().DisableGitToken(rctx, obj, fc.Args["input"].(model.DisableGitTokenInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.DisableGitTokenOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNDisableGitTokenOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDisableGitTokenOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_disableGitToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DisableGitTokenOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_disableGitToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -16589,6 +17332,54 @@ func (ec *executionContext) fieldContext_AdminQuery_allApiKeys(_ context.Context
 				return ec.fieldContext_AdminApiKeysConnection_nodes(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminApiKeysConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allGitTokens(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allGitTokens(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllGitTokens(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminGitTokensConnection)
+	fc.Result = res
+	return ec.marshalNAdminGitTokensConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminGitTokensConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allGitTokens(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminGitTokensConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGitTokensConnection", field.Name)
 		},
 	}
 	return fc, nil
@@ -23084,6 +23875,112 @@ func (ec *executionContext) fieldContext_CreateEmailWaitListRequestPayload_succe
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateGitTokenPayload_value(ctx context.Context, field graphql.CollectedField, obj *model.CreateGitTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreateGitTokenPayload_value(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Value, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreateGitTokenPayload_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateGitTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CreateGitTokenPayload_gitToken(ctx context.Context, field graphql.CollectedField, obj *model.CreateGitTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreateGitTokenPayload_gitToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GitToken, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.GitToken)
+	fc.Result = res
+	return ec.marshalNAdminGitToken2ᚖtrip2gᚋinternalᚋdbᚐGitToken(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreateGitTokenPayload_gitToken(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateGitTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminGitToken_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminGitToken_createdAt(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminGitToken_description(ctx, field)
+			case "canPull":
+				return ec.fieldContext_AdminGitToken_canPull(ctx, field)
+			case "canPush":
+				return ec.fieldContext_AdminGitToken_canPush(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminGitToken_createdBy(ctx, field)
+			case "disabledBy":
+				return ec.fieldContext_AdminGitToken_disabledBy(ctx, field)
+			case "disabledAt":
+				return ec.fieldContext_AdminGitToken_disabledAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGitToken", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreateHTMLInjectionPayload_htmlInjection(ctx context.Context, field graphql.CollectedField, obj *model.CreateHTMLInjectionPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_CreateHTMLInjectionPayload_htmlInjection(ctx, field)
 	if err != nil {
@@ -23998,6 +24895,68 @@ func (ec *executionContext) fieldContext_DisableApiKeyPayload_apiKey(_ context.C
 				return ec.fieldContext_AdminApiKey_disabledAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminApiKey", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DisableGitTokenPayload_gitToken(ctx context.Context, field graphql.CollectedField, obj *model.DisableGitTokenPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DisableGitTokenPayload_gitToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GitToken, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.GitToken)
+	fc.Result = res
+	return ec.marshalNAdminGitToken2ᚖtrip2gᚋinternalᚋdbᚐGitToken(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_DisableGitTokenPayload_gitToken(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DisableGitTokenPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminGitToken_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminGitToken_createdAt(ctx, field)
+			case "description":
+				return ec.fieldContext_AdminGitToken_description(ctx, field)
+			case "canPull":
+				return ec.fieldContext_AdminGitToken_canPull(ctx, field)
+			case "canPush":
+				return ec.fieldContext_AdminGitToken_canPush(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminGitToken_createdBy(ctx, field)
+			case "disabledBy":
+				return ec.fieldContext_AdminGitToken_disabledBy(ctx, field)
+			case "disabledAt":
+				return ec.fieldContext_AdminGitToken_disabledAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGitToken", field.Name)
 		},
 	}
 	return fc, nil
@@ -24985,6 +25944,10 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_createApiKey(ctx, field)
 			case "disableApiKey":
 				return ec.fieldContext_AdminMutation_disableApiKey(ctx, field)
+			case "createGitToken":
+				return ec.fieldContext_AdminMutation_createGitToken(ctx, field)
+			case "disableGitToken":
+				return ec.fieldContext_AdminMutation_disableGitToken(ctx, field)
 			case "createRelease":
 				return ec.fieldContext_AdminMutation_createRelease(ctx, field)
 			case "makeReleaseLive":
@@ -26895,6 +27858,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allUserUserBans(ctx, field)
 			case "allApiKeys":
 				return ec.fieldContext_AdminQuery_allApiKeys(ctx, field)
+			case "allGitTokens":
+				return ec.fieldContext_AdminQuery_allGitTokens(ctx, field)
 			case "allReleases":
 				return ec.fieldContext_AdminQuery_allReleases(ctx, field)
 			case "allAdmins":
@@ -33346,6 +34311,47 @@ func (ec *executionContext) unmarshalInputCreateEmailWaitListRequestInput(ctx co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateGitTokenInput(ctx context.Context, obj any) (model.CreateGitTokenInput, error) {
+	var it model.CreateGitTokenInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"description", "canPull", "canPush"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "canPull":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("canPull"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CanPull = data
+		case "canPush":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("canPush"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CanPush = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateHTMLInjectionInput(ctx context.Context, obj any) (model.CreateHTMLInjectionInput, error) {
 	var it model.CreateHTMLInjectionInput
 	asMap := map[string]any{}
@@ -33818,6 +34824,33 @@ func (ec *executionContext) unmarshalInputDeleteRedirectInput(ctx context.Contex
 
 func (ec *executionContext) unmarshalInputDisableApiKeyInput(ctx context.Context, obj any) (model.DisableAPIKeyInput, error) {
 	var it model.DisableAPIKeyInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDisableGitTokenInput(ctx context.Context, obj any) (model.DisableGitTokenInput, error) {
+	var it model.DisableGitTokenInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -35212,6 +36245,29 @@ func (ec *executionContext) _CreateEmailWaitListRequestOrErrorPayload(ctx contex
 	}
 }
 
+func (ec *executionContext) _CreateGitTokenOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateGitTokenOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateGitTokenPayload:
+		return ec._CreateGitTokenPayload(ctx, sel, &obj)
+	case *model.CreateGitTokenPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateGitTokenPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _CreateHTMLInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateHTMLInjectionOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -35529,6 +36585,29 @@ func (ec *executionContext) _DisableApiKeyOrErrorPayload(ctx context.Context, se
 			return graphql.Null
 		}
 		return ec._DisableApiKeyPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _DisableGitTokenOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DisableGitTokenOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DisableGitTokenPayload:
+		return ec._DisableGitTokenPayload(ctx, sel, &obj)
+	case *model.DisableGitTokenPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DisableGitTokenPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -38188,6 +39267,299 @@ func (ec *executionContext) _AdminCronJobsConnection(ctx context.Context, sel as
 	return out
 }
 
+var adminGitTokenImplementors = []string{"AdminGitToken"}
+
+func (ec *executionContext) _AdminGitToken(ctx context.Context, sel ast.SelectionSet, obj *db.GitToken) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminGitTokenImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminGitToken")
+		case "id":
+			out.Values[i] = ec._AdminGitToken_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminGitToken_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._AdminGitToken_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "canPull":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminGitToken_canPull(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "canPush":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminGitToken_canPush(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminGitToken_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "disabledBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminGitToken_disabledBy(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "disabledAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminGitToken_disabledAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminGitTokensConnectionImplementors = []string{"AdminGitTokensConnection"}
+
+func (ec *executionContext) _AdminGitTokensConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminGitTokensConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminGitTokensConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminGitTokensConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminGitTokensConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminHTMLInjectionImplementors = []string{"AdminHTMLInjection"}
 
 func (ec *executionContext) _AdminHTMLInjection(ctx context.Context, sel ast.SelectionSet, obj *db.HtmlInjection) graphql.Marshaler {
@@ -39084,6 +40456,78 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_disableApiKey(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createGitToken":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createGitToken(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "disableGitToken":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_disableGitToken(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -41996,6 +43440,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_allApiKeys(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allGitTokens":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allGitTokens(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -45800,6 +47280,50 @@ func (ec *executionContext) _CreateEmailWaitListRequestPayload(ctx context.Conte
 	return out
 }
 
+var createGitTokenPayloadImplementors = []string{"CreateGitTokenPayload", "CreateGitTokenOrErrorPayload"}
+
+func (ec *executionContext) _CreateGitTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateGitTokenPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createGitTokenPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateGitTokenPayload")
+		case "value":
+			out.Values[i] = ec._CreateGitTokenPayload_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "gitToken":
+			out.Values[i] = ec._CreateGitTokenPayload_gitToken(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createHTMLInjectionPayloadImplementors = []string{"CreateHTMLInjectionPayload", "CreateHTMLInjectionOrErrorPayload"}
 
 func (ec *executionContext) _CreateHTMLInjectionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateHTMLInjectionPayload) graphql.Marshaler {
@@ -46420,7 +47944,46 @@ func (ec *executionContext) _DisableApiKeyPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHTMLInjectionOrErrorPayload", "UpdateHTMLInjectionOrErrorPayload", "DeleteHTMLInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload"}
+var disableGitTokenPayloadImplementors = []string{"DisableGitTokenPayload", "DisableGitTokenOrErrorPayload"}
+
+func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DisableGitTokenPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, disableGitTokenPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DisableGitTokenPayload")
+		case "gitToken":
+			out.Values[i] = ec._DisableGitTokenPayload_gitToken(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHTMLInjectionOrErrorPayload", "UpdateHTMLInjectionOrErrorPayload", "DeleteHTMLInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -51079,6 +52642,78 @@ func (ec *executionContext) marshalNAdminCronJobsConnection2ᚖtrip2gᚋinternal
 	return ec._AdminCronJobsConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminGitToken2trip2gᚋinternalᚋdbᚐGitToken(ctx context.Context, sel ast.SelectionSet, v db.GitToken) graphql.Marshaler {
+	return ec._AdminGitToken(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminGitToken2ᚕtrip2gᚋinternalᚋdbᚐGitTokenᚄ(ctx context.Context, sel ast.SelectionSet, v []db.GitToken) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminGitToken2trip2gᚋinternalᚋdbᚐGitToken(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminGitToken2ᚖtrip2gᚋinternalᚋdbᚐGitToken(ctx context.Context, sel ast.SelectionSet, v *db.GitToken) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminGitToken(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminGitTokensConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminGitTokensConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminGitTokensConnection) graphql.Marshaler {
+	return ec._AdminGitTokensConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminGitTokensConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminGitTokensConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminGitTokensConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminGitTokensConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminHTMLInjection2trip2gᚋinternalᚋdbᚐHtmlInjection(ctx context.Context, sel ast.SelectionSet, v db.HtmlInjection) graphql.Marshaler {
 	return ec._AdminHTMLInjection(ctx, sel, &v)
 }
@@ -52659,6 +54294,21 @@ func (ec *executionContext) marshalNCreateEmailWaitListRequestOrErrorPayload2tri
 	return ec._CreateEmailWaitListRequestOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCreateGitTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGitTokenInput(ctx context.Context, v any) (model.CreateGitTokenInput, error) {
+	res, err := ec.unmarshalInputCreateGitTokenInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateGitTokenOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGitTokenOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateGitTokenOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateGitTokenOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateHTMLInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateHTMLInjectionInput(ctx context.Context, v any) (model.CreateHTMLInjectionInput, error) {
 	res, err := ec.unmarshalInputCreateHTMLInjectionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -52877,6 +54527,21 @@ func (ec *executionContext) marshalNDisableApiKeyOrErrorPayload2trip2gᚋinterna
 		return graphql.Null
 	}
 	return ec._DisableApiKeyOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDisableGitTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐDisableGitTokenInput(ctx context.Context, v any) (model.DisableGitTokenInput, error) {
+	res, err := ec.unmarshalInputDisableGitTokenInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDisableGitTokenOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDisableGitTokenOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DisableGitTokenOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DisableGitTokenOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNFieldMessage2trip2gᚋinternalᚋgraphᚋmodelᚐFieldMessage(ctx context.Context, sel ast.SelectionSet, v model.FieldMessage) graphql.Marshaler {

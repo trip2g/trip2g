@@ -333,6 +333,37 @@ func (q *WriteQueries) DisableApiKey(ctx context.Context, arg DisableApiKeyParam
 	return i, err
 }
 
+const disableGitToken = `-- name: DisableGitToken :one
+update git_tokens
+  set disabled_by = ?, disabled_at = datetime('now')
+ where id = ?
+returning id, created_at, last_used_at, admin_id, value_sha256, description, can_pull, can_push, usage_count, disabled_at, disabled_by
+`
+
+type DisableGitTokenParams struct {
+	DisabledBy sql.NullInt64 `json:"disabled_by"`
+	ID         int64         `json:"id"`
+}
+
+func (q *WriteQueries) DisableGitToken(ctx context.Context, arg DisableGitTokenParams) (GitToken, error) {
+	row := q.db.QueryRowContext(ctx, disableGitToken, arg.DisabledBy, arg.ID)
+	var i GitToken
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+		&i.AdminID,
+		&i.ValueSha256,
+		&i.Description,
+		&i.CanPull,
+		&i.CanPush,
+		&i.UsageCount,
+		&i.DisabledAt,
+		&i.DisabledBy,
+	)
+	return i, err
+}
+
 const hideNotePath = `-- name: HideNotePath :exec
 update note_paths
    set hidden_by = ?
@@ -593,6 +624,45 @@ func (q *WriteQueries) InsertCronJobExecution(ctx context.Context, arg InsertCro
 		&i.Status,
 		&i.ReportData,
 		&i.ErrorMessage,
+	)
+	return i, err
+}
+
+const insertGitToken = `-- name: InsertGitToken :one
+insert into git_tokens (value_sha256, admin_id, description, can_pull, can_push)
+values (?, ?, ?, ?, ?)
+returning id, created_at, last_used_at, admin_id, value_sha256, description, can_pull, can_push, usage_count, disabled_at, disabled_by
+`
+
+type InsertGitTokenParams struct {
+	ValueSha256 string        `json:"value_sha256"`
+	AdminID     sql.NullInt64 `json:"admin_id"`
+	Description string        `json:"description"`
+	CanPull     sql.NullBool  `json:"can_pull"`
+	CanPush     sql.NullBool  `json:"can_push"`
+}
+
+func (q *WriteQueries) InsertGitToken(ctx context.Context, arg InsertGitTokenParams) (GitToken, error) {
+	row := q.db.QueryRowContext(ctx, insertGitToken,
+		arg.ValueSha256,
+		arg.AdminID,
+		arg.Description,
+		arg.CanPull,
+		arg.CanPush,
+	)
+	var i GitToken
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+		&i.AdminID,
+		&i.ValueSha256,
+		&i.Description,
+		&i.CanPull,
+		&i.CanPush,
+		&i.UsageCount,
+		&i.DisabledAt,
+		&i.DisabledBy,
 	)
 	return i, err
 }

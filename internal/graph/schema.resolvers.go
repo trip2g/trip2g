@@ -16,6 +16,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
+	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createhtmlinjection"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
@@ -30,6 +31,7 @@ import (
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
+	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/restoreboostycredentials"
@@ -307,6 +309,44 @@ func (r *adminCronJobsConnectionResolver) Nodes(ctx context.Context, obj *model.
 	return r.env(ctx).ListAllCronJobs(ctx)
 }
 
+// CanPull is the resolver for the canPull field.
+func (r *adminGitTokenResolver) CanPull(ctx context.Context, obj *db.GitToken) (bool, error) {
+	return obj.CanPull.Bool, nil
+}
+
+// CanPush is the resolver for the canPush field.
+func (r *adminGitTokenResolver) CanPush(ctx context.Context, obj *db.GitToken) (bool, error) {
+	return obj.CanPush.Bool, nil
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminGitTokenResolver) CreatedBy(ctx context.Context, obj *db.GitToken) (*db.User, error) {
+	if !obj.AdminID.Valid {
+		return nil, nil
+	}
+
+	return resolveOne[db.User](ctx, obj.AdminID.Int64, r.env(ctx).UserByID)
+}
+
+// DisabledBy is the resolver for the disabledBy field.
+func (r *adminGitTokenResolver) DisabledBy(ctx context.Context, obj *db.GitToken) (*db.User, error) {
+	if !obj.DisabledBy.Valid {
+		return nil, nil
+	}
+
+	return resolveOne[db.User](ctx, obj.DisabledBy.Int64, r.env(ctx).UserByID)
+}
+
+// DisabledAt is the resolver for the disabledAt field.
+func (r *adminGitTokenResolver) DisabledAt(ctx context.Context, obj *db.GitToken) (*time.Time, error) {
+	return db.ToTimePtr(obj.DisabledAt), nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminGitTokensConnectionResolver) Nodes(ctx context.Context, obj *model.AdminGitTokensConnection) ([]db.GitToken, error) {
+	return r.env(ctx).ListAllGitTokens(ctx)
+}
+
 // ActiveFrom is the resolver for the activeFrom field.
 func (r *adminHTMLInjectionResolver) ActiveFrom(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
 	return db.ToTimePtr(obj.ActiveFrom), nil
@@ -445,6 +485,16 @@ func (r *adminMutationResolver) CreateAPIKey(ctx context.Context, obj *appmodel.
 // DisableAPIKey is the resolver for the disableApiKey field.
 func (r *adminMutationResolver) DisableAPIKey(ctx context.Context, obj *appmodel.AdminMutation, input model.DisableAPIKeyInput) (model.DisableAPIKeyOrErrorPayload, error) {
 	return disableapikey.Resolve(ctx, r.env(ctx), input)
+}
+
+// CreateGitToken is the resolver for the createGitToken field.
+func (r *adminMutationResolver) CreateGitToken(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateGitTokenInput) (model.CreateGitTokenOrErrorPayload, error) {
+	return creategittoken.Resolve(ctx, r.env(ctx), input)
+}
+
+// DisableGitToken is the resolver for the disableGitToken field.
+func (r *adminMutationResolver) DisableGitToken(ctx context.Context, obj *appmodel.AdminMutation, input model.DisableGitTokenInput) (model.DisableGitTokenOrErrorPayload, error) {
+	return disablegittoken.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreateRelease is the resolver for the createRelease field.
@@ -874,6 +924,11 @@ func (r *adminQueryResolver) AllUserUserBans(ctx context.Context, obj *appmodel.
 // AllAPIKeys is the resolver for the allApiKeys field.
 func (r *adminQueryResolver) AllAPIKeys(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminAPIKeysConnection, error) {
 	return &model.AdminAPIKeysConnection{}, nil
+}
+
+// AllGitTokens is the resolver for the allGitTokens field.
+func (r *adminQueryResolver) AllGitTokens(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminGitTokensConnection, error) {
+	return &model.AdminGitTokensConnection{}, nil
 }
 
 // AllReleases is the resolver for the allReleases field.
@@ -1940,6 +1995,14 @@ func (r *Resolver) AdminCronJobsConnection() AdminCronJobsConnectionResolver {
 	return &adminCronJobsConnectionResolver{r}
 }
 
+// AdminGitToken returns AdminGitTokenResolver implementation.
+func (r *Resolver) AdminGitToken() AdminGitTokenResolver { return &adminGitTokenResolver{r} }
+
+// AdminGitTokensConnection returns AdminGitTokensConnectionResolver implementation.
+func (r *Resolver) AdminGitTokensConnection() AdminGitTokensConnectionResolver {
+	return &adminGitTokensConnectionResolver{r}
+}
+
 // AdminHTMLInjection returns AdminHTMLInjectionResolver implementation.
 func (r *Resolver) AdminHTMLInjection() AdminHTMLInjectionResolver {
 	return &adminHTMLInjectionResolver{r}
@@ -2234,6 +2297,8 @@ type adminBoostyTiersConnectionResolver struct{ *Resolver }
 type adminCronJobResolver struct{ *Resolver }
 type adminCronJobExecutionResolver struct{ *Resolver }
 type adminCronJobsConnectionResolver struct{ *Resolver }
+type adminGitTokenResolver struct{ *Resolver }
+type adminGitTokensConnectionResolver struct{ *Resolver }
 type adminHTMLInjectionResolver struct{ *Resolver }
 type adminHTMLInjectionsConnectionResolver struct{ *Resolver }
 type adminLatestNoteAssetsConnectionResolver struct{ *Resolver }

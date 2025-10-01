@@ -1454,6 +1454,29 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 	return items, nil
 }
 
+const gitTokenByValueSHA256 = `-- name: GitTokenByValueSHA256 :one
+select id, created_at, last_used_at, admin_id, value_sha256, description, can_pull, can_push, usage_count, disabled_at, disabled_by from git_tokens where value_sha256 = ? and disabled_at is null limit 1
+`
+
+func (q *Queries) GitTokenByValueSHA256(ctx context.Context, valueSha256 string) (GitToken, error) {
+	row := q.db.QueryRowContext(ctx, gitTokenByValueSHA256, valueSha256)
+	var i GitToken
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+		&i.AdminID,
+		&i.ValueSha256,
+		&i.Description,
+		&i.CanPull,
+		&i.CanPush,
+		&i.UsageCount,
+		&i.DisabledAt,
+		&i.DisabledBy,
+	)
+	return i, err
+}
+
 const lastUserNoteView = `-- name: LastUserNoteView :one
 select unv.version_id, unv.created_at
   from user_note_views unv
@@ -2103,6 +2126,45 @@ func (q *Queries) ListAllCronJobs(ctx context.Context) ([]CronJob, error) {
 			&i.Enabled,
 			&i.Expression,
 			&i.LastExecAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllGitTokens = `-- name: ListAllGitTokens :many
+select id, created_at, last_used_at, admin_id, value_sha256, description, can_pull, can_push, usage_count, disabled_at, disabled_by from git_tokens order by admin_id, created_at desc
+`
+
+func (q *Queries) ListAllGitTokens(ctx context.Context) ([]GitToken, error) {
+	rows, err := q.db.QueryContext(ctx, listAllGitTokens)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GitToken
+	for rows.Next() {
+		var i GitToken
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.LastUsedAt,
+			&i.AdminID,
+			&i.ValueSha256,
+			&i.Description,
+			&i.CanPull,
+			&i.CanPush,
+			&i.UsageCount,
+			&i.DisabledAt,
+			&i.DisabledBy,
 		); err != nil {
 			return nil, err
 		}

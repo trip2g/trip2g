@@ -130,6 +130,17 @@ update api_keys
  where id = ?
 returning *;
 
+-- name: InsertGitToken :one
+insert into git_tokens (value_sha256, admin_id, description, can_pull, can_push)
+values (?, ?, ?, ?, ?)
+returning *;
+
+-- name: DisableGitToken :one
+update git_tokens
+  set disabled_by = ?, disabled_at = datetime('now')
+ where id = ?
+returning *;
+
 -- name: InsertAPIKeyLog :exec
 insert into api_key_logs (api_key_id, ip_id, action_id)
 values (?,
