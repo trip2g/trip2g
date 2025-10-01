@@ -187,6 +187,8 @@ func main() {
 		panic(err)
 	}
 
+	log.Info("using storage prefix", "prefix", config.Storage.Prefix)
+
 	storageLocker, err := storagelocker.New(ctx, config.StorageLocker, fileStorage)
 	if err != nil {
 		panic(err)
