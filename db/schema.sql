@@ -18,6 +18,29 @@ CREATE TABLE sign_in_codes (
   created_at datetime not null default current_timestamp
 );
 CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
+CREATE TABLE backlite_tasks (
+    id text PRIMARY KEY,
+    created_at integer NOT NULL,
+    queue text NOT NULL,
+    task blob NOT NULL,
+    wait_until integer,
+    claimed_at integer,
+    last_executed_at integer,
+    attempts integer NOT NULL DEFAULT 0
+) STRICT;
+CREATE TABLE backlite_tasks_completed (
+    id text PRIMARY KEY NOT NULL,
+    created_at integer NOT NULL,
+    queue text NOT NULL,
+    last_executed_at integer,
+    attempts integer NOT NULL,
+    last_duration_micro integer,
+    succeeded integer,
+    task blob,
+    expires_at integer,
+    error text
+) STRICT;
+CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
 CREATE TABLE subgraphs (
   id integer primary key autoincrement,
   name text not null unique,
@@ -400,29 +423,6 @@ CREATE TABLE cron_job_executions (
   report_data text,
   error_message text
 );
-CREATE TABLE backlite_tasks (
-    id text PRIMARY KEY,
-    created_at integer NOT NULL,
-    queue text NOT NULL,
-    task blob NOT NULL,
-    wait_until integer,
-    claimed_at integer,
-    last_executed_at integer,
-    attempts integer NOT NULL DEFAULT 0
-) STRICT;
-CREATE TABLE backlite_tasks_completed (
-    id text PRIMARY KEY NOT NULL,
-    created_at integer NOT NULL,
-    queue text NOT NULL,
-    last_executed_at integer,
-    attempts integer NOT NULL,
-    last_duration_micro integer,
-    succeeded integer,
-    task blob,
-    expires_at integer,
-    error text
-) STRICT;
-CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
 CREATE TABLE goqite (
   id text primary key default ('m_' || lower(hex(randomblob(16)))),
   created text not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
@@ -526,7 +526,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250815035326'),
   ('20250815092446'),
   ('20250816081838'),
-  ('20250816144659'),
   ('20250918140112'),
   ('20250925035301'),
   ('20250927035933'),

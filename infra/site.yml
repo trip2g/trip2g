@@ -10,7 +10,8 @@
     data_dir: "{{ app_dir }}/data"
     trip2g_services:
       - { service_name: trip2g, listen_addr: "localhost:8081", domain: "demo.trip2g.com" }
-      - { service_name: trip2g_mbti, listen_addr: "localhost:8082", domain: "mbti.trip2g.com" }
+      # - { service_name: trip2g_mbti, listen_addr: "localhost:8082", domain: "mbti.trip2g.com" }
+      - { service_name: trip2g_taro, listen_addr: "localhost:8083", domain: "taro.trip2g.com" }
   tasks:
     - name: Create trip2g user
       user:
@@ -151,9 +152,14 @@
         name: "trip2g"
         state: restarted
 
+    # - name: Restart service
+    #   systemd:
+    #     name: "trip2g_mbti"
+    #     state: restarted
+
     - name: Restart service
       systemd:
-        name: "trip2g_mbti"
+        name: "trip2g_taro"
         state: restarted
 
     - name: Restart litestream

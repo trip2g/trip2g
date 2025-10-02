@@ -397,7 +397,7 @@ func (api *API) preparePushNotesInput(changedFiles []string) (*model.PushNotesIn
 		}
 
 		// read content
-		readCmd := exec.Command("git", "--git-dir", api.config.RepoPath, "show", fmt.Sprintf("HEAD:%s", file))
+		readCmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "show", fmt.Sprintf("HEAD:%s", file))
 		readCmd.Stderr = os.Stderr
 
 		content, err := readCmd.Output()
@@ -427,7 +427,7 @@ func (api *API) preparePushNotesInput(changedFiles []string) (*model.PushNotesIn
 func (api *API) getChangedFiles() ([]string, error) {
 	// TODO: track the last processed commit
 	// git diff --name-only HEAD^1 HEAD
-	cmd := exec.Command("git", "diff", "--name-only", "HEAD^1", "HEAD")
+	cmd := exec.Command("git", "-c", "core.quotePath=false", "diff", "--name-only", "HEAD^1", "HEAD")
 	cmd.Dir = api.config.RepoPath
 	cmd.Stderr = os.Stderr
 
@@ -436,13 +436,24 @@ func (api *API) getChangedFiles() ([]string, error) {
 		return nil, fmt.Errorf("failed to get changed files: %w", err)
 	}
 
-	return strings.Split(strings.TrimSpace(string(output)), "\n"), nil
+	files := strings.Split(strings.TrimSpace(string(output)), "\n")
+
+	return api.filterDotFiles(files), nil
 }
 
 func (api *API) applyChanges() error {
 	changedFiles, err := api.getChangedFiles()
 	if err != nil {
-		return fmt.Errorf("failed to get changed files: %w", err)
+		api.logger.Warn("no changed files", "error", err)
+
+		// list all files
+		// TODO: fix logic for first push
+		changedFiles, err = api.getAllFiles()
+		if err != nil {
+			return fmt.Errorf("failed to get all files: %w", err)
+		}
+
+		api.logger.Info("all files", "files", changedFiles)
 	}
 
 	pushInput, err := api.preparePushNotesInput(changedFiles)
@@ -464,7 +475,7 @@ func (api *API) applyChanges() error {
 		for _, note := range payload.Notes {
 			uploadErr := api.uploadNoteAssets(note, changedFiles)
 			if uploadErr != nil {
-				return fmt.Errorf("failed to upload note assets %s: %w", uploadErr, note.Path)
+				return fmt.Errorf("failed to upload note assets %s: %w", note.Path, uploadErr)
 			}
 		}
 
@@ -473,6 +484,20 @@ func (api *API) applyChanges() error {
 	}
 
 	return nil
+}
+
+func (api *API) getAllFiles() ([]string, error) {
+	cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "ls-tree", "-r", "HEAD", "--name-only")
+	cmd.Stderr = os.Stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list files: %w", err)
+	}
+
+	files := strings.Split(strings.TrimSpace(string(output)), "\n")
+
+	return api.filterDotFiles(files), nil
 }
 
 func (api *API) uploadNoteAssets(note *appmodel.NoteView, changedFiles []string) error {
@@ -548,7 +573,7 @@ func (api *API) uploadNoteAssets(note *appmodel.NoteView, changedFiles []string)
 }
 
 func (api *API) readContent(path string) ([]byte, error) {
-	cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "show", fmt.Sprintf("HEAD:%s", path))
+	cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "show", fmt.Sprintf("HEAD:%s", path))
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -599,7 +624,7 @@ func (api *API) resolveAssetPath(notePath, relativePath string) string {
 		assetPath := filepath.Join(noteDir, relativePath)
 
 		// check exists in git
-		cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "ls-files", "--error-unmatch", assetPath)
+		cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "ls-files", "--error-unmatch", assetPath)
 		cmd.Stderr = os.Stderr
 
 		err := cmd.Run()
@@ -669,6 +694,31 @@ func (api *API) downloadRepo() error {
 	}
 
 	return nil
+}
+
+func (api *API) filterDotFiles(files []string) []string {
+	var filtered []string
+	for _, file := range files {
+		// Skip empty filenames
+		if file == "" {
+			continue
+		}
+
+		// Check if any part of the path starts with a dot
+		parts := strings.Split(file, "/")
+		shouldSkip := false
+		for _, part := range parts {
+			if strings.HasPrefix(part, ".") {
+				shouldSkip = true
+				break
+			}
+		}
+
+		if !shouldSkip {
+			filtered = append(filtered, file)
+		}
+	}
+	return filtered
 }
 
 func pktLine(s string) []byte {

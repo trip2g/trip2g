@@ -12,6 +12,7 @@ import (
 
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boostyjobs"
+	"trip2g/internal/gitapi"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
@@ -97,6 +98,8 @@ type Config struct {
 	TgAuthToken tgauthtoken.Config
 
 	StorageLocker storagelocker.Config
+
+	GitAPI gitapi.Config
 }
 
 // Default values for configuration.
@@ -366,6 +369,13 @@ func (c *Config) defineFlags() {
 		storageLockerDefaults.Name,
 		"name for the storage locker instance",
 	)
+
+	// Git API
+	gitAPIDefaults := gitapi.DefaultConfig()
+
+	flag.StringVar(&c.GitAPI.BasePath, "git-api-base-path", gitAPIDefaults.BasePath, "base url path for git API")
+	flag.StringVar(&c.GitAPI.RepoPath, "git-api-repo-path", gitAPIDefaults.RepoPath, "path to the git repository")
+	flag.StringVar(&c.GitAPI.MasterBranch, "git-api-master-branch", gitAPIDefaults.MasterBranch, "name of the master branch")
 }
 
 func (c *Config) Prepare() {

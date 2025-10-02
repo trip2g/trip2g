@@ -51,7 +51,7 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 			"subgraph": "premium",
 		},
 		Assets:        map[string]struct{}{},
-		AssetReplaces: map[string]string{},
+		AssetReplaces: map[string]*model.NoteAssetReplace{},
 	}
 
 	// Create NoteViews containing the test note
@@ -297,7 +297,7 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 		InLinks:       map[string]struct{}{},
 		RawMeta:       map[string]interface{}{},
 		Assets:        map[string]struct{}{},
-		AssetReplaces: map[string]string{},
+		AssetReplaces: map[string]*model.NoteAssetReplace{},
 	}
 
 	latestNote := &model.NoteView{
@@ -314,7 +314,7 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 		InLinks:       map[string]struct{}{},
 		RawMeta:       map[string]interface{}{},
 		Assets:        map[string]struct{}{},
-		AssetReplaces: map[string]string{},
+		AssetReplaces: map[string]*model.NoteAssetReplace{},
 	}
 
 	// Create NoteViews for live and latest versions
@@ -643,7 +643,7 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 		InLinks:       map[string]struct{}{},
 		RawMeta:       map[string]interface{}{},
 		Assets:        map[string]struct{}{},
-		AssetReplaces: map[string]string{},
+		AssetReplaces: map[string]*model.NoteAssetReplace{},
 	}
 
 	latestNote := &model.NoteView{
@@ -660,7 +660,7 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 		InLinks:       map[string]struct{}{},
 		RawMeta:       map[string]interface{}{},
 		Assets:        map[string]struct{}{},
-		AssetReplaces: map[string]string{},
+		AssetReplaces: map[string]*model.NoteAssetReplace{},
 	}
 
 	// Create NoteViews for live and latest versions
@@ -806,7 +806,7 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					InLinks:       map[string]struct{}{},
 					RawMeta:       map[string]interface{}{},
 					Assets:        map[string]struct{}{},
-					AssetReplaces: map[string]string{},
+					AssetReplaces: map[string]*model.NoteAssetReplace{},
 				}
 
 				sameNoteViews := &model.NoteViews{
@@ -931,7 +931,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 		InLinks:       map[string]struct{}{},
 		RawMeta:       map[string]interface{}{},
 		Assets:        map[string]struct{}{},
-		AssetReplaces: map[string]string{},
+		AssetReplaces: map[string]*model.NoteAssetReplace{},
 	}
 
 	systemHiddenNote := &model.NoteView{
@@ -948,7 +948,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 		InLinks:       map[string]struct{}{},
 		RawMeta:       map[string]interface{}{},
 		Assets:        map[string]struct{}{},
-		AssetReplaces: map[string]string{},
+		AssetReplaces: map[string]*model.NoteAssetReplace{},
 	}
 
 	normalNote := &model.NoteView{
@@ -965,7 +965,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 		InLinks:       map[string]struct{}{},
 		RawMeta:       map[string]interface{}{},
 		Assets:        map[string]struct{}{},
-		AssetReplaces: map[string]string{},
+		AssetReplaces: map[string]*model.NoteAssetReplace{},
 	}
 
 	// Create NoteViews containing system and normal notes
@@ -1198,7 +1198,7 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					InLinks:       map[string]struct{}{},
 					RawMeta:       map[string]interface{}{},
 					Assets:        map[string]struct{}{},
-					AssetReplaces: map[string]string{},
+					AssetReplaces: map[string]*model.NoteAssetReplace{},
 				}
 
 				noteViewsWithUnderscore := &model.NoteViews{
@@ -1268,7 +1268,7 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 			"subgraph": "premium",
 		},
 		Assets:        map[string]struct{}{},
-		AssetReplaces: map[string]string{},
+		AssetReplaces: map[string]*model.NoteAssetReplace{},
 	}
 
 	// Create NoteViews containing the test note
