@@ -1,0 +1,4 @@
+$trip2g_admin_gittoken_button_disable $mol_button_major
+	id 0
+	title \Disable
+	click?event <=> handle_click? null

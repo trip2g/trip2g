@@ -1,4 +1,4 @@
-$trip2g_admin_waitlisttgbotrequest_catalog $mol_page
+$trip2g_admin_waitlisttgbotrequest_catalog $trip2g_admin_catalog
 	menu_title \Telegram Waitlist Requests
 	body /
 		<= Items $mol_list

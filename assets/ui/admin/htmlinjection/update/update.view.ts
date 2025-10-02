@@ -4,7 +4,7 @@ namespace $.$$ {
 		data(reset?: null) {
 			const res = $trip2g_graphql_request(
 				`
-					query AdminUpdateDataHtmlInjection($id: Int64!) {
+					query AdminUpdateDataHTMLInjection($id: Int64!) {
 						admin {
 							htmlInjection(id: $id) {
 								id

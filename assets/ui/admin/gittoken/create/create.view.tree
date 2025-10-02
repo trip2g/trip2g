@@ -1,0 +1,32 @@
+$trip2g_admin_gittoken_create $mol_page
+	title \Create Git Token
+	GitTokenView $mol_view
+		sub /
+			<= GitTokenValue_labeler $mol_labeler
+				title \Git Token
+				Content <= GitTokenValue $trip2g_admin_cell
+					content <= git_token? \
+	body /
+		<= Form $mol_form
+			body /
+				<= Description_field $mol_form_field
+					name \Description
+					bid <= description_bid \
+					Content <= description_control $mol_string
+						value? <=> description? \
+				<= CanPull_field $mol_form_field
+					name \Can Pull
+					bid <= can_pull_bid \
+					Content <= can_pull_control $mol_check_box
+						checked? <=> can_pull? false
+				<= CanPush_field $mol_form_field
+					name \Can Push
+					bid <= can_push_bid \
+					Content <= can_push_control $mol_check_box
+						checked? <=> can_push? true
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \

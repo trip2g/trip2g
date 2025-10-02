@@ -1,0 +1,11 @@
+$trip2g_admin_gittoken_show $mol_page
+	title \Git Token Details
+	gittoken_id 0
+	disabled false
+	DisableButton $trip2g_admin_gittoken_button_disable
+		id <= gittoken_id
+	body /
+		<= Info $mol_view
+			sub /
+				<= InfoText $mol_text
+					text \Git token details and management

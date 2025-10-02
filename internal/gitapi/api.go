@@ -37,6 +37,9 @@ type Env interface {
 	GetPrivateObject(ctx context.Context, objectID string) (io.ReadCloser, error)
 	PrivateObjectExists(ctx context.Context, objectID string) (bool, error)
 
+	// auth
+	GetGitTokenByValueSha256(ctx context.Context, sha256Hash string) (db.GitToken, error)
+
 	// process notes
 	AllVisibleNotePaths(ctx context.Context) ([]db.NotePath, error)
 	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)

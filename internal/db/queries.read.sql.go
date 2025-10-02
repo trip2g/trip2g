@@ -1170,6 +1170,33 @@ func (q *Queries) GetBoostyTiers(ctx context.Context) ([]BoostyTier, error) {
 	return items, nil
 }
 
+const getGitTokenByValueSha256 = `-- name: GetGitTokenByValueSha256 :one
+select id, created_at, last_used_at, admin_id, value_sha256, description, can_pull, can_push, usage_count, disabled_at, disabled_by
+  from git_tokens
+ where value_sha256 = ?
+   and disabled_at is null
+ limit 1
+`
+
+func (q *Queries) GetGitTokenByValueSha256(ctx context.Context, valueSha256 string) (GitToken, error) {
+	row := q.db.QueryRowContext(ctx, getGitTokenByValueSha256, valueSha256)
+	var i GitToken
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+		&i.AdminID,
+		&i.ValueSha256,
+		&i.Description,
+		&i.CanPull,
+		&i.CanPush,
+		&i.UsageCount,
+		&i.DisabledAt,
+		&i.DisabledBy,
+	)
+	return i, err
+}
+
 const getHTMLInjection = `-- name: GetHTMLInjection :one
 select id, created_at, active_from, active_to, description, position, placement, content from html_injections
 where id = ?

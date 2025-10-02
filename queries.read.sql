@@ -700,3 +700,10 @@ select * from cron_job_executions
 where job_id = ?
 order by started_at desc
 limit 50;
+
+-- name: GetGitTokenByValueSha256 :one
+select *
+  from git_tokens
+ where value_sha256 = ?
+   and disabled_at is null
+ limit 1;

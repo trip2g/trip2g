@@ -59,7 +59,7 @@ namespace $.$$ {
 		submit() {
 			const res = $trip2g_graphql_request(
 				`
-					mutation AdminCreateHtmlInjectionMutation($input: CreateHTMLInjectionInput!) {
+					mutation AdminCreateHTMLInjectionMutation($input: CreateHTMLInjectionInput!) {
 						admin {
 							data: createHTMLInjection(input: $input) {
 								... on CreateHTMLInjectionPayload {
