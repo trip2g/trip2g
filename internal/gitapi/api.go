@@ -588,8 +588,10 @@ func (api *API) readContent(path string) ([]byte, error) {
 	}
 
 	// limit to 1MB
-	const maxSize = 1 << 20 // 1 MB
-	limited := io.LimitReader(stdout, maxSize+1)
+	maxSize := 1 << 20 // 1 MB
+	maxSize *= 10      // 10 MB for safety
+
+	limited := io.LimitReader(stdout, int64(maxSize+1))
 
 	content, err := io.ReadAll(limited)
 	if err != nil {
