@@ -219,6 +219,10 @@ func (a *FileStorage) PutPrivateObject(ctx context.Context, reader io.Reader, ob
 
 	options := minio.PutObjectOptions{
 		ContentType: "application/octet-stream",
+		PartSize:    16 * 1024 * 1024,
+		NumThreads:  1,
+
+		DisableMultipart: false,
 	}
 
 	_, err := a.minioClient.PutObject(context.Background(), a.config.Bucket, objectID, reader, -1, options)
