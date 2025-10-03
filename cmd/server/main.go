@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"net/url"
 	"os"
 	"os/signal"
@@ -1540,6 +1541,9 @@ func (a *app) startInternalServer() {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
+
+	// pprof endpoints are automatically registered by importing net/http/pprof
+	// Available at: /debug/pprof/, /debug/pprof/profile, /debug/pprof/trace, etc.
 
 	err := http.ListenAndServe(a.config.InternalListenAddr, nil)
 	if err != nil {
