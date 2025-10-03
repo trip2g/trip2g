@@ -370,6 +370,13 @@ func (c *Config) defineFlags() {
 		"name for the storage locker instance",
 	)
 
+	flag.DurationVar(
+		&c.StorageLocker.TTL,
+		"storage-locker-ttl",
+		storageLockerDefaults.TTL,
+		"ttl for the storage locker",
+	)
+
 	// Git API
 	gitAPIDefaults := gitapi.DefaultConfig()
 
