@@ -192,7 +192,7 @@ func (api *API) ensureBareRepo() error {
 
 	api.logger.Info("initializing bare repo", "path", api.config.RepoPath)
 
-	cmd := exec.Command("git", "init", "--bare", ".")
+	cmd := exec.Command("git", "init", "--bare", "--initial-branch", api.config.MasterBranch, ".")
 	cmd.Dir = api.config.RepoPath
 	cmd.Stderr = os.Stderr
 
@@ -424,14 +424,48 @@ func (api *API) preparePushNotesInput(changedFiles []string) (*model.PushNotesIn
 	return &pushInput, nil
 }
 
+func (api *API) isRefExists(ref string) bool {
+	checkCmd := exec.Command("git", "rev-parse", "--verify", ref)
+	checkCmd.Dir = api.config.RepoPath
+	checkCmd.Stderr = nil // suppress error output
+	return checkCmd.Run() == nil
+}
+
 func (api *API) getChangedFiles() ([]string, error) {
+	if !api.isRefExists("HEAD") {
+		// HEAD doesn't exist, this is the first commit
+		return nil, fmt.Errorf("first commit detected, HEAD does not exist")
+	}
+
+	if !api.isRefExists("HEAD^1") {
+		// HEAD^1 doesn't exist, this is the first commit
+		return nil, fmt.Errorf("first commit detected, HEAD^1 does not exist")
+	}
+
 	// TODO: track the last processed commit
 	// git diff --name-only HEAD^1 HEAD
 	cmd := exec.Command("git", "-c", "core.quotePath=false", "diff", "--name-only", "HEAD^1", "HEAD")
 	cmd.Dir = api.config.RepoPath
 	cmd.Stderr = os.Stderr
 
-	output, err := cmd.Output()
+	// Limit output to prevent memory issues (1MB should be enough for file lists)
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stdout pipe: %w", err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start command: %w", err)
+	}
+
+	limitedReader := io.LimitReader(stdoutPipe, 1<<20) // 1MB limit
+	output, err := io.ReadAll(limitedReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read output: %w", err)
+	}
+
+	err = cmd.Wait()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get changed files: %w", err)
 	}
@@ -487,10 +521,58 @@ func (api *API) applyChanges() error {
 }
 
 func (api *API) getAllFiles() ([]string, error) {
+	if !api.isRefExists("HEAD") {
+		// HEAD doesn't exist, use ls-files to get staged files
+		cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "ls-files")
+		cmd.Stderr = os.Stderr
+
+		// Limit output to prevent memory issues
+		stdoutPipe, err := cmd.StdoutPipe()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get stdout pipe: %w", err)
+		}
+
+		err = cmd.Start()
+		if err != nil {
+			return nil, fmt.Errorf("failed to start command: %w", err)
+		}
+
+		limitedReader := io.LimitReader(stdoutPipe, 1<<20) // 1MB limit
+		output, err := io.ReadAll(limitedReader)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read output: %w", err)
+		}
+
+		err = cmd.Wait()
+		if err != nil {
+			return nil, fmt.Errorf("failed to list staged files: %w", err)
+		}
+
+		files := strings.Split(strings.TrimSpace(string(output)), "\n")
+		return api.filterDotFiles(files), nil
+	}
+
 	cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "ls-tree", "-r", "HEAD", "--name-only")
 	cmd.Stderr = os.Stderr
 
-	output, err := cmd.Output()
+	// Limit output to prevent memory issues
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stdout pipe: %w", err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start command: %w", err)
+	}
+
+	limitedReader := io.LimitReader(stdoutPipe, 1<<20) // 1MB limit
+	output, err := io.ReadAll(limitedReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read output: %w", err)
+	}
+
+	err = cmd.Wait()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list files: %w", err)
 	}
@@ -573,6 +655,20 @@ func (api *API) uploadNoteAssets(note *appmodel.NoteView, changedFiles []string)
 }
 
 func (api *API) readContent(path string) ([]byte, error) {
+	// Check if HEAD exists first
+	if !api.isRefExists("HEAD") {
+		return nil, nil
+	}
+
+	// Check if file exists in HEAD before trying to read it
+	checkCmd := exec.Command("git", "--git-dir", api.config.RepoPath, "ls-tree", "HEAD", path)
+	checkCmd.Stderr = nil // suppress error output
+	err := checkCmd.Run()
+	if err != nil {
+		// File doesn't exist in HEAD, return empty content
+		return nil, nil
+	}
+
 	cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "show", fmt.Sprintf("HEAD:%s", path))
 
 	var stderr bytes.Buffer
@@ -587,9 +683,9 @@ func (api *API) readContent(path string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to start command: %w", err)
 	}
 
-	// limit to 1MB
+	// limit to 10MB per file
 	maxSize := 1 << 20 // 1 MB
-	maxSize *= 10      // 10 MB for safety
+	maxSize *= 10      // 10 MB
 
 	limited := io.LimitReader(stdout, int64(maxSize+1))
 
@@ -600,7 +696,7 @@ func (api *API) readContent(path string) ([]byte, error) {
 
 	if len(content) > maxSize {
 		_ = cmd.Process.Kill() // kill process if still running
-		return nil, fmt.Errorf("file too large (>1MB)")
+		return nil, fmt.Errorf("file too large (>10MB)")
 	}
 
 	if err := cmd.Wait(); err != nil {
@@ -647,21 +743,32 @@ func (api *API) uploadRepo() error {
 
 	api.logger.Info("uploading repo", "objectID", objectID)
 
-	var buf bytes.Buffer
-	gzipWriter := gzip.NewWriter(&buf)
+	// Use pipe to stream data directly without loading into memory
+	pipeReader, pipeWriter := io.Pipe()
 
-	cmd := exec.Command("tar", "-cz", "-C", api.config.RepoPath, ".")
-	cmd.Stdout = gzipWriter
+	// Start tar command in goroutine
+	go func() {
+		defer pipeWriter.Close()
 
-	err := cmd.Run()
+		gzipWriter := gzip.NewWriter(pipeWriter)
+		defer gzipWriter.Close()
+
+		cmd := exec.Command("tar", "-c", "-C", api.config.RepoPath, ".")
+		cmd.Stdout = gzipWriter
+		cmd.Stderr = os.Stderr
+
+		err := cmd.Run()
+		if err != nil {
+			api.logger.Error("failed to create tar", "error", err)
+			pipeWriter.CloseWithError(fmt.Errorf("failed to create tar: %w", err))
+			return
+		}
+	}()
+
+	// Upload the streamed data
+	err := api.env.PutPrivateObject(context.Background(), pipeReader, objectID)
 	if err != nil {
-		return fmt.Errorf("failed to create tar.gz: %w", err)
-	}
-
-	gzipWriter.Close()
-
-	err = api.env.PutPrivateObject(context.Background(), &buf, objectID)
-	if err != nil {
+		pipeReader.Close()
 		return fmt.Errorf("failed to put private object: %w", err)
 	}
 
