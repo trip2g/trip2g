@@ -264,7 +264,7 @@ func (cj *CronJobs) RefreshCronJob(job db.CronJob) error {
 	return nil
 }
 
-func (cj *CronJobs) ExecuteCronJobJobManually(jobID int64) (*db.CronJobExecution, error) {
+func (cj *CronJobs) ExecuteCronJobManually(jobID int64) (*db.CronJobExecution, error) {
 	if _, ok := cj.jobs[jobID]; !ok {
 		return nil, fmt.Errorf("job %d not found", jobID)
 	}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/valyala/fasthttp"
+	"trip2g/internal/notiontypes"
 )
 
 type Config struct {
@@ -25,7 +26,7 @@ func DefaultConfig() Config {
 	}
 }
 
-func New(config Config) (Client, error) {
+func New(config Config) (notiontypes.Client, error) {
 	client := clientImpl{
 		config: config,
 		http: &fasthttp.Client{
@@ -37,13 +38,13 @@ func New(config Config) (Client, error) {
 	return &client, nil
 }
 
-func (c *clientImpl) AllPages() ([]*Page, error) {
-	var allPages []*Page
+func (c *clientImpl) AllPages() ([]*notiontypes.Page, error) {
+	var allPages []*notiontypes.Page
 	var cursor *string
 
 	for {
-		searchReq := SearchRequest{
-			Filter: &SearchFilter{
+		searchReq := notiontypes.SearchRequest{
+			Filter: &notiontypes.SearchFilter{
 				Property: "object",
 				Value:    "page",
 			},
@@ -68,57 +69,80 @@ func (c *clientImpl) AllPages() ([]*Page, error) {
 	return allPages, nil
 }
 
-func (c *clientImpl) GetPageContent(pageID string) (*PageContent, error) {
-	httpReq := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(httpReq)
+func (c *clientImpl) GetPageContent(pageID string) (*notiontypes.PageContent, error) {
+	var allBlocks []*notiontypes.Block
+	var cursor *string
 
-	httpResp := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseResponse(httpResp)
+	for {
+		uri := fmt.Sprintf("https://api.notion.com/v1/blocks/%s/children", pageID)
+		if cursor != nil {
+			uri += "?start_cursor=" + *cursor
+		}
 
-	httpReq.SetRequestURI(fmt.Sprintf("https://api.notion.com/v1/blocks/%s/children", pageID))
-	httpReq.Header.SetMethod(fasthttp.MethodGet)
-	httpReq.Header.Set("Authorization", "Bearer "+c.config.Token)
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Notion-Version", "2022-06-28")
+		httpReq := fasthttp.AcquireRequest()
+		defer fasthttp.ReleaseRequest(httpReq)
 
-	err := c.http.DoTimeout(httpReq, httpResp, c.config.RequestTimeout)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
-	}
+		httpResp := fasthttp.AcquireResponse()
+		defer fasthttp.ReleaseResponse(httpResp)
 
-	if httpResp.StatusCode() != fasthttp.StatusOK {
-		return nil, fmt.Errorf("API request failed with status %d: %s", httpResp.StatusCode(), string(httpResp.Body()))
-	}
+		httpReq.SetRequestURI(uri)
+		httpReq.Header.SetMethod(fasthttp.MethodGet)
+		httpReq.Header.Set("Authorization", "Bearer "+c.config.Token)
+		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq.Header.Set("Notion-Version", "2022-06-28")
 
-	// First unmarshal into raw map to get individual block data
-	var rawResponse map[string]interface{}
-	err = json.Unmarshal(httpResp.Body(), &rawResponse)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
+		err := c.http.DoTimeout(httpReq, httpResp, c.config.RequestTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("failed to make HTTP request: %w", err)
+		}
 
-	var content PageContent
-	err = json.Unmarshal(httpResp.Body(), &content)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
+		if httpResp.StatusCode() != fasthttp.StatusOK {
+			return nil, fmt.Errorf("API request failed with status %d: %s", httpResp.StatusCode(), string(httpResp.Body()))
+		}
 
-	// Store raw JSON for each block
-	if results, ok := rawResponse["results"].([]interface{}); ok {
-		for i, result := range results {
-			if i < len(content.Results) && result != nil {
-				blockJSON, err := json.Marshal(result)
-				if err == nil {
-					content.Results[i].RawContent = blockJSON
+		// First unmarshal into raw map to get individual block data
+		var rawResponse map[string]interface{}
+		err = json.Unmarshal(httpResp.Body(), &rawResponse)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		var pageResponse notiontypes.PageContent
+		err = json.Unmarshal(httpResp.Body(), &pageResponse)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		// Store raw JSON for each block in this page
+		if results, ok := rawResponse["results"].([]interface{}); ok {
+			for i, result := range results {
+				if i < len(pageResponse.Results) && result != nil {
+					blockJSON, err := json.Marshal(result)
+					if err == nil {
+						pageResponse.Results[i].RawContent = blockJSON
+					}
 				}
 			}
 		}
+
+		allBlocks = append(allBlocks, pageResponse.Results...)
+
+		if !pageResponse.HasMore {
+			break
+		}
+
+		cursor = pageResponse.NextCursor
 	}
 
-	return &content, nil
+	return &notiontypes.PageContent{
+		Object:     "list",
+		Results:    allBlocks,
+		NextCursor: nil,
+		HasMore:    false,
+	}, nil
 }
 
-func (c *clientImpl) search(req SearchRequest) (*SearchResponse, error) {
+func (c *clientImpl) search(req notiontypes.SearchRequest) (*notiontypes.SearchResponse, error) {
 	requestBody, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -146,7 +170,7 @@ func (c *clientImpl) search(req SearchRequest) (*SearchResponse, error) {
 		return nil, fmt.Errorf("API request failed with status %d: %s", httpResp.StatusCode(), string(httpResp.Body()))
 	}
 
-	var response SearchResponse
+	var response notiontypes.SearchResponse
 	err = json.Unmarshal(httpResp.Body(), &response)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)

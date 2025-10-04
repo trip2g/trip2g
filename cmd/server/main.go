@@ -33,6 +33,7 @@ import (
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
+	"trip2g/internal/case/backjob/extractnotionpage"
 	"trip2g/internal/case/backjob/sendsignincode"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
@@ -55,6 +56,8 @@ import (
 	"trip2g/internal/model"
 	"trip2g/internal/noteloader"
 	"trip2g/internal/notfoundtracker"
+	"trip2g/internal/notion"
+	"trip2g/internal/notiontypes"
 	"trip2g/internal/nowpayments"
 	"trip2g/internal/patreon"
 	"trip2g/internal/patreonjobs"
@@ -99,10 +102,13 @@ type app struct {
 	*tgbots.TgBots
 	*cronjobs.CronJobs
 	*sendsignincode.SendSignInCodeJob
+	*extractnotionpage.ExtractNotionPageJob
 
-	sigChan chan os.Signal
-	stopped atomic.Bool
-	ctx     context.Context
+	sigChan     chan os.Signal
+	shutdownCtx context.Context
+	shutdown    context.CancelFunc
+	stopped     atomic.Bool
+	ctx         context.Context
 
 	graphTxs *graphTransactions
 
@@ -128,6 +134,8 @@ type app struct {
 
 	hotAuthTokenManager *hotauthtoken.Manager
 	tgAuthTokenManager  *tgauthtoken.Manager
+
+	notionClient notiontypes.Client
 
 	config *appconfig.Config
 
@@ -164,6 +172,16 @@ func main() {
 	conn, err := db.Setup(db.SetupConfig{
 		DatabaseFile: config.DatabaseFile,
 		Logger:       log,
+		ReadOnly:     true,
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to setup database: %w", err))
+	}
+
+	writeConn, err := db.Setup(db.SetupConfig{
+		DatabaseFile: config.DatabaseFile,
+		Logger:       log,
+		SkipDump:     true,
 	})
 	if err != nil {
 		panic(fmt.Errorf("failed to setup database: %w", err))
@@ -173,7 +191,7 @@ func main() {
 	tokenManager.SetInsecure(config.DevMode) // for k6
 
 	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "read: no tx:")))
-	writeQueries := db.NewWriteQueries(db.WithLogger(conn, logger.WithPrefix(log, "write: no tx:")))
+	writeQueries := db.NewWriteQueries(db.WithLogger(writeConn, logger.WithPrefix(log, "write: no tx:")))
 
 	nowpaymentsClient, err := nowpayments.NewClient(config.NowpaymentsAPIKey)
 	if err != nil {
@@ -238,6 +256,8 @@ func main() {
 	a.sigChan = make(chan os.Signal, 1)
 	signal.Notify(a.sigChan, syscall.SIGINT, syscall.SIGTERM)
 
+	a.shutdownCtx, a.shutdown = context.WithCancel(context.Background())
+
 	a.auditLogger = auditlogger.New(ctx, a, a.config.AuditLog)
 
 	a.patreonClientManager = patreon.NewClientManager(a)
@@ -272,7 +292,7 @@ func main() {
 
 	// Create shared queue and runner to prevent SQLITE_BUSY issues
 	a.goqiteQueue = goqite.New(goqite.NewOpts{
-		DB:   conn,
+		DB:   writeConn,
 		Name: "jobs",
 	})
 
@@ -292,6 +312,7 @@ func main() {
 	}
 
 	a.SendSignInCodeJob = sendsignincode.New(a)
+	a.ExtractNotionPageJob = extractnotionpage.New(a)
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)
 	if err != nil {
@@ -307,6 +328,11 @@ func main() {
 	a.latestNoteLoader = noteloader.New("latest", makeLatestNoteLoaderWrapper(a), a.config.MDLoaderConfig)
 
 	a.gitAPI, err = gitapi.New(ctx, a.config.GitAPI, a)
+	if err != nil {
+		panic(err)
+	}
+
+	a.notionClient, err = notion.New(a.config.Notion)
 	if err != nil {
 		panic(err)
 	}
@@ -353,6 +379,10 @@ func (a *app) setFileStorageExpiringCallback(ctx context.Context) {
 			a.log.Error("failed to reload all notes", "error", loadErr)
 		}
 	})
+}
+
+func (a *app) NotionClient() notiontypes.Client {
+	return a.notionClient
 }
 
 func (a *app) PushNotes(ctx context.Context, input graphmodel.PushNotesInput) (graphmodel.PushNotesOrErrorPayload, error) {
@@ -1480,7 +1510,7 @@ func (a *app) startServer() {
 		},
 	}
 
-	go func() {
+	runServer := func() {
 		if len(a.config.AcmeDomains) == 0 {
 			err := s.ListenAndServe(a.config.ListenAddr)
 			if err != nil {
@@ -1491,17 +1521,24 @@ func (a *app) startServer() {
 		}
 
 		a.startACMEServer(s)
-	}()
+	}
 
 	go a.startInternalServer()
 
-	a.waitForShutdown(s)
+	if a.config.DevMode {
+		runServer()
+	} else {
+		go runServer()
+		a.waitForShutdown(s)
+	}
 }
 
 func (a *app) waitForShutdown(s *fasthttp.Server) {
 	<-a.sigChan
 
 	a.stopped.Store(true)
+	a.shutdown() // notify all shutdown listeners
+
 	a.log.Info("shutting down in", "grace_period", a.config.ShutdownGracePeriod)
 
 	time.Sleep(a.config.ShutdownGracePeriod)
@@ -1531,7 +1568,9 @@ func (a *app) waitForShutdown(s *fasthttp.Server) {
 }
 
 func (a *app) startInternalServer() {
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if a.stopped.Load() {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			_, _ = w.Write([]byte("shutting down"))
@@ -1545,8 +1584,24 @@ func (a *app) startInternalServer() {
 	// pprof endpoints are automatically registered by importing net/http/pprof
 	// Available at: /debug/pprof/, /debug/pprof/profile, /debug/pprof/trace, etc.
 
-	err := http.ListenAndServe(a.config.InternalListenAddr, nil)
-	if err != nil {
+	server := &http.Server{
+		Addr:    a.config.InternalListenAddr,
+		Handler: mux,
+	}
+
+	go func() {
+		<-a.shutdownCtx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), a.config.ShutdownTimeout)
+		defer cancel()
+
+		err := server.Shutdown(shutdownCtx)
+		if err != nil {
+			a.log.Error("failed to shutdown internal server", "error", err)
+		}
+	}()
+
+	err := server.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
 		panic(err)
 	}
 }

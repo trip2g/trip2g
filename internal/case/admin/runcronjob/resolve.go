@@ -8,12 +8,14 @@ import (
 
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/logger"
 	"trip2g/internal/usertoken"
 )
 
 type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
-	ExecuteCronJobJobManually(jobID int64) (*db.CronJobExecution, error)
+	ExecuteCronJobManually(jobID int64) (*db.CronJobExecution, error)
+	Logger() logger.Logger
 }
 
 type Input = model.RunCronJobInput
@@ -26,6 +28,8 @@ func validateRequest(r *Input) *model.ErrorPayload {
 }
 
 func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	logger := logger.WithPrefix(env.Logger(), "RunCronJob:")
+
 	// Check admin authorization
 	_, err := env.CurrentAdminUserToken(ctx)
 	if err != nil {
@@ -38,8 +42,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return errPayload, nil
 	}
 
+	logger.Info("Running cron job manually", "id", input.ID)
+
 	// Manually trigger the job
-	execution, err := env.ExecuteCronJobJobManually(input.ID)
+	execution, err := env.ExecuteCronJobManually(input.ID)
 	if err != nil {
 		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to run cron job: %v", err)}, nil
 	}
