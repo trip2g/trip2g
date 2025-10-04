@@ -1,0 +1,156 @@
+package notion
+
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/valyala/fasthttp"
+)
+
+type Config struct {
+	Token          string
+	RequestTimeout time.Duration
+}
+
+type clientImpl struct {
+	config Config
+	http   *fasthttp.Client
+}
+
+func DefaultConfig() Config {
+	return Config{
+		Token:          "",
+		RequestTimeout: 10 * time.Second,
+	}
+}
+
+func New(config Config) (Client, error) {
+	client := clientImpl{
+		config: config,
+		http: &fasthttp.Client{
+			ReadTimeout:  config.RequestTimeout,
+			WriteTimeout: config.RequestTimeout,
+		},
+	}
+
+	return &client, nil
+}
+
+func (c *clientImpl) AllPages() ([]*Page, error) {
+	var allPages []*Page
+	var cursor *string
+
+	for {
+		searchReq := SearchRequest{
+			Filter: &SearchFilter{
+				Property: "object",
+				Value:    "page",
+			},
+			PageSize:    100,
+			StartCursor: cursor,
+		}
+
+		response, err := c.search(searchReq)
+		if err != nil {
+			return nil, fmt.Errorf("failed to search pages: %w", err)
+		}
+
+		allPages = append(allPages, response.Results...)
+
+		if !response.HasMore {
+			break
+		}
+
+		cursor = response.NextCursor
+	}
+
+	return allPages, nil
+}
+
+func (c *clientImpl) GetPageContent(pageID string) (*PageContent, error) {
+	httpReq := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(httpReq)
+
+	httpResp := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(httpResp)
+
+	httpReq.SetRequestURI(fmt.Sprintf("https://api.notion.com/v1/blocks/%s/children", pageID))
+	httpReq.Header.SetMethod(fasthttp.MethodGet)
+	httpReq.Header.Set("Authorization", "Bearer "+c.config.Token)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Notion-Version", "2022-06-28")
+
+	err := c.http.DoTimeout(httpReq, httpResp, c.config.RequestTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
+	}
+
+	if httpResp.StatusCode() != fasthttp.StatusOK {
+		return nil, fmt.Errorf("API request failed with status %d: %s", httpResp.StatusCode(), string(httpResp.Body()))
+	}
+
+	// First unmarshal into raw map to get individual block data
+	var rawResponse map[string]interface{}
+	err = json.Unmarshal(httpResp.Body(), &rawResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	var content PageContent
+	err = json.Unmarshal(httpResp.Body(), &content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	// Store raw JSON for each block
+	if results, ok := rawResponse["results"].([]interface{}); ok {
+		for i, result := range results {
+			if i < len(content.Results) && result != nil {
+				blockJSON, err := json.Marshal(result)
+				if err == nil {
+					content.Results[i].RawContent = blockJSON
+				}
+			}
+		}
+	}
+
+	return &content, nil
+}
+
+func (c *clientImpl) search(req SearchRequest) (*SearchResponse, error) {
+	requestBody, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	httpReq := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(httpReq)
+
+	httpResp := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(httpResp)
+
+	httpReq.SetRequestURI("https://api.notion.com/v1/search")
+	httpReq.Header.SetMethod(fasthttp.MethodPost)
+	httpReq.Header.Set("Authorization", "Bearer "+c.config.Token)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Notion-Version", "2022-06-28")
+	httpReq.SetBody(requestBody)
+
+	err = c.http.DoTimeout(httpReq, httpResp, c.config.RequestTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
+	}
+
+	if httpResp.StatusCode() != fasthttp.StatusOK {
+		return nil, fmt.Errorf("API request failed with status %d: %s", httpResp.StatusCode(), string(httpResp.Body()))
+	}
+
+	var response SearchResponse
+	err = json.Unmarshal(httpResp.Body(), &response)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &response, nil
+}

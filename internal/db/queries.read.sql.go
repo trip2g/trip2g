@@ -1218,6 +1218,27 @@ func (q *Queries) GetHTMLInjection(ctx context.Context, id int64) (HtmlInjection
 	return i, err
 }
 
+const getNotionIntegrationByID = `-- name: GetNotionIntegrationByID :one
+select id, created_at, created_by, enabled, secret_token, verification_token, base_path
+  from notion_integrations
+ where id = ?
+`
+
+func (q *Queries) GetNotionIntegrationByID(ctx context.Context, id int64) (NotionIntegration, error) {
+	row := q.db.QueryRowContext(ctx, getNotionIntegrationByID, id)
+	var i NotionIntegration
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Enabled,
+		&i.SecretToken,
+		&i.VerificationToken,
+		&i.BasePath,
+	)
+	return i, err
+}
+
 const getPatreonCampaignsByCredentialsID = `-- name: GetPatreonCampaignsByCredentialsID :many
 select id, credentials_id, created_at, missed_at, campaign_id, attributes from patreon_campaigns
 where credentials_id = ?

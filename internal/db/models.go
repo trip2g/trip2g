@@ -237,6 +237,16 @@ type NoteVersionAsset struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type NotionIntegration struct {
+	ID                int64          `json:"id"`
+	CreatedAt         time.Time      `json:"created_at"`
+	CreatedBy         int64          `json:"created_by"`
+	Enabled           bool           `json:"enabled"`
+	SecretToken       string         `json:"secret_token"`
+	VerificationToken sql.NullString `json:"verification_token"`
+	BasePath          string         `json:"base_path"`
+}
+
 type Offer struct {
 	ID        int64           `json:"id"`
 	PublicID  string          `json:"public_id"`

@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -26,7 +27,7 @@ import (
 	appmodel "trip2g/internal/model"
 )
 
-var ErrNoAuth = fmt.Errorf("no auth provided")
+var ErrNoAuth = errors.New("no auth provided")
 
 type handler func(ctx *fasthttp.RequestCtx) error
 
@@ -220,7 +221,7 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 
 		ctx.Response.Header.Set("WWW-Authenticate", `Basic realm="Git Repository"`)
 		ctx.SetStatusCode(fasthttp.StatusUnauthorized)
-		ctx.WriteString(err.Error())
+		_, _ = ctx.WriteString(err.Error())
 
 		return true
 	}
@@ -325,8 +326,8 @@ func (api *API) handleInfoRefs(ctx *fasthttp.RequestCtx) error {
 	contentType := fmt.Sprintf("application/x-%s-advertisement", service)
 
 	ctx.Response.Header.Set("Content-Type", contentType)
-	ctx.Write(pktLine(fmt.Sprintf("# service=%s\n", service)))
-	ctx.Write([]byte("0000"))
+	_, _ = ctx.Write(pktLine(fmt.Sprintf("# service=%s\n", service)))
+	_, _ = ctx.Write([]byte("0000"))
 
 	err := cmd.Run()
 	if err != nil {
@@ -434,12 +435,12 @@ func (api *API) isRefExists(ref string) bool {
 func (api *API) getChangedFiles() ([]string, error) {
 	if !api.isRefExists("HEAD") {
 		// HEAD doesn't exist, this is the first commit
-		return nil, fmt.Errorf("first commit detected, HEAD does not exist")
+		return nil, errors.New("first commit detected, HEAD does not exist")
 	}
 
 	if !api.isRefExists("HEAD^1") {
 		// HEAD^1 doesn't exist, this is the first commit
-		return nil, fmt.Errorf("first commit detected, HEAD^1 does not exist")
+		return nil, errors.New("first commit detected, HEAD^1 does not exist")
 	}
 
 	// TODO: track the last processed commit
@@ -582,7 +583,7 @@ func (api *API) getAllFiles() ([]string, error) {
 	return api.filterDotFiles(files), nil
 }
 
-func (api *API) uploadNoteAssets(note *appmodel.NoteView, changedFiles []string) error {
+func (api *API) uploadNoteAssets(note *appmodel.NoteView, _ []string) error {
 	for relativePath := range note.Assets {
 		var existHash *string
 
@@ -606,7 +607,7 @@ func (api *API) uploadNoteAssets(note *appmodel.NoteView, changedFiles []string)
 		}
 
 		sha := sha256.New()
-		sha.Write([]byte(content))
+		sha.Write(content)
 
 		hash := hex.EncodeToString(sha.Sum(nil))
 
@@ -696,7 +697,7 @@ func (api *API) readContent(path string) ([]byte, error) {
 
 	if len(content) > maxSize {
 		_ = cmd.Process.Kill() // kill process if still running
-		return nil, fmt.Errorf("file too large (>10MB)")
+		return nil, errors.New("file too large (>10MB)")
 	}
 
 	if err := cmd.Wait(); err != nil {
@@ -768,7 +769,7 @@ func (api *API) uploadRepo() error {
 	// Upload the streamed data
 	err := api.env.PutPrivateObject(context.Background(), pipeReader, objectID)
 	if err != nil {
-		pipeReader.Close()
+		_ = pipeReader.Close()
 		return fmt.Errorf("failed to put private object: %w", err)
 	}
 

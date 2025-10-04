@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"trip2g/internal/db"
@@ -24,8 +23,8 @@ type Input = model.CreateGitTokenInput
 type Payload = model.CreateGitTokenOrErrorPayload
 
 func validateRequest(r *Input) *model.ErrorPayload {
-	return model.NewOzzoError(ozzo.ValidateStruct(r,
-		ozzo.Field(&r.Description, validation.Required),
+	return model.NewOzzoError(validation.ValidateStruct(r,
+		validation.Field(&r.Description, validation.Required),
 	))
 }
 

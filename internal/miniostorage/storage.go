@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -279,7 +280,7 @@ func (a *FileStorage) PutLock(ctx context.Context, objectID string, ttl time.Dur
 
 	if !expired && !ownedByUs {
 		// Lock exists, not expired, and not owned by us - can't acquire
-		return fmt.Errorf("lock already exists and is owned by another instance")
+		return errors.New("lock already exists and is owned by another instance")
 	}
 
 	if expired && !ownedByUs {

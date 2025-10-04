@@ -457,6 +457,15 @@ CREATE TABLE IF NOT EXISTS "note_assets" (
   size integer not null default 0,
   unique (absolute_path, sha256_hash)
 );
+CREATE TABLE notion_integrations (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  enabled boolean not null default true,
+  secret_token text not null,
+  verification_token text,
+  base_path text not null default '/'
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -529,4 +538,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250918140112'),
   ('20250925035301'),
   ('20250927035933'),
-  ('20251001113550');
+  ('20251001113550'),
+  ('20251003125722');

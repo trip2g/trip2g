@@ -707,3 +707,8 @@ select *
  where value_sha256 = ?
    and disabled_at is null
  limit 1;
+
+-- name: GetNotionIntegrationByID :one
+select *
+  from notion_integrations
+ where id = ?;
