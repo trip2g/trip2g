@@ -33,7 +33,7 @@ import (
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
-	"trip2g/internal/case/backjob/extractnotionpage"
+	"trip2g/internal/case/backjob/extractnotionpages"
 	"trip2g/internal/case/backjob/sendsignincode"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
@@ -102,7 +102,7 @@ type app struct {
 	*tgbots.TgBots
 	*cronjobs.CronJobs
 	*sendsignincode.SendSignInCodeJob
-	*extractnotionpage.ExtractNotionPageJob
+	*extractnotionpages.ExtractNotionPagesJob
 
 	sigChan     chan os.Signal
 	shutdownCtx context.Context
@@ -135,7 +135,8 @@ type app struct {
 	hotAuthTokenManager *hotauthtoken.Manager
 	tgAuthTokenManager  *tgauthtoken.Manager
 
-	notionClient notiontypes.Client
+	notionClient        notiontypes.Client
+	notionClientManager *notion.ClientManager
 
 	config *appconfig.Config
 
@@ -312,7 +313,7 @@ func main() {
 	}
 
 	a.SendSignInCodeJob = sendsignincode.New(a)
-	a.ExtractNotionPageJob = extractnotionpage.New(a)
+	a.ExtractNotionPagesJob = extractnotionpages.New(a)
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)
 	if err != nil {
@@ -332,10 +333,7 @@ func main() {
 		panic(err)
 	}
 
-	a.notionClient, err = notion.New(a.config.Notion)
-	if err != nil {
-		panic(err)
-	}
+	a.notionClientManager = notion.NewClientManager(a, a.config.Notion)
 
 	err = a.createOwnerIfNotExists(ctx)
 	if err != nil {
@@ -381,8 +379,14 @@ func (a *app) setFileStorageExpiringCallback(ctx context.Context) {
 	})
 }
 
-func (a *app) NotionClient() notiontypes.Client {
-	return a.notionClient
+func (a *app) NotionClientByIntegrationID(integrationID int64) notiontypes.Client {
+	client, err := a.notionClientManager.Get(a.ctx, a, integrationID)
+	if err != nil {
+		a.log.Error("failed to get notion client by integration ID", "integrationID", integrationID, "error", err)
+		return nil
+	}
+
+	return client
 }
 
 func (a *app) PushNotes(ctx context.Context, input graphmodel.PushNotesInput) (graphmodel.PushNotesOrErrorPayload, error) {

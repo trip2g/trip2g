@@ -39,7 +39,7 @@ type Env interface {
 	PrivateObjectExists(ctx context.Context, objectID string) (bool, error)
 
 	// auth
-	GetGitTokenByValueSha256(ctx context.Context, sha256Hash string) (db.GitToken, error)
+	GitTokenByValueSha256(ctx context.Context, sha256Hash string) (db.GitToken, error)
 
 	// process notes
 	AllVisibleNotePaths(ctx context.Context) ([]db.NotePath, error)

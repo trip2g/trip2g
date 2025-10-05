@@ -2,7 +2,10 @@ package extractallnotionpages
 
 import (
 	"context"
+	"trip2g/internal/case/backjob/extractnotionpages"
 )
+
+type Env = extractnotionpages.Env
 
 type Job struct {
 }
@@ -20,5 +23,8 @@ func (j *Job) ExecuteAfterStart() bool {
 }
 
 func (j *Job) Execute(ctx context.Context, env any) (any, error) {
-	return Resolve(ctx, env.(Env), Params{}) //nolint:errcheck // will checked in cmd/server/cronjobs.go
+	params := extractnotionpages.Params{PageID: nil}
+	err := extractnotionpages.Resolve(ctx, env.(extractnotionpages.Env), params)
+
+	return nil, err
 }

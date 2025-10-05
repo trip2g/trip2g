@@ -620,6 +620,41 @@ func (q *Queries) AllNoteVersionsByPathID(ctx context.Context, pathID int64) ([]
 	return items, nil
 }
 
+const allNotionIntegrations = `-- name: AllNotionIntegrations :many
+select id, created_at, created_by, enabled, secret_token, verification_token, base_path from notion_integrations order by id
+`
+
+func (q *Queries) AllNotionIntegrations(ctx context.Context) ([]NotionIntegration, error) {
+	rows, err := q.db.QueryContext(ctx, allNotionIntegrations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NotionIntegration
+	for rows.Next() {
+		var i NotionIntegration
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.Enabled,
+			&i.SecretToken,
+			&i.VerificationToken,
+			&i.BasePath,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allPatreonCredentials = `-- name: AllPatreonCredentials :many
 select id, created_at, created_by, deleted_at, deleted_by, creator_access_token, synced_at, webhook_secret from patreon_credentials
 order by created_at desc
@@ -1170,33 +1205,6 @@ func (q *Queries) GetBoostyTiers(ctx context.Context) ([]BoostyTier, error) {
 	return items, nil
 }
 
-const getGitTokenByValueSha256 = `-- name: GetGitTokenByValueSha256 :one
-select id, created_at, last_used_at, admin_id, value_sha256, description, can_pull, can_push, usage_count, disabled_at, disabled_by
-  from git_tokens
- where value_sha256 = ?
-   and disabled_at is null
- limit 1
-`
-
-func (q *Queries) GetGitTokenByValueSha256(ctx context.Context, valueSha256 string) (GitToken, error) {
-	row := q.db.QueryRowContext(ctx, getGitTokenByValueSha256, valueSha256)
-	var i GitToken
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.LastUsedAt,
-		&i.AdminID,
-		&i.ValueSha256,
-		&i.Description,
-		&i.CanPull,
-		&i.CanPush,
-		&i.UsageCount,
-		&i.DisabledAt,
-		&i.DisabledBy,
-	)
-	return i, err
-}
-
 const getHTMLInjection = `-- name: GetHTMLInjection :one
 select id, created_at, active_from, active_to, description, position, placement, content from html_injections
 where id = ?
@@ -1214,27 +1222,6 @@ func (q *Queries) GetHTMLInjection(ctx context.Context, id int64) (HtmlInjection
 		&i.Position,
 		&i.Placement,
 		&i.Content,
-	)
-	return i, err
-}
-
-const getNotionIntegrationByID = `-- name: GetNotionIntegrationByID :one
-select id, created_at, created_by, enabled, secret_token, verification_token, base_path
-  from notion_integrations
- where id = ?
-`
-
-func (q *Queries) GetNotionIntegrationByID(ctx context.Context, id int64) (NotionIntegration, error) {
-	row := q.db.QueryRowContext(ctx, getNotionIntegrationByID, id)
-	var i NotionIntegration
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.CreatedBy,
-		&i.Enabled,
-		&i.SecretToken,
-		&i.VerificationToken,
-		&i.BasePath,
 	)
 	return i, err
 }
@@ -1508,6 +1495,33 @@ select id, created_at, last_used_at, admin_id, value_sha256, description, can_pu
 
 func (q *Queries) GitTokenByValueSHA256(ctx context.Context, valueSha256 string) (GitToken, error) {
 	row := q.db.QueryRowContext(ctx, gitTokenByValueSHA256, valueSha256)
+	var i GitToken
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.LastUsedAt,
+		&i.AdminID,
+		&i.ValueSha256,
+		&i.Description,
+		&i.CanPull,
+		&i.CanPush,
+		&i.UsageCount,
+		&i.DisabledAt,
+		&i.DisabledBy,
+	)
+	return i, err
+}
+
+const gitTokenByValueSha256 = `-- name: GitTokenByValueSha256 :one
+select id, created_at, last_used_at, admin_id, value_sha256, description, can_pull, can_push, usage_count, disabled_at, disabled_by
+  from git_tokens
+ where value_sha256 = ?
+   and disabled_at is null
+ limit 1
+`
+
+func (q *Queries) GitTokenByValueSha256(ctx context.Context, valueSha256 string) (GitToken, error) {
+	row := q.db.QueryRowContext(ctx, gitTokenByValueSha256, valueSha256)
 	var i GitToken
 	err := row.Scan(
 		&i.ID,
@@ -3081,6 +3095,27 @@ func (q *Queries) NoteVersionByID(ctx context.Context, id int64) (NoteVersionByI
 		&i.PathID,
 		&i.VersionID,
 		&i.Content,
+	)
+	return i, err
+}
+
+const notionIntegration = `-- name: NotionIntegration :one
+select id, created_at, created_by, enabled, secret_token, verification_token, base_path
+  from notion_integrations
+ where id = ?
+`
+
+func (q *Queries) NotionIntegration(ctx context.Context, id int64) (NotionIntegration, error) {
+	row := q.db.QueryRowContext(ctx, notionIntegration, id)
+	var i NotionIntegration
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Enabled,
+		&i.SecretToken,
+		&i.VerificationToken,
+		&i.BasePath,
 	)
 	return i, err
 }

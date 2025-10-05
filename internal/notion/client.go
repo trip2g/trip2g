@@ -69,6 +69,41 @@ func (c *clientImpl) AllPages() ([]*notiontypes.Page, error) {
 	return allPages, nil
 }
 
+func (c *clientImpl) GetPage(pageID string) (*notiontypes.Page, error) {
+	httpReq := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(httpReq)
+
+	httpResp := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(httpResp)
+
+	httpReq.SetRequestURI(fmt.Sprintf("https://api.notion.com/v1/pages/%s", pageID))
+	httpReq.Header.SetMethod(fasthttp.MethodGet)
+	httpReq.Header.Set("Authorization", "Bearer "+c.config.Token)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Notion-Version", "2022-06-28")
+
+	err := c.http.DoTimeout(httpReq, httpResp, c.config.RequestTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
+	}
+
+	if httpResp.StatusCode() != fasthttp.StatusOK {
+		return nil, fmt.Errorf("API request failed with status %d: %s", httpResp.StatusCode(), string(httpResp.Body()))
+	}
+
+	var page notiontypes.Page
+	err = json.Unmarshal(httpResp.Body(), &page)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	// Store raw JSON
+	page.Raw = make([]byte, len(httpResp.Body()))
+	copy(page.Raw, httpResp.Body())
+
+	return &page, nil
+}
+
 func (c *clientImpl) GetPageContent(pageID string) (*notiontypes.PageContent, error) {
 	var allBlocks []*notiontypes.Block
 	var cursor *string
@@ -170,10 +205,29 @@ func (c *clientImpl) search(req notiontypes.SearchRequest) (*notiontypes.SearchR
 		return nil, fmt.Errorf("API request failed with status %d: %s", httpResp.StatusCode(), string(httpResp.Body()))
 	}
 
+	// First unmarshal into raw map to preserve individual page data
+	var rawResponse map[string]interface{}
+	err = json.Unmarshal(httpResp.Body(), &rawResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
 	var response notiontypes.SearchResponse
 	err = json.Unmarshal(httpResp.Body(), &response)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	// Store raw JSON for each page
+	if results, ok := rawResponse["results"].([]interface{}); ok {
+		for i, result := range results {
+			if i < len(response.Results) && result != nil {
+				pageJSON, err := json.Marshal(result)
+				if err == nil {
+					response.Results[i].Raw = pageJSON
+				}
+			}
+		}
 	}
 
 	return &response, nil

@@ -390,7 +390,6 @@ func (c *Config) defineFlags() {
 	// Notion
 	notionDefaults := notion.DefaultConfig()
 
-	flag.StringVar(&c.Notion.Token, "notion-token", notionDefaults.Token, "Notion integration token")
 	flag.DurationVar(&c.Notion.RequestTimeout, "notion-request-timeout", notionDefaults.RequestTimeout, "Notion API request timeout")
 }
 

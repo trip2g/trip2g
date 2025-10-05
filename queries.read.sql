@@ -701,14 +701,17 @@ where job_id = ?
 order by started_at desc
 limit 50;
 
--- name: GetGitTokenByValueSha256 :one
+-- name: GitTokenByValueSha256 :one
 select *
   from git_tokens
  where value_sha256 = ?
    and disabled_at is null
  limit 1;
 
--- name: GetNotionIntegrationByID :one
+-- name: NotionIntegration :one
 select *
   from notion_integrations
  where id = ?;
+
+-- name: AllNotionIntegrations :many
+select * from notion_integrations order by id;

@@ -18,6 +18,7 @@ type Env interface {
 	InsertNotePath(ctx context.Context, arg db.InsertNotePathParams) (db.InsertNotePathRow, error)
 	IncrementNoteVersionCount(ctx context.Context, arg db.IncrementNoteVersionCountParams) (int64, error)
 	InsertNoteVersion(ctx context.Context, arg db.InsertNoteVersionParams) error
+	UnhideNotePath(ctx context.Context, value string) error
 }
 
 func Resolve(ctx context.Context, env Env, arg model.RawNote) error {
@@ -83,6 +84,12 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) error {
 	err = env.InsertNoteVersion(ctx, noteVersion)
 	if err != nil {
 		return fmt.Errorf("failed to InsertNoteVersion: %w", err)
+	}
+
+	// Reset hidden_by and hidden_at when note is pushed
+	err = env.UnhideNotePath(ctx, arg.Path)
+	if err != nil {
+		return fmt.Errorf("failed to unhide note path: %w", err)
 	}
 
 	return nil

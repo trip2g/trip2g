@@ -1,0 +1,85 @@
+package extractnotionpages
+
+import (
+	"context"
+	"fmt"
+
+	"trip2g/internal/db"
+	"trip2g/internal/logger"
+	"trip2g/internal/model"
+	"trip2g/internal/notiontypes"
+)
+
+type Params struct {
+	IntegrationID *int64
+
+	PageID *string
+}
+
+type Result struct {
+	ExtractedCount int
+}
+
+type Env interface {
+	Logger() logger.Logger
+	NotionClientByIntegrationID(integrationID int64) notiontypes.Client
+	AllNotionIntegrations(ctx context.Context) ([]db.NotionIntegration, error)
+	InsertNote(ctx context.Context, update model.RawNote) error
+}
+
+func Resolve(ctx context.Context, env Env, task Params) error {
+	if task.PageID != nil && task.IntegrationID == nil {
+		return fmt.Errorf("if PageID(%d) is specified, IntegrationID must also be specified", *task.PageID)
+	}
+
+	integrations, err := env.AllNotionIntegrations(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get all notion integrations: %w", err)
+	}
+
+	for _, integration := range integrations {
+		if task.IntegrationID != nil && *task.IntegrationID != integration.ID {
+			continue
+		}
+
+		client := env.NotionClientByIntegrationID(integration.ID)
+		pageIDS := []string{}
+
+		if task.PageID != nil {
+			pageIDS = append(pageIDS, *task.PageID)
+		} else {
+			pages, err := client.AllPages()
+			if err != nil {
+				return fmt.Errorf("failed to get all pages for integration %d: %w", integration.ID, err)
+			}
+
+			for _, page := range pages {
+				pageIDS = append(pageIDS, page.ID)
+			}
+		}
+
+		for _, pageID := range pageIDS {
+			page, err := client.GetPage(pageID)
+			if err != nil {
+				return fmt.Errorf("failed to get page %s: %w", pageID, err)
+			}
+
+			pageContent, err := client.GetPageContent(pageID)
+			if err != nil {
+				return fmt.Errorf("failed to get page content for page %s: %w", pageID, err)
+			}
+
+			rawNote, err := notiontypes.ExtractRawNote(page, pageContent, integration.BasePath)
+			if err != nil {
+				return fmt.Errorf("failed to extract raw note for page %s: %w", pageID, err)
+			}
+
+			insertErr := env.InsertNote(ctx, *rawNote)
+			if insertErr != nil {
+				return fmt.Errorf("failed to insert note for page %s: %w", pageID, insertErr)
+			}
+		}
+	}
+
+	return nil
+}

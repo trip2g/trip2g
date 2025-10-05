@@ -4,6 +4,7 @@ import "time"
 
 type Client interface {
 	AllPages() ([]*Page, error)
+	GetPage(pageID string) (*Page, error)
 	GetPageContent(pageID string) (*PageContent, error)
 }
 
@@ -20,6 +21,7 @@ type Page struct {
 	Archived       bool                   `json:"archived"`
 	Properties     map[string]interface{} `json:"properties"`
 	URL            string                 `json:"url"`
+	Raw            []byte                 `json:"-"`
 }
 
 type User struct {

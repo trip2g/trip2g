@@ -11,7 +11,7 @@ import (
 )
 
 type Env interface {
-	GetNotionIntegrationByID(ctx context.Context, id int64) (db.NotionIntegration, error)
+	NotionIntegration(ctx context.Context, id int64) (db.NotionIntegration, error)
 	UpdateNotionIntegrationVerificationToken(ctx context.Context, params db.UpdateNotionIntegrationVerificationTokenParams) error
 }
 
@@ -28,7 +28,7 @@ func Resolve(ctx context.Context, env Env, req Request) error {
 		return fmt.Errorf("invalid ID: %w", err)
 	}
 
-	integration, err := env.GetNotionIntegrationByID(ctx, id)
+	integration, err := env.NotionIntegration(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to get notion integration: %w", err)
 	}
