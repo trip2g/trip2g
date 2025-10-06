@@ -29,7 +29,7 @@ type Env interface {
 
 func Resolve(ctx context.Context, env Env, task Params) error {
 	if task.PageID != nil && task.IntegrationID == nil {
-		return fmt.Errorf("if PageID(%d) is specified, IntegrationID must also be specified", *task.PageID)
+		return fmt.Errorf("if PageID(%s) is specified, IntegrationID must also be specified", *task.PageID)
 	}
 
 	integrations, err := env.AllNotionIntegrations(ctx)
@@ -76,7 +76,8 @@ func Resolve(ctx context.Context, env Env, task Params) error {
 
 			insertErr := env.InsertNote(ctx, *rawNote)
 			if insertErr != nil {
-				return fmt.Errorf("failed to insert note for page %s: %w", pageID, insertErr)
+				fmt.Println("WARN: failed to insert note:", insertErr)
+				// return fmt.Errorf("failed to insert note for page %s: %w", pageID, insertErr)
 			}
 		}
 	}
