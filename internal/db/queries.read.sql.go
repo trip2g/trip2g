@@ -407,24 +407,31 @@ func (q *Queries) AllLatestNotes(ctx context.Context) ([]AllLatestNotesRow, erro
 }
 
 const allLiveNoteAssets = `-- name: AllLiveNoteAssets :many
-with ranked_assets as (
+with live_versions as (
+  select v.id as version_id, p.id as path_id
+  from note_paths p
+  join note_versions v on p.id = v.path_id
+  join release_note_versions rnv on v.id = rnv.note_version_id
+  join releases r on rnv.release_id = r.id
+  where r.is_live = true
+),
+ranked_assets as (
   select
-    v.id as version_id,
+    lv.version_id,
     na.id as asset_id,
     a.path,
+    lv.path_id,
     row_number() over (
-      partition by v.id, a.path
-      order by a.created_at desc
+      partition by lv.path_id, a.path
+      order by v.version desc, a.created_at desc
     ) as rn
-  from note_paths p
+  from live_versions lv
+  join note_paths p on lv.path_id = p.id
   join note_versions v on p.id = v.path_id
   join note_version_assets a on v.id = a.version_id
   join note_assets na on a.asset_id = na.id
-  join release_note_versions rnv on v.id = rnv.note_version_id
-  join releases r on rnv.release_id = r.id
- where r.is_live = true
 )
-select version_id, path, note_assets.id, note_assets.absolute_path, note_assets.file_name, note_assets.sha256_hash, note_assets.created_at, note_assets.size
+select version_id, path, path_id, note_assets.id, note_assets.absolute_path, note_assets.file_name, note_assets.sha256_hash, note_assets.created_at, note_assets.size
 from ranked_assets
 join note_assets on ranked_assets.asset_id = note_assets.id
 where rn = 1
@@ -433,6 +440,7 @@ where rn = 1
 type AllLiveNoteAssetsRow struct {
 	VersionID int64     `json:"version_id"`
 	Path      string    `json:"path"`
+	PathID    int64     `json:"path_id"`
 	NoteAsset NoteAsset `json:"note_asset"`
 }
 
@@ -448,6 +456,7 @@ func (q *Queries) AllLiveNoteAssets(ctx context.Context) ([]AllLiveNoteAssetsRow
 		if err := rows.Scan(
 			&i.VersionID,
 			&i.Path,
+			&i.PathID,
 			&i.NoteAsset.ID,
 			&i.NoteAsset.AbsolutePath,
 			&i.NoteAsset.FileName,

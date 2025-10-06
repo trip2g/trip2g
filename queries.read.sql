@@ -281,24 +281,31 @@ select value as path, p.id as path_id, v.id as version_id, content, v.created_at
  where r.is_live = true;
 
 -- name: AllLiveNoteAssets :many
-with ranked_assets as (
+with live_versions as (
+  select v.id as version_id, p.id as path_id
+  from note_paths p
+  join note_versions v on p.id = v.path_id
+  join release_note_versions rnv on v.id = rnv.note_version_id
+  join releases r on rnv.release_id = r.id
+  where r.is_live = true
+),
+ranked_assets as (
   select
-    v.id as version_id,
+    lv.version_id,
     na.id as asset_id,
     a.path,
+    lv.path_id,
     row_number() over (
-      partition by v.id, a.path
-      order by a.created_at desc
+      partition by lv.path_id, a.path
+      order by v.version desc, a.created_at desc
     ) as rn
-  from note_paths p
+  from live_versions lv
+  join note_paths p on lv.path_id = p.id
   join note_versions v on p.id = v.path_id
   join note_version_assets a on v.id = a.version_id
   join note_assets na on a.asset_id = na.id
-  join release_note_versions rnv on v.id = rnv.note_version_id
-  join releases r on rnv.release_id = r.id
- where r.is_live = true
 )
-select version_id, path, sqlc.embed(note_assets)
+select version_id, path, path_id, sqlc.embed(note_assets)
 from ranked_assets
 join note_assets on ranked_assets.asset_id = note_assets.id
 where rn = 1;
