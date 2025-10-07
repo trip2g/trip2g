@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function remountMol() {
     if (typeof $mol_view !== "undefined") {
-      $mol_view.autobind(null);
+      $mol_view.auto();
     }
   }
 
