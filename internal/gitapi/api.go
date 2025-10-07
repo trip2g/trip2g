@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -495,6 +496,9 @@ func (api *API) applyChanges() error {
 	if err != nil {
 		return fmt.Errorf("failed to prepare push notes input: %w", err)
 	}
+
+	jsonINPUT, _ := json.MarshalIndent(pushInput, "", "  ")
+	os.WriteFile("tmp/last_push_input.json", jsonINPUT, 0644)
 
 	pushPayload, err := api.env.PushNotes(api.ctx, *pushInput)
 	if err != nil {

@@ -23,6 +23,7 @@ namespace $.$$ {
 							nodes {
 								id
 								subgraphNames
+								title
 								pathId
 								free
 								isHomePage
@@ -108,7 +109,7 @@ namespace $.$$ {
 				const element: any = {
 					data: {
 						id: node.id,
-						label: node.id,
+						label: node.title,
 						pathId: node.pathId,
 						color: getNodeColor( node ),
 						shape: getNodeShape( node )

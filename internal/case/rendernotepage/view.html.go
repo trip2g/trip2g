@@ -140,7 +140,7 @@ func StreamNoteContent(qw422016 *qt422016.Writer, resp *Response) {
 	if resp.UserToken != nil {
 //line view.html:30
 		qw422016.N().S(`
-      .paywall\:core::after { display: none }
+      .paywall\:core::before { display: none }
       `)
 //line view.html:32
 	}
@@ -155,7 +155,7 @@ func StreamNoteContent(qw422016 *qt422016.Writer, resp *Response) {
 //line view.html:34
 		qw422016.E().S(k)
 //line view.html:34
-		qw422016.N().S(`::after { display: none }
+		qw422016.N().S(`::before { display: none }
       `)
 //line view.html:35
 	}

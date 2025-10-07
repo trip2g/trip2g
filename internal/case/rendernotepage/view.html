@@ -28,10 +28,10 @@
 
     <style type="text/css">
       {% if resp.UserToken != nil %}
-      .paywall\:core::after { display: none }
+      .paywall\:core::before { display: none }
       {% endif %}
       {% for _, k := range resp.UserSubgraphs %}
-      .paywall-{%s k %}::after { display: none }
+      .paywall-{%s k %}::before { display: none }
       {% endfor %}
     </style>
 
@@ -63,7 +63,7 @@
                   <a href="{%s resp.Notes.ResolveURL(inNote, resp.DefaultVersion) %}">{%s inNote.Title %}</a>
                 </div>
               {% endif %}
-            {m endfor %}
+            {% endfor %}
           </div>
         </div>
         {% endif %}
