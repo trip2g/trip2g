@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", function () {
         document.title = newDoc.title;
       }
 
-      remountMol();
+      setTimeout(() => remountMol(), 1);
 
       window.scrollTo(0, scrollY || 0);
     } catch (err) {
