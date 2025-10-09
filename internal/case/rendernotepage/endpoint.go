@@ -3,6 +3,7 @@ package rendernotepage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/render404"
@@ -35,7 +36,9 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		Client: string(req.Req.QueryArgs().Peek("client")),
 	}
 
-	resp, err := Resolve(context.Background(), req.Env.(Env), request)
+	env := req.Env.(Env)
+
+	resp, err := Resolve(context.Background(), env, request)
 	if resp != nil && resp.Note != nil {
 		layoutParams.Title = resp.Note.Title
 		layoutParams.MetaDescription = resp.Note.Description
@@ -83,6 +86,18 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		ctx.Response.Header.Set("X-Turbo-Response", "true")
 		WriteTurboNote(ctx, resp)
 		return nil, nil
+	}
+
+	if resp.Note.Layout != "" {
+		layout, layoutExists := env.Layouts().Map["/"+resp.Note.Layout]
+		if layoutExists {
+			viewErr := layout.View.Execute(ctx, nil, resp)
+			if viewErr != nil {
+				return nil, fmt.Errorf("failed to execute view: %w", viewErr)
+			}
+
+			return nil, nil
+		}
 	}
 
 	return renderlayout.Handle(req, layoutParams, func() {

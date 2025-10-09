@@ -6,6 +6,7 @@ toolchain go1.24.3
 
 require (
 	github.com/99designs/gqlgen v0.17.74
+	github.com/CloudyKit/jet/v6 v6.3.1
 	github.com/amacneil/dbmate/v2 v2.27.0
 	github.com/blevesearch/bleve/v2 v2.5.3
 	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible
@@ -55,6 +56,7 @@ require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/ClickHouse/ch-go v0.65.1 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.34.0 // indirect
+	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
 	github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24 // indirect
 	github.com/GaijinEntertainment/go-exhaustruct/v3 v3.3.1 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect

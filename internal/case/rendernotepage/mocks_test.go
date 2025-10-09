@@ -34,6 +34,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
+//			LayoutsFunc: func() *model.Layouts {
+//				panic("mock out the Layouts method")
+//			},
 //			ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
 //				panic("mock out the ListActiveUserSubgraphs method")
 //			},
@@ -67,6 +70,9 @@ type EnvMock struct {
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
+
+	// LayoutsFunc mocks the Layouts method.
+	LayoutsFunc func() *model.Layouts
 
 	// ListActiveUserSubgraphsFunc mocks the ListActiveUserSubgraphs method.
 	ListActiveUserSubgraphsFunc func(ctx context.Context, userID int64) ([]string, error)
@@ -109,6 +115,9 @@ type EnvMock struct {
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
 		}
+		// Layouts holds details about calls to the Layouts method.
+		Layouts []struct {
+		}
 		// ListActiveUserSubgraphs holds details about calls to the ListActiveUserSubgraphs method.
 		ListActiveUserSubgraphs []struct {
 			// Ctx is the ctx argument value.
@@ -145,6 +154,7 @@ type EnvMock struct {
 	lockInsertUserNoteView        sync.RWMutex
 	lockLastUserNoteView          sync.RWMutex
 	lockLatestNoteViews           sync.RWMutex
+	lockLayouts                   sync.RWMutex
 	lockListActiveUserSubgraphs   sync.RWMutex
 	lockLiveNoteViews             sync.RWMutex
 	lockLogger                    sync.RWMutex
@@ -284,6 +294,33 @@ func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 	mock.lockLatestNoteViews.RLock()
 	calls = mock.calls.LatestNoteViews
 	mock.lockLatestNoteViews.RUnlock()
+	return calls
+}
+
+// Layouts calls LayoutsFunc.
+func (mock *EnvMock) Layouts() *model.Layouts {
+	if mock.LayoutsFunc == nil {
+		panic("EnvMock.LayoutsFunc: method is nil but Env.Layouts was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLayouts.Lock()
+	mock.calls.Layouts = append(mock.calls.Layouts, callInfo)
+	mock.lockLayouts.Unlock()
+	return mock.LayoutsFunc()
+}
+
+// LayoutsCalls gets all the calls that were made to Layouts.
+// Check the length with:
+//
+//	len(mockedEnv.LayoutsCalls())
+func (mock *EnvMock) LayoutsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLayouts.RLock()
+	calls = mock.calls.Layouts
+	mock.lockLayouts.RUnlock()
 	return calls
 }
 

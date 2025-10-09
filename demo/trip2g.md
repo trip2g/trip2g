@@ -1,0 +1,3 @@
+---
+layout: trip2g
+---

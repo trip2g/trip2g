@@ -19,6 +19,11 @@ type Env interface {
 	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
 }
 
+var allowedExtensins = map[string]string{
+	".md":   "text/plain; charset=utf-8",
+	".html": "text/html; charset=utf-8",
+}
+
 func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
 	// with empty updates, we should return assets anyway
 	// if len(input.Updates) == 0 {
@@ -26,15 +31,17 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	// }
 
 	for _, update := range input.Updates {
-		if strings.ToLower(filepath.Ext(update.Path)) != ".md" {
-			return &model.ErrorPayload{Message: "Only .md files are supported"}, nil
+		expectedContentType, allowed := allowedExtensins[strings.ToLower(filepath.Ext(update.Path))]
+		if !allowed {
+			return &model.ErrorPayload{Message: "Only .md and .html files are supported"}, nil
 		}
 
 		// Once I accidentally pushed an image as content and the system accepted it.
 		// This is just a small safeguard check.
 		contentType := http.DetectContentType([]byte(update.Content))
-		if contentType != "text/plain; charset=utf-8" {
-			return &model.ErrorPayload{Message: "Only markdown content is supported"}, nil
+		if contentType != expectedContentType {
+			msg := fmt.Sprintf("%s: Expected content type: %s, actual: %s", update.Path, expectedContentType, contentType)
+			return &model.ErrorPayload{Message: msg}, nil
 		}
 
 		note := appmodel.RawNote{

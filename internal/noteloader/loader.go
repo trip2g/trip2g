@@ -3,9 +3,12 @@ package noteloader
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 	"trip2g/internal/db"
+	"trip2g/internal/layoutloader"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
@@ -39,6 +42,8 @@ type Loader struct {
 	env Env
 	nvs *model.NoteViews
 	log logger.Logger
+
+	layouts *model.Layouts
 
 	version string
 	config  mdloader.Config
@@ -101,33 +106,61 @@ func (l *Loader) Load(ctx context.Context) error {
 		}
 	}
 
-	sources := []mdloader.SourceFile{}
+	mdSources := []mdloader.SourceFile{}
+	templateSources := []layoutloader.SourceFile{}
 
 	for _, note := range notes {
-		sources = append(sources, mdloader.SourceFile{
-			Path:      note.Path,
-			PathID:    note.PathID,
-			VersionID: note.VersionID,
-			Content:   []byte(note.Content),
-			Assets:    assetMap[note.VersionID],
-			CreatedAt: note.CreatedAt,
-		})
+		ext := filepath.Ext(note.Path)
+
+		switch ext {
+		case ".md":
+			mdSources = append(mdSources, mdloader.SourceFile{
+				Path:      note.Path,
+				PathID:    note.PathID,
+				VersionID: note.VersionID,
+				Content:   []byte(note.Content),
+				Assets:    assetMap[note.VersionID],
+				CreatedAt: note.CreatedAt,
+			})
+
+		case ".html":
+			const prefix = "_layouts"
+
+			path := strings.Trim(note.Path, "/")
+
+			if strings.HasPrefix(path, prefix) {
+				templateSources = append(templateSources, layoutloader.SourceFile{
+					// without prefix and ext, starts with /
+					Path:    path[len(prefix) : len(path)-len(ext)],
+					Content: note.Content,
+				})
+			}
+
+		default:
+			l.log.Warn("unknown note extension", "path", note.Path, "ext", ext)
+		}
 	}
 
-	options := mdloader.Options{
-		Sources: sources,
+	mdOptions := mdloader.Options{
+		Sources: mdSources,
 		Log:     logger.WithPrefix(l.log, "mdloader:"),
 		Version: l.version,
 		Config:  l.config,
 	}
 
-	nvs, err := mdloader.Load(options)
+	nvs, err := mdloader.Load(mdOptions)
 	if err != nil {
 		return fmt.Errorf("failed to load pages: %w", err)
 	}
 
+	layouts, err := layoutloader.Load(templateSources)
+	if err != nil {
+		return fmt.Errorf("failed to load layouts: %w", err)
+	}
+
 	l.Lock()
 	l.nvs = nvs
+	l.layouts = layouts
 	l.Unlock()
 
 	return nil
@@ -136,7 +169,13 @@ func (l *Loader) Load(ctx context.Context) error {
 func (l *Loader) NoteViews() *model.NoteViews {
 	l.Lock()
 	defer l.Unlock()
-	return l.nvs.Copy()
+	return l.nvs.Copy() // TODO: optimize
+}
+
+func (l *Loader) Layouts() *model.Layouts {
+	l.Lock()
+	defer l.Unlock()
+	return l.layouts
 }
 
 func (l *Loader) NoteByPath(path string) *model.NoteView {

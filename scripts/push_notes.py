@@ -332,8 +332,10 @@ def main():
             # Skip files that start with dot
             if fname.startswith('.'):
                 continue
-                
-            if not fname.lower().endswith(".md"):
+
+            ext = os.path.splitext(fname)[1].lower()
+
+            if ext not in ['.md', '.html']:
                 continue
 
             full_path = os.path.join(root, fname)

@@ -100,6 +100,8 @@ type NoteView struct {
 	Warnings []NoteWarning
 
 	FirstImage *string
+
+	Layout string
 }
 
 type NoteSubgraph struct {
@@ -286,7 +288,24 @@ func (n *NoteView) ExtractMetaData() error {
 
 	n.extractEmbededClass()
 
+	n.extractLayout()
+
 	return nil
+}
+
+func (n *NoteView) extractLayout() {
+	layout, ok := n.RawMeta["layout"]
+	if ok {
+		layoutStr, isString := layout.(string)
+		if isString {
+			n.Layout = layoutStr
+		} else {
+			n.Warnings = append(n.Warnings, NoteWarning{
+				Level:   NoteWarningWarning,
+				Message: fmt.Sprintf("invalid layout type: %T, must be string", layout),
+			})
+		}
+	}
 }
 
 var classRE = regexp.MustCompile(`[^a-zA-Z0-9_-]+`)

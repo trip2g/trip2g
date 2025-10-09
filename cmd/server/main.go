@@ -898,6 +898,10 @@ func (a *app) PrepareLiveNotes(ctx context.Context) (*model.NoteViews, error) {
 	return a.liveNoteLoader.NoteViews(), nil
 }
 
+func (a *app) Layouts() *model.Layouts {
+	return a.latestNoteLoader.Layouts()
+}
+
 func (a *app) LatestNoteViews() *model.NoteViews {
 	return a.latestNoteLoader.NoteViews()
 }

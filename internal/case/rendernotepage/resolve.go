@@ -17,6 +17,8 @@ import (
 )
 
 type Env interface {
+	Layouts() *model.Layouts
+
 	Logger() logger.Logger
 	LatestNoteViews() *model.NoteViews
 	LiveNoteViews() *model.NoteViews
