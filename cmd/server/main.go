@@ -159,15 +159,7 @@ type app struct {
 	storageLocker *storagelocker.Locker
 }
 
-func main() {
-	config, err := appconfig.Get()
-	if err != nil {
-		panic(fmt.Errorf("failed to load configuration: %w", err))
-	}
-
-	log := zerologger.New(config.LogLevel, config.DevMode)
-
-	// Setup database
+func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB) {
 	conn, err := db.Setup(db.SetupConfig{
 		DatabaseFile: config.DatabaseFile,
 		Logger:       log,
@@ -185,6 +177,19 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("failed to setup database: %w", err))
 	}
+
+	return conn, writeConn
+}
+
+func main() {
+	config, err := appconfig.Get()
+	if err != nil {
+		panic(fmt.Errorf("failed to load configuration: %w", err))
+	}
+
+	log := zerologger.New(config.LogLevel, config.DevMode)
+
+	conn, writeConn := initDBs(config, log)
 
 	tokenManager := usertoken.NewManager(config.UserToken)
 	tokenManager.SetInsecure(config.DevMode) // for k6
@@ -259,35 +264,9 @@ func main() {
 
 	a.auditLogger = auditlogger.New(ctx, a, a.config.AuditLog)
 
-	a.patreonClientManager = patreon.NewClientManager(a)
-	a.boostyClientManager = boosty.NewClientManager(a)
-
-	a.PatreonJobs, err = patreonjobs.New(ctx, a, a.config.PatreonJobsConfig)
-	if err != nil {
-		panic(fmt.Errorf("failed to create Patreon IO: %w", err))
-	}
-
-	a.BoostyJobs, err = boostyjobs.New(ctx, a, a.config.BoostyJobsConfig)
-	if err != nil {
-		panic(fmt.Errorf("failed to create Boosty IO: %w", err))
-	}
-
-	a.TgBots, err = tgbots.New(ctx, a, tgbots.DefaultConfig())
-	if err != nil {
-		panic(fmt.Errorf("failed to create Telegram bots: %w", err))
-	}
-
-	a.TgBots.SetHandler(func(ctx context.Context, io *tgbots.HandlerIO, update tgbotapi.Update) error {
-		var be struct {
-			*app
-			*tgbots.HandlerIO
-		}
-
-		be.app = a
-		be.HandlerIO = io
-
-		return handletgupdate.Resolve(ctx, be, update)
-	})
+	a.initPatreon(ctx)
+	a.initBoosty(ctx)
+	a.initTelegramBots(ctx)
 
 	// Create shared queue and runner to prevent SQLITE_BUSY issues
 	a.goqiteQueue = goqite.New(goqite.NewOpts{
@@ -348,6 +327,49 @@ func main() {
 	a.setFileStorageExpiringCallback(ctx)
 
 	a.startServer()
+}
+
+func (a *app) initTelegramBots(ctx context.Context) {
+	var err error
+
+	a.TgBots, err = tgbots.New(ctx, a, tgbots.DefaultConfig())
+	if err != nil {
+		panic(fmt.Errorf("failed to create Telegram bots: %w", err))
+	}
+
+	a.TgBots.SetHandler(func(ctx context.Context, io *tgbots.HandlerIO, update tgbotapi.Update) error {
+		var be struct {
+			*app
+			*tgbots.HandlerIO
+		}
+
+		be.app = a
+		be.HandlerIO = io
+
+		return handletgupdate.Resolve(ctx, be, update)
+	})
+}
+
+func (a *app) initPatreon(ctx context.Context) {
+	a.patreonClientManager = patreon.NewClientManager(a)
+
+	var err error
+
+	a.PatreonJobs, err = patreonjobs.New(ctx, a, a.config.PatreonJobsConfig)
+	if err != nil {
+		panic(fmt.Errorf("failed to create Patreon IO: %w", err))
+	}
+}
+
+func (a *app) initBoosty(ctx context.Context) {
+	a.boostyClientManager = boosty.NewClientManager(a)
+
+	var err error
+
+	a.BoostyJobs, err = boostyjobs.New(ctx, a, a.config.BoostyJobsConfig)
+	if err != nil {
+		panic(fmt.Errorf("failed to create Boosty IO: %w", err))
+	}
 }
 
 func (a *app) setTokenValidator() {

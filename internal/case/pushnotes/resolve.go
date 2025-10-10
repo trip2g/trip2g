@@ -20,7 +20,7 @@ type Env interface {
 	Layouts() *appmodel.Layouts
 }
 
-var allowedExtensins = map[string]string{
+var allowedExtensins = map[string]string{ //nolint:gochecknoglobals // it's a constant
 	".md":   "text/plain; charset=utf-8",
 	".html": "text/html; charset=utf-8",
 }
