@@ -1,8 +1,8 @@
 package layoutloader
 
 import (
-	"fmt"
 	"io"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"trip2g/internal/logger"
@@ -13,8 +13,11 @@ import (
 )
 
 type SourceFile struct {
-	Path    string
-	Content string
+	ID        string
+	VersionID int64
+	Path      string
+	Content   string
+	Assets    map[string]*model.NoteAssetReplace
 }
 
 type Loader struct {
@@ -42,13 +45,17 @@ func (jl *jetLoader) Open(templatePath string) (io.ReadCloser, error) {
 	return io.NopCloser(strings.NewReader(content)), nil
 }
 
-func Load(sourceFiles []SourceFile) (*model.Layouts, error) {
+type Options struct {
+	BasePath string
+}
+
+func Load(sourceFiles []SourceFile, options Options) (*model.Layouts, error) {
 	jl := &jetLoader{
 		templates: make(map[string]string),
 	}
 
 	for _, source := range sourceFiles {
-		jl.templates[source.Path] = source.Content
+		jl.templates[source.ID] = source.Content
 	}
 
 	views := jet.NewSet(jl, jet.DevelopmentMode(true))
@@ -63,18 +70,30 @@ func Load(sourceFiles []SourceFile) (*model.Layouts, error) {
 	}
 
 	for _, source := range sourceFiles {
-		view, err := views.GetTemplate(source.Path)
+		view, err := views.GetTemplate(source.ID)
 		if err != nil {
-			fmt.Println("Error loading template:", err)
-			delete(jl.templates, source.Path)
+			// Silently skip templates that fail to load
+			delete(jl.templates, source.ID)
 		}
 
 		finder := assetFinder{}
 		utils.Walk(view, &finder)
 
-		layouts.Map[source.Path] = model.Layout{
-			View:   view,
-			Assets: finder.List,
+		assets := []model.LayoutAsset{}
+
+		for _, assetPath := range finder.List {
+			assets = append(assets, model.LayoutAsset{
+				Path: filepath.Join(options.BasePath, assetPath),
+			})
+		}
+
+		layouts.Map[source.ID] = model.Layout{
+			VersionID: source.VersionID,
+			Path:      source.Path,
+			View:      view,
+			Assets:    assets,
+
+			AssetReplaces: source.Assets,
 		}
 	}
 

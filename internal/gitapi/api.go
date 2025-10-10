@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -24,8 +23,6 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/valyala/fasthttp"
-
-	appmodel "trip2g/internal/model"
 )
 
 var ErrNoAuth = errors.New("no auth provided")
@@ -497,9 +494,6 @@ func (api *API) applyChanges() error {
 		return fmt.Errorf("failed to prepare push notes input: %w", err)
 	}
 
-	jsonINPUT, _ := json.MarshalIndent(pushInput, "", "  ")
-	os.WriteFile("tmp/last_push_input.json", jsonINPUT, 0644)
-
 	pushPayload, err := api.env.PushNotes(api.ctx, *pushInput)
 	if err != nil {
 		return fmt.Errorf("failed to push notes: %w", err)
@@ -587,18 +581,11 @@ func (api *API) getAllFiles() ([]string, error) {
 	return api.filterDotFiles(files), nil
 }
 
-func (api *API) uploadNoteAssets(note *appmodel.NoteView, _ []string) error {
-	for relativePath := range note.Assets {
-		var existHash *string
+func (api *API) uploadNoteAssets(note model.PushedNote, _ []string) error {
+	for _, asset := range note.Assets {
+		assetPath := api.resolveAssetPath(note.Path, asset.Path)
 
-		replace, ok := note.AssetReplaces[relativePath]
-		if ok && replace != nil {
-			existHash = &replace.Hash
-		}
-
-		assetPath := api.resolveAssetPath(note.Path, relativePath)
-
-		api.logger.Info("resolved asset path", "note", note.Path, "relative", relativePath, "asset", assetPath)
+		api.logger.Info("resolved asset path", "note", note.Path, "relative", asset.Path, "asset", assetPath)
 
 		content, err := api.readContent(assetPath)
 		if err != nil {
@@ -615,18 +602,18 @@ func (api *API) uploadNoteAssets(note *appmodel.NoteView, _ []string) error {
 
 		hash := hex.EncodeToString(sha.Sum(nil))
 
-		api.logger.Info("hashed asset", "path", assetPath, "hash", hash, "replaces", note.AssetReplaces)
-		if existHash != nil {
-			api.logger.Info("existing asset hash", "path", assetPath, "hash", *existHash)
+		api.logger.Info("hashed asset", "path", assetPath, "hash", hash, "assets", note.Assets)
+		if asset.Sha256Hash != nil {
+			api.logger.Info("existing asset hash", "path", assetPath, "hash", *asset.Sha256Hash)
 		}
 
-		if existHash != nil && *existHash == hash {
+		if asset.Sha256Hash != nil && *asset.Sha256Hash == hash {
 			continue // already uploaded
 		}
 
 		input := model.UploadNoteAssetInput{
-			NoteID:       note.VersionID,
-			Path:         relativePath,
+			NoteID:       note.ID,
+			Path:         note.Path,
 			Sha256Hash:   hash,
 			AbsolutePath: "/" + assetPath,
 			File: graphql.Upload{
@@ -671,7 +658,7 @@ func (api *API) readContent(path string) ([]byte, error) {
 	err := checkCmd.Run()
 	if err != nil {
 		// File doesn't exist in HEAD, return empty content
-		return nil, nil
+		return nil, fmt.Errorf("file does not exist in HEAD: %w", err)
 	}
 
 	cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "show", fmt.Sprintf("HEAD:%s", path))

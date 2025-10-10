@@ -816,10 +816,16 @@ type PushNotesInput struct {
 }
 
 type PushNotesPayload struct {
-	Notes []*model.NoteView `json:"notes"`
+	Notes []PushedNote `json:"notes"`
 }
 
 func (PushNotesPayload) IsPushNotesOrErrorPayload() {}
+
+type PushedNote struct {
+	ID     int64             `json:"id"`
+	Path   string            `json:"path"`
+	Assets []PushedNoteAsset `json:"assets"`
+}
 
 type PushedNoteAsset struct {
 	Path       string  `json:"path"`

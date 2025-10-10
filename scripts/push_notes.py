@@ -50,6 +50,7 @@ def fetch_server_hashes():
         print(f"❌ Ошибка при запросе хэшей через GraphQL: {e}")
         return {}
 
+
 def push_updates_graphql(updates, base_path):
     query = """
     mutation PushNotes($input: PushNotesInput!) {
@@ -375,16 +376,18 @@ def main():
     print("-" * 80)
     asset_stats = None
     
+    # Always call pushNotes to get current state of notes and assets
     if updates:
         print(f"📤 Отправка {len(updates)} файлов через GraphQL...")
-        notes = push_updates_graphql(updates, base_path)
-        
-        # Step 2: Process assets for uploaded notes
-        if notes:
-            print(f"📎 Обработка ассетов для {len(notes)} заметок...")
-            asset_stats = process_note_assets(notes, base_path)
     else:
-        print("✅ Все файлы актуальны. Обновлений нет.")
+        print("✅ Все файлы актуальны. Проверяем ассеты...")
+    
+    notes = push_updates_graphql(updates, base_path)
+    
+    # Process assets for all notes (whether updated or not)
+    if notes:
+        print(f"📎 Обработка ассетов для {len(notes)} заметок...")
+        asset_stats = process_note_assets(notes, base_path)
 
     if server_only_paths:
         print(f"🙈 Скрытие {len(server_only_paths)} заметок, отсутствующих локально...")

@@ -233,7 +233,7 @@ select * from note_assets
  limit 1;
 
 -- name: NoteVersionByID :one
-select p.value as path, path_id, v.id as version_id, content
+select p.value as path, path_id, v.id as version_id, content, v.created_at
   from note_versions v
   join note_paths p on v.path_id = p.id
  where v.id = ?

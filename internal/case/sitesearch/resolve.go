@@ -70,7 +70,7 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 		}
 	}
 
-	log.Info("notes indexed", "count", len(notes), "took", time.Now().Sub(startedAt).Seconds())
+	log.Info("notes indexed", "count", len(notes), "took", time.Since(startedAt).Seconds())
 
 	queryString := strings.TrimSpace(input.Query)
 	conn := model.SearchConnection{}
@@ -167,7 +167,7 @@ func extractText(doc ast.Node, src []byte) string {
 		case *ast.FencedCodeBlock, *ast.CodeBlock:
 			// Extract text from code blocks line by line.
 			lines := node.Lines()
-			for i := 0; i < lines.Len(); i++ {
+			for i := range lines.Len() {
 				line := lines.At(i)
 				buf.Write(line.Value(src))
 			}

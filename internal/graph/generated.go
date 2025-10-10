@@ -114,7 +114,6 @@ type ResolverRoot interface {
 	NoteWarning() NoteWarningResolver
 	Offer() OfferResolver
 	Purchase() PurchaseResolver
-	PushedNote() PushedNoteResolver
 	Query() QueryResolver
 	RefreshBoostyDataPayload() RefreshBoostyDataPayloadResolver
 	RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
@@ -1416,11 +1415,6 @@ type OfferResolver interface {
 }
 type PurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
-}
-type PushedNoteResolver interface {
-	ID(ctx context.Context, obj *model1.NoteView) (int64, error)
-
-	Assets(ctx context.Context, obj *model1.NoteView) ([]model.PushedNoteAsset, error)
 }
 type QueryResolver interface {
 	Viewer(ctx context.Context) (*model1.Viewer, error)
@@ -27448,9 +27442,9 @@ func (ec *executionContext) _PushNotesPayload_notes(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model1.NoteView)
+	res := resTmp.([]model.PushedNote)
 	fc.Result = res
-	return ec.marshalNPushedNote2ᚕᚖtrip2gᚋinternalᚋmodelᚐNoteViewᚄ(ctx, field.Selections, res)
+	return ec.marshalNPushedNote2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPushedNoteᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_PushNotesPayload_notes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -27474,7 +27468,7 @@ func (ec *executionContext) fieldContext_PushNotesPayload_notes(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _PushedNote_id(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+func (ec *executionContext) _PushedNote_id(ctx context.Context, field graphql.CollectedField, obj *model.PushedNote) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PushedNote_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -27488,7 +27482,7 @@ func (ec *executionContext) _PushedNote_id(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.PushedNote().ID(rctx, obj)
+		return obj.ID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -27509,8 +27503,8 @@ func (ec *executionContext) fieldContext_PushedNote_id(_ context.Context, field 
 	fc = &graphql.FieldContext{
 		Object:     "PushedNote",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
 		},
@@ -27518,7 +27512,7 @@ func (ec *executionContext) fieldContext_PushedNote_id(_ context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _PushedNote_path(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+func (ec *executionContext) _PushedNote_path(ctx context.Context, field graphql.CollectedField, obj *model.PushedNote) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PushedNote_path(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -27562,7 +27556,7 @@ func (ec *executionContext) fieldContext_PushedNote_path(_ context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _PushedNote_assets(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+func (ec *executionContext) _PushedNote_assets(ctx context.Context, field graphql.CollectedField, obj *model.PushedNote) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PushedNote_assets(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -27576,7 +27570,7 @@ func (ec *executionContext) _PushedNote_assets(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.PushedNote().Assets(rctx, obj)
+		return obj.Assets, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -27597,8 +27591,8 @@ func (ec *executionContext) fieldContext_PushedNote_assets(_ context.Context, fi
 	fc = &graphql.FieldContext{
 		Object:     "PushedNote",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "path":
@@ -49084,7 +49078,7 @@ func (ec *executionContext) _PushNotesPayload(ctx context.Context, sel ast.Selec
 
 var pushedNoteImplementors = []string{"PushedNote"}
 
-func (ec *executionContext) _PushedNote(ctx context.Context, sel ast.SelectionSet, obj *model1.NoteView) graphql.Marshaler {
+func (ec *executionContext) _PushedNote(ctx context.Context, sel ast.SelectionSet, obj *model.PushedNote) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, pushedNoteImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -49094,82 +49088,20 @@ func (ec *executionContext) _PushedNote(ctx context.Context, sel ast.SelectionSe
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("PushedNote")
 		case "id":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._PushedNote_id(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._PushedNote_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "path":
 			out.Values[i] = ec._PushedNote_path(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "assets":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._PushedNote_assets(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._PushedNote_assets(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -55142,7 +55074,11 @@ func (ec *executionContext) marshalNPushNotesOrErrorPayload2trip2gᚋinternalᚋ
 	return ec._PushNotesOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNPushedNote2ᚕᚖtrip2gᚋinternalᚋmodelᚐNoteViewᚄ(ctx context.Context, sel ast.SelectionSet, v []*model1.NoteView) graphql.Marshaler {
+func (ec *executionContext) marshalNPushedNote2trip2gᚋinternalᚋgraphᚋmodelᚐPushedNote(ctx context.Context, sel ast.SelectionSet, v model.PushedNote) graphql.Marshaler {
+	return ec._PushedNote(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPushedNote2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPushedNoteᚄ(ctx context.Context, sel ast.SelectionSet, v []model.PushedNote) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -55166,7 +55102,7 @@ func (ec *executionContext) marshalNPushedNote2ᚕᚖtrip2gᚋinternalᚋmodel�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNPushedNote2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx, sel, v[i])
+			ret[i] = ec.marshalNPushedNote2trip2gᚋinternalᚋgraphᚋmodelᚐPushedNote(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -55184,16 +55120,6 @@ func (ec *executionContext) marshalNPushedNote2ᚕᚖtrip2gᚋinternalᚋmodel�
 	}
 
 	return ret
-}
-
-func (ec *executionContext) marshalNPushedNote2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx context.Context, sel ast.SelectionSet, v *model1.NoteView) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._PushedNote(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNPushedNoteAsset2trip2gᚋinternalᚋgraphᚋmodelᚐPushedNoteAsset(ctx context.Context, sel ast.SelectionSet, v model.PushedNoteAsset) graphql.Marshaler {

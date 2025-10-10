@@ -17,6 +17,7 @@ type Env interface {
 	InsertNote(ctx context.Context, update appmodel.RawNote) error
 	InsertSubgraph(ctx context.Context, name string) error
 	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
+	Layouts() *appmodel.Layouts
 }
 
 var allowedExtensins = map[string]string{
@@ -69,8 +70,61 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		}
 	}
 
+	pushedNotes := []model.PushedNote{}
+
+	// prepare md notes
+	for _, note := range nvs.List {
+		assets := []model.PushedNoteAsset{}
+
+		for relativePath := range note.Assets {
+			var hash *string
+
+			replace, ok := note.AssetReplaces[relativePath]
+			if ok && replace != nil {
+				hash = &replace.Hash
+			}
+
+			assets = append(assets, model.PushedNoteAsset{
+				Path:       relativePath,
+				Sha256Hash: hash,
+			})
+		}
+
+		pushedNotes = append(pushedNotes, model.PushedNote{
+			ID:     note.VersionID,
+			Path:   note.Path,
+			Assets: assets,
+		})
+	}
+
+	// prepare layouts
+	layouts := env.Layouts()
+
+	for _, layout := range layouts.Map {
+		assets := []model.PushedNoteAsset{}
+
+		for path, asset := range layout.AssetReplaces {
+			var hash *string
+
+			if asset.Hash != "" {
+				hash = &asset.Hash
+			}
+
+			assets = append(assets, model.PushedNoteAsset{
+				Path:       path,
+				Sha256Hash: hash,
+			})
+		}
+
+		pushedNotes = append(pushedNotes, model.PushedNote{
+			ID:     layout.VersionID,
+			Path:   layout.Path,
+			Assets: assets,
+		})
+	}
+
 	response := model.PushNotesPayload{
-		Notes: nvs.List,
+		Notes: pushedNotes,
 	}
 
 	return &response, nil

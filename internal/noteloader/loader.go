@@ -87,6 +87,7 @@ func (l *Loader) Load(ctx context.Context) error {
 		if !exists {
 			l.log.Warn("note asset not exists", "asset", asset, "object_id", l.env.NoteAssetPath(asset.NoteAsset))
 
+			// is not always image... TODO: fix it
 			noteMap[asset.Path] = &model.NoteAssetReplace{
 				URL:  "/assets/missed_image.png",
 				Hash: fmt.Sprintf("%+v", asset),
@@ -109,6 +110,8 @@ func (l *Loader) Load(ctx context.Context) error {
 	mdSources := []mdloader.SourceFile{}
 	templateSources := []layoutloader.SourceFile{}
 
+	const layoutBasePath = "_layouts"
+
 	for _, note := range notes {
 		ext := filepath.Ext(note.Path)
 
@@ -124,15 +127,16 @@ func (l *Loader) Load(ctx context.Context) error {
 			})
 
 		case ".html":
-			const prefix = "_layouts"
-
 			path := strings.Trim(note.Path, "/")
 
-			if strings.HasPrefix(path, prefix) {
+			if strings.HasPrefix(path, layoutBasePath) {
 				templateSources = append(templateSources, layoutloader.SourceFile{
+					Path:      note.Path,
+					VersionID: note.VersionID,
 					// without prefix and ext, starts with /
-					Path:    path[len(prefix) : len(path)-len(ext)],
+					ID:      path[len(layoutBasePath) : len(path)-len(ext)],
 					Content: note.Content,
+					Assets:  assetMap[note.VersionID],
 				})
 			}
 
@@ -153,7 +157,11 @@ func (l *Loader) Load(ctx context.Context) error {
 		return fmt.Errorf("failed to load pages: %w", err)
 	}
 
-	layouts, err := layoutloader.Load(templateSources)
+	layoutOptions := layoutloader.Options{
+		BasePath: layoutBasePath,
+	}
+
+	layouts, err := layoutloader.Load(templateSources, layoutOptions)
 	if err != nil {
 		return fmt.Errorf("failed to load layouts: %w", err)
 	}

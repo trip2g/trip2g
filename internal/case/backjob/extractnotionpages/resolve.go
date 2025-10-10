@@ -28,6 +28,7 @@ type Env interface {
 }
 
 func Resolve(ctx context.Context, env Env, task Params) error {
+	log := env.Logger()
 	if task.PageID != nil && task.IntegrationID == nil {
 		return fmt.Errorf("if PageID(%s) is specified, IntegrationID must also be specified", *task.PageID)
 	}
@@ -76,7 +77,7 @@ func Resolve(ctx context.Context, env Env, task Params) error {
 
 			insertErr := env.InsertNote(ctx, *rawNote)
 			if insertErr != nil {
-				fmt.Println("WARN: failed to insert note:", insertErr)
+				log.Warn("failed to insert note", "error", insertErr)
 				// return fmt.Errorf("failed to insert note for page %s: %w", pageID, insertErr)
 			}
 		}

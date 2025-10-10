@@ -9,7 +9,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// ExtractPageTitle extracts the title from a Notion page's properties
+// ExtractPageTitle extracts the title from a Notion page's properties.
 func ExtractPageTitle(page *Page) string {
 	if page.Raw == nil {
 		return "untitled"
@@ -49,7 +49,7 @@ func ExtractPageTitle(page *Page) string {
 	return "untitled"
 }
 
-// ExtractRawNote creates a model.RawNote from a Notion page and its content
+// ExtractRawNote creates a model.RawNote from a Notion page and its content.
 func ExtractRawNote(page *Page, content *PageContent, basePath string) (*model.RawNote, error) {
 	// Extract title and build path
 	title := ExtractPageTitle(page)

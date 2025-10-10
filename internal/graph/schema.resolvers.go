@@ -1538,32 +1538,6 @@ func (r *purchaseResolver) Successful(ctx context.Context, obj *db.Purchase) (bo
 	return nowpayments.PaymentStatus(obj.Status).IsSuccessful(), nil
 }
 
-// ID is the resolver for the id field.
-func (r *pushedNoteResolver) ID(ctx context.Context, obj *appmodel.NoteView) (int64, error) {
-	return obj.VersionID, nil
-}
-
-// Assets is the resolver for the assets field.
-func (r *pushedNoteResolver) Assets(ctx context.Context, obj *appmodel.NoteView) ([]model.PushedNoteAsset, error) {
-	assets := []model.PushedNoteAsset{}
-
-	for relativePath := range obj.Assets {
-		var hash *string
-
-		replace, ok := obj.AssetReplaces[relativePath]
-		if ok && replace != nil {
-			hash = &replace.Hash
-		}
-
-		assets = append(assets, model.PushedNoteAsset{
-			Path:       relativePath,
-			Sha256Hash: hash,
-		})
-	}
-
-	return assets, nil
-}
-
 // Viewer is the resolver for the viewer field.
 func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 	req, err := appreq.FromCtx(ctx)
@@ -2225,9 +2199,6 @@ func (r *Resolver) Offer() OfferResolver { return &offerResolver{r} }
 // Purchase returns PurchaseResolver implementation.
 func (r *Resolver) Purchase() PurchaseResolver { return &purchaseResolver{r} }
 
-// PushedNote returns PushedNoteResolver implementation.
-func (r *Resolver) PushedNote() PushedNoteResolver { return &pushedNoteResolver{r} }
-
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -2351,7 +2322,6 @@ type noteViewResolver struct{ *Resolver }
 type noteWarningResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
 type purchaseResolver struct{ *Resolver }
-type pushedNoteResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type refreshBoostyDataPayloadResolver struct{ *Resolver }
 type refreshPatreonDataPayloadResolver struct{ *Resolver }

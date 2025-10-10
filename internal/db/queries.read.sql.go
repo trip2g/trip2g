@@ -3082,7 +3082,7 @@ func (q *Queries) NoteGraphPositionByPathID(ctx context.Context, id int64) (Note
 }
 
 const noteVersionByID = `-- name: NoteVersionByID :one
-select p.value as path, path_id, v.id as version_id, content
+select p.value as path, path_id, v.id as version_id, content, v.created_at
   from note_versions v
   join note_paths p on v.path_id = p.id
  where v.id = ?
@@ -3090,10 +3090,11 @@ select p.value as path, path_id, v.id as version_id, content
 `
 
 type NoteVersionByIDRow struct {
-	Path      string `json:"path"`
-	PathID    int64  `json:"path_id"`
-	VersionID int64  `json:"version_id"`
-	Content   string `json:"content"`
+	Path      string    `json:"path"`
+	PathID    int64     `json:"path_id"`
+	VersionID int64     `json:"version_id"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func (q *Queries) NoteVersionByID(ctx context.Context, id int64) (NoteVersionByIDRow, error) {
@@ -3104,6 +3105,7 @@ func (q *Queries) NoteVersionByID(ctx context.Context, id int64) (NoteVersionByI
 		&i.PathID,
 		&i.VersionID,
 		&i.Content,
+		&i.CreatedAt,
 	)
 	return i, err
 }

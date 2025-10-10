@@ -51,7 +51,6 @@ import (
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
-	"trip2g/internal/mdloader"
 	"trip2g/internal/miniostorage"
 	"trip2g/internal/model"
 	"trip2g/internal/noteloader"
@@ -135,7 +134,6 @@ type app struct {
 	hotAuthTokenManager *hotauthtoken.Manager
 	tgAuthTokenManager  *tgauthtoken.Manager
 
-	notionClient        notiontypes.Client
 	notionClientManager *notion.ClientManager
 
 	config *appconfig.Config
@@ -777,29 +775,35 @@ func (a *app) UserCSSURLs() []string {
 }
 
 func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error) {
-	noteVersion, err := a.queries.NoteVersionByID(ctx, id)
+	wrapper := makeSingleNoteLoaderWrapper(a, id)
+	loader := noteloader.New("single", wrapper, a.config.MDLoaderConfig)
+
+	err := loader.Load(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get note version by ID: %w", err)
+		return nil, fmt.Errorf("failed to load note version %d: %w", id, err)
 	}
 
-	sources := []mdloader.SourceFile{{
-		Path:      noteVersion.Path,
-		PathID:    noteVersion.PathID,
-		VersionID: noteVersion.VersionID,
-		Content:   []byte(noteVersion.Content),
-	}}
+	nvs := loader.NoteViews()
+	layouts := loader.Layouts()
 
-	options := mdloader.Options{
-		Sources: sources,
-		Log:     logger.WithPrefix(a.log, "uploadnoteasset: mdloader:"),
+	if len(nvs.List) > 0 {
+		return nvs.List[0].Assets, nil
 	}
 
-	pages, err := mdloader.Load(options)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load pages: %w", err)
+	res := map[string]struct{}{}
+
+	if len(layouts.Map) > 0 {
+		for _, layout := range layouts.Map {
+			for _, asset := range layout.Assets {
+				res[asset.Path] = struct{}{}
+			}
+		}
+
+		return res, nil
 	}
 
-	return pages.List[0].Assets, nil
+	// something strange happened
+	return nil, fmt.Errorf("unknown source type #%d not found", id)
 }
 
 func (a *app) IDHash(entity string, id int64) string {

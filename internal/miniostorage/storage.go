@@ -297,7 +297,7 @@ func (a *FileStorage) PutLock(ctx context.Context, objectID string, ttl time.Dur
 	return a.createNewLock(ctx, objectID, ttl, "")
 }
 
-// createNewLock creates a new lock, optionally replacing an existing one with the given ETag
+// createNewLock creates a new lock, optionally replacing an existing one with the given ETag.
 func (a *FileStorage) createNewLock(ctx context.Context, objectID string, ttl time.Duration, expectedETag string) error {
 	lock := lockInfo{
 		OwnerID:   a.instanceID,
@@ -331,7 +331,7 @@ func (a *FileStorage) createNewLock(ctx context.Context, objectID string, ttl ti
 	return nil
 }
 
-// renewLock renews an existing lock that we own
+// renewLock renews an existing lock that we own.
 func (a *FileStorage) renewLock(ctx context.Context, objectID string, ttl time.Duration, expectedETag string) error {
 	lock := lockInfo{
 		OwnerID:   a.instanceID,
@@ -372,7 +372,7 @@ func (a *FileStorage) RemoveLock(ctx context.Context, objectID string) error {
 	return nil
 }
 
-// generateInstanceID creates a unique identifier for this storage instance
+// generateInstanceID creates a unique identifier for this storage instance.
 func generateInstanceID() (string, error) {
 	bytes := make([]byte, 16)
 	_, err := rand.Read(bytes)
@@ -382,7 +382,7 @@ func generateInstanceID() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-// getLockInfo reads and parses lock information from the object
+// getLockInfo reads and parses lock information from the object.
 func (a *FileStorage) getLockInfo(ctx context.Context, objectID string) (*lockInfo, string, error) {
 	obj, err := a.minioClient.GetObject(ctx, a.config.Bucket, objectID, minio.GetObjectOptions{})
 	if err != nil {
@@ -412,12 +412,12 @@ func (a *FileStorage) getLockInfo(ctx context.Context, objectID string) (*lockIn
 }
 
 // isLockExpired checks if a lock exists and if it's expired
-// Returns: (expired, ownedByUs, etag, error)
+// Returns: (expired, ownedByUs, etag, error).
 func (a *FileStorage) isLockExpired(ctx context.Context, objectID string, currentTTL time.Duration) (bool, bool, string, error) {
 	lock, etag, err := a.getLockInfo(ctx, objectID)
 	if err != nil {
 		// If object doesn't exist, consider it as expired
-		return true, false, "", nil
+		return true, false, "", fmt.Errorf("failed to get lock info: %w", err)
 	}
 
 	// Check if we own this lock
