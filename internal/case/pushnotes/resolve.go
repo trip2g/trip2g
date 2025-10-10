@@ -103,15 +103,16 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	for _, layout := range layouts.Map {
 		assets := []model.PushedNoteAsset{}
 
-		for path, asset := range layout.AssetReplaces {
+		for _, asset := range layout.Assets {
 			var hash *string
 
-			if asset.Hash != "" {
-				hash = &asset.Hash
+			replace, ok := layout.AssetReplaces[asset.Path]
+			if ok {
+				hash = &replace.Hash
 			}
 
 			assets = append(assets, model.PushedNoteAsset{
-				Path:       path,
+				Path:       asset.Path,
 				Sha256Hash: hash,
 			})
 		}

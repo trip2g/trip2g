@@ -1384,6 +1384,20 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 
 	path := string(ctx.Path())
 
+	if strings.HasPrefix(path, "/debug/layouts/latest") {
+		ctx.SetContentType("application/json")
+		ctx.SetStatusCode(fasthttp.StatusOK)
+
+		data, err := json.Marshal(a.Layouts()) //nolint:musttag // debug endpoint
+		if err != nil {
+			a.log.Error("failed to marshal latest note views", "error", err)
+			return true
+		}
+
+		ctx.SetBody(data)
+		return true
+	}
+
 	if strings.HasPrefix(path, "/debug/nvs/latest") {
 		ctx.SetContentType("application/json")
 		ctx.SetStatusCode(fasthttp.StatusOK)

@@ -1,6 +1,8 @@
 package layoutloader
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"path/filepath"
 	"reflect"
@@ -60,9 +62,23 @@ func Load(sourceFiles []SourceFile, options Options) (*model.Layouts, error) {
 
 	views := jet.NewSet(jl, jet.DevelopmentMode(true))
 
+	allAssets := map[string]string{}
+
 	views.AddGlobalFunc("asset", func(a jet.Arguments) reflect.Value {
 		a.RequireNumOfArguments("asset", 1, 1)
-		return reflect.ValueOf("path_to_asset")
+
+		buffer := bytes.NewBuffer(nil)
+		fmt.Fprint(buffer, a.Get(0))
+
+		key := options.BasePath + "/" + buffer.String()
+
+		url, exists := allAssets[key]
+		fmt.Println("Looking for asset key:", key, "exists:", exists)
+		if exists {
+			return reflect.ValueOf(url)
+		}
+
+		return reflect.ValueOf(buffer)
 	})
 
 	layouts := model.Layouts{
@@ -82,9 +98,15 @@ func Load(sourceFiles []SourceFile, options Options) (*model.Layouts, error) {
 		assets := []model.LayoutAsset{}
 
 		for _, assetPath := range finder.List {
+			fmt.Printf("Found asset path: %s\n", assetPath)
+
 			assets = append(assets, model.LayoutAsset{
 				Path: filepath.Join(options.BasePath, assetPath),
 			})
+		}
+
+		for key, asset := range source.Assets {
+			allAssets[key] = asset.URL
 		}
 
 		layouts.Map[source.ID] = model.Layout{
@@ -96,6 +118,8 @@ func Load(sourceFiles []SourceFile, options Options) (*model.Layouts, error) {
 			AssetReplaces: source.Assets,
 		}
 	}
+
+	fmt.Printf("%+v\n", allAssets)
 
 	return &layouts, nil
 }
