@@ -1434,12 +1434,9 @@ func (a *app) handlePurchaseTokens(ctx *fasthttp.RequestCtx) bool {
 
 func (a *app) startServer() {
 	fsHandler := a.assetsFS.NewRequestHandler()
+	handleGraphQL := a.prepareGraphQLHandler()
 
 	rtr := router.New(a)
-
-	// graphql.
-	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
-	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(graph.NewHandler(a))
 
 	s := &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
@@ -1508,13 +1505,7 @@ func (a *app) startServer() {
 			// 	return
 			// }
 
-			if strings.HasPrefix(path, "/graphql") {
-				if string(ctx.Method()) == "GET" {
-					playgroundHandler(ctx)
-				} else {
-					graphqlHandler(ctx)
-				}
-
+			if handleGraphQL(ctx, path) {
 				return
 			}
 
@@ -1564,6 +1555,26 @@ func (a *app) startServer() {
 	} else {
 		go runServer()
 		a.waitForShutdown(s)
+	}
+}
+
+func (a *app) prepareGraphQLHandler() func(ctx *fasthttp.RequestCtx, path string) bool {
+	// graphql.
+	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
+	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(graph.NewHandler(a))
+
+	return func(ctx *fasthttp.RequestCtx, path string) bool {
+		if strings.HasPrefix(path, "/graphql") {
+			if string(ctx.Method()) == "GET" {
+				playgroundHandler(ctx)
+			} else {
+				graphqlHandler(ctx)
+			}
+
+			return true
+		}
+
+		return false
 	}
 }
 
@@ -1621,6 +1632,9 @@ func (a *app) startInternalServer() {
 	server := &http.Server{
 		Addr:    a.config.InternalListenAddr,
 		Handler: mux,
+
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
 	go func() {

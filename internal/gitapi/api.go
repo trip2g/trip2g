@@ -230,7 +230,7 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 		return false
 	}
 
-	handler, ok := handlers[path[len(api.config.BasePath):]]
+	hdr, ok := handlers[path[len(api.config.BasePath):]]
 	if !ok {
 		api.logger.Warn("unsupported path", "path", path)
 	}
@@ -246,7 +246,7 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 		return true
 	}
 
-	err = handler(ctx)
+	err = hdr(ctx)
 	if err != nil {
 		api.logger.Error("handler error", "error", err)
 		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
@@ -399,9 +399,9 @@ func (api *API) preparePushNotesInput(changedFiles []string) (*model.PushNotesIn
 		readCmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "show", fmt.Sprintf("HEAD:%s", file))
 		readCmd.Stderr = os.Stderr
 
-		content, err := readCmd.Output()
-		if err != nil {
-			return nil, fmt.Errorf("failed to read file %s: %w", file, err)
+		content, readErr := readCmd.Output()
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to read file %s: %w", file, readErr)
 		}
 
 		sha := sha256.New()
@@ -671,7 +671,8 @@ func (api *API) readContent(path string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to get stdout pipe: %w", err)
 	}
 
-	if err := cmd.Start(); err != nil {
+	err = cmd.Start()
+	if err != nil {
 		return nil, fmt.Errorf("failed to start command: %w", err)
 	}
 
@@ -691,7 +692,8 @@ func (api *API) readContent(path string) ([]byte, error) {
 		return nil, errors.New("file too large (>10MB)")
 	}
 
-	if err := cmd.Wait(); err != nil {
+	err = cmd.Wait()
+	if err != nil {
 		errOutput := stderr.String()
 		if strings.Contains(errOutput, "does not exist in") {
 			return nil, nil

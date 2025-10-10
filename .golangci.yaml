@@ -463,3 +463,6 @@ linters:
       - path: 'internal/russkayalatinica/latinica_test\.go'
         linters:
           - intrange  # Classic for loops are clearer in test benchmarks
+      - path: 'internal/gitapi/'
+        linters:
+          - gosec  # Git operations require subprocess calls which are legitimate

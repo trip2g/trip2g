@@ -64,9 +64,9 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 			Body:  extractText(note.Ast(), note.Content),
 		}
 
-		err := index.Index(note.Permalink, content)
-		if err != nil {
-			panic(err)
+		indexErr := index.Index(note.Permalink, content)
+		if indexErr != nil {
+			panic(indexErr)
 		}
 	}
 

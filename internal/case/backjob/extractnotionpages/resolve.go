@@ -49,9 +49,9 @@ func Resolve(ctx context.Context, env Env, task Params) error {
 		if task.PageID != nil {
 			pageIDS = append(pageIDS, *task.PageID)
 		} else {
-			pages, err := client.AllPages()
-			if err != nil {
-				return fmt.Errorf("failed to get all pages for integration %d: %w", integration.ID, err)
+			pages, pErr := client.AllPages()
+			if pErr != nil {
+				return fmt.Errorf("failed to get all pages for integration %d: %w", integration.ID, pErr)
 			}
 
 			for _, page := range pages {
@@ -60,19 +60,19 @@ func Resolve(ctx context.Context, env Env, task Params) error {
 		}
 
 		for _, pageID := range pageIDS {
-			page, err := client.GetPage(pageID)
-			if err != nil {
-				return fmt.Errorf("failed to get page %s: %w", pageID, err)
+			page, pErr := client.GetPage(pageID)
+			if pErr != nil {
+				return fmt.Errorf("failed to get page %s: %w", pageID, pErr)
 			}
 
-			pageContent, err := client.GetPageContent(pageID)
-			if err != nil {
-				return fmt.Errorf("failed to get page content for page %s: %w", pageID, err)
+			pageContent, pErr := client.GetPageContent(pageID)
+			if pErr != nil {
+				return fmt.Errorf("failed to get page content for page %s: %w", pageID, pErr)
 			}
 
-			rawNote, err := notiontypes.ExtractRawNote(page, pageContent, integration.BasePath)
-			if err != nil {
-				return fmt.Errorf("failed to extract raw note for page %s: %w", pageID, err)
+			rawNote, pErr := notiontypes.ExtractRawNote(page, pageContent, integration.BasePath)
+			if pErr != nil {
+				return fmt.Errorf("failed to extract raw note for page %s: %w", pageID, pErr)
 			}
 
 			insertErr := env.InsertNote(ctx, *rawNote)

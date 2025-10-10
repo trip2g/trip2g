@@ -413,7 +413,7 @@ func (a *FileStorage) getLockInfo(ctx context.Context, objectID string) (*lockIn
 
 // isLockExpired checks if a lock exists and if it's expired
 // Returns: (expired, ownedByUs, etag, error).
-func (a *FileStorage) isLockExpired(ctx context.Context, objectID string, currentTTL time.Duration) (bool, bool, string, error) {
+func (a *FileStorage) isLockExpired(ctx context.Context, objectID string, _ time.Duration) (bool, bool, string, error) {
 	lock, etag, err := a.getLockInfo(ctx, objectID)
 	if err != nil {
 		// If object doesn't exist, consider it as expired

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/valyala/fasthttp"
+
 	"trip2g/internal/notiontypes"
 )
 
@@ -152,8 +153,8 @@ func (c *clientImpl) GetPageContent(pageID string) (*notiontypes.PageContent, er
 		if results, ok := rawResponse["results"].([]interface{}); ok {
 			for i, result := range results {
 				if i < len(pageResponse.Results) && result != nil {
-					blockJSON, err := json.Marshal(result)
-					if err == nil {
+					blockJSON, marshalErr := json.Marshal(result)
+					if marshalErr == nil {
 						pageResponse.Results[i].RawContent = blockJSON
 					}
 				}
@@ -222,8 +223,8 @@ func (c *clientImpl) search(req notiontypes.SearchRequest) (*notiontypes.SearchR
 	if results, ok := rawResponse["results"].([]interface{}); ok {
 		for i, result := range results {
 			if i < len(response.Results) && result != nil {
-				pageJSON, err := json.Marshal(result)
-				if err == nil {
+				pageJSON, marshalErr := json.Marshal(result)
+				if marshalErr == nil {
 					response.Results[i].Raw = pageJSON
 				}
 			}
