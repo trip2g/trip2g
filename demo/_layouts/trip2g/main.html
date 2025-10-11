@@ -19,14 +19,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tiny-slider/2.9.4/tiny-slider.css">
     <!-- Main Style -->
-    <link rel="stylesheet" href="./public/assets/css/style.css">
-    <link rel="stylesheet" href="{{ asset("trip2g.css") }}">
+    <link rel="stylesheet" href="{{ asset("style.out.css") }}">
   </head>
 
   <body class="landing">
     <!-- Preloader Start -->
     <div class="preloader h-full fixed w-full z-50 bg-white transition duration-300">
-      <img src="{{ asset("trip2g_logo.png") }}" class="max-w-[20rem] block absolute top-2/4 left-2/4 transform -translate-x-2/4 -translate-y-2/4" alt="Logo">
+      <img src="{{ asset("logo.png") }}" class="max-w-[20rem] block absolute top-2/4 left-2/4 transform -translate-x-2/4 -translate-y-2/4" alt="Logo">
     </div>
     <!-- Preloader End -->
     <!-- Header -->
@@ -36,7 +35,7 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center">
               <a href="./index.html">
-                <img src="{{ asset("trip2g_logo.png") }}" class="w-36" alt="Logo Image">
+                <img src="{{ asset("logo.png") }}" class="w-36" alt="Logo Image">
               </a>
             </div>
 
@@ -109,8 +108,21 @@
     </div>
     <!-- Header -->
 
+    <!-- About -->
+    <section class="bg-[url('../../../public/assets/images/landing/works.png')] bg-no-repeat bg-cover py-10 md:py-14 xl:py-24" id="d2c_about">
+      <div class="container">
+        <div class="ml-5">
+          <h4 class="d2c_title mb-4">{{ note.Title }}</h4>
+          <div class="prose prose-stone prose-lg">
+          {{ note.HTMLString() | unsafe }}
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- About -->
+
     <!-- Banner Section -->
-    <section class="bg-[url('{{ asset("trip2g_hero_bg.png") }}')] bg-no-repeat py-16 xl:py-20 bg-cover h-auto md:min-h-fit lg:h-screen flex items-center" id="home">
+    <section class="bg-[url('{{ asset("hero_bg.png") }}')] bg-no-repeat py-16 xl:py-20 bg-cover h-auto md:min-h-fit lg:h-screen flex items-center" id="home">
       <div class="container">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
           <div class="text-center lg:text-left order-2 md:order-1">
@@ -126,7 +138,7 @@
             </div>
           </div>
           <div class="order-1 md:order-2">
-            <img class="w-full sm:w-3/4 lg:w-full mx-auto" src="{{ asset("trip2g_hero_img.png") }}" alt="Hero Image">
+            <img class="w-full sm:w-3/4 lg:w-full mx-auto" src="{{ asset("hero_img.png") }}" alt="Hero Image">
           </div>
         </div>
       </div>
@@ -588,7 +600,7 @@
 
         <div class="flex flex-col md:flex-row items-center justify-between py-4 border-b border-[rgba(228,219,237,0.06)]">
           <div class="mb-4 md:mb-0">
-            <a href="./index.html"><img class="w-36" src="{{ asset("trip2g_logo_white.png") }}" alt="Logo Image"></a>
+            <a href="./index.html"><img class="w-36" src="{{ asset("logo_white.png") }}" alt="Logo Image"></a>
           </div>
           <div class="mb-4 md:mb-0">
             <a target="_blank" href="https://designtocodes.com/privacy-policy/" class="text-white text-base font-semibold">Privacy Policy</a>
@@ -610,7 +622,7 @@
     <!-- jquery -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <!-- Main Js Config -->
-    <script src="{{ asset("trip2g.js") }}"></script>
+    <script src="{{ asset("main.js") }}"></script>
 
     <!-- Tiny Slider -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tiny-slider/2.9.2/min/tiny-slider.js"></script>

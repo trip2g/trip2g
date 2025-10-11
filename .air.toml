@@ -8,7 +8,7 @@ tmp_dir = "tmp"
   cmd_all = "go generate ./... && go build -o ./tmp/main ./cmd/server"
   cmd = "go build -o ./tmp/main -tags=dev ./cmd/server"
   delay = 500
-  exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules", "out"]
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", "node_modules", "out", "_demo"]
   exclude_file = ["data.sqlite3"]
   exclude_regex = ["_test.go", "easyjson"]
   exclude_unchanged = false

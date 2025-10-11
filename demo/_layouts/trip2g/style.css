@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer base {
+	html {
+		@apply font-sans selection:bg-primary selection:text-white scroll-smooth;
+	}
+}
+
+@layer components {
+	p {
+		@apply text-base text-info;
+	}
+	.nav-link {
+		@apply flex justify-between text-global font-semibold hover:text-primary items-center relative before:content-[''] before:h-[2.2rem] before:w-1 hover:before:bg-primary before:absolute before:-left-8 before:top-1/2 before:-translate-y-1/2 before:rounded-r-std transition-colors duration-500 before:transition-colors before:duration-500 capitalize;
+	}
+	[data-toggler="active"] {
+		@apply after:content-['\f077'] after:text-lg transform after:rotate-180;
+	}
+	.active[data-toggler="active"] {
+		@apply after:content-['\f077'] after:text-lg after:rotate-0;
+	}
+	[data-toggler="active"]::after {
+		@apply font-black;
+		font-family: "Font Awesome 5 Free";
+	}
+	.nav-link.active {
+		@apply text-primary font-semibold before:content-[''] before:h-[2.2rem] before:w-1 before:bg-primary before:absolute before:-left-8 before:top-1/2 before:-translate-y-1/2 before:rounded-r-std;
+	}
+	ul li a.active {
+		@apply text-primary;
+	}
+
+	/* Card */
+	.card {
+		@apply w-full rounded-md bg-white shadow-std border border-primary-1;
+	}
+	.card-header {
+		@apply p-6 pb-0 w-full;
+	}
+	.card-body {
+		@apply p-6 w-full;
+	}
+
+	/* Form */
+	.form-control {
+		@apply bg-white font-normal w-full h-auto flex items-center p-3 text-sm rounded border border-primary-1 focus:outline-none;
+	}
+	label {
+		@apply text-base text-secondary font-semibold block mb-2;
+	}
+	.form-control.invalid-input {
+		@apply border-danger;
+	}
+	.form-control.invalid-input:focus {
+		@apply border-danger;
+	}
+
+	/* Accordion */
+	.accordion-button{
+		@apply after:ml-2;
+	}
+	.accordion .accordion-button.active {
+		@apply text-primary;
+	}
+	.tab-button.active {
+		@apply text-primary before:content-[''] before:h-[2.2rem] before:w-1 before:bg-primary before:absolute before:-left-6 before:inset-y-0 before:rounded-r-std;
+	}
+	.d2c_service_tab_btn.active {
+		@apply before:-left-4 text-secondary;
+	}
+
+	/* landing page title */
+	.d2c_title{
+		@apply text-2xl md:text-4xl text-primary font-extrabold;
+	}
+
+	/* table */
+	table td{
+		@apply text-info-1 border-y border-primary-1 py-2 text-[15px] font-semibold;
+	}
+
+	/* progress-bar */
+	.circle_percent {
+		@apply text-[200px] w-[1em] h-[1em] relative rounded-[50%] overflow-hidden inline-block;
+		font-size: 200px;
+	}
+	.circle_inner {
+		@apply absolute top-0 right-0 w-[1em] h-[1em];
+		clip: rect(0 0.5em 1em 0em);
+	}
+	.round_per {
+		@apply absolute top-0 right-0 w-[1em] h-[1em] rotate-180 transition-all duration-300 bg-primary;
+		clip: rect(0 0.5em 1em 0em);
+	}
+	.circle_percent.percent_more {
+		@apply after:content-[''] after:absolute after:top-0 after:bottom-0 after:left-0 after:right-[.5em] after:bg-primary;
+	}
+	.percent_more .circle_inner {
+		clip: rect(0 1em 1em 0.5em);
+	}
+	.circle_percent .circle_inbox {
+		@apply absolute top-[20px] bottom-[20px] left-[20px] right-[20px] bg-white z-10 rounded-[50%];
+	}
+	.circle_percent .circle_inbox .percent_text {
+		@apply text-secondary text-4xl font-bold absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-10;
+	}
+	.d2c_counter_bottom {
+		@apply bg-white h-[40px] w-[90px] absolute left-1/2 -translate-x-1/2 bottom-[20px] text-base font-bold text-secondary after:relative after:-bottom-[35px] after:left-[60px] before:relative before:-bottom-[35px] before:right-0;
+	}
+
+	/* Map */
+	#world_map svg path {
+		@apply fill-[#C9C7CB] hover:fill-primary;
+	}
+
+	select {
+		background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNSIgaGVpZ2h0PSIyNSIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2U9IiNiYmIiPjxwYXRoIGQ9Ik02IDlsNiA2IDYtNiIvPjwvc3ZnPg==);
+		background-repeat: no-repeat;
+		background-position-x: 98%;
+		background-position-y: 50%;
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		-ms-appearance: none;
+		-o-appearance: none;
+		appearance: none;
+	}
+	select::-ms-expand {
+		display: none;
+	}
+	select.from-control{
+		@apply form-control text-info-1 py-1 text-xs font-semibold w-20;
+	}
+}

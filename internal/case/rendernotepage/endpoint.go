@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/render404"
 	"trip2g/internal/case/renderlayout"
+
+	"github.com/CloudyKit/jet/v6"
 )
 
 //go:generate go tool github.com/valyala/quicktemplate/qtc -dir=. -ext=html
@@ -91,7 +94,10 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	if resp.Note.Layout != "" {
 		layout, layoutExists := env.Layouts().Map["/"+resp.Note.Layout]
 		if layoutExists {
-			viewErr := layout.View.Execute(ctx, nil, resp)
+			vars := make(jet.VarMap)
+			vars["note"] = reflect.ValueOf(resp.Note)
+
+			viewErr := layout.View.Execute(ctx, vars, resp)
 			if viewErr != nil {
 				return nil, fmt.Errorf("failed to execute view: %w", viewErr)
 			}

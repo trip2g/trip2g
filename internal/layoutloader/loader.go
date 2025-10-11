@@ -1,8 +1,6 @@
 package layoutloader
 
 import (
-	"bytes"
-	"fmt"
 	"io"
 	"path/filepath"
 	"reflect"
@@ -60,32 +58,35 @@ func Load(sourceFiles []SourceFile, options Options) (*model.Layouts, error) {
 		jl.templates[source.ID] = source.Content
 	}
 
-	views := jet.NewSet(jl, jet.DevelopmentMode(true))
-
-	allAssets := map[string]string{}
-
-	views.AddGlobalFunc("asset", func(a jet.Arguments) reflect.Value {
-		a.RequireNumOfArguments("asset", 1, 1)
-
-		buffer := bytes.NewBuffer(nil)
-		fmt.Fprint(buffer, a.Get(0))
-
-		key := options.BasePath + "/" + buffer.String()
-
-		url, exists := allAssets[key]
-		fmt.Println("Looking for asset key:", key, "exists:", exists)
-		if exists {
-			return reflect.ValueOf(url)
-		}
-
-		return reflect.ValueOf(buffer)
-	})
-
 	layouts := model.Layouts{
 		Map: make(map[string]model.Layout),
 	}
 
 	for _, source := range sourceFiles {
+		views := jet.NewSet(jl, jet.DevelopmentMode(true))
+
+		sourceDir := filepath.Dir(source.Path)
+
+		views.AddGlobalFunc("asset", func(a jet.Arguments) reflect.Value {
+			a.RequireNumOfArguments("asset", 1, 1)
+
+			var val string
+
+			err := a.ParseInto(&val)
+			if err != nil {
+				return reflect.ValueOf("invalid value")
+			}
+
+			key := filepath.Join(sourceDir, val)
+
+			asset, exists := source.Assets[key]
+			if exists {
+				return reflect.ValueOf(asset.URL)
+			}
+
+			return reflect.ValueOf(val)
+		})
+
 		view, err := views.GetTemplate(source.ID)
 		if err != nil {
 			// Silently skip templates that fail to load
@@ -97,16 +98,12 @@ func Load(sourceFiles []SourceFile, options Options) (*model.Layouts, error) {
 
 		assets := []model.LayoutAsset{}
 
+		dir := filepath.Dir(source.Path)
+
 		for _, assetPath := range finder.List {
-			fmt.Printf("Found asset path: %s\n", assetPath)
-
 			assets = append(assets, model.LayoutAsset{
-				Path: filepath.Join(options.BasePath, assetPath),
+				Path: filepath.Join(dir, assetPath),
 			})
-		}
-
-		for key, asset := range source.Assets {
-			allAssets[key] = asset.URL
 		}
 
 		layouts.Map[source.ID] = model.Layout{
@@ -118,8 +115,6 @@ func Load(sourceFiles []SourceFile, options Options) (*model.Layouts, error) {
 			AssetReplaces: source.Assets,
 		}
 	}
-
-	fmt.Printf("%+v\n", allAssets)
 
 	return &layouts, nil
 }

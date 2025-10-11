@@ -124,6 +124,10 @@ type NoteViews struct {
 	Version string
 }
 
+func (n *NoteView) HTMLString() string {
+	return string(n.HTML)
+}
+
 func (n *NoteView) ID() string {
 	return n.Permalink
 }

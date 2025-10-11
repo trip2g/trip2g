@@ -1,6 +1,7 @@
 {
   "scripts": {
     "start": "npx @tailwindcss/cli -i ./assets/styles.css -o ./assets/output.css",
+    "trip2g-css": "npx tailwindcss -c ./demo/_layouts/trip2g.tailwind.config.js -o ./demo/_layouts/trip2g.css --watch",
     "dev": "vite",
     "graphqlgen": "graphql-codegen --config graphqlgen.js",
     "build": "tsc && vite build",

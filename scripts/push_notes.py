@@ -326,8 +326,8 @@ def main():
     print("-" * 80)
 
     for root, dirs, files in os.walk(base_path):
-        # Filter out directories that start with dot
-        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        # Filter out directories that start with dot and node_modules
+        dirs[:] = [d for d in dirs if not d.startswith('.') and d != 'node_modules']
         
         for fname in files:
             # Skip files that start with dot
