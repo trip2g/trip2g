@@ -1,6 +1,7 @@
 package layoutloader
 
 import (
+	"fmt"
 	"io"
 	"path/filepath"
 	"reflect"
@@ -33,9 +34,11 @@ type Env interface {
 
 type jetLoader struct {
 	templates map[string]string
+	log       logger.Logger
 }
 
 func (jl *jetLoader) Exists(templatePath string) bool {
+	jl.log.Debug("checking existence of template", "path", templatePath)
 	_, exists := jl.templates[templatePath]
 	return exists
 }
@@ -49,13 +52,17 @@ type Options struct {
 	BasePath string
 }
 
-func Load(sourceFiles []SourceFile, options Options) (*model.Layouts, error) {
+func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, error) {
+	log := logger.WithPrefix(env.Logger(), "layoutloader:")
+
 	jl := &jetLoader{
 		templates: make(map[string]string),
+		log:       log,
 	}
 
 	for _, source := range sourceFiles {
 		jl.templates[source.ID] = source.Content
+		log.Debug("loaded layout", "id", source.ID)
 	}
 
 	layouts := model.Layouts{
@@ -88,9 +95,11 @@ func Load(sourceFiles []SourceFile, options Options) (*model.Layouts, error) {
 		})
 
 		view, err := views.GetTemplate(source.ID)
-		if err != nil {
+		if err != nil || view == nil {
+			fmt.Printf("Failed to load layout template: %v nil: %+v\n", err, view == nil)
 			// Silently skip templates that fail to load
 			delete(jl.templates, source.ID)
+			continue
 		}
 
 		finder := assetFinder{}
@@ -125,6 +134,10 @@ type assetFinder struct {
 }
 
 func (w *assetFinder) Visit(vc utils.VisitorContext, node jet.Node) {
+	if node == nil {
+		return
+	}
+
 	switch node := node.(type) {
 	case *jet.IdentifierNode:
 		if node.Ident == "asset" {
@@ -139,5 +152,5 @@ func (w *assetFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 
 	vc.Visit(node)
 
-	w.WaitNext = true
+	w.WaitNext = false
 }

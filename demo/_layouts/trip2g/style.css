@@ -9,7 +9,7 @@
 
 @layer components {
 	p {
-		@apply text-base text-info;
+		@apply text-base;
 	}
 	.nav-link {
 		@apply flex justify-between text-global font-semibold hover:text-primary items-center relative before:content-[''] before:h-[2.2rem] before:w-1 hover:before:bg-primary before:absolute before:-left-8 before:top-1/2 before:-translate-y-1/2 before:rounded-r-std transition-colors duration-500 before:transition-colors before:duration-500 capitalize;

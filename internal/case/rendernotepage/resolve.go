@@ -62,6 +62,8 @@ type Response struct {
 	DefaultVersion string
 
 	ViewedAt *time.Time
+
+	IsAdmin bool
 }
 
 func (r *Response) NoteSubgraphsJSON() string {
@@ -96,6 +98,8 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	// only admins can access the latest version
 	isAdmin := request.UserToken.IsAdmin()
 	isLatest := request.Version == "latest"
+
+	response.IsAdmin = isAdmin
 
 	if isAdmin {
 		response.DefaultVersion = "latest"

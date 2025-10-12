@@ -1,16 +1,18 @@
+{{ import "blocks" }}
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 
   <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="index, follow">
-    <meta name="og:title" property="og:title" content="DataAI - Free Tailwind App Landing Page Template">
-    <meta property="og:image" content="https://designtocodes.com/wp-content/uploads/2023/12/DataAI-Free-Tailwind-App-Landing-Page-Template.jpg">
-    <meta name="og:description" content="DataAI is a simple and basic app landing page template made especially for people who want to showcase dashboards. Get our free landing page template now!">
+    <meta name="og:title" property="og:title" content="{{ note.Title }}">
+    <meta name="og:description" content="{{ note.Description }}">
+
     <link rel="icon" href="./public/assets/images/logo/favicon.png" type="image/gif" sizes="16x16">
-    <title>Home - DataAi Landing Page</title>
+    <title>{{ note.Title }}</title>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="./public/lib/fontawesome/css/all.min.css">
     <!-- Google Font -->
@@ -24,9 +26,11 @@
 
   <body class="landing">
     <!-- Preloader Start -->
+    <!--
     <div class="preloader h-full fixed w-full z-50 bg-white transition duration-300">
       <img src="{{ asset("logo.png") }}" class="max-w-[20rem] block absolute top-2/4 left-2/4 transform -translate-x-2/4 -translate-y-2/4" alt="Logo">
     </div>
+    -->
     <!-- Preloader End -->
     <!-- Header -->
     <header class=" bg-white sticky top-0 w-full z-10">
@@ -34,7 +38,7 @@
         <div class="container">
           <div class="flex items-center justify-between">
             <div class="flex items-center">
-              <a href="./index.html">
+              <a href="/">
                 <img src="{{ asset("logo.png") }}" class="w-36" alt="Logo Image">
               </a>
             </div>
@@ -47,21 +51,9 @@
 
             <div class="hidden lg:flex items-center ">
               <ul class="font-medium flex flex-col lg:flex-row relative" id="js-clone-nav">
-                <li>
-                  <a href="#" class="block py-2 pl-3 pr-4 font-semibold text-secondary hover:text-primary transition-colors duration-300" aria-current="page">Home</a>
-                </li>
-                <li>
-                  <a href="#d2c_about" class="block py-2 pl-3 pr-4 font-semibold text-secondary hover:text-primary transition-colors duration-300">About</a>
-                </li>
-                <li>
-                  <a href="#d2c_services" class="block py-2 pl-3 pr-4 font-semibold text-secondary hover:text-primary transition-colors duration-300">Services</a>
-                </li>
-                <li>
-                  <a href="#d2c_testimonial" class="block py-2 pl-3 pr-4 font-semibold text-secondary hover:text-primary transition-colors duration-300">Testimonials</a>
-                </li>
-                <li>
-                  <a href="#d2c_pricing" class="block py-2 pl-3 pr-4 font-semibold text-secondary hover:text-primary transition-colors duration-300">Pricing</a>
-                </li>
+                {{ yield nav_link(href="/", text="Главная") }}
+                {{ yield nav_link(href="/#d2c_about", text="Как работает?") }}
+                {{ yield nav_link(href="/#d2c_pricing", text="Цены") }}
                 <!-- Menu Item -->
                 <li class="relative hidden lg:block">
                   <a href="javascript:void(0)" class="nav-link before:hidden py-2 pl-3 pr-4 text-secondary" data-toggler="active" data-d2c-dropdown="dropdown1">
@@ -113,7 +105,7 @@
       <div class="container">
         <div class="ml-5">
           <h4 class="d2c_title mb-4">{{ note.Title }}</h4>
-          <div class="prose prose-stone prose-lg">
+          <div class="prose prose-stone">
           {{ note.HTMLString() | unsafe }}
           </div>
         </div>

@@ -1419,8 +1419,6 @@ html::selection {
 p {
   font-size: 1rem;
   line-height: 1.5rem;
-  --tw-text-opacity: 1;
-  color: rgb(177 168 185 / var(--tw-text-opacity, 1));
 }
 
 .nav-link {
@@ -2254,7 +2252,7 @@ select::-ms-expand {
 
 .text-info {
   --tw-text-opacity: 1;
-  color: rgb(177 168 185 / var(--tw-text-opacity, 1));
+  color: rgb(79 73 84 / var(--tw-text-opacity, 1));
 }
 
 .text-info-1 {

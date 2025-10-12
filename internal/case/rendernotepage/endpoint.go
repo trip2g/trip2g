@@ -99,7 +99,11 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 			viewErr := layout.View.Execute(ctx, vars, resp)
 			if viewErr != nil {
-				return nil, fmt.Errorf("failed to execute view: %w", viewErr)
+				if resp.IsAdmin {
+					_, _ = ctx.WriteString(viewErr.Error())
+				} else {
+					return nil, fmt.Errorf("failed to execute view: %w", viewErr)
+				}
 			}
 
 			return nil, nil

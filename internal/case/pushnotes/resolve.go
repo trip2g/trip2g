@@ -20,9 +20,14 @@ type Env interface {
 	Layouts() *appmodel.Layouts
 }
 
-var allowedExtensins = map[string]string{ //nolint:gochecknoglobals // it's a constant
-	".md":   "text/plain; charset=utf-8",
-	".html": "text/html; charset=utf-8",
+var allowedExtensins = map[string]struct{}{ //nolint:gochecknoglobals // it's a constant
+	".md":   {},
+	".html": {},
+}
+
+var allowedContentTypes = map[string]struct{}{ //nolint:gochecknoglobals // it's a constant
+	"text/plain; charset=utf-8": {},
+	"text/html; charset=utf-8":  {},
 }
 
 func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
@@ -31,17 +36,23 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	// 	return &model.ErrorPayload{Message: "No updates provided"}, nil
 	// }
 
+	log := logger.WithPrefix(env.Logger(), "pushNotes:")
+
 	for _, update := range input.Updates {
-		expectedContentType, allowed := allowedExtensins[strings.ToLower(filepath.Ext(update.Path))]
+		_, allowed := allowedExtensins[strings.ToLower(filepath.Ext(update.Path))]
 		if !allowed {
+			log.Info("unsupported file extension", "path", update.Path)
 			return &model.ErrorPayload{Message: "Only .md and .html files are supported"}, nil
 		}
 
 		// Once I accidentally pushed an image as content and the system accepted it.
 		// This is just a small safeguard check.
 		contentType := http.DetectContentType([]byte(update.Content))
-		if contentType != expectedContentType {
-			msg := fmt.Sprintf("%s: Expected content type: %s, actual: %s", update.Path, expectedContentType, contentType)
+		_, allowed = allowedContentTypes[contentType]
+
+		if !allowed {
+			msg := fmt.Sprintf("Unsupported content type: %s", contentType)
+			log.Info("unsupported content type", "path", update.Path, "contentType", contentType)
 			return &model.ErrorPayload{Message: msg}, nil
 		}
 
@@ -49,6 +60,8 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 			Path:    update.Path,
 			Content: update.Content,
 		}
+
+		log.Info("insert note", "path", update.Path)
 
 		insertErr := env.InsertNote(ctx, note)
 		if insertErr != nil {

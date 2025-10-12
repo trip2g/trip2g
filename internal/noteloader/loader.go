@@ -35,6 +35,8 @@ type Env interface {
 	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (string, error)
 	NoteAssetPath(asset db.NoteAsset) string
 	Logger() logger.Logger
+
+	layoutloader.Env
 }
 
 type Loader struct {
@@ -161,7 +163,7 @@ func (l *Loader) Load(ctx context.Context) error {
 		BasePath: layoutBasePath,
 	}
 
-	layouts, err := layoutloader.Load(templateSources, layoutOptions)
+	layouts, err := layoutloader.Load(l.env, templateSources, layoutOptions)
 	if err != nil {
 		return fmt.Errorf("failed to load layouts: %w", err)
 	}
