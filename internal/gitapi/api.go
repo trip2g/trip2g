@@ -401,7 +401,8 @@ func (api *API) preparePushNotesInput(changedFiles []string) (*model.PushNotesIn
 
 		content, readErr := readCmd.Output()
 		if readErr != nil {
-			return nil, fmt.Errorf("failed to read file %s: %w", file, readErr)
+			// Skip files that can't be read instead of failing the entire operation
+			continue
 		}
 
 		sha := sha256.New()
@@ -698,7 +699,8 @@ func (api *API) readContent(path string) ([]byte, error) {
 		if strings.Contains(errOutput, "does not exist in") {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to read file %s: %w | %s", path, err, errOutput)
+		// Skip files that can't be read instead of failing the entire operation
+		return nil, nil
 	}
 
 	return content, nil
