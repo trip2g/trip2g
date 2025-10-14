@@ -338,6 +338,8 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		Subgraphs: make(map[string]*model.NoteSubgraph),
 		Assets:    make(map[string]struct{}),
 
+		PartialRenderer: &PartialRenderer{md: ldr.md},
+
 		ResolvedLinks: make(map[string]string),
 
 		AssetReplaces: src.Assets,
@@ -352,6 +354,11 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 
 	pp.PreparePermalink()
 	pp.SetAst(doc)
+
+	// Set content for partial renderer
+	if partialRenderer, ok := pp.PartialRenderer.(*PartialRenderer); ok {
+		partialRenderer.SetContent(doc, content)
+	}
 
 	pp.RawMeta = meta.Get(context)
 	pp.Title = pp.ExtractTitle()

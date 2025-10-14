@@ -48,6 +48,15 @@ type NoteAssetReplace struct {
 	Hash string
 }
 
+type NoteViewHeadingBlock struct {
+	TitleHTML   string
+	ContentHTML string
+}
+
+type NoteViewPartialRenderer interface {
+	HeadingBlocks(level int) []NoteViewHeadingBlock
+}
+
 type NoteView struct {
 	Path  string
 	Title string
@@ -59,6 +68,8 @@ type NoteView struct {
 	Content []byte
 	HTML    template.HTML
 	ast     ast.Node // hide from JSON
+
+	PartialRenderer NoteViewPartialRenderer
 
 	// If the field `free_paragraphs` is present, then thin field will
 	// includes the first rendered paragraphs equal to this number.
