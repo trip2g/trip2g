@@ -391,7 +391,7 @@ func (api *API) preparePushNotesInput(changedFiles []string) (*model.PushNotesIn
 
 	for _, file := range changedFiles {
 		ext := strings.ToLower(filepath.Ext(file))
-		if ext != ".md" {
+		if ext != ".md" && ext != ".html" {
 			continue // only process markdown files
 		}
 
@@ -476,18 +476,24 @@ func (api *API) getChangedFiles() ([]string, error) {
 }
 
 func (api *API) applyChanges() error {
-	changedFiles, err := api.getChangedFiles()
+	// changedFiles, err := api.getChangedFiles()
+	// if err != nil {
+	// 	api.logger.Warn("no changed files", "error", err)
+	//
+	// 	// list all files
+	// 	// TODO: fix logic for first push
+	// 	changedFiles, err = api.getAllFiles()
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to get all files: %w", err)
+	// 	}
+	//
+	// 	api.logger.Info("all files", "files", changedFiles)
+	// }
+
+	// TODO: for now, always list all files
+	changedFiles, err := api.getAllFiles()
 	if err != nil {
-		api.logger.Warn("no changed files", "error", err)
-
-		// list all files
-		// TODO: fix logic for first push
-		changedFiles, err = api.getAllFiles()
-		if err != nil {
-			return fmt.Errorf("failed to get all files: %w", err)
-		}
-
-		api.logger.Info("all files", "files", changedFiles)
+		return fmt.Errorf("failed to get all files: %w", err)
 	}
 
 	pushInput, err := api.preparePushNotesInput(changedFiles)
@@ -586,8 +592,6 @@ func (api *API) uploadNoteAssets(note model.PushedNote, _ []string) error {
 	for _, asset := range note.Assets {
 		assetPath := api.resolveAssetPath(note.Path, asset.Path)
 
-		api.logger.Info("resolved asset path", "note", note.Path, "relative", asset.Path, "asset", assetPath)
-
 		content, err := api.readContent(assetPath)
 		if err != nil {
 			return fmt.Errorf("failed to calculate hash for asset %s: %w", assetPath, err)
@@ -614,12 +618,12 @@ func (api *API) uploadNoteAssets(note model.PushedNote, _ []string) error {
 
 		input := model.UploadNoteAssetInput{
 			NoteID:       note.ID,
-			Path:         note.Path,
+			Path:         asset.Path, // relative path to asset (_layouts/trip2g/style.out.css)
 			Sha256Hash:   hash,
-			AbsolutePath: "/" + assetPath,
+			AbsolutePath: "/" + assetPath, // absolute path in git repo
 			File: graphql.Upload{
 				File:        bytes.NewReader(content),
-				Filename:    filepath.Base(note.Path),
+				Filename:    filepath.Base(assetPath),
 				Size:        int64(len(content)),
 				ContentType: "text/plain",
 			},
@@ -711,6 +715,14 @@ func (api *API) resolveAssetPath(notePath, relativePath string) string {
 		return relativePath[1:]
 	}
 
+	// First, try the path as-is (it might already be correct)
+	cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "ls-files", "--error-unmatch", relativePath)
+	cmd.Stderr = nil
+	err := cmd.Run()
+	if err == nil {
+		return relativePath
+	}
+
 	noteDirParts := strings.Split(filepath.Dir(notePath), string(filepath.Separator))
 
 	for i := len(noteDirParts) - 1; i >= 0; i-- {
@@ -719,14 +731,13 @@ func (api *API) resolveAssetPath(notePath, relativePath string) string {
 
 		// check exists in git
 		cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "ls-files", "--error-unmatch", assetPath)
-		cmd.Stderr = os.Stderr
+		cmd.Stderr = nil
 
 		err := cmd.Run()
 		if err == nil {
 			return assetPath
 		}
 	}
-
 	return relativePath
 }
 
