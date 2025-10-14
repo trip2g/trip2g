@@ -13,6 +13,8 @@
       # - { service_name: trip2g_mbti, listen_addr: "localhost:8082", domain: "mbti.trip2g.com" }
       - { service_name: trip2g_taro, listen_addr: "localhost:8083", domain: "taro.trip2g.com" }
       - { service_name: trip2g_secondbrain, listen_addr: "localhost:8085", domain: "secondbrain.trip2g.com" }
+      - { service_name: trip2g_blizzard, listen_addr: "localhost:8086", domain: "blizzard.trip2g.com" }
+      - { service_name: trip2g_landing, listen_addr: "localhost:8087", domain: "trip2g.com" }
   tasks:
     - name: Create trip2g user
       user:

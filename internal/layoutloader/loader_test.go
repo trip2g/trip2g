@@ -3,10 +3,19 @@ package layoutloader
 import (
 	"bytes"
 	"testing"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
 )
+
+type testEnv struct {
+	logger logger.Logger
+}
+
+func (t *testEnv) Logger() logger.Logger {
+	return t.logger
+}
 
 func TestResolveAssets(t *testing.T) {
 	sources := []SourceFile{{
@@ -27,8 +36,9 @@ func TestResolveAssets(t *testing.T) {
 	}}
 
 	options := Options{}
+	env := &testEnv{logger: &logger.TestLogger{}}
 
-	layouts, err := Load(sources, options)
+	layouts, err := Load(env, sources, options)
 	require.NoError(t, err)
 	require.Len(t, layouts.Map, 1)
 
