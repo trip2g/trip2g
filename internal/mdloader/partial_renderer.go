@@ -72,9 +72,45 @@ func (pr *PartialRenderer) HeadingBlocks(level int) []model.NoteViewHeadingBlock
 	return blocks
 }
 
+func (pr *PartialRenderer) Introduce() model.NoteViewHeadingBlock {
+	if pr.ast == nil || pr.content == nil {
+		return model.NoteViewHeadingBlock{}
+	}
+
+	var allNodes []ast.Node
+
+	// Collect all top-level nodes
+	for child := pr.ast.FirstChild(); child != nil; child = child.NextSibling() {
+		allNodes = append(allNodes, child)
+	}
+
+	// Find the first heading of any level
+	var firstHeadingIndex int = -1
+	for i, node := range allNodes {
+		if _, ok := node.(*ast.Heading); ok {
+			firstHeadingIndex = i
+			break
+		}
+	}
+
+	// If no headings found, return all content
+	if firstHeadingIndex == -1 {
+		return model.NoteViewHeadingBlock{
+			TitleHTML:   "",
+			ContentHTML: pr.renderNodeRange(allNodes, 0, len(allNodes)),
+		}
+	}
+
+	// Return content before the first heading
+	return model.NoteViewHeadingBlock{
+		TitleHTML:   "",
+		ContentHTML: pr.renderNodeRange(allNodes, 0, firstHeadingIndex),
+	}
+}
+
 func (pr *PartialRenderer) renderHeading(heading *ast.Heading) string {
 	var buf bytes.Buffer
-	
+
 	// Render only the children of the heading (the content inside)
 	for child := heading.FirstChild(); child != nil; child = child.NextSibling() {
 		err := pr.md.Renderer().Render(&buf, pr.content, child)
@@ -82,7 +118,7 @@ func (pr *PartialRenderer) renderHeading(heading *ast.Heading) string {
 			continue // Skip nodes that can't be rendered
 		}
 	}
-	
+
 	return buf.String()
 }
 
@@ -92,7 +128,7 @@ func (pr *PartialRenderer) renderNodeRange(allNodes []ast.Node, start, end int) 
 	}
 
 	var buf bytes.Buffer
-	
+
 	for i := start; i < end && i < len(allNodes); i++ {
 		node := allNodes[i]
 		err := pr.md.Renderer().Render(&buf, pr.content, node)

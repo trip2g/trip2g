@@ -25,7 +25,8 @@
       "Bash(ls:*)",
       "Bash(go fmt:*)",
       "Bash(go fmt:*)",
-      "Bash(gofmt:*)"
+      "Bash(gofmt:*)",
+      "Bash(npm install:*)"
     ],
     "deny": []
   },

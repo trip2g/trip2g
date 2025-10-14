@@ -55,6 +55,7 @@ type NoteViewHeadingBlock struct {
 
 type NoteViewPartialRenderer interface {
 	HeadingBlocks(level int) []NoteViewHeadingBlock
+	Introduce() NoteViewHeadingBlock
 }
 
 type NoteView struct {

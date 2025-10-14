@@ -8,10 +8,11 @@
   },
   "private": true,
   "devDependencies": {
-    "tailwindcss": "^4.0.0-alpha.30"
+    "tailwindcss": "^4.1"
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.19",
     "preline": "^3.2.3"
   }
 }
