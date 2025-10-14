@@ -47,5 +47,9 @@ func TestResolveAssets(t *testing.T) {
 	err = layouts.Map["/trip2g/main"].View.Execute(&buf, nil, nil)
 	require.NoError(t, err)
 
+	require.Len(t, layouts.Map["/trip2g/main"].Assets, 2)
+	require.Equal(t, "_layouts/trip2g/style.css", layouts.Map["/trip2g/main"].Assets[0].Path)
+	require.Equal(t, "_layouts/trip2g/main.js", layouts.Map["/trip2g/main"].Assets[1].Path)
+
 	require.Equal(t, `https://storage/style.css, https://storage/main.js`, buf.String())
 }

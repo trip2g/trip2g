@@ -1,0 +1,13 @@
+{
+  "name": "trip2g_small",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tailwindcss -i ./style.css -o style.out.css -w"
+  },
+  "private": true,
+  "devDependencies": {
+    "tailwindcss": "^4.0.0-alpha.30"
+  }
+}

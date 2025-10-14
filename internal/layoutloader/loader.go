@@ -105,6 +105,8 @@ func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, e
 		finder := assetFinder{}
 		utils.Walk(view, &finder)
 
+		log.Debug("detect assets", "assets", finder.List)
+
 		assets := []model.LayoutAsset{}
 
 		dir := filepath.Dir(source.Path)
@@ -142,6 +144,8 @@ func (w *assetFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	case *jet.IdentifierNode:
 		if node.Ident == "asset" {
 			w.WaitNext = true
+			vc.Visit(node)
+			return
 		}
 
 	case *jet.StringNode:
