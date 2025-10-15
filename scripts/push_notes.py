@@ -6,6 +6,7 @@ import json
 import hashlib
 import base64
 import requests
+from collections import OrderedDict
 
 # get first arg or http://localhost:8081
 
@@ -176,11 +177,11 @@ def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash:
     
     try:
         with open(asset_path, 'rb') as f:
-            files = {
-                'operations': (None, operations),
-                'map': (None, files_map),
-                '0': (os.path.basename(asset_path), f, 'application/octet-stream')
-            }
+            files = OrderedDict([
+                ('operations', (None, operations)),
+                ('map', (None, files_map)),
+                ('0', (os.path.basename(asset_path), f, 'application/octet-stream'))
+            ])
             
             upload_headers = {
                 "X-API-Key": API_KEY,
@@ -205,6 +206,12 @@ def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash:
                 print(f"⏩ Asset upload skipped (already exists): {relative_path}")
                 return True
                 
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 422:
+            print(f"❌ 422 Unprocessable Entity for {relative_path}: {e.response.text}")
+        else:
+            print(f"❌ HTTP error uploading asset {relative_path}: {e}")
+        return False
     except Exception as e:
         print(f"❌ Failed to upload asset {relative_path}: {e}")
         return False

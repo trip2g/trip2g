@@ -170,6 +170,16 @@
         name: "trip2g_secondbrain"
         state: restarted
 
+    - name: Restart service
+      systemd:
+        name: "trip2g_blizzard"
+        state: restarted
+
+    - name: Restart service
+      systemd:
+        name: "trip2g_landing"
+        state: restarted
+
     - name: Restart litestream
       systemd:
         name: litestream
