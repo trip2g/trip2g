@@ -361,7 +361,7 @@ func (api *API) handleGitReceivePack(ctx *fasthttp.RequestCtx) error {
 		return fmt.Errorf("failed to run git-receive-pack: %w", err)
 	}
 
-	err = api.applyChanges()
+	_, err = api.ApplyChanges(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to apply changes: %w", err)
 	}
@@ -475,7 +475,7 @@ func (api *API) getChangedFiles() ([]string, error) {
 	return api.filterDotFiles(files), nil
 }
 
-func (api *API) applyChanges() error {
+func (api *API) ApplyChanges(_ context.Context) ([]string, error) {
 	// changedFiles, err := api.getChangedFiles()
 	// if err != nil {
 	// 	api.logger.Warn("no changed files", "error", err)
@@ -493,37 +493,37 @@ func (api *API) applyChanges() error {
 	// TODO: for now, always list all files
 	changedFiles, err := api.getAllFiles()
 	if err != nil {
-		return fmt.Errorf("failed to get all files: %w", err)
+		return nil, fmt.Errorf("failed to get all files: %w", err)
 	}
 
 	pushInput, err := api.preparePushNotesInput(changedFiles)
 	if err != nil {
-		return fmt.Errorf("failed to prepare push notes input: %w", err)
+		return nil, fmt.Errorf("failed to prepare push notes input: %w", err)
 	}
 
 	pushPayload, err := api.env.PushNotes(api.ctx, *pushInput)
 	if err != nil {
-		return fmt.Errorf("failed to push notes: %w", err)
+		return nil, fmt.Errorf("failed to push notes: %w", err)
 	}
 
 	switch payload := pushPayload.(type) {
 	case *model.ErrorPayload:
-		return fmt.Errorf("failed to push notes: %s", payload.Message)
+		return nil, fmt.Errorf("failed to push notes: %s", payload.Message)
 	case *model.PushNotesPayload:
 		api.logger.Info("notes pushed", "count", len(payload.Notes))
 
 		for _, note := range payload.Notes {
 			uploadErr := api.uploadNoteAssets(note, changedFiles)
 			if uploadErr != nil {
-				return fmt.Errorf("failed to upload note assets %s: %w", note.Path, uploadErr)
+				return nil, fmt.Errorf("failed to upload note assets %s: %w", note.Path, uploadErr)
 			}
 		}
 
 	default:
-		return fmt.Errorf("unknown push payload type: %T", payload)
+		return nil, fmt.Errorf("unknown push payload type: %T", payload)
 	}
 
-	return nil
+	return changedFiles, nil
 }
 
 func (api *API) getAllFiles() ([]string, error) {

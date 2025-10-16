@@ -53,3 +53,24 @@ func TestResolveAssets(t *testing.T) {
 
 	require.Equal(t, `https://storage/style.css, https://storage/main.js`, buf.String())
 }
+
+func TestYieldBlocks(t *testing.T) {
+	sources := []SourceFile{{
+		ID:        "/trip2g/main",
+		VersionID: 27,
+		Path:      "_layouts/trip2g/main.html",
+		Content:   `{{ import "blocks" }}{{ yield main_layout() content }}hello{{ end }}`,
+	}, {
+		ID:        "/trip2g/blocks",
+		VersionID: 28,
+		Path:      "_layouts/trip2g/blocks.html",
+		Content:   `{{ block main_layout() }}<wrapper>{{ yield content }}</wrapper>{{ end }}`,
+	}}
+
+	options := Options{}
+	env := &testEnv{logger: &logger.TestLogger{}}
+
+	layouts, err := Load(env, sources, options)
+	require.NoError(t, err)
+	require.Len(t, layouts.Map, 2)
+}

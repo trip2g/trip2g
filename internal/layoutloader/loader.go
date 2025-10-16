@@ -152,6 +152,10 @@ func (w *assetFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 		if w.WaitNext {
 			w.List = append(w.List, node.Text)
 		}
+
+	// fix the jet panic on missing Parameters
+	case *jet.YieldNode:
+		node.Parameters = &jet.BlockParameterList{}
 	}
 
 	vc.Visit(node)

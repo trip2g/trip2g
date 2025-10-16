@@ -399,6 +399,10 @@ func (a *app) setFileStorageExpiringCallback(ctx context.Context) {
 	})
 }
 
+func (a *app) ApplyGitChanges(ctx context.Context) ([]string, error) {
+	return a.gitAPI.ApplyChanges(ctx)
+}
+
 func (a *app) NotionClientByIntegrationID(integrationID int64) notiontypes.Client {
 	client, err := a.notionClientManager.Get(a.ctx, a, integrationID)
 	if err != nil {
