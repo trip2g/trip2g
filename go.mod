@@ -17,6 +17,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.9.0
 	github.com/minio/minio-go/v7 v7.0.91
+	github.com/modelcontextprotocol/go-sdk v1.0.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/quailyquaily/goldmark-enclave v0.1.9
 	github.com/resend/resend-go/v2 v2.20.0
@@ -31,7 +32,7 @@ require (
 	github.com/yuin/goldmark v1.7.12
 	github.com/yuin/goldmark-meta v1.1.0
 	go.abhg.dev/goldmark/wikilink v0.6.0
-	golang.org/x/crypto v0.38.0
+	golang.org/x/crypto v0.39.0
 	maragu.dev/goqite v0.3.1
 	modernc.org/sqlite v1.37.0
 )
@@ -171,6 +172,7 @@ require (
 	github.com/google/cel-go v0.24.1 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/google/jsonschema-go v0.3.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
@@ -325,6 +327,7 @@ require (
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.3.0 // indirect
 	github.com/ykadowak/zerologlint v0.1.5 // indirect
+	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	gitlab.com/bosi/decorder v0.4.2 // indirect
 	go-simpler.org/musttag v0.13.1 // indirect
@@ -343,14 +346,14 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b // indirect
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
-	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/mod v0.25.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/oauth2 v0.29.0 // indirect
-	golang.org/x/sync v0.14.0 // indirect
+	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
-	golang.org/x/tools v0.33.0 // indirect
+	golang.org/x/tools v0.34.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.230.0 // indirect
 	google.golang.org/genproto v0.0.0-20250428153025-10db94c68c34 // indirect

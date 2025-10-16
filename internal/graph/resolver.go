@@ -16,6 +16,7 @@ import (
 	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/createtgbot"
+	"trip2g/internal/case/admin/createuser"
 	"trip2g/internal/case/admin/deleteboostycredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
@@ -42,6 +43,7 @@ import (
 	"trip2g/internal/case/admin/updateredirect"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updatetgbot"
+	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createemailwaitlistrequest"
@@ -158,7 +160,9 @@ type Env interface {
 	makereleaselive.Env
 	updatenotegraphpositions.Env
 	createoffer.Env
+	createuser.Env
 	updateoffer.Env
+	updateuser.Env
 	createredirect.Env
 	updateredirect.Env
 	deleteredirect.Env

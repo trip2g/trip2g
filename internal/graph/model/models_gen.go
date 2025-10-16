@@ -66,6 +66,10 @@ type CreateTgBotOrErrorPayload interface {
 	IsCreateTgBotOrErrorPayload()
 }
 
+type CreateUserOrErrorPayload interface {
+	IsCreateUserOrErrorPayload()
+}
+
 type DeleteBoostyCredentialsOrErrorPayload interface {
 	IsDeleteBoostyCredentialsOrErrorPayload()
 }
@@ -212,6 +216,10 @@ type UpdateSubgraphOrErrorPayload interface {
 
 type UpdateTgBotOrErrorPayload interface {
 	IsUpdateTgBotOrErrorPayload()
+}
+
+type UpdateUserOrErrorPayload interface {
+	IsUpdateUserOrErrorPayload()
 }
 
 type UpdateUserSubgraphAccessOrErrorPayload interface {
@@ -561,6 +569,16 @@ type CreateTgBotPayload struct {
 
 func (CreateTgBotPayload) IsCreateTgBotOrErrorPayload() {}
 
+type CreateUserInput struct {
+	Email string `json:"email"`
+}
+
+type CreateUserPayload struct {
+	User *db.User `json:"user"`
+}
+
+func (CreateUserPayload) IsCreateUserOrErrorPayload() {}
+
 type DeleteBoostyCredentialsInput struct {
 	ID int64 `json:"id"`
 }
@@ -739,6 +757,10 @@ func (ErrorPayload) IsDeleteHTMLInjectionOrErrorPayload() {}
 func (ErrorPayload) IsUpdateCronJobOrErrorPayload() {}
 
 func (ErrorPayload) IsRunCronJobOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateUserOrErrorPayload() {}
+
+func (ErrorPayload) IsUpdateUserOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`
@@ -1153,6 +1175,17 @@ type UpdateTgBotPayload struct {
 }
 
 func (UpdateTgBotPayload) IsUpdateTgBotOrErrorPayload() {}
+
+type UpdateUserInput struct {
+	ID    int64   `json:"id"`
+	Email *string `json:"email,omitempty"`
+}
+
+type UpdateUserPayload struct {
+	User *db.User `json:"user"`
+}
+
+func (UpdateUserPayload) IsUpdateUserOrErrorPayload() {}
 
 type UpdateUserSubgraphAccessPayload struct {
 	UserSubgraphAccess *db.UserSubgraphAccess `json:"userSubgraphAccess"`

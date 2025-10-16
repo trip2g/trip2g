@@ -25,6 +25,7 @@ import (
 	"trip2g/internal/case/admin/createredirect"
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/createtgbot"
+	"trip2g/internal/case/admin/createuser"
 	"trip2g/internal/case/admin/deleteboostycredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
@@ -51,6 +52,7 @@ import (
 	"trip2g/internal/case/admin/updateredirect"
 	"trip2g/internal/case/admin/updatesubgraph"
 	"trip2g/internal/case/admin/updatetgbot"
+	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/createemailwaitlistrequest"
@@ -410,6 +412,16 @@ func (r *adminLatestNoteViewsConnectionResolver) Nodes(ctx context.Context, obj 
 	}
 
 	return res, nil
+}
+
+// CreateUser is the resolver for the createUser field.
+func (r *adminMutationResolver) CreateUser(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateUserInput) (model.CreateUserOrErrorPayload, error) {
+	return createuser.Resolve(ctx, r.env(ctx), input)
+}
+
+// UpdateUser is the resolver for the updateUser field.
+func (r *adminMutationResolver) UpdateUser(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateUserInput) (model.UpdateUserOrErrorPayload, error) {
+	return updateuser.Resolve(ctx, r.env(ctx), input)
 }
 
 // UpdateSubgraph is the resolver for the updateSubgraph field.
@@ -1061,6 +1073,11 @@ func (r *adminQueryResolver) UserSubgraphAccess(ctx context.Context, obj *appmod
 // Offer is the resolver for the offer field.
 func (r *adminQueryResolver) Offer(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.Offer, error) {
 	return resolveOne[db.Offer](ctx, id, r.env(ctx).OfferByID)
+}
+
+// User is the resolver for the user field.
+func (r *adminQueryResolver) User(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.User, error) {
+	return resolveOne[db.User](ctx, id, r.env(ctx).UserByID)
 }
 
 // Purchase is the resolver for the purchase field.

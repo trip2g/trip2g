@@ -303,6 +303,7 @@ type ComplexityRoot struct {
 		CreateRedirect               func(childComplexity int, input model.CreateRedirectInput) int
 		CreateRelease                func(childComplexity int, input model.CreateReleaseInput) int
 		CreateTgBot                  func(childComplexity int, input model.CreateTgBotInput) int
+		CreateUser                   func(childComplexity int, input model.CreateUserInput) int
 		DeleteBoostyCredentials      func(childComplexity int, input model.DeleteBoostyCredentialsInput) int
 		DeleteHTMLInjection          func(childComplexity int, input model.DeleteHTMLInjectionInput) int
 		DeleteNotFoundIgnoredPattern func(childComplexity int, input model.DeleteNotFoundIgnoredPatternInput) int
@@ -332,6 +333,7 @@ type ComplexityRoot struct {
 		UpdateRedirect               func(childComplexity int, input model.UpdateRedirectInput) int
 		UpdateSubgraph               func(childComplexity int, input updatesubgraph.Request) int
 		UpdateTgBot                  func(childComplexity int, input model.UpdateTgBotInput) int
+		UpdateUser                   func(childComplexity int, input model.UpdateUserInput) int
 		UpdateUserSubgraphAccess     func(childComplexity int, input updateusersubgraphaccess.Request) int
 	}
 
@@ -495,6 +497,7 @@ type ComplexityRoot struct {
 		TgBotChats                 func(childComplexity int, filter model.AdminTgBotChatsFilterInput) int
 		TgChatMembers              func(childComplexity int, filter model.AdminTgChatMembersFilterInput) int
 		TgChatSubgraphAccesses     func(childComplexity int, filter model.AdminTgChatSubgraphAccessesFilterInput) int
+		User                       func(childComplexity int, id int64) int
 		UserSubgraphAccess         func(childComplexity int, id int64) int
 	}
 
@@ -716,6 +719,10 @@ type ComplexityRoot struct {
 
 	CreateTgBotPayload struct {
 		TgBot func(childComplexity int) int
+	}
+
+	CreateUserPayload struct {
+		User func(childComplexity int) int
 	}
 
 	DeleteBoostyCredentialsPayload struct {
@@ -1001,6 +1008,10 @@ type ComplexityRoot struct {
 		TgBot func(childComplexity int) int
 	}
 
+	UpdateUserPayload struct {
+		User func(childComplexity int) int
+	}
+
 	UpdateUserSubgraphAccessPayload struct {
 		UserSubgraphAccess func(childComplexity int) int
 	}
@@ -1140,6 +1151,8 @@ type AdminLatestNoteViewsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminLatestNoteViewsConnection) ([]model1.NoteView, error)
 }
 type AdminMutationResolver interface {
+	CreateUser(ctx context.Context, obj *model1.AdminMutation, input model.CreateUserInput) (model.CreateUserOrErrorPayload, error)
+	UpdateUser(ctx context.Context, obj *model1.AdminMutation, input model.UpdateUserInput) (model.UpdateUserOrErrorPayload, error)
 	UpdateSubgraph(ctx context.Context, obj *model1.AdminMutation, input updatesubgraph.Request) (model.UpdateSubgraphOrErrorPayload, error)
 	UpdateUserSubgraphAccess(ctx context.Context, obj *model1.AdminMutation, input updateusersubgraphaccess.Request) (model.UpdateUserSubgraphAccessOrErrorPayload, error)
 	CreateOffer(ctx context.Context, obj *model1.AdminMutation, input model.CreateOfferInput) (model.CreateOfferOrErrorPayload, error)
@@ -1275,6 +1288,7 @@ type AdminQueryResolver interface {
 	NoteView(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.NoteView, error)
 	UserSubgraphAccess(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.UserSubgraphAccess, error)
 	Offer(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Offer, error)
+	User(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.User, error)
 	Purchase(ctx context.Context, obj *model1.AdminQuery, id string) (*db.Purchase, error)
 	Redirect(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Redirect, error)
 	TgBot(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.TgBot, error)
@@ -2226,6 +2240,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.CreateTgBot(childComplexity, args["input"].(model.CreateTgBotInput)), true
 
+	case "AdminMutation.createUser":
+		if e.complexity.AdminMutation.CreateUser == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_createUser_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.CreateUser(childComplexity, args["input"].(model.CreateUserInput)), true
+
 	case "AdminMutation.deleteBoostyCredentials":
 		if e.complexity.AdminMutation.DeleteBoostyCredentials == nil {
 			break
@@ -2573,6 +2599,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.UpdateTgBot(childComplexity, args["input"].(model.UpdateTgBotInput)), true
+
+	case "AdminMutation.updateUser":
+		if e.complexity.AdminMutation.UpdateUser == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_updateUser_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.UpdateUser(childComplexity, args["input"].(model.UpdateUserInput)), true
 
 	case "AdminMutation.updateUserSubgraphAccess":
 		if e.complexity.AdminMutation.UpdateUserSubgraphAccess == nil {
@@ -3463,6 +3501,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminQuery.TgChatSubgraphAccesses(childComplexity, args["filter"].(model.AdminTgChatSubgraphAccessesFilterInput)), true
 
+	case "AdminQuery.user":
+		if e.complexity.AdminQuery.User == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_user_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.User(childComplexity, args["id"].(int64)), true
+
 	case "AdminQuery.userSubgraphAccess":
 		if e.complexity.AdminQuery.UserSubgraphAccess == nil {
 			break
@@ -4216,6 +4266,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CreateTgBotPayload.TgBot(childComplexity), true
+
+	case "CreateUserPayload.user":
+		if e.complexity.CreateUserPayload.User == nil {
+			break
+		}
+
+		return e.complexity.CreateUserPayload.User(childComplexity), true
 
 	case "DeleteBoostyCredentialsPayload.boostyCredentials":
 		if e.complexity.DeleteBoostyCredentialsPayload.BoostyCredentials == nil {
@@ -5119,6 +5176,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UpdateTgBotPayload.TgBot(childComplexity), true
 
+	case "UpdateUserPayload.user":
+		if e.complexity.UpdateUserPayload.User == nil {
+			break
+		}
+
+		return e.complexity.UpdateUserPayload.User(childComplexity), true
+
 	case "UpdateUserSubgraphAccessPayload.userSubgraphAccess":
 		if e.complexity.UpdateUserSubgraphAccessPayload.UserSubgraphAccess == nil {
 			break
@@ -5320,6 +5384,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateRedirectInput,
 		ec.unmarshalInputCreateReleaseInput,
 		ec.unmarshalInputCreateTgBotInput,
+		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputDeleteBoostyCredentialsInput,
 		ec.unmarshalInputDeleteHTMLInjectionInput,
 		ec.unmarshalInputDeleteNotFoundIgnoredPatternInput,
@@ -5360,6 +5425,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateRedirectInput,
 		ec.unmarshalInputUpdateSubgraphInput,
 		ec.unmarshalInputUpdateTgBotInput,
+		ec.unmarshalInputUpdateUserInput,
 		ec.unmarshalInputUpdateUserSubgraphAccessInput,
 		ec.unmarshalInputUploadNoteAssetInput,
 		ec.unmarshalInputViewerOffersFilter,
@@ -5729,6 +5795,29 @@ func (ec *executionContext) field_AdminMutation_createTgBot_argsInput(
 	}
 
 	var zeroVal model.CreateTgBotInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_createUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_createUser_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_createUser_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.CreateUserInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateUserInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateUserInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateUserInput
 	return zeroVal, nil
 }
 
@@ -6422,6 +6511,29 @@ func (ec *executionContext) field_AdminMutation_updateUserSubgraphAccess_argsInp
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_AdminMutation_updateUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_updateUser_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_updateUser_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.UpdateUserInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateUserInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateUserInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateUserInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_AdminQuery_activeUserSubgraphs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -6893,6 +7005,29 @@ func (ec *executionContext) field_AdminQuery_userSubgraphAccess_args(ctx context
 	return args, nil
 }
 func (ec *executionContext) field_AdminQuery_userSubgraphAccess_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int64, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNInt642int64(ctx, tmp)
+	}
+
+	var zeroVal int64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_user_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_user_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_user_argsID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (int64, error) {
@@ -11409,6 +11544,116 @@ func (ec *executionContext) fieldContext_AdminLatestNoteViewsConnection_nodes(_ 
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_createUser(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_createUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().CreateUser(rctx, obj, fc.Args["input"].(model.CreateUserInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.CreateUserOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNCreateUserOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateUserOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateUserOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_updateUser(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_updateUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().UpdateUser(rctx, obj, fc.Args["input"].(model.UpdateUserInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.UpdateUserOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNUpdateUserOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateUserOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_updateUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UpdateUserOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_updateUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -18850,6 +19095,68 @@ func (ec *executionContext) fieldContext_AdminQuery_offer(ctx context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_user(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().User(rctx, obj, fc.Args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalOAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_user_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_purchase(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminQuery_purchase(ctx, field)
 	if err != nil {
@@ -24484,6 +24791,60 @@ func (ec *executionContext) fieldContext_CreateTgBotPayload_tgBot(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateUserPayload_user(ctx context.Context, field graphql.CollectedField, obj *model.CreateUserPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreateUserPayload_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CreateUserPayload_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateUserPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _DeleteBoostyCredentialsPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteBoostyCredentialsPayload) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_DeleteBoostyCredentialsPayload_deletedId(ctx, field)
 	if err != nil {
@@ -25908,6 +26269,10 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "createUser":
+				return ec.fieldContext_AdminMutation_createUser(ctx, field)
+			case "updateUser":
+				return ec.fieldContext_AdminMutation_updateUser(ctx, field)
 			case "updateSubgraph":
 				return ec.fieldContext_AdminMutation_updateSubgraph(ctx, field)
 			case "updateUserSubgraphAccess":
@@ -27906,6 +28271,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_userSubgraphAccess(ctx, field)
 			case "offer":
 				return ec.fieldContext_AdminQuery_offer(ctx, field)
+			case "user":
+				return ec.fieldContext_AdminQuery_user(ctx, field)
 			case "purchase":
 				return ec.fieldContext_AdminQuery_purchase(ctx, field)
 			case "redirect":
@@ -30832,6 +31199,60 @@ func (ec *executionContext) fieldContext_UpdateTgBotPayload_tgBot(_ context.Cont
 				return ec.fieldContext_AdminTgBot_createdBy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminTgBot", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UpdateUserPayload_user(ctx context.Context, field graphql.CollectedField, obj *model.UpdateUserPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpdateUserPayload_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.User)
+	fc.Result = res
+	return ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UpdateUserPayload_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UpdateUserPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
 		},
 	}
 	return fc, nil
@@ -34681,6 +35102,33 @@ func (ec *executionContext) unmarshalInputCreateTgBotInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, obj any) (model.CreateUserInput, error) {
+	var it model.CreateUserInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"email"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDeleteBoostyCredentialsInput(ctx context.Context, obj any) (model.DeleteBoostyCredentialsInput, error) {
 	var it model.DeleteBoostyCredentialsInput
 	asMap := map[string]any{}
@@ -36020,6 +36468,40 @@ func (ec *executionContext) unmarshalInputUpdateTgBotInput(ctx context.Context, 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, obj any) (model.UpdateUserInput, error) {
+	var it model.UpdateUserInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "email"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateUserSubgraphAccessInput(ctx context.Context, obj any) (updateusersubgraphaccess.Request, error) {
 	var it updateusersubgraphaccess.Request
 	asMap := map[string]any{}
@@ -36441,6 +36923,29 @@ func (ec *executionContext) _CreateTgBotOrErrorPayload(ctx context.Context, sel 
 			return graphql.Null
 		}
 		return ec._CreateTgBotPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _CreateUserOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateUserOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateUserPayload:
+		return ec._CreateUserPayload(ctx, sel, &obj)
+	case *model.CreateUserPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateUserPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -37278,6 +37783,29 @@ func (ec *executionContext) _UpdateTgBotOrErrorPayload(ctx context.Context, sel 
 			return graphql.Null
 		}
 		return ec._UpdateTgBotPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _UpdateUserOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateUserOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.UpdateUserPayload:
+		return ec._UpdateUserPayload(ctx, sel, &obj)
+	case *model.UpdateUserPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._UpdateUserPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -39936,6 +40464,78 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("AdminMutation")
+		case "createUser":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createUser(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "updateUser":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_updateUser(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "updateSubgraph":
 			field := field
 
@@ -44414,6 +45014,39 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_user(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "purchase":
 			field := field
 
@@ -47632,6 +48265,45 @@ func (ec *executionContext) _CreateTgBotPayload(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var createUserPayloadImplementors = []string{"CreateUserPayload", "CreateUserOrErrorPayload"}
+
+func (ec *executionContext) _CreateUserPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateUserPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createUserPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateUserPayload")
+		case "user":
+			out.Values[i] = ec._CreateUserPayload_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var deleteBoostyCredentialsPayloadImplementors = []string{"DeleteBoostyCredentialsPayload", "DeleteBoostyCredentialsOrErrorPayload"}
 
 func (ec *executionContext) _DeleteBoostyCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteBoostyCredentialsPayload) graphql.Marshaler {
@@ -47977,7 +48649,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHTMLInjectionOrErrorPayload", "UpdateHTMLInjectionOrErrorPayload", "DeleteHTMLInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHTMLInjectionOrErrorPayload", "UpdateHTMLInjectionOrErrorPayload", "DeleteHTMLInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -50845,6 +51517,45 @@ func (ec *executionContext) _UpdateTgBotPayload(ctx context.Context, sel ast.Sel
 			out.Values[i] = graphql.MarshalString("UpdateTgBotPayload")
 		case "tgBot":
 			out.Values[i] = ec._UpdateTgBotPayload_tgBot(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var updateUserPayloadImplementors = []string{"UpdateUserPayload", "UpdateUserOrErrorPayload"}
+
+func (ec *executionContext) _UpdateUserPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateUserPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateUserPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UpdateUserPayload")
+		case "user":
+			out.Values[i] = ec._UpdateUserPayload_user(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -54361,6 +55072,21 @@ func (ec *executionContext) marshalNCreateTgBotOrErrorPayload2trip2gᚋinternal�
 	return ec._CreateTgBotOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCreateUserInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateUserInput(ctx context.Context, v any) (model.CreateUserInput, error) {
+	res, err := ec.unmarshalInputCreateUserInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateUserOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateUserOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateUserOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateUserOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCronJobExecutionStatus2trip2gᚋinternalᚋgraphᚋmodelᚐCronJobExecutionStatus(ctx context.Context, v any) (model.CronJobExecutionStatus, error) {
 	var res model.CronJobExecutionStatus
 	err := res.UnmarshalGQL(v)
@@ -55813,6 +56539,21 @@ func (ec *executionContext) marshalNUpdateTgBotOrErrorPayload2trip2gᚋinternal�
 		return graphql.Null
 	}
 	return ec._UpdateTgBotOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUpdateUserInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateUserInput(ctx context.Context, v any) (model.UpdateUserInput, error) {
+	res, err := ec.unmarshalInputUpdateUserInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUpdateUserOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateUserOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateUserOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UpdateUserOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateUserSubgraphAccessInput2trip2gᚋinternalᚋcaseᚋadminᚋupdateusersubgraphaccessᚐRequest(ctx context.Context, v any) (updateusersubgraphaccess.Request, error) {

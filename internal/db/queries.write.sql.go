@@ -2113,6 +2113,30 @@ func (q *WriteQueries) UpdateTgBotChatSubgraphAccessJoinedAt(ctx context.Context
 	return err
 }
 
+const updateUser = `-- name: UpdateUser :one
+update users set email = coalesce(?2, email) where id = ? returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via
+`
+
+type UpdateUserParams struct {
+	Email sql.NullString `json:"email"`
+	ID    int64          `json:"id"`
+}
+
+func (q *WriteQueries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUser, arg.Email, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.LastSigninCodeSentAt,
+		&i.NoteViewCount,
+		&i.TgUserID,
+		&i.CreatedVia,
+	)
+	return i, err
+}
+
 const updateUserSubgraphAccess = `-- name: UpdateUserSubgraphAccess :one
 update user_subgraph_accesses
    set expires_at = ?
@@ -2449,11 +2473,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-  *Queries
+	*Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-  return &WriteQueries{
-    Queries: New(db),
-  }
+	return &WriteQueries{
+		Queries: New(db),
+	}
 }

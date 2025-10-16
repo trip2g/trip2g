@@ -598,7 +598,7 @@ type AdminQuery {
   allLatestNoteAssets: AdminLatestNoteAssetsConnection!
   allHTMLInjections: AdminHTMLInjectionsConnection!
   allCronJobs: AdminCronJobsConnection!
-  
+
   allWaitListEmailRequests: AdminWaitListEmailRequestsConnection!
   allWaitListTgBotRequests: AdminWaitListTgBotRequestsConnection!
 
@@ -620,6 +620,7 @@ type AdminQuery {
   noteView(id: String!): NoteView
   userSubgraphAccess(id: Int64!): AdminUserSubgraphAccess
   offer(id: Int64!): AdminOffer
+  user(id: Int64!): AdminUser
   purchase(id: String!): AdminPurchase
   redirect(id: Int64!): AdminRedirect
   tgBot(id: Int64!): AdminTgBot
@@ -1598,7 +1599,39 @@ type RunCronJobPayload {
 
 union RunCronJobOrErrorPayload = RunCronJobPayload | ErrorPayload
 
+#
+# createUser
+#
+
+input CreateUserInput {
+  email: String!
+}
+
+type CreateUserPayload {
+  user: AdminUser!
+}
+
+union CreateUserOrErrorPayload = CreateUserPayload | ErrorPayload
+
+#
+# updateUser
+#
+
+input UpdateUserInput {
+  id: Int64!
+  email: String
+}
+
+type UpdateUserPayload {
+  user: AdminUser!
+}
+
+union UpdateUserOrErrorPayload = UpdateUserPayload | ErrorPayload
+
 type AdminMutation {
+  createUser(input: CreateUserInput!): CreateUserOrErrorPayload!
+  updateUser(input: UpdateUserInput!): UpdateUserOrErrorPayload!
+
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
 

@@ -51,7 +51,7 @@ content
 	require.NotEmpty(t, blocks[0].ContentHTML)
 	require.NotEmpty(t, blocks2[0].ContentHTML)
 	require.Equal(t, blocks[0].ContentHTML, blocks2[0].ContentHTML)
-	
+
 	// Check that TitleHTML doesn't contain the heading tag itself
 	require.NotContains(t, blocks[0].TitleHTML, "<h2>")
 	require.NotContains(t, blocks[0].TitleHTML, "</h2>")
