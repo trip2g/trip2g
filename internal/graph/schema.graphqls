@@ -580,6 +580,18 @@ type AdminCronJobsConnection {
   nodes: [AdminCronJob!]! @goField(forceResolver: true)
 }
 
+type AdminConfigVersion @goModel(model: "trip2g/internal/db.ConfigVersion") {
+  id: Int64!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+	showDraftVersions: Boolean!
+	defaultLayout: String!
+}
+
+type AdminConfigVersionsConnection {
+  nodes: [AdminConfigVersion!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -598,6 +610,7 @@ type AdminQuery {
   allLatestNoteAssets: AdminLatestNoteAssetsConnection!
   allHTMLInjections: AdminHTMLInjectionsConnection!
   allCronJobs: AdminCronJobsConnection!
+  allConfigVersions: AdminConfigVersionsConnection!
 
   allWaitListEmailRequests: AdminWaitListEmailRequestsConnection!
   allWaitListTgBotRequests: AdminWaitListTgBotRequestsConnection!
@@ -615,6 +628,8 @@ type AdminQuery {
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
   auditLogs(filter: AdminAuditLogsFilterInput!): AdminAuditLogsConnection!
+
+  latestConfig: AdminConfigVersion!
 
   subgraph(id: Int64!): AdminSubgraph
   noteView(id: String!): NoteView

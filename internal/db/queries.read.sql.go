@@ -1235,6 +1235,26 @@ func (q *Queries) GetHTMLInjection(ctx context.Context, id int64) (HtmlInjection
 	return i, err
 }
 
+const getLatestConfig = `-- name: GetLatestConfig :one
+select id, created_at, created_by, show_draft_versions, default_layout
+  from config_versions
+ order by id desc
+ limit 1
+`
+
+func (q *Queries) GetLatestConfig(ctx context.Context) (ConfigVersion, error) {
+	row := q.db.QueryRowContext(ctx, getLatestConfig)
+	var i ConfigVersion
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.ShowDraftVersions,
+		&i.DefaultLayout,
+	)
+	return i, err
+}
+
 const getPatreonCampaignsByCredentialsID = `-- name: GetPatreonCampaignsByCredentialsID :many
 select id, credentials_id, created_at, missed_at, campaign_id, attributes from patreon_campaigns
 where credentials_id = ?
@@ -2164,6 +2184,42 @@ func (q *Queries) ListAllAdmins(ctx context.Context) ([]Admin, error) {
 	for rows.Next() {
 		var i Admin
 		if err := rows.Scan(&i.UserID, &i.GrantedAt, &i.GrantedBy); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllConfigVersions = `-- name: ListAllConfigVersions :many
+select id, created_at, created_by, show_draft_versions, default_layout
+  from config_versions
+ order by id desc
+ limit 50
+`
+
+func (q *Queries) ListAllConfigVersions(ctx context.Context) ([]ConfigVersion, error) {
+	rows, err := q.db.QueryContext(ctx, listAllConfigVersions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ConfigVersion
+	for rows.Next() {
+		var i ConfigVersion
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.ShowDraftVersions,
+			&i.DefaultLayout,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

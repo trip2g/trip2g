@@ -31,6 +31,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 //				panic("mock out the LastUserNoteView method")
 //			},
+//			LatestConfigFunc: func() db.ConfigVersion {
+//				panic("mock out the LatestConfig method")
+//			},
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
@@ -67,6 +70,9 @@ type EnvMock struct {
 
 	// LastUserNoteViewFunc mocks the LastUserNoteView method.
 	LastUserNoteViewFunc func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
+
+	// LatestConfigFunc mocks the LatestConfig method.
+	LatestConfigFunc func() db.ConfigVersion
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
@@ -112,6 +118,9 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.LastUserNoteViewParams
 		}
+		// LatestConfig holds details about calls to the LatestConfig method.
+		LatestConfig []struct {
+		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
 		}
@@ -153,6 +162,7 @@ type EnvMock struct {
 	lockIncreaseUserNoteViewCount sync.RWMutex
 	lockInsertUserNoteView        sync.RWMutex
 	lockLastUserNoteView          sync.RWMutex
+	lockLatestConfig              sync.RWMutex
 	lockLatestNoteViews           sync.RWMutex
 	lockLayouts                   sync.RWMutex
 	lockListActiveUserSubgraphs   sync.RWMutex
@@ -267,6 +277,33 @@ func (mock *EnvMock) LastUserNoteViewCalls() []struct {
 	mock.lockLastUserNoteView.RLock()
 	calls = mock.calls.LastUserNoteView
 	mock.lockLastUserNoteView.RUnlock()
+	return calls
+}
+
+// LatestConfig calls LatestConfigFunc.
+func (mock *EnvMock) LatestConfig() db.ConfigVersion {
+	if mock.LatestConfigFunc == nil {
+		panic("EnvMock.LatestConfigFunc: method is nil but Env.LatestConfig was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLatestConfig.Lock()
+	mock.calls.LatestConfig = append(mock.calls.LatestConfig, callInfo)
+	mock.lockLatestConfig.Unlock()
+	return mock.LatestConfigFunc()
+}
+
+// LatestConfigCalls gets all the calls that were made to LatestConfig.
+// Check the length with:
+//
+//	len(mockedEnv.LatestConfigCalls())
+func (mock *EnvMock) LatestConfigCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLatestConfig.RLock()
+	calls = mock.calls.LatestConfig
+	mock.lockLatestConfig.RUnlock()
 	return calls
 }
 

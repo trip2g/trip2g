@@ -7,7 +7,7 @@ description: "Home page"
 
 This is a demo.
 
-v2
+v3
 
 [[sub/index]]
 [[sub]]

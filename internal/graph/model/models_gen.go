@@ -286,6 +286,10 @@ type AdminBoostyTiersConnection struct {
 	Nodes []db.BoostyTier `json:"nodes"`
 }
 
+type AdminConfigVersionsConnection struct {
+	Nodes []db.ConfigVersion `json:"nodes"`
+}
+
 type AdminCronJobsConnection struct {
 	Nodes []db.CronJob `json:"nodes"`
 }

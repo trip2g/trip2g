@@ -257,6 +257,16 @@ func (r *adminBoostyTiersConnectionResolver) Nodes(ctx context.Context, obj *mod
 	return r.env(ctx).GetBoostyTiers(ctx)
 }
 
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminConfigVersionResolver) CreatedBy(ctx context.Context, obj *db.ConfigVersion) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminConfigVersionsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminConfigVersionsConnection) ([]db.ConfigVersion, error) {
+	return r.env(ctx).ListAllConfigVersions(ctx)
+}
+
 // LastExecAt is the resolver for the lastExecAt field.
 func (r *adminCronJobResolver) LastExecAt(ctx context.Context, obj *db.CronJob) (*time.Time, error) {
 	if obj.LastExecAt.Valid {
@@ -993,6 +1003,11 @@ func (r *adminQueryResolver) AllCronJobs(ctx context.Context, obj *appmodel.Admi
 	return &model.AdminCronJobsConnection{}, nil
 }
 
+// AllConfigVersions is the resolver for the allConfigVersions field.
+func (r *adminQueryResolver) AllConfigVersions(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminConfigVersionsConnection, error) {
+	return &model.AdminConfigVersionsConnection{}, nil
+}
+
 // AllWaitListEmailRequests is the resolver for the allWaitListEmailRequests field.
 func (r *adminQueryResolver) AllWaitListEmailRequests(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error) {
 	return &model.AdminWaitListEmailRequestsConnection{}, nil
@@ -1051,6 +1066,12 @@ func (r *adminQueryResolver) APIKeyLogs(ctx context.Context, obj *appmodel.Admin
 // AuditLogs is the resolver for the auditLogs field.
 func (r *adminQueryResolver) AuditLogs(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminAuditLogsFilterInput) (*model.AdminAuditLogsConnection, error) {
 	return &model.AdminAuditLogsConnection{Filter: &filter}, nil
+}
+
+// LatestConfig is the resolver for the latestConfig field.
+func (r *adminQueryResolver) LatestConfig(ctx context.Context, obj *appmodel.AdminQuery) (*db.ConfigVersion, error) {
+	cfg := r.env(ctx).LatestConfig()
+	return &cfg, nil
 }
 
 // Subgraph is the resolver for the subgraph field.
@@ -1973,6 +1994,16 @@ func (r *Resolver) AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolv
 	return &adminBoostyTiersConnectionResolver{r}
 }
 
+// AdminConfigVersion returns AdminConfigVersionResolver implementation.
+func (r *Resolver) AdminConfigVersion() AdminConfigVersionResolver {
+	return &adminConfigVersionResolver{r}
+}
+
+// AdminConfigVersionsConnection returns AdminConfigVersionsConnectionResolver implementation.
+func (r *Resolver) AdminConfigVersionsConnection() AdminConfigVersionsConnectionResolver {
+	return &adminConfigVersionsConnectionResolver{r}
+}
+
 // AdminCronJob returns AdminCronJobResolver implementation.
 func (r *Resolver) AdminCronJob() AdminCronJobResolver { return &adminCronJobResolver{r} }
 
@@ -2282,6 +2313,8 @@ type adminBoostyMemberResolver struct{ *Resolver }
 type adminBoostyMembersConnectionResolver struct{ *Resolver }
 type adminBoostyTierResolver struct{ *Resolver }
 type adminBoostyTiersConnectionResolver struct{ *Resolver }
+type adminConfigVersionResolver struct{ *Resolver }
+type adminConfigVersionsConnectionResolver struct{ *Resolver }
 type adminCronJobResolver struct{ *Resolver }
 type adminCronJobExecutionResolver struct{ *Resolver }
 type adminCronJobsConnectionResolver struct{ *Resolver }

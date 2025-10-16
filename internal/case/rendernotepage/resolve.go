@@ -28,6 +28,7 @@ type Env interface {
 	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
 	RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
 	LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
+	LatestConfig() db.ConfigVersion
 }
 
 type Request struct {
@@ -101,7 +102,9 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	response.IsAdmin = isAdmin
 
-	if isAdmin {
+	config := env.LatestConfig()
+
+	if isAdmin || config.ShowDraftVersions {
 		response.DefaultVersion = "latest"
 
 		// admins view the latest version by default

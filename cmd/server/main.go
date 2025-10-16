@@ -403,6 +403,22 @@ func (a *app) ApplyGitChanges(ctx context.Context) ([]string, error) {
 	return a.gitAPI.ApplyChanges(ctx)
 }
 
+func (a *app) LatestConfig() db.ConfigVersion {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cfg, err := a.GetLatestConfig(ctx)
+	if err != nil {
+		a.log.Error("failed to get latest config", "error", err)
+
+		return db.ConfigVersion{
+			ShowDraftVersions: true,
+		}
+	}
+
+	return cfg
+}
+
 func (a *app) NotionClientByIntegrationID(integrationID int64) notiontypes.Client {
 	client, err := a.notionClientManager.Get(a.ctx, a, integrationID)
 	if err != nil {

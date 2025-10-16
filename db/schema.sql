@@ -466,6 +466,20 @@ CREATE TABLE notion_integrations (
   verification_token text,
   base_path text not null default '/'
 );
+CREATE TABLE settings (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  show_draft_versions boolean not null default false,
+  default_layout text not null default ''
+);
+CREATE TABLE config_versions (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  show_draft_versions boolean not null default false,
+  default_layout text not null default ''
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -539,4 +553,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250925035301'),
   ('20250927035933'),
   ('20251001113550'),
-  ('20251003125722');
+  ('20251003125722'),
+  ('20251016125315');

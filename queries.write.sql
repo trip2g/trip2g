@@ -632,3 +632,7 @@ where started_at < datetime('now', '-7 days');
 update notion_integrations
    set verification_token = ?
  where id = ?;
+
+-- name: InsertConfigVersion :exec
+insert into config_versions (created_by, show_draft_versions, default_layout)
+values (?, ?, ?);

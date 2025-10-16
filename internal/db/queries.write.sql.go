@@ -602,6 +602,22 @@ func (q *WriteQueries) InsertBoostyTierSubgraph(ctx context.Context, arg InsertB
 	return err
 }
 
+const insertConfigVersion = `-- name: InsertConfigVersion :exec
+insert into config_versions (created_by, show_draft_versions, default_layout)
+values (?, ?, ?)
+`
+
+type InsertConfigVersionParams struct {
+	CreatedBy         int64  `json:"created_by"`
+	ShowDraftVersions bool   `json:"show_draft_versions"`
+	DefaultLayout     string `json:"default_layout"`
+}
+
+func (q *WriteQueries) InsertConfigVersion(ctx context.Context, arg InsertConfigVersionParams) error {
+	_, err := q.db.ExecContext(ctx, insertConfigVersion, arg.CreatedBy, arg.ShowDraftVersions, arg.DefaultLayout)
+	return err
+}
+
 const insertCronJobExecution = `-- name: InsertCronJobExecution :one
 insert into cron_job_executions (job_id, status)
 values (?, ?)
@@ -2473,11 +2489,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-	*Queries
+  *Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-	return &WriteQueries{
-		Queries: New(db),
-	}
+  return &WriteQueries{
+    Queries: New(db),
+  }
 }

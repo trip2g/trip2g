@@ -722,3 +722,15 @@ select *
 
 -- name: AllNotionIntegrations :many
 select * from notion_integrations order by id;
+
+-- name: GetLatestConfig :one
+select *
+  from config_versions
+ order by id desc
+ limit 1;
+
+-- name: ListAllConfigVersions :many
+select *
+  from config_versions
+ order by id desc
+ limit 50;

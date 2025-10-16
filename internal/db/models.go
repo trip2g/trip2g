@@ -126,6 +126,14 @@ type BoostyTierSubgraph struct {
 	CreatedBy  int64     `json:"created_by"`
 }
 
+type ConfigVersion struct {
+	ID                int64     `json:"id"`
+	CreatedAt         time.Time `json:"created_at"`
+	CreatedBy         int64     `json:"created_by"`
+	ShowDraftVersions bool      `json:"show_draft_versions"`
+	DefaultLayout     string    `json:"default_layout"`
+}
+
 type CronJob struct {
 	ID         int64        `json:"id"`
 	Name       string       `json:"name"`
@@ -357,6 +365,14 @@ type Revoke struct {
 
 type SchemaMigration struct {
 	Version string `json:"version"`
+}
+
+type Setting struct {
+	ID                int64     `json:"id"`
+	CreatedAt         time.Time `json:"created_at"`
+	CreatedBy         int64     `json:"created_by"`
+	ShowDraftVersions bool      `json:"show_draft_versions"`
+	DefaultLayout     string    `json:"default_layout"`
 }
 
 type SignInCode struct {

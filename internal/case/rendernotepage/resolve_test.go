@@ -89,6 +89,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -120,6 +123,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -171,6 +177,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -220,6 +229,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -358,6 +370,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
@@ -403,6 +418,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
@@ -453,6 +471,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
@@ -501,6 +522,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
@@ -551,6 +575,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
@@ -593,6 +620,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
@@ -705,6 +735,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
@@ -749,6 +782,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
@@ -822,6 +858,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return sameNoteViews
 					},
@@ -865,6 +904,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
@@ -999,6 +1041,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -1021,6 +1066,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -1042,6 +1090,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -1068,6 +1119,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -1093,6 +1147,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -1114,6 +1171,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -1141,6 +1201,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -1213,6 +1276,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViewsWithUnderscore
@@ -1305,6 +1371,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -1328,6 +1397,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -1371,6 +1443,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 				return &EnvMock{
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
+					},
+					LatestConfigFunc: func() db.ConfigVersion {
+						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
