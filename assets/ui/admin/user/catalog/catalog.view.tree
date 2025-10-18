@@ -4,12 +4,16 @@ $trip2g_admin_user_catalog $trip2g_admin_catalog
 		<= BansLink $mol_link
 			sub / <= BansIcon $mol_icon_bomb
 			arg * nav \userbans
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
 	menu_filter_enabled true
-	param \user_id
+	param \id
 	Empty $mol_status
-	Content* $mol_page
+	ShowPage* $trip2g_admin_user_show
+		user_id <= row_id_number*
 		tools / <= Spread_close
-		sub / \Content
+	CreateForm $trip2g_admin_user_create
 	UserBan* $trip2g_admin_user_banuser
 		tools /
 			<= Close $mol_link

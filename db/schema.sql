@@ -466,13 +466,6 @@ CREATE TABLE notion_integrations (
   verification_token text,
   base_path text not null default '/'
 );
-CREATE TABLE settings (
-  id integer primary key autoincrement,
-  created_at datetime not null default current_timestamp,
-  created_by integer not null references admins(user_id) on delete restrict,
-  show_draft_versions boolean not null default false,
-  default_layout text not null default ''
-);
 CREATE TABLE config_versions (
   id integer primary key autoincrement,
   created_at datetime not null default current_timestamp,

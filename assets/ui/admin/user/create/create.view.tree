@@ -1,0 +1,18 @@
+$trip2g_admin_user_create $mol_page
+	title \Create User
+	body /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Email_field $mol_form_field
+					name \Email
+					bid <= email_bid \
+					Content <= email_control $mol_string
+						value? <=> email? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

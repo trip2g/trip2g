@@ -1,0 +1,21 @@
+$trip2g_admin_user_show $mol_page
+	user_id? 0
+	title \User
+	UserView $mol_view
+		sub /
+			<= UserDetails $mol_view
+				sub /
+					<= Id_labeler $mol_labeler
+						title \ID
+						Content <= Id $trip2g_admin_cell
+							content <= user_id_string \
+					<= Email_labeler $mol_labeler
+						title \Email
+						Content <= Email $trip2g_admin_cell
+							content <= user_email \
+					<= CreatedAt_labeler $mol_labeler
+						title \Created At
+						Content <= CreatedAt $trip2g_admin_cell
+							content <= user_created_at \
+	body /
+		<= UserView
