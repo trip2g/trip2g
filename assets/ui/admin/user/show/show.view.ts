@@ -1,5 +1,16 @@
 namespace $.$$ {
 	export class $trip2g_admin_user_show extends $.$trip2g_admin_user_show {
+		action() {
+			return this.$.$mol_state_arg.value('action') || 'view';
+		}
+
+		override body() {
+			if (this.action() === 'update') {
+				return [this.UpdateForm()]
+			}
+
+			return super.body()
+		}
 		@$mol_mem
 		data() {
 			const res = $trip2g_graphql_request(`
@@ -15,6 +26,10 @@ namespace $.$$ {
 			`, {
 				id: this.user_id()
 			})
+
+			if (!res.admin.user) {
+				throw new Error('User not found')
+			}
 
 			return res.admin.user
 		}

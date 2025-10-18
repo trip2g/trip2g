@@ -1,0 +1,22 @@
+$trip2g_admin_user_update $mol_view
+	user_id 0
+	sub /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Id_labeler $mol_labeler
+					title \User ID
+					Content <= Id $trip2g_admin_cell
+						content <= user_id_string \
+				<= Email_field $mol_form_field
+					name \Email
+					bid <= email_bid \
+					Content <= email_control $mol_string
+						value? <=> email? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

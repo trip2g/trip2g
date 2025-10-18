@@ -367,14 +367,6 @@ type SchemaMigration struct {
 	Version string `json:"version"`
 }
 
-type Setting struct {
-	ID                int64     `json:"id"`
-	CreatedAt         time.Time `json:"created_at"`
-	CreatedBy         int64     `json:"created_by"`
-	ShowDraftVersions bool      `json:"show_draft_versions"`
-	DefaultLayout     string    `json:"default_layout"`
-}
-
 type SignInCode struct {
 	UserID    int64     `json:"user_id"`
 	Code      string    `json:"code"`

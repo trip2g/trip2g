@@ -8,6 +8,10 @@ $trip2g_admin $trip2g_auth
 $trip2g_admin_app $trip2g_admin_catalog
 	param \nav
 	menu_title \Admin
+	plugins /
+		<= Theme $mol_theme_auto
+	menu_tools /
+		<= Lighter $mol_lights_toggle
 	menu_foot /
 		<= profile_info $mol_button_major
 			title \hello@example.com

@@ -2130,7 +2130,7 @@ func (q *WriteQueries) UpdateTgBotChatSubgraphAccessJoinedAt(ctx context.Context
 }
 
 const updateUser = `-- name: UpdateUser :one
-update users set email = coalesce(?2, email) where id = ? returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via
+update users set email = coalesce(?1, email) where id = ?2 returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via
 `
 
 type UpdateUserParams struct {

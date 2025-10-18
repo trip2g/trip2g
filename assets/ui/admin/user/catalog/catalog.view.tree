@@ -12,7 +12,7 @@ $trip2g_admin_user_catalog $trip2g_admin_catalog
 	Empty $mol_status
 	ShowPage* $trip2g_admin_user_show
 		user_id <= row_id_number*
-		tools / <= Spread_close
+		close_icon <= Spread_close
 	CreateForm $trip2g_admin_user_create
 	UserBan* $trip2g_admin_user_banuser
 		tools /

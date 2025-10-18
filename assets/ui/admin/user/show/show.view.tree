@@ -1,6 +1,14 @@
 $trip2g_admin_user_show $mol_page
 	user_id? 0
 	title \User
+	close_icon null $mol_view
+	tools /
+		<= EditLink $mol_link
+			arg * action \update
+			title \Edit
+		<= close_icon
+	UpdateForm $trip2g_admin_user_update
+		user_id <= user_id
 	UserView $mol_view
 		sub /
 			<= UserDetails $mol_view

@@ -542,7 +542,7 @@ update users set tg_user_id = ? where id = ?;
 update users set tg_user_id = null where tg_user_id = ?;
 
 -- name: UpdateUser :one
-update users set email = coalesce(sqlc.narg(email), email) where id = ? returning *;
+update users set email = coalesce(sqlc.narg(email), email) where id = sqlc.arg(id) returning *;
 
 -- name: InsertTgBotChatSubgraphAccess :exec
 insert into tg_bot_chat_subgraph_accesses (chat_id, user_id, subgraph_id)
