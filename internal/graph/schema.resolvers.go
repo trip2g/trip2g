@@ -1847,7 +1847,16 @@ func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, filte
 		return nil, nil
 	}
 
-	note := r.env(ctx).LiveNoteViews().GetByPathID(*filter.PageID)
+	config := r.env(ctx).LatestConfig()
+
+	var note *appmodel.NoteView
+
+	if config.ShowDraftVersions {
+		note = r.env(ctx).LatestNoteViews().GetByPathID(*filter.PageID)
+	} else {
+		note = r.env(ctx).LiveNoteViews().GetByPathID(*filter.PageID)
+	}
+
 	if note == nil {
 		return nil, nil
 	}
