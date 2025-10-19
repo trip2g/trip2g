@@ -104,6 +104,7 @@ type Env interface {
 	ListAllNotFoundPaths(ctx context.Context) ([]db.NotFoundPath, error)
 	ListEnabledTgBots(ctx context.Context) ([]db.TgBot, error)
 	ListAuditLogs(ctx context.Context, arg db.ListAuditLogsParams) ([]db.AuditLog, error)
+	ListNotePathsLike(ctx context.Context, like string) ([]db.NotePath, error)
 	AllWaitListEmailRequests(ctx context.Context) ([]db.AllWaitListEmailRequestsRow, error)
 	ListAllConfigVersions(ctx context.Context) ([]db.ConfigVersion, error)
 	AllWaitListTgBotRequests(ctx context.Context) ([]db.AllWaitListTgBotRequestsRow, error)

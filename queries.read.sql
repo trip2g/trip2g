@@ -734,3 +734,9 @@ select *
   from config_versions
  order by id desc
  limit 50;
+
+
+-- name: ListNotePathsLike :many
+select * from note_paths
+ where value like ?
+ order by id;

@@ -715,6 +715,7 @@ type Purchase {
 type NotePath @goModel(model: "trip2g/internal/model.NotePath"){
   value: String!
   latestContentHash: String!
+  latestContent: String!
 }
 
 input NoteInput {
@@ -756,9 +757,13 @@ type SearchConnection @goExtraField(name: "Input", type: "*trip2g/internal/graph
   nodes: [SearchResult!]!
 }
 
+input NotePathsFilter {
+  like: String # LIKE pattern with % and _ wildcards supported.
+}
+
 type Query {
   viewer: Viewer!
-  notePaths: [NotePath!]!
+  notePaths(filter: NotePathsFilter): [NotePath!]!
   admin: AdminQuery!
   note(input: NoteInput!): PublicNote
   search(input: SearchInput!): SearchConnection!

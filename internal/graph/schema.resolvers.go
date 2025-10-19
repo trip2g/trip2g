@@ -1486,6 +1486,11 @@ func (r *mutationResolver) Admin(ctx context.Context) (*appmodel.AdminMutation, 
 	return &appmodel.AdminMutation{}, nil
 }
 
+// LatestContent is the resolver for the latestContent field.
+func (r *notePathResolver) LatestContent(ctx context.Context, obj *db.NotePath) (string, error) {
+	panic(fmt.Errorf("not implemented: LatestContent - latestContent"))
+}
+
 // Content is the resolver for the content field.
 func (r *noteViewResolver) Content(ctx context.Context, obj *appmodel.NoteView) (string, error) {
 	return string(obj.Content), nil
@@ -1592,10 +1597,23 @@ func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 }
 
 // NotePaths is the resolver for the notePaths field.
-func (r *queryResolver) NotePaths(ctx context.Context) ([]db.NotePath, error) {
+func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFilter) ([]db.NotePath, error) {
 	_, err := checkapikey.Resolve(ctx, r.env(ctx), "get_note_paths")
 	if err != nil {
 		return nil, err
+	}
+
+	if filter != nil {
+		if filter.Like != nil {
+			pattern := *filter.Like
+
+			// Prevent potential DoS attacks with excessive wildcards
+			if strings.Count(pattern, "%") > 5 || strings.Count(pattern, "_") > 10 {
+				return nil, errors.New("too many wildcard characters in pattern")
+			}
+
+			return r.env(ctx).ListNotePathsLike(ctx, pattern)
+		}
 	}
 
 	return r.env(ctx).AllVisibleNotePaths(ctx)
@@ -2244,6 +2262,9 @@ func (r *Resolver) ErrorPayload() ErrorPayloadResolver { return &errorPayloadRes
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
+// NotePath returns NotePathResolver implementation.
+func (r *Resolver) NotePath() NotePathResolver { return &notePathResolver{r} }
+
 // NoteView returns NoteViewResolver implementation.
 func (r *Resolver) NoteView() NoteViewResolver { return &noteViewResolver{r} }
 
@@ -2377,6 +2398,7 @@ type deleteBoostyCredentialsPayloadResolver struct{ *Resolver }
 type deletePatreonCredentialsPayloadResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
+type notePathResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }
 type noteWarningResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }

@@ -816,6 +816,10 @@ type NoteInput struct {
 	Referer string  `json:"referer"`
 }
 
+type NotePathsFilter struct {
+	Like *string `json:"like,omitempty"`
+}
+
 type NoteTocItem struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
