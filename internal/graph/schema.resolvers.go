@@ -1603,29 +1603,6 @@ func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 	return &appmodel.Viewer{UserToken: token}, nil
 }
 
-// NotePaths is the resolver for the notePaths field.
-func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFilter) ([]db.NotePath, error) {
-	_, err := checkapikey.Resolve(ctx, r.env(ctx), "get_note_paths")
-	if err != nil {
-		return nil, err
-	}
-
-	if filter != nil {
-		if filter.Like != nil {
-			pattern := *filter.Like
-
-			// Prevent potential DoS attacks with excessive wildcards
-			if strings.Count(pattern, "%") > 5 || strings.Count(pattern, "_") > 10 {
-				return nil, errors.New("too many wildcard characters in pattern")
-			}
-
-			return r.env(ctx).ListNotePathsLike(ctx, pattern)
-		}
-	}
-
-	return r.env(ctx).AllVisibleNotePaths(ctx)
-}
-
 // Admin is the resolver for the admin field.
 func (r *queryResolver) Admin(ctx context.Context) (*appmodel.AdminQuery, error) {
 	err := checkAdmin(ctx)
@@ -1686,6 +1663,29 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 // Search is the resolver for the search field.
 func (r *queryResolver) Search(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error) {
 	return sitesearch.Resolve(ctx, r.env(ctx), input)
+}
+
+// NotePaths is the resolver for the notePaths field.
+func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFilter) ([]db.NotePath, error) {
+	_, err := checkapikey.Resolve(ctx, r.env(ctx), "get_note_paths")
+	if err != nil {
+		return nil, err
+	}
+
+	if filter != nil {
+		if filter.Like != nil {
+			pattern := *filter.Like
+
+			// Prevent potential DoS attacks with excessive wildcards
+			if strings.Count(pattern, "%") > 5 || strings.Count(pattern, "_") > 10 {
+				return nil, errors.New("too many wildcard characters in pattern")
+			}
+
+			return r.env(ctx).ListNotePathsLike(ctx, pattern)
+		}
+	}
+
+	return r.env(ctx).AllVisibleNotePaths(ctx)
 }
 
 // Credentials is the resolver for the credentials field.

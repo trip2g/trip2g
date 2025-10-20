@@ -767,10 +767,14 @@ input NotePathsFilter {
 
 type Query {
   viewer: Viewer!
-  notePaths(filter: NotePathsFilter): [NotePath!]!
   admin: AdminQuery!
   note(input: NoteInput!): PublicNote
   search(input: SearchInput!): SearchConnection!
+
+  """
+  X-Api-Key header must be set.
+  """
+  notePaths(filter: NotePathsFilter): [NotePath!]!
 }
 
 type FieldMessage {
@@ -964,8 +968,19 @@ type Mutation {
 
   toggleFavoriteNote(input: ToggleFavoriteNoteInput!): ToggleFavoriteNoteOrErrorPayload!
 
+  """
+  X-Api-Key header must be set.
+  """
   pushNotes(input: PushNotesInput!): PushNotesOrErrorPayload!
+
+  """
+  X-Api-Key header must be set.
+  """
   hideNotes(input: HideNotesInput!): HideNotesOrErrorPayload!
+
+  """
+  X-Api-Key header must be set.
+  """
   uploadNoteAsset(input: UploadNoteAssetInput!): UploadNoteAssetOrErrorPayload!
 
   generateTgAttachCode(input: GenerateTgAttachCodeInput!): GenerateTgAttachCodeOrErrorPayload!
