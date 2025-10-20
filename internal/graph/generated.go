@@ -36389,7 +36389,7 @@ func (ec *executionContext) unmarshalInputNotePathsFilter(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"like"}
+	fieldsInOrder := [...]string{"like", "search"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -36403,6 +36403,13 @@ func (ec *executionContext) unmarshalInputNotePathsFilter(ctx context.Context, o
 				return it, err
 			}
 			it.Like = data
+		case "search":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Search = data
 		}
 	}
 

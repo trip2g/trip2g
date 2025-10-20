@@ -740,7 +740,7 @@ type NoteTocItem {
   level: Int!
 }
 
-type PublicNote {
+type PublicNote @goExtraField(name: "NoteView", type: "*trip2g/internal/model.NoteView") {
   pathId: Int64!
   title: String!
   html: String!
@@ -773,6 +773,11 @@ input NotePathsFilter {
   For example, to find all note paths starting with "myfolder/", use "myfolder/%".
   """
   like: String # LIKE pattern with % and _ wildcards supported.
+
+  """
+  Full-text search on note paths. like will be ignored if search is set.
+  """
+  search: String
 }
 
 type Query {

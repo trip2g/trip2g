@@ -1596,27 +1596,6 @@ func (q *Queries) LastUserNoteView(ctx context.Context, arg LastUserNoteViewPara
 	return i, err
 }
 
-const latestNoteVersionByPathID = `-- name: LatestNoteVersionByPathID :one
-select id, path_id, version, content, created_at
-  from note_versions v
- where path_id = ?
- order by version desc
- limit 1
-`
-
-func (q *Queries) LatestNoteVersionByPathID(ctx context.Context, pathID int64) (NoteVersion, error) {
-	row := q.db.QueryRowContext(ctx, latestNoteVersionByPathID, pathID)
-	var i NoteVersion
-	err := row.Scan(
-		&i.ID,
-		&i.PathID,
-		&i.Version,
-		&i.Content,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
 const listAPIKeyLogsByAPIKeyID = `-- name: ListAPIKeyLogsByAPIKeyID :many
 select l.created_at, a.name as action_name, i.value as ip
   from api_key_logs l
@@ -3195,6 +3174,29 @@ func (q *Queries) NoteGraphPositionByPathID(ctx context.Context, id int64) (Note
 	row := q.db.QueryRowContext(ctx, noteGraphPositionByPathID, id)
 	var i NoteGraphPositionByPathIDRow
 	err := row.Scan(&i.X, &i.Y)
+	return i, err
+}
+
+const notePathByID = `-- name: NotePathByID :one
+select id, value, value_hash, latest_content_hash, created_at, version_count, graph_position_x, graph_position_y, hidden_by, hidden_at from note_paths
+ where id = ?
+`
+
+func (q *Queries) NotePathByID(ctx context.Context, id int64) (NotePath, error) {
+	row := q.db.QueryRowContext(ctx, notePathByID, id)
+	var i NotePath
+	err := row.Scan(
+		&i.ID,
+		&i.Value,
+		&i.ValueHash,
+		&i.LatestContentHash,
+		&i.CreatedAt,
+		&i.VersionCount,
+		&i.GraphPositionX,
+		&i.GraphPositionY,
+		&i.HiddenBy,
+		&i.HiddenAt,
+	)
 	return i, err
 }
 

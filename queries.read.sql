@@ -740,3 +740,7 @@ select *
 select * from note_paths
  where value like ?
  order by id;
+
+-- name: NotePathByID :one
+select * from note_paths
+ where id = ?;

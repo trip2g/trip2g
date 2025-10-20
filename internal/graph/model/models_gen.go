@@ -820,6 +820,8 @@ type NotePathsFilter struct {
 	// LIKE pattern with % and _ wildcards supported.
 	// For example, to find all note paths starting with "myfolder/", use "myfolder/%".
 	Like *string `json:"like,omitempty"`
+	// Full-text search on note paths. like will be ignored if search is set.
+	Search *string `json:"search,omitempty"`
 }
 
 type NoteTocItem struct {
@@ -834,10 +836,11 @@ type NoteViewMeta struct {
 }
 
 type PublicNote struct {
-	PathID int64         `json:"pathId"`
-	Title  string        `json:"title"`
-	HTML   string        `json:"html"`
-	Toc    []NoteTocItem `json:"toc"`
+	PathID   int64           `json:"pathId"`
+	Title    string          `json:"title"`
+	HTML     string          `json:"html"`
+	Toc      []NoteTocItem   `json:"toc"`
+	NoteView *model.NoteView `json:"-"`
 }
 
 func (PublicNote) IsSearchResultDocument() {}

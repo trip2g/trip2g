@@ -42,6 +42,8 @@ func ConvertNoteToPublic(note *model.NoteView) *PublicNote {
 		Title:  note.Title,
 		HTML:   string(note.HTML),
 		Toc:    prepareTOC(note),
+
+		NoteView: note,
 	}
 }
 

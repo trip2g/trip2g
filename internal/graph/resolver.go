@@ -118,6 +118,7 @@ type Env interface {
 	OfferByID(ctx context.Context, id int64) (db.Offer, error)
 	PurchaseByID(ctx context.Context, id string) (db.Purchase, error)
 	RedirectByID(ctx context.Context, id int64) (db.Redirect, error)
+	NotePathByID(ctx context.Context, id int64) (db.NotePath, error)
 
 	ListActiveSubgraphsByUserID(ctx context.Context, userID int64) ([]db.Subgraph, error)
 	ListActiveUserSubgraphAccessesByUserID(ctx context.Context, userID int64) ([]db.UserSubgraphAccess, error)

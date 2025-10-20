@@ -18,7 +18,7 @@ import (
 )
 
 type Env interface {
-	LiveNoteViews() *appmodel.NoteViews
+	LatestNoteViews() *appmodel.NoteViews
 	Logger() logger.Logger
 }
 
@@ -30,7 +30,7 @@ type noteContent struct {
 func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.SearchConnection, error) {
 	log := logger.WithPrefix(env.Logger(), "sitesearch:")
 
-	nvs := env.LiveNoteViews()
+	nvs := env.LatestNoteViews()
 	notes := nvs.VisibleList()
 
 	documentMapping := bleve.NewDocumentMapping()

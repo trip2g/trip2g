@@ -1686,6 +1686,29 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 	}
 
 	if filter != nil {
+		if filter.Search != nil {
+			conn, err := r.Search(ctx, model.SearchInput{Query: *filter.Search})
+			if err != nil {
+				return nil, err
+			}
+
+			res := []db.NotePath{}
+
+			for _, node := range conn.Nodes {
+				switch doc := node.Document.(type) {
+				case *model.PublicNote:
+					notePath, selectErr := r.env(ctx).NotePathByID(ctx, doc.PathID)
+					if selectErr != nil {
+						return nil, fmt.Errorf("failed to get note path by ID %s: %w", doc.PathID, selectErr)
+					}
+
+					res = append(res, notePath)
+				}
+			}
+
+			return res, nil
+		}
+
 		if filter.Like != nil {
 			pattern := *filter.Like
 
