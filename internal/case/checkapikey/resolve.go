@@ -15,7 +15,7 @@ type Env interface {
 	UpsertAPIKeyLogIP(ctx context.Context, ip string) error
 }
 
-var ErrMissingKey = errors.New("missing API key in request header")
+var ErrMissingKey = errors.New("missing X-API-Key in request header")
 var ErrInvalidKey = errors.New("invalid API key")
 
 func Resolve(ctx context.Context, env Env, action string) (*db.ApiKey, error) {

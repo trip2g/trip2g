@@ -817,6 +817,8 @@ type NoteInput struct {
 }
 
 type NotePathsFilter struct {
+	// LIKE pattern with % and _ wildcards supported.
+	// For example, to find all note paths starting with "myfolder/", use "myfolder/%".
 	Like *string `json:"like,omitempty"`
 }
 

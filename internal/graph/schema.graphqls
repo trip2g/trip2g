@@ -758,6 +758,10 @@ type SearchConnection @goExtraField(name: "Input", type: "*trip2g/internal/graph
 }
 
 input NotePathsFilter {
+  """
+  LIKE pattern with % and _ wildcards supported.
+  For example, to find all note paths starting with "myfolder/", use "myfolder/%".
+  """
   like: String # LIKE pattern with % and _ wildcards supported.
 }
 
