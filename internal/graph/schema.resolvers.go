@@ -1488,7 +1488,14 @@ func (r *mutationResolver) Admin(ctx context.Context) (*appmodel.AdminMutation, 
 
 // LatestContent is the resolver for the latestContent field.
 func (r *notePathResolver) LatestContent(ctx context.Context, obj *db.NotePath) (string, error) {
-	panic(fmt.Errorf("not implemented: LatestContent - latestContent"))
+	nvs := r.env(ctx).LatestNoteViews()
+
+	note, ok := nvs.PathMap[obj.Value]
+	if !ok {
+		return "", nil
+	}
+
+	return string(note.Content), nil
 }
 
 // Content is the resolver for the content field.

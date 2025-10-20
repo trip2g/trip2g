@@ -1596,6 +1596,27 @@ func (q *Queries) LastUserNoteView(ctx context.Context, arg LastUserNoteViewPara
 	return i, err
 }
 
+const latestNoteVersionByPathID = `-- name: LatestNoteVersionByPathID :one
+select id, path_id, version, content, created_at
+  from note_versions v
+ where path_id = ?
+ order by version desc
+ limit 1
+`
+
+func (q *Queries) LatestNoteVersionByPathID(ctx context.Context, pathID int64) (NoteVersion, error) {
+	row := q.db.QueryRowContext(ctx, latestNoteVersionByPathID, pathID)
+	var i NoteVersion
+	err := row.Scan(
+		&i.ID,
+		&i.PathID,
+		&i.Version,
+		&i.Content,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listAPIKeyLogsByAPIKeyID = `-- name: ListAPIKeyLogsByAPIKeyID :many
 select l.created_at, a.name as action_name, i.value as ip
   from api_key_logs l
