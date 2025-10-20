@@ -810,8 +810,8 @@ type ComplexityRoot struct {
 	}
 
 	NotePath struct {
-		LatestContent     func(childComplexity int) int
 		LatestContentHash func(childComplexity int) int
+		LatestNoteView    func(childComplexity int) int
 		Value             func(childComplexity int) int
 	}
 
@@ -823,19 +823,27 @@ type ComplexityRoot struct {
 
 	NoteView struct {
 		Content       func(childComplexity int) int
+		Description   func(childComplexity int) int
 		Free          func(childComplexity int) int
 		GraphPosition func(childComplexity int) int
 		HTML          func(childComplexity int) int
 		ID            func(childComplexity int) int
 		InLinks       func(childComplexity int) int
 		IsHomePage    func(childComplexity int) int
+		Meta          func(childComplexity int) int
 		Path          func(childComplexity int) int
 		PathID        func(childComplexity int) int
 		Permalink     func(childComplexity int) int
 		SubgraphNames func(childComplexity int) int
 		Title         func(childComplexity int) int
+		Toc           func(childComplexity int) int
 		VersionID     func(childComplexity int) int
 		Warnings      func(childComplexity int) int
+	}
+
+	NoteViewMeta struct {
+		Key func(childComplexity int) int
+		Raw func(childComplexity int) int
 	}
 
 	NoteWarning struct {
@@ -1438,7 +1446,7 @@ type MutationResolver interface {
 	Admin(ctx context.Context) (*model1.AdminMutation, error)
 }
 type NotePathResolver interface {
-	LatestContent(ctx context.Context, obj *db.NotePath) (string, error)
+	LatestNoteView(ctx context.Context, obj *db.NotePath) (*model1.NoteView, error)
 }
 type NoteViewResolver interface {
 	Content(ctx context.Context, obj *model1.NoteView) (string, error)
@@ -1447,6 +1455,9 @@ type NoteViewResolver interface {
 	Warnings(ctx context.Context, obj *model1.NoteView) ([]model1.NoteWarning, error)
 	InLinks(ctx context.Context, obj *model1.NoteView) ([]model1.NoteView, error)
 	GraphPosition(ctx context.Context, obj *model1.NoteView) (*model.Vector2, error)
+
+	Meta(ctx context.Context, obj *model1.NoteView) ([]model.NoteViewMeta, error)
+	Toc(ctx context.Context, obj *model1.NoteView) ([]model.NoteTocItem, error)
 }
 type NoteWarningResolver interface {
 	Level(ctx context.Context, obj *model1.NoteWarning) (model.NoteWarningLevelEnum, error)
@@ -4600,19 +4611,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UploadNoteAsset(childComplexity, args["input"].(model.UploadNoteAssetInput)), true
 
-	case "NotePath.latestContent":
-		if e.complexity.NotePath.LatestContent == nil {
-			break
-		}
-
-		return e.complexity.NotePath.LatestContent(childComplexity), true
-
 	case "NotePath.latestContentHash":
 		if e.complexity.NotePath.LatestContentHash == nil {
 			break
 		}
 
 		return e.complexity.NotePath.LatestContentHash(childComplexity), true
+
+	case "NotePath.latestNoteView":
+		if e.complexity.NotePath.LatestNoteView == nil {
+			break
+		}
+
+		return e.complexity.NotePath.LatestNoteView(childComplexity), true
 
 	case "NotePath.value":
 		if e.complexity.NotePath.Value == nil {
@@ -4648,6 +4659,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NoteView.Content(childComplexity), true
+
+	case "NoteView.description":
+		if e.complexity.NoteView.Description == nil {
+			break
+		}
+
+		return e.complexity.NoteView.Description(childComplexity), true
 
 	case "NoteView.free":
 		if e.complexity.NoteView.Free == nil {
@@ -4691,6 +4709,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.NoteView.IsHomePage(childComplexity), true
 
+	case "NoteView.meta":
+		if e.complexity.NoteView.Meta == nil {
+			break
+		}
+
+		return e.complexity.NoteView.Meta(childComplexity), true
+
 	case "NoteView.path":
 		if e.complexity.NoteView.Path == nil {
 			break
@@ -4726,6 +4751,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.NoteView.Title(childComplexity), true
 
+	case "NoteView.toc":
+		if e.complexity.NoteView.Toc == nil {
+			break
+		}
+
+		return e.complexity.NoteView.Toc(childComplexity), true
+
 	case "NoteView.versionId":
 		if e.complexity.NoteView.VersionID == nil {
 			break
@@ -4739,6 +4771,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.NoteView.Warnings(childComplexity), true
+
+	case "NoteViewMeta.key":
+		if e.complexity.NoteViewMeta.Key == nil {
+			break
+		}
+
+		return e.complexity.NoteViewMeta.Key(childComplexity), true
+
+	case "NoteViewMeta.raw":
+		if e.complexity.NoteViewMeta.Raw == nil {
+			break
+		}
+
+		return e.complexity.NoteViewMeta.Raw(childComplexity), true
 
 	case "NoteWarning.level":
 		if e.complexity.NoteWarning.Level == nil {
@@ -11948,6 +11994,12 @@ func (ec *executionContext) fieldContext_AdminLatestNoteViewsConnection_nodes(_ 
 				return ec.fieldContext_NoteView_graphPosition(ctx, field)
 			case "isHomePage":
 				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -19448,6 +19500,12 @@ func (ec *executionContext) fieldContext_AdminQuery_noteView(ctx context.Context
 				return ec.fieldContext_NoteView_graphPosition(ctx, field)
 			case "isHomePage":
 				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -20802,6 +20860,12 @@ func (ec *executionContext) fieldContext_AdminRelease_homeNote(_ context.Context
 				return ec.fieldContext_NoteView_graphPosition(ctx, field)
 			case "isHomePage":
 				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -26961,8 +27025,8 @@ func (ec *executionContext) fieldContext_NotePath_latestContentHash(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _NotePath_latestContent(ctx context.Context, field graphql.CollectedField, obj *db.NotePath) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_NotePath_latestContent(ctx, field)
+func (ec *executionContext) _NotePath_latestNoteView(ctx context.Context, field graphql.CollectedField, obj *db.NotePath) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NotePath_latestNoteView(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -26975,7 +27039,7 @@ func (ec *executionContext) _NotePath_latestContent(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.NotePath().LatestContent(rctx, obj)
+		return ec.resolvers.NotePath().LatestNoteView(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -26987,19 +27051,55 @@ func (ec *executionContext) _NotePath_latestContent(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model1.NoteView)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNNoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_NotePath_latestContent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_NotePath_latestNoteView(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "NotePath",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteView_id(ctx, field)
+			case "path":
+				return ec.fieldContext_NoteView_path(ctx, field)
+			case "title":
+				return ec.fieldContext_NoteView_title(ctx, field)
+			case "content":
+				return ec.fieldContext_NoteView_content(ctx, field)
+			case "html":
+				return ec.fieldContext_NoteView_html(ctx, field)
+			case "permalink":
+				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "free":
+				return ec.fieldContext_NoteView_free(ctx, field)
+			case "pathId":
+				return ec.fieldContext_NoteView_pathId(ctx, field)
+			case "versionId":
+				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
+			case "warnings":
+				return ec.fieldContext_NoteView_warnings(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
+			case "isHomePage":
+				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
 	}
 	return fc, nil
@@ -27694,6 +27794,12 @@ func (ec *executionContext) fieldContext_NoteView_inLinks(_ context.Context, fie
 				return ec.fieldContext_NoteView_graphPosition(ctx, field)
 			case "isHomePage":
 				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -27787,6 +27893,237 @@ func (ec *executionContext) fieldContext_NoteView_isHomePage(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteView_description(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NoteView_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NoteView_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteView_meta(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NoteView_meta(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.NoteView().Meta(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.NoteViewMeta)
+	fc.Result = res
+	return ec.marshalNNoteViewMeta2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteViewMetaᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NoteView_meta(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteView",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "key":
+				return ec.fieldContext_NoteViewMeta_key(ctx, field)
+			case "raw":
+				return ec.fieldContext_NoteViewMeta_raw(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteViewMeta", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteView_toc(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NoteView_toc(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.NoteView().Toc(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.NoteTocItem)
+	fc.Result = res
+	return ec.marshalNNoteTocItem2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteTocItemᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NoteView_toc(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteView",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteTocItem_id(ctx, field)
+			case "title":
+				return ec.fieldContext_NoteTocItem_title(ctx, field)
+			case "level":
+				return ec.fieldContext_NoteTocItem_level(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteTocItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteViewMeta_key(ctx context.Context, field graphql.CollectedField, obj *model.NoteViewMeta) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NoteViewMeta_key(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Key, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NoteViewMeta_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteViewMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteViewMeta_raw(ctx context.Context, field graphql.CollectedField, obj *model.NoteViewMeta) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_NoteViewMeta_raw(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Raw, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_NoteViewMeta_raw(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteViewMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -28969,8 +29306,8 @@ func (ec *executionContext) fieldContext_Query_notePaths(ctx context.Context, fi
 				return ec.fieldContext_NotePath_value(ctx, field)
 			case "latestContentHash":
 				return ec.fieldContext_NotePath_latestContentHash(ctx, field)
-			case "latestContent":
-				return ec.fieldContext_NotePath_latestContent(ctx, field)
+			case "latestNoteView":
+				return ec.fieldContext_NotePath_latestNoteView(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NotePath", field.Name)
 		},
@@ -31531,6 +31868,12 @@ func (ec *executionContext) fieldContext_UpdateNoteGraphPositionsPayload_updated
 				return ec.fieldContext_NoteView_graphPosition(ctx, field)
 			case "isHomePage":
 				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -49861,7 +50204,7 @@ func (ec *executionContext) _NotePath(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "latestContent":
+		case "latestNoteView":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -49870,7 +50213,7 @@ func (ec *executionContext) _NotePath(ctx context.Context, sel ast.SelectionSet,
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._NotePath_latestContent(ctx, field, obj)
+				res = ec._NotePath_latestNoteView(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -50201,6 +50544,124 @@ func (ec *executionContext) _NoteView(ctx context.Context, sel ast.SelectionSet,
 			out.Values[i] = ec._NoteView_isHomePage(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._NoteView_description(ctx, field, obj)
+		case "meta":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NoteView_meta(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "toc":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NoteView_toc(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var noteViewMetaImplementors = []string{"NoteViewMeta"}
+
+func (ec *executionContext) _NoteViewMeta(ctx context.Context, sel ast.SelectionSet, obj *model.NoteViewMeta) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, noteViewMetaImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NoteViewMeta")
+		case "key":
+			out.Values[i] = ec._NoteViewMeta_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "raw":
+			out.Values[i] = ec._NoteViewMeta_raw(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -56463,6 +56924,64 @@ func (ec *executionContext) marshalNNoteView2ᚕtrip2gᚋinternalᚋmodelᚐNote
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNNoteView2trip2gᚋinternalᚋmodelᚐNoteView(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNNoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx context.Context, sel ast.SelectionSet, v *model1.NoteView) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._NoteView(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNoteViewMeta2trip2gᚋinternalᚋgraphᚋmodelᚐNoteViewMeta(ctx context.Context, sel ast.SelectionSet, v model.NoteViewMeta) graphql.Marshaler {
+	return ec._NoteViewMeta(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNoteViewMeta2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteViewMetaᚄ(ctx context.Context, sel ast.SelectionSet, v []model.NoteViewMeta) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNoteViewMeta2trip2gᚋinternalᚋgraphᚋmodelᚐNoteViewMeta(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)

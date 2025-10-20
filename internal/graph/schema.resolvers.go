@@ -1486,16 +1486,10 @@ func (r *mutationResolver) Admin(ctx context.Context) (*appmodel.AdminMutation, 
 	return &appmodel.AdminMutation{}, nil
 }
 
-// LatestContent is the resolver for the latestContent field.
-func (r *notePathResolver) LatestContent(ctx context.Context, obj *db.NotePath) (string, error) {
+// LatestNoteView is the resolver for the latestNoteView field.
+func (r *notePathResolver) LatestNoteView(ctx context.Context, obj *db.NotePath) (*appmodel.NoteView, error) {
 	nvs := r.env(ctx).LatestNoteViews()
-
-	note, ok := nvs.PathMap[obj.Value]
-	if !ok {
-		return "", nil
-	}
-
-	return string(note.Content), nil
+	return nvs.PathMap[obj.Value], nil
 }
 
 // Content is the resolver for the content field.
@@ -1546,6 +1540,25 @@ func (r *noteViewResolver) GraphPosition(ctx context.Context, obj *appmodel.Note
 	}
 
 	return &pos, nil
+}
+
+// Meta is the resolver for the meta field.
+func (r *noteViewResolver) Meta(ctx context.Context, obj *appmodel.NoteView) ([]model.NoteViewMeta, error) {
+	res := []model.NoteViewMeta{}
+
+	for key, value := range obj.RawMeta {
+		res = append(res, model.NoteViewMeta{
+			Key: key,
+			Raw: fmt.Sprintf("%v", value),
+		})
+	}
+
+	return res, nil
+}
+
+// Toc is the resolver for the toc field.
+func (r *noteViewResolver) Toc(ctx context.Context, obj *appmodel.NoteView) ([]model.NoteTocItem, error) {
+	return model.ConvertNoteToPublic(obj).Toc, nil
 }
 
 // Level is the resolver for the level field.

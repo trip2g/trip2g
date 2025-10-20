@@ -828,6 +828,11 @@ type NoteTocItem struct {
 	Level int32  `json:"level"`
 }
 
+type NoteViewMeta struct {
+	Key string `json:"key"`
+	Raw string `json:"raw"`
+}
+
 type PublicNote struct {
 	PathID int64         `json:"pathId"`
 	Title  string        `json:"title"`

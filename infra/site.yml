@@ -16,6 +16,7 @@
       - { service_name: trip2g_blizzard, listen_addr: "localhost:8086", domain: "blizzard.trip2g.com" }
       - { service_name: trip2g_landing, listen_addr: "localhost:8087", domain: "trip2g.com" }
       - { service_name: trip2g_demo2, listen_addr: "localhost:8088", domain: "simple.trip2g.com" }
+      - { service_name: trip2g_sn, listen_addr: "localhost:8089", domain: "sn.trip2g.com" }
   tasks:
     - name: Create trip2g user
       user:
@@ -169,6 +170,11 @@
     - name: Restart service
       systemd:
         name: "trip2g_secondbrain"
+        state: restarted
+
+    - name: Restart service
+      systemd:
+        name: "trip2g_sn"
         state: restarted
 
     - name: Restart service

@@ -90,6 +90,11 @@ type NoteWarning {
   message: String!
 }
 
+type NoteViewMeta {
+  key: String!
+  raw: String!
+}
+
 type NoteView {
   id: String!
   path: String!
@@ -106,6 +111,11 @@ type NoteView {
   inLinks: [NoteView!]!
   graphPosition: Vector2
   isHomePage: Boolean!
+
+  description: String
+
+  meta: [NoteViewMeta!]!
+  toc: [NoteTocItem!]!
 }
 
 type AdminUserSubgraphAccessesConnection {
@@ -715,7 +725,7 @@ type Purchase {
 type NotePath @goModel(model: "trip2g/internal/model.NotePath"){
   value: String!
   latestContentHash: String!
-  latestContent: String!
+  latestNoteView: NoteView!
 }
 
 input NoteInput {
