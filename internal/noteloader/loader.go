@@ -12,6 +12,8 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
+
+	"github.com/blevesearch/bleve/v2"
 )
 
 type RawNote struct {
@@ -46,6 +48,8 @@ type Loader struct {
 	log logger.Logger
 
 	layouts *model.Layouts
+
+	searchIndex bleve.Index
 
 	version string
 	config  mdloader.Config
@@ -168,8 +172,14 @@ func (l *Loader) Load(ctx context.Context) error {
 		return fmt.Errorf("failed to load layouts: %w", err)
 	}
 
+	searchIndex, err := l.buildSearchIndex(nvs)
+	if err != nil {
+		return fmt.Errorf("failed to build search index: %w", err)
+	}
+
 	l.Lock()
 	l.nvs = nvs
+	l.searchIndex = searchIndex
 	l.layouts = layouts
 	l.Unlock()
 

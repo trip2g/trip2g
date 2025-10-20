@@ -931,6 +931,24 @@ func (a *app) CreateNowpaymentsInvoice(params nowpayments.CreateInvoiceParams) (
 	return a.nowpaymentsClient.CreateInvoice(params)
 }
 
+func (a *app) SearchLiveNotes(query string) (*graphmodel.SearchConnection, error) {
+	results, err := a.liveNoteLoader.Search(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search live notes: %w", err)
+	}
+
+	return convertSearchResultsToGraphModel(results), nil
+}
+
+func (a *app) SearchLatestNotes(query string) (*graphmodel.SearchConnection, error) {
+	results, err := a.latestNoteLoader.Search(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search latest notes: %w", err)
+	}
+
+	return convertSearchResultsToGraphModel(results), nil
+}
+
 func (a *app) PrepareLatestNotes(ctx context.Context) (*model.NoteViews, error) {
 	err := a.latestNoteLoader.Load(ctx)
 	if err != nil {
@@ -1758,4 +1776,24 @@ func getEnvOrDefault[T any](ctx context.Context, defaultEnv *app) (T, error) {
 	}
 
 	return zero, fmt.Errorf("request env does not implement required type: %T", zero)
+}
+
+func convertSearchResultsToGraphModel(results []model.SearchResult) *graphmodel.SearchConnection {
+	conn := graphmodel.SearchConnection{}
+
+	for _, res := range results {
+		publicNote := graphmodel.ConvertNoteToPublic(res.Note)
+
+		res := graphmodel.SearchResult{
+			HighlightedTitle:   res.HighlightedTitle,
+			HighlightedContent: res.HighlightedContent,
+
+			Document: publicNote,
+			URL:      res.Note.Permalink,
+		}
+
+		conn.Nodes = append(conn.Nodes, res)
+	}
+
+	return &conn
 }

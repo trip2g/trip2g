@@ -58,6 +58,13 @@ type NoteViewPartialRenderer interface {
 	Introduce() NoteViewHeadingBlock
 }
 
+type SearchResult struct {
+	HighlightedTitle   *string
+	HighlightedContent []string
+
+	Note *NoteView
+}
+
 type NoteView struct {
 	Path  string
 	Title string

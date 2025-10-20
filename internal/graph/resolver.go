@@ -59,6 +59,7 @@ import (
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
+	"trip2g/internal/case/sitesearch"
 	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/db"
@@ -190,6 +191,7 @@ type Env interface {
 	listactiveusersubgraphs.Env
 	updatecronjob.Env
 	runcronjob.Env
+	sitesearch.Env
 
 	// Boosty credentials
 	createboostycredentials.Env
