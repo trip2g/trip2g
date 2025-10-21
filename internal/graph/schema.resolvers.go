@@ -1694,12 +1694,13 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 
 			res := []db.NotePath{}
 
-			for _, node := range conn.Nodes {
-				switch doc := node.Document.(type) {
-				case *model.PublicNote:
-					notePath, selectErr := r.env(ctx).NotePathByID(ctx, doc.PathID)
+			for _, result := range conn.Nodes {
+				if result.NoteView != nil {
+					pathID := result.NoteView.PathID
+
+					notePath, selectErr := r.env(ctx).NotePathByID(ctx, pathID)
 					if selectErr != nil {
-						return nil, fmt.Errorf("failed to get note path by ID %s: %w", doc.PathID, selectErr)
+						return nil, fmt.Errorf("failed to get note path by ID %s: %w", pathID, selectErr)
 					}
 
 					res = append(res, notePath)
@@ -1732,6 +1733,15 @@ func (r *refreshBoostyDataPayloadResolver) Credentials(ctx context.Context, obj 
 // Credentials is the resolver for the credentials field.
 func (r *refreshPatreonDataPayloadResolver) Credentials(ctx context.Context, obj *model.RefreshPatreonDataPayload) (*db.PatreonCredential, error) {
 	return resolveOne[db.PatreonCredential](ctx, obj.CredentialsID, r.env(ctx).PatreonCredentials)
+}
+
+// Document is the resolver for the document field.
+func (r *searchResultResolver) Document(ctx context.Context, obj *appmodel.SearchResult) (model.SearchResultDocument, error) {
+	if obj.NoteView != nil {
+		return model.ConvertNoteToPublic(obj.NoteView), nil
+	}
+
+	return nil, nil
 }
 
 // Chat is the resolver for the chat field.
@@ -2333,6 +2343,9 @@ func (r *Resolver) RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
 	return &refreshPatreonDataPayloadResolver{r}
 }
 
+// SearchResult returns SearchResultResolver implementation.
+func (r *Resolver) SearchResult() SearchResultResolver { return &searchResultResolver{r} }
+
 // SetTgChatSubgraphInvitesPayload returns SetTgChatSubgraphInvitesPayloadResolver implementation.
 func (r *Resolver) SetTgChatSubgraphInvitesPayload() SetTgChatSubgraphInvitesPayloadResolver {
 	return &setTgChatSubgraphInvitesPayloadResolver{r}
@@ -2449,6 +2462,7 @@ type purchaseResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type refreshBoostyDataPayloadResolver struct{ *Resolver }
 type refreshPatreonDataPayloadResolver struct{ *Resolver }
+type searchResultResolver struct{ *Resolver }
 type setTgChatSubgraphInvitesPayloadResolver struct{ *Resolver }
 type setTgChatSubgraphsPayloadResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }

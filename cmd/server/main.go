@@ -35,6 +35,7 @@ import (
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/case/backjob/extractnotionpages"
 	"trip2g/internal/case/backjob/sendsignincode"
+	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/handletgupdate"
@@ -870,6 +871,10 @@ func (a *app) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {
 
 var ErrNotAdmin = errors.New("unauthorized")
 
+func (a *app) CanReadNote(ctx context.Context, note *model.NoteView) (bool, error) {
+	return canreadnote.Resolve(ctx, a, note)
+}
+
 func (a *app) CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error) {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {
@@ -931,22 +936,12 @@ func (a *app) CreateNowpaymentsInvoice(params nowpayments.CreateInvoiceParams) (
 	return a.nowpaymentsClient.CreateInvoice(params)
 }
 
-func (a *app) SearchLiveNotes(query string) (*graphmodel.SearchConnection, error) {
-	results, err := a.liveNoteLoader.Search(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to search live notes: %w", err)
-	}
-
-	return convertSearchResultsToGraphModel(results), nil
+func (a *app) SearchLiveNotes(query string) ([]model.SearchResult, error) {
+	return a.liveNoteLoader.Search(query)
 }
 
-func (a *app) SearchLatestNotes(query string) (*graphmodel.SearchConnection, error) {
-	results, err := a.latestNoteLoader.Search(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to search latest notes: %w", err)
-	}
-
-	return convertSearchResultsToGraphModel(results), nil
+func (a *app) SearchLatestNotes(query string) ([]model.SearchResult, error) {
+	return a.latestNoteLoader.Search(query)
 }
 
 func (a *app) PrepareLatestNotes(ctx context.Context) (*model.NoteViews, error) {
@@ -1776,24 +1771,4 @@ func getEnvOrDefault[T any](ctx context.Context, defaultEnv *app) (T, error) {
 	}
 
 	return zero, fmt.Errorf("request env does not implement required type: %T", zero)
-}
-
-func convertSearchResultsToGraphModel(results []model.SearchResult) *graphmodel.SearchConnection {
-	conn := graphmodel.SearchConnection{}
-
-	for _, res := range results {
-		publicNote := graphmodel.ConvertNoteToPublic(res.Note)
-
-		res := graphmodel.SearchResult{
-			HighlightedTitle:   res.HighlightedTitle,
-			HighlightedContent: res.HighlightedContent,
-
-			Document: publicNote,
-			URL:      res.Note.Permalink,
-		}
-
-		conn.Nodes = append(conn.Nodes, res)
-	}
-
-	return &conn
 }

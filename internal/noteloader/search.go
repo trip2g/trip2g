@@ -10,6 +10,8 @@ import (
 
 	htmlFilter "github.com/blevesearch/bleve/v2/analysis/char/html"
 
+	_ "github.com/blevesearch/bleve/v2/analysis/lang/ru"
+
 	"github.com/blevesearch/bleve/v2"
 	"github.com/yuin/goldmark/ast"
 )
@@ -94,8 +96,10 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 			continue
 		}
 
+		fmt.Println(note.Permalink, note.Title)
 		result := model.SearchResult{
-			Note: note,
+			NoteView: note,
+			URL:      note.Permalink,
 		}
 
 		for field, fragments := range hit.Fragments {

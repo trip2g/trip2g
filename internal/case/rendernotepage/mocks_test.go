@@ -22,6 +22,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //
 //		// make and configure a mocked rendernotepage.Env
 //		mockedEnv := &EnvMock{
+//			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+//				panic("mock out the CanReadNote method")
+//			},
 //			IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 //				panic("mock out the IncreaseUserNoteViewCount method")
 //			},
@@ -62,6 +65,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// CanReadNoteFunc mocks the CanReadNote method.
+	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
+
 	// IncreaseUserNoteViewCountFunc mocks the IncreaseUserNoteViewCount method.
 	IncreaseUserNoteViewCountFunc func(ctx context.Context, userID int64) error
 
@@ -97,6 +103,13 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// CanReadNote holds details about calls to the CanReadNote method.
+		CanReadNote []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Note is the note argument value.
+			Note *model.NoteView
+		}
 		// IncreaseUserNoteViewCount holds details about calls to the IncreaseUserNoteViewCount method.
 		IncreaseUserNoteViewCount []struct {
 			// Ctx is the ctx argument value.
@@ -159,6 +172,7 @@ type EnvMock struct {
 			Params db.UpsertUserNoteDailyViewParams
 		}
 	}
+	lockCanReadNote               sync.RWMutex
 	lockIncreaseUserNoteViewCount sync.RWMutex
 	lockInsertUserNoteView        sync.RWMutex
 	lockLastUserNoteView          sync.RWMutex
@@ -170,6 +184,42 @@ type EnvMock struct {
 	lockLogger                    sync.RWMutex
 	lockRecordUserNoteView        sync.RWMutex
 	lockUpsertUserNoteDailyView   sync.RWMutex
+}
+
+// CanReadNote calls CanReadNoteFunc.
+func (mock *EnvMock) CanReadNote(ctx context.Context, note *model.NoteView) (bool, error) {
+	if mock.CanReadNoteFunc == nil {
+		panic("EnvMock.CanReadNoteFunc: method is nil but Env.CanReadNote was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Note *model.NoteView
+	}{
+		Ctx:  ctx,
+		Note: note,
+	}
+	mock.lockCanReadNote.Lock()
+	mock.calls.CanReadNote = append(mock.calls.CanReadNote, callInfo)
+	mock.lockCanReadNote.Unlock()
+	return mock.CanReadNoteFunc(ctx, note)
+}
+
+// CanReadNoteCalls gets all the calls that were made to CanReadNote.
+// Check the length with:
+//
+//	len(mockedEnv.CanReadNoteCalls())
+func (mock *EnvMock) CanReadNoteCalls() []struct {
+	Ctx  context.Context
+	Note *model.NoteView
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Note *model.NoteView
+	}
+	mock.lockCanReadNote.RLock()
+	calls = mock.calls.CanReadNote
+	mock.lockCanReadNote.RUnlock()
+	return calls
 }
 
 // IncreaseUserNoteViewCount calls IncreaseUserNoteViewCountFunc.

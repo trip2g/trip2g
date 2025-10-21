@@ -120,6 +120,7 @@ type ResolverRoot interface {
 	Query() QueryResolver
 	RefreshBoostyDataPayload() RefreshBoostyDataPayloadResolver
 	RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
+	SearchResult() SearchResultResolver
 	SetTgChatSubgraphInvitesPayload() SetTgChatSubgraphInvitesPayloadResolver
 	SetTgChatSubgraphsPayload() SetTgChatSubgraphsPayloadResolver
 	Subgraph() SubgraphResolver
@@ -1482,6 +1483,9 @@ type RefreshBoostyDataPayloadResolver interface {
 }
 type RefreshPatreonDataPayloadResolver interface {
 	Credentials(ctx context.Context, obj *model.RefreshPatreonDataPayload) (*db.PatreonCredential, error)
+}
+type SearchResultResolver interface {
+	Document(ctx context.Context, obj *model1.SearchResult) (model.SearchResultDocument, error)
 }
 type SetTgChatSubgraphInvitesPayloadResolver interface {
 	Chat(ctx context.Context, obj *model.SetTgChatSubgraphInvitesPayload) (*db.TgBotChat, error)
@@ -30215,9 +30219,9 @@ func (ec *executionContext) _SearchConnection_nodes(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]model.SearchResult)
+	res := resTmp.([]model1.SearchResult)
 	fc.Result = res
-	return ec.marshalNSearchResult2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐSearchResultᚄ(ctx, field.Selections, res)
+	return ec.marshalNSearchResult2ᚕtrip2gᚋinternalᚋmodelᚐSearchResultᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SearchConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -30243,7 +30247,7 @@ func (ec *executionContext) fieldContext_SearchConnection_nodes(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _SearchResult_highlightedTitle(ctx context.Context, field graphql.CollectedField, obj *model.SearchResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _SearchResult_highlightedTitle(ctx context.Context, field graphql.CollectedField, obj *model1.SearchResult) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SearchResult_highlightedTitle(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -30284,7 +30288,7 @@ func (ec *executionContext) fieldContext_SearchResult_highlightedTitle(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _SearchResult_highlightedContent(ctx context.Context, field graphql.CollectedField, obj *model.SearchResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _SearchResult_highlightedContent(ctx context.Context, field graphql.CollectedField, obj *model1.SearchResult) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SearchResult_highlightedContent(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -30328,7 +30332,7 @@ func (ec *executionContext) fieldContext_SearchResult_highlightedContent(_ conte
 	return fc, nil
 }
 
-func (ec *executionContext) _SearchResult_url(ctx context.Context, field graphql.CollectedField, obj *model.SearchResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _SearchResult_url(ctx context.Context, field graphql.CollectedField, obj *model1.SearchResult) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SearchResult_url(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -30372,7 +30376,7 @@ func (ec *executionContext) fieldContext_SearchResult_url(_ context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _SearchResult_document(ctx context.Context, field graphql.CollectedField, obj *model.SearchResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _SearchResult_document(ctx context.Context, field graphql.CollectedField, obj *model1.SearchResult) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SearchResult_document(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -30386,29 +30390,26 @@ func (ec *executionContext) _SearchResult_document(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Document, nil
+		return ec.resolvers.SearchResult().Document(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(model.SearchResultDocument)
 	fc.Result = res
-	return ec.marshalNSearchResultDocument2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResultDocument(ctx, field.Selections, res)
+	return ec.marshalOSearchResultDocument2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResultDocument(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_SearchResult_document(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SearchResult",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type SearchResultDocument does not have child fields")
 		},
@@ -51775,7 +51776,7 @@ func (ec *executionContext) _SearchConnection(ctx context.Context, sel ast.Selec
 
 var searchResultImplementors = []string{"SearchResult"}
 
-func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.SelectionSet, obj *model.SearchResult) graphql.Marshaler {
+func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.SelectionSet, obj *model1.SearchResult) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, searchResultImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -51789,18 +51790,46 @@ func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.Selection
 		case "highlightedContent":
 			out.Values[i] = ec._SearchResult_highlightedContent(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "url":
 			out.Values[i] = ec._SearchResult_url(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "document":
-			out.Values[i] = ec._SearchResult_document(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SearchResult_document(ctx, field, obj)
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -57510,11 +57539,11 @@ func (ec *executionContext) unmarshalNSearchInput2trip2gᚋinternalᚋgraphᚋmo
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNSearchResult2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResult(ctx context.Context, sel ast.SelectionSet, v model.SearchResult) graphql.Marshaler {
+func (ec *executionContext) marshalNSearchResult2trip2gᚋinternalᚋmodelᚐSearchResult(ctx context.Context, sel ast.SelectionSet, v model1.SearchResult) graphql.Marshaler {
 	return ec._SearchResult(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNSearchResult2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐSearchResultᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SearchResult) graphql.Marshaler {
+func (ec *executionContext) marshalNSearchResult2ᚕtrip2gᚋinternalᚋmodelᚐSearchResultᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.SearchResult) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -57538,7 +57567,7 @@ func (ec *executionContext) marshalNSearchResult2ᚕtrip2gᚋinternalᚋgraphᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNSearchResult2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResult(ctx, sel, v[i])
+			ret[i] = ec.marshalNSearchResult2trip2gᚋinternalᚋmodelᚐSearchResult(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -57556,16 +57585,6 @@ func (ec *executionContext) marshalNSearchResult2ᚕtrip2gᚋinternalᚋgraphᚋ
 	}
 
 	return ret
-}
-
-func (ec *executionContext) marshalNSearchResultDocument2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResultDocument(ctx context.Context, sel ast.SelectionSet, v model.SearchResultDocument) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._SearchResultDocument(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSetBoostyTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetBoostyTierSubgraphsInput(ctx context.Context, v any) (model.SetBoostyTierSubgraphsInput, error) {
@@ -58754,6 +58773,13 @@ func (ec *executionContext) marshalOPublicNote2ᚖtrip2gᚋinternalᚋgraphᚋmo
 		return graphql.Null
 	}
 	return ec._PublicNote(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOSearchResultDocument2trip2gᚋinternalᚋgraphᚋmodelᚐSearchResultDocument(ctx context.Context, sel ast.SelectionSet, v model.SearchResultDocument) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SearchResultDocument(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {

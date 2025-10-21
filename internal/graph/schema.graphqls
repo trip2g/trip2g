@@ -759,7 +759,7 @@ type SearchResult {
   highlightedContent: [String!]!
   url: String!
 
-  document: SearchResultDocument!
+  document: SearchResultDocument
 }
 
 type SearchConnection @goExtraField(name: "Input", type: "*trip2g/internal/graph/model.SearchInput"){

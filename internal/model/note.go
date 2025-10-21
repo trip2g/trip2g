@@ -61,8 +61,9 @@ type NoteViewPartialRenderer interface {
 type SearchResult struct {
 	HighlightedTitle   *string
 	HighlightedContent []string
+	URL                string
 
-	Note *NoteView
+	NoteView *NoteView
 }
 
 type NoteView struct {

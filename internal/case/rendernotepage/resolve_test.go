@@ -17,15 +17,18 @@ import (
 //go:generate go run github.com/matryer/moq -out mocks_test.go -pkg rendernotepage_test . Env
 
 type Env interface {
+	Layouts() *model.Layouts
 	Logger() logger.Logger
 	LatestNoteViews() *model.NoteViews
 	LiveNoteViews() *model.NoteViews
-	ListActiveSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
-	ListActiveTgChatSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
-	ListActivePatreonSubgraphNamesByUserID(ctx context.Context, userID int64) ([]string, error)
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error
 	UpsertUserNoteDailyView(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
 	IncreaseUserNoteViewCount(ctx context.Context, userID int64) error
+	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
+	RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
+	LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
+	LatestConfig() db.ConfigVersion
+	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
 }
 
 func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
@@ -95,6 +98,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -149,6 +155,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -201,6 +210,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
 					},
 				}
 			},
@@ -257,6 +269,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
 					},
 				}
 			},
@@ -394,6 +409,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -445,6 +463,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					},
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
 					},
 				}
 			},
@@ -498,6 +519,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -550,6 +574,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -599,6 +626,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
+					},
 				}
 			},
 			wantErr: false,
@@ -626,6 +656,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
+					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
 					},
 				}
 			},
@@ -762,6 +795,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
+					},
 				}
 			},
 			wantErr:            false,
@@ -809,6 +845,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					},
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
 					},
 				}
 			},
@@ -885,6 +924,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
+					},
 				}
 			},
 			wantErr:      false,
@@ -928,6 +970,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					},
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
 					},
 				}
 			},
@@ -1047,6 +1092,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
+					},
 				}
 			},
 			expectErrNF: true,
@@ -1071,6 +1119,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
+					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
 					},
 				}
 			},
@@ -1178,6 +1229,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
+					},
 				}
 			},
 			expectErrNF: false,
@@ -1228,6 +1282,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					},
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
 					},
 				}
 			},
@@ -1282,6 +1339,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViewsWithUnderscore
+					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
 					},
 				}
 			},
@@ -1377,6 +1437,11 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						// This should not be called for unauthenticated users on non-free notes
+						// as the paywall check happens before CanReadNote
+						return true, nil
+					},
 				}
 			},
 			wantErr:       true,
@@ -1423,6 +1488,10 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
 					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						// User without subgraph access should be denied
+						return false, nil
+					},
 				}
 			},
 			wantErr:       true,
@@ -1468,6 +1537,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					},
 					LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 						return db.LastUserNoteViewRow{}, sql.ErrNoRows
+					},
+					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
+						return true, nil
 					},
 				}
 			},

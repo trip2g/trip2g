@@ -29,6 +29,7 @@ type Env interface {
 	RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
 	LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
 	LatestConfig() db.ConfigVersion
+	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
 }
 
 type Request struct {
@@ -167,33 +168,9 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		}
 	}
 
-	// non-subgraph notes are opened if the user have a subscription to
-	// a graph with show_unsubgraph_notes_for_paid_users
-	hasAccess := len(response.Note.Subgraphs) == 0
-	if hasAccess {
-		// TODO: check show_unsubgraph_notes_for_paid_users
-		// it's work for claude.
-		hasAccess = true
-	}
-
-	if response.Note.Free {
-		hasAccess = true
-	}
-
-	if request.UserToken != nil && request.UserToken.Role == "admin" {
-		hasAccess = true
-	}
-
-	// check if the user has access to the subgraph
-	if !hasAccess {
-		for _, ps := range response.Note.SubgraphNames {
-			for _, us := range response.UserSubgraphs {
-				if ps == us {
-					hasAccess = true
-					break
-				}
-			}
-		}
+	hasAccess, err := env.CanReadNote(ctx, note)
+	if err != nil {
+		return &response, err
 	}
 
 	if !hasAccess {

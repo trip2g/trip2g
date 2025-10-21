@@ -962,20 +962,13 @@ type RunCronJobPayload struct {
 func (RunCronJobPayload) IsRunCronJobOrErrorPayload() {}
 
 type SearchConnection struct {
-	TotalCount int64          `json:"totalCount"`
-	Nodes      []SearchResult `json:"nodes"`
-	Input      *SearchInput   `json:"-"`
+	TotalCount int64                `json:"totalCount"`
+	Nodes      []model.SearchResult `json:"nodes"`
+	Input      *SearchInput         `json:"-"`
 }
 
 type SearchInput struct {
 	Query string `json:"query"`
-}
-
-type SearchResult struct {
-	HighlightedTitle   *string              `json:"highlightedTitle,omitempty"`
-	HighlightedContent []string             `json:"highlightedContent"`
-	URL                string               `json:"url"`
-	Document           SearchResultDocument `json:"document"`
 }
 
 type SetBoostyTierSubgraphsInput struct {
