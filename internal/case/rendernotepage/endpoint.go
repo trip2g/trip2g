@@ -1,7 +1,6 @@
 package rendernotepage
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -41,7 +40,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	env := req.Env.(Env)
 
-	resp, err := Resolve(context.Background(), env, request)
+	resp, err := Resolve(ctx, env, request)
 	if resp != nil && resp.Note != nil {
 		layoutParams.Title = resp.Note.Title
 		layoutParams.MetaDescription = resp.Note.Description

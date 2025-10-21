@@ -35,26 +35,24 @@ func Resolve(ctx context.Context, env Env, note *model.NoteView) (bool, error) {
 		return note.Free, nil
 	}
 
-	// non-subgraph notes are opened if the user have a subscription to
-	// a graph with show_unsubgraph_notes_for_paid_users
-	hasAccess := len(note.Subgraphs) == 0
-	if hasAccess {
-		// TODO: check show_unsubgraph_notes_for_paid_users
-		// it's work for claude.
-		hasAccess = true
+	// if user has no active subscriptions, they can't see anything
+	if len(userSubgraphs) == 0 {
+		return false, nil
 	}
 
-	// check if the user has access to the subgraph
-	if !hasAccess {
-		for _, ps := range note.SubgraphNames {
-			for _, us := range userSubgraphs {
-				if ps == us {
-					hasAccess = true
-					break
-				}
+	// notes without subgraphs (general knowledge) are accessible to all users with active subscriptions
+	if len(note.SubgraphNames) == 0 {
+		return true, nil
+	}
+
+	// check if user has access to any of the note's subgraphs
+	for _, noteSubgraph := range note.SubgraphNames {
+		for _, userSubgraph := range userSubgraphs {
+			if noteSubgraph == userSubgraph {
+				return true, nil
 			}
 		}
 	}
 
-	return hasAccess, nil
+	return false, nil
 }

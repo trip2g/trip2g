@@ -1,0 +1,46 @@
+$trip2g_user_search $mol_view
+	Panel $trip2g_user_search_panel
+
+$trip2g_user_search_test_view $mol_view
+	style *
+		flexDirection \column
+	sub /
+		<= ToggleButton $trip2g_user_search_toggle
+		<= SearchPanel $trip2g_user_search
+
+$trip2g_user_search_toggle $mol_check_icon
+	Icon <= Lights_icon $mol_icon_magnify
+	hint @ \Toggle Search
+	checked? <=> state? false
+
+$trip2g_user_search_panel $mol_view
+	plugins /
+		<= Theme $mol_theme_auto
+	ResultCount $mol_view
+		sub / <= result_count \
+	CloseButton $mol_view
+		sub /
+			<= CloseButtonButton $mol_button_major
+				title \Закрыть поиск
+				click? <=> close null
+	sub /
+		<= Form $mol_view
+			sub /
+				<= Search $mol_search
+					query? <=> query? \Сон
+				<= SubmitButton $mol_button_major
+					title \Поиск
+		<= Results $mol_list
+			rows <= results /$mol_view
+				<= ResultItem*0 $mol_view
+					dom_name \a
+					attr *
+						href <= result_link* \
+					sub /
+						<= Title* $trip2g_user_search_dimmer
+							html <= result_title* \
+						<= Content* $mol_view
+							sub <= result_content* /$mol_view
+
+$trip2g_user_search_dimmer $mol_dimmer
+	html \

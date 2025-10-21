@@ -11,6 +11,8 @@
     </div>
   </div>
 
+  <div mol_view_root="$trip2g_user_search"></div>
+
   {%= NoteContent(resp) %}
 </div>
 
@@ -173,6 +175,8 @@
     </div>
   </div>
 
+  <div mol_view_root="$trip2g_user_search"></div>
+
   <div class="noteview__content" id="noteview-content">
     {% if !resp.Note.IsHomePage() %}
     <h1 class="noteview__main-title">{%s resp.Note.Title %}</h1>
@@ -188,6 +192,12 @@
       <p class="noteview__description">{%s= *resp.Note.Description %}</p>
       {% endif %}
     {% endif %}
+
+    <script>
+      window.__trip2g_paywall = {
+        page_id: {%dl resp.Note.PathID %},
+      }
+    </script>
 
     <div
       id="paywall"

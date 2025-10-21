@@ -104,12 +104,18 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 
 		for field, fragments := range hit.Fragments {
 			if field == "Title" && len(fragments) > 0 {
+				// v := replaceMarkToEmphasis(fragments[0])
 				result.HighlightedTitle = &fragments[0]
 				continue
 			}
 
 			if field == "Body" {
 				result.HighlightedContent = fragments
+				// for _, fragment := range fragments {
+				// 	v := replaceMarkToEmphasis(fragment)
+				// 	result.HighlightedContent = append(result.HighlightedContent, v)
+				// }
+
 				continue
 			}
 		}
@@ -119,6 +125,14 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 
 	return results, nil
 }
+
+// I don't know how to change the highlight tags in bleve here
+// search/highlight/format/html/html.go
+// func replaceMarkToEmphasis(s string) string {
+// 	s = strings.ReplaceAll(s, "<mark>", "<em>")
+// 	s = strings.ReplaceAll(s, "</mark>", "</em>")
+// 	return s
+// }
 
 // extractText extracts plain text from a Markdown AST.
 // This version is optimized for getting the minimal text content

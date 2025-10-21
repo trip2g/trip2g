@@ -170,7 +170,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	hasAccess, err := env.CanReadNote(ctx, note)
 	if err != nil {
-		return &response, err
+		return &response, fmt.Errorf("failed to check note access: %w", err)
 	}
 
 	if !hasAccess {

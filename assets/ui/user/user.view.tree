@@ -8,3 +8,4 @@ $trip2g_user $mol_view
 	Space $trip2g_user_space
 	Reader $trip2g_reader
 	Favorite $trip2g_user_favoritenote
+	Search $trip2g_user_search_test_view

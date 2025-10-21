@@ -15,6 +15,7 @@ namespace $.$$ {
 				space: this.Space(),
 				reader: this.Reader(),
 				favorite: this.Favorite(),
+				search: this.Search(),
 			}
 		}
 

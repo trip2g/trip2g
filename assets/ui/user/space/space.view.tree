@@ -20,6 +20,7 @@ $trip2g_user_space $mol_view
 		<= admin_link null $mol_view
 		<= open_button null $mol_view
 		<= Lighter $mol_lights_toggle
+		<= Search $trip2g_user_search_toggle
 		<= Dialog $mol_view
 			dom_name \dialog
 			attr * open <= open_status null null|string
