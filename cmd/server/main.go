@@ -38,6 +38,7 @@ import (
 	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
+	"trip2g/internal/case/handletgpublishviews"
 	"trip2g/internal/case/handletgupdate"
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/case/listactiveusersubgraphs"
@@ -148,6 +149,9 @@ type app struct {
 	assetsFS    *fasthttp.FS
 	assetHashes map[string]string
 	assetsMu    sync.Mutex
+
+	timeLocation      *time.Location
+	timeLocationMutex sync.Mutex
 
 	liveNoteLoader   *noteloader.Loader
 	latestNoteLoader *noteloader.Loader
@@ -414,10 +418,49 @@ func (a *app) LatestConfig() db.ConfigVersion {
 
 		return db.ConfigVersion{
 			ShowDraftVersions: true,
+			Timezone:          "UTC",
 		}
 	}
 
 	return cfg
+}
+
+func (a *app) InsertConfigVersion(ctx context.Context, params db.InsertConfigVersionParams) error {
+	err := a.WriteQueries.InsertConfigVersion(ctx, params)
+
+	if err == nil {
+		a.resetTimeLocation()
+	}
+
+	return err
+}
+
+func (a *app) resetTimeLocation() {
+	a.timeLocationMutex.Lock()
+	defer a.timeLocationMutex.Unlock()
+
+	a.timeLocation = nil
+}
+
+func (a *app) TimeLocation() *time.Location {
+	a.timeLocationMutex.Lock()
+	defer a.timeLocationMutex.Unlock()
+
+	if a.timeLocation != nil {
+		return a.timeLocation
+	}
+
+	cfg := a.LatestConfig()
+
+	var err error
+
+	a.timeLocation, err = time.LoadLocation(cfg.Timezone)
+	if err != nil {
+		a.timeLocation = time.UTC
+		a.log.Error("failed to load timezone location", "timezone", cfg.Timezone, "error", err)
+	}
+
+	return a.timeLocation
 }
 
 func (a *app) NotionClientByIntegrationID(integrationID int64) notiontypes.Client {
@@ -858,6 +901,15 @@ func (a *app) IDHash(entity string, id int64) string {
 	sha256 := sha256.New()
 	fmt.Fprintf(sha256, "%s:%d", entity, id)
 	return hex.EncodeToString(sha256.Sum(nil))
+}
+
+func (a *app) HandleLatestNotesAfterSave(nvs *model.NoteViews) error {
+	err := handletgpublishviews.Resolve(a.ctx, a, nvs)
+	if err != nil {
+		return fmt.Errorf("failed to handle Telegram publish views: %w", err)
+	}
+
+	return nil
 }
 
 func (a *app) CurrentUserToken(ctx context.Context) (*usertoken.Data, error) {

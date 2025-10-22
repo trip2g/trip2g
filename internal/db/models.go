@@ -132,6 +132,7 @@ type ConfigVersion struct {
 	CreatedBy         int64     `json:"created_by"`
 	ShowDraftVersions bool      `json:"show_draft_versions"`
 	DefaultLayout     string    `json:"default_layout"`
+	Timezone          string    `json:"timezone"`
 }
 
 type CronJob struct {
@@ -380,6 +381,32 @@ type Subgraph struct {
 	CreatedAt                       time.Time      `json:"created_at"`
 	Hidden                          bool           `json:"hidden"`
 	ShowUnsubgraphNotesForPaidUsers sql.NullBool   `json:"show_unsubgraph_notes_for_paid_users"`
+}
+
+type TelegramPublishChat struct {
+	ChatID    int64     `json:"chat_id"`
+	TagID     int64     `json:"tag_id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+}
+
+type TelegramPublishNote struct {
+	NotePathID         int64         `json:"note_path_id"`
+	CreatedAt          time.Time     `json:"created_at"`
+	PublishAt          time.Time     `json:"publish_at"`
+	PublishedVersionID sql.NullInt64 `json:"published_version_id"`
+	PublishedAt        sql.NullTime  `json:"published_at"`
+}
+
+type TelegramPublishNoteTag struct {
+	NotePathID int64 `json:"note_path_id"`
+	TagID      int64 `json:"tag_id"`
+}
+
+type TelegramPublishTag struct {
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	Label     string    `json:"label"`
 }
 
 type TgAttachCode struct {

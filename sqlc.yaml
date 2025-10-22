@@ -9,6 +9,8 @@ sql:
         out: "internal/db"
         emit_json_tags: true
         overrides: &overrides
+          - column: "telegram_publish_notes.tag_ids"
+            go_type: "trip2g/internal/model.Int64IDs"
           - column: "purchases.payment_data"
             go_type: "string"
           - column: "offers.lifetime"

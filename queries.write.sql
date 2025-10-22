@@ -636,3 +636,21 @@ update notion_integrations
 -- name: InsertConfigVersion :exec
 insert into config_versions (created_by, show_draft_versions, default_layout)
 values (?, ?, ?);
+
+-- name: InsertTelegramPublishTags :exec
+insert into telegram_publish_tags (label)
+values (?)
+on conflict(label) do nothing;
+
+-- name: UpsertTelegramPublishNote :exec
+insert into telegram_publish_notes (note_path_id, publish_at)
+values (?, ?)
+on conflict(note_path_id) do update set publish_at = excluded.publish_at;
+
+-- name: DeleteTelegramPublishNoteTagsByPathID :exec
+delete from telegram_publish_note_tags where note_path_id = ?;
+
+-- name: UpsertTelegramPublishNoteTag :exec
+insert into telegram_publish_note_tags (note_path_id, tag_id)
+values (?, ?)
+on conflict(note_path_id, tag_id) do nothing;

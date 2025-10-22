@@ -744,3 +744,8 @@ select * from note_paths
 -- name: NotePathByID :one
 select * from note_paths
  where id = ?;
+
+-- name: TelegramPublishTagByLabel :one
+select * from telegram_publish_tags
+ where label = ?
+ limit 1;

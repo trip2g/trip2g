@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+	"time"
 
 	"trip2g/internal/model"
 )
@@ -224,6 +225,15 @@ delete from sign_in_codes
 
 func (q *WriteQueries) DeleteSignInCodesByUserID(ctx context.Context, userID int64) error {
 	_, err := q.db.ExecContext(ctx, deleteSignInCodesByUserID, userID)
+	return err
+}
+
+const deleteTelegramPublishNoteTagsByPathID = `-- name: DeleteTelegramPublishNoteTagsByPathID :exec
+delete from telegram_publish_note_tags where note_path_id = ?
+`
+
+func (q *WriteQueries) DeleteTelegramPublishNoteTagsByPathID(ctx context.Context, notePathID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTelegramPublishNoteTagsByPathID, notePathID)
 	return err
 }
 
@@ -1066,6 +1076,17 @@ on conflict(name) do update set hidden = false
 
 func (q *WriteQueries) InsertSubgraph(ctx context.Context, name string) error {
 	_, err := q.db.ExecContext(ctx, insertSubgraph, name)
+	return err
+}
+
+const insertTelegramPublishTags = `-- name: InsertTelegramPublishTags :exec
+insert into telegram_publish_tags (label)
+values (?)
+on conflict(label) do nothing
+`
+
+func (q *WriteQueries) InsertTelegramPublishTags(ctx context.Context, label string) error {
+	_, err := q.db.ExecContext(ctx, insertTelegramPublishTags, label)
 	return err
 }
 
@@ -2408,6 +2429,38 @@ func (q *WriteQueries) UpsertPatreonTier(ctx context.Context, arg UpsertPatreonT
 		arg.AmountCents,
 		arg.Attributes,
 	)
+	return err
+}
+
+const upsertTelegramPublishNote = `-- name: UpsertTelegramPublishNote :exec
+insert into telegram_publish_notes (note_path_id, publish_at)
+values (?, ?)
+on conflict(note_path_id) do update set publish_at = excluded.publish_at
+`
+
+type UpsertTelegramPublishNoteParams struct {
+	NotePathID int64     `json:"note_path_id"`
+	PublishAt  time.Time `json:"publish_at"`
+}
+
+func (q *WriteQueries) UpsertTelegramPublishNote(ctx context.Context, arg UpsertTelegramPublishNoteParams) error {
+	_, err := q.db.ExecContext(ctx, upsertTelegramPublishNote, arg.NotePathID, arg.PublishAt)
+	return err
+}
+
+const upsertTelegramPublishNoteTag = `-- name: UpsertTelegramPublishNoteTag :exec
+insert into telegram_publish_note_tags (note_path_id, tag_id)
+values (?, ?)
+on conflict(note_path_id, tag_id) do nothing
+`
+
+type UpsertTelegramPublishNoteTagParams struct {
+	NotePathID int64 `json:"note_path_id"`
+	TagID      int64 `json:"tag_id"`
+}
+
+func (q *WriteQueries) UpsertTelegramPublishNoteTag(ctx context.Context, arg UpsertTelegramPublishNoteTagParams) error {
+	_, err := q.db.ExecContext(ctx, upsertTelegramPublishNoteTag, arg.NotePathID, arg.TagID)
 	return err
 }
 

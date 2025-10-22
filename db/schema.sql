@@ -472,6 +472,30 @@ CREATE TABLE config_versions (
   created_by integer not null references admins(user_id) on delete restrict,
   show_draft_versions boolean not null default false,
   default_layout text not null default ''
+, timezone text not null default 'UTC');
+CREATE TABLE telegram_publish_tags (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  hidden boolean not null default false,
+  label text not null unique
+);
+CREATE TABLE telegram_publish_chats (
+  chat_id integer not null references tg_bot_chats(id) on delete cascade,
+  tag_id integer not null references telegram_publish_tags(id) on delete cascade,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict
+);
+CREATE TABLE telegram_publish_notes (
+  note_path_id integer not null primary key references note_paths(id) on delete restrict,
+  created_at datetime not null default current_timestamp,
+  publish_at datetime not null,
+  published_version_id integer references note_versions(id) on delete restrict,
+  published_at datetime
+);
+CREATE TABLE telegram_publish_note_tags (
+  note_path_id integer not null references telegram_publish_notes(note_path_id) on delete cascade,
+  tag_id integer not null references telegram_publish_tags(id) on delete cascade,
+  primary key (note_path_id, tag_id)
 );
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
@@ -547,4 +571,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20250927035933'),
   ('20251001113550'),
   ('20251003125722'),
-  ('20251016125315');
+  ('20251016125315'),
+  ('20251021134341'),
+  ('20251022032711');

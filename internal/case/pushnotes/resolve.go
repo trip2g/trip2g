@@ -17,6 +17,7 @@ type Env interface {
 	InsertNote(ctx context.Context, update appmodel.RawNote) error
 	InsertSubgraph(ctx context.Context, name string) error
 	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
+	HandleLatestNotesAfterSave(nvs *appmodel.NoteViews) error
 	Layouts() *appmodel.Layouts
 }
 
@@ -74,13 +75,17 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}
 
-	// env.Logger().Info("insert subgraphs", "subgraphs", nvs.Subgraphs)
-
+	// TODO: mv to HandleLatestNotesAfterSave
 	for _, subgraph := range nvs.Subgraphs {
 		insertErr := env.InsertSubgraph(ctx, subgraph.Name)
 		if insertErr != nil {
 			return nil, fmt.Errorf("failed to insert subgraph: %w", insertErr)
 		}
+	}
+
+	err = env.HandleLatestNotesAfterSave(nvs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to handle latest notes after save: %w", err)
 	}
 
 	pushedNotes := []model.PushedNote{}

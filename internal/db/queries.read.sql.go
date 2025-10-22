@@ -1236,7 +1236,7 @@ func (q *Queries) GetHTMLInjection(ctx context.Context, id int64) (HtmlInjection
 }
 
 const getLatestConfig = `-- name: GetLatestConfig :one
-select id, created_at, created_by, show_draft_versions, default_layout
+select id, created_at, created_by, show_draft_versions, default_layout, timezone
   from config_versions
  order by id desc
  limit 1
@@ -1251,6 +1251,7 @@ func (q *Queries) GetLatestConfig(ctx context.Context) (ConfigVersion, error) {
 		&i.CreatedBy,
 		&i.ShowDraftVersions,
 		&i.DefaultLayout,
+		&i.Timezone,
 	)
 	return i, err
 }
@@ -2198,7 +2199,7 @@ func (q *Queries) ListAllAdmins(ctx context.Context) ([]Admin, error) {
 }
 
 const listAllConfigVersions = `-- name: ListAllConfigVersions :many
-select id, created_at, created_by, show_draft_versions, default_layout
+select id, created_at, created_by, show_draft_versions, default_layout, timezone
   from config_versions
  order by id desc
  limit 50
@@ -2219,6 +2220,7 @@ func (q *Queries) ListAllConfigVersions(ctx context.Context) ([]ConfigVersion, e
 			&i.CreatedBy,
 			&i.ShowDraftVersions,
 			&i.DefaultLayout,
+			&i.Timezone,
 		); err != nil {
 			return nil, err
 		}
@@ -3405,6 +3407,19 @@ func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, er
 		&i.Hidden,
 		&i.ShowUnsubgraphNotesForPaidUsers,
 	)
+	return i, err
+}
+
+const telegramPublishTagByLabel = `-- name: TelegramPublishTagByLabel :one
+select id, created_at, label from telegram_publish_tags
+ where label = ?
+ limit 1
+`
+
+func (q *Queries) TelegramPublishTagByLabel(ctx context.Context, label string) (TelegramPublishTag, error) {
+	row := q.db.QueryRowContext(ctx, telegramPublishTagByLabel, label)
+	var i TelegramPublishTag
+	err := row.Scan(&i.ID, &i.CreatedAt, &i.Label)
 	return i, err
 }
 
