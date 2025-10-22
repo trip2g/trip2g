@@ -228,6 +228,15 @@ func (q *WriteQueries) DeleteSignInCodesByUserID(ctx context.Context, userID int
 	return err
 }
 
+const deleteTelegramPublishChatsByChatID = `-- name: DeleteTelegramPublishChatsByChatID :exec
+delete from telegram_publish_chats where chat_id = ?
+`
+
+func (q *WriteQueries) DeleteTelegramPublishChatsByChatID(ctx context.Context, chatID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTelegramPublishChatsByChatID, chatID)
+	return err
+}
+
 const deleteTelegramPublishNoteTagsByPathID = `-- name: DeleteTelegramPublishNoteTagsByPathID :exec
 delete from telegram_publish_note_tags where note_path_id = ?
 `
@@ -1076,6 +1085,22 @@ on conflict(name) do update set hidden = false
 
 func (q *WriteQueries) InsertSubgraph(ctx context.Context, name string) error {
 	_, err := q.db.ExecContext(ctx, insertSubgraph, name)
+	return err
+}
+
+const insertTelegramPublishChat = `-- name: InsertTelegramPublishChat :exec
+insert into telegram_publish_chats (chat_id, tag_id, created_by)
+values (?, ?, ?)
+`
+
+type InsertTelegramPublishChatParams struct {
+	ChatID    int64 `json:"chat_id"`
+	TagID     int64 `json:"tag_id"`
+	CreatedBy int64 `json:"created_by"`
+}
+
+func (q *WriteQueries) InsertTelegramPublishChat(ctx context.Context, arg InsertTelegramPublishChatParams) error {
+	_, err := q.db.ExecContext(ctx, insertTelegramPublishChat, arg.ChatID, arg.TagID, arg.CreatedBy)
 	return err
 }
 

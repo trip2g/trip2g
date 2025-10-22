@@ -406,6 +406,7 @@ type TelegramPublishNoteTag struct {
 type TelegramPublishTag struct {
 	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
+	Hidden    bool      `json:"hidden"`
 	Label     string    `json:"label"`
 }
 

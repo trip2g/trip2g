@@ -40,6 +40,7 @@ import (
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
+	"trip2g/internal/case/admin/settgchatpublishtags"
 	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
@@ -554,6 +555,11 @@ func (r *adminMutationResolver) SetTgChatSubgraphInvites(ctx context.Context, ob
 	return settgchatsubgraphinvites.Resolve(ctx, r.env(ctx), input)
 }
 
+// SetTgChatPublishTags is the resolver for the setTgChatPublishTags field.
+func (r *adminMutationResolver) SetTgChatPublishTags(ctx context.Context, obj *appmodel.AdminMutation, input model.SetTgChatPublishTagsInput) (model.SetTgChatPublishTagsOrErrorPayload, error) {
+	return settgchatpublishtags.Resolve(ctx, r.env(ctx), input)
+}
+
 // RemoveExpiredTgChatMembers is the resolver for the removeExpiredTgChatMembers field.
 func (r *adminMutationResolver) RemoveExpiredTgChatMembers(ctx context.Context, obj *appmodel.AdminMutation, input model.RemoveExpiredTgChatMembersInput) (model.RemoveExpiredTgChatMembersOrErrorPayload, error) {
 	filter := removeexpiredtgchatmembers.Filter{
@@ -1008,6 +1014,11 @@ func (r *adminQueryResolver) AllConfigVersions(ctx context.Context, obj *appmode
 	return &model.AdminConfigVersionsConnection{}, nil
 }
 
+// AllTelegramPublishTags is the resolver for the allTelegramPublishTags field.
+func (r *adminQueryResolver) AllTelegramPublishTags(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminTelegramPublishTagsConnection, error) {
+	return &model.AdminTelegramPublishTagsConnection{}, nil
+}
+
 // AllWaitListEmailRequests is the resolver for the allWaitListEmailRequests field.
 func (r *adminQueryResolver) AllWaitListEmailRequests(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error) {
 	return &model.AdminWaitListEmailRequestsConnection{}, nil
@@ -1180,6 +1191,11 @@ func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model
 	return r.env(ctx).ListAllSubgraphs(ctx)
 }
 
+// Nodes is the resolver for the nodes field.
+func (r *adminTelegramPublishTagsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTelegramPublishTagsConnection) ([]db.TelegramPublishTag, error) {
+	return r.env(ctx).ListAllTelegramPublishTags(ctx)
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminTgBotResolver) CreatedBy(ctx context.Context, obj *db.TgBot) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -1220,6 +1236,11 @@ func (r *adminTgBotChatResolver) SubgraphAccesses(ctx context.Context, obj *db.T
 // SubgraphInvites is the resolver for the subgraphInvites field.
 func (r *adminTgBotChatResolver) SubgraphInvites(ctx context.Context, obj *db.TgBotChat) ([]db.TgBotChatSubgraphInvite, error) {
 	return r.env(ctx).TgBotChatSubgraphInvitesByChatID(ctx, obj.ID)
+}
+
+// PublishTags is the resolver for the publishTags field.
+func (r *adminTgBotChatResolver) PublishTags(ctx context.Context, obj *db.TgBotChat) ([]db.TelegramPublishTag, error) {
+	return r.env(ctx).ListTelegramPublishTagsByChatID(ctx, obj.ID)
 }
 
 // ID is the resolver for the id field.
@@ -1745,6 +1766,11 @@ func (r *searchResultResolver) Document(ctx context.Context, obj *appmodel.Searc
 }
 
 // Chat is the resolver for the chat field.
+func (r *setTgChatPublishTagsPayloadResolver) Chat(ctx context.Context, obj *model.SetTgChatPublishTagsPayload) (*db.TgBotChat, error) {
+	return resolveOne[db.TgBotChat](ctx, obj.ChatID, r.env(ctx).TgBotChat)
+}
+
+// Chat is the resolver for the chat field.
 func (r *setTgChatSubgraphInvitesPayloadResolver) Chat(ctx context.Context, obj *model.SetTgChatSubgraphInvitesPayload) (*db.TgBotChat, error) {
 	return resolveOne[db.TgBotChat](ctx, obj.ChatID, r.env(ctx).TgBotChat)
 }
@@ -2212,6 +2238,11 @@ func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
 	return &adminSubgraphsConnectionResolver{r}
 }
 
+// AdminTelegramPublishTagsConnection returns AdminTelegramPublishTagsConnectionResolver implementation.
+func (r *Resolver) AdminTelegramPublishTagsConnection() AdminTelegramPublishTagsConnectionResolver {
+	return &adminTelegramPublishTagsConnectionResolver{r}
+}
+
 // AdminTgBot returns AdminTgBotResolver implementation.
 func (r *Resolver) AdminTgBot() AdminTgBotResolver { return &adminTgBotResolver{r} }
 
@@ -2346,6 +2377,11 @@ func (r *Resolver) RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
 // SearchResult returns SearchResultResolver implementation.
 func (r *Resolver) SearchResult() SearchResultResolver { return &searchResultResolver{r} }
 
+// SetTgChatPublishTagsPayload returns SetTgChatPublishTagsPayloadResolver implementation.
+func (r *Resolver) SetTgChatPublishTagsPayload() SetTgChatPublishTagsPayloadResolver {
+	return &setTgChatPublishTagsPayloadResolver{r}
+}
+
 // SetTgChatSubgraphInvitesPayload returns SetTgChatSubgraphInvitesPayloadResolver implementation.
 func (r *Resolver) SetTgChatSubgraphInvitesPayload() SetTgChatSubgraphInvitesPayloadResolver {
 	return &setTgChatSubgraphInvitesPayloadResolver{r}
@@ -2431,6 +2467,7 @@ type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }
 type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
+type adminTelegramPublishTagsConnectionResolver struct{ *Resolver }
 type adminTgBotResolver struct{ *Resolver }
 type adminTgBotChatResolver struct{ *Resolver }
 type adminTgBotChatSubgraphInviteResolver struct{ *Resolver }
@@ -2463,6 +2500,7 @@ type queryResolver struct{ *Resolver }
 type refreshBoostyDataPayloadResolver struct{ *Resolver }
 type refreshPatreonDataPayloadResolver struct{ *Resolver }
 type searchResultResolver struct{ *Resolver }
+type setTgChatPublishTagsPayloadResolver struct{ *Resolver }
 type setTgChatSubgraphInvitesPayloadResolver struct{ *Resolver }
 type setTgChatSubgraphsPayloadResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }

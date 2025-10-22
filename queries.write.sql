@@ -654,3 +654,10 @@ delete from telegram_publish_note_tags where note_path_id = ?;
 insert into telegram_publish_note_tags (note_path_id, tag_id)
 values (?, ?)
 on conflict(note_path_id, tag_id) do nothing;
+
+-- name: DeleteTelegramPublishChatsByChatID :exec
+delete from telegram_publish_chats where chat_id = ?;
+
+-- name: InsertTelegramPublishChat :exec
+insert into telegram_publish_chats (chat_id, tag_id, created_by)
+values (?, ?, ?);

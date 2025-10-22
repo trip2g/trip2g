@@ -1,0 +1,7 @@
+$trip2g_admin_tgbot_show_publishtags_tags $mol_view
+	chat_id 0
+	current_ids /number
+	sub /
+		<= Row*0 $mol_check_box
+			title <= item_title* \Name
+			checked? <=> item_check*? false

@@ -33,6 +33,7 @@ require (
 	github.com/yuin/goldmark-meta v1.1.0
 	go.abhg.dev/goldmark/wikilink v0.6.0
 	golang.org/x/crypto v0.39.0
+	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b
 	maragu.dev/goqite v0.3.1
 	modernc.org/sqlite v1.37.0
 )
@@ -344,7 +345,6 @@ require (
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/exp v0.0.0-20250531010427-b6e5de432a8b // indirect
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.25.0 // indirect
 	golang.org/x/net v0.41.0 // indirect

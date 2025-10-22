@@ -158,6 +158,10 @@ type SetPatreonTierSubgraphsOrErrorPayload interface {
 	IsSetPatreonTierSubgraphsOrErrorPayload()
 }
 
+type SetTgChatPublishTagsOrErrorPayload interface {
+	IsSetTgChatPublishTagsOrErrorPayload()
+}
+
 type SetTgChatSubgraphInvitesOrErrorPayload interface {
 	IsSetTgChatSubgraphInvitesOrErrorPayload()
 }
@@ -358,6 +362,10 @@ type AdminReleasesConnection struct {
 
 type AdminSubgraphsConnection struct {
 	Nodes []db.Subgraph `json:"nodes"`
+}
+
+type AdminTelegramPublishTagsConnection struct {
+	Nodes []db.TelegramPublishTag `json:"nodes"`
 }
 
 type AdminTgBotChatsConnection struct {
@@ -766,6 +774,8 @@ func (ErrorPayload) IsCreateUserOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateUserOrErrorPayload() {}
 
+func (ErrorPayload) IsSetTgChatPublishTagsOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -994,6 +1004,19 @@ type SetPatreonTierSubgraphsPayload struct {
 }
 
 func (SetPatreonTierSubgraphsPayload) IsSetPatreonTierSubgraphsOrErrorPayload() {}
+
+type SetTgChatPublishTagsInput struct {
+	ChatID int64   `json:"chatId"`
+	TagIds []int64 `json:"tagIds"`
+}
+
+type SetTgChatPublishTagsPayload struct {
+	Chat    *db.TgBotChat `json:"chat"`
+	Success bool          `json:"success"`
+	ChatID  int64         `json:"-"`
+}
+
+func (SetTgChatPublishTagsPayload) IsSetTgChatPublishTagsOrErrorPayload() {}
 
 type SetTgChatSubgraphInvitesInput struct {
 	ChatID      int64   `json:"chatId"`

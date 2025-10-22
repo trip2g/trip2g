@@ -315,6 +315,12 @@ type AdminTgBotChatSubgraphInvite @goModel(model: "trip2g/internal/db.TgBotChatS
   subgraph: AdminSubgraph!
 }
 
+type AdminTelegramPublishTag @goModel(model: "trip2g/internal/db.TelegramPublishTag") {
+  id: Int64!
+  label: String!
+  createdAt: Time!
+}
+
 type AdminTgBotChat @goModel(model: "trip2g/internal/db.TgBotChat") {
   id: Int64!
   chatType: String!
@@ -326,6 +332,7 @@ type AdminTgBotChat @goModel(model: "trip2g/internal/db.TgBotChat") {
 
   subgraphAccesses: [AdminTgChatSubgraphAccess!]!
   subgraphInvites: [AdminTgBotChatSubgraphInvite!]!
+  publishTags: [AdminTelegramPublishTag!]!
 }
 
 type AdminTgChatMember @goModel(model: "trip2g/internal/db.TgChatMember") {
@@ -602,6 +609,10 @@ type AdminConfigVersionsConnection {
   nodes: [AdminConfigVersion!]! @goField(forceResolver: true)
 }
 
+type AdminTelegramPublishTagsConnection {
+  nodes: [AdminTelegramPublishTag!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -621,6 +632,7 @@ type AdminQuery {
   allHTMLInjections: AdminHTMLInjectionsConnection!
   allCronJobs: AdminCronJobsConnection!
   allConfigVersions: AdminConfigVersionsConnection!
+  allTelegramPublishTags: AdminTelegramPublishTagsConnection!
 
   allWaitListEmailRequests: AdminWaitListEmailRequestsConnection!
   allWaitListTgBotRequests: AdminWaitListTgBotRequestsConnection!
@@ -1682,6 +1694,23 @@ type UpdateUserPayload {
 
 union UpdateUserOrErrorPayload = UpdateUserPayload | ErrorPayload
 
+#
+# setTgChatPublishTags
+#
+
+input SetTgChatPublishTagsInput {
+  chatId: Int64!
+  tagIds: [Int64!]!
+}
+
+type SetTgChatPublishTagsPayload
+  @goExtraField(name: "ChatID", type: "int64") {
+  chat: AdminTgBotChat! @goField(forceResolver: true)
+  success: Boolean!
+}
+
+union SetTgChatPublishTagsOrErrorPayload = SetTgChatPublishTagsPayload | ErrorPayload
+
 type AdminMutation {
   createUser(input: CreateUserInput!): CreateUserOrErrorPayload!
   updateUser(input: UpdateUserInput!): UpdateUserOrErrorPayload!
@@ -1720,6 +1749,7 @@ type AdminMutation {
   updateTgBot(input: UpdateTgBotInput!): UpdateTgBotOrErrorPayload!
   setTgChatSubgraphs(input: SetTgChatSubgraphsInput!): SetTgChatSubgraphsOrErrorPayload!
   setTgChatSubgraphInvites(input: SetTgChatSubgraphInvitesInput!): SetTgChatSubgraphInvitesOrErrorPayload!
+  setTgChatPublishTags(input: SetTgChatPublishTagsInput!): SetTgChatPublishTagsOrErrorPayload!
   removeExpiredTgChatMembers(input: RemoveExpiredTgChatMembersInput!): RemoveExpiredTgChatMembersOrErrorPayload!
 
   # Patreon credentials mutations

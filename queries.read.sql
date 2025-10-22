@@ -749,3 +749,13 @@ select * from note_paths
 select * from telegram_publish_tags
  where label = ?
  limit 1;
+
+-- name: ListTelegramPublishTagsByChatID :many
+select t.*
+  from telegram_publish_tags t
+  join telegram_publish_chats c on t.id = c.tag_id
+ where c.chat_id = ?;
+
+-- name: ListAllTelegramPublishTags :many
+select * from telegram_publish_tags
+ order by label;

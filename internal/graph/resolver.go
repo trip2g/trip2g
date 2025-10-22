@@ -31,6 +31,7 @@ import (
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
+	"trip2g/internal/case/admin/settgchatpublishtags"
 	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
 	"trip2g/internal/case/admin/unbanuser"
@@ -106,6 +107,7 @@ type Env interface {
 	ListEnabledTgBots(ctx context.Context) ([]db.TgBot, error)
 	ListAuditLogs(ctx context.Context, arg db.ListAuditLogsParams) ([]db.AuditLog, error)
 	ListNotePathsLike(ctx context.Context, like string) ([]db.NotePath, error)
+	ListAllTelegramPublishTags(ctx context.Context) ([]db.TelegramPublishTag, error)
 	AllWaitListEmailRequests(ctx context.Context) ([]db.AllWaitListEmailRequestsRow, error)
 	ListAllConfigVersions(ctx context.Context) ([]db.ConfigVersion, error)
 	AllWaitListTgBotRequests(ctx context.Context) ([]db.AllWaitListTgBotRequestsRow, error)
@@ -192,6 +194,7 @@ type Env interface {
 	updatecronjob.Env
 	runcronjob.Env
 	sitesearch.Env
+	settgchatpublishtags.Env
 
 	// Boosty credentials
 	createboostycredentials.Env
@@ -236,6 +239,8 @@ type Env interface {
 	GetPatreonCampaignsByCredentialsID(ctx context.Context, credentialsID int64) ([]db.PatreonCampaign, error)
 	GetPatreonTiersByCampaignID(ctx context.Context, campaignID int64) ([]db.PatreonTier, error)
 	GetPatreonMembersByCampaignID(ctx context.Context, campaignID int64) ([]db.PatreonMember, error)
+
+	ListTelegramPublishTagsByChatID(ctx context.Context, chatID int64) ([]db.TelegramPublishTag, error)
 
 	// Boosty credentials queries
 	AllBoostyCredentials(ctx context.Context) ([]db.BoostyCredential, error)

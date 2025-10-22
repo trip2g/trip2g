@@ -18,3 +18,8 @@ $trip2g_admin_tgbot_show $mol_page
 			content /
 				<= InviteChats $trip2g_admin_tgbot_show_invitechats
 					bot_id <= tgbot_id
+		<= PublishTagsSection $mol_section
+			title \Publish to this groups
+			content /
+				<= PublishTags $trip2g_admin_tgbot_show_publishtags
+					bot_id <= tgbot_id

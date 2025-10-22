@@ -2549,6 +2549,39 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 	return items, nil
 }
 
+const listAllTelegramPublishTags = `-- name: ListAllTelegramPublishTags :many
+select id, created_at, hidden, label from telegram_publish_tags
+ order by label
+`
+
+func (q *Queries) ListAllTelegramPublishTags(ctx context.Context) ([]TelegramPublishTag, error) {
+	rows, err := q.db.QueryContext(ctx, listAllTelegramPublishTags)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TelegramPublishTag
+	for rows.Next() {
+		var i TelegramPublishTag
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.Hidden,
+			&i.Label,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllUserBans = `-- name: ListAllUserBans :many
 select user_id, created_at, banned_by, reason from user_bans
 `
@@ -2906,6 +2939,41 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 			&i.CreatedAt,
 			&i.Hidden,
 			&i.ShowUnsubgraphNotesForPaidUsers,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTelegramPublishTagsByChatID = `-- name: ListTelegramPublishTagsByChatID :many
+select t.id, t.created_at, t.hidden, t.label
+  from telegram_publish_tags t
+  join telegram_publish_chats c on t.id = c.tag_id
+ where c.chat_id = ?
+`
+
+func (q *Queries) ListTelegramPublishTagsByChatID(ctx context.Context, chatID int64) ([]TelegramPublishTag, error) {
+	rows, err := q.db.QueryContext(ctx, listTelegramPublishTagsByChatID, chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TelegramPublishTag
+	for rows.Next() {
+		var i TelegramPublishTag
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.Hidden,
+			&i.Label,
 		); err != nil {
 			return nil, err
 		}
@@ -3411,7 +3479,7 @@ func (q *Queries) SubgraphByName(ctx context.Context, name string) (Subgraph, er
 }
 
 const telegramPublishTagByLabel = `-- name: TelegramPublishTagByLabel :one
-select id, created_at, label from telegram_publish_tags
+select id, created_at, hidden, label from telegram_publish_tags
  where label = ?
  limit 1
 `
@@ -3419,7 +3487,12 @@ select id, created_at, label from telegram_publish_tags
 func (q *Queries) TelegramPublishTagByLabel(ctx context.Context, label string) (TelegramPublishTag, error) {
 	row := q.db.QueryRowContext(ctx, telegramPublishTagByLabel, label)
 	var i TelegramPublishTag
-	err := row.Scan(&i.ID, &i.CreatedAt, &i.Label)
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.Hidden,
+		&i.Label,
+	)
 	return i, err
 }
 
