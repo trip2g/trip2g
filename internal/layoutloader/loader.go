@@ -1,7 +1,6 @@
 package layoutloader
 
 import (
-	"fmt"
 	"io"
 	"path/filepath"
 	"reflect"
@@ -96,7 +95,7 @@ func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, e
 
 		view, err := views.GetTemplate(source.ID)
 		if err != nil || view == nil {
-			fmt.Printf("Failed to load layout template: %v nil: %+v\n", err, view == nil)
+			// Failed to load layout template - skipping silently
 			// Silently skip templates that fail to load
 			delete(jl.templates, source.ID)
 			continue

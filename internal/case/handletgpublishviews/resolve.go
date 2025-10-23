@@ -148,8 +148,8 @@ func extractTags(note *model.NoteView) ([]string, bool) {
 	var tags []string
 
 	for _, t := range tagsI {
-		tagStr, ok := t.(string)
-		if !ok {
+		tagStr, tagOk := t.(string)
+		if !tagOk {
 			note.AddWarning(model.NoteWarningWarning, "invalid tag in telegram_publish_tags, expected string")
 			continue
 		}

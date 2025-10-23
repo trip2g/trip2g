@@ -21,10 +21,6 @@ type Env interface {
 	Logger() logger.Logger
 }
 
-type noteContent struct {
-	Title string
-	Body  string
-}
 
 func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.SearchConnection, error) {
 	userToken, err := env.CurrentUserToken(ctx)
@@ -55,9 +51,9 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 
 	for _, res := range results {
 		if res.NoteView != nil {
-			canRead, err := env.CanReadNote(ctx, res.NoteView)
-			if err != nil {
-				return nil, fmt.Errorf("failed to check CanReadNote: %w", err)
+			canRead, readErr := env.CanReadNote(ctx, res.NoteView)
+			if readErr != nil {
+				return nil, fmt.Errorf("failed to check CanReadNote: %w", readErr)
 			}
 
 			if canRead {

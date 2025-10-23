@@ -96,7 +96,7 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 			continue
 		}
 
-		fmt.Println(note.Permalink, note.Title)
+		// Debug output for search results has been removed
 		result := model.SearchResult{
 			NoteView: note,
 			URL:      note.Permalink,

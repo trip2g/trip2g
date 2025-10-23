@@ -431,49 +431,6 @@ func (api *API) isRefExists(ref string) bool {
 	return checkCmd.Run() == nil
 }
 
-func (api *API) getChangedFiles() ([]string, error) {
-	if !api.isRefExists("HEAD") {
-		// HEAD doesn't exist, this is the first commit
-		return nil, errors.New("first commit detected, HEAD does not exist")
-	}
-
-	if !api.isRefExists("HEAD^1") {
-		// HEAD^1 doesn't exist, this is the first commit
-		return nil, errors.New("first commit detected, HEAD^1 does not exist")
-	}
-
-	// TODO: track the last processed commit
-	// git diff --name-only HEAD^1 HEAD
-	cmd := exec.Command("git", "-c", "core.quotePath=false", "diff", "--name-only", "HEAD^1", "HEAD")
-	cmd.Dir = api.config.RepoPath
-	cmd.Stderr = os.Stderr
-
-	// Limit output to prevent memory issues (1MB should be enough for file lists)
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get stdout pipe: %w", err)
-	}
-
-	err = cmd.Start()
-	if err != nil {
-		return nil, fmt.Errorf("failed to start command: %w", err)
-	}
-
-	limitedReader := io.LimitReader(stdoutPipe, 1<<20) // 1MB limit
-	output, err := io.ReadAll(limitedReader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read output: %w", err)
-	}
-
-	err = cmd.Wait()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get changed files: %w", err)
-	}
-
-	files := strings.Split(strings.TrimSpace(string(output)), "\n")
-
-	return api.filterDotFiles(files), nil
-}
 
 func (api *API) ApplyChanges(_ context.Context) ([]string, error) {
 	// changedFiles, err := api.getChangedFiles()
@@ -716,10 +673,10 @@ func (api *API) resolveAssetPath(notePath, relativePath string) string {
 	}
 
 	// First, try the path as-is (it might already be correct)
-	cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "ls-files", "--error-unmatch", relativePath)
-	cmd.Stderr = nil
-	err := cmd.Run()
-	if err == nil {
+	firstCmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "ls-files", "--error-unmatch", relativePath)
+	firstCmd.Stderr = nil
+	firstErr := firstCmd.Run()
+	if firstErr == nil {
 		return relativePath
 	}
 
@@ -730,11 +687,11 @@ func (api *API) resolveAssetPath(notePath, relativePath string) string {
 		assetPath := filepath.Join(noteDir, relativePath)
 
 		// check exists in git
-		cmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "ls-files", "--error-unmatch", assetPath)
-		cmd.Stderr = nil
+		checkCmd := exec.Command("git", "--git-dir", api.config.RepoPath, "-c", "core.quotePath=false", "ls-files", "--error-unmatch", assetPath)
+		checkCmd.Stderr = nil
 
-		err := cmd.Run()
-		if err == nil {
+		checkErr := checkCmd.Run()
+		if checkErr == nil {
 			return assetPath
 		}
 	}

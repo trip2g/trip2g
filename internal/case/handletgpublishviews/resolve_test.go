@@ -11,7 +11,7 @@ import (
 	"trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/rand"
+	"math/rand/v2"
 )
 
 //go:generate go run github.com/matryer/moq -out mocks_test.go -pkg handletgpublishviews_test . Env
@@ -25,11 +25,11 @@ func insertTelegramPublishTags(_ context.Context, _ string) error {
 }
 
 func makeTelegramPublishTagByLabel() func(context.Context, string) (db.TelegramPublishTag, error) {
-	r := rand.New(rand.NewSource(0))
+	r := rand.New(rand.NewPCG(0, 0))
 
 	return func(_ context.Context, label string) (db.TelegramPublishTag, error) {
 		return db.TelegramPublishTag{
-			ID:    r.Int63(),
+			ID:    int64(r.Uint64()),
 			Label: label,
 		}, nil
 	}
@@ -114,11 +114,11 @@ func TestMetaExtractrs(t *testing.T) {
 
 	env := prepare(t, &nvs)
 
-	require.Len(t, nvs.List[0].Warnings, 0)
-	require.Len(t, nvs.List[1].Warnings, 0)
+	require.Empty(t, nvs.List[0].Warnings)
+	require.Empty(t, nvs.List[1].Warnings)
 	require.Len(t, nvs.List[2].Warnings, 1)
 	require.Len(t, nvs.List[3].Warnings, 1)
-	require.Len(t, nvs.List[4].Warnings, 0)
+	require.Empty(t, nvs.List[4].Warnings)
 
 	require.Len(t, env.calls.InsertTelegramPublishTags, 2)
 	require.Equal(t, "tag1", env.calls.InsertTelegramPublishTags[0].Label)

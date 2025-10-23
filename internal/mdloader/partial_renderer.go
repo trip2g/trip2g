@@ -33,7 +33,7 @@ func (pr *PartialRenderer) HeadingBlocks(level int) []model.NoteViewHeadingBlock
 	}
 
 	var currentBlock *model.NoteViewHeadingBlock
-	var contentStart int = -1
+	var contentStart = -1
 
 	for i, node := range allNodes {
 		if heading, ok := node.(*ast.Heading); ok {
@@ -85,7 +85,7 @@ func (pr *PartialRenderer) Introduce() model.NoteViewHeadingBlock {
 	}
 
 	// Find the first heading of any level
-	var firstHeadingIndex int = -1
+	var firstHeadingIndex = -1
 	for i, node := range allNodes {
 		if _, ok := node.(*ast.Heading); ok {
 			firstHeadingIndex = i

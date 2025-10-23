@@ -1795,9 +1795,9 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 
 	if filter != nil {
 		if filter.Search != nil {
-			conn, err := r.Search(ctx, model.SearchInput{Query: *filter.Search})
-			if err != nil {
-				return nil, err
+			conn, searchErr := r.Search(ctx, model.SearchInput{Query: *filter.Search})
+			if searchErr != nil {
+				return nil, searchErr
 			}
 
 			res := []db.NotePath{}
@@ -1808,7 +1808,7 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 
 					notePath, selectErr := r.env(ctx).NotePathByID(ctx, pathID)
 					if selectErr != nil {
-						return nil, fmt.Errorf("failed to get note path by ID %s: %w", pathID, selectErr)
+						return nil, fmt.Errorf("failed to get note path by ID %d: %w", pathID, selectErr)
 					}
 
 					res = append(res, notePath)
