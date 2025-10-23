@@ -2,7 +2,6 @@ package convertnoteviewtotgpost_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 	"trip2g/internal/case/convertnoteviewtotgpost"
@@ -38,9 +37,6 @@ title: "Sample Note"
 
 	post, err := convertnoteviewtotgpost.Resolve(context.Background(), &env, nvs.List[0])
 	require.NoError(t, err)
-
-	fmt.Println(string(tgMarkdown))
-	fmt.Println(post.Content)
 
 	require.Empty(t, post.Warnings)
 	require.Equal(t, string(tgMarkdown), post.Content)
