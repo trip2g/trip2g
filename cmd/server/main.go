@@ -860,6 +860,18 @@ func (a *app) UserCSSURLs() []string {
 	return []string{a.assetURL("/assets/output.css")}
 }
 
+func (a *app) LoadNoteViewByVersionID(ctx context.Context, id int64) (*model.NoteView, error) {
+	wrapper := makeSingleNoteLoaderWrapper(a, id)
+	loader := noteloader.New("single", wrapper, a.config.MDLoaderConfig)
+
+	err := loader.Load(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load note version %d: %w", id, err)
+	}
+
+	return loader.NoteViews().List[0], nil
+}
+
 func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error) {
 	wrapper := makeSingleNoteLoaderWrapper(a, id)
 	loader := noteloader.New("single", wrapper, a.config.MDLoaderConfig)

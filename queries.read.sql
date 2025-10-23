@@ -735,7 +735,6 @@ select *
  order by id desc
  limit 50;
 
-
 -- name: ListNotePathsLike :many
 select * from note_paths
  where value like ?
@@ -759,3 +758,19 @@ select t.*
 -- name: ListAllTelegramPublishTags :many
 select * from telegram_publish_tags
  order by label;
+
+-- name: ListAllTelegramPublishNotes :many
+select n.*
+  from telegram_publish_notes n
+  join note_paths p on n.note_path_id = p.id
+ where p.hidden_by is null
+   and (sqlc.arg(include_sent) = true or published_at is null)
+   and (sqlc.arg(include_outdated) = true or publish_at > n.created_at)
+ order by n.publish_at;
+
+-- name: ListTelegramPublishTagsByNoteID :many
+select t.*
+  from telegram_publish_tags t
+  join telegram_publish_note_tags nt on t.id = nt.tag_id
+ where nt.note_path_id = ?
+ order by t.label;

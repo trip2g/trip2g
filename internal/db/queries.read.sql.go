@@ -2549,6 +2549,50 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 	return items, nil
 }
 
+const listAllTelegramPublishNotes = `-- name: ListAllTelegramPublishNotes :many
+select n.note_path_id, n.created_at, n.publish_at, n.published_version_id, n.published_at
+  from telegram_publish_notes n
+  join note_paths p on n.note_path_id = p.id
+ where p.hidden_by is null
+   and (?1 = true or published_at is null)
+   and (?2 = true or publish_at > n.created_at)
+ order by n.publish_at
+`
+
+type ListAllTelegramPublishNotesParams struct {
+	IncludeSent     interface{} `json:"include_sent"`
+	IncludeOutdated interface{} `json:"include_outdated"`
+}
+
+func (q *Queries) ListAllTelegramPublishNotes(ctx context.Context, arg ListAllTelegramPublishNotesParams) ([]TelegramPublishNote, error) {
+	rows, err := q.db.QueryContext(ctx, listAllTelegramPublishNotes, arg.IncludeSent, arg.IncludeOutdated)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TelegramPublishNote
+	for rows.Next() {
+		var i TelegramPublishNote
+		if err := rows.Scan(
+			&i.NotePathID,
+			&i.CreatedAt,
+			&i.PublishAt,
+			&i.PublishedVersionID,
+			&i.PublishedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllTelegramPublishTags = `-- name: ListAllTelegramPublishTags :many
 select id, created_at, hidden, label from telegram_publish_tags
  order by label
@@ -2962,6 +3006,42 @@ select t.id, t.created_at, t.hidden, t.label
 
 func (q *Queries) ListTelegramPublishTagsByChatID(ctx context.Context, chatID int64) ([]TelegramPublishTag, error) {
 	rows, err := q.db.QueryContext(ctx, listTelegramPublishTagsByChatID, chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TelegramPublishTag
+	for rows.Next() {
+		var i TelegramPublishTag
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.Hidden,
+			&i.Label,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTelegramPublishTagsByNoteID = `-- name: ListTelegramPublishTagsByNoteID :many
+select t.id, t.created_at, t.hidden, t.label
+  from telegram_publish_tags t
+  join telegram_publish_note_tags nt on t.id = nt.tag_id
+ where nt.note_path_id = ?
+ order by t.label
+`
+
+func (q *Queries) ListTelegramPublishTagsByNoteID(ctx context.Context, notePathID int64) ([]TelegramPublishTag, error) {
+	rows, err := q.db.QueryContext(ctx, listTelegramPublishTagsByNoteID, notePathID)
 	if err != nil {
 		return nil, err
 	}

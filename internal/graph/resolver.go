@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
@@ -111,6 +112,8 @@ type Env interface {
 	AllWaitListEmailRequests(ctx context.Context) ([]db.AllWaitListEmailRequestsRow, error)
 	ListAllConfigVersions(ctx context.Context) ([]db.ConfigVersion, error)
 	AllWaitListTgBotRequests(ctx context.Context) ([]db.AllWaitListTgBotRequestsRow, error)
+	ListAllTelegramPublishNotes(ctx context.Context, arg db.ListAllTelegramPublishNotesParams) ([]db.TelegramPublishNote, error)
+	ListTelegramPublishTagsByNoteID(ctx context.Context, notePathID int64) ([]db.TelegramPublishTag, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
@@ -138,7 +141,10 @@ type Env interface {
 
 	IDHash(entity string, id int64) string
 
+	LoadNoteViewByVersionID(ctx context.Context, id int64) (*model.NoteView, error)
+
 	Logger() logger.Logger
+	Now() time.Time
 
 	LatestConfig() db.ConfigVersion
 

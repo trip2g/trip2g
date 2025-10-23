@@ -613,6 +613,30 @@ type AdminTelegramPublishTagsConnection {
   nodes: [AdminTelegramPublishTag!]! @goField(forceResolver: true)
 }
 
+input AdminTelegramPublishNotesFilter {
+  includeSent: Boolean
+  includeOutdated: Boolean
+}
+
+type AdminTelegramPublishNote @goModel(model: "trip2g/internal/db.TelegramPublishNote") {
+  id: Int64!
+  createdAt: Time!
+  publishAt: Time!
+  publishedAt: Time
+  publishedVersionID: Int64
+  status: String!
+  """
+  latest or published NoteView depending on the status
+  """
+  noteView: NoteView!
+  tags: [AdminTelegramPublishTag!]!
+}
+
+type AdminTelegramPublishNotesConnection
+  @goExtraField(name: "Filter", type: "*trip2g/internal/graph/model.AdminTelegramPublishNotesFilter"){
+  nodes: [AdminTelegramPublishNote!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -633,6 +657,7 @@ type AdminQuery {
   allCronJobs: AdminCronJobsConnection!
   allConfigVersions: AdminConfigVersionsConnection!
   allTelegramPublishTags: AdminTelegramPublishTagsConnection!
+  allTelegramPublishNotes(filter: AdminTelegramPublishNotesFilter): AdminTelegramPublishNotesConnection!
 
   allWaitListEmailRequests: AdminWaitListEmailRequestsConnection!
   allWaitListTgBotRequests: AdminWaitListTgBotRequestsConnection!

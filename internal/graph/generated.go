@@ -89,6 +89,8 @@ type ResolverRoot interface {
 	AdminReleasesConnection() AdminReleasesConnectionResolver
 	AdminSubgraph() AdminSubgraphResolver
 	AdminSubgraphsConnection() AdminSubgraphsConnectionResolver
+	AdminTelegramPublishNote() AdminTelegramPublishNoteResolver
+	AdminTelegramPublishNotesConnection() AdminTelegramPublishNotesConnectionResolver
 	AdminTelegramPublishTagsConnection() AdminTelegramPublishTagsConnectionResolver
 	AdminTgBot() AdminTgBotResolver
 	AdminTgBotChat() AdminTgBotChatResolver
@@ -496,6 +498,7 @@ type ComplexityRoot struct {
 		AllRedirects               func(childComplexity int) int
 		AllReleases                func(childComplexity int) int
 		AllSubgraphs               func(childComplexity int) int
+		AllTelegramPublishNotes    func(childComplexity int, filter *model.AdminTelegramPublishNotesFilter) int
 		AllTelegramPublishTags     func(childComplexity int) int
 		AllTgBots                  func(childComplexity int) int
 		AllUserSubgraphAccesses    func(childComplexity int) int
@@ -560,6 +563,21 @@ type ComplexityRoot struct {
 	}
 
 	AdminSubgraphsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminTelegramPublishNote struct {
+		CreatedAt          func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		NoteView           func(childComplexity int) int
+		PublishAt          func(childComplexity int) int
+		PublishedAt        func(childComplexity int) int
+		PublishedVersionID func(childComplexity int) int
+		Status             func(childComplexity int) int
+		Tags               func(childComplexity int) int
+	}
+
+	AdminTelegramPublishNotesConnection struct {
 		Nodes func(childComplexity int) int
 	}
 
@@ -1328,6 +1346,7 @@ type AdminQueryResolver interface {
 	AllCronJobs(ctx context.Context, obj *model1.AdminQuery) (*model.AdminCronJobsConnection, error)
 	AllConfigVersions(ctx context.Context, obj *model1.AdminQuery) (*model.AdminConfigVersionsConnection, error)
 	AllTelegramPublishTags(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTelegramPublishTagsConnection, error)
+	AllTelegramPublishNotes(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminTelegramPublishNotesFilter) (*model.AdminTelegramPublishNotesConnection, error)
 	AllWaitListEmailRequests(ctx context.Context, obj *model1.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error)
 	AllWaitListTgBotRequests(ctx context.Context, obj *model1.AdminQuery) (*model.AdminWaitListTgBotRequestsConnection, error)
 	AllTgBots(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTgBotsConnection, error)
@@ -1374,6 +1393,18 @@ type AdminSubgraphResolver interface {
 }
 type AdminSubgraphsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error)
+}
+type AdminTelegramPublishNoteResolver interface {
+	ID(ctx context.Context, obj *db.TelegramPublishNote) (int64, error)
+
+	PublishedAt(ctx context.Context, obj *db.TelegramPublishNote) (*time.Time, error)
+	PublishedVersionID(ctx context.Context, obj *db.TelegramPublishNote) (*int64, error)
+	Status(ctx context.Context, obj *db.TelegramPublishNote) (string, error)
+	NoteView(ctx context.Context, obj *db.TelegramPublishNote) (*model1.NoteView, error)
+	Tags(ctx context.Context, obj *db.TelegramPublishNote) ([]db.TelegramPublishTag, error)
+}
+type AdminTelegramPublishNotesConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminTelegramPublishNotesConnection) ([]db.TelegramPublishNote, error)
 }
 type AdminTelegramPublishTagsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminTelegramPublishTagsConnection) ([]db.TelegramPublishTag, error)
@@ -3413,6 +3444,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminQuery.AllSubgraphs(childComplexity), true
 
+	case "AdminQuery.allTelegramPublishNotes":
+		if e.complexity.AdminQuery.AllTelegramPublishNotes == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_allTelegramPublishNotes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.AllTelegramPublishNotes(childComplexity, args["filter"].(*model.AdminTelegramPublishNotesFilter)), true
+
 	case "AdminQuery.allTelegramPublishTags":
 		if e.complexity.AdminQuery.AllTelegramPublishTags == nil {
 			break
@@ -3826,6 +3869,69 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminSubgraphsConnection.Nodes(childComplexity), true
+
+	case "AdminTelegramPublishNote.createdAt":
+		if e.complexity.AdminTelegramPublishNote.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramPublishNote.CreatedAt(childComplexity), true
+
+	case "AdminTelegramPublishNote.id":
+		if e.complexity.AdminTelegramPublishNote.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramPublishNote.ID(childComplexity), true
+
+	case "AdminTelegramPublishNote.noteView":
+		if e.complexity.AdminTelegramPublishNote.NoteView == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramPublishNote.NoteView(childComplexity), true
+
+	case "AdminTelegramPublishNote.publishAt":
+		if e.complexity.AdminTelegramPublishNote.PublishAt == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramPublishNote.PublishAt(childComplexity), true
+
+	case "AdminTelegramPublishNote.publishedAt":
+		if e.complexity.AdminTelegramPublishNote.PublishedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramPublishNote.PublishedAt(childComplexity), true
+
+	case "AdminTelegramPublishNote.publishedVersionID":
+		if e.complexity.AdminTelegramPublishNote.PublishedVersionID == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramPublishNote.PublishedVersionID(childComplexity), true
+
+	case "AdminTelegramPublishNote.status":
+		if e.complexity.AdminTelegramPublishNote.Status == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramPublishNote.Status(childComplexity), true
+
+	case "AdminTelegramPublishNote.tags":
+		if e.complexity.AdminTelegramPublishNote.Tags == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramPublishNote.Tags(childComplexity), true
+
+	case "AdminTelegramPublishNotesConnection.nodes":
+		if e.complexity.AdminTelegramPublishNotesConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramPublishNotesConnection.Nodes(childComplexity), true
 
 	case "AdminTelegramPublishTag.createdAt":
 		if e.complexity.AdminTelegramPublishTag.CreatedAt == nil {
@@ -5611,6 +5717,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAdminBoostyCredentialsFilterInput,
 		ec.unmarshalInputAdminLatestNoteViewsFilter,
 		ec.unmarshalInputAdminPatreonCredentialsFilterInput,
+		ec.unmarshalInputAdminTelegramPublishNotesFilter,
 		ec.unmarshalInputAdminTgBotChatsFilterInput,
 		ec.unmarshalInputAdminTgChatMembersFilterInput,
 		ec.unmarshalInputAdminTgChatSubgraphAccessesFilterInput,
@@ -6892,6 +6999,29 @@ func (ec *executionContext) field_AdminQuery_allPatreonCredentials_argsFilter(
 	}
 
 	var zeroVal *model.AdminPatreonCredentialsFilterInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_allTelegramPublishNotes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_allTelegramPublishNotes_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_allTelegramPublishNotes_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*model.AdminTelegramPublishNotesFilter, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOAdminTelegramPublishNotesFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramPublishNotesFilter(ctx, tmp)
+	}
+
+	var zeroVal *model.AdminTelegramPublishNotesFilter
 	return zeroVal, nil
 }
 
@@ -18839,6 +18969,65 @@ func (ec *executionContext) fieldContext_AdminQuery_allTelegramPublishTags(_ con
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_allTelegramPublishNotes(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allTelegramPublishNotes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().AllTelegramPublishNotes(rctx, obj, fc.Args["filter"].(*model.AdminTelegramPublishNotesFilter))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.AdminTelegramPublishNotesConnection)
+	fc.Result = res
+	return ec.marshalNAdminTelegramPublishNotesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramPublishNotesConnection(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allTelegramPublishNotes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminTelegramPublishNotesConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramPublishNotesConnection", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_allTelegramPublishNotes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_allWaitListEmailRequests(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminQuery_allWaitListEmailRequests(ctx, field)
 	if err != nil {
@@ -21473,6 +21662,458 @@ func (ec *executionContext) fieldContext_AdminSubgraphsConnection_nodes(_ contex
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminSubgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramPublishNote_id(ctx context.Context, field graphql.CollectedField, obj *db.TelegramPublishNote) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTelegramPublishNote_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTelegramPublishNote().ID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramPublishNote_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramPublishNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramPublishNote_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.TelegramPublishNote) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTelegramPublishNote_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramPublishNote_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramPublishNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramPublishNote_publishAt(ctx context.Context, field graphql.CollectedField, obj *db.TelegramPublishNote) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTelegramPublishNote_publishAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PublishAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramPublishNote_publishAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramPublishNote",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramPublishNote_publishedAt(ctx context.Context, field graphql.CollectedField, obj *db.TelegramPublishNote) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTelegramPublishNote_publishedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTelegramPublishNote().PublishedAt(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramPublishNote_publishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramPublishNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramPublishNote_publishedVersionID(ctx context.Context, field graphql.CollectedField, obj *db.TelegramPublishNote) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTelegramPublishNote_publishedVersionID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTelegramPublishNote().PublishedVersionID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int64)
+	fc.Result = res
+	return ec.marshalOInt642ᚖint64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramPublishNote_publishedVersionID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramPublishNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramPublishNote_status(ctx context.Context, field graphql.CollectedField, obj *db.TelegramPublishNote) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTelegramPublishNote_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTelegramPublishNote().Status(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramPublishNote_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramPublishNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramPublishNote_noteView(ctx context.Context, field graphql.CollectedField, obj *db.TelegramPublishNote) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTelegramPublishNote_noteView(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTelegramPublishNote().NoteView(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model1.NoteView)
+	fc.Result = res
+	return ec.marshalNNoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramPublishNote_noteView(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramPublishNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteView_id(ctx, field)
+			case "path":
+				return ec.fieldContext_NoteView_path(ctx, field)
+			case "title":
+				return ec.fieldContext_NoteView_title(ctx, field)
+			case "content":
+				return ec.fieldContext_NoteView_content(ctx, field)
+			case "html":
+				return ec.fieldContext_NoteView_html(ctx, field)
+			case "permalink":
+				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "free":
+				return ec.fieldContext_NoteView_free(ctx, field)
+			case "pathId":
+				return ec.fieldContext_NoteView_pathId(ctx, field)
+			case "versionId":
+				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
+			case "warnings":
+				return ec.fieldContext_NoteView_warnings(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
+			case "isHomePage":
+				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramPublishNote_tags(ctx context.Context, field graphql.CollectedField, obj *db.TelegramPublishNote) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTelegramPublishNote_tags(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTelegramPublishNote().Tags(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.TelegramPublishTag)
+	fc.Result = res
+	return ec.marshalNAdminTelegramPublishTag2ᚕtrip2gᚋinternalᚋdbᚐTelegramPublishTagᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramPublishNote_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramPublishNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTelegramPublishTag_id(ctx, field)
+			case "label":
+				return ec.fieldContext_AdminTelegramPublishTag_label(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTelegramPublishTag_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramPublishTag", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramPublishNotesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminTelegramPublishNotesConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTelegramPublishNotesConnection_nodes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTelegramPublishNotesConnection().Nodes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]db.TelegramPublishNote)
+	fc.Result = res
+	return ec.marshalNAdminTelegramPublishNote2ᚕtrip2gᚋinternalᚋdbᚐTelegramPublishNoteᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramPublishNotesConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramPublishNotesConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTelegramPublishNote_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTelegramPublishNote_createdAt(ctx, field)
+			case "publishAt":
+				return ec.fieldContext_AdminTelegramPublishNote_publishAt(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_AdminTelegramPublishNote_publishedAt(ctx, field)
+			case "publishedVersionID":
+				return ec.fieldContext_AdminTelegramPublishNote_publishedVersionID(ctx, field)
+			case "status":
+				return ec.fieldContext_AdminTelegramPublishNote_status(ctx, field)
+			case "noteView":
+				return ec.fieldContext_AdminTelegramPublishNote_noteView(ctx, field)
+			case "tags":
+				return ec.fieldContext_AdminTelegramPublishNote_tags(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramPublishNote", field.Name)
 		},
 	}
 	return fc, nil
@@ -29557,6 +30198,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allConfigVersions(ctx, field)
 			case "allTelegramPublishTags":
 				return ec.fieldContext_AdminQuery_allTelegramPublishTags(ctx, field)
+			case "allTelegramPublishNotes":
+				return ec.fieldContext_AdminQuery_allTelegramPublishNotes(ctx, field)
 			case "allWaitListEmailRequests":
 				return ec.fieldContext_AdminQuery_allWaitListEmailRequests(ctx, field)
 			case "allWaitListTgBotRequests":
@@ -35955,6 +36598,40 @@ func (ec *executionContext) unmarshalInputAdminPatreonCredentialsFilterInput(ctx
 				return it, err
 			}
 			it.State = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAdminTelegramPublishNotesFilter(ctx context.Context, obj any) (model.AdminTelegramPublishNotesFilter, error) {
+	var it model.AdminTelegramPublishNotesFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"includeSent", "includeOutdated"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "includeSent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeSent"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludeSent = data
+		case "includeOutdated":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeOutdated"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IncludeOutdated = data
 		}
 	}
 
@@ -46315,6 +46992,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allTelegramPublishNotes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allTelegramPublishNotes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "allWaitListEmailRequests":
 			field := field
 
@@ -47703,6 +48416,330 @@ func (ec *executionContext) _AdminSubgraphsConnection(ctx context.Context, sel a
 					}
 				}()
 				res = ec._AdminSubgraphsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTelegramPublishNoteImplementors = []string{"AdminTelegramPublishNote"}
+
+func (ec *executionContext) _AdminTelegramPublishNote(ctx context.Context, sel ast.SelectionSet, obj *db.TelegramPublishNote) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTelegramPublishNoteImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTelegramPublishNote")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramPublishNote_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._AdminTelegramPublishNote_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "publishAt":
+			out.Values[i] = ec._AdminTelegramPublishNote_publishAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "publishedAt":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramPublishNote_publishedAt(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "publishedVersionID":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramPublishNote_publishedVersionID(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "status":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramPublishNote_status(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "noteView":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramPublishNote_noteView(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "tags":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramPublishNote_tags(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTelegramPublishNotesConnectionImplementors = []string{"AdminTelegramPublishNotesConnection"}
+
+func (ec *executionContext) _AdminTelegramPublishNotesConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminTelegramPublishNotesConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTelegramPublishNotesConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTelegramPublishNotesConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramPublishNotesConnection_nodes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -56612,6 +57649,68 @@ func (ec *executionContext) marshalNAdminSubgraphsConnection2ᚖtrip2gᚋinterna
 	return ec._AdminSubgraphsConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminTelegramPublishNote2trip2gᚋinternalᚋdbᚐTelegramPublishNote(ctx context.Context, sel ast.SelectionSet, v db.TelegramPublishNote) graphql.Marshaler {
+	return ec._AdminTelegramPublishNote(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminTelegramPublishNote2ᚕtrip2gᚋinternalᚋdbᚐTelegramPublishNoteᚄ(ctx context.Context, sel ast.SelectionSet, v []db.TelegramPublishNote) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminTelegramPublishNote2trip2gᚋinternalᚋdbᚐTelegramPublishNote(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminTelegramPublishNotesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramPublishNotesConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminTelegramPublishNotesConnection) graphql.Marshaler {
+	return ec._AdminTelegramPublishNotesConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminTelegramPublishNotesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramPublishNotesConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminTelegramPublishNotesConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminTelegramPublishNotesConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminTelegramPublishTag2trip2gᚋinternalᚋdbᚐTelegramPublishTag(ctx context.Context, sel ast.SelectionSet, v db.TelegramPublishTag) graphql.Marshaler {
 	return ec._AdminTelegramPublishTag(ctx, sel, &v)
 }
@@ -59598,6 +60697,14 @@ func (ec *executionContext) marshalOAdminSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSu
 		return graphql.Null
 	}
 	return ec._AdminSubgraph(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOAdminTelegramPublishNotesFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramPublishNotesFilter(ctx context.Context, v any) (*model.AdminTelegramPublishNotesFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAdminTelegramPublishNotesFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOAdminTgBot2ᚖtrip2gᚋinternalᚋdbᚐTgBot(ctx context.Context, sel ast.SelectionSet, v *db.TgBot) graphql.Marshaler {

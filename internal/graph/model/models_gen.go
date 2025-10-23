@@ -364,6 +364,16 @@ type AdminSubgraphsConnection struct {
 	Nodes []db.Subgraph `json:"nodes"`
 }
 
+type AdminTelegramPublishNotesConnection struct {
+	Nodes  []db.TelegramPublishNote         `json:"nodes"`
+	Filter *AdminTelegramPublishNotesFilter `json:"-"`
+}
+
+type AdminTelegramPublishNotesFilter struct {
+	IncludeSent     *bool `json:"includeSent,omitempty"`
+	IncludeOutdated *bool `json:"includeOutdated,omitempty"`
+}
+
 type AdminTelegramPublishTagsConnection struct {
 	Nodes []db.TelegramPublishTag `json:"nodes"`
 }

@@ -1019,6 +1019,11 @@ func (r *adminQueryResolver) AllTelegramPublishTags(ctx context.Context, obj *ap
 	return &model.AdminTelegramPublishTagsConnection{}, nil
 }
 
+// AllTelegramPublishNotes is the resolver for the allTelegramPublishNotes field.
+func (r *adminQueryResolver) AllTelegramPublishNotes(ctx context.Context, obj *appmodel.AdminQuery, filter *model.AdminTelegramPublishNotesFilter) (*model.AdminTelegramPublishNotesConnection, error) {
+	return &model.AdminTelegramPublishNotesConnection{Filter: filter}, nil
+}
+
 // AllWaitListEmailRequests is the resolver for the allWaitListEmailRequests field.
 func (r *adminQueryResolver) AllWaitListEmailRequests(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error) {
 	return &model.AdminWaitListEmailRequestsConnection{}, nil
@@ -1189,6 +1194,77 @@ func (r *adminSubgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*s
 // Nodes is the resolver for the nodes field.
 func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error) {
 	return r.env(ctx).ListAllSubgraphs(ctx)
+}
+
+// ID is the resolver for the id field.
+func (r *adminTelegramPublishNoteResolver) ID(ctx context.Context, obj *db.TelegramPublishNote) (int64, error) {
+	return obj.NotePathID, nil
+}
+
+// PublishedAt is the resolver for the publishedAt field.
+func (r *adminTelegramPublishNoteResolver) PublishedAt(ctx context.Context, obj *db.TelegramPublishNote) (*time.Time, error) {
+	return db.ToTimePtr(obj.PublishedAt), nil
+}
+
+// PublishedVersionID is the resolver for the publishedVersionID field.
+func (r *adminTelegramPublishNoteResolver) PublishedVersionID(ctx context.Context, obj *db.TelegramPublishNote) (*int64, error) {
+	return db.ToInt64Ptr(obj.PublishedVersionID), nil
+}
+
+// Status is the resolver for the status field.
+func (r *adminTelegramPublishNoteResolver) Status(ctx context.Context, obj *db.TelegramPublishNote) (string, error) {
+	if obj.PublishedAt.Valid {
+		return "Sent", nil
+	}
+
+	if obj.CreatedAt.After(obj.PublishAt) {
+		return "Outdated", nil
+	}
+
+	if obj.PublishAt.Before(r.env(ctx).Now()) {
+		return "Scheduled", nil
+	}
+
+	return "Pending", nil
+}
+
+// NoteView is the resolver for the noteView field.
+func (r *adminTelegramPublishNoteResolver) NoteView(ctx context.Context, obj *db.TelegramPublishNote) (*appmodel.NoteView, error) {
+	if !obj.PublishedVersionID.Valid {
+		nvs := r.env(ctx).LatestNoteViews()
+
+		for _, note := range nvs.List {
+			if note.PathID == obj.NotePathID {
+				return note, nil
+			}
+		}
+
+		return nil, fmt.Errorf("note view not found for note path ID %d", obj.NotePathID)
+	}
+
+	return r.env(ctx).LoadNoteViewByVersionID(ctx, obj.PublishedVersionID.Int64)
+}
+
+// Tags is the resolver for the tags field.
+func (r *adminTelegramPublishNoteResolver) Tags(ctx context.Context, obj *db.TelegramPublishNote) ([]db.TelegramPublishTag, error) {
+	return r.env(ctx).ListTelegramPublishTagsByNoteID(ctx, obj.NotePathID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminTelegramPublishNotesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTelegramPublishNotesConnection) ([]db.TelegramPublishNote, error) {
+	params := db.ListAllTelegramPublishNotesParams{}
+
+	if obj.Filter != nil {
+		if obj.Filter.IncludeSent != nil && *obj.Filter.IncludeSent {
+			params.IncludeSent = true
+		}
+
+		if obj.Filter.IncludeOutdated != nil && *obj.Filter.IncludeOutdated {
+			params.IncludeOutdated = true
+		}
+	}
+
+	return r.env(ctx).ListAllTelegramPublishNotes(ctx, params)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -2238,6 +2314,16 @@ func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
 	return &adminSubgraphsConnectionResolver{r}
 }
 
+// AdminTelegramPublishNote returns AdminTelegramPublishNoteResolver implementation.
+func (r *Resolver) AdminTelegramPublishNote() AdminTelegramPublishNoteResolver {
+	return &adminTelegramPublishNoteResolver{r}
+}
+
+// AdminTelegramPublishNotesConnection returns AdminTelegramPublishNotesConnectionResolver implementation.
+func (r *Resolver) AdminTelegramPublishNotesConnection() AdminTelegramPublishNotesConnectionResolver {
+	return &adminTelegramPublishNotesConnectionResolver{r}
+}
+
 // AdminTelegramPublishTagsConnection returns AdminTelegramPublishTagsConnectionResolver implementation.
 func (r *Resolver) AdminTelegramPublishTagsConnection() AdminTelegramPublishTagsConnectionResolver {
 	return &adminTelegramPublishTagsConnectionResolver{r}
@@ -2467,6 +2553,8 @@ type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }
 type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
+type adminTelegramPublishNoteResolver struct{ *Resolver }
+type adminTelegramPublishNotesConnectionResolver struct{ *Resolver }
 type adminTelegramPublishTagsConnectionResolver struct{ *Resolver }
 type adminTgBotResolver struct{ *Resolver }
 type adminTgBotChatResolver struct{ *Resolver }

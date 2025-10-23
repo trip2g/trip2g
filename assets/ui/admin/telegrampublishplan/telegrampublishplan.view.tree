@@ -1,0 +1,6 @@
+$trip2g_admin_telegrampublishplan $mol_page
+	close_icon null $mol_view
+	tools / <= close_icon
+	title \Telegram Publish Plan
+	body /
+		\Telegram Publish Plan
