@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/logger"
+	"trip2g/internal/mdloader/highlight"
 	"trip2g/internal/model"
 
 	enclave "github.com/quailyquaily/goldmark-enclave"
@@ -84,6 +85,7 @@ func Load(options Options) (*model.NoteViews, error) {
 			}, 198)),
 		),
 		goldmark.WithExtensions(
+			highlight.Highlight,
 			&wikilink.Extender{
 				Resolver: ldr.linkResolver,
 			},
