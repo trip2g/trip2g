@@ -56,6 +56,7 @@ import (
 	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
+	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/case/createemailwaitlistrequest"
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
@@ -1243,6 +1244,16 @@ func (r *adminTelegramPublishNoteResolver) NoteView(ctx context.Context, obj *db
 	}
 
 	return r.env(ctx).LoadNoteViewByVersionID(ctx, obj.PublishedVersionID.Int64)
+}
+
+// Post is the resolver for the post field.
+func (r *adminTelegramPublishNoteResolver) Post(ctx context.Context, obj *db.TelegramPublishNote) (*appmodel.TelegramPost, error) {
+	nv, err := r.NoteView(ctx, obj)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertnoteviewtotgpost.Resolve(ctx, r.env(ctx), nv)
 }
 
 // Tags is the resolver for the tags field.

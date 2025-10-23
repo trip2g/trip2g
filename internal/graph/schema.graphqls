@@ -618,6 +618,10 @@ input AdminTelegramPublishNotesFilter {
   includeOutdated: Boolean
 }
 
+type TelegramPost {
+  content: String!
+}
+
 type AdminTelegramPublishNote @goModel(model: "trip2g/internal/db.TelegramPublishNote") {
   id: Int64!
   createdAt: Time!
@@ -629,6 +633,7 @@ type AdminTelegramPublishNote @goModel(model: "trip2g/internal/db.TelegramPublis
   latest or published NoteView depending on the status
   """
   noteView: NoteView!
+  post: TelegramPost!
   tags: [AdminTelegramPublishTag!]!
 }
 

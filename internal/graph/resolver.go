@@ -48,6 +48,7 @@ import (
 	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
+	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/case/createemailwaitlistrequest"
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
@@ -201,6 +202,7 @@ type Env interface {
 	runcronjob.Env
 	sitesearch.Env
 	settgchatpublishtags.Env
+	convertnoteviewtotgpost.Env
 
 	// Boosty credentials
 	createboostycredentials.Env
