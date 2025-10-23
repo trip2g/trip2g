@@ -3,7 +3,7 @@ _italic \*text_
 <u>underline</u>
 ~~strikethrough~~
 ==spoiler==
-**bold _italic bold ~~italic bold strikethrough ==italic bold strikethrough spoiler==~~ <u>underline italic bold</u> bold**
+**bold _italic bold ~~italic bold strikethrough ==italic bold strikethrough spoiler==~~ <u>underline italic bold</u>_ bold**
 [inline URL](http://www.example.com/)
 [inline mention of a user](tg://user?id=123456789)
 ![👍](tg://emoji?id=5368324170671202286)
