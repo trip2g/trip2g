@@ -620,6 +620,7 @@ input AdminTelegramPublishNotesFilter {
 
 type TelegramPost {
   content: String!
+  warnings: [String!]!
 }
 
 type AdminTelegramPublishNote @goModel(model: "trip2g/internal/db.TelegramPublishNote") {

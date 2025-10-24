@@ -1222,6 +1222,15 @@ func (r *adminTelegramPublishNoteResolver) Status(ctx context.Context, obj *db.T
 		return "Outdated", nil
 	}
 
+	post, err := r.Post(ctx, obj)
+	if err != nil {
+		return "Error: " + err.Error(), nil
+	}
+
+	if len(post.Warnings) > 0 {
+		return "Requires attention", nil
+	}
+
 	if obj.PublishAt.Before(r.env(ctx).Now()) {
 		return "Scheduled", nil
 	}

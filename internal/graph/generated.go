@@ -1023,7 +1023,8 @@ type ComplexityRoot struct {
 	}
 
 	TelegramPost struct {
-		Content func(childComplexity int) int
+		Content  func(childComplexity int) int
+		Warnings func(childComplexity int) int
 	}
 
 	TgBot struct {
@@ -5433,6 +5434,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TelegramPost.Content(childComplexity), true
+
+	case "TelegramPost.warnings":
+		if e.complexity.TelegramPost.Warnings == nil {
+			break
+		}
+
+		return e.complexity.TelegramPost.Warnings(childComplexity), true
 
 	case "TgBot.description":
 		if e.complexity.TgBot.Description == nil {
@@ -22066,6 +22074,8 @@ func (ec *executionContext) fieldContext_AdminTelegramPublishNote_post(_ context
 			switch field.Name {
 			case "content":
 				return ec.fieldContext_TelegramPost_content(ctx, field)
+			case "warnings":
+				return ec.fieldContext_TelegramPost_warnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TelegramPost", field.Name)
 		},
@@ -32563,6 +32573,50 @@ func (ec *executionContext) _TelegramPost_content(ctx context.Context, field gra
 }
 
 func (ec *executionContext) fieldContext_TelegramPost_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TelegramPost",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TelegramPost_warnings(ctx context.Context, field graphql.CollectedField, obj *model1.TelegramPost) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TelegramPost_warnings(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Warnings, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TelegramPost_warnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "TelegramPost",
 		Field:      field,
@@ -54469,6 +54523,11 @@ func (ec *executionContext) _TelegramPost(ctx context.Context, sel ast.Selection
 			out.Values[i] = graphql.MarshalString("TelegramPost")
 		case "content":
 			out.Values[i] = ec._TelegramPost_content(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "warnings":
+			out.Values[i] = ec._TelegramPost_warnings(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
