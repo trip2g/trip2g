@@ -36,6 +36,10 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			// Nothing to do
 
 		case *ast.Paragraph:
+			if n.HasBlankPreviousLines() && entering {
+				lines = append(lines, "\n\n")
+			}
+
 			if !c.inBlockquote {
 				if !entering {
 					// End of paragraph, add current line to lines slice
@@ -60,7 +64,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 					buf.WriteString(escapedText)
 					if node.SoftLineBreak() {
 						// Add current line to lines and start new line
-						lines = append(lines, buf.String())
+						lines = append(lines, buf.String(), "\n")
 						buf.Reset()
 					}
 				}
@@ -68,7 +72,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 		case *ast.Emphasis:
 			tag := ""
-			if emphasis := node.Level; emphasis == 1 {
+			if node.Level == 1 {
 				if entering {
 					tag = "<i>"
 				} else {
@@ -202,6 +206,8 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 		case *ast.FencedCodeBlock:
 			if entering {
+				lines = append(lines, "\n")
+
 				language := string(node.Language(src))
 				code := string(node.Text(src))
 
@@ -235,7 +241,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 		lines = append(lines, buf.String())
 	}
 
-	res.Content = strings.Join(lines, "\n") + "\n"
+	res.Content = strings.Join(lines, "")
 
 	return res
 }
