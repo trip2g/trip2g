@@ -158,6 +158,10 @@ type SetPatreonTierSubgraphsOrErrorPayload interface {
 	IsSetPatreonTierSubgraphsOrErrorPayload()
 }
 
+type SetTgChatPublishInstantTagsOrErrorPayload interface {
+	IsSetTgChatPublishInstantTagsOrErrorPayload()
+}
+
 type SetTgChatPublishTagsOrErrorPayload interface {
 	IsSetTgChatPublishTagsOrErrorPayload()
 }
@@ -786,6 +790,8 @@ func (ErrorPayload) IsUpdateUserOrErrorPayload() {}
 
 func (ErrorPayload) IsSetTgChatPublishTagsOrErrorPayload() {}
 
+func (ErrorPayload) IsSetTgChatPublishInstantTagsOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -1014,6 +1020,19 @@ type SetPatreonTierSubgraphsPayload struct {
 }
 
 func (SetPatreonTierSubgraphsPayload) IsSetPatreonTierSubgraphsOrErrorPayload() {}
+
+type SetTgChatPublishInstantTagsInput struct {
+	ChatID int64   `json:"chatId"`
+	TagIds []int64 `json:"tagIds"`
+}
+
+type SetTgChatPublishInstantTagsPayload struct {
+	Chat    *db.TgBotChat `json:"chat"`
+	Success bool          `json:"success"`
+	ChatID  int64         `json:"-"`
+}
+
+func (SetTgChatPublishInstantTagsPayload) IsSetTgChatPublishInstantTagsOrErrorPayload() {}
 
 type SetTgChatPublishTagsInput struct {
 	ChatID int64   `json:"chatId"`

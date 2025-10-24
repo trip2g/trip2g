@@ -40,6 +40,7 @@ import (
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
+	"trip2g/internal/case/admin/settgchatpublishinstanttags"
 	"trip2g/internal/case/admin/settgchatpublishtags"
 	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
@@ -559,6 +560,11 @@ func (r *adminMutationResolver) SetTgChatSubgraphInvites(ctx context.Context, ob
 // SetTgChatPublishTags is the resolver for the setTgChatPublishTags field.
 func (r *adminMutationResolver) SetTgChatPublishTags(ctx context.Context, obj *appmodel.AdminMutation, input model.SetTgChatPublishTagsInput) (model.SetTgChatPublishTagsOrErrorPayload, error) {
 	return settgchatpublishtags.Resolve(ctx, r.env(ctx), input)
+}
+
+// SetTgChatPublishInstantTags is the resolver for the setTgChatPublishInstantTags field.
+func (r *adminMutationResolver) SetTgChatPublishInstantTags(ctx context.Context, obj *appmodel.AdminMutation, input model.SetTgChatPublishInstantTagsInput) (model.SetTgChatPublishInstantTagsOrErrorPayload, error) {
+	return settgchatpublishinstanttags.Resolve(ctx, r.env(ctx), input)
 }
 
 // RemoveExpiredTgChatMembers is the resolver for the removeExpiredTgChatMembers field.
@@ -1349,6 +1355,11 @@ func (r *adminTgBotChatResolver) PublishTags(ctx context.Context, obj *db.TgBotC
 	return r.env(ctx).ListTelegramPublishTagsByChatID(ctx, obj.ID)
 }
 
+// PublishInstantTags is the resolver for the publishInstantTags field.
+func (r *adminTgBotChatResolver) PublishInstantTags(ctx context.Context, obj *db.TgBotChat) ([]db.TelegramPublishTag, error) {
+	return r.env(ctx).ListTelegramPublishInstantTagsByChatID(ctx, obj.ID)
+}
+
 // ID is the resolver for the id field.
 func (r *adminTgBotChatSubgraphInviteResolver) ID(ctx context.Context, obj *db.TgBotChatSubgraphInvite) (string, error) {
 	return fmt.Sprintf("%d_%d", obj.ChatID, obj.SubgraphID), nil
@@ -1869,6 +1880,11 @@ func (r *searchResultResolver) Document(ctx context.Context, obj *appmodel.Searc
 	}
 
 	return nil, nil
+}
+
+// Chat is the resolver for the chat field.
+func (r *setTgChatPublishInstantTagsPayloadResolver) Chat(ctx context.Context, obj *model.SetTgChatPublishInstantTagsPayload) (*db.TgBotChat, error) {
+	return resolveOne[db.TgBotChat](ctx, obj.ChatID, r.env(ctx).TgBotChat)
 }
 
 // Chat is the resolver for the chat field.
@@ -2493,6 +2509,11 @@ func (r *Resolver) RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
 // SearchResult returns SearchResultResolver implementation.
 func (r *Resolver) SearchResult() SearchResultResolver { return &searchResultResolver{r} }
 
+// SetTgChatPublishInstantTagsPayload returns SetTgChatPublishInstantTagsPayloadResolver implementation.
+func (r *Resolver) SetTgChatPublishInstantTagsPayload() SetTgChatPublishInstantTagsPayloadResolver {
+	return &setTgChatPublishInstantTagsPayloadResolver{r}
+}
+
 // SetTgChatPublishTagsPayload returns SetTgChatPublishTagsPayloadResolver implementation.
 func (r *Resolver) SetTgChatPublishTagsPayload() SetTgChatPublishTagsPayloadResolver {
 	return &setTgChatPublishTagsPayloadResolver{r}
@@ -2618,6 +2639,7 @@ type queryResolver struct{ *Resolver }
 type refreshBoostyDataPayloadResolver struct{ *Resolver }
 type refreshPatreonDataPayloadResolver struct{ *Resolver }
 type searchResultResolver struct{ *Resolver }
+type setTgChatPublishInstantTagsPayloadResolver struct{ *Resolver }
 type setTgChatPublishTagsPayloadResolver struct{ *Resolver }
 type setTgChatSubgraphInvitesPayloadResolver struct{ *Resolver }
 type setTgChatSubgraphsPayloadResolver struct{ *Resolver }

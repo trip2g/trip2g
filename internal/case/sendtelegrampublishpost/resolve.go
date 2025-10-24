@@ -14,6 +14,7 @@ import (
 type Env interface {
 	// Database methods for getting note and chat information
 	ListTgBotChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]db.TgBotChat, error)
+	ListTgBotInstantChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]db.TgBotChat, error)
 	UpdateTelegramPublishNoteAsPublished(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error
 
 	// Telegram bot methods for sending messages
@@ -23,7 +24,7 @@ type Env interface {
 	LatestNoteViews() *model.NoteViews
 }
 
-func Resolve(ctx context.Context, env Env, notePathID int64) error {
+func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error {
 	noteView := env.LatestNoteViews().GetByPathID(notePathID)
 	if noteView == nil {
 		return fmt.Errorf("note view not found for path ID %d", notePathID)
@@ -40,12 +41,23 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 	}
 
 	// Get chat IDs that should receive this post
-	chats, err := env.ListTgBotChatsByTelegramPublishNotePathID(ctx, notePathID)
+	var chats []db.TgBotChat
+
+	if instant {
+		chats, err = env.ListTgBotInstantChatsByTelegramPublishNotePathID(ctx, notePathID)
+	} else {
+		chats, err = env.ListTgBotChatsByTelegramPublishNotePathID(ctx, notePathID)
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to get chat IDs for note: %w", err)
 	}
 
 	if len(chats) == 0 {
+		if instant {
+			return nil
+		}
+
 		return fmt.Errorf("no chat IDs found for note path ID %d", notePathID)
 	}
 

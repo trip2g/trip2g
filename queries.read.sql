@@ -755,6 +755,12 @@ select t.*
   join telegram_publish_chats c on t.id = c.tag_id
  where c.chat_id = ?;
 
+-- name: ListTelegramPublishInstantTagsByChatID :many
+select t.*
+  from telegram_publish_tags t
+  join telegram_publish_instant_chats c on t.id = c.tag_id
+ where c.chat_id = ?;
+
 -- name: ListAllTelegramPublishTags :many
 select * from telegram_publish_tags
  order by label;
@@ -785,6 +791,14 @@ select note_path_id
 select c.*
   from tg_bot_chats c
   join telegram_publish_chats pc on c.id = pc.chat_id
+  join telegram_publish_note_tags nt on pc.tag_id = nt.tag_id
+ where nt.note_path_id = ?
+   and c.removed_at is null;
+
+-- name: ListTgBotInstantChatsByTelegramPublishNotePathID :many
+select c.*
+  from tg_bot_chats c
+  join telegram_publish_instant_chats pc on c.id = pc.chat_id
   join telegram_publish_note_tags nt on pc.tag_id = nt.tag_id
  where nt.note_path_id = ?
    and c.removed_at is null;

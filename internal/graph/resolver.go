@@ -32,6 +32,7 @@ import (
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
+	"trip2g/internal/case/admin/settgchatpublishinstanttags"
 	"trip2g/internal/case/admin/settgchatpublishtags"
 	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
@@ -203,6 +204,7 @@ type Env interface {
 	runcronjob.Env
 	sitesearch.Env
 	settgchatpublishtags.Env
+	settgchatpublishinstanttags.Env
 	convertnoteviewtotgpost.Env
 
 	// Boosty credentials
@@ -250,6 +252,7 @@ type Env interface {
 	GetPatreonMembersByCampaignID(ctx context.Context, campaignID int64) ([]db.PatreonMember, error)
 
 	ListTelegramPublishTagsByChatID(ctx context.Context, chatID int64) ([]db.TelegramPublishTag, error)
+	ListTelegramPublishInstantTagsByChatID(ctx context.Context, chatID int64) ([]db.TelegramPublishTag, error)
 
 	// Boosty credentials queries
 	AllBoostyCredentials(ctx context.Context) ([]db.BoostyCredential, error)

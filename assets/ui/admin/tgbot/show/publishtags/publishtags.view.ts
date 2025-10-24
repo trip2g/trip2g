@@ -16,6 +16,9 @@ namespace $.$$ {
 								publishTags {
 									id
 								}
+								publishInstantTags {
+									id
+								}
 							}
 						}
 					}
@@ -72,6 +75,10 @@ namespace $.$$ {
 
 		override row_publish_tag_ids( id: any ) {
 			return this.row(id).publishTags.map( tag => tag.id )
+		}
+
+		override row_publish_instant_tag_ids( id: any ) {
+			return this.row(id).publishInstantTags.map( tag => tag.id )
 		}
 	}
 }

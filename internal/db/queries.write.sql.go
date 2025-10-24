@@ -237,6 +237,15 @@ func (q *WriteQueries) DeleteTelegramPublishChatsByChatID(ctx context.Context, c
 	return err
 }
 
+const deleteTelegramPublishInstantChatsByChatID = `-- name: DeleteTelegramPublishInstantChatsByChatID :exec
+delete from telegram_publish_instant_chats where chat_id = ?
+`
+
+func (q *WriteQueries) DeleteTelegramPublishInstantChatsByChatID(ctx context.Context, chatID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTelegramPublishInstantChatsByChatID, chatID)
+	return err
+}
+
 const deleteTelegramPublishNoteTagsByPathID = `-- name: DeleteTelegramPublishNoteTagsByPathID :exec
 delete from telegram_publish_note_tags where note_path_id = ?
 `
@@ -1101,6 +1110,22 @@ type InsertTelegramPublishChatParams struct {
 
 func (q *WriteQueries) InsertTelegramPublishChat(ctx context.Context, arg InsertTelegramPublishChatParams) error {
 	_, err := q.db.ExecContext(ctx, insertTelegramPublishChat, arg.ChatID, arg.TagID, arg.CreatedBy)
+	return err
+}
+
+const insertTelegramPublishInstantChat = `-- name: InsertTelegramPublishInstantChat :exec
+insert into telegram_publish_instant_chats (chat_id, tag_id, created_by)
+values (?, ?, ?)
+`
+
+type InsertTelegramPublishInstantChatParams struct {
+	ChatID    int64 `json:"chat_id"`
+	TagID     int64 `json:"tag_id"`
+	CreatedBy int64 `json:"created_by"`
+}
+
+func (q *WriteQueries) InsertTelegramPublishInstantChat(ctx context.Context, arg InsertTelegramPublishInstantChatParams) error {
+	_, err := q.db.ExecContext(ctx, insertTelegramPublishInstantChat, arg.ChatID, arg.TagID, arg.CreatedBy)
 	return err
 }
 

@@ -10,8 +10,9 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
-	"github.com/stretchr/testify/require"
 	"math/rand/v2"
+
+	"github.com/stretchr/testify/require"
 )
 
 //go:generate go run github.com/matryer/moq -out mocks_test.go -pkg handletgpublishviews_test . Env
@@ -57,6 +58,10 @@ func prepare(t *testing.T, nvs *model.NoteViews) *EnvMock {
 			return timeLocation
 		},
 
+		LatestNoteViewsFunc: func() *model.NoteViews {
+			return nvs
+		},
+
 		InsertTelegramPublishTagsFunc: insertTelegramPublishTags,
 		TelegramPublishTagByLabelFunc: makeTelegramPublishTagByLabel(),
 
@@ -64,12 +69,22 @@ func prepare(t *testing.T, nvs *model.NoteViews) *EnvMock {
 		UpsertTelegramPublishNoteTagFunc: upsertTelegramPublishNoteTag,
 
 		DeleteTelegramPublishNoteTagsByPathIDFunc: deleteTelegramPublishNoteTagsByPathID,
+
+		SendTelegramPublishPostFunc: func(ctx context.Context, pathID int64, instant bool) error {
+			return nil
+		},
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	err := handletgpublishviews.Resolve(ctx, env, nvs)
+	changedPathIDs := []int64{}
+
+	for _, nv := range nvs.List {
+		changedPathIDs = append(changedPathIDs, nv.PathID)
+	}
+
+	err := handletgpublishviews.Resolve(ctx, env, changedPathIDs)
 	require.NoError(t, err)
 
 	return env
@@ -131,4 +146,10 @@ func TestMetaExtractrs(t *testing.T) {
 	// should be converted to UTC
 	require.Equal(t, time.Date(2024, 7, 2, 16, 2, 0, 0, time.UTC), env.calls.UpsertTelegramPublishNote[0].Params.PublishAt)
 	require.Equal(t, time.Date(2024, 7, 2, 20, 2, 0, 0, time.UTC), env.calls.UpsertTelegramPublishNote[1].Params.PublishAt)
+
+	require.Len(t, env.calls.SendTelegramPublishPost, 2)
+	require.Equal(t, int64(7), env.calls.SendTelegramPublishPost[0].NotePathID)
+	require.Equal(t, int64(9), env.calls.SendTelegramPublishPost[1].NotePathID)
+	require.True(t, env.calls.SendTelegramPublishPost[0].Instant)
+	require.True(t, env.calls.SendTelegramPublishPost[0].Instant)
 }

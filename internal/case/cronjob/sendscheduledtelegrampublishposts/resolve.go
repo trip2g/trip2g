@@ -7,7 +7,7 @@ import (
 
 type Env interface {
 	ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int64, error)
-	SendTelegramPublishPost(ctx context.Context, notePathID int64) error
+	SendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error
 }
 
 func Resolve(ctx context.Context, env Env) (any, error) {
@@ -17,7 +17,7 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 	}
 
 	for _, id := range ids {
-		err = env.SendTelegramPublishPost(ctx, id)
+		err = env.SendTelegramPublishPost(ctx, id, false)
 		if err != nil {
 			return nil, fmt.Errorf("failed to SendTelegramPublishPost: %w", err)
 		}

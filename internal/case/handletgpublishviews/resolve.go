@@ -20,15 +20,32 @@ type Env interface {
 	UpsertTelegramPublishNoteTag(ctx context.Context, params db.UpsertTelegramPublishNoteTagParams) error
 
 	TimeLocation() *time.Location
+	LatestNoteViews() *model.NoteViews
+
+	SendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error
 }
 
 type tagIDCache map[string]int64
 
-func Resolve(ctx context.Context, env Env, nvs *model.NoteViews) error {
+func Resolve(ctx context.Context, env Env, changedPathIDs []int64) error {
 	tagIDs := tagIDCache{}
 	timeLocation := env.TimeLocation()
+	nvs := env.LatestNoteViews()
 
 	for _, note := range nvs.List {
+		changed := false
+
+		for _, changedPathID := range changedPathIDs {
+			if note.PathID == changedPathID {
+				changed = true
+				break
+			}
+		}
+
+		if !changed {
+			continue
+		}
+
 		// telegram_publish_at: 2024-07-02T23:02:00
 		at, atOk := extractTime(note, timeLocation)
 		// telegram_publish_tags: string[]
@@ -76,6 +93,11 @@ func Resolve(ctx context.Context, env Env, nvs *model.NoteViews) error {
 			if err != nil {
 				return fmt.Errorf("failed to upsert telegram publish note tag %q for note %q: %w", tag, note.Path, err)
 			}
+		}
+
+		err = env.SendTelegramPublishPost(ctx, note.PathID, true)
+		if err != nil {
+			return fmt.Errorf("failed to send telegram publish post for note %q: %w", note.Path, err)
 		}
 	}
 

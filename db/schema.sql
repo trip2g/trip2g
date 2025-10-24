@@ -497,6 +497,12 @@ CREATE TABLE telegram_publish_note_tags (
   tag_id integer not null references telegram_publish_tags(id) on delete cascade,
   primary key (note_path_id, tag_id)
 );
+CREATE TABLE telegram_publish_instant_chats (
+  chat_id integer not null references tg_bot_chats(id) on delete cascade,
+  tag_id integer not null references telegram_publish_tags(id) on delete cascade,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -573,4 +579,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251003125722'),
   ('20251016125315'),
   ('20251021134341'),
-  ('20251022032711');
+  ('20251022032711'),
+  ('20251024123641');

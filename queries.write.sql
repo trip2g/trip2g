@@ -662,6 +662,13 @@ delete from telegram_publish_chats where chat_id = ?;
 insert into telegram_publish_chats (chat_id, tag_id, created_by)
 values (?, ?, ?);
 
+-- name: DeleteTelegramPublishInstantChatsByChatID :exec
+delete from telegram_publish_instant_chats where chat_id = ?;
+
+-- name: InsertTelegramPublishInstantChat :exec
+insert into telegram_publish_instant_chats (chat_id, tag_id, created_by)
+values (?, ?, ?);
+
 -- name: UpdateTelegramPublishNoteAsPublished :exec
 update telegram_publish_notes
    set published_at = datetime('now'), published_version_id = ?

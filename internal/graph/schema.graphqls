@@ -333,6 +333,7 @@ type AdminTgBotChat @goModel(model: "trip2g/internal/db.TgBotChat") {
   subgraphAccesses: [AdminTgChatSubgraphAccess!]!
   subgraphInvites: [AdminTgBotChatSubgraphInvite!]!
   publishTags: [AdminTelegramPublishTag!]!
+  publishInstantTags: [AdminTelegramPublishTag!]!
 }
 
 type AdminTgChatMember @goModel(model: "trip2g/internal/db.TgChatMember") {
@@ -1744,6 +1745,23 @@ type SetTgChatPublishTagsPayload
 
 union SetTgChatPublishTagsOrErrorPayload = SetTgChatPublishTagsPayload | ErrorPayload
 
+#
+# setTgChatPublishInstantTags
+#
+
+input SetTgChatPublishInstantTagsInput {
+  chatId: Int64!
+  tagIds: [Int64!]!
+}
+
+type SetTgChatPublishInstantTagsPayload
+  @goExtraField(name: "ChatID", type: "int64") {
+  chat: AdminTgBotChat! @goField(forceResolver: true)
+  success: Boolean!
+}
+
+union SetTgChatPublishInstantTagsOrErrorPayload = SetTgChatPublishInstantTagsPayload | ErrorPayload
+
 type AdminMutation {
   createUser(input: CreateUserInput!): CreateUserOrErrorPayload!
   updateUser(input: UpdateUserInput!): UpdateUserOrErrorPayload!
@@ -1783,6 +1801,7 @@ type AdminMutation {
   setTgChatSubgraphs(input: SetTgChatSubgraphsInput!): SetTgChatSubgraphsOrErrorPayload!
   setTgChatSubgraphInvites(input: SetTgChatSubgraphInvitesInput!): SetTgChatSubgraphInvitesOrErrorPayload!
   setTgChatPublishTags(input: SetTgChatPublishTagsInput!): SetTgChatPublishTagsOrErrorPayload!
+  setTgChatPublishInstantTags(input: SetTgChatPublishInstantTagsInput!): SetTgChatPublishInstantTagsOrErrorPayload!
   removeExpiredTgChatMembers(input: RemoveExpiredTgChatMembersInput!): RemoveExpiredTgChatMembersOrErrorPayload!
 
   # Patreon credentials mutations

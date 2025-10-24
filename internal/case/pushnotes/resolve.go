@@ -17,7 +17,7 @@ type Env interface {
 	InsertNote(ctx context.Context, update appmodel.RawNote) error
 	InsertSubgraph(ctx context.Context, name string) error
 	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
-	HandleLatestNotesAfterSave(nvs *appmodel.NoteViews) error
+	HandleLatestNotesAfterSave(changedPathIDs []int64) error
 	Layouts() *appmodel.Layouts
 }
 
@@ -38,6 +38,7 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 	// }
 
 	log := logger.WithPrefix(env.Logger(), "pushNotes:")
+	changedPaths := map[string]struct{}{}
 
 	for _, update := range input.Updates {
 		_, allowed := allowedExtensins[strings.ToLower(filepath.Ext(update.Path))]
@@ -68,11 +69,22 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		if insertErr != nil {
 			return nil, fmt.Errorf("failed to insert note: %w", insertErr)
 		}
+
+		changedPaths[update.Path] = struct{}{}
 	}
 
 	nvs, err := env.PrepareLatestNotes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare notes: %w", err)
+	}
+
+	pathIDs := []int64{}
+
+	for _, note := range nvs.List {
+		_, changed := changedPaths[note.Path]
+		if changed {
+			pathIDs = append(pathIDs, note.PathID)
+		}
 	}
 
 	// TODO: mv to HandleLatestNotesAfterSave
@@ -83,7 +95,7 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		}
 	}
 
-	err = env.HandleLatestNotesAfterSave(nvs)
+	err = env.HandleLatestNotesAfterSave(pathIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to handle latest notes after save: %w", err)
 	}

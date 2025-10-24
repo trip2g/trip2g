@@ -916,8 +916,8 @@ func (a *app) IDHash(entity string, id int64) string {
 	return hex.EncodeToString(sha256.Sum(nil))
 }
 
-func (a *app) HandleLatestNotesAfterSave(nvs *model.NoteViews) error {
-	err := handletgpublishviews.Resolve(a.ctx, a, nvs)
+func (a *app) HandleLatestNotesAfterSave(changedPathIDs []int64) error {
+	err := handletgpublishviews.Resolve(a.ctx, a, changedPathIDs)
 	if err != nil {
 		return fmt.Errorf("failed to handle Telegram publish views: %w", err)
 	}
@@ -940,8 +940,8 @@ func (a *app) CanReadNote(ctx context.Context, note *model.NoteView) (bool, erro
 	return canreadnote.Resolve(ctx, a, note)
 }
 
-func (a *app) SendTelegramPublishPost(ctx context.Context, notePathID int64) error {
-	return sendtelegrampublishpost.Resolve(ctx, a, notePathID)
+func (a *app) SendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error {
+	return sendtelegrampublishpost.Resolve(ctx, a, notePathID, instant)
 }
 
 func (a *app) CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error) {
