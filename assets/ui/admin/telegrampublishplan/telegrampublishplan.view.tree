@@ -17,6 +17,8 @@ $trip2g_admin_telegrampublishplan_post $mol_view
 			sub / <= publish_at \
 		<= Status $mol_view
 			sub / <= status \Status:
+		<= Chats $mol_view
+			sub / <= chats \Chats:
 		<= SecondsUntilPublish $mol_view
 			sub /
 				\Осталось:

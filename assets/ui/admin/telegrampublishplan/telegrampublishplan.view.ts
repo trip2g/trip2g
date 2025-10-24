@@ -16,6 +16,10 @@ namespace $.$$ {
 								tags {
 									label
 								}
+								chats {
+									chatTitle
+									chatType
+								}
 								noteView {
 									title
 								}
@@ -70,6 +74,10 @@ namespace $.$$ {
 
 		override status(): string {
 			return `${ super.status() } ${ this.data().status }`
+		}
+
+		override chats(): string {
+			return this.data().chats.map( chat => `${ chat.chatTitle } (${ chat.chatType })` ).join( ', ' )
 		}
 	}
 }

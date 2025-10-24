@@ -43,6 +43,7 @@ import (
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/pushnotes"
+	"trip2g/internal/case/sendtelegrampublishpost"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
 	"trip2g/internal/case/uploadnoteasset"
@@ -937,6 +938,10 @@ var ErrNotAdmin = errors.New("unauthorized")
 
 func (a *app) CanReadNote(ctx context.Context, note *model.NoteView) (bool, error) {
 	return canreadnote.Resolve(ctx, a, note)
+}
+
+func (a *app) SendTelegramPublishPost(ctx context.Context, notePathID int64) error {
+	return sendtelegrampublishpost.Resolve(ctx, a, notePathID)
 }
 
 func (a *app) CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error) {

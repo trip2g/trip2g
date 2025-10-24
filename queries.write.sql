@@ -661,3 +661,8 @@ delete from telegram_publish_chats where chat_id = ?;
 -- name: InsertTelegramPublishChat :exec
 insert into telegram_publish_chats (chat_id, tag_id, created_by)
 values (?, ?, ?);
+
+-- name: UpdateTelegramPublishNoteAsPublished :exec
+update telegram_publish_notes
+   set published_at = datetime('now'), published_version_id = ?
+ where note_path_id = ?;

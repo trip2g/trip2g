@@ -2929,6 +2929,36 @@ func (q *Queries) ListNotePathsLike(ctx context.Context, value string) ([]NotePa
 	return items, nil
 }
 
+const listSheduledTelegarmPublishNoteIDs = `-- name: ListSheduledTelegarmPublishNoteIDs :many
+select note_path_id
+  from telegram_publish_notes
+ where publish_at < datetime('now')
+   and published_at is null
+`
+
+func (q *Queries) ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listSheduledTelegarmPublishNoteIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var note_path_id int64
+		if err := rows.Scan(&note_path_id); err != nil {
+			return nil, err
+		}
+		items = append(items, note_path_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSubgraphIDsByOfferID = `-- name: ListSubgraphIDsByOfferID :many
 select subgraph_id
   from offer_subgraphs
@@ -2987,6 +3017,36 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTelegramPublishChatIDsByNotePathID = `-- name: ListTelegramPublishChatIDsByNotePathID :many
+select distinct c.chat_id
+  from telegram_publish_chats c
+  join telegram_publish_note_tags nt on c.tag_id = nt.tag_id
+ where nt.note_path_id = ?
+`
+
+func (q *Queries) ListTelegramPublishChatIDsByNotePathID(ctx context.Context, notePathID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listTelegramPublishChatIDsByNotePathID, notePathID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var chat_id int64
+		if err := rows.Scan(&chat_id); err != nil {
+			return nil, err
+		}
+		items = append(items, chat_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -3118,6 +3178,47 @@ func (q *Queries) ListTgBotChatSubgraphAccesses(ctx context.Context, arg ListTgB
 			&i.TgBotChat.RemovedAt,
 			&i.TgBotChat.CanInvite,
 			&i.TgBotChat.BotID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTgBotChatsByTelegramPublishNotePathID = `-- name: ListTgBotChatsByTelegramPublishNotePathID :many
+select c.id, c.telegram_id, c.chat_type, c.chat_title, c.added_at, c.removed_at, c.can_invite, c.bot_id
+  from tg_bot_chats c
+  join telegram_publish_chats pc on c.id = pc.chat_id
+  join telegram_publish_note_tags nt on pc.tag_id = nt.tag_id
+ where nt.note_path_id = ?
+   and c.removed_at is null
+`
+
+func (q *Queries) ListTgBotChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]TgBotChat, error) {
+	rows, err := q.db.QueryContext(ctx, listTgBotChatsByTelegramPublishNotePathID, notePathID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TgBotChat
+	for rows.Next() {
+		var i TgBotChat
+		if err := rows.Scan(
+			&i.ID,
+			&i.TelegramID,
+			&i.ChatType,
+			&i.ChatTitle,
+			&i.AddedAt,
+			&i.RemovedAt,
+			&i.CanInvite,
+			&i.BotID,
 		); err != nil {
 			return nil, err
 		}

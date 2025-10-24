@@ -2113,6 +2113,22 @@ func (q *WriteQueries) UpdateRunningCronJobExecutions(ctx context.Context, arg U
 	return err
 }
 
+const updateTelegramPublishNoteAsPublished = `-- name: UpdateTelegramPublishNoteAsPublished :exec
+update telegram_publish_notes
+   set published_at = datetime('now'), published_version_id = ?
+ where note_path_id = ?
+`
+
+type UpdateTelegramPublishNoteAsPublishedParams struct {
+	PublishedVersionID sql.NullInt64 `json:"published_version_id"`
+	NotePathID         int64         `json:"note_path_id"`
+}
+
+func (q *WriteQueries) UpdateTelegramPublishNoteAsPublished(ctx context.Context, arg UpdateTelegramPublishNoteAsPublishedParams) error {
+	_, err := q.db.ExecContext(ctx, updateTelegramPublishNoteAsPublished, arg.PublishedVersionID, arg.NotePathID)
+	return err
+}
+
 const updateTgBot = `-- name: UpdateTgBot :one
 update tg_bots
 set description = coalesce(?1, description),

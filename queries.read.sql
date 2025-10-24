@@ -774,3 +774,17 @@ select t.*
   join telegram_publish_note_tags nt on t.id = nt.tag_id
  where nt.note_path_id = ?
  order by t.label;
+
+-- name: ListSheduledTelegarmPublishNoteIDs :many
+select note_path_id
+  from telegram_publish_notes
+ where publish_at < datetime('now')
+   and published_at is null;
+
+-- name: ListTgBotChatsByTelegramPublishNotePathID :many
+select c.*
+  from tg_bot_chats c
+  join telegram_publish_chats pc on c.id = pc.chat_id
+  join telegram_publish_note_tags nt on pc.tag_id = nt.tag_id
+ where nt.note_path_id = ?
+   and c.removed_at is null;

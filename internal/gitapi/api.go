@@ -431,7 +431,6 @@ func (api *API) isRefExists(ref string) bool {
 	return checkCmd.Run() == nil
 }
 
-
 func (api *API) ApplyChanges(_ context.Context) ([]string, error) {
 	// changedFiles, err := api.getChangedFiles()
 	// if err != nil {

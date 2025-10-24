@@ -21,7 +21,6 @@ type Env interface {
 	Logger() logger.Logger
 }
 
-
 func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.SearchConnection, error) {
 	userToken, err := env.CurrentUserToken(ctx)
 	if err != nil {

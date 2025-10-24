@@ -637,6 +637,7 @@ type AdminTelegramPublishNote @goModel(model: "trip2g/internal/db.TelegramPublis
   noteView: NoteView!
   post: TelegramPost!
   tags: [AdminTelegramPublishTag!]!
+  chats: [AdminTgBotChat!]!
 }
 
 type AdminTelegramPublishNotesConnection

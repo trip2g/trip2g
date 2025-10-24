@@ -10,7 +10,7 @@ type Env interface {
 }
 
 func Resolve(ctx context.Context, env Env, nv *model.NoteView) (*model.TelegramPost, error) {
-	tr := markdownv2.CommonConverter{}
+	tr := markdownv2.HTMLConverter{}
 	res := tr.Process(nv)
 
 	return &model.TelegramPost{

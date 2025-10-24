@@ -1275,6 +1275,11 @@ func (r *adminTelegramPublishNoteResolver) Tags(ctx context.Context, obj *db.Tel
 	return r.env(ctx).ListTelegramPublishTagsByNoteID(ctx, obj.NotePathID)
 }
 
+// Chats is the resolver for the chats field.
+func (r *adminTelegramPublishNoteResolver) Chats(ctx context.Context, obj *db.TelegramPublishNote) ([]db.TgBotChat, error) {
+	return r.env(ctx).ListTgBotChatsByTelegramPublishNotePathID(ctx, obj.NotePathID)
+}
+
 // Nodes is the resolver for the nodes field.
 func (r *adminTelegramPublishNotesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTelegramPublishNotesConnection) ([]db.TelegramPublishNote, error) {
 	params := db.ListAllTelegramPublishNotesParams{}

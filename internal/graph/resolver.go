@@ -115,6 +115,7 @@ type Env interface {
 	AllWaitListTgBotRequests(ctx context.Context) ([]db.AllWaitListTgBotRequestsRow, error)
 	ListAllTelegramPublishNotes(ctx context.Context, arg db.ListAllTelegramPublishNotesParams) ([]db.TelegramPublishNote, error)
 	ListTelegramPublishTagsByNoteID(ctx context.Context, notePathID int64) ([]db.TelegramPublishTag, error)
+	ListTgBotChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]db.TgBotChat, error)
 
 	UserByID(ctx context.Context, id int64) (db.User, error)
 	UserBanByUserID(ctx context.Context, userID int64) (*db.UserBan, error)
