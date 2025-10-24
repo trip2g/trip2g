@@ -466,3 +466,6 @@ linters:
       - path: 'internal/gitapi/'
         linters:
           - gosec  # Git operations require subprocess calls which are legitimate
+      - path: 'internal/mdloader/highlight/'
+        linters:
+          - gochecknoglobals  # Package-level variables needed for goldmark extension registration

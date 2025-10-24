@@ -1,17 +1,21 @@
-package convertnoteviewtotgpost_test
+package markdownv2_test
 
 import (
-	"context"
+	"os"
 	"testing"
-	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/logger"
+	"trip2g/internal/markdownv2"
 	"trip2g/internal/mdloader"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestContent(t *testing.T) {
-	var env struct{}
+	obsidianMarkdown, err := os.ReadFile("obsidian.md")
+	require.NoError(t, err)
+
+	tgMarkdown, err := os.ReadFile("telegram.md")
+	require.NoError(t, err)
 
 	mdOptions := mdloader.Options{
 		Sources: []mdloader.SourceFile{{
@@ -19,9 +23,7 @@ func TestContent(t *testing.T) {
 free: true
 title: "Sample Note"
 ---
-
-hello
-`),
+` + string(obsidianMarkdown)),
 		}},
 		Log:     &logger.TestLogger{},
 		Version: "latest",
@@ -30,9 +32,10 @@ hello
 	nvs, err := mdloader.Load(mdOptions)
 	require.NoError(t, err)
 
-	post, err := convertnoteviewtotgpost.Resolve(context.Background(), &env, nvs.List[0])
-	require.NoError(t, err)
+	convertor := markdownv2.CommonConverter{}
 
-	require.Empty(t, post.Warnings)
-	require.Equal(t, "hello", post.Content)
+	res := convertor.Process(nvs.List[0])
+
+	require.Empty(t, res.Warnings)
+	require.Equal(t, string(tgMarkdown), res.Content)
 }
