@@ -131,6 +131,8 @@ namespace $ {
 	}
 
 	export function $trip2g_graphql_raw_request(query: string, variables?: any, opts?: RequestOptions): any {
+		// replace @exportType directives
+		query = query.replace(/@exportType\s*(\([^)]*\))?\s*/g, '')
 		query = inject_typenames(query)
 
 		const res = $.$mol_fetch.json('/graphql', {

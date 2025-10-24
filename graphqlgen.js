@@ -9,7 +9,7 @@ module.exports = {
 			plugins: [
 				{
 					add: {
-						content: 'namespace $.$$ {\n\n',
+						content: 'namespace $ {\n\n',
 					},
 				},
 				'typescript',

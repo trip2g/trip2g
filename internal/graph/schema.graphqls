@@ -627,6 +627,7 @@ type AdminTelegramPublishNote @goModel(model: "trip2g/internal/db.TelegramPublis
   id: Int64!
   createdAt: Time!
   publishAt: Time!
+  secondsUntilPublish: Int64!
   publishedAt: Time
   publishedVersionID: Int64
   status: String!

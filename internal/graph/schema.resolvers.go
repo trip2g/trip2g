@@ -1202,6 +1202,11 @@ func (r *adminTelegramPublishNoteResolver) ID(ctx context.Context, obj *db.Teleg
 	return obj.NotePathID, nil
 }
 
+// SecondsUntilPublish is the resolver for the secondsUntilPublish field.
+func (r *adminTelegramPublishNoteResolver) SecondsUntilPublish(ctx context.Context, obj *db.TelegramPublishNote) (int64, error) {
+	return int64(obj.PublishAt.Sub(r.env(ctx).Now()).Seconds()), nil
+}
+
 // PublishedAt is the resolver for the publishedAt field.
 func (r *adminTelegramPublishNoteResolver) PublishedAt(ctx context.Context, obj *db.TelegramPublishNote) (*time.Time, error) {
 	return db.ToTimePtr(obj.PublishedAt), nil

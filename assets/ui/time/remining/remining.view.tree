@@ -1,0 +1,4 @@
+$trip2g_time_remining $mol_view
+	dom_name \span
+	seconds 0 number
+	sub / <= text \

@@ -3,4 +3,23 @@ $trip2g_admin_telegrampublishplan $mol_page
 	tools / <= close_icon
 	title \Telegram Publish Plan
 	body /
-		\Telegram Publish Plan
+		<= Posts $mol_list
+			rows <= rows /$mol_view
+				<= Post*0 $trip2g_admin_telegrampublishplan_post
+					data <= row* null $trip2g_graphql_AdminTelegramPublishPlanRow
+
+$trip2g_admin_telegrampublishplan_post $mol_view
+	data null $trip2g_graphql_AdminTelegramPublishPlanRow
+	sub /
+		<= Title $mol_view
+			sub / <= title \
+		<= PublishAt $mol_view
+			sub / <= publish_at \
+		<= SecondsUntilPublish $mol_view
+			sub /
+				\Осталось:
+				<= Remining $trip2g_time_remining
+					seconds <= seconds_until_publish 0
+		<= Content $mol_view
+			dom_name \pre
+			sub / <= content \
