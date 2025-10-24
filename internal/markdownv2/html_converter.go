@@ -54,7 +54,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 				if c.inBlockquote {
 					c.blockquoteContent.WriteString(escapedText)
 					if node.SoftLineBreak() {
-						c.blockquoteContent.WriteString("\\n")
+						c.blockquoteContent.WriteString("\n")
 					}
 				} else {
 					buf.WriteString(escapedText)
@@ -235,7 +235,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 		lines = append(lines, buf.String())
 	}
 
-	res.Content = strings.Join(lines, "\n")
+	res.Content = strings.Join(lines, "\n") + "\n"
 
 	return res
 }
