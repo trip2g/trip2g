@@ -151,6 +151,8 @@ func (c *CommonConverter) Process(nv *model.NoteView) ConverterResult {
 				msg := fmt.Sprintf("unexpected markdown node: %s", n.Kind())
 				res.Warnings = append(res.Warnings, msg)
 			}
+
+			return ast.WalkSkipChildren, nil
 		}
 
 		return ast.WalkContinue, nil

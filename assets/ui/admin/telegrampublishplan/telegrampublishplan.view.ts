@@ -20,7 +20,7 @@ namespace $.$$ {
 									title
 								}
 								post {
-								content
+									content
 									warnings
 								}
 							}
@@ -62,6 +62,14 @@ namespace $.$$ {
 
 		override seconds_until_publish() {
 			return this.data().secondsUntilPublish
+		}
+
+		override warnings(): string {
+			return this.data().post.warnings.join( '\n' )
+		}
+
+		override status(): string {
+			return `${ super.status() } ${ this.data().status }`
 		}
 	}
 }
