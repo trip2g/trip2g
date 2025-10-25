@@ -17,10 +17,27 @@ $trip2g_admin_configversion_create $mol_page
 					name \Timezone
 					bid <= timezone_bid \
 					content /
-						<= Timezone_control $mol_string
-							value? <=> timezone? \
+						<= Timezone_control $mol_search
+							Clear null
+							hint \Введите свою или выберите из списка
+							query? <=> timezone? \
+							suggests <= suggests /
+								\UTC
+								\America/New_York
+								\America/Los_Angeles
+								\America/Chicago
+								\Europe/London
+								\Europe/Paris
+								\Europe/Moscow
+								\Asia/Dubai
+								\Asia/Kolkata
+								\Asia/Shanghai
+								\Asia/Tokyo
+								\Asia/Singapore
+								\Australia/Sydney
+								\Pacific/Auckland
 						<= MyTimezoneButton $mol_button_major
-							title \Set My
+							title <= my_timezone \Set My
 							click? <=> set_my_timezone? null
 			buttons /
 				<= Submit $mol_button_major

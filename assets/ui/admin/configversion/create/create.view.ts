@@ -71,9 +71,13 @@ namespace $.$$ {
 			return next || this.current().timezone || 'UTC'
 		}
 
+		@$mol_mem
+		override my_timezone() {
+			return Intl.DateTimeFormat().resolvedOptions().timeZone
+		}
+
 		override set_my_timezone() {
-			const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-			this.timezone( userTimezone )
+			this.timezone( this.my_timezone() )
 		}
 	}
 }
