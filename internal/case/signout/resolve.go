@@ -8,6 +8,8 @@ import (
 	"trip2g/internal/model"
 )
 
+//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg signout_test . Env
+
 type Env interface {
 	ResetUserToken(ctx context.Context) error
 }

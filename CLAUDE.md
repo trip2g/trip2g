@@ -477,12 +477,106 @@ When you need new database operations:
 
 7. **Write Tests** following the pattern in `internal/userbans/userbans_test.go`:
    - Create `resolve_test.go` with table-driven tests
-   - Use `//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env` for mocking
+   - **Mock Generation**: Add `//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg {packagename}_test . Env` to the main `resolve.go` file (NOT in test file)
+   - **Don't duplicate interfaces**: Use the original interface from the main package, don't copy it to test files
    - Test success, error, and edge cases
-   - **Don't forget**: Run `go generate` if tests contain `//go:generate go tool github.com/matryer/moq -out mocks_test.go . Env` to generate mocks
+   - **Don't forget**: Run `go generate` to generate mocks
 
 8. **Add Methods to Main Server** (if needed) in `cmd/server/main.go`:
    - Only if the case requires methods not available in standard `*Queries`
+
+## Testing Guidelines
+
+### Mock Generation with moq
+
+For generating mocks in Go tests:
+
+1. **Choose generation location based on test package**:
+   
+   **For separate test packages** (e.g., `package packagename_test`):
+   - Place `//go:generate` in the `resolve.go` file where the interface is defined:
+   ```go
+   //go:generate go run github.com/matryer/moq -out mocks_test.go -pkg packagename_test . Env
+   
+   type Env interface {
+       // interface methods
+   }
+   ```
+   - Don't duplicate the interface in test files
+   - Mocks will reference `packagename.Env`
+
+   **For same package tests** (e.g., `package packagename`):
+   - `//go:generate` can be in either `resolve.go` or `resolve_test.go`
+   - Interface can be defined locally in test file if needed
+   - No circular import issues since it's the same package
+
+2. **Run generation**: Execute `go generate ./internal/case/packagename/...` to create mocks
+
+### Examples:
+
+**Separate test package** (recommended for avoiding circular imports):
+```go
+// In resolve.go
+//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg sendtelegrampublishpost_test . Env
+
+type Env interface {
+    SendMessage(ctx context.Context, msg string) error
+}
+
+// In resolve_test.go (package sendtelegrampublishpost_test)
+func TestResolve(t *testing.T) {
+    env := &EnvMock{  // References sendtelegrampublishpost.Env
+        SendMessageFunc: func(ctx context.Context, msg string) error {
+            return nil
+        },
+    }
+    // test logic
+}
+```
+
+**Same package tests**:
+```go
+// In resolve_test.go (package signout)
+//go:generate go run github.com/matryer/moq -out mocks_test.go . Env
+
+type Env interface {
+    ResetUserToken(ctx context.Context) error
+}
+
+func TestResolve(t *testing.T) {
+    env := &EnvMock{  // Uses local Env interface
+        ResetUserTokenFunc: func(ctx context.Context) error {
+            return nil
+        },
+    }
+    // test logic
+}
+```
+
+### Testing with AST
+
+When testing code that processes markdown with goldmark AST:
+
+```go
+import (
+    "github.com/yuin/goldmark"
+    "github.com/yuin/goldmark/text"
+)
+
+func createNoteViewWithAST(content []byte) *model.NoteView {
+    reader := text.NewReader(content)
+    parser := goldmark.New().Parser()
+    doc := parser.Parse(reader)
+    
+    noteView := &model.NoteView{
+        Content: content,
+        // other fields...
+    }
+    noteView.SetAst(doc)
+    
+    return noteView
+}
+```
 
 ## Frontend Development
 

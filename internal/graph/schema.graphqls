@@ -604,6 +604,7 @@ type AdminConfigVersion @goModel(model: "trip2g/internal/db.ConfigVersion") {
   createdBy: AdminUser! @goField(forceResolver: true)
 	showDraftVersions: Boolean!
 	defaultLayout: String!
+  timezone: String!
 }
 
 type AdminConfigVersionsConnection {
@@ -1762,6 +1763,22 @@ type SetTgChatPublishInstantTagsPayload
 
 union SetTgChatPublishInstantTagsOrErrorPayload = SetTgChatPublishInstantTagsPayload | ErrorPayload
 
+#
+# createConfigVersion
+#
+
+input CreateConfigVersionInput {
+  showDraftVersions: Boolean!
+  defaultLayout: String!
+  timezone: String!
+}
+
+type CreateConfigVersionPayload {
+  configVersion: AdminConfigVersion!
+}
+
+union CreateConfigVersionOrErrorPayload = CreateConfigVersionPayload | ErrorPayload
+
 type AdminMutation {
   createUser(input: CreateUserInput!): CreateUserOrErrorPayload!
   updateUser(input: UpdateUserInput!): UpdateUserOrErrorPayload!
@@ -1827,4 +1844,7 @@ type AdminMutation {
   # Cron Job mutations
   updateCronJob(input: UpdateCronJobInput!): UpdateCronJobOrErrorPayload!
   runCronJob(input: RunCronJobInput!): RunCronJobOrErrorPayload!
+
+  # Config Version mutations
+  createConfigVersion(input: CreateConfigVersionInput!): CreateConfigVersionOrErrorPayload!
 }

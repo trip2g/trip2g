@@ -19,9 +19,7 @@ func TestContent(t *testing.T) {
 free: true
 title: "Sample Note"
 ---
-
-hello
-`),
+hello`),
 		}},
 		Log:     &logger.TestLogger{},
 		Version: "latest",
@@ -34,5 +32,5 @@ hello
 	require.NoError(t, err)
 
 	require.Empty(t, post.Warnings)
-	require.Equal(t, "hello\n", post.Content)
+	require.Equal(t, "hello", post.Content)
 }

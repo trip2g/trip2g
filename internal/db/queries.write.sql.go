@@ -1129,6 +1129,22 @@ func (q *WriteQueries) InsertTelegramPublishInstantChat(ctx context.Context, arg
 	return err
 }
 
+const insertTelegramPublishSentMessage = `-- name: InsertTelegramPublishSentMessage :exec
+insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id)
+values (?, ?, ?)
+`
+
+type InsertTelegramPublishSentMessageParams struct {
+	NotePathID int64 `json:"note_path_id"`
+	ChatID     int64 `json:"chat_id"`
+	MessageID  int64 `json:"message_id"`
+}
+
+func (q *WriteQueries) InsertTelegramPublishSentMessage(ctx context.Context, arg InsertTelegramPublishSentMessageParams) error {
+	_, err := q.db.ExecContext(ctx, insertTelegramPublishSentMessage, arg.NotePathID, arg.ChatID, arg.MessageID)
+	return err
+}
+
 const insertTelegramPublishTags = `-- name: InsertTelegramPublishTags :exec
 insert into telegram_publish_tags (label)
 values (?)
@@ -2140,7 +2156,8 @@ func (q *WriteQueries) UpdateRunningCronJobExecutions(ctx context.Context, arg U
 
 const updateTelegramPublishNoteAsPublished = `-- name: UpdateTelegramPublishNoteAsPublished :exec
 update telegram_publish_notes
-   set published_at = datetime('now'), published_version_id = ?
+   set published_at = datetime('now')
+     , published_version_id = ?
  where note_path_id = ?
 `
 

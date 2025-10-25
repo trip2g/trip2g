@@ -84,9 +84,9 @@ func TestResolve(t *testing.T) {
 					return nil
 				}
 
-				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 					require.Equal(t, int64(1), chatID)
-					return nil
+					return 1, nil
 				}
 
 				env.DeleteTgBotChatSubgraphAccessFunc = func(ctx context.Context, arg db.DeleteTgBotChatSubgraphAccessParams) error {
@@ -393,8 +393,8 @@ func TestProcessUser(t *testing.T) {
 					return nil
 				}
 
-				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
-					return nil
+				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
+					return 1, nil
 				}
 
 				env.DeleteTgBotChatSubgraphAccessFunc = func(ctx context.Context, arg db.DeleteTgBotChatSubgraphAccessParams) error {
@@ -560,9 +560,9 @@ func TestProcessExpiredAccess(t *testing.T) {
 					return nil
 				}
 
-				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 					require.Equal(t, int64(1), chatID)
-					return nil
+					return 1, nil
 				}
 
 				env.DeleteTgBotChatSubgraphAccessFunc = func(ctx context.Context, arg db.DeleteTgBotChatSubgraphAccessParams) error {
@@ -672,8 +672,8 @@ func TestProcessExpiredAccess(t *testing.T) {
 					return nil
 				}
 
-				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
-					return errors.New("telegram send error")
+				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
+					return 0, errors.New("telegram send error")
 				}
 			},
 			expectedError: "failed to send expiration notification to telegram user 987654321: failed to send telegram message to user: telegram send error",
@@ -710,8 +710,8 @@ func TestProcessExpiredAccess(t *testing.T) {
 					return nil
 				}
 
-				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
-					return nil
+				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
+					return 1, nil
 				}
 
 				env.DeleteTgBotChatSubgraphAccessFunc = func(ctx context.Context, arg db.DeleteTgBotChatSubgraphAccessParams) error {
@@ -820,7 +820,7 @@ func TestSendExpirationNotification(t *testing.T) {
 			chatTitle:      "Premium Chat",
 			subgraphName:   "premium",
 			setup: func(env *EnvMock) {
-				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 					require.Equal(t, int64(1), chatID)
 
 					// Verify the message content
@@ -831,7 +831,7 @@ func TestSendExpirationNotification(t *testing.T) {
 					require.Contains(t, telegramMsg.Text, "premium")
 					require.Contains(t, telegramMsg.Text, "истёк")
 
-					return nil
+					return 1, nil
 				}
 			},
 		},
@@ -842,8 +842,8 @@ func TestSendExpirationNotification(t *testing.T) {
 			chatTitle:      "Premium Chat",
 			subgraphName:   "premium",
 			setup: func(env *EnvMock) {
-				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
-					return errors.New("telegram API unavailable")
+				env.SendTelegramMessageFunc = func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
+					return 0, errors.New("telegram API unavailable")
 				}
 			},
 			expectedError: "failed to send telegram message to user: telegram API unavailable",

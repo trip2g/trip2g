@@ -689,6 +689,11 @@ func (r *adminMutationResolver) RunCronJob(ctx context.Context, obj *appmodel.Ad
 	return runcronjob.Resolve(ctx, r.env(ctx), input)
 }
 
+// CreateConfigVersion is the resolver for the createConfigVersion field.
+func (r *adminMutationResolver) CreateConfigVersion(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateConfigVersionInput) (model.CreateConfigVersionOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: CreateConfigVersion - createConfigVersion"))
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminNotFoundIgnoredPatternResolver) CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)

@@ -42,7 +42,7 @@ var _ Env = &EnvMock{}
 //			RemoveTgChatMemberFunc: func(ctx context.Context, arg db.RemoveTgChatMemberParams) error {
 //				panic("mock out the RemoveTgChatMember method")
 //			},
-//			SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+//			SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 //				panic("mock out the SendTelegramMessage method")
 //			},
 //			UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
@@ -77,7 +77,7 @@ type EnvMock struct {
 	RemoveTgChatMemberFunc func(ctx context.Context, arg db.RemoveTgChatMemberParams) error
 
 	// SendTelegramMessageFunc mocks the SendTelegramMessage method.
-	SendTelegramMessageFunc func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
+	SendTelegramMessageFunc func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
 
 	// UserByIDFunc mocks the UserByID method.
 	UserByIDFunc func(ctx context.Context, id int64) (db.User, error)
@@ -394,7 +394,7 @@ func (mock *EnvMock) RemoveTgChatMemberCalls() []struct {
 }
 
 // SendTelegramMessage calls SendTelegramMessageFunc.
-func (mock *EnvMock) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+func (mock *EnvMock) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 	if mock.SendTelegramMessageFunc == nil {
 		panic("EnvMock.SendTelegramMessageFunc: method is nil but Env.SendTelegramMessage was just called")
 	}

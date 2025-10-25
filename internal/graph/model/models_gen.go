@@ -26,6 +26,10 @@ type CreateBoostyCredentialsOrErrorPayload interface {
 	IsCreateBoostyCredentialsOrErrorPayload()
 }
 
+type CreateConfigVersionOrErrorPayload interface {
+	IsCreateConfigVersionOrErrorPayload()
+}
+
 type CreateEmailWaitListRequestOrErrorPayload interface {
 	IsCreateEmailWaitListRequestOrErrorPayload()
 }
@@ -473,6 +477,18 @@ type CreateBoostyCredentialsPayload struct {
 
 func (CreateBoostyCredentialsPayload) IsCreateBoostyCredentialsOrErrorPayload() {}
 
+type CreateConfigVersionInput struct {
+	ShowDraftVersions bool   `json:"showDraftVersions"`
+	DefaultLayout     string `json:"defaultLayout"`
+	Timezone          string `json:"timezone"`
+}
+
+type CreateConfigVersionPayload struct {
+	ConfigVersion *db.ConfigVersion `json:"configVersion"`
+}
+
+func (CreateConfigVersionPayload) IsCreateConfigVersionOrErrorPayload() {}
+
 type CreateEmailWaitListRequestInput struct {
 	Email  string `json:"email"`
 	PathID int64  `json:"pathId"`
@@ -791,6 +807,8 @@ func (ErrorPayload) IsUpdateUserOrErrorPayload() {}
 func (ErrorPayload) IsSetTgChatPublishTagsOrErrorPayload() {}
 
 func (ErrorPayload) IsSetTgChatPublishInstantTagsOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateConfigVersionOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`

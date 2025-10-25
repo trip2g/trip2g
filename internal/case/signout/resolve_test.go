@@ -14,11 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg signout_test . Env
-
-type Env interface {
-	ResetUserToken(ctx context.Context) error
-}
 
 type envMock = EnvMock
 

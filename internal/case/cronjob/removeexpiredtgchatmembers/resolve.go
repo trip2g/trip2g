@@ -20,7 +20,7 @@ type Env interface {
 	RemoveTgChatMember(ctx context.Context, arg db.RemoveTgChatMemberParams) error
 	KickTelegramChatMember(ctx context.Context, chatID, userID int64) error
 	UserByID(ctx context.Context, id int64) (db.User, error)
-	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
+	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
 }
 
 type Filter struct {
@@ -170,7 +170,7 @@ func sendExpirationNotification(ctx context.Context, env Env, chatID int64, tele
 		chatTitle, subgraphName)
 
 	msg := tgbotapi.NewMessage(telegramUserID, message)
-	err := env.SendTelegramMessage(ctx, chatID, msg)
+	_, err := env.SendTelegramMessage(ctx, chatID, msg)
 
 	if err != nil {
 		return fmt.Errorf("failed to send telegram message to user: %w", err)

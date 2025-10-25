@@ -410,6 +410,13 @@ type TelegramPublishNoteTag struct {
 	TagID      int64 `json:"tag_id"`
 }
 
+type TelegramPublishSentMessage struct {
+	NotePathID int64     `json:"note_path_id"`
+	ChatID     int64     `json:"chat_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	MessageID  int64     `json:"message_id"`
+}
+
 type TelegramPublishTag struct {
 	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"created_at"`

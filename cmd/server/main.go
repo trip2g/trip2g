@@ -584,24 +584,24 @@ func (a *app) BoostyClientByCredentialsID(ctx context.Context, credentialID int6
 	return a.boostyClientManager.Get(ctx, env, credentialID)
 }
 
-func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 	chat, err := a.TgBotChat(ctx, chatID)
 	if err != nil {
-		return fmt.Errorf("failed to get Telegram chat: %w", err)
+		return 0, fmt.Errorf("failed to get Telegram chat: %w", err)
 	}
 
 	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
 
 	if handlerIO == nil {
-		return fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
+		return 0, fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
 	}
 
-	_, err = handlerIO.Send(msg)
+	res, err := handlerIO.Send(msg)
 	if err != nil {
-		return fmt.Errorf("failed to send Telegram message: %w", err)
+		return 0, fmt.Errorf("failed to send Telegram message: %w", err)
 	}
 
-	return nil
+	return int64(res.MessageID), nil
 }
 
 func (a *app) KickTelegramChatMember(ctx context.Context, chatID, userID int64) error {

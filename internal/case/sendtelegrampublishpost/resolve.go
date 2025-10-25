@@ -11,14 +11,17 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg sendtelegrampublishpost_test . Env
+
 type Env interface {
 	// Database methods for getting note and chat information
 	ListTgBotChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]db.TgBotChat, error)
 	ListTgBotInstantChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]db.TgBotChat, error)
 	UpdateTelegramPublishNoteAsPublished(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error
+	InsertTelegramPublishSentMessage(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error
 
 	// Telegram bot methods for sending messages
-	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
+	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
 
 	// Content access methods
 	LatestNoteViews() *model.NoteViews
@@ -66,21 +69,36 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 		msg := tgbotapi.NewMessage(chat.TelegramID, post.Content)
 		msg.ParseMode = "HTML"
 
-		err = env.SendTelegramMessage(ctx, chat.ID, msg)
-		if err != nil {
-			return fmt.Errorf("failed to send telegram message to chat %d: %w", chat.ID, err)
+		messageID, sendErr := env.SendTelegramMessage(ctx, chat.ID, msg)
+		if sendErr != nil {
+			return fmt.Errorf("failed to send telegram message to chat %d: %w", chat.ID, sendErr)
+		}
+
+		if !instant {
+			sentParams := db.InsertTelegramPublishSentMessageParams{
+				NotePathID: notePathID,
+				ChatID:     chat.ID,
+				MessageID:  messageID,
+			}
+
+			insertErr := env.InsertTelegramPublishSentMessage(ctx, sentParams)
+			if insertErr != nil {
+				return fmt.Errorf("failed to record sent message for chat %d: %w", chat.ID, insertErr)
+			}
 		}
 	}
 
-	// Mark the note as published
-	updateParams := db.UpdateTelegramPublishNoteAsPublishedParams{
-		PublishedVersionID: sql.NullInt64{Int64: noteView.VersionID, Valid: true},
-		NotePathID:         notePathID,
-	}
+	if !instant {
+		// Mark the note as published
+		updateParams := db.UpdateTelegramPublishNoteAsPublishedParams{
+			PublishedVersionID: sql.NullInt64{Int64: noteView.VersionID, Valid: true},
+			NotePathID:         notePathID,
+		}
 
-	err = env.UpdateTelegramPublishNoteAsPublished(ctx, updateParams)
-	if err != nil {
-		return fmt.Errorf("failed to mark note as published: %w", err)
+		err = env.UpdateTelegramPublishNoteAsPublished(ctx, updateParams)
+		if err != nil {
+			return fmt.Errorf("failed to mark note as published: %w", err)
+		}
 	}
 
 	return nil

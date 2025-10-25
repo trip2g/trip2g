@@ -671,5 +671,10 @@ values (?, ?, ?);
 
 -- name: UpdateTelegramPublishNoteAsPublished :exec
 update telegram_publish_notes
-   set published_at = datetime('now'), published_version_id = ?
+   set published_at = datetime('now')
+     , published_version_id = ?
  where note_path_id = ?;
+
+-- name: InsertTelegramPublishSentMessage :exec
+insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id)
+values (?, ?, ?);
