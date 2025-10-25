@@ -630,20 +630,36 @@ func (q *WriteQueries) InsertBoostyTierSubgraph(ctx context.Context, arg InsertB
 	return err
 }
 
-const insertConfigVersion = `-- name: InsertConfigVersion :exec
-insert into config_versions (created_by, show_draft_versions, default_layout)
-values (?, ?, ?)
+const insertConfigVersion = `-- name: InsertConfigVersion :one
+insert into config_versions (created_by, show_draft_versions, default_layout, timezone)
+values (?, ?, ?, ?)
+returning id, created_at, created_by, show_draft_versions, default_layout, timezone
 `
 
 type InsertConfigVersionParams struct {
 	CreatedBy         int64  `json:"created_by"`
 	ShowDraftVersions bool   `json:"show_draft_versions"`
 	DefaultLayout     string `json:"default_layout"`
+	Timezone          string `json:"timezone"`
 }
 
-func (q *WriteQueries) InsertConfigVersion(ctx context.Context, arg InsertConfigVersionParams) error {
-	_, err := q.db.ExecContext(ctx, insertConfigVersion, arg.CreatedBy, arg.ShowDraftVersions, arg.DefaultLayout)
-	return err
+func (q *WriteQueries) InsertConfigVersion(ctx context.Context, arg InsertConfigVersionParams) (ConfigVersion, error) {
+	row := q.db.QueryRowContext(ctx, insertConfigVersion,
+		arg.CreatedBy,
+		arg.ShowDraftVersions,
+		arg.DefaultLayout,
+		arg.Timezone,
+	)
+	var i ConfigVersion
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.ShowDraftVersions,
+		&i.DefaultLayout,
+		&i.Timezone,
+	)
+	return i, err
 }
 
 const insertCronJobExecution = `-- name: InsertCronJobExecution :one

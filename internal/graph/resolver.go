@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
+	"trip2g/internal/case/admin/createconfigversion"
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/createhtmlinjection"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
@@ -206,6 +207,7 @@ type Env interface {
 	settgchatpublishtags.Env
 	settgchatpublishinstanttags.Env
 	convertnoteviewtotgpost.Env
+	createconfigversion.Env
 
 	// Boosty credentials
 	createboostycredentials.Env

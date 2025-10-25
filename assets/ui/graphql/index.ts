@@ -156,11 +156,12 @@ namespace $ {
 	}
 
 	export function $trip2g_graphql_make_map<K extends PropertyKey, T extends { id: K }>(rows: T[]) {
+		const keys = rows.map(row => row.id.toString())
 		const map = new Map<string, T>(rows.map(row => [row.id.toString(), row] as [string, T]))
 
 		return {
-			keys: () => map.keys(),
-			size: () => map.size,
+			keys: () => keys,
+			size: () => keys.length,
 			get: (key: string) => {
 				const val = map.get(key)
 				if (!val) {
@@ -171,7 +172,7 @@ namespace $ {
 			},
 			mapKeys<V>(fn: (key: string) => V): Record<string, V> {
 				const out: Record<string, V> = {}
-				for (const key of map.keys()) {
+				for (const key of keys) {
 					out[key] = fn(key)
 				}
 				return out
@@ -183,7 +184,7 @@ namespace $ {
 
 				const out: V[] = []
 				let i = 0;
-				for (const key of map.keys()) {
+				for (const key of keys) {
 					out.push(fn(key, i++))
 				}
 				return out

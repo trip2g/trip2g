@@ -426,14 +426,14 @@ func (a *app) LatestConfig() db.ConfigVersion {
 	return cfg
 }
 
-func (a *app) InsertConfigVersion(ctx context.Context, params db.InsertConfigVersionParams) error {
-	err := a.WriteQueries.InsertConfigVersion(ctx, params)
+func (a *app) InsertConfigVersion(ctx context.Context, params db.InsertConfigVersionParams) (db.ConfigVersion, error) {
+	config, err := a.WriteQueries.InsertConfigVersion(ctx, params)
 
 	if err == nil {
 		a.resetTimeLocation()
 	}
 
-	return err
+	return config, err
 }
 
 func (a *app) resetTimeLocation() {

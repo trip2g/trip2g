@@ -17,6 +17,7 @@ import (
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
+	"trip2g/internal/case/admin/createconfigversion"
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/createhtmlinjection"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
@@ -691,7 +692,7 @@ func (r *adminMutationResolver) RunCronJob(ctx context.Context, obj *appmodel.Ad
 
 // CreateConfigVersion is the resolver for the createConfigVersion field.
 func (r *adminMutationResolver) CreateConfigVersion(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateConfigVersionInput) (model.CreateConfigVersionOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: CreateConfigVersion - createConfigVersion"))
+	return createconfigversion.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatedBy is the resolver for the createdBy field.
