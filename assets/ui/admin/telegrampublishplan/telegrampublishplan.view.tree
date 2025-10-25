@@ -2,8 +2,11 @@ $trip2g_admin_telegrampublishplan $mol_page
 	close_icon null $mol_view
 	tools / <= close_icon
 	title \Telegram Publish Plan
+	Empty $mol_view
+		sub / \Ничего не запланировано.
 	body /
 		<= Posts $mol_list
+			Empty <= Empty
 			rows <= rows /$mol_view
 				<= Post*0 $trip2g_admin_telegrampublishplan_post
 					data <= row* null $trip2g_graphql_AdminTelegramPublishPlanRow

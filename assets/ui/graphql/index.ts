@@ -163,7 +163,7 @@ namespace $ {
 			keys: () => keys,
 			size: () => keys.length,
 			get: (key: string) => {
-				const val = map.get(key)
+				const val = map.get(key.replace(/^key/, ''))
 				if (!val) {
 					throw new Error(`Key ${key} not found`)
 				}
@@ -173,7 +173,7 @@ namespace $ {
 			mapKeys<V>(fn: (key: string) => V): Record<string, V> {
 				const out: Record<string, V> = {}
 				for (const key of keys) {
-					out[key] = fn(key)
+					out[`key${key}`] = fn(key)
 				}
 				return out
 			},
