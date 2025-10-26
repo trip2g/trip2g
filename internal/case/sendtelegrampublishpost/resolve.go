@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
+	"path/filepath"
+	"strings"
 	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
@@ -66,12 +69,41 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 
 	// Send the post to each chat
 	for _, chat := range chats {
-		msg := tgbotapi.NewMessage(chat.TelegramID, post.Content)
-		msg.ParseMode = "HTML"
+		var firstImageURL *string
+		var messageID int64
 
-		messageID, sendErr := env.SendTelegramMessage(ctx, chat.ID, msg)
-		if sendErr != nil {
-			return fmt.Errorf("failed to send telegram message to chat %d: %w", chat.ID, sendErr)
+		for path := range noteView.Assets {
+			firstImageURL = &noteView.AssetReplaces[path].URL
+			break
+		}
+
+		if firstImageURL != nil {
+			params := sendPhotoParams{
+				chat: &chat,
+				post: post,
+				url:  *firstImageURL,
+			}
+
+			messageID, err = sendPhoto(ctx, env, params)
+			if err != nil {
+				// workaround for localhost minio or something similar.
+				if strings.Contains(err.Error(), "wrong HTTP URL specified") {
+					params.stream = true
+					messageID, err = sendPhoto(ctx, env, params)
+				}
+
+				if err != nil {
+					return fmt.Errorf("failed to send photo message to chat %d: %w", chat.ID, err)
+				}
+			}
+		} else {
+			msg := tgbotapi.NewMessage(chat.TelegramID, post.Content)
+			msg.ParseMode = "HTML"
+
+			messageID, err = env.SendTelegramMessage(ctx, chat.ID, msg)
+			if err != nil {
+				return fmt.Errorf("failed to send telegram message to chat %d: %w", chat.ID, err)
+			}
 		}
 
 		if !instant {
@@ -102,4 +134,42 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 	}
 
 	return nil
+}
+
+type sendPhotoParams struct {
+	chat   *db.TgBotChat
+	post   *model.TelegramPost
+	url    string
+	stream bool
+}
+
+func sendPhoto(ctx context.Context, env Env, params sendPhotoParams) (int64, error) {
+	var file tgbotapi.RequestFileData
+
+	if !params.stream {
+		file = tgbotapi.FileURL(params.url)
+	} else {
+		req, err := http.NewRequestWithContext(ctx, "GET", params.url, nil)
+		if err != nil {
+			return 0, fmt.Errorf("failed to create request for image URL: %w", err)
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return 0, fmt.Errorf("failed to fetch image URL: %w", err)
+		}
+
+		defer resp.Body.Close()
+
+		file = tgbotapi.FileReader{
+			Name:   filepath.Base(params.url),
+			Reader: resp.Body,
+		}
+	}
+
+	photo := tgbotapi.NewPhoto(params.chat.TelegramID, file)
+	photo.Caption = params.post.Content
+	photo.ParseMode = "HTML"
+
+	return env.SendTelegramMessage(ctx, params.chat.ID, photo)
 }

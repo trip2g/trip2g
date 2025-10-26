@@ -199,6 +199,17 @@ func detectContentType(fileName string) string {
 	return "application/octet-stream"
 }
 
+func (a *FileStorage) GetAssetObject(ctx context.Context, asset db.NoteAsset) (io.ReadCloser, error) {
+	objectID := a.NoteAssetPath(asset)
+
+	object, err := a.minioClient.GetObject(ctx, a.config.Bucket, objectID, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get asset object: %w", err)
+	}
+
+	return object, nil
+}
+
 func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, asset db.NoteAsset) error {
 	options := minio.PutObjectOptions{
 		ContentType: detectContentType(asset.FileName),

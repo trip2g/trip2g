@@ -23,6 +23,7 @@ const (
 type ConverterResult struct {
 	Warnings []string
 	Content  string
+	Assets   []string
 }
 
 type CommonConverter struct {

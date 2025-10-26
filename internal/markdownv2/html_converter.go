@@ -11,6 +11,7 @@ import (
 	enclavecore "github.com/quailyquaily/goldmark-enclave/core"
 	"github.com/yuin/goldmark/ast"
 	extast "github.com/yuin/goldmark/extension/ast"
+	"go.abhg.dev/goldmark/wikilink"
 )
 
 type HTMLConverter struct {
@@ -223,6 +224,10 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 				lines = append(lines, codeHTML)
 			}
+
+		case *wikilink.Node:
+			// allowed but ignored
+			return ast.WalkSkipChildren, nil
 
 		default:
 			if entering {
