@@ -64,8 +64,8 @@ type ResolverRoot interface {
 	AdminCronJobsConnection() AdminCronJobsConnectionResolver
 	AdminGitToken() AdminGitTokenResolver
 	AdminGitTokensConnection() AdminGitTokensConnectionResolver
-	AdminHTMLInjection() AdminHTMLInjectionResolver
-	AdminHTMLInjectionsConnection() AdminHTMLInjectionsConnectionResolver
+	AdminHtmlInjection() AdminHtmlInjectionResolver
+	AdminHtmlInjectionsConnection() AdminHtmlInjectionsConnectionResolver
 	AdminLatestNoteAssetsConnection() AdminLatestNoteAssetsConnectionResolver
 	AdminLatestNoteViewsConnection() AdminLatestNoteViewsConnectionResolver
 	AdminMutation() AdminMutationResolver
@@ -290,7 +290,7 @@ type ComplexityRoot struct {
 		Nodes func(childComplexity int) int
 	}
 
-	AdminHTMLInjection struct {
+	AdminHtmlInjection struct {
 		ActiveFrom  func(childComplexity int) int
 		ActiveTo    func(childComplexity int) int
 		Content     func(childComplexity int) int
@@ -301,7 +301,7 @@ type ComplexityRoot struct {
 		Position    func(childComplexity int) int
 	}
 
-	AdminHTMLInjectionsConnection struct {
+	AdminHtmlInjectionsConnection struct {
 		Nodes func(childComplexity int) int
 	}
 
@@ -585,6 +585,7 @@ type ComplexityRoot struct {
 	}
 
 	AdminTelegramPublishNotesConnection struct {
+		Count func(childComplexity int) int
 		Nodes func(childComplexity int) int
 	}
 
@@ -751,7 +752,7 @@ type ComplexityRoot struct {
 		Value    func(childComplexity int) int
 	}
 
-	CreateHTMLInjectionPayload struct {
+	CreateHtmlInjectionPayload struct {
 		HTMLInjection func(childComplexity int) int
 	}
 
@@ -793,7 +794,7 @@ type ComplexityRoot struct {
 		DeletedID         func(childComplexity int) int
 	}
 
-	DeleteHTMLInjectionPayload struct {
+	DeleteHtmlInjectionPayload struct {
 		DeletedID func(childComplexity int) int
 	}
 
@@ -1066,7 +1067,7 @@ type ComplexityRoot struct {
 		CronJob func(childComplexity int) int
 	}
 
-	UpdateHTMLInjectionPayload struct {
+	UpdateHtmlInjectionPayload struct {
 		HTMLInjection func(childComplexity int) int
 	}
 
@@ -1228,13 +1229,13 @@ type AdminGitTokenResolver interface {
 type AdminGitTokensConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminGitTokensConnection) ([]db.GitToken, error)
 }
-type AdminHTMLInjectionResolver interface {
+type AdminHtmlInjectionResolver interface {
 	ActiveFrom(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error)
 	ActiveTo(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error)
 
 	Position(ctx context.Context, obj *db.HtmlInjection) (int32, error)
 }
-type AdminHTMLInjectionsConnectionResolver interface {
+type AdminHtmlInjectionsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminHTMLInjectionsConnection) ([]db.HtmlInjection, error)
 }
 type AdminLatestNoteAssetsConnectionResolver interface {
@@ -1432,6 +1433,7 @@ type AdminTelegramPublishNoteResolver interface {
 }
 type AdminTelegramPublishNotesConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminTelegramPublishNotesConnection) ([]db.TelegramPublishNote, error)
+	Count(ctx context.Context, obj *model.AdminTelegramPublishNotesConnection) (int64, error)
 }
 type AdminTelegramPublishTagsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminTelegramPublishTagsConnection) ([]db.TelegramPublishTag, error)
@@ -2215,68 +2217,68 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminGitTokensConnection.Nodes(childComplexity), true
 
-	case "AdminHTMLInjection.activeFrom":
-		if e.complexity.AdminHTMLInjection.ActiveFrom == nil {
+	case "AdminHtmlInjection.activeFrom":
+		if e.complexity.AdminHtmlInjection.ActiveFrom == nil {
 			break
 		}
 
-		return e.complexity.AdminHTMLInjection.ActiveFrom(childComplexity), true
+		return e.complexity.AdminHtmlInjection.ActiveFrom(childComplexity), true
 
-	case "AdminHTMLInjection.activeTo":
-		if e.complexity.AdminHTMLInjection.ActiveTo == nil {
+	case "AdminHtmlInjection.activeTo":
+		if e.complexity.AdminHtmlInjection.ActiveTo == nil {
 			break
 		}
 
-		return e.complexity.AdminHTMLInjection.ActiveTo(childComplexity), true
+		return e.complexity.AdminHtmlInjection.ActiveTo(childComplexity), true
 
-	case "AdminHTMLInjection.content":
-		if e.complexity.AdminHTMLInjection.Content == nil {
+	case "AdminHtmlInjection.content":
+		if e.complexity.AdminHtmlInjection.Content == nil {
 			break
 		}
 
-		return e.complexity.AdminHTMLInjection.Content(childComplexity), true
+		return e.complexity.AdminHtmlInjection.Content(childComplexity), true
 
-	case "AdminHTMLInjection.createdAt":
-		if e.complexity.AdminHTMLInjection.CreatedAt == nil {
+	case "AdminHtmlInjection.createdAt":
+		if e.complexity.AdminHtmlInjection.CreatedAt == nil {
 			break
 		}
 
-		return e.complexity.AdminHTMLInjection.CreatedAt(childComplexity), true
+		return e.complexity.AdminHtmlInjection.CreatedAt(childComplexity), true
 
-	case "AdminHTMLInjection.description":
-		if e.complexity.AdminHTMLInjection.Description == nil {
+	case "AdminHtmlInjection.description":
+		if e.complexity.AdminHtmlInjection.Description == nil {
 			break
 		}
 
-		return e.complexity.AdminHTMLInjection.Description(childComplexity), true
+		return e.complexity.AdminHtmlInjection.Description(childComplexity), true
 
-	case "AdminHTMLInjection.id":
-		if e.complexity.AdminHTMLInjection.ID == nil {
+	case "AdminHtmlInjection.id":
+		if e.complexity.AdminHtmlInjection.ID == nil {
 			break
 		}
 
-		return e.complexity.AdminHTMLInjection.ID(childComplexity), true
+		return e.complexity.AdminHtmlInjection.ID(childComplexity), true
 
-	case "AdminHTMLInjection.placement":
-		if e.complexity.AdminHTMLInjection.Placement == nil {
+	case "AdminHtmlInjection.placement":
+		if e.complexity.AdminHtmlInjection.Placement == nil {
 			break
 		}
 
-		return e.complexity.AdminHTMLInjection.Placement(childComplexity), true
+		return e.complexity.AdminHtmlInjection.Placement(childComplexity), true
 
-	case "AdminHTMLInjection.position":
-		if e.complexity.AdminHTMLInjection.Position == nil {
+	case "AdminHtmlInjection.position":
+		if e.complexity.AdminHtmlInjection.Position == nil {
 			break
 		}
 
-		return e.complexity.AdminHTMLInjection.Position(childComplexity), true
+		return e.complexity.AdminHtmlInjection.Position(childComplexity), true
 
-	case "AdminHTMLInjectionsConnection.nodes":
-		if e.complexity.AdminHTMLInjectionsConnection.Nodes == nil {
+	case "AdminHtmlInjectionsConnection.nodes":
+		if e.complexity.AdminHtmlInjectionsConnection.Nodes == nil {
 			break
 		}
 
-		return e.complexity.AdminHTMLInjectionsConnection.Nodes(childComplexity), true
+		return e.complexity.AdminHtmlInjectionsConnection.Nodes(childComplexity), true
 
 	case "AdminLatestNoteAssetsConnection.nodes":
 		if e.complexity.AdminLatestNoteAssetsConnection.Nodes == nil {
@@ -2352,12 +2354,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.CreateGitToken(childComplexity, args["input"].(model.CreateGitTokenInput)), true
 
-	case "AdminMutation.createHTMLInjection":
+	case "AdminMutation.createHtmlInjection":
 		if e.complexity.AdminMutation.CreateHTMLInjection == nil {
 			break
 		}
 
-		args, err := ec.field_AdminMutation_createHTMLInjection_args(ctx, rawArgs)
+		args, err := ec.field_AdminMutation_createHtmlInjection_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -2460,12 +2462,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.DeleteBoostyCredentials(childComplexity, args["input"].(model.DeleteBoostyCredentialsInput)), true
 
-	case "AdminMutation.deleteHTMLInjection":
+	case "AdminMutation.deleteHtmlInjection":
 		if e.complexity.AdminMutation.DeleteHTMLInjection == nil {
 			break
 		}
 
-		args, err := ec.field_AdminMutation_deleteHTMLInjection_args(ctx, rawArgs)
+		args, err := ec.field_AdminMutation_deleteHtmlInjection_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -2736,12 +2738,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.UpdateCronJob(childComplexity, args["input"].(model.UpdateCronJobInput)), true
 
-	case "AdminMutation.updateHTMLInjection":
+	case "AdminMutation.updateHtmlInjection":
 		if e.complexity.AdminMutation.UpdateHTMLInjection == nil {
 			break
 		}
 
-		args, err := ec.field_AdminMutation_updateHTMLInjection_args(ctx, rawArgs)
+		args, err := ec.field_AdminMutation_updateHtmlInjection_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
@@ -3419,7 +3421,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminQuery.AllGitTokens(childComplexity), true
 
-	case "AdminQuery.allHTMLInjections":
+	case "AdminQuery.allHtmlInjections":
 		if e.complexity.AdminQuery.AllHTMLInjections == nil {
 			break
 		}
@@ -4009,6 +4011,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminTelegramPublishNote.Tags(childComplexity), true
 
+	case "AdminTelegramPublishNotesConnection.count":
+		if e.complexity.AdminTelegramPublishNotesConnection.Count == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramPublishNotesConnection.Count(childComplexity), true
+
 	case "AdminTelegramPublishNotesConnection.nodes":
 		if e.complexity.AdminTelegramPublishNotesConnection.Nodes == nil {
 			break
@@ -4590,12 +4599,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.CreateGitTokenPayload.Value(childComplexity), true
 
-	case "CreateHTMLInjectionPayload.htmlInjection":
-		if e.complexity.CreateHTMLInjectionPayload.HTMLInjection == nil {
+	case "CreateHtmlInjectionPayload.htmlInjection":
+		if e.complexity.CreateHtmlInjectionPayload.HTMLInjection == nil {
 			break
 		}
 
-		return e.complexity.CreateHTMLInjectionPayload.HTMLInjection(childComplexity), true
+		return e.complexity.CreateHtmlInjectionPayload.HTMLInjection(childComplexity), true
 
 	case "CreateNotFoundIgnoredPatternPayload.notFoundIgnoredPattern":
 		if e.complexity.CreateNotFoundIgnoredPatternPayload.NotFoundIgnoredPattern == nil {
@@ -4674,12 +4683,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.DeleteBoostyCredentialsPayload.DeletedID(childComplexity), true
 
-	case "DeleteHTMLInjectionPayload.deletedId":
-		if e.complexity.DeleteHTMLInjectionPayload.DeletedID == nil {
+	case "DeleteHtmlInjectionPayload.deletedId":
+		if e.complexity.DeleteHtmlInjectionPayload.DeletedID == nil {
 			break
 		}
 
-		return e.complexity.DeleteHTMLInjectionPayload.DeletedID(childComplexity), true
+		return e.complexity.DeleteHtmlInjectionPayload.DeletedID(childComplexity), true
 
 	case "DeleteNotFoundIgnoredPatternPayload.deletedId":
 		if e.complexity.DeleteNotFoundIgnoredPatternPayload.DeletedID == nil {
@@ -5595,12 +5604,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.UpdateCronJobPayload.CronJob(childComplexity), true
 
-	case "UpdateHTMLInjectionPayload.htmlInjection":
-		if e.complexity.UpdateHTMLInjectionPayload.HTMLInjection == nil {
+	case "UpdateHtmlInjectionPayload.htmlInjection":
+		if e.complexity.UpdateHtmlInjectionPayload.HTMLInjection == nil {
 			break
 		}
 
-		return e.complexity.UpdateHTMLInjectionPayload.HTMLInjection(childComplexity), true
+		return e.complexity.UpdateHtmlInjectionPayload.HTMLInjection(childComplexity), true
 
 	case "UpdateNotFoundIgnoredPatternPayload.notFoundIgnoredPattern":
 		if e.complexity.UpdateNotFoundIgnoredPatternPayload.NotFoundIgnoredPattern == nil {
@@ -5853,7 +5862,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateConfigVersionInput,
 		ec.unmarshalInputCreateEmailWaitListRequestInput,
 		ec.unmarshalInputCreateGitTokenInput,
-		ec.unmarshalInputCreateHTMLInjectionInput,
+		ec.unmarshalInputCreateHtmlInjectionInput,
 		ec.unmarshalInputCreateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputCreateOfferInput,
 		ec.unmarshalInputCreatePatreonCredentialsInput,
@@ -5863,7 +5872,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateTgBotInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputDeleteBoostyCredentialsInput,
-		ec.unmarshalInputDeleteHTMLInjectionInput,
+		ec.unmarshalInputDeleteHtmlInjectionInput,
 		ec.unmarshalInputDeleteNotFoundIgnoredPatternInput,
 		ec.unmarshalInputDeletePatreonCredentialsInput,
 		ec.unmarshalInputDeleteRedirectInput,
@@ -5897,7 +5906,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUnbanUserInput,
 		ec.unmarshalInputUpdateBoostyCredentialsInput,
 		ec.unmarshalInputUpdateCronJobInput,
-		ec.unmarshalInputUpdateHTMLInjectionInput,
+		ec.unmarshalInputUpdateHtmlInjectionInput,
 		ec.unmarshalInputUpdateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputUpdateNoteGraphPositionInput,
 		ec.unmarshalInputUpdateNoteGraphPositionsInput,
@@ -6140,23 +6149,23 @@ func (ec *executionContext) field_AdminMutation_createGitToken_argsInput(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_AdminMutation_createHTMLInjection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_AdminMutation_createHtmlInjection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_AdminMutation_createHTMLInjection_argsInput(ctx, rawArgs)
+	arg0, err := ec.field_AdminMutation_createHtmlInjection_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_AdminMutation_createHTMLInjection_argsInput(
+func (ec *executionContext) field_AdminMutation_createHtmlInjection_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (model.CreateHTMLInjectionInput, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNCreateHTMLInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateHTMLInjectionInput(ctx, tmp)
+		return ec.unmarshalNCreateHtmlInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateHTMLInjectionInput(ctx, tmp)
 	}
 
 	var zeroVal model.CreateHTMLInjectionInput
@@ -6347,23 +6356,23 @@ func (ec *executionContext) field_AdminMutation_deleteBoostyCredentials_argsInpu
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_AdminMutation_deleteHTMLInjection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_AdminMutation_deleteHtmlInjection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_AdminMutation_deleteHTMLInjection_argsInput(ctx, rawArgs)
+	arg0, err := ec.field_AdminMutation_deleteHtmlInjection_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_AdminMutation_deleteHTMLInjection_argsInput(
+func (ec *executionContext) field_AdminMutation_deleteHtmlInjection_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (model.DeleteHTMLInjectionInput, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNDeleteHTMLInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteHTMLInjectionInput(ctx, tmp)
+		return ec.unmarshalNDeleteHtmlInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteHTMLInjectionInput(ctx, tmp)
 	}
 
 	var zeroVal model.DeleteHTMLInjectionInput
@@ -6876,23 +6885,23 @@ func (ec *executionContext) field_AdminMutation_updateCronJob_argsInput(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_AdminMutation_updateHTMLInjection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_AdminMutation_updateHtmlInjection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_AdminMutation_updateHTMLInjection_argsInput(ctx, rawArgs)
+	arg0, err := ec.field_AdminMutation_updateHtmlInjection_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["input"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_AdminMutation_updateHTMLInjection_argsInput(
+func (ec *executionContext) field_AdminMutation_updateHtmlInjection_argsInput(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (model.UpdateHTMLInjectionInput, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNUpdateHTMLInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateHTMLInjectionInput(ctx, tmp)
+		return ec.unmarshalNUpdateHtmlInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateHTMLInjectionInput(ctx, tmp)
 	}
 
 	var zeroVal model.UpdateHTMLInjectionInput
@@ -11935,8 +11944,8 @@ func (ec *executionContext) fieldContext_AdminGitTokensConnection_nodes(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminHTMLInjection_id(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminHTMLInjection_id(ctx, field)
+func (ec *executionContext) _AdminHtmlInjection_id(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminHtmlInjection_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -11966,9 +11975,9 @@ func (ec *executionContext) _AdminHTMLInjection_id(ctx context.Context, field gr
 	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminHTMLInjection_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminHtmlInjection_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AdminHTMLInjection",
+		Object:     "AdminHtmlInjection",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -11979,8 +11988,8 @@ func (ec *executionContext) fieldContext_AdminHTMLInjection_id(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminHTMLInjection_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminHTMLInjection_createdAt(ctx, field)
+func (ec *executionContext) _AdminHtmlInjection_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminHtmlInjection_createdAt(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -12010,9 +12019,9 @@ func (ec *executionContext) _AdminHTMLInjection_createdAt(ctx context.Context, f
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminHTMLInjection_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminHtmlInjection_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AdminHTMLInjection",
+		Object:     "AdminHtmlInjection",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -12023,8 +12032,8 @@ func (ec *executionContext) fieldContext_AdminHTMLInjection_createdAt(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminHTMLInjection_activeFrom(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminHTMLInjection_activeFrom(ctx, field)
+func (ec *executionContext) _AdminHtmlInjection_activeFrom(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminHtmlInjection_activeFrom(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -12037,7 +12046,7 @@ func (ec *executionContext) _AdminHTMLInjection_activeFrom(ctx context.Context, 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminHTMLInjection().ActiveFrom(rctx, obj)
+		return ec.resolvers.AdminHtmlInjection().ActiveFrom(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -12051,9 +12060,9 @@ func (ec *executionContext) _AdminHTMLInjection_activeFrom(ctx context.Context, 
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminHTMLInjection_activeFrom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminHtmlInjection_activeFrom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AdminHTMLInjection",
+		Object:     "AdminHtmlInjection",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
@@ -12064,8 +12073,8 @@ func (ec *executionContext) fieldContext_AdminHTMLInjection_activeFrom(_ context
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminHTMLInjection_activeTo(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminHTMLInjection_activeTo(ctx, field)
+func (ec *executionContext) _AdminHtmlInjection_activeTo(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminHtmlInjection_activeTo(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -12078,7 +12087,7 @@ func (ec *executionContext) _AdminHTMLInjection_activeTo(ctx context.Context, fi
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminHTMLInjection().ActiveTo(rctx, obj)
+		return ec.resolvers.AdminHtmlInjection().ActiveTo(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -12092,9 +12101,9 @@ func (ec *executionContext) _AdminHTMLInjection_activeTo(ctx context.Context, fi
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminHTMLInjection_activeTo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminHtmlInjection_activeTo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AdminHTMLInjection",
+		Object:     "AdminHtmlInjection",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
@@ -12105,8 +12114,8 @@ func (ec *executionContext) fieldContext_AdminHTMLInjection_activeTo(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminHTMLInjection_description(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminHTMLInjection_description(ctx, field)
+func (ec *executionContext) _AdminHtmlInjection_description(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminHtmlInjection_description(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -12136,9 +12145,9 @@ func (ec *executionContext) _AdminHTMLInjection_description(ctx context.Context,
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminHTMLInjection_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminHtmlInjection_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AdminHTMLInjection",
+		Object:     "AdminHtmlInjection",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -12149,8 +12158,8 @@ func (ec *executionContext) fieldContext_AdminHTMLInjection_description(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminHTMLInjection_position(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminHTMLInjection_position(ctx, field)
+func (ec *executionContext) _AdminHtmlInjection_position(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminHtmlInjection_position(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -12163,7 +12172,7 @@ func (ec *executionContext) _AdminHTMLInjection_position(ctx context.Context, fi
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminHTMLInjection().Position(rctx, obj)
+		return ec.resolvers.AdminHtmlInjection().Position(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -12180,9 +12189,9 @@ func (ec *executionContext) _AdminHTMLInjection_position(ctx context.Context, fi
 	return ec.marshalNInt2int32(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminHTMLInjection_position(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminHtmlInjection_position(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AdminHTMLInjection",
+		Object:     "AdminHtmlInjection",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
@@ -12193,8 +12202,8 @@ func (ec *executionContext) fieldContext_AdminHTMLInjection_position(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminHTMLInjection_placement(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminHTMLInjection_placement(ctx, field)
+func (ec *executionContext) _AdminHtmlInjection_placement(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminHtmlInjection_placement(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -12224,9 +12233,9 @@ func (ec *executionContext) _AdminHTMLInjection_placement(ctx context.Context, f
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminHTMLInjection_placement(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminHtmlInjection_placement(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AdminHTMLInjection",
+		Object:     "AdminHtmlInjection",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -12237,8 +12246,8 @@ func (ec *executionContext) fieldContext_AdminHTMLInjection_placement(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminHTMLInjection_content(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminHTMLInjection_content(ctx, field)
+func (ec *executionContext) _AdminHtmlInjection_content(ctx context.Context, field graphql.CollectedField, obj *db.HtmlInjection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminHtmlInjection_content(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -12268,9 +12277,9 @@ func (ec *executionContext) _AdminHTMLInjection_content(ctx context.Context, fie
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminHTMLInjection_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminHtmlInjection_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AdminHTMLInjection",
+		Object:     "AdminHtmlInjection",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -12281,8 +12290,8 @@ func (ec *executionContext) fieldContext_AdminHTMLInjection_content(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminHTMLInjectionsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminHTMLInjectionsConnection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminHTMLInjectionsConnection_nodes(ctx, field)
+func (ec *executionContext) _AdminHtmlInjectionsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminHTMLInjectionsConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminHtmlInjectionsConnection_nodes(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -12295,7 +12304,7 @@ func (ec *executionContext) _AdminHTMLInjectionsConnection_nodes(ctx context.Con
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminHTMLInjectionsConnection().Nodes(rctx, obj)
+		return ec.resolvers.AdminHtmlInjectionsConnection().Nodes(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -12309,35 +12318,35 @@ func (ec *executionContext) _AdminHTMLInjectionsConnection_nodes(ctx context.Con
 	}
 	res := resTmp.([]db.HtmlInjection)
 	fc.Result = res
-	return ec.marshalNAdminHTMLInjection2ᚕtrip2gᚋinternalᚋdbᚐHtmlInjectionᚄ(ctx, field.Selections, res)
+	return ec.marshalNAdminHtmlInjection2ᚕtrip2gᚋinternalᚋdbᚐHtmlInjectionᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminHTMLInjectionsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminHtmlInjectionsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AdminHTMLInjectionsConnection",
+		Object:     "AdminHtmlInjectionsConnection",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_AdminHTMLInjection_id(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_id(ctx, field)
 			case "createdAt":
-				return ec.fieldContext_AdminHTMLInjection_createdAt(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_createdAt(ctx, field)
 			case "activeFrom":
-				return ec.fieldContext_AdminHTMLInjection_activeFrom(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_activeFrom(ctx, field)
 			case "activeTo":
-				return ec.fieldContext_AdminHTMLInjection_activeTo(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_activeTo(ctx, field)
 			case "description":
-				return ec.fieldContext_AdminHTMLInjection_description(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_description(ctx, field)
 			case "position":
-				return ec.fieldContext_AdminHTMLInjection_position(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_position(ctx, field)
 			case "placement":
-				return ec.fieldContext_AdminHTMLInjection_placement(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_placement(ctx, field)
 			case "content":
-				return ec.fieldContext_AdminHTMLInjection_content(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_content(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminHTMLInjection", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type AdminHtmlInjection", field.Name)
 		},
 	}
 	return fc, nil
@@ -14681,8 +14690,8 @@ func (ec *executionContext) fieldContext_AdminMutation_setBoostyTierSubgraphs(ct
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminMutation_createHTMLInjection(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminMutation_createHTMLInjection(ctx, field)
+func (ec *executionContext) _AdminMutation_createHtmlInjection(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_createHtmlInjection(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -14709,17 +14718,17 @@ func (ec *executionContext) _AdminMutation_createHTMLInjection(ctx context.Conte
 	}
 	res := resTmp.(model.CreateHTMLInjectionOrErrorPayload)
 	fc.Result = res
-	return ec.marshalNCreateHTMLInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateHTMLInjectionOrErrorPayload(ctx, field.Selections, res)
+	return ec.marshalNCreateHtmlInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateHTMLInjectionOrErrorPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminMutation_createHTMLInjection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminMutation_createHtmlInjection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminMutation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type CreateHTMLInjectionOrErrorPayload does not have child fields")
+			return nil, errors.New("field of type CreateHtmlInjectionOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -14729,15 +14738,15 @@ func (ec *executionContext) fieldContext_AdminMutation_createHTMLInjection(ctx c
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_createHTMLInjection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_AdminMutation_createHtmlInjection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminMutation_updateHTMLInjection(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminMutation_updateHTMLInjection(ctx, field)
+func (ec *executionContext) _AdminMutation_updateHtmlInjection(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_updateHtmlInjection(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -14764,17 +14773,17 @@ func (ec *executionContext) _AdminMutation_updateHTMLInjection(ctx context.Conte
 	}
 	res := resTmp.(model.UpdateHTMLInjectionOrErrorPayload)
 	fc.Result = res
-	return ec.marshalNUpdateHTMLInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateHTMLInjectionOrErrorPayload(ctx, field.Selections, res)
+	return ec.marshalNUpdateHtmlInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateHTMLInjectionOrErrorPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminMutation_updateHTMLInjection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminMutation_updateHtmlInjection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminMutation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type UpdateHTMLInjectionOrErrorPayload does not have child fields")
+			return nil, errors.New("field of type UpdateHtmlInjectionOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -14784,15 +14793,15 @@ func (ec *executionContext) fieldContext_AdminMutation_updateHTMLInjection(ctx c
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_updateHTMLInjection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_AdminMutation_updateHtmlInjection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminMutation_deleteHTMLInjection(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminMutation_deleteHTMLInjection(ctx, field)
+func (ec *executionContext) _AdminMutation_deleteHtmlInjection(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_deleteHtmlInjection(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -14819,17 +14828,17 @@ func (ec *executionContext) _AdminMutation_deleteHTMLInjection(ctx context.Conte
 	}
 	res := resTmp.(model.DeleteHTMLInjectionOrErrorPayload)
 	fc.Result = res
-	return ec.marshalNDeleteHTMLInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteHTMLInjectionOrErrorPayload(ctx, field.Selections, res)
+	return ec.marshalNDeleteHtmlInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteHTMLInjectionOrErrorPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminMutation_deleteHTMLInjection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminMutation_deleteHtmlInjection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminMutation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DeleteHTMLInjectionOrErrorPayload does not have child fields")
+			return nil, errors.New("field of type DeleteHtmlInjectionOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -14839,7 +14848,7 @@ func (ec *executionContext) fieldContext_AdminMutation_deleteHTMLInjection(ctx c
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_deleteHTMLInjection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_AdminMutation_deleteHtmlInjection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -19106,8 +19115,8 @@ func (ec *executionContext) fieldContext_AdminQuery_allLatestNoteAssets(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminQuery_allHTMLInjections(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminQuery_allHTMLInjections(ctx, field)
+func (ec *executionContext) _AdminQuery_allHtmlInjections(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_allHtmlInjections(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -19134,10 +19143,10 @@ func (ec *executionContext) _AdminQuery_allHTMLInjections(ctx context.Context, f
 	}
 	res := resTmp.(*model.AdminHTMLInjectionsConnection)
 	fc.Result = res
-	return ec.marshalNAdminHTMLInjectionsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminHTMLInjectionsConnection(ctx, field.Selections, res)
+	return ec.marshalNAdminHtmlInjectionsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminHTMLInjectionsConnection(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminQuery_allHTMLInjections(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminQuery_allHtmlInjections(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminQuery",
 		Field:      field,
@@ -19146,9 +19155,9 @@ func (ec *executionContext) fieldContext_AdminQuery_allHTMLInjections(_ context.
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "nodes":
-				return ec.fieldContext_AdminHTMLInjectionsConnection_nodes(ctx, field)
+				return ec.fieldContext_AdminHtmlInjectionsConnection_nodes(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminHTMLInjectionsConnection", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type AdminHtmlInjectionsConnection", field.Name)
 		},
 	}
 	return fc, nil
@@ -19339,6 +19348,8 @@ func (ec *executionContext) fieldContext_AdminQuery_allTelegramPublishNotes(ctx 
 			switch field.Name {
 			case "nodes":
 				return ec.fieldContext_AdminTelegramPublishNotesConnection_nodes(ctx, field)
+			case "count":
+				return ec.fieldContext_AdminTelegramPublishNotesConnection_count(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramPublishNotesConnection", field.Name)
 		},
@@ -20773,7 +20784,7 @@ func (ec *executionContext) _AdminQuery_htmlInjection(ctx context.Context, field
 	}
 	res := resTmp.(*db.HtmlInjection)
 	fc.Result = res
-	return ec.marshalOAdminHTMLInjection2ᚖtrip2gᚋinternalᚋdbᚐHtmlInjection(ctx, field.Selections, res)
+	return ec.marshalOAdminHtmlInjection2ᚖtrip2gᚋinternalᚋdbᚐHtmlInjection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_AdminQuery_htmlInjection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -20785,23 +20796,23 @@ func (ec *executionContext) fieldContext_AdminQuery_htmlInjection(ctx context.Co
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_AdminHTMLInjection_id(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_id(ctx, field)
 			case "createdAt":
-				return ec.fieldContext_AdminHTMLInjection_createdAt(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_createdAt(ctx, field)
 			case "activeFrom":
-				return ec.fieldContext_AdminHTMLInjection_activeFrom(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_activeFrom(ctx, field)
 			case "activeTo":
-				return ec.fieldContext_AdminHTMLInjection_activeTo(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_activeTo(ctx, field)
 			case "description":
-				return ec.fieldContext_AdminHTMLInjection_description(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_description(ctx, field)
 			case "position":
-				return ec.fieldContext_AdminHTMLInjection_position(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_position(ctx, field)
 			case "placement":
-				return ec.fieldContext_AdminHTMLInjection_placement(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_placement(ctx, field)
 			case "content":
-				return ec.fieldContext_AdminHTMLInjection_content(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_content(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminHTMLInjection", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type AdminHtmlInjection", field.Name)
 		},
 	}
 	defer func() {
@@ -22613,6 +22624,50 @@ func (ec *executionContext) fieldContext_AdminTelegramPublishNotesConnection_nod
 				return ec.fieldContext_AdminTelegramPublishNote_chats(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramPublishNote", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramPublishNotesConnection_count(ctx context.Context, field graphql.CollectedField, obj *model.AdminTelegramPublishNotesConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminTelegramPublishNotesConnection_count(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminTelegramPublishNotesConnection().Count(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt642int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramPublishNotesConnection_count(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramPublishNotesConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
 		},
 	}
 	return fc, nil
@@ -26583,8 +26638,8 @@ func (ec *executionContext) fieldContext_CreateGitTokenPayload_gitToken(_ contex
 	return fc, nil
 }
 
-func (ec *executionContext) _CreateHTMLInjectionPayload_htmlInjection(ctx context.Context, field graphql.CollectedField, obj *model.CreateHTMLInjectionPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_CreateHTMLInjectionPayload_htmlInjection(ctx, field)
+func (ec *executionContext) _CreateHtmlInjectionPayload_htmlInjection(ctx context.Context, field graphql.CollectedField, obj *model.CreateHTMLInjectionPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CreateHtmlInjectionPayload_htmlInjection(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -26611,35 +26666,35 @@ func (ec *executionContext) _CreateHTMLInjectionPayload_htmlInjection(ctx contex
 	}
 	res := resTmp.(*db.HtmlInjection)
 	fc.Result = res
-	return ec.marshalNAdminHTMLInjection2ᚖtrip2gᚋinternalᚋdbᚐHtmlInjection(ctx, field.Selections, res)
+	return ec.marshalNAdminHtmlInjection2ᚖtrip2gᚋinternalᚋdbᚐHtmlInjection(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_CreateHTMLInjectionPayload_htmlInjection(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_CreateHtmlInjectionPayload_htmlInjection(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "CreateHTMLInjectionPayload",
+		Object:     "CreateHtmlInjectionPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_AdminHTMLInjection_id(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_id(ctx, field)
 			case "createdAt":
-				return ec.fieldContext_AdminHTMLInjection_createdAt(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_createdAt(ctx, field)
 			case "activeFrom":
-				return ec.fieldContext_AdminHTMLInjection_activeFrom(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_activeFrom(ctx, field)
 			case "activeTo":
-				return ec.fieldContext_AdminHTMLInjection_activeTo(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_activeTo(ctx, field)
 			case "description":
-				return ec.fieldContext_AdminHTMLInjection_description(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_description(ctx, field)
 			case "position":
-				return ec.fieldContext_AdminHTMLInjection_position(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_position(ctx, field)
 			case "placement":
-				return ec.fieldContext_AdminHTMLInjection_placement(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_placement(ctx, field)
 			case "content":
-				return ec.fieldContext_AdminHTMLInjection_content(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_content(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminHTMLInjection", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type AdminHtmlInjection", field.Name)
 		},
 	}
 	return fc, nil
@@ -27256,8 +27311,8 @@ func (ec *executionContext) fieldContext_DeleteBoostyCredentialsPayload_boostyCr
 	return fc, nil
 }
 
-func (ec *executionContext) _DeleteHTMLInjectionPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteHTMLInjectionPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_DeleteHTMLInjectionPayload_deletedId(ctx, field)
+func (ec *executionContext) _DeleteHtmlInjectionPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteHTMLInjectionPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_DeleteHtmlInjectionPayload_deletedId(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -27287,9 +27342,9 @@ func (ec *executionContext) _DeleteHTMLInjectionPayload_deletedId(ctx context.Co
 	return ec.marshalNInt642int64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_DeleteHTMLInjectionPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_DeleteHtmlInjectionPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "DeleteHTMLInjectionPayload",
+		Object:     "DeleteHtmlInjectionPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -28650,12 +28705,12 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_refreshBoostyData(ctx, field)
 			case "setBoostyTierSubgraphs":
 				return ec.fieldContext_AdminMutation_setBoostyTierSubgraphs(ctx, field)
-			case "createHTMLInjection":
-				return ec.fieldContext_AdminMutation_createHTMLInjection(ctx, field)
-			case "updateHTMLInjection":
-				return ec.fieldContext_AdminMutation_updateHTMLInjection(ctx, field)
-			case "deleteHTMLInjection":
-				return ec.fieldContext_AdminMutation_deleteHTMLInjection(ctx, field)
+			case "createHtmlInjection":
+				return ec.fieldContext_AdminMutation_createHtmlInjection(ctx, field)
+			case "updateHtmlInjection":
+				return ec.fieldContext_AdminMutation_updateHtmlInjection(ctx, field)
+			case "deleteHtmlInjection":
+				return ec.fieldContext_AdminMutation_deleteHtmlInjection(ctx, field)
 			case "updateCronJob":
 				return ec.fieldContext_AdminMutation_updateCronJob(ctx, field)
 			case "runCronJob":
@@ -30809,8 +30864,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allNotFoundIgnoredPatterns(ctx, field)
 			case "allLatestNoteAssets":
 				return ec.fieldContext_AdminQuery_allLatestNoteAssets(ctx, field)
-			case "allHTMLInjections":
-				return ec.fieldContext_AdminQuery_allHTMLInjections(ctx, field)
+			case "allHtmlInjections":
+				return ec.fieldContext_AdminQuery_allHtmlInjections(ctx, field)
 			case "allCronJobs":
 				return ec.fieldContext_AdminQuery_allCronJobs(ctx, field)
 			case "allConfigVersions":
@@ -33694,8 +33749,8 @@ func (ec *executionContext) fieldContext_UpdateCronJobPayload_cronJob(_ context.
 	return fc, nil
 }
 
-func (ec *executionContext) _UpdateHTMLInjectionPayload_htmlInjection(ctx context.Context, field graphql.CollectedField, obj *model.UpdateHTMLInjectionPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_UpdateHTMLInjectionPayload_htmlInjection(ctx, field)
+func (ec *executionContext) _UpdateHtmlInjectionPayload_htmlInjection(ctx context.Context, field graphql.CollectedField, obj *model.UpdateHTMLInjectionPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UpdateHtmlInjectionPayload_htmlInjection(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -33722,35 +33777,35 @@ func (ec *executionContext) _UpdateHTMLInjectionPayload_htmlInjection(ctx contex
 	}
 	res := resTmp.(*db.HtmlInjection)
 	fc.Result = res
-	return ec.marshalNAdminHTMLInjection2ᚖtrip2gᚋinternalᚋdbᚐHtmlInjection(ctx, field.Selections, res)
+	return ec.marshalNAdminHtmlInjection2ᚖtrip2gᚋinternalᚋdbᚐHtmlInjection(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_UpdateHTMLInjectionPayload_htmlInjection(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_UpdateHtmlInjectionPayload_htmlInjection(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "UpdateHTMLInjectionPayload",
+		Object:     "UpdateHtmlInjectionPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_AdminHTMLInjection_id(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_id(ctx, field)
 			case "createdAt":
-				return ec.fieldContext_AdminHTMLInjection_createdAt(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_createdAt(ctx, field)
 			case "activeFrom":
-				return ec.fieldContext_AdminHTMLInjection_activeFrom(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_activeFrom(ctx, field)
 			case "activeTo":
-				return ec.fieldContext_AdminHTMLInjection_activeTo(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_activeTo(ctx, field)
 			case "description":
-				return ec.fieldContext_AdminHTMLInjection_description(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_description(ctx, field)
 			case "position":
-				return ec.fieldContext_AdminHTMLInjection_position(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_position(ctx, field)
 			case "placement":
-				return ec.fieldContext_AdminHTMLInjection_placement(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_placement(ctx, field)
 			case "content":
-				return ec.fieldContext_AdminHTMLInjection_content(ctx, field)
+				return ec.fieldContext_AdminHtmlInjection_content(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminHTMLInjection", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type AdminHtmlInjection", field.Name)
 		},
 	}
 	return fc, nil
@@ -37810,7 +37865,7 @@ func (ec *executionContext) unmarshalInputCreateGitTokenInput(ctx context.Contex
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputCreateHTMLInjectionInput(ctx context.Context, obj any) (model.CreateHTMLInjectionInput, error) {
+func (ec *executionContext) unmarshalInputCreateHtmlInjectionInput(ctx context.Context, obj any) (model.CreateHTMLInjectionInput, error) {
 	var it model.CreateHTMLInjectionInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
@@ -38199,7 +38254,7 @@ func (ec *executionContext) unmarshalInputDeleteBoostyCredentialsInput(ctx conte
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputDeleteHTMLInjectionInput(ctx context.Context, obj any) (model.DeleteHTMLInjectionInput, error) {
+func (ec *executionContext) unmarshalInputDeleteHtmlInjectionInput(ctx context.Context, obj any) (model.DeleteHTMLInjectionInput, error) {
 	var it model.DeleteHTMLInjectionInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
@@ -39243,7 +39298,7 @@ func (ec *executionContext) unmarshalInputUpdateCronJobInput(ctx context.Context
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputUpdateHTMLInjectionInput(ctx context.Context, obj any) (model.UpdateHTMLInjectionInput, error) {
+func (ec *executionContext) unmarshalInputUpdateHtmlInjectionInput(ctx context.Context, obj any) (model.UpdateHTMLInjectionInput, error) {
 	var it model.UpdateHTMLInjectionInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
@@ -39912,7 +39967,7 @@ func (ec *executionContext) _CreateGitTokenOrErrorPayload(ctx context.Context, s
 	}
 }
 
-func (ec *executionContext) _CreateHTMLInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateHTMLInjectionOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) _CreateHtmlInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateHTMLInjectionOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
@@ -39924,12 +39979,12 @@ func (ec *executionContext) _CreateHTMLInjectionOrErrorPayload(ctx context.Conte
 		}
 		return ec._ErrorPayload(ctx, sel, obj)
 	case model.CreateHTMLInjectionPayload:
-		return ec._CreateHTMLInjectionPayload(ctx, sel, &obj)
+		return ec._CreateHtmlInjectionPayload(ctx, sel, &obj)
 	case *model.CreateHTMLInjectionPayload:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._CreateHTMLInjectionPayload(ctx, sel, obj)
+		return ec._CreateHtmlInjectionPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -40142,7 +40197,7 @@ func (ec *executionContext) _DeleteBoostyCredentialsOrErrorPayload(ctx context.C
 	}
 }
 
-func (ec *executionContext) _DeleteHTMLInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteHTMLInjectionOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) _DeleteHtmlInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteHTMLInjectionOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
@@ -40154,12 +40209,12 @@ func (ec *executionContext) _DeleteHTMLInjectionOrErrorPayload(ctx context.Conte
 		}
 		return ec._ErrorPayload(ctx, sel, obj)
 	case model.DeleteHTMLInjectionPayload:
-		return ec._DeleteHTMLInjectionPayload(ctx, sel, &obj)
+		return ec._DeleteHtmlInjectionPayload(ctx, sel, &obj)
 	case *model.DeleteHTMLInjectionPayload:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._DeleteHTMLInjectionPayload(ctx, sel, obj)
+		return ec._DeleteHtmlInjectionPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -40848,17 +40903,17 @@ func (ec *executionContext) _UpdateCronJobOrErrorPayload(ctx context.Context, se
 	}
 }
 
-func (ec *executionContext) _UpdateHTMLInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateHTMLInjectionOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) _UpdateHtmlInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.UpdateHTMLInjectionOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
 	case model.UpdateHTMLInjectionPayload:
-		return ec._UpdateHTMLInjectionPayload(ctx, sel, &obj)
+		return ec._UpdateHtmlInjectionPayload(ctx, sel, &obj)
 	case *model.UpdateHTMLInjectionPayload:
 		if obj == nil {
 			return graphql.Null
 		}
-		return ec._UpdateHTMLInjectionPayload(ctx, sel, obj)
+		return ec._UpdateHtmlInjectionPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -43461,24 +43516,24 @@ func (ec *executionContext) _AdminGitTokensConnection(ctx context.Context, sel a
 	return out
 }
 
-var adminHTMLInjectionImplementors = []string{"AdminHTMLInjection"}
+var adminHtmlInjectionImplementors = []string{"AdminHtmlInjection"}
 
-func (ec *executionContext) _AdminHTMLInjection(ctx context.Context, sel ast.SelectionSet, obj *db.HtmlInjection) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, adminHTMLInjectionImplementors)
+func (ec *executionContext) _AdminHtmlInjection(ctx context.Context, sel ast.SelectionSet, obj *db.HtmlInjection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminHtmlInjectionImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("AdminHTMLInjection")
+			out.Values[i] = graphql.MarshalString("AdminHtmlInjection")
 		case "id":
-			out.Values[i] = ec._AdminHTMLInjection_id(ctx, field, obj)
+			out.Values[i] = ec._AdminHtmlInjection_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "createdAt":
-			out.Values[i] = ec._AdminHTMLInjection_createdAt(ctx, field, obj)
+			out.Values[i] = ec._AdminHtmlInjection_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -43491,7 +43546,7 @@ func (ec *executionContext) _AdminHTMLInjection(ctx context.Context, sel ast.Sel
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminHTMLInjection_activeFrom(ctx, field, obj)
+				res = ec._AdminHtmlInjection_activeFrom(ctx, field, obj)
 				return res
 			}
 
@@ -43524,7 +43579,7 @@ func (ec *executionContext) _AdminHTMLInjection(ctx context.Context, sel ast.Sel
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminHTMLInjection_activeTo(ctx, field, obj)
+				res = ec._AdminHtmlInjection_activeTo(ctx, field, obj)
 				return res
 			}
 
@@ -43549,7 +43604,7 @@ func (ec *executionContext) _AdminHTMLInjection(ctx context.Context, sel ast.Sel
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "description":
-			out.Values[i] = ec._AdminHTMLInjection_description(ctx, field, obj)
+			out.Values[i] = ec._AdminHtmlInjection_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -43562,7 +43617,7 @@ func (ec *executionContext) _AdminHTMLInjection(ctx context.Context, sel ast.Sel
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminHTMLInjection_position(ctx, field, obj)
+				res = ec._AdminHtmlInjection_position(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -43590,12 +43645,12 @@ func (ec *executionContext) _AdminHTMLInjection(ctx context.Context, sel ast.Sel
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "placement":
-			out.Values[i] = ec._AdminHTMLInjection_placement(ctx, field, obj)
+			out.Values[i] = ec._AdminHtmlInjection_placement(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "content":
-			out.Values[i] = ec._AdminHTMLInjection_content(ctx, field, obj)
+			out.Values[i] = ec._AdminHtmlInjection_content(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
@@ -43622,17 +43677,17 @@ func (ec *executionContext) _AdminHTMLInjection(ctx context.Context, sel ast.Sel
 	return out
 }
 
-var adminHTMLInjectionsConnectionImplementors = []string{"AdminHTMLInjectionsConnection"}
+var adminHtmlInjectionsConnectionImplementors = []string{"AdminHtmlInjectionsConnection"}
 
-func (ec *executionContext) _AdminHTMLInjectionsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminHTMLInjectionsConnection) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, adminHTMLInjectionsConnectionImplementors)
+func (ec *executionContext) _AdminHtmlInjectionsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminHTMLInjectionsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminHtmlInjectionsConnectionImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("AdminHTMLInjectionsConnection")
+			out.Values[i] = graphql.MarshalString("AdminHtmlInjectionsConnection")
 		case "nodes":
 			field := field
 
@@ -43642,7 +43697,7 @@ func (ec *executionContext) _AdminHTMLInjectionsConnection(ctx context.Context, 
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminHTMLInjectionsConnection_nodes(ctx, field, obj)
+				res = ec._AdminHtmlInjectionsConnection_nodes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -45283,7 +45338,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "createHTMLInjection":
+		case "createHtmlInjection":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -45292,7 +45347,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminMutation_createHTMLInjection(ctx, field, obj)
+				res = ec._AdminMutation_createHtmlInjection(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -45319,7 +45374,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "updateHTMLInjection":
+		case "updateHtmlInjection":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -45328,7 +45383,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminMutation_updateHTMLInjection(ctx, field, obj)
+				res = ec._AdminMutation_updateHtmlInjection(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -45355,7 +45410,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "deleteHTMLInjection":
+		case "deleteHtmlInjection":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -45364,7 +45419,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminMutation_deleteHTMLInjection(ctx, field, obj)
+				res = ec._AdminMutation_deleteHtmlInjection(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -47871,7 +47926,7 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "allHTMLInjections":
+		case "allHtmlInjections":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -47880,7 +47935,7 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminQuery_allHTMLInjections(ctx, field, obj)
+				res = ec._AdminQuery_allHtmlInjections(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -49871,6 +49926,42 @@ func (ec *executionContext) _AdminTelegramPublishNotesConnection(ctx context.Con
 					}
 				}()
 				res = ec._AdminTelegramPublishNotesConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "count":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramPublishNotesConnection_count(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -52244,19 +52335,19 @@ func (ec *executionContext) _CreateGitTokenPayload(ctx context.Context, sel ast.
 	return out
 }
 
-var createHTMLInjectionPayloadImplementors = []string{"CreateHTMLInjectionPayload", "CreateHTMLInjectionOrErrorPayload"}
+var createHtmlInjectionPayloadImplementors = []string{"CreateHtmlInjectionPayload", "CreateHtmlInjectionOrErrorPayload"}
 
-func (ec *executionContext) _CreateHTMLInjectionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateHTMLInjectionPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, createHTMLInjectionPayloadImplementors)
+func (ec *executionContext) _CreateHtmlInjectionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateHTMLInjectionPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createHtmlInjectionPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("CreateHTMLInjectionPayload")
+			out.Values[i] = graphql.MarshalString("CreateHtmlInjectionPayload")
 		case "htmlInjection":
-			out.Values[i] = ec._CreateHTMLInjectionPayload_htmlInjection(ctx, field, obj)
+			out.Values[i] = ec._CreateHtmlInjectionPayload_htmlInjection(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -52672,19 +52763,19 @@ func (ec *executionContext) _DeleteBoostyCredentialsPayload(ctx context.Context,
 	return out
 }
 
-var deleteHTMLInjectionPayloadImplementors = []string{"DeleteHTMLInjectionPayload", "DeleteHTMLInjectionOrErrorPayload"}
+var deleteHtmlInjectionPayloadImplementors = []string{"DeleteHtmlInjectionPayload", "DeleteHtmlInjectionOrErrorPayload"}
 
-func (ec *executionContext) _DeleteHTMLInjectionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteHTMLInjectionPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, deleteHTMLInjectionPayloadImplementors)
+func (ec *executionContext) _DeleteHtmlInjectionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteHTMLInjectionPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteHtmlInjectionPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("DeleteHTMLInjectionPayload")
+			out.Values[i] = graphql.MarshalString("DeleteHtmlInjectionPayload")
 		case "deletedId":
-			out.Values[i] = ec._DeleteHTMLInjectionPayload_deletedId(ctx, field, obj)
+			out.Values[i] = ec._DeleteHtmlInjectionPayload_deletedId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -52942,7 +53033,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHTMLInjectionOrErrorPayload", "UpdateHTMLInjectionOrErrorPayload", "DeleteHTMLInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -55903,19 +55994,19 @@ func (ec *executionContext) _UpdateCronJobPayload(ctx context.Context, sel ast.S
 	return out
 }
 
-var updateHTMLInjectionPayloadImplementors = []string{"UpdateHTMLInjectionPayload", "UpdateHTMLInjectionOrErrorPayload"}
+var updateHtmlInjectionPayloadImplementors = []string{"UpdateHtmlInjectionPayload", "UpdateHtmlInjectionOrErrorPayload"}
 
-func (ec *executionContext) _UpdateHTMLInjectionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateHTMLInjectionPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, updateHTMLInjectionPayloadImplementors)
+func (ec *executionContext) _UpdateHtmlInjectionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdateHTMLInjectionPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, updateHtmlInjectionPayloadImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("UpdateHTMLInjectionPayload")
+			out.Values[i] = graphql.MarshalString("UpdateHtmlInjectionPayload")
 		case "htmlInjection":
-			out.Values[i] = ec._UpdateHTMLInjectionPayload_htmlInjection(ctx, field, obj)
+			out.Values[i] = ec._UpdateHtmlInjectionPayload_htmlInjection(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -58098,11 +58189,11 @@ func (ec *executionContext) marshalNAdminGitTokensConnection2ᚖtrip2gᚋinterna
 	return ec._AdminGitTokensConnection(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNAdminHTMLInjection2trip2gᚋinternalᚋdbᚐHtmlInjection(ctx context.Context, sel ast.SelectionSet, v db.HtmlInjection) graphql.Marshaler {
-	return ec._AdminHTMLInjection(ctx, sel, &v)
+func (ec *executionContext) marshalNAdminHtmlInjection2trip2gᚋinternalᚋdbᚐHtmlInjection(ctx context.Context, sel ast.SelectionSet, v db.HtmlInjection) graphql.Marshaler {
+	return ec._AdminHtmlInjection(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAdminHTMLInjection2ᚕtrip2gᚋinternalᚋdbᚐHtmlInjectionᚄ(ctx context.Context, sel ast.SelectionSet, v []db.HtmlInjection) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminHtmlInjection2ᚕtrip2gᚋinternalᚋdbᚐHtmlInjectionᚄ(ctx context.Context, sel ast.SelectionSet, v []db.HtmlInjection) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -58126,7 +58217,7 @@ func (ec *executionContext) marshalNAdminHTMLInjection2ᚕtrip2gᚋinternalᚋdb
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNAdminHTMLInjection2trip2gᚋinternalᚋdbᚐHtmlInjection(ctx, sel, v[i])
+			ret[i] = ec.marshalNAdminHtmlInjection2trip2gᚋinternalᚋdbᚐHtmlInjection(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -58146,28 +58237,28 @@ func (ec *executionContext) marshalNAdminHTMLInjection2ᚕtrip2gᚋinternalᚋdb
 	return ret
 }
 
-func (ec *executionContext) marshalNAdminHTMLInjection2ᚖtrip2gᚋinternalᚋdbᚐHtmlInjection(ctx context.Context, sel ast.SelectionSet, v *db.HtmlInjection) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminHtmlInjection2ᚖtrip2gᚋinternalᚋdbᚐHtmlInjection(ctx context.Context, sel ast.SelectionSet, v *db.HtmlInjection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._AdminHTMLInjection(ctx, sel, v)
+	return ec._AdminHtmlInjection(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNAdminHTMLInjectionsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminHTMLInjectionsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminHTMLInjectionsConnection) graphql.Marshaler {
-	return ec._AdminHTMLInjectionsConnection(ctx, sel, &v)
+func (ec *executionContext) marshalNAdminHtmlInjectionsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminHTMLInjectionsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminHTMLInjectionsConnection) graphql.Marshaler {
+	return ec._AdminHtmlInjectionsConnection(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAdminHTMLInjectionsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminHTMLInjectionsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminHTMLInjectionsConnection) graphql.Marshaler {
+func (ec *executionContext) marshalNAdminHtmlInjectionsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminHTMLInjectionsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminHTMLInjectionsConnection) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._AdminHTMLInjectionsConnection(ctx, sel, v)
+	return ec._AdminHtmlInjectionsConnection(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNAdminLatestNoteAssetsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteAssetsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminLatestNoteAssetsConnection) graphql.Marshaler {
@@ -59832,19 +59923,19 @@ func (ec *executionContext) marshalNCreateGitTokenOrErrorPayload2trip2gᚋintern
 	return ec._CreateGitTokenOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNCreateHTMLInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateHTMLInjectionInput(ctx context.Context, v any) (model.CreateHTMLInjectionInput, error) {
-	res, err := ec.unmarshalInputCreateHTMLInjectionInput(ctx, v)
+func (ec *executionContext) unmarshalNCreateHtmlInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateHTMLInjectionInput(ctx context.Context, v any) (model.CreateHTMLInjectionInput, error) {
+	res, err := ec.unmarshalInputCreateHtmlInjectionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNCreateHTMLInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateHTMLInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateHTMLInjectionOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNCreateHtmlInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateHTMLInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateHTMLInjectionOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._CreateHTMLInjectionOrErrorPayload(ctx, sel, v)
+	return ec._CreateHtmlInjectionOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNCreateNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateNotFoundIgnoredPatternInput(ctx context.Context, v any) (model.CreateNotFoundIgnoredPatternInput, error) {
@@ -59992,19 +60083,19 @@ func (ec *executionContext) marshalNDeleteBoostyCredentialsOrErrorPayload2trip2g
 	return ec._DeleteBoostyCredentialsOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNDeleteHTMLInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteHTMLInjectionInput(ctx context.Context, v any) (model.DeleteHTMLInjectionInput, error) {
-	res, err := ec.unmarshalInputDeleteHTMLInjectionInput(ctx, v)
+func (ec *executionContext) unmarshalNDeleteHtmlInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteHTMLInjectionInput(ctx context.Context, v any) (model.DeleteHTMLInjectionInput, error) {
+	res, err := ec.unmarshalInputDeleteHtmlInjectionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNDeleteHTMLInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteHTMLInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteHTMLInjectionOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNDeleteHtmlInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteHTMLInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteHTMLInjectionOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._DeleteHTMLInjectionOrErrorPayload(ctx, sel, v)
+	return ec._DeleteHtmlInjectionOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDeleteNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteNotFoundIgnoredPatternInput(ctx context.Context, v any) (model.DeleteNotFoundIgnoredPatternInput, error) {
@@ -61388,19 +61479,19 @@ func (ec *executionContext) marshalNUpdateCronJobOrErrorPayload2trip2gᚋinterna
 	return ec._UpdateCronJobOrErrorPayload(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNUpdateHTMLInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateHTMLInjectionInput(ctx context.Context, v any) (model.UpdateHTMLInjectionInput, error) {
-	res, err := ec.unmarshalInputUpdateHTMLInjectionInput(ctx, v)
+func (ec *executionContext) unmarshalNUpdateHtmlInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateHTMLInjectionInput(ctx context.Context, v any) (model.UpdateHTMLInjectionInput, error) {
+	res, err := ec.unmarshalInputUpdateHtmlInjectionInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNUpdateHTMLInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateHTMLInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateHTMLInjectionOrErrorPayload) graphql.Marshaler {
+func (ec *executionContext) marshalNUpdateHtmlInjectionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateHTMLInjectionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.UpdateHTMLInjectionOrErrorPayload) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._UpdateHTMLInjectionOrErrorPayload(ctx, sel, v)
+	return ec._UpdateHtmlInjectionOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateNotFoundIgnoredPatternInput2trip2gᚋinternalᚋgraphᚋmodelᚐUpdateNotFoundIgnoredPatternInput(ctx context.Context, v any) (model.UpdateNotFoundIgnoredPatternInput, error) {
@@ -61996,11 +62087,11 @@ func (ec *executionContext) marshalOAdminCronJob2ᚖtrip2gᚋinternalᚋdbᚐCro
 	return ec._AdminCronJob(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOAdminHTMLInjection2ᚖtrip2gᚋinternalᚋdbᚐHtmlInjection(ctx context.Context, sel ast.SelectionSet, v *db.HtmlInjection) graphql.Marshaler {
+func (ec *executionContext) marshalOAdminHtmlInjection2ᚖtrip2gᚋinternalᚋdbᚐHtmlInjection(ctx context.Context, sel ast.SelectionSet, v *db.HtmlInjection) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec._AdminHTMLInjection(ctx, sel, v)
+	return ec._AdminHtmlInjection(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOAdminLatestNoteViewsFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteViewsFilter(ctx context.Context, v any) (*model.AdminLatestNoteViewsFilter, error) {

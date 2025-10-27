@@ -5,7 +5,7 @@ namespace $.$$ {
 			const res = $trip2g_graphql_request( `
 				query AdminHtmlInjections {
 					admin {
-						allHTMLInjections {
+						allHtmlInjections {
 							nodes {
 								id
 								createdAt
@@ -20,7 +20,18 @@ namespace $.$$ {
 				}
 			`)
 
-			return $trip2g_graphql_make_map( res.admin.allHTMLInjections.nodes )
+			return $trip2g_graphql_make_map( res.admin.allHtmlInjections.nodes )
+		}
+
+		override after_delete( id: any ) {
+			this.spread( '' )
+			this.data( null )
+		}
+
+		override after_create( id?: number ) {
+			this.spread( `key${ id }` )
+			this.data( null )
+			return id || 0
 		}
 
 		@$mol_mem
@@ -62,14 +73,14 @@ namespace $.$$ {
 
 		override row_active_from( id: any ): string {
 			const activeFrom = this.row( id ).activeFrom
-			if (!activeFrom) return '-'
+			if( !activeFrom ) return '-'
 			const m = new $mol_time_moment( activeFrom )
 			return m.toString( 'YYYY-MM-DD' )
 		}
 
 		override row_active_to( id: any ): string {
 			const activeTo = this.row( id ).activeTo
-			if (!activeTo) return '-'
+			if( !activeTo ) return '-'
 			const m = new $mol_time_moment( activeTo )
 			return m.toString( 'YYYY-MM-DD' )
 		}

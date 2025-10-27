@@ -1,0 +1,5 @@
+$trip2g_admin_telegrampublishplan_message $mol_view
+	sub /
+		<= Message $mol_view
+			dom_name \pre
+			sub / <= content \

@@ -4,7 +4,7 @@ namespace $.$$ {
 		data(reset?: null) {
 			const res = $trip2g_graphql_request(
 				`
-					query AdminUserShow($id: Int64!) {
+					query AdminUserEditQuery($id: Int64!) {
 						admin {
 							user(id: $id) {
 								id

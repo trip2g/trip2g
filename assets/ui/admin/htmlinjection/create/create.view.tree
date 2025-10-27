@@ -1,11 +1,6 @@
 $trip2g_admin_htmlinjection_create $mol_page
 	title \Create HTML Injection
-	InjectionView $mol_view
-		sub /
-			<= InjectionId_labeler $mol_labeler
-				title \ID
-				Content <= InjectionId $trip2g_admin_cell
-					content <= injection_id_string? \
+	after_success? 0
 	body /
 		<= Form $mol_form
 			submit_allowed => submit_allowed

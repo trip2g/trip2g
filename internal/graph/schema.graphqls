@@ -559,7 +559,7 @@ type AdminLatestNoteAssetsConnection {
   nodes: [AdminNoteAsset!]! @goField(forceResolver: true)
 }
 
-type AdminHTMLInjection @goModel(model: "trip2g/internal/db.HtmlInjection") {
+type AdminHtmlInjection @goModel(model: "trip2g/internal/db.HtmlInjection") {
   id: Int64!
   createdAt: Time!
   activeFrom: Time
@@ -570,8 +570,8 @@ type AdminHTMLInjection @goModel(model: "trip2g/internal/db.HtmlInjection") {
   content: String!
 }
 
-type AdminHTMLInjectionsConnection {
-  nodes: [AdminHTMLInjection!]! @goField(forceResolver: true)
+type AdminHtmlInjectionsConnection {
+  nodes: [AdminHtmlInjection!]! @goField(forceResolver: true)
 }
 
 type AdminCronJob @goModel(model: "trip2g/internal/db.CronJob") {
@@ -645,6 +645,8 @@ type AdminTelegramPublishNote @goModel(model: "trip2g/internal/db.TelegramPublis
 type AdminTelegramPublishNotesConnection
   @goExtraField(name: "Filter", type: "*trip2g/internal/graph/model.AdminTelegramPublishNotesFilter"){
   nodes: [AdminTelegramPublishNote!]! @goField(forceResolver: true)
+
+  count: Int64! @goField(forceResolver: true)
 }
 
 type AdminQuery {
@@ -663,7 +665,7 @@ type AdminQuery {
   allNotFoundPaths: AdminNotFoundPathsConnection!
   allNotFoundIgnoredPatterns: AdminNotFoundIgnoredPatternsConnection!
   allLatestNoteAssets: AdminLatestNoteAssetsConnection!
-  allHTMLInjections: AdminHTMLInjectionsConnection!
+  allHtmlInjections: AdminHtmlInjectionsConnection!
   allCronJobs: AdminCronJobsConnection!
   allConfigVersions: AdminConfigVersionsConnection!
   allTelegramPublishTags: AdminTelegramPublishTagsConnection!
@@ -697,7 +699,7 @@ type AdminQuery {
   redirect(id: Int64!): AdminRedirect
   tgBot(id: Int64!): AdminTgBot
   noteAsset(id: Int64!): AdminNoteAsset
-  htmlInjection(id: Int64!): AdminHTMLInjection
+  htmlInjection(id: Int64!): AdminHtmlInjection
   cronJob(id: Int64!): AdminCronJob
 
   activeUserSubgraphs(id: Int64!): [String!]!
@@ -1618,10 +1620,10 @@ type RemoveExpiredTgChatMembersPayload {
 union RemoveExpiredTgChatMembersOrErrorPayload = RemoveExpiredTgChatMembersPayload | ErrorPayload
 
 #
-# createHTMLInjection
+# createHtmlInjection
 #
 
-input CreateHTMLInjectionInput {
+input CreateHtmlInjectionInput {
   description: String!
   position: Int!
   placement: String!
@@ -1630,17 +1632,17 @@ input CreateHTMLInjectionInput {
   activeTo: Time
 }
 
-type CreateHTMLInjectionPayload {
-  htmlInjection: AdminHTMLInjection!
+type CreateHtmlInjectionPayload {
+  htmlInjection: AdminHtmlInjection!
 }
 
-union CreateHTMLInjectionOrErrorPayload = CreateHTMLInjectionPayload | ErrorPayload
+union CreateHtmlInjectionOrErrorPayload = CreateHtmlInjectionPayload | ErrorPayload
 
 #
-# updateHTMLInjection
+# updateHtmlInjection
 #
 
-input UpdateHTMLInjectionInput {
+input UpdateHtmlInjectionInput {
   id: Int64!
   description: String!
   position: Int!
@@ -1650,25 +1652,25 @@ input UpdateHTMLInjectionInput {
   activeTo: Time
 }
 
-type UpdateHTMLInjectionPayload {
-  htmlInjection: AdminHTMLInjection!
+type UpdateHtmlInjectionPayload {
+  htmlInjection: AdminHtmlInjection!
 }
 
-union UpdateHTMLInjectionOrErrorPayload = UpdateHTMLInjectionPayload | ErrorPayload
+union UpdateHtmlInjectionOrErrorPayload = UpdateHtmlInjectionPayload | ErrorPayload
 
 #
-# deleteHTMLInjection
+# deleteHtmlInjection
 #
 
-input DeleteHTMLInjectionInput {
+input DeleteHtmlInjectionInput {
   id: Int64!
 }
 
-type DeleteHTMLInjectionPayload {
+type DeleteHtmlInjectionPayload {
   deletedId: Int64!
 }
 
-union DeleteHTMLInjectionOrErrorPayload = DeleteHTMLInjectionPayload | ErrorPayload
+union DeleteHtmlInjectionOrErrorPayload = DeleteHtmlInjectionPayload | ErrorPayload
 
 #
 # updateCronJob
@@ -1836,10 +1838,10 @@ type AdminMutation {
   refreshBoostyData(input: RefreshBoostyDataInput!): RefreshBoostyDataOrErrorPayload!
   setBoostyTierSubgraphs(input: SetBoostyTierSubgraphsInput!): SetBoostyTierSubgraphsOrErrorPayload!
 
-  # HTML Injection mutations
-  createHTMLInjection(input: CreateHTMLInjectionInput!): CreateHTMLInjectionOrErrorPayload!
-  updateHTMLInjection(input: UpdateHTMLInjectionInput!): UpdateHTMLInjectionOrErrorPayload!
-  deleteHTMLInjection(input: DeleteHTMLInjectionInput!): DeleteHTMLInjectionOrErrorPayload!
+  # Html Injection mutations
+  createHtmlInjection(input: CreateHtmlInjectionInput!): CreateHtmlInjectionOrErrorPayload!
+  updateHtmlInjection(input: UpdateHtmlInjectionInput!): UpdateHtmlInjectionOrErrorPayload!
+  deleteHtmlInjection(input: DeleteHtmlInjectionInput!): DeleteHtmlInjectionOrErrorPayload!
 
   # Cron Job mutations
   updateCronJob(input: UpdateCronJobInput!): UpdateCronJobOrErrorPayload!

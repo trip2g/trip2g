@@ -4,7 +4,7 @@ namespace $.$$ {
 		data(reset?: null) {
 			const res = $trip2g_graphql_request(
 				`
-					query AdminUpdateDataHTMLInjection($id: Int64!) {
+					query AdminUpdateDataHtmlInjection($id: Int64!) {
 						admin {
 							htmlInjection(id: $id) {
 								id
@@ -26,7 +26,7 @@ namespace $.$$ {
 
 			const injection = res.admin.htmlInjection
 			if (!injection) {
-				throw new Error('HTML Injection not found')
+				throw new Error('Html Injection not found')
 			}
 
 			return injection
@@ -125,10 +125,10 @@ namespace $.$$ {
 		submit() {
 			const res = $trip2g_graphql_request(
 				`
-					mutation AdminUpdateHtmlInjection($input: UpdateHTMLInjectionInput!) {
+					mutation AdminUpdateHtmlInjection($input: UpdateHtmlInjectionInput!) {
 						admin {
-							data: updateHTMLInjection(input: $input) {
-								... on UpdateHTMLInjectionPayload {
+							data: updateHtmlInjection(input: $input) {
+								... on UpdateHtmlInjectionPayload {
 									htmlInjection {
 										id
 									}
@@ -143,7 +143,7 @@ namespace $.$$ {
 				{
 					input: {
 						id: this.htmlinjection_id(),
-						description: this.description() || null,
+						description: this.description(),
 						placement: this.placement(),
 						position: this.position(),
 						content: this.content(),
@@ -158,8 +158,8 @@ namespace $.$$ {
 				return
 			}
 
-			if (res.admin.data.__typename === 'UpdateHTMLInjectionPayload') {
-				this.result('HTML Injection updated successfully')
+			if (res.admin.data.__typename === 'UpdateHtmlInjectionPayload') {
+				this.result('Html Injection updated successfully')
 				// Navigate back to show page
 				this.$.$mol_state_arg.value('action', '')
 				return

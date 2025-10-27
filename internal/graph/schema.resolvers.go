@@ -364,25 +364,26 @@ func (r *adminGitTokensConnectionResolver) Nodes(ctx context.Context, obj *model
 }
 
 // ActiveFrom is the resolver for the activeFrom field.
-func (r *adminHTMLInjectionResolver) ActiveFrom(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
+func (r *adminHtmlInjectionResolver) ActiveFrom(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
 	return db.ToTimePtr(obj.ActiveFrom), nil
 }
 
 // ActiveTo is the resolver for the activeTo field.
-func (r *adminHTMLInjectionResolver) ActiveTo(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
+func (r *adminHtmlInjectionResolver) ActiveTo(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
 	return db.ToTimePtr(obj.ActiveTo), nil
 }
 
 // Position is the resolver for the position field.
-func (r *adminHTMLInjectionResolver) Position(ctx context.Context, obj *db.HtmlInjection) (int32, error) {
+func (r *adminHtmlInjectionResolver) Position(ctx context.Context, obj *db.HtmlInjection) (int32, error) {
 	if obj.Position > math.MaxInt32 {
 		return 0, fmt.Errorf("position value %d exceeds int32 max", obj.Position)
 	}
+
 	return int32(obj.Position), nil //nolint:gosec // bounds checked above
 }
 
 // Nodes is the resolver for the nodes field.
-func (r *adminHTMLInjectionsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminHTMLInjectionsConnection) ([]db.HtmlInjection, error) {
+func (r *adminHtmlInjectionsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminHTMLInjectionsConnection) ([]db.HtmlInjection, error) {
 	return r.env(ctx).ListHTMLInjections(ctx)
 }
 
@@ -1307,6 +1308,17 @@ func (r *adminTelegramPublishNotesConnectionResolver) Nodes(ctx context.Context,
 	}
 
 	return r.env(ctx).ListAllTelegramPublishNotes(ctx, params)
+}
+
+// Count is the resolver for the count field.
+func (r *adminTelegramPublishNotesConnectionResolver) Count(ctx context.Context, obj *model.AdminTelegramPublishNotesConnection) (int64, error) {
+	nodes, err := r.Nodes(ctx, obj)
+	if err != nil {
+		return 0, err
+	}
+
+	// TODO: select count(*) instead of fetching all nodes
+	return int64(len(nodes)), nil
 }
 
 // Nodes is the resolver for the nodes field.
@@ -2259,14 +2271,14 @@ func (r *Resolver) AdminGitTokensConnection() AdminGitTokensConnectionResolver {
 	return &adminGitTokensConnectionResolver{r}
 }
 
-// AdminHTMLInjection returns AdminHTMLInjectionResolver implementation.
-func (r *Resolver) AdminHTMLInjection() AdminHTMLInjectionResolver {
-	return &adminHTMLInjectionResolver{r}
+// AdminHtmlInjection returns AdminHtmlInjectionResolver implementation.
+func (r *Resolver) AdminHtmlInjection() AdminHtmlInjectionResolver {
+	return &adminHtmlInjectionResolver{r}
 }
 
-// AdminHTMLInjectionsConnection returns AdminHTMLInjectionsConnectionResolver implementation.
-func (r *Resolver) AdminHTMLInjectionsConnection() AdminHTMLInjectionsConnectionResolver {
-	return &adminHTMLInjectionsConnectionResolver{r}
+// AdminHtmlInjectionsConnection returns AdminHtmlInjectionsConnectionResolver implementation.
+func (r *Resolver) AdminHtmlInjectionsConnection() AdminHtmlInjectionsConnectionResolver {
+	return &adminHtmlInjectionsConnectionResolver{r}
 }
 
 // AdminLatestNoteAssetsConnection returns AdminLatestNoteAssetsConnectionResolver implementation.
@@ -2585,8 +2597,8 @@ type adminCronJobExecutionResolver struct{ *Resolver }
 type adminCronJobsConnectionResolver struct{ *Resolver }
 type adminGitTokenResolver struct{ *Resolver }
 type adminGitTokensConnectionResolver struct{ *Resolver }
-type adminHTMLInjectionResolver struct{ *Resolver }
-type adminHTMLInjectionsConnectionResolver struct{ *Resolver }
+type adminHtmlInjectionResolver struct{ *Resolver }
+type adminHtmlInjectionsConnectionResolver struct{ *Resolver }
 type adminLatestNoteAssetsConnectionResolver struct{ *Resolver }
 type adminLatestNoteViewsConnectionResolver struct{ *Resolver }
 type adminMutationResolver struct{ *Resolver }

@@ -1,3 +1,4 @@
 $trip2g_admin_htmlinjection_button_delete $mol_button_minor
 	htmlinjection_id 0
+	after_success? null
 	title \Delete

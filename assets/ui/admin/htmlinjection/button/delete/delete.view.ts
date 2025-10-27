@@ -5,10 +5,10 @@ namespace $.$$ {
 			e.preventDefault()
 
 			const res = $trip2g_graphql_request(`
-				mutation AdminDeleteHTMLInjection($input: DeleteHTMLInjectionInput!) {
+				mutation AdminDeleteHtmlInjection($input: DeleteHtmlInjectionInput!) {
 					admin {
-						data: deleteHTMLInjection(input: $input) {
-							... on DeleteHTMLInjectionPayload {
+						data: deleteHtmlInjection(input: $input) {
+							... on DeleteHtmlInjectionPayload {
 								deletedId
 								__typename
 							}
@@ -27,6 +27,10 @@ namespace $.$$ {
 
 			if (res.admin.data.__typename === 'ErrorPayload') {
 				throw new Error(res.admin.data.message);
+			}
+
+			if (res.admin.data.__typename === 'DeleteHtmlInjectionPayload') {
+				this.after_success()
 			}
 		}
 	}

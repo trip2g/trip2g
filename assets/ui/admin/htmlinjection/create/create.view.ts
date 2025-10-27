@@ -1,13 +1,5 @@
 namespace $.$$ {
 	export class $trip2g_admin_htmlinjection_create extends $.$trip2g_admin_htmlinjection_create {
-		override body() {
-			if( this.injection_id_string() !== '' ) {
-				return [ this.InjectionView() ]
-			}
-
-			return super.body()
-		}
-
 		override description_bid(): string {
 			// Description is optional
 			return ''
@@ -59,10 +51,10 @@ namespace $.$$ {
 		submit() {
 			const res = $trip2g_graphql_request(
 				`
-					mutation AdminCreateHTMLInjectionMutation($input: CreateHTMLInjectionInput!) {
+					mutation AdminCreateHtmlInjectionMutation($input: CreateHtmlInjectionInput!) {
 						admin {
-							data: createHTMLInjection(input: $input) {
-								... on CreateHTMLInjectionPayload {
+							data: createHtmlInjection(input: $input) {
+								... on CreateHtmlInjectionPayload {
 									htmlInjection {
 										id
 									}
@@ -76,7 +68,7 @@ namespace $.$$ {
 				`,
 				{
 					input: {
-						description: this.description() || null,
+						description: this.description(),
 						placement: this.placement(),
 						position: this.position(),
 						content: this.content(),
@@ -91,8 +83,8 @@ namespace $.$$ {
 				return
 			}
 
-			if( res.admin.data.__typename === 'CreateHTMLInjectionPayload' ) {
-				this.injection_id_string( res.admin.data.htmlInjection.id.toString() )
+			if( res.admin.data.__typename === 'CreateHtmlInjectionPayload' ) {
+				this.after_success(res.admin.data.htmlInjection.id)
 				return
 			}
 

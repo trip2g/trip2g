@@ -8,7 +8,9 @@ $trip2g_admin_htmlinjection_catalog $trip2g_admin_catalog
 			title \+ Add
 	ShowPage* $trip2g_admin_htmlinjection_show
 		htmlinjection_id <= row_id* 0
+		after_delete <= after_delete* null
 	CreateForm $trip2g_admin_htmlinjection_create
+		after_success? <=> after_create? 0
 	menu_link_content* / <= HtmlInjectionItem* $mol_view
 		sub /
 			<= Rows* $mol_row

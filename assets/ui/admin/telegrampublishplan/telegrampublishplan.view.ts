@@ -1,40 +1,71 @@
 namespace $.$$ {
+	const count_request = ( vars: $trip2g_graphql_AdminTelegramPublishPlanVariables ) => $trip2g_graphql_request( `
+		query AdminTelegramPublishPlanCount($filter: AdminTelegramPublishNotesFilter!) {
+			admin {
+				allTelegramPublishNotes(filter: $filter) {
+					count
+				}
+			}
+	}`, vars ).admin.allTelegramPublishNotes.count
+
+	const request = ( vars: $trip2g_graphql_AdminTelegramPublishPlanVariables ) => $trip2g_graphql_request( `
+		query AdminTelegramPublishPlan($filter: AdminTelegramPublishNotesFilter!) {
+			admin {
+				allTelegramPublishNotes(filter: $filter) {
+					nodes @exportType(name: "Row", single: true) {
+						id
+						publishAt
+						secondsUntilPublish
+						publishedAt
+						status
+						tags {
+							label
+						}
+						chats {
+							chatTitle
+							chatType
+						}
+						noteView {
+							title
+						}
+						post {
+							content
+							warnings
+						}
+					}
+				}
+			}
+	}`, vars )
 
 	export class $trip2g_admin_telegrampublishplan extends $.$trip2g_admin_telegrampublishplan {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request( `
-				query AdminTelegramPublishPlan($filter: AdminTelegramPublishNotesFilter!) {
-					admin {
-						allTelegramPublishNotes(filter: $filter) {
-							nodes @exportType(name: "Row", single: true) {
-								id
-								publishAt
-								secondsUntilPublish
-								publishedAt
-								status
-								tags {
-									label
-								}
-								chats {
-									chatTitle
-									chatType
-								}
-								noteView {
-									title
-								}
-								post {
-									content
-									warnings
-								}
-							}
-						}
-					}
-			}`, {
-				filter: {},
+			const res = request( {
+				filter: {
+					includeSent: this.show_sent(),
+					includeOutdated: this.show_outdated(),
+				},
 			} )
 
 			return $trip2g_graphql_make_map( res.admin.allTelegramPublishNotes.nodes )
+		}
+
+		override show_sent_title(): string {
+			const count = count_request( { filter: { includeSent: true } } )
+			return super.show_sent_title().replace( '{count}', count.toString() )
+		}
+
+		override show_outdated_title(): string {
+			const count = count_request( { filter: { includeOutdated: true } } )
+			return super.show_outdated_title().replace( '{count}', count.toString() )
+		}
+
+		override show_sent( next?: boolean ): boolean {
+			return this.$.$trip2g_state_arg.bool_value('sent', next)
+		}
+
+		override show_outdated( next?: boolean ): boolean {
+			return this.$.$trip2g_state_arg.bool_value('outdated')
 		}
 
 		override rows(): readonly ( $mol_view )[] {

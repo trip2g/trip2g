@@ -5,6 +5,12 @@ $trip2g_admin_telegrampublishplan $mol_page
 	Empty $mol_view
 		sub / \Ничего не запланировано.
 	body /
+		<= ShowSent $mol_check_box
+			title <= show_sent_title \Показывать отправленные ({count})
+			checked? <=> show_sent? false
+		<= ShowOutdated $mol_check_box
+			title <= show_outdated_title \Показывать устаревшие ({count})
+			checked? <=> show_outdated? false
 		<= Posts $mol_list
 			Empty <= Empty
 			rows <= rows /$mol_view
@@ -27,9 +33,8 @@ $trip2g_admin_telegrampublishplan_post $mol_view
 				\Осталось:
 				<= Remining $trip2g_time_remining
 					seconds <= seconds_until_publish 0
-		<= Content $mol_view
-			dom_name \pre
-			sub / <= content \
+		<= Content $trip2g_admin_telegrampublishplan_message
+			content <= content \
 		<= Warnings $mol_view
 			dom_name \pre
 			sub / <= warnings \

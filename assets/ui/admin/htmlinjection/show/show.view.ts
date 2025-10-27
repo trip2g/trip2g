@@ -8,7 +8,7 @@ namespace $.$$ {
 		data( reset?: null ) {
 			const res = $trip2g_graphql_request(
 				`
-					query AdminShowHTMLInjection($id: Int64!) {
+					query AdminShowHtmlInjection($id: Int64!) {
 						admin {
 							htmlInjection(id: $id) {
 								id
@@ -30,7 +30,7 @@ namespace $.$$ {
 
 			const injection = res.admin.htmlInjection
 			if( !injection ) {
-				throw new Error( 'HTML Injection not found' )
+				throw new Error( 'Html Injection not found' )
 			}
 
 			return injection
@@ -41,7 +41,7 @@ namespace $.$$ {
 				return [ this.UpdateForm() ]
 			}
 
-			return [ this.InjectionDetails(), this.DeleteResult() ]
+			return [ this.InjectionDetails() ]
 		}
 
 		injection_id(): string {
@@ -81,44 +81,6 @@ namespace $.$$ {
 		injection_created_at(): string {
 			const m = new $mol_time_moment( this.data().createdAt )
 			return m.toString( 'YYYY-MM-DD HH:mm' )
-		}
-
-		delete() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminDeleteHTMLInjectionMutation($input: DeleteHTMLInjectionInput!) {
-						admin {
-							data: deleteHTMLInjection(input: $input) {
-								... on DeleteHTMLInjectionPayload {
-									deletedId
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						id: this.htmlinjection_id()
-					},
-				}
-			)
-
-			if( res.admin.data.__typename === 'ErrorPayload' ) {
-				this.delete_result( res.admin.data.message )
-				return
-			}
-
-			if( res.admin.data.__typename === 'DeleteHTMLInjectionPayload' ) {
-				this.delete_result( 'HTML Injection deleted successfully' )
-				// Navigate back to catalog
-				this.$.$mol_state_arg.value( 'id', '' )
-				return
-			}
-
-			this.delete_result( 'Unexpected response type' )
 		}
 	}
 }

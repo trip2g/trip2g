@@ -374,6 +374,7 @@ type AdminSubgraphsConnection struct {
 
 type AdminTelegramPublishNotesConnection struct {
 	Nodes  []db.TelegramPublishNote         `json:"nodes"`
+	Count  int64                            `json:"count"`
 	Filter *AdminTelegramPublishNotesFilter `json:"-"`
 }
 

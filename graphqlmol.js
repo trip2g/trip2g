@@ -153,6 +153,24 @@ function extractExportTypes(source, operationName, operationType) {
 	return exportTypes
 }
 
+function extractOperationVariableTypes(operations) {
+	const variableTypes = []
+	
+	for (const op of operations) {
+		if (op.hasVars) {
+			// Extract operation name from variablesType (remove suffix like "QueryVariables")
+			const operationName = op.variablesType.replace(/(Query|Mutation|Subscription)Variables$/, '')
+			
+			variableTypes.push({
+				operationName,
+				variablesType: op.variablesType
+			})
+		}
+	}
+	
+	return variableTypes
+}
+
 function buildTypePath(pathArray, operationType, operationName, isSingle = false) {
 	if (pathArray.length === 0) return ''
 
@@ -190,6 +208,13 @@ function generateExportTypeDeclarations(exportTypes, molPrefix) {
 	return exportTypes.map(({ exportName, typePath, operationName }) => {
 		const typeAlias = `${molPrefix}_${operationName}${exportName}`
 		return `export type ${typeAlias} = ${typePath}`
+	})
+}
+
+function generateVariableTypeDeclarations(variableTypes, molPrefix) {
+	return variableTypes.map(({ operationName, variablesType }) => {
+		const typeAlias = `${molPrefix}_${operationName}Variables`
+		return `export type ${typeAlias} = ${variablesType}`
 	})
 }
 
@@ -250,6 +275,9 @@ module.exports.plugin = (schema, documents, config) => {
 		}
 	}
 
+	// Extract variable types from operations
+	const allVariableTypes = extractOperationVariableTypes(operations)
+
 	const requestLines = []
 	const subscriptionLines = []
 
@@ -299,6 +327,13 @@ module.exports.plugin = (schema, documents, config) => {
 		const exportTypeDeclarations = generateExportTypeDeclarations(allExportTypes, molPrefix)
 		requestLines.push('// Generated @exportType declarations')
 		requestLines.push(...exportTypeDeclarations)
+	}
+
+	// Generate variable type declarations
+	if (allVariableTypes.length > 0) {
+		const variableTypeDeclarations = generateVariableTypeDeclarations(allVariableTypes, molPrefix)
+		requestLines.push('// Generated variable type declarations')
+		requestLines.push(...variableTypeDeclarations)
 	}
 
 	return requestLines.join('\n\n') + '\n\n}'

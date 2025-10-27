@@ -1,5 +1,6 @@
 $trip2g_admin_htmlinjection_show $mol_page
 	htmlinjection_id? 0
+	after_delete? null
 	title \HTML Injection
 	tools /
 		<= EditLink $mol_link
@@ -7,7 +8,7 @@ $trip2g_admin_htmlinjection_show $mol_page
 			title \Edit
 		<= DeleteButton $trip2g_admin_htmlinjection_button_delete
 			htmlinjection_id <= htmlinjection_id
-			click? <=> delete? null
+			after_success <= after_delete null
 	UpdateForm $trip2g_admin_htmlinjection_update
 		htmlinjection_id <= htmlinjection_id
 	body /
@@ -49,5 +50,3 @@ $trip2g_admin_htmlinjection_show $mol_page
 								title \Created At
 								Content <= CreatedAt $trip2g_admin_cell
 									content <= injection_created_at \
-		<= DeleteResult $mol_status
-			message <= delete_result? \
