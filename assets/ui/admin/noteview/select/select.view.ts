@@ -1,22 +1,21 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminSelectNoteView {
+			admin {
+				allLatestNoteViews {
+					nodes {
+						versionId
+						path
+						title
+					}
+				}
+			}
+		}
+	`)
 	export class $trip2g_admin_noteview_select extends $.$trip2g_admin_noteview_select {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminSelectNoteView {
-						admin {
-							allLatestNoteViews {
-								nodes {
-									versionId
-									path
-									title
-								}
-							}
-						}
-					}
-				`
-			)
+			const res = request()
 
 			return res.admin.allLatestNoteViews.nodes
 		}

@@ -1,5 +1,5 @@
 $trip2g_admin_notfoundpattern_catalog $trip2g_admin_catalog
-	menu_title \Not Found Ignored Patterns
+	menu_title @ \Not Found Ignored Patterns
 	param \id
 	Empty $mol_status
 	actions /

@@ -1,28 +1,48 @@
 namespace $.$$ {
+	const data_request = $trip2g_graphql_request(
+		`
+			query AdminUpdateDataHtmlInjection($id: Int64!) {
+				admin {
+					htmlInjection(id: $id) {
+						id
+						createdAt
+						activeFrom
+						activeTo
+						description
+						position
+						placement
+						content
+					}
+				}
+			}
+		`
+	)
+
+	const submit_request = $trip2g_graphql_request(
+		`
+			mutation AdminUpdateHtmlInjection($input: UpdateHtmlInjectionInput!) {
+				admin {
+					data: updateHtmlInjection(input: $input) {
+						... on UpdateHtmlInjectionPayload {
+							htmlInjection {
+								id
+							}
+						}
+						... on ErrorPayload {
+							message
+						}
+					}
+				}
+			}
+		`
+	)
+
 	export class $trip2g_admin_htmlinjection_update extends $.$trip2g_admin_htmlinjection_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminUpdateDataHtmlInjection($id: Int64!) {
-						admin {
-							htmlInjection(id: $id) {
-								id
-								createdAt
-								activeFrom
-								activeTo
-								description
-								position
-								placement
-								content
-							}
-						}
-					}
-				`,
-				{
-					id: this.htmlinjection_id()
-				}
-			)
+			const res = data_request({
+				id: this.htmlinjection_id()
+			})
 
 			const injection = res.admin.htmlInjection
 			if (!injection) {
@@ -123,35 +143,17 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminUpdateHtmlInjection($input: UpdateHtmlInjectionInput!) {
-						admin {
-							data: updateHtmlInjection(input: $input) {
-								... on UpdateHtmlInjectionPayload {
-									htmlInjection {
-										id
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						id: this.htmlinjection_id(),
-						description: this.description(),
-						placement: this.placement(),
-						position: this.position(),
-						content: this.content(),
-						activeFrom: $trip2g_moment_toserver(this.active_from_moment()),
-						activeTo: $trip2g_moment_toserver(this.active_to_moment())
-					},
-				}
-			)
+			const res = submit_request({
+				input: {
+					id: this.htmlinjection_id(),
+					description: this.description(),
+					placement: this.placement(),
+					position: this.position(),
+					content: this.content(),
+					activeFrom: $trip2g_moment_toserver(this.active_from_moment()),
+					activeTo: $trip2g_moment_toserver(this.active_to_moment())
+				},
+			})
 
 			if (res.admin.data.__typename === 'ErrorPayload') {
 				this.result(res.admin.data.message)

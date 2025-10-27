@@ -1,5 +1,5 @@
 $trip2g_admin_user_bans $mol_page
-	title \User Bans
+	title @ \User Bans
 	close_icon null $mol_view
 	tools / <= close_icon
 	NoRows $mol_view

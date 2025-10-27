@@ -1,4 +1,50 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminGraph {
+			admin {
+				allSubgraphs {
+					nodes {
+						name
+						color
+					}
+				}
+				allLatestNoteViews {
+					nodes {
+						id
+						subgraphNames
+						title
+						pathId
+						free
+						isHomePage
+						graphPosition{
+							x,
+							y,
+						}
+						inLinks {
+							title
+							pathId
+							id
+						}
+					}
+				}
+			}
+		}
+`)
+
+	const mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation UpdateNoteGraphPositions($input: UpdateNoteGraphPositionsInput!) {
+			admin {
+				payload: updateNoteGraphPositions(input: $input) {
+					... on UpdateNoteGraphPositionsPayload {
+						success
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
 	export class $trip2g_admin_noteview_graph_cytoscape extends $.$trip2g_admin_noteview_graph_cytoscape {
 		static cytoscape(): any {
 			return $mol_import.script( 'https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.32.0/cytoscape.min.js' ).cytoscape
@@ -10,37 +56,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		data() {
-			const res = $trip2g_graphql_request( `
-				query AdminGraph {
-					admin {
-						allSubgraphs {
-							nodes {
-								name
-								color
-							}
-						}
-						allLatestNoteViews {
-							nodes {
-								id
-								subgraphNames
-								title
-								pathId
-								free
-								isHomePage
-								graphPosition{
-									x,
-									y,
-								}
-								inLinks {
-									title
-									pathId
-									id
-								}
-							}
-						}
-					}
-				}
-			`)
+			const res = request()
 
 			return {
 				nodes: res.admin.allLatestNoteViews.nodes,
@@ -210,32 +226,14 @@ namespace $.$$ {
 		}
 
 		save_position( pathId: string, x: number, y: number ) {
-			const res = $trip2g_graphql_request( `
-					mutation AdminUpdateNoteGraphPositions($input: UpdateNoteGraphPositionsInput!) {
-						admin {
-							data: updateNoteGraphPositions(input: $input) {
-								... on ErrorPayload {
-									message
-								}
-								... on UpdateNoteGraphPositionsPayload {
-									success
-									updatedNoteViews {
-										id
-										pathId
-										title
-									}
-								}
-							}
-						}
-					}
-				`, {
+			const res = mutate({
 				input: { 
 					positions: [{ pathId, x, y }]
 				},
-			} )
+			})
 
-			if( res.admin?.data?.__typename === 'ErrorPayload' ) {
-				console.error( 'Failed to save position:', res.admin.data.message )
+			if( res.admin?.payload?.__typename === 'ErrorPayload' ) {
+				console.error( 'Failed to save position:', res.admin.payload.message )
 			}
 		}
 	}

@@ -1,31 +1,33 @@
 namespace $.$$ {
-	export class $trip2g_admin_gittoken_catalog extends $.$trip2g_admin_gittoken_catalog {
-		@$mol_mem
-		data( reset?: null ) {
-			const res = $trip2g_graphql_request( `
-				query AdminGitTokens {
-					admin {
-						allGitTokens {
-							nodes {
-								id
-								createdAt
-								description
-								canPull
-								canPush
-								createdBy {
-									id
-									email
-								}
-								disabledAt
-								disabledBy {
-									id
-									email
-								}
-							}
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminGitTokens {
+			admin {
+				allGitTokens {
+					nodes {
+						id
+						createdAt
+						description
+						canPull
+						canPush
+						createdBy {
+							id
+							email
+						}
+						disabledAt
+						disabledBy {
+							id
+							email
 						}
 					}
 				}
-			`)
+			}
+		}
+	`)
+
+	export class $trip2g_admin_gittoken_catalog extends $.$trip2g_admin_gittoken_catalog {
+		@$mol_mem
+		data( reset?: null ) {
+			const res = request()
 
 			return $trip2g_graphql_make_map( res.admin.allGitTokens.nodes )
 		}

@@ -203,7 +203,7 @@ func main() {
 	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "read: no tx:")))
 	writeQueries := db.NewWriteQueries(db.WithLogger(writeConn, logger.WithPrefix(log, "write: no tx:")))
 
-	nowpaymentsClient, err := nowpayments.NewClient(config.NowpaymentsAPIKey)
+	nowpaymentsClient, err := nowpayments.NewClient(config.NowpaymentsAPIKey, log)
 	if err != nil {
 		panic(err)
 	}
@@ -604,6 +604,26 @@ func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotap
 	return int64(res.MessageID), nil
 }
 
+func (a *app) SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+	chat, err := a.TgBotChat(ctx, chatID)
+	if err != nil {
+		return fmt.Errorf("failed to get Telegram chat: %w", err)
+	}
+
+	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
+
+	if handlerIO == nil {
+		return fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
+	}
+
+	_, err = handlerIO.Request(msg)
+	if err != nil {
+		return fmt.Errorf("failed to send Telegram message: %w", err)
+	}
+
+	return nil
+}
+
 func (a *app) KickTelegramChatMember(ctx context.Context, chatID, userID int64) error {
 	// Get the user to find their Telegram ID
 	user, err := a.UserByID(ctx, userID)
@@ -853,7 +873,7 @@ func (a *app) AdminJSURL() string {
 func (a *app) UserJSURLs() []string {
 	return []string{
 		a.assetURL("/assets/ui/user/-/web.js"),
-		a.assetURL("/assets/turbo.js"),
+		// a.assetURL("/assets/turbo.js"),
 	}
 }
 

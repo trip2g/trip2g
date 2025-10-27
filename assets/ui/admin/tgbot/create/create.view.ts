@@ -1,4 +1,22 @@
 namespace $.$$ {
+	const mutate = $trip2g_graphql_request(/* GraphQL */`
+		mutation AdminCreateTgBotMutation($input: CreateTgBotInput!) {
+			admin {
+				payload: createTgBot(input: $input) {
+					... on CreateTgBotPayload {
+						tgBot {
+							id
+							name
+						}
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_tgbot_create extends $.$trip2g_admin_tgbot_create {
 		override body() {
 			if( this.tgbot_name() !== '' ) {
@@ -25,39 +43,20 @@ namespace $.$$ {
 		}
 
 		override submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminCreateTgBotMutation($input: CreateTgBotInput!) {
-						admin {
-							data: createTgBot(input: $input) {
-								... on CreateTgBotPayload {
-									tgBot {
-										id
-										name
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						token: this.token(),
-						description: this.description()
-					},
-				}
-			)
+			const res = mutate({
+				input: {
+					token: this.token(),
+					description: this.description()
+				},
+			})
 
-			if( res.admin.data.__typename === 'ErrorPayload' ) {
-				this.result( res.admin.data.message )
+			if( res.admin.payload.__typename === 'ErrorPayload' ) {
+				this.result( res.admin.payload.message )
 				return
 			}
 
-			if( res.admin.data.__typename === 'CreateTgBotPayload' ) {
-				this.tgbot_name( res.admin.data.tgBot.name )
+			if( res.admin.payload.__typename === 'CreateTgBotPayload' ) {
+				this.tgbot_name( res.admin.payload.tgBot.name )
 				return
 			}
 

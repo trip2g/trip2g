@@ -1,6 +1,6 @@
 $trip2g_admin_subgraph_catalog $trip2g_admin_catalog
 	row_id_number* 0
-	menu_title \Subgraphs
+	menu_title @ \Subgraphs
 	menu_filter_enabled true
 	param \subgraph_id
 	Empty $mol_status

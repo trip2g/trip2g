@@ -1,4 +1,23 @@
 namespace $.$$ {
+	const submit_request = $trip2g_graphql_request(
+		`
+			mutation AdminCreateHtmlInjectionMutation($input: CreateHtmlInjectionInput!) {
+				admin {
+					data: createHtmlInjection(input: $input) {
+						... on CreateHtmlInjectionPayload {
+							htmlInjection {
+								id
+							}
+						}
+						... on ErrorPayload {
+							message
+						}
+					}
+				}
+			}
+		`
+	)
+
 	export class $trip2g_admin_htmlinjection_create extends $.$trip2g_admin_htmlinjection_create {
 		override description_bid(): string {
 			// Description is optional
@@ -49,34 +68,16 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminCreateHtmlInjectionMutation($input: CreateHtmlInjectionInput!) {
-						admin {
-							data: createHtmlInjection(input: $input) {
-								... on CreateHtmlInjectionPayload {
-									htmlInjection {
-										id
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						description: this.description(),
-						placement: this.placement(),
-						position: this.position(),
-						content: this.content(),
-						activeFrom: $trip2g_moment_toserver(this.active_from_moment()),
-						activeTo: $trip2g_moment_toserver(this.active_to_moment()),
-					},
-				}
-			)
+			const res = submit_request({
+				input: {
+					description: this.description(),
+					placement: this.placement(),
+					position: this.position(),
+					content: this.content(),
+					activeFrom: $trip2g_moment_toserver(this.active_from_moment()),
+					activeTo: $trip2g_moment_toserver(this.active_to_moment()),
+				},
+			})
 
 			if( res.admin.data.__typename === 'ErrorPayload' ) {
 				this.result( res.admin.data.message )

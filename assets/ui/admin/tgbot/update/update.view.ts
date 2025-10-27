@@ -1,26 +1,43 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */`
+		query AdminShowTgBot($id: Int64!) {
+			admin {
+				tgBot(id: $id) {
+					id
+					name
+					description
+					enabled
+					createdAt
+					createdBy {
+						email
+					}
+				}
+			}
+		}
+	`)
+
+	const mutate = $trip2g_graphql_request(/* GraphQL */`
+		mutation AdminUpdateTgBotMutation($input: UpdateTgBotInput!) {
+			admin {
+				payload: updateTgBot(input: $input) {
+					... on UpdateTgBotPayload {
+						tgBot {
+							id
+							description
+						}
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_tgbot_update extends $.$trip2g_admin_tgbot_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminShowTgBot($id: Int64!) {
-						admin {
-							tgBot(id: $id) {
-								id
-								name
-								description
-								enabled
-								createdAt
-								createdBy {
-									email
-								}
-							}
-						}
-					}
-				`,
-				{ id: this.tgbot_id() }
-			)
+			const res = request({ id: this.tgbot_id() })
 
 			if (!res.admin.tgBot) {
 				throw new Error('TG Bot not found')
@@ -52,39 +69,20 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminUpdateTgBotMutation($input: UpdateTgBotInput!) {
-						admin {
-							data: updateTgBot(input: $input) {
-								... on UpdateTgBotPayload {
-									tgBot {
-										id
-										description
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						id: this.tgbot_id(),
-						description: this.description(),
-						enabled: this.enabled()
-					},
-				}
-			)
+			const res = mutate({
+				input: {
+					id: this.tgbot_id(),
+					description: this.description(),
+					enabled: this.enabled()
+				},
+			})
 
-			if (res.admin.data.__typename === 'ErrorPayload') {
-				this.result(res.admin.data.message)
+			if (res.admin.payload.__typename === 'ErrorPayload') {
+				this.result(res.admin.payload.message)
 				return
 			}
 
-			if (res.admin.data.__typename === 'UpdateTgBotPayload') {
+			if (res.admin.payload.__typename === 'UpdateTgBotPayload') {
 				this.result('TG Bot updated successfully')
 				this.data(null) // Reset data to refresh
 				return

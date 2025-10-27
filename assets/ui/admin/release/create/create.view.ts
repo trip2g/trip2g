@@ -1,38 +1,37 @@
 namespace $.$$ {
-	export class $trip2g_admin_release_create extends $.$trip2g_admin_release_create {
-		override submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminCreateRelease($input: CreateReleaseInput!) {
-						admin {
-							data: createRelease(input: $input) {
-								... on CreateReleasePayload {
-									release {
-										id
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
+	const mutate = $trip2g_graphql_request(/* GraphQL */`
+		mutation AdminCreateRelease($input: CreateReleaseInput!) {
+			admin {
+				payload: createRelease(input: $input) {
+					... on CreateReleasePayload {
+						release {
+							id
 						}
 					}
-				`,
-				{
-					input: {
-						title: this.release_title(),
-						homeNoteVersionId: this.home_note_version_id(),
-					},
+					... on ErrorPayload {
+						message
+					}
 				}
-			)
+			}
+		}
+	`)
 
-			if (res.admin.data.__typename === 'ErrorPayload') {
-				this.result(res.admin.data.message)
+	export class $trip2g_admin_release_create extends $.$trip2g_admin_release_create {
+		override submit() {
+			const res = mutate({
+				input: {
+					title: this.release_title(),
+					homeNoteVersionId: this.home_note_version_id(),
+				},
+			})
+
+			if (res.admin.payload.__typename === 'ErrorPayload') {
+				this.result(res.admin.payload.message)
 				return
 			}
 
-			if (res.admin.data.__typename === 'CreateReleasePayload') {
-				this.created_id( res.admin.data.release.id )
+			if (res.admin.payload.__typename === 'CreateReleasePayload') {
+				this.created_id( res.admin.payload.release.id )
 				return
 			}
 

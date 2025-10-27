@@ -1,27 +1,26 @@
 $trip2g_admin $trip2g_auth
 	AppView $trip2g_admin_app
-		profile_info <= ProfileInfo $mol_button_major
+		ProfileEmail <= ProfileInfo $mol_button_major
 			title <= me_user_email
-		sign_out <= SignOut $mol_button_major
+		SignOutButton <= SignOut $mol_button_major
 			click? <=> signout
 
 $trip2g_admin_app $trip2g_admin_catalog
 	param \nav
-	menu_title \Admin
+	menu_title @ \Admin Panel
 	plugins /
 		<= Theme $mol_theme_auto
 	menu_tools /
 		<= Lighter $mol_lights_toggle
 	menu_foot /
-		<= profile_info $mol_button_major
-			title \hello@example.com
-		<= sign_out $mol_button_major
-			title \Sign out
+		<= ProfileEmail $mol_view
+		<= SignOutButton $mol_button_minor
+			title @ \Sign out
 	Spread_default $trip2g_admin_dashboard
 	spreads *
 		users <= ListUsers $trip2g_admin_user_catalog
 			close_icon <= Spread_close
-		telegrampublishplan <= TelegramPublishPlan $trip2g_admin_telegrampublishplan
+		telegrampublishnotes <= TelegramPublishNotes $trip2g_admin_telegrampublishnote_catalog
 			close_icon <= Spread_close
 		tgbots <= ListTgBots $trip2g_admin_tgbot_catalog
 			close_icon <= Spread_close

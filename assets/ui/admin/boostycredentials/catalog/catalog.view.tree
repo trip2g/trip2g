@@ -1,5 +1,5 @@
 $trip2g_admin_boostycredentials_catalog $trip2g_admin_catalog
-	menu_title \Boosty Credentials
+	menu_title @ \Boosty Credentials
 	param \id
 	Empty $mol_status
 	actions /

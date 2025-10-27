@@ -1,5 +1,5 @@
 $trip2g_admin_cronjob_catalog $trip2g_admin_catalog
-	menu_title \Cron Jobs
+	menu_title @ \Cron Jobs
 	param \id
 	Empty $mol_status
 	ShowPage* $trip2g_admin_cronjob_show

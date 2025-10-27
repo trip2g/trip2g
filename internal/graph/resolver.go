@@ -28,6 +28,7 @@ import (
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/resetnotfoundpath"
+	"trip2g/internal/case/admin/resettelegrampublishnote"
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/runcronjob"
@@ -206,6 +207,7 @@ type Env interface {
 	sitesearch.Env
 	settgchatpublishtags.Env
 	settgchatpublishinstanttags.Env
+	resettelegrampublishnote.Env
 	convertnoteviewtotgpost.Env
 	createconfigversion.Env
 

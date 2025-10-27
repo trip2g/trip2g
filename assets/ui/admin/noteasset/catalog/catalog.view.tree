@@ -1,5 +1,5 @@
 $trip2g_admin_noteasset_catalog $trip2g_admin_catalog
-	menu_title \Note Assets
+	menu_title @ \Note Assets
 	param \id
 	Empty $mol_status
 	ShowPage* $trip2g_admin_noteasset_show

@@ -1,5 +1,5 @@
 $trip2g_admin_patreoncredentials_catalog $trip2g_admin_catalog
-	menu_title \Patreon Credentials
+	menu_title @ \Patreon Credentials
 	param \id
 	Empty $mol_status
 	actions /

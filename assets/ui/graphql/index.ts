@@ -130,29 +130,31 @@ namespace $ {
 		resetCache?: boolean // true by default
 	}
 
-	export function $trip2g_graphql_raw_request(query: string, variables?: any, opts?: RequestOptions): any {
+	export function $trip2g_graphql_raw_request(query: string) {
 		// replace @exportType directives
 		query = query.replace(/@exportType\s*(\([^)]*\))?\s*/g, '')
 		query = inject_typenames(query)
 
-		const res = $.$mol_fetch.json('/graphql', {
-			method: 'POST',
-			credentials: 'include',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ query, variables }),
-		}) as { data?: any; errors?: any[] }
+		return (variables?: any, opts?: RequestOptions): any => {
+			const res = $.$mol_fetch.json('/graphql', {
+				method: 'POST',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ query, variables }),
+			}) as { data?: any; errors?: any[] }
 
-		if (res.errors) {
-			throw new $.$trip2g_graphql_error('GraphQL Error', res.errors)
+			if (res.errors) {
+				throw new $.$trip2g_graphql_error('GraphQL Error', res.errors)
+			}
+
+			const isMutation = !!query.match(/^\s+mutation/)
+
+			if (opts?.resetCache !== false) {
+				cacheInstance.markTypenames(res.data, isMutation)
+			}
+
+			return res.data
 		}
-
-		const isMutation = !!query.match(/^\s+mutation/)
-
-		if (opts?.resetCache !== false) {
-			cacheInstance.markTypenames(res.data, isMutation)
-		}
-
-		return res.data
 	}
 
 	export function $trip2g_graphql_make_map<K extends PropertyKey, T extends { id: K }>(rows: T[]) {

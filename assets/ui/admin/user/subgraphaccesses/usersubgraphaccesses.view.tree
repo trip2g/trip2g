@@ -1,5 +1,5 @@
 $trip2g_admin_user_subgraphaccesses $trip2g_admin_catalog
-	menu_title \Subgraph accesses
+	menu_title @ \Subgraph accesses
 	param \access_id
 	Empty $mol_status
 	Content* $trip2g_admin_user_subgraphaccess

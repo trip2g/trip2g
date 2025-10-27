@@ -1,4 +1,23 @@
 namespace $.$$ {
+	const data_request = $trip2g_graphql_request(
+		`
+			query AdminShowHtmlInjection($id: Int64!) {
+				admin {
+					htmlInjection(id: $id) {
+						id
+						createdAt
+						activeFrom
+						activeTo
+						description
+						position
+						placement
+						content
+					}
+				}
+			}
+		`
+	)
+
 	export class $trip2g_admin_htmlinjection_show extends $.$trip2g_admin_htmlinjection_show {
 		action() {
 			return this.$.$mol_state_arg.value( 'action' ) || 'view'
@@ -6,27 +25,9 @@ namespace $.$$ {
 
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminShowHtmlInjection($id: Int64!) {
-						admin {
-							htmlInjection(id: $id) {
-								id
-								createdAt
-								activeFrom
-								activeTo
-								description
-								position
-								placement
-								content
-							}
-						}
-					}
-				`,
-				{
-					id: this.htmlinjection_id()
-				}
-			)
+			const res = data_request({
+				id: this.htmlinjection_id()
+			})
 
 			const injection = res.admin.htmlInjection
 			if( !injection ) {

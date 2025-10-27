@@ -1,21 +1,23 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminNoteAsset($id: Int64!) {
+			admin {
+				noteAsset(id: $id) {
+					id
+					absolutePath
+					fileName
+					size
+					createdAt
+					url
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_noteasset_show extends $.$trip2g_admin_noteasset_show {
 		@$mol_mem
 		data() {
-			const res = $trip2g_graphql_request(`
-				query AdminNoteAsset($id: Int64!) {
-					admin {
-						noteAsset(id: $id) {
-							id
-							absolutePath
-							fileName
-							size
-							createdAt
-							url
-						}
-					}
-				}
-			`, {
+			const res = request({
 				id: this.asset_id()
 			})
 

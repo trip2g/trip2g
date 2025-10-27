@@ -1,5 +1,5 @@
 $trip2g_admin_htmlinjection_catalog $trip2g_admin_catalog
-	menu_title \HTML Injections
+	menu_title @ \HTML Injections
 	param \id
 	Empty $mol_status
 	actions /

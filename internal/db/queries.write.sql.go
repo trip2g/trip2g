@@ -255,6 +255,15 @@ func (q *WriteQueries) DeleteTelegramPublishNoteTagsByPathID(ctx context.Context
 	return err
 }
 
+const deleteTelegramPublishSentMessagesByNotePathID = `-- name: DeleteTelegramPublishSentMessagesByNotePathID :exec
+delete from telegram_publish_sent_messages where note_path_id = ?
+`
+
+func (q *WriteQueries) DeleteTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTelegramPublishSentMessagesByNotePathID, notePathID)
+	return err
+}
+
 const deleteTgAttachCode = `-- name: DeleteTgAttachCode :exec
 delete from tg_attach_codes where code = ?
 `
@@ -1546,6 +1555,18 @@ func (q *WriteQueries) ResetNotFoundPathTotalHits(ctx context.Context, id int64)
 		&i.LastHitAt,
 	)
 	return i, err
+}
+
+const resetTelegramPublishNote = `-- name: ResetTelegramPublishNote :exec
+update telegram_publish_notes
+   set published_at = null
+     , published_version_id = null
+ where note_path_id = ?
+`
+
+func (q *WriteQueries) ResetTelegramPublishNote(ctx context.Context, notePathID int64) error {
+	_, err := q.db.ExecContext(ctx, resetTelegramPublishNote, notePathID)
+	return err
 }
 
 const restoreBoostyCredentials = `-- name: RestoreBoostyCredentials :one

@@ -1,53 +1,55 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminTgbotShowInviteChatsSubgraphs {
+			admin {
+				allSubgraphs {
+					nodes {
+						id
+						name
+					}
+				}
+			}
+		}
+	`)
+
+	const mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation AdminTgbotShowInviteChatsSubgraphsSave($input: SetTgChatSubgraphInvitesInput!) {
+			admin {
+				payload: setTgChatSubgraphInvites(input: $input) {
+					... on SetTgChatSubgraphInvitesPayload {
+						success
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_tgbot_show_invitechats_subgraphs extends $.$trip2g_admin_tgbot_show_invitechats_subgraphs {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminTgbotShowInviteChatsSubgraphs {
-						admin {
-							allSubgraphs {
-								nodes {
-									id
-									name
-								}
-							}
-						}
-					}
-				`
-			)
+			const res = request()
 
 			return res.admin.allSubgraphs.nodes
 		}
 
 		save( subgraph_ids: number[] ) {
-			const res = $trip2g_graphql_request( `
-				mutation AdminTgbotShowInviteChatsSubgraphsSave($input: SetTgChatSubgraphInvitesInput!) {
-					admin {
-						data: setTgChatSubgraphInvites(input: $input) {
-							... on SetTgChatSubgraphInvitesPayload {
-								success
-							}
-							... on ErrorPayload {
-								message
-							}
-						}
-					}
-				}
-			`, {
+			const res = mutate({
 				input: {
 					chatId: this.chat_id(),
 					subgraphIds: subgraph_ids,
 				},
-			} )
+			})
 
-			const { data } = res.admin
+			const { payload } = res.admin
 
-			if( data.__typename === 'ErrorPayload' ) {
-				throw new Error( data.message )
+			if( payload.__typename === 'ErrorPayload' ) {
+				throw new Error( payload.message )
 			}
 
-			if( data.__typename === 'SetTgChatSubgraphInvitesPayload' && !data.success ) {
+			if( payload.__typename === 'SetTgChatSubgraphInvitesPayload' && !payload.success ) {
 				throw new Error( 'Unexpected response type from server' )
 			}
 		}

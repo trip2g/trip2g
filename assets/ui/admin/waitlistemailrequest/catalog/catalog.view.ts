@@ -1,21 +1,23 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminWaitListEmailRequests {
+			admin {
+				allWaitListEmailRequests {
+					nodes {
+						email
+						createdAt
+						ip
+						notePath
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_waitlistemailrequest_catalog extends $.$trip2g_admin_waitlistemailrequest_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request( `
-				query AdminWaitListEmailRequests {
-					admin {
-						allWaitListEmailRequests {
-							nodes {
-								email
-								createdAt
-								ip
-								notePath
-							}
-						}
-					}
-				}
-			`)
+			const res = request()
 
 			// Use email as unique identifier since it's the primary key
 			return new Map( res.admin.allWaitListEmailRequests.nodes.map( (node: any) => [node.email, node] ) )

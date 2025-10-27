@@ -1,5 +1,5 @@
 namespace $.$$ {
-	$mol_style_define( $trip2g_admin_telegrampublishplan_message, {
+	$mol_style_define( $trip2g_admin_telegrampublishnote_message, {
 		Message: {
 			maxWidth: '600px',
 			overflow: 'auto',

@@ -1519,6 +1519,25 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 	return items, nil
 }
 
+const getTelegramPublishNoteByNotePathID = `-- name: GetTelegramPublishNoteByNotePathID :one
+select note_path_id, created_at, publish_at, published_version_id, published_at
+  from telegram_publish_notes
+ where note_path_id = ?
+`
+
+func (q *Queries) GetTelegramPublishNoteByNotePathID(ctx context.Context, notePathID int64) (TelegramPublishNote, error) {
+	row := q.db.QueryRowContext(ctx, getTelegramPublishNoteByNotePathID, notePathID)
+	var i TelegramPublishNote
+	err := row.Scan(
+		&i.NotePathID,
+		&i.CreatedAt,
+		&i.PublishAt,
+		&i.PublishedVersionID,
+		&i.PublishedAt,
+	)
+	return i, err
+}
+
 const gitTokenByValueSHA256 = `-- name: GitTokenByValueSHA256 :one
 select id, created_at, last_used_at, admin_id, value_sha256, description, can_pull, can_push, usage_count, disabled_at, disabled_by from git_tokens where value_sha256 = ? and disabled_at is null limit 1
 `
@@ -3049,6 +3068,42 @@ func (q *Queries) ListTelegramPublishInstantTagsByChatID(ctx context.Context, ch
 			&i.Hidden,
 			&i.Label,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTelegramPublishSentMessagesByNotePathID = `-- name: ListTelegramPublishSentMessagesByNotePathID :many
+select tsm.chat_id, tsm.message_id, c.telegram_id
+  from telegram_publish_sent_messages tsm
+  join tg_bot_chats c on tsm.chat_id = c.id
+ where tsm.note_path_id = ?
+`
+
+type ListTelegramPublishSentMessagesByNotePathIDRow struct {
+	ChatID     int64 `json:"chat_id"`
+	MessageID  int64 `json:"message_id"`
+	TelegramID int64 `json:"telegram_id"`
+}
+
+func (q *Queries) ListTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) ([]ListTelegramPublishSentMessagesByNotePathIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, listTelegramPublishSentMessagesByNotePathID, notePathID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTelegramPublishSentMessagesByNotePathIDRow
+	for rows.Next() {
+		var i ListTelegramPublishSentMessagesByNotePathIDRow
+		if err := rows.Scan(&i.ChatID, &i.MessageID, &i.TelegramID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

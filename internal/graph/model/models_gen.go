@@ -138,6 +138,10 @@ type ResetNotFoundPathOrErrorPayload interface {
 	IsResetNotFoundPathOrErrorPayload()
 }
 
+type ResetTelegramPublishNoteOrErrorPayload interface {
+	IsResetTelegramPublishNoteOrErrorPayload()
+}
+
 type RestoreBoostyCredentialsOrErrorPayload interface {
 	IsRestoreBoostyCredentialsOrErrorPayload()
 }
@@ -811,6 +815,8 @@ func (ErrorPayload) IsSetTgChatPublishInstantTagsOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateConfigVersionOrErrorPayload() {}
 
+func (ErrorPayload) IsResetTelegramPublishNoteOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -975,6 +981,16 @@ type ResetNotFoundPathPayload struct {
 }
 
 func (ResetNotFoundPathPayload) IsResetNotFoundPathOrErrorPayload() {}
+
+type ResetTelegramPublishNoteInput struct {
+	ID int64 `json:"id"`
+}
+
+type ResetTelegramPublishNotePayload struct {
+	PublishNote *db.TelegramPublishNote `json:"publishNote"`
+}
+
+func (ResetTelegramPublishNotePayload) IsResetTelegramPublishNoteOrErrorPayload() {}
 
 type RestoreBoostyCredentialsInput struct {
 	ID int64 `json:"id"`

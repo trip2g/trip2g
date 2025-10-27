@@ -1,4 +1,37 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminShowNotFoundIgnoredPattern {
+			admin {
+				allNotFoundIgnoredPatterns {
+					nodes {
+						id
+						pattern
+						createdAt
+						createdBy {
+							id
+							email
+						}
+					}
+				}
+			}
+		}
+	`)
+
+	const delete_mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation AdminDeleteNotFoundIgnoredPatternMutation($input: DeleteNotFoundIgnoredPatternInput!) {
+			admin {
+				data: deleteNotFoundIgnoredPattern(input: $input) {
+					... on DeleteNotFoundIgnoredPatternPayload {
+						deletedId
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_notfoundpattern_show extends $.$trip2g_admin_notfoundpattern_show {
 		action() {
 			return this.$.$mol_state_arg.value( 'action' ) || 'view'
@@ -6,25 +39,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminShowNotFoundIgnoredPattern {
-						admin {
-							allNotFoundIgnoredPatterns {
-								nodes {
-									id
-									pattern
-									createdAt
-									createdBy {
-										id
-										email
-									}
-								}
-							}
-						}
-					}
-				`
-			)
+			const res = request()
 
 			const pattern = res.admin.allNotFoundIgnoredPatterns.nodes.find( ( n: any ) => n.id === this.pattern_id() )
 			if( !pattern ) {
@@ -56,27 +71,11 @@ namespace $.$$ {
 		}
 
 		delete() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminDeleteNotFoundIgnoredPatternMutation($input: DeleteNotFoundIgnoredPatternInput!) {
-						admin {
-							data: deleteNotFoundIgnoredPattern(input: $input) {
-								... on DeleteNotFoundIgnoredPatternPayload {
-									deletedId
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						id: this.pattern_id()
-					},
-				}
-			)
+			const res = delete_mutate({
+				input: {
+					id: this.pattern_id()
+				},
+			})
 
 			if( res.admin.data.__typename === 'ErrorPayload' ) {
 				this.delete_result( res.admin.data.message )

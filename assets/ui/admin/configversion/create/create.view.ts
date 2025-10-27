@@ -1,48 +1,53 @@
 namespace $.$$ {
-	export class $trip2g_admin_configversion_create extends $.$trip2g_admin_configversion_create {
-		@$mol_mem
-		current() {
-			const res = $trip2g_graphql_request( `
-				query AdminCreateConfigLatestConfig {
-					admin {
-						latestConfig {
-							showDraftVersions
-							defaultLayout
-							timezone
+	const current_request = $trip2g_graphql_request(
+		`
+			query AdminCreateConfigLatestConfig {
+				admin {
+					latestConfig {
+						showDraftVersions
+						defaultLayout
+						timezone
+					}
+				}
+			}
+		`
+	)
+
+	const submit_request = $trip2g_graphql_request(
+		`
+			mutation AdminCreateConfigVersion($input: CreateConfigVersionInput!) {
+				admin {
+					data: createConfigVersion(input: $input) {
+						... on ErrorPayload {
+							message
+						}
+						... on CreateConfigVersionPayload {
+							configVersion {
+								id
+							}
 						}
 					}
 				}
-			`)
+			}
+		`
+	)
+
+	export class $trip2g_admin_configversion_create extends $.$trip2g_admin_configversion_create {
+		@$mol_mem
+		current() {
+			const res = current_request()
 
 			return res.admin.latestConfig
 		}
 
 		override submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminCreateConfigVersion($input: CreateConfigVersionInput!) {
-						admin {
-							data: createConfigVersion(input: $input) {
-								... on ErrorPayload {
-									message
-								}
-								... on CreateConfigVersionPayload {
-									configVersion {
-										id
-									}
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						showDraftVersions: this.show_draft_versions(),
-						defaultLayout: this.default_layout(),
-						timezone: this.timezone(),
-					},
-				}
-			)
+			const res = submit_request({
+				input: {
+					showDraftVersions: this.show_draft_versions(),
+					defaultLayout: this.default_layout(),
+					timezone: this.timezone(),
+				},
+			})
 
 			if( res.admin.data.__typename === 'ErrorPayload' ) {
 				throw new Error( res.admin.data.message )

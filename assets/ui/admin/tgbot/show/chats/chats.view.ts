@@ -1,31 +1,33 @@
 namespace $.$$ {
-	export class $trip2g_admin_tgbot_show_chats extends $.$trip2g_admin_tgbot_show_chats {
-		@$mol_mem
-		data( reset?: null ) {
-			const res = $trip2g_graphql_request( `
-				query AdminTgBotChats($filter: AdminTgBotChatsFilterInput!) {
-					admin {
-						tgBotChats(filter: $filter) {
-							nodes {
-								id
-								chatType
-								chatTitle
-								addedAt
-								removedAt
-								memberCount
-								subgraphAccesses {
-									id
-									subgraphId
-								}
-							}
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminTgBotChats($filter: AdminTgBotChatsFilterInput!) {
+			admin {
+				tgBotChats(filter: $filter) {
+					nodes {
+						id
+						chatType
+						chatTitle
+						addedAt
+						removedAt
+						memberCount
+						subgraphAccesses {
+							id
+							subgraphId
 						}
 					}
 				}
-			`, {
+			}
+		}
+	`)
+
+	export class $trip2g_admin_tgbot_show_chats extends $.$trip2g_admin_tgbot_show_chats {
+		@$mol_mem
+		data( reset?: null ) {
+			const res = request({
 				filter: {
 					botId: this.bot_id(),
 				}
-			} )
+			})
 
 			return $trip2g_graphql_make_map( res.admin.tgBotChats.nodes )
 		}

@@ -679,3 +679,12 @@ update telegram_publish_notes
 -- name: InsertTelegramPublishSentMessage :exec
 insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id)
 values (?, ?, ?);
+
+-- name: ResetTelegramPublishNote :exec
+update telegram_publish_notes
+   set published_at = null
+     , published_version_id = null
+ where note_path_id = ?;
+
+-- name: DeleteTelegramPublishSentMessagesByNotePathID :exec
+delete from telegram_publish_sent_messages where note_path_id = ?;

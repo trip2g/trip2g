@@ -1,24 +1,28 @@
 namespace $.$$ {
-	export class $trip2g_admin_htmlinjection_catalog extends $.$trip2g_admin_htmlinjection_catalog {
-		@$mol_mem
-		data( reset?: null ) {
-			const res = $trip2g_graphql_request( `
-				query AdminHtmlInjections {
-					admin {
-						allHtmlInjections {
-							nodes {
-								id
-								createdAt
-								activeFrom
-								activeTo
-								description
-								position
-								placement
-							}
+	const data_request = $trip2g_graphql_request(
+		`
+			query AdminHtmlInjections {
+				admin {
+					allHtmlInjections {
+						nodes {
+							id
+							createdAt
+							activeFrom
+							activeTo
+							description
+							position
+							placement
 						}
 					}
 				}
-			`)
+			}
+		`
+	)
+
+	export class $trip2g_admin_htmlinjection_catalog extends $.$trip2g_admin_htmlinjection_catalog {
+		@$mol_mem
+		data( reset?: null ) {
+			const res = data_request()
 
 			return $trip2g_graphql_make_map( res.admin.allHtmlInjections.nodes )
 		}

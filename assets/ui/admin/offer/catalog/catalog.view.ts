@@ -1,27 +1,29 @@
 namespace $.$$ {
-	export class $trip2g_admin_offer_catalog extends $.$trip2g_admin_offer_catalog {
-		@$mol_mem
-		data( reset?: null ) {
-			const res = $trip2g_graphql_request( `
-				query AdminOffers {
-					admin {
-						allOffers {
-							nodes {
-								id
-								publicId
-								createdAt
-								lifetime
-								priceUSD
-								startsAt
-								endsAt
-								subgraphs {
-									name
-								}
-							}
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminOffers {
+			admin {
+				allOffers {
+					nodes {
+						id
+						publicId
+						createdAt
+						lifetime
+						priceUSD
+						startsAt
+						endsAt
+						subgraphs {
+							name
 						}
 					}
 				}
-			`)
+			}
+		}
+	`)
+
+	export class $trip2g_admin_offer_catalog extends $.$trip2g_admin_offer_catalog {
+		@$mol_mem
+		data( reset?: null ) {
+			const res = request()
 
 			return $trip2g_graphql_make_map( res.admin.allOffers.nodes )
 		}

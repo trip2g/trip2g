@@ -1,21 +1,21 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */`
+		query AdminSelectSubgraph {
+			admin {
+				allSubgraphs {
+					nodes {
+						id
+						name
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_subgraph_select extends $.$trip2g_admin_subgraph_select {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminSelectSubgraph {
-						admin {
-							allSubgraphs {
-								nodes {
-									id
-									name
-								}
-							}
-						}
-					}
-				`
-			)
+			const res = request()
 
 			return res.admin.allSubgraphs.nodes
 		}

@@ -1,28 +1,45 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminUserSubgraphAccess($id: Int64!) {
+			admin {
+				allSubgraphs {
+					nodes {
+						id
+						name
+					}
+				}
+
+				userSubgraphAccess(id: $id) {
+					userId
+					subgraphId
+					expiresAt
+				}
+			}
+		}
+	`)
+
+	const mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation AdminUpdateUserSubgraphAccess($input: UpdateUserSubgraphAccessInput!) {
+			admin {
+				payload: updateUserSubgraphAccess(input: $input) {
+					... on UpdateUserSubgraphAccessPayload {
+						userSubgraphAccess {
+							__typename
+							expiresAt
+						}
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_user_subgraphaccess extends $.$trip2g_admin_user_subgraphaccess {
 		@$mol_mem
 		all_data(reset?: null) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminUserSubgraphAccess($id: Int64!) {
-						admin {
-							allSubgraphs {
-								nodes {
-									id
-									name
-								}
-							}
-
-							userSubgraphAccess(id: $id) {
-								userId
-								subgraphId
-								expiresAt
-							}
-						}
-					}
-				`,
-				{ id: this.access_id() }
-			)
+			const res = request({ id: this.access_id() })
 
 			return res.admin;
 		}
@@ -61,35 +78,16 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminUpdateUserSubgraphAccess($input: UpdateUserSubgraphAccessInput!) {
-						admin {
-							data: updateUserSubgraphAccess(input: $input) {
-								... on UpdateUserSubgraphAccessPayload {
-									userSubgraphAccess {
-										__typename
-										expiresAt
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						id: this.access_id(),
-						expiresAt: $trip2g_moment_toserver(this.expires_at_moment()),
-						subgraphId: this.subgraph_id(),
-					},
-				}
-			)
+			const res = mutate({
+				input: {
+					id: this.access_id(),
+					expiresAt: $trip2g_moment_toserver(this.expires_at_moment()),
+					subgraphId: this.subgraph_id(),
+				},
+			})
 
-			if (res.admin.data.__typename === 'ErrorPayload') {
-				this.result(res.admin.data.message)
+			if (res.admin.payload.__typename === 'ErrorPayload') {
+				this.result(res.admin.payload.message)
 			}
 		}
 	}

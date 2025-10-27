@@ -1,53 +1,55 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminTgbotShowChatsSubgraphs {
+			admin {
+				allSubgraphs {
+					nodes {
+						id
+						name
+					}
+				}
+			}
+		}
+	`)
+
+	const mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation AdminTgbotsShowchatsSubgraphsSave($input: SetTgChatSubgraphsInput!) {
+			admin {
+				payload: setTgChatSubgraphs(input: $input) {
+					... on SetTgChatSubgraphsPayload {
+						success
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_tgbot_show_chats_subgraphs extends $.$trip2g_admin_tgbot_show_chats_subgraphs {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminTgbotShowChatsSubgraphs {
-						admin {
-							allSubgraphs {
-								nodes {
-									id
-									name
-								}
-							}
-						}
-					}
-				`
-			)
+			const res = request()
 
 			return res.admin.allSubgraphs.nodes
 		}
 
 		save( subgraph_ids: number[] ) {
-			const res = $trip2g_graphql_request( `
-				mutation AdminTgbotsShowchatsSubgraphsSave($input: SetTgChatSubgraphsInput!) {
-					admin {
-						data: setTgChatSubgraphs(input: $input) {
-							... on SetTgChatSubgraphsPayload {
-								success
-							}
-							... on ErrorPayload {
-								message
-							}
-						}
-					}
-				}
-			`, {
+			const res = mutate({
 				input: {
 					chatId: this.chat_id(),
 					subgraphIds: subgraph_ids,
 				},
-			} )
+			})
 
-			const { data } = res.admin
+			const { payload } = res.admin
 
-			if( data.__typename === 'ErrorPayload' ) {
-				throw new Error( data.message )
+			if( payload.__typename === 'ErrorPayload' ) {
+				throw new Error( payload.message )
 			}
 
-			if( data.__typename === 'SetTgChatSubgraphsPayload' && !data.success ) {
+			if( payload.__typename === 'SetTgChatSubgraphsPayload' && !payload.success ) {
 				throw new Error( 'Unexpected response type from server' )
 			}
 		}

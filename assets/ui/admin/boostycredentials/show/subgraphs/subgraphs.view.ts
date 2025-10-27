@@ -1,45 +1,47 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminBoostycredentialsShowSubgraphs {
+			admin {
+				allSubgraphs {
+					nodes {
+						id
+						name
+					}
+				}
+			}
+		}
+	`)
+
+	const mutate_save = $trip2g_graphql_request(/* GraphQL */ `
+		mutation AdminBoostycredentialsShowSubgraphsSave($input: SetBoostyTierSubgraphsInput!) {
+			admin {
+				data: setBoostyTierSubgraphs(input: $input) {
+					... on SetBoostyTierSubgraphsPayload {
+						success
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_boostycredentials_show_subgraphs extends $.$trip2g_admin_boostycredentials_show_subgraphs {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminBoostycredentialsShowSubgraphs {
-						admin {
-							allSubgraphs {
-								nodes {
-									id
-									name
-								}
-							}
-						}
-					}
-				`
-			)
+			const res = request()
 
 			return res.admin.allSubgraphs.nodes
 		}
 
 		save( subgraph_ids: number[] ) {
-			const res = $trip2g_graphql_request( `
-				mutation AdminBoostycredentialsShowSubgraphsSave($input: SetBoostyTierSubgraphsInput!) {
-					admin {
-						data: setBoostyTierSubgraphs(input: $input) {
-							... on SetBoostyTierSubgraphsPayload {
-								success
-							}
-							... on ErrorPayload {
-								message
-							}
-						}
-					}
-				}
-			`, {
+			const res = mutate_save({
 				input: {
 					tierId: this.tier_id(),
 					subgraphIds: subgraph_ids,
 				},
-			} )
+			})
 
 			const { data } = res.admin
 

@@ -1,4 +1,22 @@
 namespace $.$$ {
+	const mutate = $trip2g_graphql_request(/* GraphQL */`
+		mutation AdminCreateOfferMutation($input: CreateOfferInput!) {
+			admin {
+				payload: createOffer(input: $input) {
+					... on CreateOfferPayload {
+						offer {
+							id
+							publicId
+						}
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_offer_create extends $.$trip2g_admin_offer_create {
 		override body() {
 			if( this.offer_public_id() !== '' ) {
@@ -55,42 +73,23 @@ namespace $.$$ {
 		}
 
 		override submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminCreateOfferMutation($input: CreateOfferInput!) {
-						admin {
-							data: createOffer(input: $input) {
-								... on CreateOfferPayload {
-									offer {
-										id
-										publicId
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						priceUSD: this.price_usd(),
-						subgraphIds: this.subgraph_ids() as number[],
-						lifetime: this.lifetime() || null,
-						startsAt: $trip2g_moment_toserver(this.starts_at_moment()),
-						endsAt: $trip2g_moment_toserver(this.ends_at_moment())
-					},
-				}
-			)
+			const res = mutate({
+				input: {
+					priceUSD: this.price_usd(),
+					subgraphIds: this.subgraph_ids() as number[],
+					lifetime: this.lifetime() || null,
+					startsAt: $trip2g_moment_toserver(this.starts_at_moment()),
+					endsAt: $trip2g_moment_toserver(this.ends_at_moment())
+				},
+			})
 
-			if( res.admin.data.__typename === 'ErrorPayload' ) {
-				this.result( res.admin.data.message )
+			if( res.admin.payload.__typename === 'ErrorPayload' ) {
+				this.result( res.admin.payload.message )
 				return
 			}
 
-			if( res.admin.data.__typename === 'CreateOfferPayload' ) {
-				this.offer_public_id( res.admin.data.offer.publicId )
+			if( res.admin.payload.__typename === 'CreateOfferPayload' ) {
+				this.offer_public_id( res.admin.payload.offer.publicId )
 				return
 			}
 

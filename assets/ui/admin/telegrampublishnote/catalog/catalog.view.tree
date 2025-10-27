@@ -1,0 +1,36 @@
+$trip2g_admin_telegrampublishnote_catalog $trip2g_admin_catalog
+	menu_title @ \Telegram Publish Notes
+	close_button null $mol_view
+	actions /
+		<= ShowSent $mol_check_box
+			title <= show_sent_title @ \Show Sent ({count})
+			checked? <=> show_sent? false
+		<= ShowOutdated $mol_check_box
+			title <= show_outdated_title @ \Show Outdated ({count})
+			checked? <=> show_outdated? false
+	param \id
+	Empty $mol_status
+	Content* $trip2g_admin_telegrampublishnote_show
+		telegrampublishnote_id <= row_id* 0
+	menu_link_content* / <= TelegramPublishNoteItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Row_title_labeler* $mol_labeler
+						title @ \Title
+						Content <= Row_title* $trip2g_admin_cell
+							content <= row_title* \title
+					<= Row_publish_at_labeler* $mol_labeler
+						title @ \Publish At
+						Content <= Row_publish_at* $trip2g_admin_cell
+							content <= row_publish_at* \publish_at
+					<= Row_status_labeler* $mol_labeler
+						title @ \Status
+						Content <= Row_status* $trip2g_admin_cell
+							content <= row_status* \status
+					<= Row_seconds_until_publish_labeler* $mol_labeler
+						title @ \Seconds Until Publish
+						Content <= Row_seconds_until_publish* $trip2g_admin_cell
+							content <= row_seconds_until_publish* \seconds_until_publish

@@ -1,4 +1,21 @@
 namespace $.$$ {
+	const mutate = $trip2g_graphql_request(/* GraphQL */`
+		mutation AdminCreateNotFoundIgnoredPatternMutation($input: CreateNotFoundIgnoredPatternInput!) {
+			admin {
+				payload: createNotFoundIgnoredPattern(input: $input) {
+					... on CreateNotFoundIgnoredPatternPayload {
+						notFoundIgnoredPattern {
+							id
+						}
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_notfoundpattern_create extends $.$trip2g_admin_notfoundpattern_create {
 		override body() {
 			if( this.pattern_id_string() !== '' ) {
@@ -18,37 +35,19 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminCreateNotFoundIgnoredPatternMutation($input: CreateNotFoundIgnoredPatternInput!) {
-						admin {
-							data: createNotFoundIgnoredPattern(input: $input) {
-								... on CreateNotFoundIgnoredPatternPayload {
-									notFoundIgnoredPattern {
-										id
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						pattern: this.pattern()
-					},
-				}
-			)
+			const res = mutate({
+				input: {
+					pattern: this.pattern()
+				},
+			})
 
-			if( res.admin.data.__typename === 'ErrorPayload' ) {
-				this.result( res.admin.data.message )
+			if( res.admin.payload.__typename === 'ErrorPayload' ) {
+				this.result( res.admin.payload.message )
 				return
 			}
 
-			if( res.admin.data.__typename === 'CreateNotFoundIgnoredPatternPayload' ) {
-				this.pattern_id_string( res.admin.data.notFoundIgnoredPattern.id.toString() )
+			if( res.admin.payload.__typename === 'CreateNotFoundIgnoredPatternPayload' ) {
+				this.pattern_id_string( res.admin.payload.notFoundIgnoredPattern.id.toString() )
 				return
 			}
 

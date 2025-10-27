@@ -1,5 +1,5 @@
 $trip2g_admin_user_catalog $trip2g_admin_catalog
-	menu_title \Users
+	menu_title @ \Users
 	actions /
 		<= BansLink $mol_link
 			sub / <= BansIcon $mol_icon_bomb

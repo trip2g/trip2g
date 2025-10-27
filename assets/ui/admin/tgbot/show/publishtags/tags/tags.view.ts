@@ -1,53 +1,55 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminTgbotShowPublishTags {
+			admin {
+				allTelegramPublishTags {
+					nodes {
+						id
+						label
+					}
+				}
+			}
+		}
+	`)
+
+	const mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation AdminTgbotShowPublishTagsSave($input: SetTgChatPublishTagsInput!) {
+			admin {
+				payload: setTgChatPublishTags(input: $input) {
+					... on SetTgChatPublishTagsPayload {
+						success
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_tgbot_show_publishtags_tags extends $.$trip2g_admin_tgbot_show_publishtags_tags {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminTgbotShowPublishTags {
-						admin {
-							allTelegramPublishTags {
-								nodes {
-									id
-									label
-								}
-							}
-						}
-					}
-				`
-			)
+			const res = request()
 
 			return res.admin.allTelegramPublishTags.nodes
 		}
 
 		save( chat_ids: number[] ) {
-			const res = $trip2g_graphql_request( `
-				mutation AdminTgbotShowPublishTagsSave($input: SetTgChatPublishTagsInput!) {
-					admin {
-						data: setTgChatPublishTags(input: $input) {
-							... on SetTgChatPublishTagsPayload {
-								success
-							}
-							... on ErrorPayload {
-								message
-							}
-						}
-					}
-				}
-			`, {
+			const res = mutate({
 				input: {
 					chatId: this.chat_id(),
 					tagIds: chat_ids,
 				},
-			} )
+			})
 
-			const { data } = res.admin
+			const { payload } = res.admin
 
-			if( data.__typename === 'ErrorPayload' ) {
-				throw new Error( data.message )
+			if( payload.__typename === 'ErrorPayload' ) {
+				throw new Error( payload.message )
 			}
 
-			if( data.__typename === 'SetTgChatPublishTagsPayload' && !data.success ) {
+			if( payload.__typename === 'SetTgChatPublishTagsPayload' && !payload.success ) {
 				throw new Error( 'Unexpected response type from server' )
 			}
 		}

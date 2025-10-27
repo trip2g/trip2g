@@ -1,6 +1,26 @@
 namespace $.$$ {
 	const state = $trip2g_graphql_boosty_credentials_state_enum
 
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminBoostyCredentials($filter: AdminBoostyCredentialsFilterInput) {
+			admin {
+				allBoostyCredentials(filter: $filter) {
+					nodes {
+						id
+						state
+						deviceId
+						blogName
+						createdAt
+						createdBy {
+							id
+							email
+						}
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_boostycredentials_catalog extends $.$trip2g_admin_boostycredentials_catalog {
 		@$mol_mem
 		filter_state() {
@@ -18,27 +38,9 @@ namespace $.$$ {
 		@$mol_mem
 		data( reset?: null ) {
 			const filter = this.filter_state()
-			const res = $trip2g_graphql_request( `
-				query AdminBoostyCredentials($filter: AdminBoostyCredentialsFilterInput) {
-					admin {
-						allBoostyCredentials(filter: $filter) {
-							nodes {
-								id
-								state
-								deviceId
-								blogName
-								createdAt
-								createdBy {
-									id
-									email
-								}
-							}
-						}
-					}
-				}
-			`, {
+			const res = request({
 				filter: filter ? { state: filter } : null
-			} )
+			})
 
 			return $trip2g_graphql_make_map( res.admin.allBoostyCredentials.nodes )
 		}

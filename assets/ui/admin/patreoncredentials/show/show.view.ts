@@ -1,43 +1,45 @@
 namespace $.$$ {
-	const request = ( id: number ) => {
-		const res = $trip2g_graphql_request( `
-				query AdminPatreonCredentialsById($id: Int64!) {
-					admin {
-						patreonCredentials(id: $id) {
-							createdAt
-							creatorAccessToken
-							state
+	const data_request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminPatreonCredentialsById($id: Int64!) {
+			admin {
+				patreonCredentials(id: $id) {
+					createdAt
+					creatorAccessToken
+					state
 
-							createdBy {
-								email
-							}
+					createdBy {
+						email
+					}
 
-							tiers {
-								nodes {
-									id
-									missedAt
-									title
-									amountCents
+					tiers {
+						nodes {
+							id
+							missedAt
+							title
+							amountCents
 
-									subgraphs {
-										id
-									}
-								}
-							}
-							
-							members {
-								nodes {
-									email
-									status
-									currentTier {
-										title
-									}
-								}
+							subgraphs {
+								id
 							}
 						}
 					}
+					
+					members {
+						nodes {
+							email
+							status
+						currentTier {
+							title
+						}
+					}
 				}
-			`, { id } )
+			}
+		}
+	}
+`)
+
+	const request = ( id: number ) => {
+		const res = data_request({ id })
 
 		if( !res.admin.patreonCredentials ) {
 			throw new Error( `Patreon credentials with ID id not found` )

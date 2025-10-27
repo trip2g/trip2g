@@ -1,4 +1,21 @@
 namespace $.$$ {
+	const mutate = $trip2g_graphql_request(/* GraphQL */`
+		mutation AdminCreateBoostyCreds($input: CreateBoostyCredentialsInput!) {
+			admin {
+				payload: createBoostyCredentials(input: $input) {
+					... on ErrorPayload {
+						message
+					}
+					... on CreateBoostyCredentialsPayload {
+						boostyCredentials {
+							id
+						}
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_boostycredentials_create extends $.$trip2g_admin_boostycredentials_create {
 		override body() {
 			if( this.credentials_id_string() !== '' ) {
@@ -40,39 +57,21 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminCreateBoostyCreds($input: CreateBoostyCredentialsInput!) {
-						admin {
-							createBoostyCredentials(input: $input) {
-								... on ErrorPayload {
-									message
-								}
-								... on CreateBoostyCredentialsPayload {
-									boostyCredentials {
-										id
-									}
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						authData: this.auth_data(),
-						deviceId: this.device_id(),
-						blogName: this.blog_name()
-					},
-				}
-			)
+			const res = mutate({
+				input: {
+					authData: this.auth_data(),
+					deviceId: this.device_id(),
+					blogName: this.blog_name()
+				},
+			})
 
-			if( res.admin.createBoostyCredentials.__typename === 'ErrorPayload' ) {
-				this.result( res.admin.createBoostyCredentials.message )
+			if( res.admin.payload.__typename === 'ErrorPayload' ) {
+				this.result( res.admin.payload.message )
 				return
 			}
 
-			if( res.admin.createBoostyCredentials.__typename === 'CreateBoostyCredentialsPayload' ) {
-				this.credentials_id_string( res.admin.createBoostyCredentials.boostyCredentials.id.toString() )
+			if( res.admin.payload.__typename === 'CreateBoostyCredentialsPayload' ) {
+				this.credentials_id_string( res.admin.payload.boostyCredentials.id.toString() )
 				return
 			}
 

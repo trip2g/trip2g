@@ -1,0 +1,37 @@
+$trip2g_admin_telegrampublishnote_show $mol_page
+	telegrampublishnote_id 0
+	title <= note_title \Telegram Publish Note
+	tools /
+		<= ResetButton $trip2g_admin_telegrampublishnote_button_reset
+			note_path_id <= telegrampublishnote_id
+	body /
+		<= Info $mol_view
+			style *
+				flexDirection \column
+			sub /
+				<= PublishAt_labeler $mol_labeler
+					title @ \Publish At
+					Content <= PublishAt $trip2g_admin_cell
+						content <= publish_at \
+				<= Status_labeler $mol_labeler
+					title @ \Status
+					Content <= Status $trip2g_admin_cell
+						content <= status \
+				<= Chats_labeler $mol_labeler
+					title @ \Chats
+					Content <= Chats $trip2g_admin_cell
+						content <= chats \
+				<= TimeRemaining_labeler $mol_labeler
+					title @ \Time Remaining
+					Content <= TimeRemaining $trip2g_admin_cell
+						sub /
+							<= Remaining $trip2g_time_remining
+								seconds <= seconds_until_publish 0
+				<= Warnings_labeler $mol_labeler
+					title @ \Warnings
+					Content <= Warnings $trip2g_admin_cell
+						content <= warnings @ \No Warnings
+				<= Content_labeler $mol_labeler
+					title @ \Post Content
+					Content <= MessageContent $trip2g_admin_telegrampublishnote_message
+						content <= content_text \

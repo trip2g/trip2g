@@ -1,22 +1,23 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminAllCronJobs {
+			admin {
+				allCronJobs {
+					nodes {
+						id
+						name
+						enabled
+						expression
+						lastExecAt
+					}
+				}
+			}
+		}
+	`)
 	export class $trip2g_admin_cronjob_catalog extends $.$trip2g_admin_cronjob_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request( `
-				query AdminAllCronJobs {
-					admin {
-						allCronJobs {
-							nodes {
-								id
-								name
-								enabled
-								expression
-								lastExecAt
-							}
-						}
-					}
-				}
-			`)
+			const res = request()
 
 			return $trip2g_graphql_make_map( res.admin.allCronJobs.nodes )
 		}

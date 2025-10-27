@@ -73,6 +73,11 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 		var messageID int64
 
 		for path := range noteView.Assets {
+			_, ok := noteView.AssetReplaces[path]
+			if !ok {
+				continue
+			}
+
 			firstImageURL = &noteView.AssetReplaces[path].URL
 			break
 		}

@@ -1,5 +1,5 @@
 $trip2g_admin_auditlog_catalog $mol_page
-	menu_title \Audit Logs
+	menu_title @ \Audit Logs
 	menu_filter_enabled true
 	body /
 		<= Items $mol_list

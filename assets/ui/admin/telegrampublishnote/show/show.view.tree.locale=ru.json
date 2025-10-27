@@ -1,0 +1,9 @@
+{
+	"$trip2g_admin_telegrampublishnote_show_PublishAt_labeler_title": "Время публикации",
+	"$trip2g_admin_telegrampublishnote_show_Status_labeler_title": "Статус",
+	"$trip2g_admin_telegrampublishnote_show_Chats_labeler_title": "Чаты",
+	"$trip2g_admin_telegrampublishnote_show_TimeRemaining_labeler_title": "Время до публикации",
+	"$trip2g_admin_telegrampublishnote_show_Warnings_labeler_title": "Предупреждения",
+	"$trip2g_admin_telegrampublishnote_show_warnings": "Нет предупреждений",
+	"$trip2g_admin_telegrampublishnote_show_Content_labeler_title": "Содержимое поста"
+}

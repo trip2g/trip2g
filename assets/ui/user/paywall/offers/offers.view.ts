@@ -1,34 +1,45 @@
 namespace $.$$ {
-	const request = ( page_id: number ) => {
-		const res = $trip2g_graphql_request(
-			`
-				query PaywallQuery($filter: ViewerOffersFilter!) {
-					viewer {
-						offers(filter: $filter) {
-							... on ActiveOffers {
-								nodes {
-									id
-									priceUSD
-									subgraphs {
-										name
-									}
-								}
-							}
-							... on SubgraphWaitList {
-								tgBotUrl
-								emailAllowed
+	const request_query = $trip2g_graphql_request(/* GraphQL */ `
+		query PaywallQuery($filter: ViewerOffersFilter!) {
+			viewer {
+				offers(filter: $filter) {
+					... on ActiveOffers {
+						nodes {
+							id
+							priceUSD
+							subgraphs {
+								name
 							}
 						}
 					}
-				
-				}
-			`,
-			{
-				filter: {
-					pageId: page_id,
+					... on SubgraphWaitList {
+						tgBotUrl
+						emailAllowed
+					}
 				}
 			}
-		)
+		}
+	`)
+
+	const payment_mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation CreatePaymentLink($input: CreatePaymentLinkInput!) {
+			data: createPaymentLink(input: $input) {
+				... on CreatePaymentLinkPayload {
+					redirectUrl
+				}
+				... on ErrorPayload {
+					message
+				}
+			}
+		}
+	`)
+
+	const request = ( page_id: number ) => {
+		const res = request_query({
+			filter: {
+				pageId: page_id,
+			}
+		})
 
 		return res.viewer.offers
 	}
@@ -77,28 +88,14 @@ namespace $.$$ {
 		buy( id?: any ) {
 			id = id || this.$.$mol_state_arg.value( 'offer' )
 
-			const res = $trip2g_graphql_request(
-				`
-				mutation CreatePaymentLink($input: CreatePaymentLinkInput!) {
-					data: createPaymentLink(input: $input) {
-						... on CreatePaymentLinkPayload {
-							redirectUrl
-						}
-						... on ErrorPayload {
-							message
-						}
-					}
-				}
-				`,
-				{
-					input: {
-						email: this.current_email() || null,
-						offerId: id,
-						returnPath: '/secondbrain',
-						paymentType: 'CRYPTO' as any,
-					},
-				}
-			)
+			const res = payment_mutate({
+				input: {
+					email: this.current_email() || null,
+					offerId: id,
+					returnPath: '/secondbrain',
+					paymentType: 'CRYPTO' as any,
+				},
+			})
 
 			if( res.data.__typename === 'ErrorPayload' ) {
 				if( res.data.message === 'sign_in_required' ) {

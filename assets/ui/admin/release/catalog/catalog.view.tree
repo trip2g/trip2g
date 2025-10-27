@@ -1,5 +1,5 @@
 $trip2g_admin_release_catalog $trip2g_admin_catalog
-	menu_title \Releases
+	menu_title @ \Releases
 	actions /
 		<= AddLink $mol_link
 			arg * id \add

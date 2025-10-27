@@ -123,7 +123,7 @@ function extractExportTypes(source, operationName, operationType) {
 					if (exportDirective) {
 						const nameArg = exportDirective.arguments?.find(arg => arg.name.value === 'name')
 						const singleArg = exportDirective.arguments?.find(arg => arg.name.value === 'single')
-						
+
 						const exportName = nameArg?.value?.value || node.name.value
 						const isSingle = singleArg?.value?.value === true
 
@@ -155,19 +155,19 @@ function extractExportTypes(source, operationName, operationType) {
 
 function extractOperationVariableTypes(operations) {
 	const variableTypes = []
-	
+
 	for (const op of operations) {
 		if (op.hasVars) {
 			// Extract operation name from variablesType (remove suffix like "QueryVariables")
 			const operationName = op.variablesType.replace(/(Query|Mutation|Subscription)Variables$/, '')
-			
+
 			variableTypes.push({
 				operationName,
 				variablesType: op.variablesType
 			})
 		}
 	}
-	
+
 	return variableTypes
 }
 
@@ -285,11 +285,9 @@ module.exports.plugin = (schema, documents, config) => {
 		const lit = op.source.replace(/\n/g, '\\n').replace(/\t/g, '\\t')
 
 		let vars = ''
-		let passVars = ''
 
 		if (op.hasVars) {
-			vars = `, variables: ${op.variablesType}`
-			passVars = `, variables`
+			vars = `variables: ${op.variablesType}`
 		}
 
 		if (op.type === 'subscription') {
@@ -297,12 +295,13 @@ module.exports.plugin = (schema, documents, config) => {
 				`export function ${molPrefix}_subscription(query: '${lit}'${vars}): ${op.resultType}`
 			)
 		} else {
-			requestLines.push(`export function ${molPrefix}_request(query: '${lit}'${vars}): ${op.resultType}`)
+      //requestLines.push(`export function ${molPrefix}_request(query: '${lit}'${vars}): ${op.resultType}`)
+      requestLines.push(`export function ${molPrefix}_request(query: '${lit}'): (${vars}) => ${op.resultType}`)
 		}
 	}
 
 	requestLines.push(
-		`export function ${molPrefix}_request(query: any, variables?: any) { return ${molPrefix}_raw_request(query, variables); }`
+		`export function ${molPrefix}_request(query: any) { return ${molPrefix}_raw_request(query); }`
 	)
 
 	subscriptionLines.push(

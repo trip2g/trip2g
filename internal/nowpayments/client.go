@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+	"trip2g/internal/logger"
 
 	"github.com/valyala/fasthttp"
 )
@@ -15,6 +16,8 @@ type Client struct {
 	http   *fasthttp.Client
 
 	reqTimeout time.Duration
+
+	logger logger.Logger
 }
 
 type UnexpectedStatusCodeError struct {
@@ -25,10 +28,11 @@ func (e *UnexpectedStatusCodeError) Error() string {
 	return fmt.Sprintf("unexpected status code: %d", e.StatusCode)
 }
 
-func NewClient(apiKey string) (*Client, error) {
+func NewClient(apiKey string, l logger.Logger) (*Client, error) {
 	client := Client{
 		apiKey:     apiKey,
 		reqTimeout: 5 * time.Second,
+		logger:     logger.WithPrefix(l, "nowpayments"),
 		http: &fasthttp.Client{
 			NoDefaultUserAgentHeader:      true,
 			DisableHeaderNamesNormalizing: true,
@@ -131,6 +135,8 @@ func (client *Client) CreateInvoice(params CreateInvoiceParams) (*CreateInvoiceR
 	}
 
 	if resp.StatusCode() != fasthttp.StatusOK {
+		client.logger.Error("unexpected status code", "status_code", resp.StatusCode(), "body", string(resp.Body()))
+
 		return nil, &UnexpectedStatusCodeError{StatusCode: resp.StatusCode()}
 	}
 

@@ -1,28 +1,30 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminNoteWarnings($filter: AdminLatestNoteViewsFilter) {
+			admin {
+				allLatestNoteViews(filter: $filter) {
+					nodes {
+						id
+						path
+						warnings {
+							level
+							message
+						}
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_noteview_warnings extends $.$trip2g_admin_noteview_warnings {
 
 		@$mol_mem
 		data() {
-			const res = $trip2g_graphql_request( `
-				query AdminNoteWarnings($filter: AdminLatestNoteViewsFilter) {
-					admin {
-						allLatestNoteViews(filter: $filter) {
-							nodes {
-								id
-								path
-								warnings {
-									level
-									message
-								}
-							}
-						}
-					}
-				}
-			`, {
+			const res = request({
 				filter: {
 					withWarnings: true,
 				},
-			} )
+			})
 
 			return $trip2g_graphql_make_map( res.admin.allLatestNoteViews.nodes )
 		}

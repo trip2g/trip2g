@@ -1,5 +1,5 @@
 $trip2g_admin_waitlistemailrequest_catalog $trip2g_admin_catalog
-	menu_title \Email Waitlist Requests
+	menu_title @ \Email Waitlist Requests
 	body /
 		<= Items $mol_list
 			rows <= rows /$mol_view

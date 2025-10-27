@@ -1,33 +1,32 @@
 namespace $.$$ {
-	export class $trip2g_admin_patreoncredentials_button_refresh extends $.$trip2g_admin_patreoncredentials_button_refresh {
-		refresh( event?: Event ) {
-			const res = $trip2g_graphql_request(
-				`
-					mutation RefreshPatreonData($input: RefreshPatreonDataInput!) {
-						admin {
-							refreshPatreonData(input: $input) {
-								... on ErrorPayload {
-									message
-								}
-								... on RefreshPatreonDataPayload {
-									success
-								}
-							}
-						}
+	const mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation RefreshPatreonData($input: RefreshPatreonDataInput!) {
+			admin {
+				payload: refreshPatreonData(input: $input) {
+					... on ErrorPayload {
+						message
 					}
-				`,
-				{
-					input: {
-						credentialsId: this.credentials_id()
+					... on RefreshPatreonDataPayload {
+						success
 					}
 				}
-			)
+			}
+		}
+	`)
 
-			if( res.admin.refreshPatreonData.__typename === 'ErrorPayload' ) {
-				throw new Error( res.admin.refreshPatreonData.message )
+	export class $trip2g_admin_patreoncredentials_button_refresh extends $.$trip2g_admin_patreoncredentials_button_refresh {
+		refresh( event?: Event ) {
+			const res = mutate( {
+				input: {
+					credentialsId: this.credentials_id()
+				}
+			} )
+
+			if( res.admin.payload.__typename === 'ErrorPayload' ) {
+				throw new Error( res.admin.payload.message )
 			}
 
-			if( res.admin.refreshPatreonData.__typename === 'RefreshPatreonDataPayload' ) {
+			if( res.admin.payload.__typename === 'RefreshPatreonDataPayload' ) {
 				this.status_title( 'Refresh: Success' )
 				return
 			}
@@ -36,7 +35,7 @@ namespace $.$$ {
 		}
 
 		@$mol_mem
-		override status_title(next?: string) {
+		override status_title( next?: string ) {
 			return next || 'Refresh'
 		}
 	}

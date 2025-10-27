@@ -1,30 +1,47 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */`
+		query AdminShowOffer($id: Int64!) {
+			admin {
+				offer(id: $id) {
+					id
+					publicId
+					createdAt
+					lifetime
+					priceUSD
+					startsAt
+					endsAt
+					subgraphIds
+					subgraphs {
+						id
+						name
+					}
+				}
+			}
+		}
+	`)
+
+	const mutate = $trip2g_graphql_request(/* GraphQL */`
+		mutation AdminUpdateOfferMutation($input: UpdateOfferInput!) {
+			admin {
+				payload: updateOffer(input: $input) {
+					... on UpdateOfferPayload {
+						offer {
+							id
+							publicId
+						}
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_offer_update extends $.$trip2g_admin_offer_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminShowOffer($id: Int64!) {
-						admin {
-							offer(id: $id) {
-								id
-								publicId
-								createdAt
-								lifetime
-								priceUSD
-								startsAt
-								endsAt
-								subgraphIds
-								subgraphs {
-									id
-									name
-								}
-							}
-						}
-					}
-				`,
-				{ id: this.offer_id() }
-			)
+			const res = request({ id: this.offer_id() })
 
 			if (!res.admin.offer) {
 				throw new Error('Offer not found')
@@ -125,42 +142,23 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminUpdateOfferMutation($input: UpdateOfferInput!) {
-						admin {
-							data: updateOffer(input: $input) {
-								... on UpdateOfferPayload {
-									offer {
-										id
-										publicId
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						id: this.offer_id(),
-						priceUSD: this.price_usd(),
-						subgraphIds: this.subgraph_ids() as number[],
-						lifetime: this.lifetime() || null,
-						startsAt: $trip2g_moment_toserver(this.starts_at_moment()),
-						endsAt: $trip2g_moment_toserver(this.ends_at_moment())
-					},
-				}
-			)
+			const res = mutate({
+				input: {
+					id: this.offer_id(),
+					priceUSD: this.price_usd(),
+					subgraphIds: this.subgraph_ids() as number[],
+					lifetime: this.lifetime() || null,
+					startsAt: $trip2g_moment_toserver(this.starts_at_moment()),
+					endsAt: $trip2g_moment_toserver(this.ends_at_moment())
+				},
+			})
 
-			if (res.admin.data.__typename === 'ErrorPayload') {
-				this.result(res.admin.data.message)
+			if (res.admin.payload.__typename === 'ErrorPayload') {
+				this.result(res.admin.payload.message)
 				return
 			}
 
-			if (res.admin.data.__typename === 'UpdateOfferPayload') {
+			if (res.admin.payload.__typename === 'UpdateOfferPayload') {
 				this.result('Offer updated successfully')
 				this.data(null) // Reset data to refresh
 				return

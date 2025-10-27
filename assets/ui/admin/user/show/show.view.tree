@@ -12,6 +12,8 @@ $trip2g_admin_user_show $mol_page
 	UserView $mol_view
 		sub /
 			<= UserDetails $mol_view
+				style *
+					flexDirection \column
 				sub /
 					<= Id_labeler $mol_labeler
 						title \ID

@@ -1,28 +1,30 @@
 namespace $.$$ {
-	export class $trip2g_admin_user_subgraphaccesses extends $.$trip2g_admin_user_subgraphaccesses {
-		@$mol_mem
-		data(reset?: null) {
-			const res = $trip2g_graphql_request(`
-				query AdminListUserSubgraphAccesses {
-					admin {
-						data: allUserSubgraphAccesses {
-							nodes {
-								__typename
-								id
-								createdAt
-								expiresAt
-								subgraph {
-									name
-								}
-								user {
-									id
-									email
-								}
-							}
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminListUserSubgraphAccesses {
+			admin {
+				data: allUserSubgraphAccesses {
+					nodes {
+						__typename
+						id
+						createdAt
+						expiresAt
+						subgraph {
+							name
+						}
+						user {
+							id
+							email
 						}
 					}
 				}
-			`)
+			}
+		}
+	`)
+
+	export class $trip2g_admin_user_subgraphaccesses extends $.$trip2g_admin_user_subgraphaccesses {
+		@$mol_mem
+		data(reset?: null) {
+			const res = request()
 
 			return $trip2g_graphql_make_map(res.admin.data.nodes)
 		}

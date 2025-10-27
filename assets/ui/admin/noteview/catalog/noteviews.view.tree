@@ -1,5 +1,5 @@
 $trip2g_admin_noteview_catalog $trip2g_admin_catalog
-	menu_title \Note Views
+	menu_title @ \Note Views
 	menu_filter_enabled true
 	param \path
 	Empty $mol_status

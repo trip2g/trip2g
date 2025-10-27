@@ -802,3 +802,14 @@ select c.*
   join telegram_publish_note_tags nt on pc.tag_id = nt.tag_id
  where nt.note_path_id = ?
    and c.removed_at is null;
+
+-- name: ListTelegramPublishSentMessagesByNotePathID :many
+select tsm.chat_id, tsm.message_id, c.telegram_id
+  from telegram_publish_sent_messages tsm
+  join tg_bot_chats c on tsm.chat_id = c.id
+ where tsm.note_path_id = ?;
+
+-- name: GetTelegramPublishNoteByNotePathID :one
+select *
+  from telegram_publish_notes
+ where note_path_id = ?;

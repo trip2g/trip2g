@@ -1,5 +1,5 @@
 $trip2g_admin_notfoundpath_catalog $trip2g_admin_catalog
-	menu_title \Not Found Paths
+	menu_title @ \Not Found Paths
 	param \id
 	Empty $mol_status
 	ShowPage* $trip2g_admin_notfoundpath_show

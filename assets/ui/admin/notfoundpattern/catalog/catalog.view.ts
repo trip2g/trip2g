@@ -1,24 +1,26 @@
 namespace $.$$ {
-	export class $trip2g_admin_notfoundpattern_catalog extends $.$trip2g_admin_notfoundpattern_catalog {
-		@$mol_mem
-		data( reset?: null ) {
-			const res = $trip2g_graphql_request( `
-				query AdminNotFoundIgnoredPatterns {
-					admin {
-						allNotFoundIgnoredPatterns {
-							nodes {
-								id
-								pattern
-								createdAt
-								createdBy {
-									id
-									email
-								}
-							}
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminNotFoundIgnoredPatterns {
+			admin {
+				allNotFoundIgnoredPatterns {
+					nodes {
+						id
+						pattern
+						createdAt
+						createdBy {
+							id
+							email
 						}
 					}
 				}
-			`)
+			}
+		}
+	`)
+
+	export class $trip2g_admin_notfoundpattern_catalog extends $.$trip2g_admin_notfoundpattern_catalog {
+		@$mol_mem
+		data( reset?: null ) {
+			const res = request()
 
 			return $trip2g_graphql_make_map( res.admin.allNotFoundIgnoredPatterns.nodes )
 		}

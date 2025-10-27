@@ -1,4 +1,16 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query PaywallActivePurchaseQuery {
+			viewer {
+				activePurchases {
+					id
+					status
+					successful
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_user_paywall_activepurchases extends $.$trip2g_user_paywall_activepurchases {
 		subgraphs(): string[] {
 			throw new Error('Not implemented')
@@ -18,19 +30,7 @@ namespace $.$$ {
 				return $trip2g_graphql_make_map([])
 			}
 
-			const res = $trip2g_graphql_request(
-				`
-				query PaywallActivePurchaseQuery {
-					viewer {
-						activePurchases {
-							id
-							status
-							successful
-						}
-					}
-				}
-			`
-			)
+			const res = request()
 
 			const done = this.$.$mol_state_arg.value('done') === 'true'
 

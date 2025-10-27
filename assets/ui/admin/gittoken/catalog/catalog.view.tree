@@ -1,5 +1,5 @@
 $trip2g_admin_gittoken_catalog $trip2g_admin_catalog
-	menu_title \Git Tokens
+	menu_title @ \Git Tokens
 	actions /
 		<= AddLink $mol_link
 			arg * id \add

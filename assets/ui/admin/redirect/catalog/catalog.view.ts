@@ -1,27 +1,29 @@
 namespace $.$$ {
-	export class $trip2g_admin_redirect_catalog extends $.$trip2g_admin_redirect_catalog {
-		@$mol_mem
-		data( reset?: null ) {
-			const res = $trip2g_graphql_request( `
-				query AdminRedirects {
-					admin {
-						allRedirects {
-							nodes {
-								id
-								createdAt
-								pattern
-								ignoreCase
-								isRegex
-								target
-								createdBy {
-									id
-									email
-								}
-							}
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminRedirects {
+			admin {
+				allRedirects {
+					nodes {
+						id
+						createdAt
+						pattern
+						ignoreCase
+						isRegex
+						target
+						createdBy {
+							id
+							email
 						}
 					}
 				}
-			`)
+			}
+		}
+	`)
+
+	export class $trip2g_admin_redirect_catalog extends $.$trip2g_admin_redirect_catalog {
+		@$mol_mem
+		data( reset?: null ) {
+			const res = request()
 
 			return $trip2g_graphql_make_map( res.admin.allRedirects.nodes )
 		}

@@ -1,26 +1,43 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminShowNotFoundIgnoredPattern {
+			admin {
+				allNotFoundIgnoredPatterns {
+					nodes {
+						id
+						pattern
+						createdAt
+						createdBy {
+							id
+							email
+						}
+					}
+				}
+			}
+		}
+	`)
+
+	const mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation AdminUpdateNotFoundIgnoredPatternMutation($input: UpdateNotFoundIgnoredPatternInput!) {
+			admin {
+				data: updateNotFoundIgnoredPattern(input: $input) {
+					... on UpdateNotFoundIgnoredPatternPayload {
+						notFoundIgnoredPattern {
+							id
+						}
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_notfoundpattern_update extends $.$trip2g_admin_notfoundpattern_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminShowNotFoundIgnoredPattern {
-						admin {
-							allNotFoundIgnoredPatterns {
-								nodes {
-									id
-									pattern
-									createdAt
-									createdBy {
-										id
-										email
-									}
-								}
-							}
-						}
-					}
-				`
-			)
+			const res = request()
 
 			const pattern = res.admin.allNotFoundIgnoredPatterns.nodes.find((n: any) => n.id === this.pattern_id())
 			if (!pattern) {
@@ -45,30 +62,12 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminUpdateNotFoundIgnoredPatternMutation($input: UpdateNotFoundIgnoredPatternInput!) {
-						admin {
-							data: updateNotFoundIgnoredPattern(input: $input) {
-								... on UpdateNotFoundIgnoredPatternPayload {
-									notFoundIgnoredPattern {
-										id
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						id: this.pattern_id(),
-						pattern: this.pattern()
-					},
-				}
-			)
+			const res = mutate({
+				input: {
+					id: this.pattern_id(),
+					pattern: this.pattern()
+				},
+			})
 
 			if( res.admin.data.__typename === 'ErrorPayload' ) {
 				this.result( res.admin.data.message )

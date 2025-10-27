@@ -1,21 +1,42 @@
 namespace $.$$ {
+	const data_request = $trip2g_graphql_request(
+		`
+			query AdminUserEditQuery($id: Int64!) {
+				admin {
+					user(id: $id) {
+						id
+						email
+						createdAt
+					}
+				}
+			}
+		`
+	)
+
+	const submit_request = $trip2g_graphql_request(
+		`
+			mutation AdminUpdateUser($input: UpdateUserInput!) {
+				admin {
+					updateUser(input: $input) {
+						... on UpdateUserPayload {
+							user {
+								id
+								email
+							}
+						}
+						... on ErrorPayload {
+							message
+						}
+					}
+			}
+		}
+		`
+	)
+
 	export class $trip2g_admin_user_update extends $.$trip2g_admin_user_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminUserEditQuery($id: Int64!) {
-						admin {
-							user(id: $id) {
-								id
-								email
-								createdAt
-							}
-						}
-					}
-				`,
-				{ id: this.user_id() }
-			)
+			const res = data_request({ id: this.user_id() })
 
 			if (!res.admin.user) {
 				throw new Error('User not found')
@@ -57,31 +78,12 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminUpdateUser($input: UpdateUserInput!) {
-						admin {
-							updateUser(input: $input) {
-								... on UpdateUserPayload {
-									user {
-										id
-										email
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						id: this.user_id(),
-						email: this.email()
-					},
-				}
-			)
+			const res = submit_request({
+				input: {
+					id: this.user_id(),
+					email: this.email()
+				},
+			})
 
 			if (res.admin.updateUser.__typename === 'ErrorPayload') {
 				this.result(res.admin.updateUser.message)

@@ -1,25 +1,29 @@
 namespace $.$$ {
+	const delete_request = $trip2g_graphql_request(
+		`
+			mutation AdminDeleteHtmlInjection($input: DeleteHtmlInjectionInput!) {
+				admin {
+					data: deleteHtmlInjection(input: $input) {
+						... on DeleteHtmlInjectionPayload {
+							deletedId
+							__typename
+						}
+
+						... on ErrorPayload {
+							message
+						}
+					}
+				}
+			}
+		`
+	)
+
 	export class $trip2g_admin_htmlinjection_button_delete extends $.$trip2g_admin_htmlinjection_button_delete {
 		click(e: PointerEvent) {
 			e.stopPropagation()
 			e.preventDefault()
 
-			const res = $trip2g_graphql_request(`
-				mutation AdminDeleteHtmlInjection($input: DeleteHtmlInjectionInput!) {
-					admin {
-						data: deleteHtmlInjection(input: $input) {
-							... on DeleteHtmlInjectionPayload {
-								deletedId
-								__typename
-							}
-
-							... on ErrorPayload {
-								message
-							}
-						}
-					}
-				}
-			`, {
+			const res = delete_request({
 				input: {
 					id: this.htmlinjection_id(),
 				},

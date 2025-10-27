@@ -1,24 +1,26 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query AdminPurchases {
+			admin {
+				allPurchases {
+					nodes {
+						id
+						createdAt
+						paymentProvider
+						status
+						successful
+						offerId
+						email
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_purchase_catalog extends $.$trip2g_admin_purchase_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = $trip2g_graphql_request( `
-				query AdminPurchases {
-					admin {
-						allPurchases {
-							nodes {
-								id
-								createdAt
-								paymentProvider
-								status
-								successful
-								offerId
-								email
-							}
-						}
-					}
-				}
-			`)
+			const res = request()
 
 			return $trip2g_graphql_make_map( res.admin.allPurchases.nodes )
 		}

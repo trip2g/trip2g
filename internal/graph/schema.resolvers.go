@@ -36,6 +36,7 @@ import (
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/resetnotfoundpath"
+	"trip2g/internal/case/admin/resettelegrampublishnote"
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/runcronjob"
@@ -559,16 +560,6 @@ func (r *adminMutationResolver) SetTgChatSubgraphInvites(ctx context.Context, ob
 	return settgchatsubgraphinvites.Resolve(ctx, r.env(ctx), input)
 }
 
-// SetTgChatPublishTags is the resolver for the setTgChatPublishTags field.
-func (r *adminMutationResolver) SetTgChatPublishTags(ctx context.Context, obj *appmodel.AdminMutation, input model.SetTgChatPublishTagsInput) (model.SetTgChatPublishTagsOrErrorPayload, error) {
-	return settgchatpublishtags.Resolve(ctx, r.env(ctx), input)
-}
-
-// SetTgChatPublishInstantTags is the resolver for the setTgChatPublishInstantTags field.
-func (r *adminMutationResolver) SetTgChatPublishInstantTags(ctx context.Context, obj *appmodel.AdminMutation, input model.SetTgChatPublishInstantTagsInput) (model.SetTgChatPublishInstantTagsOrErrorPayload, error) {
-	return settgchatpublishinstanttags.Resolve(ctx, r.env(ctx), input)
-}
-
 // RemoveExpiredTgChatMembers is the resolver for the removeExpiredTgChatMembers field.
 func (r *adminMutationResolver) RemoveExpiredTgChatMembers(ctx context.Context, obj *appmodel.AdminMutation, input model.RemoveExpiredTgChatMembersInput) (model.RemoveExpiredTgChatMembersOrErrorPayload, error) {
 	filter := removeexpiredtgchatmembers.Filter{
@@ -599,6 +590,21 @@ func (r *adminMutationResolver) RemoveExpiredTgChatMembers(ctx context.Context, 
 	}
 
 	return &payload, nil
+}
+
+// SetTgChatPublishTags is the resolver for the setTgChatPublishTags field.
+func (r *adminMutationResolver) SetTgChatPublishTags(ctx context.Context, obj *appmodel.AdminMutation, input model.SetTgChatPublishTagsInput) (model.SetTgChatPublishTagsOrErrorPayload, error) {
+	return settgchatpublishtags.Resolve(ctx, r.env(ctx), input)
+}
+
+// SetTgChatPublishInstantTags is the resolver for the setTgChatPublishInstantTags field.
+func (r *adminMutationResolver) SetTgChatPublishInstantTags(ctx context.Context, obj *appmodel.AdminMutation, input model.SetTgChatPublishInstantTagsInput) (model.SetTgChatPublishInstantTagsOrErrorPayload, error) {
+	return settgchatpublishinstanttags.Resolve(ctx, r.env(ctx), input)
+}
+
+// ResetTelegramPublishNote is the resolver for the resetTelegramPublishNote field.
+func (r *adminMutationResolver) ResetTelegramPublishNote(ctx context.Context, obj *appmodel.AdminMutation, input model.ResetTelegramPublishNoteInput) (model.ResetTelegramPublishNoteOrErrorPayload, error) {
+	return resettelegrampublishnote.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatePatreonCredentials is the resolver for the createPatreonCredentials field.
@@ -1159,6 +1165,11 @@ func (r *adminQueryResolver) HTMLInjection(ctx context.Context, obj *appmodel.Ad
 // CronJob is the resolver for the cronJob field.
 func (r *adminQueryResolver) CronJob(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.CronJob, error) {
 	return resolveOne[db.CronJob](ctx, id, r.env(ctx).CronJobByID)
+}
+
+// TelegramPublishNote is the resolver for the telegramPublishNote field.
+func (r *adminQueryResolver) TelegramPublishNote(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.TelegramPublishNote, error) {
+	return resolveOne[db.TelegramPublishNote](ctx, id, r.env(ctx).GetTelegramPublishNoteByNotePathID)
 }
 
 // ActiveUserSubgraphs is the resolver for the activeUserSubgraphs field.

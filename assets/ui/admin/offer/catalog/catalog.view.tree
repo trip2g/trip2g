@@ -1,5 +1,5 @@
 $trip2g_admin_offer_catalog $trip2g_admin_catalog
-	menu_title \Offers
+	menu_title @ \Offers
 	param \id
 	Empty $mol_status
 	actions /

@@ -339,6 +339,7 @@ type ComplexityRoot struct {
 		RefreshPatreonData           func(childComplexity int, input model.RefreshPatreonDataInput) int
 		RemoveExpiredTgChatMembers   func(childComplexity int, input model.RemoveExpiredTgChatMembersInput) int
 		ResetNotFoundPath            func(childComplexity int, input model.ResetNotFoundPathInput) int
+		ResetTelegramPublishNote     func(childComplexity int, input model.ResetTelegramPublishNoteInput) int
 		RestoreBoostyCredentials     func(childComplexity int, input model.RestoreBoostyCredentialsInput) int
 		RestorePatreonCredentials    func(childComplexity int, input model.RestorePatreonCredentialsInput) int
 		RunCronJob                   func(childComplexity int, input model.RunCronJobInput) int
@@ -522,6 +523,7 @@ type ComplexityRoot struct {
 		Purchase                   func(childComplexity int, id string) int
 		Redirect                   func(childComplexity int, id int64) int
 		Subgraph                   func(childComplexity int, id int64) int
+		TelegramPublishNote        func(childComplexity int, id int64) int
 		TgBot                      func(childComplexity int, id int64) int
 		TgBotChats                 func(childComplexity int, filter model.AdminTgBotChatsFilterInput) int
 		TgChatMembers              func(childComplexity int, filter model.AdminTgChatMembersFilterInput) int
@@ -965,6 +967,10 @@ type ComplexityRoot struct {
 		NotFoundPath func(childComplexity int) int
 	}
 
+	ResetTelegramPublishNotePayload struct {
+		PublishNote func(childComplexity int) int
+	}
+
 	RestoreBoostyCredentialsPayload struct {
 		BoostyCredentials func(childComplexity int) int
 	}
@@ -1271,9 +1277,10 @@ type AdminMutationResolver interface {
 	UpdateTgBot(ctx context.Context, obj *model1.AdminMutation, input model.UpdateTgBotInput) (model.UpdateTgBotOrErrorPayload, error)
 	SetTgChatSubgraphs(ctx context.Context, obj *model1.AdminMutation, input model.SetTgChatSubgraphsInput) (model.SetTgChatSubgraphsOrErrorPayload, error)
 	SetTgChatSubgraphInvites(ctx context.Context, obj *model1.AdminMutation, input model.SetTgChatSubgraphInvitesInput) (model.SetTgChatSubgraphInvitesOrErrorPayload, error)
+	RemoveExpiredTgChatMembers(ctx context.Context, obj *model1.AdminMutation, input model.RemoveExpiredTgChatMembersInput) (model.RemoveExpiredTgChatMembersOrErrorPayload, error)
 	SetTgChatPublishTags(ctx context.Context, obj *model1.AdminMutation, input model.SetTgChatPublishTagsInput) (model.SetTgChatPublishTagsOrErrorPayload, error)
 	SetTgChatPublishInstantTags(ctx context.Context, obj *model1.AdminMutation, input model.SetTgChatPublishInstantTagsInput) (model.SetTgChatPublishInstantTagsOrErrorPayload, error)
-	RemoveExpiredTgChatMembers(ctx context.Context, obj *model1.AdminMutation, input model.RemoveExpiredTgChatMembersInput) (model.RemoveExpiredTgChatMembersOrErrorPayload, error)
+	ResetTelegramPublishNote(ctx context.Context, obj *model1.AdminMutation, input model.ResetTelegramPublishNoteInput) (model.ResetTelegramPublishNoteOrErrorPayload, error)
 	CreatePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreatePatreonCredentialsInput) (model.CreatePatreonCredentialsOrErrorPayload, error)
 	DeletePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeletePatreonCredentialsInput) (model.DeletePatreonCredentialsOrErrorPayload, error)
 	RestorePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.RestorePatreonCredentialsInput) (model.RestorePatreonCredentialsOrErrorPayload, error)
@@ -1396,6 +1403,7 @@ type AdminQueryResolver interface {
 	NoteAsset(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.NoteAsset, error)
 	HTMLInjection(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.HtmlInjection, error)
 	CronJob(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.CronJob, error)
+	TelegramPublishNote(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.TelegramPublishNote, error)
 	ActiveUserSubgraphs(ctx context.Context, obj *model1.AdminQuery, id int64) ([]string, error)
 }
 type AdminRedirectResolver interface {
@@ -2594,6 +2602,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminMutation.ResetNotFoundPath(childComplexity, args["input"].(model.ResetNotFoundPathInput)), true
 
+	case "AdminMutation.resetTelegramPublishNote":
+		if e.complexity.AdminMutation.ResetTelegramPublishNote == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_resetTelegramPublishNote_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.ResetTelegramPublishNote(childComplexity, args["input"].(model.ResetTelegramPublishNoteInput)), true
+
 	case "AdminMutation.restoreBoostyCredentials":
 		if e.complexity.AdminMutation.RestoreBoostyCredentials == nil {
 			break
@@ -3707,6 +3727,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.Subgraph(childComplexity, args["id"].(int64)), true
+
+	case "AdminQuery.telegramPublishNote":
+		if e.complexity.AdminQuery.TelegramPublishNote == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_telegramPublishNote_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.TelegramPublishNote(childComplexity, args["id"].(int64)), true
 
 	case "AdminQuery.tgBot":
 		if e.complexity.AdminQuery.TgBot == nil {
@@ -5331,6 +5363,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ResetNotFoundPathPayload.NotFoundPath(childComplexity), true
 
+	case "ResetTelegramPublishNotePayload.publishNote":
+		if e.complexity.ResetTelegramPublishNotePayload.PublishNote == nil {
+			break
+		}
+
+		return e.complexity.ResetTelegramPublishNotePayload.PublishNote(childComplexity), true
+
 	case "RestoreBoostyCredentialsPayload.boostyCredentials":
 		if e.complexity.RestoreBoostyCredentialsPayload.BoostyCredentials == nil {
 			break
@@ -5891,6 +5930,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRemoveExpiredTgChatMembersInput,
 		ec.unmarshalInputRequestEmailSignInCodeInput,
 		ec.unmarshalInputResetNotFoundPathInput,
+		ec.unmarshalInputResetTelegramPublishNoteInput,
 		ec.unmarshalInputRestoreBoostyCredentialsInput,
 		ec.unmarshalInputRestorePatreonCredentialsInput,
 		ec.unmarshalInputRunCronJobInput,
@@ -6606,6 +6646,29 @@ func (ec *executionContext) field_AdminMutation_resetNotFoundPath_argsInput(
 	}
 
 	var zeroVal model.ResetNotFoundPathInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_resetTelegramPublishNote_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_resetTelegramPublishNote_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_resetTelegramPublishNote_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.ResetTelegramPublishNoteInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNResetTelegramPublishNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐResetTelegramPublishNoteInput(ctx, tmp)
+	}
+
+	var zeroVal model.ResetTelegramPublishNoteInput
 	return zeroVal, nil
 }
 
@@ -7471,6 +7534,29 @@ func (ec *executionContext) field_AdminQuery_subgraph_args(ctx context.Context, 
 	return args, nil
 }
 func (ec *executionContext) field_AdminQuery_subgraph_argsID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (int64, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNInt642int64(ctx, tmp)
+	}
+
+	var zeroVal int64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminQuery_telegramPublishNote_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminQuery_telegramPublishNote_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminQuery_telegramPublishNote_argsID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (int64, error) {
@@ -13920,6 +14006,61 @@ func (ec *executionContext) fieldContext_AdminMutation_setTgChatSubgraphInvites(
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminMutation_removeExpiredTgChatMembers(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_removeExpiredTgChatMembers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().RemoveExpiredTgChatMembers(rctx, obj, fc.Args["input"].(model.RemoveExpiredTgChatMembersInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.RemoveExpiredTgChatMembersOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNRemoveExpiredTgChatMembersOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveExpiredTgChatMembersOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_removeExpiredTgChatMembers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RemoveExpiredTgChatMembersOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_removeExpiredTgChatMembers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminMutation_setTgChatPublishTags(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminMutation_setTgChatPublishTags(ctx, field)
 	if err != nil {
@@ -14030,8 +14171,8 @@ func (ec *executionContext) fieldContext_AdminMutation_setTgChatPublishInstantTa
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminMutation_removeExpiredTgChatMembers(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AdminMutation_removeExpiredTgChatMembers(ctx, field)
+func (ec *executionContext) _AdminMutation_resetTelegramPublishNote(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_resetTelegramPublishNote(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -14044,7 +14185,7 @@ func (ec *executionContext) _AdminMutation_removeExpiredTgChatMembers(ctx contex
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.AdminMutation().RemoveExpiredTgChatMembers(rctx, obj, fc.Args["input"].(model.RemoveExpiredTgChatMembersInput))
+		return ec.resolvers.AdminMutation().ResetTelegramPublishNote(rctx, obj, fc.Args["input"].(model.ResetTelegramPublishNoteInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -14056,19 +14197,19 @@ func (ec *executionContext) _AdminMutation_removeExpiredTgChatMembers(ctx contex
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.RemoveExpiredTgChatMembersOrErrorPayload)
+	res := resTmp.(model.ResetTelegramPublishNoteOrErrorPayload)
 	fc.Result = res
-	return ec.marshalNRemoveExpiredTgChatMembersOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐRemoveExpiredTgChatMembersOrErrorPayload(ctx, field.Selections, res)
+	return ec.marshalNResetTelegramPublishNoteOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐResetTelegramPublishNoteOrErrorPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AdminMutation_removeExpiredTgChatMembers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_AdminMutation_resetTelegramPublishNote(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AdminMutation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type RemoveExpiredTgChatMembersOrErrorPayload does not have child fields")
+			return nil, errors.New("field of type ResetTelegramPublishNoteOrErrorPayload does not have child fields")
 		},
 	}
 	defer func() {
@@ -14078,7 +14219,7 @@ func (ec *executionContext) fieldContext_AdminMutation_removeExpiredTgChatMember
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_removeExpiredTgChatMembers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_AdminMutation_resetTelegramPublishNote_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -20889,6 +21030,82 @@ func (ec *executionContext) fieldContext_AdminQuery_cronJob(ctx context.Context,
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_cronJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_telegramPublishNote(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminQuery_telegramPublishNote(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminQuery().TelegramPublishNote(rctx, obj, fc.Args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.TelegramPublishNote)
+	fc.Result = res
+	return ec.marshalOAdminTelegramPublishNote2ᚖtrip2gᚋinternalᚋdbᚐTelegramPublishNote(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_telegramPublishNote(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTelegramPublishNote_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTelegramPublishNote_createdAt(ctx, field)
+			case "publishAt":
+				return ec.fieldContext_AdminTelegramPublishNote_publishAt(ctx, field)
+			case "secondsUntilPublish":
+				return ec.fieldContext_AdminTelegramPublishNote_secondsUntilPublish(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_AdminTelegramPublishNote_publishedAt(ctx, field)
+			case "publishedVersionID":
+				return ec.fieldContext_AdminTelegramPublishNote_publishedVersionID(ctx, field)
+			case "status":
+				return ec.fieldContext_AdminTelegramPublishNote_status(ctx, field)
+			case "noteView":
+				return ec.fieldContext_AdminTelegramPublishNote_noteView(ctx, field)
+			case "post":
+				return ec.fieldContext_AdminTelegramPublishNote_post(ctx, field)
+			case "tags":
+				return ec.fieldContext_AdminTelegramPublishNote_tags(ctx, field)
+			case "chats":
+				return ec.fieldContext_AdminTelegramPublishNote_chats(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramPublishNote", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_telegramPublishNote_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -28677,12 +28894,14 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_setTgChatSubgraphs(ctx, field)
 			case "setTgChatSubgraphInvites":
 				return ec.fieldContext_AdminMutation_setTgChatSubgraphInvites(ctx, field)
+			case "removeExpiredTgChatMembers":
+				return ec.fieldContext_AdminMutation_removeExpiredTgChatMembers(ctx, field)
 			case "setTgChatPublishTags":
 				return ec.fieldContext_AdminMutation_setTgChatPublishTags(ctx, field)
 			case "setTgChatPublishInstantTags":
 				return ec.fieldContext_AdminMutation_setTgChatPublishInstantTags(ctx, field)
-			case "removeExpiredTgChatMembers":
-				return ec.fieldContext_AdminMutation_removeExpiredTgChatMembers(ctx, field)
+			case "resetTelegramPublishNote":
+				return ec.fieldContext_AdminMutation_resetTelegramPublishNote(ctx, field)
 			case "createPatreonCredentials":
 				return ec.fieldContext_AdminMutation_createPatreonCredentials(ctx, field)
 			case "deletePatreonCredentials":
@@ -30922,6 +31141,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_htmlInjection(ctx, field)
 			case "cronJob":
 				return ec.fieldContext_AdminQuery_cronJob(ctx, field)
+			case "telegramPublishNote":
+				return ec.fieldContext_AdminQuery_telegramPublishNote(ctx, field)
 			case "activeUserSubgraphs":
 				return ec.fieldContext_AdminQuery_activeUserSubgraphs(ctx, field)
 			}
@@ -31737,6 +31958,74 @@ func (ec *executionContext) fieldContext_ResetNotFoundPathPayload_notFoundPath(_
 				return ec.fieldContext_AdminNotFoundPath_lastHitAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminNotFoundPath", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResetTelegramPublishNotePayload_publishNote(ctx context.Context, field graphql.CollectedField, obj *model.ResetTelegramPublishNotePayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResetTelegramPublishNotePayload_publishNote(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PublishNote, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.TelegramPublishNote)
+	fc.Result = res
+	return ec.marshalNAdminTelegramPublishNote2ᚖtrip2gᚋinternalᚋdbᚐTelegramPublishNote(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResetTelegramPublishNotePayload_publishNote(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResetTelegramPublishNotePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTelegramPublishNote_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTelegramPublishNote_createdAt(ctx, field)
+			case "publishAt":
+				return ec.fieldContext_AdminTelegramPublishNote_publishAt(ctx, field)
+			case "secondsUntilPublish":
+				return ec.fieldContext_AdminTelegramPublishNote_secondsUntilPublish(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_AdminTelegramPublishNote_publishedAt(ctx, field)
+			case "publishedVersionID":
+				return ec.fieldContext_AdminTelegramPublishNote_publishedVersionID(ctx, field)
+			case "status":
+				return ec.fieldContext_AdminTelegramPublishNote_status(ctx, field)
+			case "noteView":
+				return ec.fieldContext_AdminTelegramPublishNote_noteView(ctx, field)
+			case "post":
+				return ec.fieldContext_AdminTelegramPublishNote_post(ctx, field)
+			case "tags":
+				return ec.fieldContext_AdminTelegramPublishNote_tags(ctx, field)
+			case "chats":
+				return ec.fieldContext_AdminTelegramPublishNote_chats(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramPublishNote", field.Name)
 		},
 	}
 	return fc, nil
@@ -38802,6 +39091,33 @@ func (ec *executionContext) unmarshalInputResetNotFoundPathInput(ctx context.Con
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputResetTelegramPublishNoteInput(ctx context.Context, obj any) (model.ResetTelegramPublishNoteInput, error) {
+	var it model.ResetTelegramPublishNoteInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRestoreBoostyCredentialsInput(ctx context.Context, obj any) (model.RestoreBoostyCredentialsInput, error) {
 	var it model.RestoreBoostyCredentialsInput
 	asMap := map[string]any{}
@@ -40530,6 +40846,29 @@ func (ec *executionContext) _ResetNotFoundPathOrErrorPayload(ctx context.Context
 			return graphql.Null
 		}
 		return ec._ResetNotFoundPathPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _ResetTelegramPublishNoteOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.ResetTelegramPublishNoteOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ResetTelegramPublishNotePayload:
+		return ec._ResetTelegramPublishNotePayload(ctx, sel, &obj)
+	case *model.ResetTelegramPublishNotePayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ResetTelegramPublishNotePayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -44834,6 +45173,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "removeExpiredTgChatMembers":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_removeExpiredTgChatMembers(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "setTgChatPublishTags":
 			field := field
 
@@ -44906,7 +45281,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "removeExpiredTgChatMembers":
+		case "resetTelegramPublishNote":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -44915,7 +45290,7 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._AdminMutation_removeExpiredTgChatMembers(ctx, field, obj)
+				res = ec._AdminMutation_resetTelegramPublishNote(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -48908,6 +49283,39 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_cronJob(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "telegramPublishNote":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_telegramPublishNote(ctx, field, obj)
 				return res
 			}
 
@@ -53033,7 +53441,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -54789,6 +55197,45 @@ func (ec *executionContext) _ResetNotFoundPathPayload(ctx context.Context, sel a
 			out.Values[i] = graphql.MarshalString("ResetNotFoundPathPayload")
 		case "notFoundPath":
 			out.Values[i] = ec._ResetNotFoundPathPayload_notFoundPath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var resetTelegramPublishNotePayloadImplementors = []string{"ResetTelegramPublishNotePayload", "ResetTelegramPublishNoteOrErrorPayload"}
+
+func (ec *executionContext) _ResetTelegramPublishNotePayload(ctx context.Context, sel ast.SelectionSet, obj *model.ResetTelegramPublishNotePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resetTelegramPublishNotePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResetTelegramPublishNotePayload")
+		case "publishNote":
+			out.Values[i] = ec._ResetTelegramPublishNotePayload_publishNote(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -59113,6 +59560,16 @@ func (ec *executionContext) marshalNAdminTelegramPublishNote2ᚕtrip2gᚋinterna
 	return ret
 }
 
+func (ec *executionContext) marshalNAdminTelegramPublishNote2ᚖtrip2gᚋinternalᚋdbᚐTelegramPublishNote(ctx context.Context, sel ast.SelectionSet, v *db.TelegramPublishNote) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminTelegramPublishNote(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminTelegramPublishNotesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramPublishNotesConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminTelegramPublishNotesConnection) graphql.Marshaler {
 	return ec._AdminTelegramPublishNotesConnection(ctx, sel, &v)
 }
@@ -61000,6 +61457,21 @@ func (ec *executionContext) marshalNResetNotFoundPathOrErrorPayload2trip2gᚋint
 	return ec._ResetNotFoundPathOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNResetTelegramPublishNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐResetTelegramPublishNoteInput(ctx context.Context, v any) (model.ResetTelegramPublishNoteInput, error) {
+	res, err := ec.unmarshalInputResetTelegramPublishNoteInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNResetTelegramPublishNoteOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐResetTelegramPublishNoteOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.ResetTelegramPublishNoteOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ResetTelegramPublishNoteOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNRestoreBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐRestoreBoostyCredentialsInput(ctx context.Context, v any) (model.RestoreBoostyCredentialsInput, error) {
 	res, err := ec.unmarshalInputRestoreBoostyCredentialsInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -62157,6 +62629,13 @@ func (ec *executionContext) marshalOAdminSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSu
 		return graphql.Null
 	}
 	return ec._AdminSubgraph(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminTelegramPublishNote2ᚖtrip2gᚋinternalᚋdbᚐTelegramPublishNote(ctx context.Context, sel ast.SelectionSet, v *db.TelegramPublishNote) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminTelegramPublishNote(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOAdminTelegramPublishNotesFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramPublishNotesFilter(ctx context.Context, v any) (*model.AdminTelegramPublishNotesFilter, error) {

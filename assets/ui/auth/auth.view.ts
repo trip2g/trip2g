@@ -1,4 +1,51 @@
 namespace $.$$ {
+	const signout_mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation SignOut {
+			data: signOut {
+				... on ErrorPayload {
+					__typename
+					message
+				}
+				... on SignOutPayload {
+					__typename
+					viewer {
+						id
+					}
+				}
+			}
+		}
+	`)
+
+	const request_email_mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {
+			data: requestEmailSignInCode(input: $input) {
+				... on ErrorPayload {
+					__typename
+					message
+				}
+				... on RequestEmailSignInCodePayload {
+					__typename
+					success
+				}
+			}
+		}
+	`)
+
+	const signin_mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation SignInByEmail($input: SignInByEmailInput!) {
+			data: signInByEmail(input: $input) {
+				... on SignInPayload {
+					__typename
+					token
+				}
+				... on ErrorPayload {
+					__typename
+					message
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_auth extends $.$trip2g_auth {
 		me( reset?: null ) {
 			return $trip2g_auth_viewer.current( reset )
@@ -13,22 +60,7 @@ namespace $.$$ {
 		}
 
 		signout() {
-			const res = $trip2g_graphql_request(/* GraphQL */ `
-				mutation SignOut {
-					data: signOut {
-						... on ErrorPayload {
-							__typename
-							message
-						}
-						... on SignOutPayload {
-							__typename
-							viewer {
-								id
-							}
-						}
-					}
-				}
-			`)
+			const res = signout_mutate()
 
 			if( res.data.__typename === 'ErrorPayload' ) {
 				throw new Error( res.data.message )
@@ -80,25 +112,9 @@ namespace $.$$ {
 		}
 
 		static mutate( email: string ) {
-			return $trip2g_graphql_request(
-				/* GraphQL */ `
-					mutation RequestEmailSignInCode($input: RequestEmailSignInCodeInput!) {
-						data: requestEmailSignInCode(input: $input) {
-							... on ErrorPayload {
-								__typename
-								message
-							}
-							... on RequestEmailSignInCodePayload {
-								__typename
-								success
-							}
-						}
-					}
-				`,
-				{
-					input: { email },
-				}
-			)
+			return request_email_mutate({
+				input: { email },
+			})
 		}
 
 		submit() {
@@ -153,28 +169,12 @@ namespace $.$$ {
 				}
 			}
 
-			const res = $trip2g_graphql_request(
-				/* GraphQL */ `
-					mutation SignInByEmail($input: SignInByEmailInput!) {
-						data: signInByEmail(input: $input) {
-							... on SignInPayload {
-								__typename
-								token
-							}
-							... on ErrorPayload {
-								__typename
-								message
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						email,
-						code: this.code(),
-					},
-				}
-			)
+			const res = signin_mutate({
+				input: {
+					email,
+					code: this.code(),
+				},
+			})
 
 			if( res.data.__typename === 'ErrorPayload' ) {
 				this.request_error( res.data.message )

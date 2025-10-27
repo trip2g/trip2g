@@ -1,4 +1,19 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */ `
+		query ReaderQuery($input: NoteInput!) {
+			note(input: $input) {
+				title
+				html
+				pathId
+				toc {
+					id
+					title
+					level
+				}
+			}
+		}
+	`)
+
 	type NoteKey = string | number
 
 	export class $trip2g_reader extends $.$trip2g_reader {
@@ -14,22 +29,9 @@ namespace $.$$ {
 				pathId = key
 			}
 
-			const res = $trip2g_graphql_request( `
-				query ReaderQuery($input: NoteInput!) {
-					note(input: $input) {
-						title
-						html
-						pathId
-						toc {
-							id
-							title
-							level
-						}
-					}
-				}
-			`, {
+			const res = request({
 				input: { path, pathId, referer: "" },
-			} )
+			})
 
 			if( !res.note ) {
 				throw new Error( `Note not found for path: ${ key }` )

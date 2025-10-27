@@ -1,5 +1,5 @@
 $trip2g_admin_tgbot_catalog $trip2g_admin_catalog
-	menu_title \TG Bots
+	menu_title @ \TG Bots
 	param \id
 	Empty $mol_status
 	actions /

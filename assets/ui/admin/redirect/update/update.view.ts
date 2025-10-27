@@ -1,28 +1,44 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */`
+		query AdminShowRedirect($id: Int64!) {
+			admin {
+				redirect(id: $id) {
+					id
+					createdAt
+					pattern
+					ignoreCase
+					isRegex
+					target
+					createdBy {
+						id
+						email
+					}
+				}
+			}
+		}
+	`)
+
+	const mutate = $trip2g_graphql_request(/* GraphQL */`
+		mutation AdminUpdateRedirectMutation($input: UpdateRedirectInput!) {
+			admin {
+				payload: updateRedirect(input: $input) {
+					... on UpdateRedirectPayload {
+						redirect {
+							id
+						}
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_redirect_update extends $.$trip2g_admin_redirect_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminShowRedirect($id: Int64!) {
-						admin {
-							redirect(id: $id) {
-								id
-								createdAt
-								pattern
-								ignoreCase
-								isRegex
-								target
-								createdBy {
-									id
-									email
-								}
-							}
-						}
-					}
-				`,
-				{ id: this.redirect_id() }
-			)
+			const res = request({ id: this.redirect_id() })
 
 			if (!res.admin.redirect) {
 				throw new Error('Redirect not found')
@@ -82,40 +98,22 @@ namespace $.$$ {
 		}
 
 		submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminUpdateRedirectMutation($input: UpdateRedirectInput!) {
-						admin {
-							data: updateRedirect(input: $input) {
-								... on UpdateRedirectPayload {
-									redirect {
-										id
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						id: this.redirect_id(),
-						pattern: this.pattern(),
-						target: this.target(),
-						isRegex: this.is_regex(),
-						ignoreCase: this.ignore_case()
-					},
-				}
-			)
+			const res = mutate({
+				input: {
+					id: this.redirect_id(),
+					pattern: this.pattern(),
+					target: this.target(),
+					isRegex: this.is_regex(),
+					ignoreCase: this.ignore_case()
+				},
+			})
 
-			if (res.admin.data.__typename === 'ErrorPayload') {
-				this.result(res.admin.data.message)
+			if (res.admin.payload.__typename === 'ErrorPayload') {
+				this.result(res.admin.payload.message)
 				return
 			}
 
-			if (res.admin.data.__typename === 'UpdateRedirectPayload') {
+			if (res.admin.payload.__typename === 'UpdateRedirectPayload') {
 				this.result('Redirect updated successfully')
 				this.data(null) // Reset data to refresh
 				return

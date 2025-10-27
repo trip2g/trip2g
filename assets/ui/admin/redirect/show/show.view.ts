@@ -1,4 +1,38 @@
 namespace $.$$ {
+	const request = $trip2g_graphql_request(/* GraphQL */`
+		query AdminShowRedirect($id: Int64!) {
+			admin {
+				redirect(id: $id) {
+					id
+					createdAt
+					pattern
+					ignoreCase
+					isRegex
+					target
+					createdBy {
+						id
+						email
+					}
+				}
+			}
+		}
+	`)
+
+	const mutate = $trip2g_graphql_request(/* GraphQL */`
+		mutation AdminDeleteRedirectMutation($input: DeleteRedirectInput!) {
+			admin {
+				payload: deleteRedirect(input: $input) {
+					... on DeleteRedirectPayload {
+						id
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
+
 	export class $trip2g_admin_redirect_show extends $.$trip2g_admin_redirect_show {
 		action() {
 			return this.$.$mol_state_arg.value('action') || 'view';
@@ -6,27 +40,7 @@ namespace $.$$ {
 
 		@$mol_mem
 		data(reset?: null) {
-			const res = $trip2g_graphql_request(
-				`
-					query AdminShowRedirect($id: Int64!) {
-						admin {
-							redirect(id: $id) {
-								id
-								createdAt
-								pattern
-								ignoreCase
-								isRegex
-								target
-								createdBy {
-									id
-									email
-								}
-							}
-						}
-					}
-				`,
-				{ id: this.redirect_id() }
-			)
+			const res = request({ id: this.redirect_id() })
 
 			if (!res.admin.redirect) {
 				throw new Error('Redirect not found')
@@ -65,34 +79,18 @@ namespace $.$$ {
 		}
 
 		delete() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminDeleteRedirectMutation($input: DeleteRedirectInput!) {
-						admin {
-							data: deleteRedirect(input: $input) {
-								... on DeleteRedirectPayload {
-									id
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						id: this.redirect_id()
-					},
-				}
-			)
+			const res = mutate({
+				input: {
+					id: this.redirect_id()
+				},
+			})
 
-			if (res.admin.data.__typename === 'ErrorPayload') {
-				this.delete_result(res.admin.data.message)
+			if (res.admin.payload.__typename === 'ErrorPayload') {
+				this.delete_result(res.admin.payload.message)
 				return
 			}
 
-			if (res.admin.data.__typename === 'DeleteRedirectPayload') {
+			if (res.admin.payload.__typename === 'DeleteRedirectPayload') {
 				this.delete_result('Redirect deleted successfully')
 				// Navigate back to catalog
 				this.$.$mol_state_arg.value('id', '')

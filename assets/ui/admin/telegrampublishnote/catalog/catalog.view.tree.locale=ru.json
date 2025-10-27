@@ -1,0 +1,9 @@
+{
+	"$trip2g_admin_telegrampublishnote_catalog_show_sent_title": "Показать отправленные ({count})",
+	"$trip2g_admin_telegrampublishnote_catalog_show_outdated_title": "Показать устаревшие ({count})",
+	"$trip2g_admin_telegrampublishnote_catalog_Row_title_labeler_title": "Заголовок",
+	"$trip2g_admin_telegrampublishnote_catalog_Row_publish_at_labeler_title": "Дата публикации",
+	"$trip2g_admin_telegrampublishnote_catalog_Row_status_labeler_title": "Статус",
+	"$trip2g_admin_telegrampublishnote_catalog_Row_seconds_until_publish_labeler_title": "Секунд до публикации",
+	"$trip2g_admin_telegrampublishnote_catalog_menu_title": "Telegram посты"
+}

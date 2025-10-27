@@ -701,6 +701,7 @@ type AdminQuery {
   noteAsset(id: Int64!): AdminNoteAsset
   htmlInjection(id: Int64!): AdminHtmlInjection
   cronJob(id: Int64!): AdminCronJob
+  telegramPublishNote(id: Int64!): AdminTelegramPublishNote
 
   activeUserSubgraphs(id: Int64!): [String!]!
 }
@@ -1781,6 +1782,20 @@ type CreateConfigVersionPayload {
 
 union CreateConfigVersionOrErrorPayload = CreateConfigVersionPayload | ErrorPayload
 
+#
+# resetTelegramPublishNote
+#
+
+input ResetTelegramPublishNoteInput {
+  id: Int64!
+}
+
+type ResetTelegramPublishNotePayload {
+  publishNote: AdminTelegramPublishNote!
+}
+
+union ResetTelegramPublishNoteOrErrorPayload = ResetTelegramPublishNotePayload | ErrorPayload
+
 type AdminMutation {
   createUser(input: CreateUserInput!): CreateUserOrErrorPayload!
   updateUser(input: UpdateUserInput!): UpdateUserOrErrorPayload!
@@ -1819,9 +1834,12 @@ type AdminMutation {
   updateTgBot(input: UpdateTgBotInput!): UpdateTgBotOrErrorPayload!
   setTgChatSubgraphs(input: SetTgChatSubgraphsInput!): SetTgChatSubgraphsOrErrorPayload!
   setTgChatSubgraphInvites(input: SetTgChatSubgraphInvitesInput!): SetTgChatSubgraphInvitesOrErrorPayload!
+  removeExpiredTgChatMembers(input: RemoveExpiredTgChatMembersInput!): RemoveExpiredTgChatMembersOrErrorPayload!
+
+  # Telegram publish
   setTgChatPublishTags(input: SetTgChatPublishTagsInput!): SetTgChatPublishTagsOrErrorPayload!
   setTgChatPublishInstantTags(input: SetTgChatPublishInstantTagsInput!): SetTgChatPublishInstantTagsOrErrorPayload!
-  removeExpiredTgChatMembers(input: RemoveExpiredTgChatMembersInput!): RemoveExpiredTgChatMembersOrErrorPayload!
+  resetTelegramPublishNote(input: ResetTelegramPublishNoteInput!): ResetTelegramPublishNoteOrErrorPayload!
 
   # Patreon credentials mutations
   createPatreonCredentials(input: CreatePatreonCredentialsInput!): CreatePatreonCredentialsOrErrorPayload!

@@ -1,4 +1,20 @@
 namespace $.$$ {
+	const mutate = $trip2g_graphql_request(/* GraphQL */ `
+		mutation AdminCreateUser($input: CreateUserInput!) {
+			admin {
+				createUser(input: $input) {
+					... on CreateUserPayload {
+						user {
+							id
+						}
+					}
+					... on ErrorPayload {
+						message
+					}
+				}
+			}
+		}
+	`)
 	export class $trip2g_admin_user_create extends $.$trip2g_admin_user_create {
 		override email_bid(): string {
 			const email = this.email()
@@ -20,29 +36,11 @@ namespace $.$$ {
 		}
 
 		override submit() {
-			const res = $trip2g_graphql_request(
-				`
-					mutation AdminCreateUser($input: CreateUserInput!) {
-						admin {
-							createUser(input: $input) {
-								... on CreateUserPayload {
-									user {
-										id
-									}
-								}
-								... on ErrorPayload {
-									message
-								}
-							}
-						}
-					}
-				`,
-				{
-					input: {
-						email: this.email()
-					},
-				}
-			)
+			const res = mutate({
+				input: {
+					email: this.email()
+				},
+			})
 
 			if( res.admin.createUser.__typename === 'ErrorPayload' ) {
 				this.result( res.admin.createUser.message )

@@ -1,25 +1,29 @@
 namespace $.$$ {
-	export class $trip2g_admin_configversion_catalog extends $.$trip2g_admin_configversion_catalog {
-		@$mol_mem
-		data( reset?: null ) {
-			const res = $trip2g_graphql_request( `
-				query AdminConfigVersions {
-					admin {
-						allConfigVersions {
-							nodes {
-								id
-								createdAt
-								createdBy {
-									email
-								}
-								showDraftVersions
-								defaultLayout
-								timezone
+	const data_request = $trip2g_graphql_request(
+		`
+			query AdminConfigVersions {
+				admin {
+					allConfigVersions {
+						nodes {
+							id
+							createdAt
+							createdBy {
+								email
 							}
+							showDraftVersions
+							defaultLayout
+							timezone
 						}
 					}
 				}
-			`)
+			}
+		`
+	)
+
+	export class $trip2g_admin_configversion_catalog extends $.$trip2g_admin_configversion_catalog {
+		@$mol_mem
+		data( reset?: null ) {
+			const res = data_request()
 
 			return $trip2g_graphql_make_map( res.admin.allConfigVersions.nodes )
 		}
