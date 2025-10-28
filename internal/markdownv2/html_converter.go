@@ -226,8 +226,6 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 						return ast.WalkSkipChildren, nil
 					}
 
-					fmt.Println("resolved wikilink:", dest, "->", url)
-
 					c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(url)))
 				} else {
 					if !c.skipClosingTag[n] {

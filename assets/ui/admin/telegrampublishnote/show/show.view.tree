@@ -40,4 +40,4 @@ $trip2g_admin_telegrampublishnote_show $mol_page
 				<= Content_labeler $mol_labeler
 					title @ \Post Content
 					Content <= MessageContent $trip2g_admin_telegrampublishnote_message
-						content <= content_text \
+						html <= content_text \

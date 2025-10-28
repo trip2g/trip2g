@@ -1,5 +1,9 @@
 $trip2g_admin_telegrampublishnote_message $mol_view
 	sub /
-		<= Message $mol_view
-			dom_name \pre
-			sub / <= content \
+		<= Message $mol_html_view
+			link_uri* => link_uri* \
+			content* => content* /
+			Link* <= Link* $mol_link
+				uri <= link_uri*
+				content <= content*
+			html <= html \
