@@ -29,43 +29,49 @@ func StreamPage(qw422016 *qt422016.Writer, resp *Response) {
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 
+  <link rel="icon" type="image/png" href="/assets/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="shortcut icon" href="/assets/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png" />
+  <link rel="manifest" href="/assets/site.webmanifest" />
+
   <title>Admin</title>
 
   <body mol_view_root>
     <div mol_view_root="$trip2g_admin"></div>
     <script src="`)
-//line views.qtpl:15
+//line views.qtpl:21
 	qw422016.N().S(resp.JSURL)
-//line views.qtpl:15
+//line views.qtpl:21
 	qw422016.N().S(`"></script>
   </body
 </html>
 `)
-//line views.qtpl:18
+//line views.qtpl:24
 }
 
-//line views.qtpl:18
+//line views.qtpl:24
 func WritePage(qq422016 qtio422016.Writer, resp *Response) {
-//line views.qtpl:18
+//line views.qtpl:24
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.qtpl:18
+//line views.qtpl:24
 	StreamPage(qw422016, resp)
-//line views.qtpl:18
+//line views.qtpl:24
 	qt422016.ReleaseWriter(qw422016)
-//line views.qtpl:18
+//line views.qtpl:24
 }
 
-//line views.qtpl:18
+//line views.qtpl:24
 func Page(resp *Response) string {
-//line views.qtpl:18
+//line views.qtpl:24
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.qtpl:18
+//line views.qtpl:24
 	WritePage(qb422016, resp)
-//line views.qtpl:18
+//line views.qtpl:24
 	qs422016 := string(qb422016.B)
-//line views.qtpl:18
+//line views.qtpl:24
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.qtpl:18
+//line views.qtpl:24
 	return qs422016
-//line views.qtpl:18
+//line views.qtpl:24
 }

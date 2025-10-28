@@ -154,43 +154,9 @@
 
     - name: Restart service
       systemd:
-        name: "trip2g"
+        name: "{{ item.service_name }}"
         state: restarted
-
-    # - name: Restart service
-    #   systemd:
-    #     name: "trip2g_mbti"
-    #     state: restarted
-
-    # - name: Restart service
-    #   systemd:
-    #     name: "trip2g_taro"
-    #     state: restarted
-
-    - name: Restart service
-      systemd:
-        name: "trip2g_secondbrain"
-        state: restarted
-
-    - name: Restart service
-      systemd:
-        name: "trip2g_sn"
-        state: restarted
-
-    - name: Restart service
-      systemd:
-        name: "trip2g_blizzard"
-        state: restarted
-
-    - name: Restart service
-      systemd:
-        name: "trip2g_landing"
-        state: restarted
-
-    - name: Restart service
-      systemd:
-        name: "trip2g_demo2"
-        state: restarted
+      loop: "{{ trip2g_services }}"
 
     - name: Restart litestream
       systemd:

@@ -1,4 +1,5 @@
 $trip2g_admin $trip2g_auth
+	title @ \Admin Panel | trip2g
 	AppView $trip2g_admin_app
 		ProfileEmail <= ProfileInfo $mol_button_major
 			title <= me_user_email
