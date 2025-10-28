@@ -10,22 +10,24 @@ import (
 	"trip2g/internal/model"
 )
 
+type SentMessage = db.ListTelegramPublishSentMessagesByChatIDRow
+
 type Env interface {
 	LatestNoteViews() *model.NoteViews
 	Logger() logger.Logger
-	ListAllTelegramPublishSentMessages(ctx context.Context) ([]db.ListAllTelegramPublishSentMessagesRow, error)
+	ListTelegramPublishSentMessagesByChatID(ctx context.Context, chatID int64) ([]SentMessage, error)
 	PublicURL() string
 }
 
-func Resolve(ctx context.Context, env Env, nv *model.NoteView) (*model.TelegramPost, error) {
+func Resolve(ctx context.Context, env Env, nv *model.NoteView, chatID int64) (*model.TelegramPost, error) {
 	logger := logger.WithPrefix(env.Logger(), "convertnoteviewtotgpost")
 
-	sentMsgs, err := env.ListAllTelegramPublishSentMessages(ctx)
+	sentMsgs, err := env.ListTelegramPublishSentMessagesByChatID(ctx, chatID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list all telegram publish sent messages: %w", err)
 	}
 
-	sentMap := make(map[int64]*db.ListAllTelegramPublishSentMessagesRow)
+	sentMap := make(map[int64]*SentMessage)
 
 	for _, msg := range sentMsgs {
 		sentMap[msg.NotePathID] = &msg

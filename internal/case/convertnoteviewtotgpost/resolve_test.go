@@ -15,7 +15,7 @@ import (
 type testEnv struct {
 	nvs       *model.NoteViews
 	logger    logger.Logger
-	sentMsgs  []db.ListAllTelegramPublishSentMessagesRow
+	sentMsgs  []db.ListTelegramPublishSentMessagesByChatIDRow
 	publicURL string
 }
 
@@ -27,7 +27,7 @@ func (e *testEnv) Logger() logger.Logger {
 	return e.logger
 }
 
-func (e *testEnv) ListAllTelegramPublishSentMessages(ctx context.Context) ([]db.ListAllTelegramPublishSentMessagesRow, error) {
+func (e *testEnv) ListTelegramPublishSentMessagesByChatID(ctx context.Context, chatID int64) ([]db.ListTelegramPublishSentMessagesByChatIDRow, error) {
 	return e.sentMsgs, nil
 }
 
@@ -54,11 +54,11 @@ hello`),
 	env := &testEnv{
 		nvs:       nvs,
 		logger:    &logger.TestLogger{},
-		sentMsgs:  []db.ListAllTelegramPublishSentMessagesRow{},
+		sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
 		publicURL: "https://example.com",
 	}
 
-	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, nvs.List[0])
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, nvs.List[0], 123)
 	require.NoError(t, err)
 
 	require.Empty(t, post.Warnings)

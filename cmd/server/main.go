@@ -36,7 +36,6 @@ import (
 	"trip2g/internal/case/backjob/extractnotionpages"
 	"trip2g/internal/case/backjob/sendsignincode"
 	"trip2g/internal/case/canreadnote"
-	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/handletgpublishviews"
@@ -585,113 +584,9 @@ func (a *app) BoostyClientByCredentialsID(ctx context.Context, credentialID int6
 	return a.boostyClientManager.Get(ctx, env, credentialID)
 }
 
-func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
-	chat, err := a.TgBotChat(ctx, chatID)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get Telegram chat: %w", err)
-	}
-
-	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
-
-	if handlerIO == nil {
-		return 0, fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
-	}
-
-	res, err := handlerIO.Send(msg)
-	if err != nil {
-		return 0, fmt.Errorf("failed to send Telegram message: %w", err)
-	}
-
-	return int64(res.MessageID), nil
-}
-
-func (a *app) SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
-	chat, err := a.TgBotChat(ctx, chatID)
-	if err != nil {
-		return fmt.Errorf("failed to get Telegram chat: %w", err)
-	}
-
-	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
-
-	if handlerIO == nil {
-		return fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
-	}
-
-	_, err = handlerIO.Request(msg)
-	if err != nil {
-		return fmt.Errorf("failed to send Telegram message: %w", err)
-	}
-
-	return nil
-}
-
-func (a *app) KickTelegramChatMember(ctx context.Context, chatID, userID int64) error {
-	// Get the user to find their Telegram ID
-	user, err := a.UserByID(ctx, userID)
-	if err != nil {
-		return fmt.Errorf("failed to get user by ID %d: %w", userID, err)
-	}
-
-	if !user.TgUserID.Valid {
-		return fmt.Errorf("user %d does not have a Telegram ID", userID)
-	}
-
-	chat, err := a.TgBotChat(ctx, chatID)
-	if err != nil {
-		return fmt.Errorf("failed to get Telegram chat: %w", err)
-	}
-
-	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
-
-	if handlerIO == nil {
-		return fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
-	}
-
-	err = handlerIO.KickChatMember(ctx, chat.TelegramID, user.TgUserID.Int64, chat.ChatType)
-	if err != nil {
-		return fmt.Errorf("failed to kick Telegram chat member: %w", err)
-	}
-
-	return nil
-}
-
-func (a *app) UnbanTelegramChatMember(ctx context.Context, chatID, userID int64) error {
-	// Get the user to find their Telegram ID
-	user, err := a.UserByID(ctx, userID)
-	if err != nil {
-		return fmt.Errorf("failed to get user by ID %d: %w", userID, err)
-	}
-
-	if !user.TgUserID.Valid {
-		return fmt.Errorf("user %d does not have a Telegram ID", userID)
-	}
-
-	chat, err := a.TgBotChat(ctx, chatID)
-	if err != nil {
-		return fmt.Errorf("failed to get Telegram chat: %w", err)
-	}
-
-	handlerIO := a.TgBots.GetHandlerIO(chat.BotID)
-
-	if handlerIO == nil {
-		return fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
-	}
-
-	err = handlerIO.UnbanChatMember(ctx, chat.TelegramID, user.TgUserID.Int64)
-	if err != nil {
-		return fmt.Errorf("failed to unban Telegram chat member: %w", err)
-	}
-
-	return nil
-}
-
 func (a *app) ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error) {
 	// TODO: add caching for this method
 	return listactiveusersubgraphs.Resolve(ctx, a, userID)
-}
-
-func (a *app) ConvertNoteViewToTelegramPost(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
-	return convertnoteviewtotgpost.Resolve(ctx, a, noteView)
 }
 
 func (a *app) SendMail(ctx context.Context, data model.Mail) error {
@@ -1360,14 +1255,6 @@ func (a *app) GenerateTgAttachCode() string {
 		return fmt.Sprintf("%08x", time.Now().Unix()%0xFFFFFFFF)
 	}
 	return code
-}
-
-func (a *app) BotStartLink(botID int64, param string) (string, error) {
-	handlerIO := a.TgBots.GetHandlerIO(botID)
-	if handlerIO == nil {
-		return "", fmt.Errorf("bot with ID %d not found or not active", botID)
-	}
-	return handlerIO.BotStartLink(param), nil
 }
 
 func (a *app) NoteByPath(path string) *model.NoteView {

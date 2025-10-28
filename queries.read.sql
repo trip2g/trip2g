@@ -812,7 +812,7 @@ select tsm.chat_id, tsm.message_id, c.telegram_id
   join tg_bot_chats c on tsm.chat_id = c.id
  where tsm.note_path_id = ?;
 
--- name: ListAllTelegramPublishSentMessages :many
+-- name: ListTelegramPublishSentMessagesByChatID :many
 select tsm.chat_id
      , tsm.message_id
      , tsm.note_path_id
@@ -820,7 +820,8 @@ select tsm.chat_id
      , c.telegram_id as telegram_chat_id
   from telegram_publish_sent_messages tsm
   join tg_bot_chats c on tsm.chat_id = c.id
-  join note_paths p on tsm.note_path_id = p.id;
+  join note_paths p on tsm.note_path_id = p.id
+ where tsm.chat_id = ?;
 
 -- name: GetTelegramPublishNoteByNotePathID :one
 select *

@@ -25,7 +25,7 @@ type Env interface {
 	// Telegram bot methods for sending messages
 	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
 
-	ConvertNoteViewToTelegramPost(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error)
+	ConvertNoteViewToTelegramPost(ctx context.Context, noteView *model.NoteView, chatID int64) (*model.TelegramPost, error)
 
 	// Content access methods
 	LatestNoteViews() *model.NoteViews
@@ -37,18 +37,9 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 		return fmt.Errorf("note view not found for path ID %d", notePathID)
 	}
 
-	// Convert note to Telegram post
-	post, err := env.ConvertNoteViewToTelegramPost(ctx, noteView)
-	if err != nil {
-		return fmt.Errorf("failed to convert note to telegram post: %w", err)
-	}
-
-	if len(post.Warnings) > 0 {
-		return fmt.Errorf("conversion produced warnings: %v", post.Warnings)
-	}
-
 	// Get chat IDs that should receive this post
 	var chats []db.TgBotChat
+	var err error
 
 	if instant {
 		chats, err = env.ListTgBotInstantChatsByTelegramPublishNotePathID(ctx, notePathID)
@@ -70,6 +61,16 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 
 	// Send the post to each chat
 	for _, chat := range chats {
+		// Convert note to Telegram post
+		post, convertErr := env.ConvertNoteViewToTelegramPost(ctx, noteView, chat.ID)
+		if convertErr != nil {
+			return fmt.Errorf("failed to convert note to telegram post: %w", convertErr)
+		}
+
+		if len(post.Warnings) > 0 {
+			return fmt.Errorf("conversion produced warnings: %v", post.Warnings)
+		}
+
 		var firstImageURL *string
 		var messageID int64
 
@@ -90,25 +91,25 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 				url:  *firstImageURL,
 			}
 
-			messageID, err = sendPhoto(ctx, env, params)
-			if err != nil {
+			messageID, convertErr = sendPhoto(ctx, env, params)
+			if convertErr != nil {
 				// workaround for localhost minio or something similar.
-				if strings.Contains(err.Error(), "wrong HTTP URL specified") {
+				if strings.Contains(convertErr.Error(), "wrong HTTP URL specified") {
 					params.stream = true
-					messageID, err = sendPhoto(ctx, env, params)
+					messageID, convertErr = sendPhoto(ctx, env, params)
 				}
 
-				if err != nil {
-					return fmt.Errorf("failed to send photo message to chat %d: %w", chat.ID, err)
+				if convertErr != nil {
+					return fmt.Errorf("failed to send photo message to chat %d: %w", chat.ID, convertErr)
 				}
 			}
 		} else {
 			msg := tgbotapi.NewMessage(chat.TelegramID, post.Content)
 			msg.ParseMode = "HTML"
 
-			messageID, err = env.SendTelegramMessage(ctx, chat.ID, msg)
-			if err != nil {
-				return fmt.Errorf("failed to send telegram message to chat %d: %w", chat.ID, err)
+			messageID, convertErr = env.SendTelegramMessage(ctx, chat.ID, msg)
+			if convertErr != nil {
+				return fmt.Errorf("failed to send telegram message to chat %d: %w", chat.ID, convertErr)
 			}
 		}
 
