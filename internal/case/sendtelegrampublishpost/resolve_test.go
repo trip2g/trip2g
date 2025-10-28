@@ -85,6 +85,12 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+						return &model.TelegramPost{
+							Content:  "Test note content",
+							Warnings: []string{},
+						}, nil
+					},
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -122,6 +128,12 @@ func TestResolve(t *testing.T) {
 			instant: true,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+						return &model.TelegramPost{
+							Content:  "Test note content",
+							Warnings: []string{},
+						}, nil
+					},
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -152,6 +164,12 @@ func TestResolve(t *testing.T) {
 			instant: true,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+						return &model.TelegramPost{
+							Content:  "Test note content",
+							Warnings: []string{},
+						}, nil
+					},
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -168,6 +186,12 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+						return &model.TelegramPost{
+							Content:  "Test note content",
+							Warnings: []string{},
+						}, nil
+					},
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -182,6 +206,12 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+						return &model.TelegramPost{
+							Content:  "Test note content",
+							Warnings: []string{},
+						}, nil
+					},
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -199,6 +229,12 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+						return &model.TelegramPost{
+							Content:  "Test note content",
+							Warnings: []string{},
+						}, nil
+					},
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -216,6 +252,12 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+						return &model.TelegramPost{
+							Content:  "Test note content",
+							Warnings: []string{},
+						}, nil
+					},
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -236,6 +278,12 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+						return &model.TelegramPost{
+							Content:  "Test note content",
+							Warnings: []string{},
+						}, nil
+					},
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -259,6 +307,12 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+						return &model.TelegramPost{
+							Content:  "Test note content",
+							Warnings: []string{},
+						}, nil
+					},
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},

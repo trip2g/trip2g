@@ -22,6 +22,9 @@ var _ sendtelegrampublishpost.Env = &EnvMock{}
 //
 //		// make and configure a mocked sendtelegrampublishpost.Env
 //		mockedEnv := &EnvMock{
+//			ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+//				panic("mock out the ConvertNoteViewToTelegramPost method")
+//			},
 //			InsertTelegramPublishSentMessageFunc: func(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error {
 //				panic("mock out the InsertTelegramPublishSentMessage method")
 //			},
@@ -47,6 +50,9 @@ var _ sendtelegrampublishpost.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// ConvertNoteViewToTelegramPostFunc mocks the ConvertNoteViewToTelegramPost method.
+	ConvertNoteViewToTelegramPostFunc func(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error)
+
 	// InsertTelegramPublishSentMessageFunc mocks the InsertTelegramPublishSentMessage method.
 	InsertTelegramPublishSentMessageFunc func(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error
 
@@ -67,6 +73,13 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// ConvertNoteViewToTelegramPost holds details about calls to the ConvertNoteViewToTelegramPost method.
+		ConvertNoteViewToTelegramPost []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// NoteView is the noteView argument value.
+			NoteView *model.NoteView
+		}
 		// InsertTelegramPublishSentMessage holds details about calls to the InsertTelegramPublishSentMessage method.
 		InsertTelegramPublishSentMessage []struct {
 			// Ctx is the ctx argument value.
@@ -108,12 +121,49 @@ type EnvMock struct {
 			Arg db.UpdateTelegramPublishNoteAsPublishedParams
 		}
 	}
+	lockConvertNoteViewToTelegramPost                    sync.RWMutex
 	lockInsertTelegramPublishSentMessage                 sync.RWMutex
 	lockLatestNoteViews                                  sync.RWMutex
 	lockListTgBotChatsByTelegramPublishNotePathID        sync.RWMutex
 	lockListTgBotInstantChatsByTelegramPublishNotePathID sync.RWMutex
 	lockSendTelegramMessage                              sync.RWMutex
 	lockUpdateTelegramPublishNoteAsPublished             sync.RWMutex
+}
+
+// ConvertNoteViewToTelegramPost calls ConvertNoteViewToTelegramPostFunc.
+func (mock *EnvMock) ConvertNoteViewToTelegramPost(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+	if mock.ConvertNoteViewToTelegramPostFunc == nil {
+		panic("EnvMock.ConvertNoteViewToTelegramPostFunc: method is nil but Env.ConvertNoteViewToTelegramPost was just called")
+	}
+	callInfo := struct {
+		Ctx      context.Context
+		NoteView *model.NoteView
+	}{
+		Ctx:      ctx,
+		NoteView: noteView,
+	}
+	mock.lockConvertNoteViewToTelegramPost.Lock()
+	mock.calls.ConvertNoteViewToTelegramPost = append(mock.calls.ConvertNoteViewToTelegramPost, callInfo)
+	mock.lockConvertNoteViewToTelegramPost.Unlock()
+	return mock.ConvertNoteViewToTelegramPostFunc(ctx, noteView)
+}
+
+// ConvertNoteViewToTelegramPostCalls gets all the calls that were made to ConvertNoteViewToTelegramPost.
+// Check the length with:
+//
+//	len(mockedEnv.ConvertNoteViewToTelegramPostCalls())
+func (mock *EnvMock) ConvertNoteViewToTelegramPostCalls() []struct {
+	Ctx      context.Context
+	NoteView *model.NoteView
+} {
+	var calls []struct {
+		Ctx      context.Context
+		NoteView *model.NoteView
+	}
+	mock.lockConvertNoteViewToTelegramPost.RLock()
+	calls = mock.calls.ConvertNoteViewToTelegramPost
+	mock.lockConvertNoteViewToTelegramPost.RUnlock()
+	return calls
 }
 
 // InsertTelegramPublishSentMessage calls InsertTelegramPublishSentMessageFunc.
