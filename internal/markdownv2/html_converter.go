@@ -1,7 +1,6 @@
 package markdownv2
 
 import (
-	"bytes"
 	"fmt"
 	"html"
 	"strings"
@@ -27,14 +26,34 @@ func (e *LinkResolverError) Error() string {
 
 type HTMLConverter struct {
 	CommonConverter
-	blockquoteContent strings.Builder
-	inBlockquote      bool
-	linkResolver      LinkResolver
-	skipClosingTag    map[ast.Node]bool
+	bufStack       []*strings.Builder
+	linkResolver   LinkResolver
+	skipClosingTag map[ast.Node]bool
 }
 
 func (c *HTMLConverter) SetLinkResolver(resolver LinkResolver) {
 	c.linkResolver = resolver
+}
+
+// Write writes string to the current buffer (last in stack)
+func (c *HTMLConverter) Write(s string) {
+	if len(c.bufStack) > 0 {
+		c.bufStack[len(c.bufStack)-1].WriteString(s)
+	}
+}
+
+func (c *HTMLConverter) pushBuffer() {
+	c.bufStack = append(c.bufStack, &strings.Builder{})
+}
+
+func (c *HTMLConverter) popBuffer() string {
+	if len(c.bufStack) == 0 {
+		return ""
+	}
+	lastIdx := len(c.bufStack) - 1
+	result := c.bufStack[lastIdx].String()
+	c.bufStack = c.bufStack[:lastIdx]
+	return result
 }
 
 func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
@@ -42,11 +61,10 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 	src := nv.Content
 
 	c.state = lineStart
-	c.inBlockquote = false
-	c.blockquoteContent.Reset()
 	c.skipClosingTag = make(map[ast.Node]bool)
+	c.bufStack = nil
+	c.pushBuffer() // Initialize with root buffer
 
-	var buf bytes.Buffer
 	var lines []string
 
 	_ = ast.Walk(nv.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -59,13 +77,12 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 				lines = append(lines, "\n\n")
 			}
 
-			if !c.inBlockquote {
-				if !entering {
-					// End of paragraph, add current line to lines slice
-					if buf.Len() > 0 {
-						lines = append(lines, buf.String())
-						buf.Reset()
-					}
+			if !entering && len(c.bufStack) == 1 {
+				// End of paragraph in root buffer, add current line to lines slice
+				current := c.bufStack[0]
+				if current.Len() > 0 {
+					lines = append(lines, current.String())
+					current.Reset()
 				}
 			}
 
@@ -74,17 +91,15 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 				text := string(node.Segment.Value(src))
 				escapedText := html.EscapeString(text)
 
-				if c.inBlockquote {
-					c.blockquoteContent.WriteString(escapedText)
-					if node.SoftLineBreak() {
-						c.blockquoteContent.WriteString("\n")
-					}
-				} else {
-					buf.WriteString(escapedText)
-					if node.SoftLineBreak() {
-						// Add current line to lines and start new line
-						lines = append(lines, buf.String(), "\n")
-						buf.Reset()
+				c.Write(escapedText)
+				if node.SoftLineBreak() {
+					if len(c.bufStack) == 1 {
+						// In root buffer: add current line to lines and start new line
+						lines = append(lines, c.bufStack[0].String(), "\n")
+						c.bufStack[0].Reset()
+					} else {
+						// In nested buffer (blockquote): just add newline
+						c.Write("\n")
 					}
 				}
 			}
@@ -104,12 +119,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 					tag = "</b>"
 				}
 			}
-
-			if c.inBlockquote {
-				c.blockquoteContent.WriteString(tag)
-			} else {
-				buf.WriteString(tag)
-			}
+			c.Write(tag)
 
 		case *extast.Strikethrough:
 			tag := ""
@@ -118,12 +128,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			} else {
 				tag = "</s>"
 			}
-
-			if c.inBlockquote {
-				c.blockquoteContent.WriteString(tag)
-			} else {
-				buf.WriteString(tag)
-			}
+			c.Write(tag)
 
 		case *ast.CodeSpan:
 			tag := ""
@@ -132,35 +137,20 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			} else {
 				tag = "</code>"
 			}
-
-			if c.inBlockquote {
-				c.blockquoteContent.WriteString(tag)
-			} else {
-				buf.WriteString(tag)
-			}
+			c.Write(tag)
 
 		case *highlight.HighlightAST:
-			if c.inBlockquote {
-				if entering {
-					c.blockquoteContent.WriteString(`<span class="tg-spoiler">`)
-				} else {
-					c.blockquoteContent.WriteString("</span>")
-				}
+			if entering {
+				c.Write(`<span class="tg-spoiler">`)
 			} else {
-				if entering {
-					buf.WriteString(`<span class="tg-spoiler">`)
-				} else {
-					buf.WriteString("</span>")
-				}
+				c.Write("</span>")
 			}
 
 		case *ast.Blockquote:
 			if entering {
-				c.inBlockquote = true
-				c.blockquoteContent.Reset()
+				c.pushBuffer()
 			} else {
-				c.inBlockquote = false
-				content := c.blockquoteContent.String()
+				content := c.popBuffer()
 
 				// Check if blockquote ends with spoiler (||)
 				isExpandable := strings.HasSuffix(content, "||")
@@ -173,34 +163,20 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			}
 
 		case *ast.Link:
-			linkHTML := ""
 			if entering {
-				linkHTML = fmt.Sprintf(`<a href="%s">`, html.EscapeString(string(node.Destination)))
+				c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(string(node.Destination))))
 			} else {
-				linkHTML = "</a>"
-			}
-
-			if c.inBlockquote {
-				c.blockquoteContent.WriteString(linkHTML)
-			} else {
-				buf.WriteString(linkHTML)
+				c.Write("</a>")
 			}
 
 		case *enclavecore.Enclave:
 			dest := string(node.Destination)
 			if strings.HasPrefix(dest, "tg://emoji?id=") {
 				emojiID := strings.TrimPrefix(dest, "tg://emoji?id=")
-				emojiHTML := ""
 				if entering {
-					emojiHTML = fmt.Sprintf(`<tg-emoji emoji-id="%s">`, html.EscapeString(emojiID))
+					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">`, html.EscapeString(emojiID)))
 				} else {
-					emojiHTML = "</tg-emoji>"
-				}
-
-				if c.inBlockquote {
-					c.blockquoteContent.WriteString(emojiHTML)
-				} else {
-					buf.WriteString(emojiHTML)
+					c.Write("</tg-emoji>")
 				}
 			} else {
 				msg := fmt.Sprintf("unsupported image source: %s", dest)
@@ -212,11 +188,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			if entering {
 				tag := string(node.Segments.Value(src))
 				if tag == "<u>" || tag == "</u>" {
-					if c.inBlockquote {
-						c.blockquoteContent.WriteString(tag)
-					} else {
-						buf.WriteString(tag)
-					}
+					c.Write(tag)
 				} else {
 					msg := fmt.Sprintf("raw html tag is not supported: %s", tag)
 					res.Warnings = append(res.Warnings, msg)
@@ -254,19 +226,10 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 						return ast.WalkSkipChildren, nil
 					}
 
-					linkHTML := fmt.Sprintf(`<a href="%s">`, html.EscapeString(url))
-					if c.inBlockquote {
-						c.blockquoteContent.WriteString(linkHTML)
-					} else {
-						buf.WriteString(linkHTML)
-					}
+					c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(url)))
 				} else {
 					if !c.skipClosingTag[n] {
-						if c.inBlockquote {
-							c.blockquoteContent.WriteString("</a>")
-						} else {
-							buf.WriteString("</a>")
-						}
+						c.Write("</a>")
 					}
 					delete(c.skipClosingTag, n)
 				}
@@ -287,9 +250,9 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 		return ast.WalkContinue, nil
 	})
 
-	// Add any remaining content in buffer
-	if buf.Len() > 0 {
-		lines = append(lines, buf.String())
+	// Add any remaining content in root buffer
+	if len(c.bufStack) > 0 && c.bufStack[0].Len() > 0 {
+		lines = append(lines, c.bufStack[0].String())
 	}
 
 	res.Content = strings.Join(lines, "")
