@@ -14,10 +14,11 @@ type Env interface {
 	LatestNoteViews() *model.NoteViews
 	Logger() logger.Logger
 	ListAllTelegramPublishSentMessages(ctx context.Context) ([]db.ListAllTelegramPublishSentMessagesRow, error)
+	PublicURL() string
 }
 
 func Resolve(ctx context.Context, env Env, nv *model.NoteView) (*model.TelegramPost, error) {
-	// logger := logger.WithPrefix(env.Logger(), "convertnoteviewtotgpost")
+	logger := logger.WithPrefix(env.Logger(), "convertnoteviewtotgpost")
 
 	sentMsgs, err := env.ListAllTelegramPublishSentMessages(ctx)
 	if err != nil {
@@ -32,6 +33,9 @@ func Resolve(ctx context.Context, env Env, nv *model.NoteView) (*model.TelegramP
 
 	nvs := env.LatestNoteViews()
 
+	allowExternalLinks := getAllowExternalLinks(nv)
+	publicURL := env.PublicURL()
+
 	tr := markdownv2.HTMLConverter{}
 	tr.SetLinkResolver(func(target string) (string, error) {
 		linkedNV, ok := nvs.Map[target]
@@ -41,6 +45,16 @@ func Resolve(ctx context.Context, env Env, nv *model.NoteView) (*model.TelegramP
 
 		msg, ok := sentMap[linkedNV.PathID]
 		if !ok {
+			if allowExternalLinks {
+				if publicURL == "" {
+					logger.Warn("public URL is not set, cannot generate external link")
+					return "", nil
+				}
+
+				externalURL := publicURL + linkedNV.Permalink
+				return externalURL, nil
+			}
+
 			return "", fmt.Errorf("note not published: %s", target)
 		}
 
@@ -57,4 +71,18 @@ func Resolve(ctx context.Context, env Env, nv *model.NoteView) (*model.TelegramP
 		Content:  res.Content,
 		Warnings: res.Warnings,
 	}, nil
+}
+
+func getAllowExternalLinks(nv *model.NoteView) bool {
+	val, ok := nv.RawMeta["telegram_publish_allow_external_links"]
+	if ok {
+		switch v := val.(type) {
+		case bool:
+			return v
+		case string:
+			return v == "true"
+		}
+	}
+
+	return false
 }

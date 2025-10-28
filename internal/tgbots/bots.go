@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 	"trip2g/internal/appreq"
@@ -63,7 +64,7 @@ func New(ctx context.Context, env Env, config Config) (*TgBots, error) {
 	}
 
 	publicURL := env.PublicURL()
-	if publicURL != "" {
+	if publicURL != "" && strings.HasPrefix(publicURL, "https") {
 		webhookURL, err := url.Parse(publicURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse public URL: %w", err)
