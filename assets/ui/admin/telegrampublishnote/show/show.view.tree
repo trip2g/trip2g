@@ -9,6 +9,10 @@ $trip2g_admin_telegrampublishnote_show $mol_page
 			style *
 				flexDirection \column
 			sub /
+				<= CreatedAt_labeler $mol_labeler
+					title @ \Created At
+					Content <= CreatedAt $trip2g_admin_cell
+						content <= created_at \
 				<= PublishAt_labeler $mol_labeler
 					title @ \Publish At
 					Content <= PublishAt $trip2g_admin_cell

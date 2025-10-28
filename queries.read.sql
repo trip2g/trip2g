@@ -770,8 +770,9 @@ select n.*
   from telegram_publish_notes n
   join note_paths p on n.note_path_id = p.id
  where p.hidden_by is null
-   and (sqlc.arg(include_sent) = true or published_at is null)
-   and (sqlc.arg(include_outdated) = true or publish_at > n.created_at)
+   and ((coalesce(sqlc.arg(show_scheduled), true) = true and published_at is null and publish_at > n.created_at)
+       or (coalesce(sqlc.arg(show_sent), false) = true and published_at is not null)
+       or (coalesce(sqlc.arg(show_outdated), false) = true and publish_at <= n.created_at))
  order by n.publish_at;
 
 -- name: ListTelegramPublishTagsByNoteID :many
@@ -783,8 +784,10 @@ select t.*
 
 -- name: ListSheduledTelegarmPublishNoteIDs :many
 select note_path_id
-  from telegram_publish_notes
- where publish_at < datetime('now')
+  from telegram_publish_notes n
+  join note_paths p on n.note_path_id = p.id
+  where p.hidden_by is null
+   and publish_at <= datetime('now')
    and published_at is null;
 
 -- name: ListTgBotChatsByTelegramPublishNotePathID :many

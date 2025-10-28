@@ -40,6 +40,7 @@ import (
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/runcronjob"
+	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/settgchatpublishinstanttags"
@@ -605,6 +606,11 @@ func (r *adminMutationResolver) SetTgChatPublishInstantTags(ctx context.Context,
 // ResetTelegramPublishNote is the resolver for the resetTelegramPublishNote field.
 func (r *adminMutationResolver) ResetTelegramPublishNote(ctx context.Context, obj *appmodel.AdminMutation, input model.ResetTelegramPublishNoteInput) (model.ResetTelegramPublishNoteOrErrorPayload, error) {
 	return resettelegrampublishnote.Resolve(ctx, r.env(ctx), input)
+}
+
+// SendTelegramPublishNoteNow is the resolver for the sendTelegramPublishNoteNow field.
+func (r *adminMutationResolver) SendTelegramPublishNoteNow(ctx context.Context, obj *appmodel.AdminMutation, input model.SendTelegramPublishNoteNowInput) (model.SendTelegramPublishNoteNowOrErrorPayload, error) {
+	return sendtelegrampublishnotenow.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreatePatreonCredentials is the resolver for the createPatreonCredentials field.
@@ -1309,12 +1315,12 @@ func (r *adminTelegramPublishNotesConnectionResolver) Nodes(ctx context.Context,
 	params := db.ListAllTelegramPublishNotesParams{}
 
 	if obj.Filter != nil {
-		if obj.Filter.IncludeSent != nil && *obj.Filter.IncludeSent {
-			params.IncludeSent = true
+		if obj.Filter.IncludeSent != nil {
+			params.ShowSent = *obj.Filter.IncludeSent
 		}
 
-		if obj.Filter.IncludeOutdated != nil && *obj.Filter.IncludeOutdated {
-			params.IncludeOutdated = true
+		if obj.Filter.IncludeOutdated != nil {
+			params.ShowOutdated = *obj.Filter.IncludeOutdated
 		}
 	}
 

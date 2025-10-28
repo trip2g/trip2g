@@ -9,7 +9,8 @@ $trip2g_admin_telegrampublishnote_catalog $trip2g_admin_catalog
 			title <= show_outdated_title @ \Show Outdated ({count})
 			checked? <=> show_outdated? false
 	param \id
-	Empty $mol_status
+	Menu_links_empty $mol_view
+		sub / <= empty_text @ \Empty
 	Content* $trip2g_admin_telegrampublishnote_show
 		telegrampublishnote_id <= row_id* 0
 	menu_link_content* / <= TelegramPublishNoteItem* $mol_view

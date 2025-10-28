@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 type envMock = EnvMock
 
 func TestResolve(t *testing.T) {

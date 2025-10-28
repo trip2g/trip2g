@@ -343,6 +343,7 @@ type ComplexityRoot struct {
 		RestoreBoostyCredentials     func(childComplexity int, input model.RestoreBoostyCredentialsInput) int
 		RestorePatreonCredentials    func(childComplexity int, input model.RestorePatreonCredentialsInput) int
 		RunCronJob                   func(childComplexity int, input model.RunCronJobInput) int
+		SendTelegramPublishNoteNow   func(childComplexity int, input model.SendTelegramPublishNoteNowInput) int
 		SetBoostyTierSubgraphs       func(childComplexity int, input model.SetBoostyTierSubgraphsInput) int
 		SetPatreonTierSubgraphs      func(childComplexity int, input model.SetPatreonTierSubgraphsInput) int
 		SetTgChatPublishInstantTags  func(childComplexity int, input model.SetTgChatPublishInstantTagsInput) int
@@ -995,6 +996,10 @@ type ComplexityRoot struct {
 		URL                func(childComplexity int) int
 	}
 
+	SendTelegramPublishNoteNowPayload struct {
+		Success func(childComplexity int) int
+	}
+
 	SetBoostyTierSubgraphsPayload struct {
 		Success func(childComplexity int) int
 		Tier    func(childComplexity int) int
@@ -1281,6 +1286,7 @@ type AdminMutationResolver interface {
 	SetTgChatPublishTags(ctx context.Context, obj *model1.AdminMutation, input model.SetTgChatPublishTagsInput) (model.SetTgChatPublishTagsOrErrorPayload, error)
 	SetTgChatPublishInstantTags(ctx context.Context, obj *model1.AdminMutation, input model.SetTgChatPublishInstantTagsInput) (model.SetTgChatPublishInstantTagsOrErrorPayload, error)
 	ResetTelegramPublishNote(ctx context.Context, obj *model1.AdminMutation, input model.ResetTelegramPublishNoteInput) (model.ResetTelegramPublishNoteOrErrorPayload, error)
+	SendTelegramPublishNoteNow(ctx context.Context, obj *model1.AdminMutation, input model.SendTelegramPublishNoteNowInput) (model.SendTelegramPublishNoteNowOrErrorPayload, error)
 	CreatePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreatePatreonCredentialsInput) (model.CreatePatreonCredentialsOrErrorPayload, error)
 	DeletePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeletePatreonCredentialsInput) (model.DeletePatreonCredentialsOrErrorPayload, error)
 	RestorePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.RestorePatreonCredentialsInput) (model.RestorePatreonCredentialsOrErrorPayload, error)
@@ -2649,6 +2655,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.RunCronJob(childComplexity, args["input"].(model.RunCronJobInput)), true
+
+	case "AdminMutation.sendTelegramPublishNoteNow":
+		if e.complexity.AdminMutation.SendTelegramPublishNoteNow == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_sendTelegramPublishNoteNow_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.SendTelegramPublishNoteNow(childComplexity, args["input"].(model.SendTelegramPublishNoteNowInput)), true
 
 	case "AdminMutation.setBoostyTierSubgraphs":
 		if e.complexity.AdminMutation.SetBoostyTierSubgraphs == nil {
@@ -5433,6 +5451,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SearchResult.URL(childComplexity), true
 
+	case "SendTelegramPublishNoteNowPayload.success":
+		if e.complexity.SendTelegramPublishNoteNowPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.SendTelegramPublishNoteNowPayload.Success(childComplexity), true
+
 	case "SetBoostyTierSubgraphsPayload.success":
 		if e.complexity.SetBoostyTierSubgraphsPayload.Success == nil {
 			break
@@ -5935,6 +5960,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRestorePatreonCredentialsInput,
 		ec.unmarshalInputRunCronJobInput,
 		ec.unmarshalInputSearchInput,
+		ec.unmarshalInputSendTelegramPublishNoteNowInput,
 		ec.unmarshalInputSetBoostyTierSubgraphsInput,
 		ec.unmarshalInputSetPatreonTierSubgraphsInput,
 		ec.unmarshalInputSetTgChatPublishInstantTagsInput,
@@ -6738,6 +6764,29 @@ func (ec *executionContext) field_AdminMutation_runCronJob_argsInput(
 	}
 
 	var zeroVal model.RunCronJobInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_AdminMutation_sendTelegramPublishNoteNow_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_AdminMutation_sendTelegramPublishNoteNow_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_AdminMutation_sendTelegramPublishNoteNow_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.SendTelegramPublishNoteNowInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNSendTelegramPublishNoteNowInput2trip2gᚋinternalᚋgraphᚋmodelᚐSendTelegramPublishNoteNowInput(ctx, tmp)
+	}
+
+	var zeroVal model.SendTelegramPublishNoteNowInput
 	return zeroVal, nil
 }
 
@@ -14220,6 +14269,61 @@ func (ec *executionContext) fieldContext_AdminMutation_resetTelegramPublishNote(
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_resetTelegramPublishNote_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_sendTelegramPublishNoteNow(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminMutation_sendTelegramPublishNoteNow(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.AdminMutation().SendTelegramPublishNoteNow(rctx, obj, fc.Args["input"].(model.SendTelegramPublishNoteNowInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SendTelegramPublishNoteNowOrErrorPayload)
+	fc.Result = res
+	return ec.marshalNSendTelegramPublishNoteNowOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSendTelegramPublishNoteNowOrErrorPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_sendTelegramPublishNoteNow(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SendTelegramPublishNoteNowOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_sendTelegramPublishNoteNow_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -28902,6 +29006,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_setTgChatPublishInstantTags(ctx, field)
 			case "resetTelegramPublishNote":
 				return ec.fieldContext_AdminMutation_resetTelegramPublishNote(ctx, field)
+			case "sendTelegramPublishNoteNow":
+				return ec.fieldContext_AdminMutation_sendTelegramPublishNoteNow(ctx, field)
 			case "createPatreonCredentials":
 				return ec.fieldContext_AdminMutation_createPatreonCredentials(ctx, field)
 			case "deletePatreonCredentials":
@@ -32488,6 +32594,50 @@ func (ec *executionContext) fieldContext_SearchResult_document(_ context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type SearchResultDocument does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SendTelegramPublishNoteNowPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.SendTelegramPublishNoteNowPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SendTelegramPublishNoteNowPayload_success(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Success, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SendTelegramPublishNoteNowPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SendTelegramPublishNoteNowPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -39226,6 +39376,33 @@ func (ec *executionContext) unmarshalInputSearchInput(ctx context.Context, obj a
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSendTelegramPublishNoteNowInput(ctx context.Context, obj any) (model.SendTelegramPublishNoteNowInput, error) {
+	var it model.SendTelegramPublishNoteNowInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSetBoostyTierSubgraphsInput(ctx context.Context, obj any) (model.SetBoostyTierSubgraphsInput, error) {
 	var it model.SetBoostyTierSubgraphsInput
 	asMap := map[string]any{}
@@ -40961,6 +41138,29 @@ func (ec *executionContext) _SearchResultDocument(ctx context.Context, sel ast.S
 			return graphql.Null
 		}
 		return ec._PublicNote(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SendTelegramPublishNoteNowOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SendTelegramPublishNoteNowOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SendTelegramPublishNoteNowPayload:
+		return ec._SendTelegramPublishNoteNowPayload(ctx, sel, &obj)
+	case *model.SendTelegramPublishNoteNowPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SendTelegramPublishNoteNowPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -45291,6 +45491,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_resetTelegramPublishNote(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "sendTelegramPublishNoteNow":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_sendTelegramPublishNoteNow(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -53441,7 +53677,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -55479,6 +55715,45 @@ func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.Selection
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sendTelegramPublishNoteNowPayloadImplementors = []string{"SendTelegramPublishNoteNowPayload", "SendTelegramPublishNoteNowOrErrorPayload"}
+
+func (ec *executionContext) _SendTelegramPublishNoteNowPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SendTelegramPublishNoteNowPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sendTelegramPublishNoteNowPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SendTelegramPublishNoteNowPayload")
+		case "success":
+			out.Values[i] = ec._SendTelegramPublishNoteNowPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -61592,6 +61867,21 @@ func (ec *executionContext) marshalNSearchResult2ᚕtrip2gᚋinternalᚋmodelᚐ
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNSendTelegramPublishNoteNowInput2trip2gᚋinternalᚋgraphᚋmodelᚐSendTelegramPublishNoteNowInput(ctx context.Context, v any) (model.SendTelegramPublishNoteNowInput, error) {
+	res, err := ec.unmarshalInputSendTelegramPublishNoteNowInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSendTelegramPublishNoteNowOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSendTelegramPublishNoteNowOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SendTelegramPublishNoteNowOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SendTelegramPublishNoteNowOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSetBoostyTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetBoostyTierSubgraphsInput(ctx context.Context, v any) (model.SetBoostyTierSubgraphsInput, error) {

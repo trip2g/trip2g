@@ -4,6 +4,7 @@ namespace $.$$ {
 			admin {
 				telegramPublishNote(id: $id) {
 					id
+					createdAt
 					publishAt
 					secondsUntilPublish
 					publishedAt
@@ -47,6 +48,11 @@ namespace $.$$ {
 
 		override note_title(): string {
 			return this.data().noteView.title
+		}
+
+		override created_at(): string {
+			const m = new $mol_time_moment( this.data().createdAt )
+			return m.toString( 'DD.MM.YYYY hh:mm' )
 		}
 
 		override publish_at(): string {

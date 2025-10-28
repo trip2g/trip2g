@@ -151,7 +151,7 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			name: "validation error - missing timezone",
-			env: &envMock{},
+			env:  &envMock{},
 			args: args{
 				ctx: context.Background(),
 				input: model.CreateConfigVersionInput{
@@ -220,7 +220,7 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			name: "validation error - invalid timezone",
-			env: &envMock{},
+			env:  &envMock{},
 			args: args{
 				ctx: context.Background(),
 				input: model.CreateConfigVersionInput{
@@ -242,7 +242,7 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			name: "validation error - missing timezone with blank default layout",
-			env: &envMock{},
+			env:  &envMock{},
 			args: args{
 				ctx: context.Background(),
 				input: model.CreateConfigVersionInput{
@@ -373,7 +373,7 @@ func TestValidateTimezone(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test the timezone validation directly using time.LoadLocation
 			_, err := time.LoadLocation(tt.timezone)
-			
+
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

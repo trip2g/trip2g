@@ -2573,18 +2573,20 @@ select n.note_path_id, n.created_at, n.publish_at, n.published_version_id, n.pub
   from telegram_publish_notes n
   join note_paths p on n.note_path_id = p.id
  where p.hidden_by is null
-   and (?1 = true or published_at is null)
-   and (?2 = true or publish_at > n.created_at)
+   and ((coalesce(?1, true) = true and published_at is null and publish_at > n.created_at)
+       or (coalesce(?2, false) = true and published_at is not null)
+       or (coalesce(?3, false) = true and publish_at <= n.created_at))
  order by n.publish_at
 `
 
 type ListAllTelegramPublishNotesParams struct {
-	IncludeSent     interface{} `json:"include_sent"`
-	IncludeOutdated interface{} `json:"include_outdated"`
+	ShowScheduled interface{} `json:"show_scheduled"`
+	ShowSent      interface{} `json:"show_sent"`
+	ShowOutdated  interface{} `json:"show_outdated"`
 }
 
 func (q *Queries) ListAllTelegramPublishNotes(ctx context.Context, arg ListAllTelegramPublishNotesParams) ([]TelegramPublishNote, error) {
-	rows, err := q.db.QueryContext(ctx, listAllTelegramPublishNotes, arg.IncludeSent, arg.IncludeOutdated)
+	rows, err := q.db.QueryContext(ctx, listAllTelegramPublishNotes, arg.ShowScheduled, arg.ShowSent, arg.ShowOutdated)
 	if err != nil {
 		return nil, err
 	}
@@ -2950,8 +2952,10 @@ func (q *Queries) ListNotePathsLike(ctx context.Context, value string) ([]NotePa
 
 const listSheduledTelegarmPublishNoteIDs = `-- name: ListSheduledTelegarmPublishNoteIDs :many
 select note_path_id
-  from telegram_publish_notes
- where publish_at < datetime('now')
+  from telegram_publish_notes n
+  join note_paths p on n.note_path_id = p.id
+  where p.hidden_by is null
+   and publish_at <= datetime('now')
    and published_at is null
 `
 

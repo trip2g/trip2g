@@ -32,6 +32,7 @@ import (
 	"trip2g/internal/case/admin/restoreboostycredentials"
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/runcronjob"
+	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/settgchatpublishinstanttags"
@@ -208,6 +209,7 @@ type Env interface {
 	settgchatpublishtags.Env
 	settgchatpublishinstanttags.Env
 	resettelegrampublishnote.Env
+	sendtelegrampublishnotenow.Env
 	convertnoteviewtotgpost.Env
 	createconfigversion.Env
 

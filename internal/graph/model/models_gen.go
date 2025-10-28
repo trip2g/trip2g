@@ -158,6 +158,10 @@ type SearchResultDocument interface {
 	IsSearchResultDocument()
 }
 
+type SendTelegramPublishNoteNowOrErrorPayload interface {
+	IsSendTelegramPublishNoteNowOrErrorPayload()
+}
+
 type SetBoostyTierSubgraphsOrErrorPayload interface {
 	IsSetBoostyTierSubgraphsOrErrorPayload()
 }
@@ -817,6 +821,8 @@ func (ErrorPayload) IsCreateConfigVersionOrErrorPayload() {}
 
 func (ErrorPayload) IsResetTelegramPublishNoteOrErrorPayload() {}
 
+func (ErrorPayload) IsSendTelegramPublishNoteNowOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -1031,6 +1037,16 @@ type SearchConnection struct {
 type SearchInput struct {
 	Query string `json:"query"`
 }
+
+type SendTelegramPublishNoteNowInput struct {
+	ID int64 `json:"id"`
+}
+
+type SendTelegramPublishNoteNowPayload struct {
+	Success bool `json:"success"`
+}
+
+func (SendTelegramPublishNoteNowPayload) IsSendTelegramPublishNoteNowOrErrorPayload() {}
 
 type SetBoostyTierSubgraphsInput struct {
 	TierID      int64   `json:"tierId"`

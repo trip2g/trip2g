@@ -74,13 +74,13 @@ namespace $.$$ {
 			return super.show_outdated_title().replace( '{count}', count.toString() )
 		}
 
-		override show_sent( next?: boolean ): boolean {
-			return this.$.$trip2g_state_arg.bool_value('sent', next)
-		}
+		// override show_sent( next?: boolean ): boolean {
+		// 	return this.$.$trip2g_state_arg.bool_value('sent', next)
+		// }
 
-		override show_outdated( next?: boolean ): boolean {
-			return this.$.$trip2g_state_arg.bool_value('outdated', next)
-		}
+		// override show_outdated( next?: boolean ): boolean {
+		// 	return this.$.$trip2g_state_arg.bool_value('outdated', next)
+		// }
 
 		override row_title( id: any ): string {
 			return this.row( id ).noteView.title

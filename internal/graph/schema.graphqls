@@ -1796,6 +1796,20 @@ type ResetTelegramPublishNotePayload {
 
 union ResetTelegramPublishNoteOrErrorPayload = ResetTelegramPublishNotePayload | ErrorPayload
 
+#
+# sendTelegramPublishNoteNow
+#
+
+input SendTelegramPublishNoteNowInput {
+  id: Int64!
+}
+
+type SendTelegramPublishNoteNowPayload {
+  success: Boolean!
+}
+
+union SendTelegramPublishNoteNowOrErrorPayload = SendTelegramPublishNoteNowPayload | ErrorPayload
+
 type AdminMutation {
   createUser(input: CreateUserInput!): CreateUserOrErrorPayload!
   updateUser(input: UpdateUserInput!): UpdateUserOrErrorPayload!
@@ -1840,6 +1854,7 @@ type AdminMutation {
   setTgChatPublishTags(input: SetTgChatPublishTagsInput!): SetTgChatPublishTagsOrErrorPayload!
   setTgChatPublishInstantTags(input: SetTgChatPublishInstantTagsInput!): SetTgChatPublishInstantTagsOrErrorPayload!
   resetTelegramPublishNote(input: ResetTelegramPublishNoteInput!): ResetTelegramPublishNoteOrErrorPayload!
+  sendTelegramPublishNoteNow(input: SendTelegramPublishNoteNowInput!): SendTelegramPublishNoteNowOrErrorPayload!
 
   # Patreon credentials mutations
   createPatreonCredentials(input: CreatePatreonCredentialsInput!): CreatePatreonCredentialsOrErrorPayload!
