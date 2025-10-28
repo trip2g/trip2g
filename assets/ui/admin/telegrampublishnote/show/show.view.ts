@@ -41,6 +41,8 @@ namespace $.$$ {
 
 			if (this.data().status === 'Sent') {
 				items.push( this.ResetButton() )
+			} else {
+				items.push( this.SendButton() )
 			}
 
 			return items

@@ -4,6 +4,8 @@ $trip2g_admin_telegrampublishnote_show $mol_page
 	tools /
 		<= ResetButton $trip2g_admin_telegrampublishnote_button_reset
 			note_path_id <= telegrampublishnote_id
+		<= SendButton $trip2g_admin_telegrampublishnote_button_send
+			note_path_id <= telegrampublishnote_id
 	body /
 		<= Info $mol_view
 			style *
