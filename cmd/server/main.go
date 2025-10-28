@@ -36,6 +36,7 @@ import (
 	"trip2g/internal/case/backjob/extractnotionpages"
 	"trip2g/internal/case/backjob/sendsignincode"
 	"trip2g/internal/case/canreadnote"
+	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/handletgpublishviews"
@@ -687,6 +688,10 @@ func (a *app) UnbanTelegramChatMember(ctx context.Context, chatID, userID int64)
 func (a *app) ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error) {
 	// TODO: add caching for this method
 	return listactiveusersubgraphs.Resolve(ctx, a, userID)
+}
+
+func (a *app) ConvertNoteViewToTelegramPost(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error) {
+	return convertnoteviewtotgpost.Resolve(ctx, a, noteView)
 }
 
 func (a *app) SendMail(ctx context.Context, data model.Mail) error {

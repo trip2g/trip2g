@@ -2614,6 +2614,54 @@ func (q *Queries) ListAllTelegramPublishNotes(ctx context.Context, arg ListAllTe
 	return items, nil
 }
 
+const listAllTelegramPublishSentMessages = `-- name: ListAllTelegramPublishSentMessages :many
+select tsm.chat_id
+     , tsm.message_id
+     , tsm.note_path_id
+     , p.value as note_path
+     , c.telegram_id as telegram_chat_id
+  from telegram_publish_sent_messages tsm
+  join tg_bot_chats c on tsm.chat_id = c.id
+  join note_paths p on tsm.note_path_id = p.id
+`
+
+type ListAllTelegramPublishSentMessagesRow struct {
+	ChatID         int64  `json:"chat_id"`
+	MessageID      int64  `json:"message_id"`
+	NotePathID     int64  `json:"note_path_id"`
+	NotePath       string `json:"note_path"`
+	TelegramChatID int64  `json:"telegram_chat_id"`
+}
+
+func (q *Queries) ListAllTelegramPublishSentMessages(ctx context.Context) ([]ListAllTelegramPublishSentMessagesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAllTelegramPublishSentMessages)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllTelegramPublishSentMessagesRow
+	for rows.Next() {
+		var i ListAllTelegramPublishSentMessagesRow
+		if err := rows.Scan(
+			&i.ChatID,
+			&i.MessageID,
+			&i.NotePathID,
+			&i.NotePath,
+			&i.TelegramChatID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllTelegramPublishTags = `-- name: ListAllTelegramPublishTags :many
 select id, created_at, hidden, label from telegram_publish_tags
  order by label

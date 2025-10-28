@@ -14,10 +14,27 @@ import (
 	"go.abhg.dev/goldmark/wikilink"
 )
 
+type LinkResolver func(string) (string, error)
+
+type LinkResolverError struct {
+	Target string
+	Reason string
+}
+
+func (e *LinkResolverError) Error() string {
+	return fmt.Sprintf("failed to resolve link '%s': %s", e.Target, e.Reason)
+}
+
 type HTMLConverter struct {
 	CommonConverter
 	blockquoteContent strings.Builder
 	inBlockquote      bool
+	linkResolver      LinkResolver
+	skipClosingTag    map[ast.Node]bool
+}
+
+func (c *HTMLConverter) SetLinkResolver(resolver LinkResolver) {
+	c.linkResolver = resolver
 }
 
 func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
@@ -27,6 +44,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 	c.state = lineStart
 	c.inBlockquote = false
 	c.blockquoteContent.Reset()
+	c.skipClosingTag = make(map[ast.Node]bool)
 
 	var buf bytes.Buffer
 	var lines []string
@@ -226,8 +244,36 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			}
 
 		case *wikilink.Node:
-			// allowed but ignored
-			return ast.WalkSkipChildren, nil
+			if c.linkResolver != nil && !node.Embed {
+				if entering {
+					dest := string(node.Target)
+					url, err := c.linkResolver(dest)
+					if err != nil {
+						res.Warnings = append(res.Warnings, err.Error())
+						c.skipClosingTag[n] = true
+						return ast.WalkSkipChildren, nil
+					}
+
+					linkHTML := fmt.Sprintf(`<a href="%s">`, html.EscapeString(url))
+					if c.inBlockquote {
+						c.blockquoteContent.WriteString(linkHTML)
+					} else {
+						buf.WriteString(linkHTML)
+					}
+				} else {
+					if !c.skipClosingTag[n] {
+						if c.inBlockquote {
+							c.blockquoteContent.WriteString("</a>")
+						} else {
+							buf.WriteString("</a>")
+						}
+					}
+					delete(c.skipClosingTag, n)
+				}
+			} else {
+				// No link resolver or embed - skip this node
+				return ast.WalkSkipChildren, nil
+			}
 
 		default:
 			if entering {

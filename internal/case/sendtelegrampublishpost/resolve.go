@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
 
@@ -26,6 +25,8 @@ type Env interface {
 	// Telegram bot methods for sending messages
 	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
 
+	ConvertNoteViewToTelegramPost(ctx context.Context, noteView *model.NoteView) (*model.TelegramPost, error)
+
 	// Content access methods
 	LatestNoteViews() *model.NoteViews
 }
@@ -37,7 +38,7 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 	}
 
 	// Convert note to Telegram post
-	post, err := convertnoteviewtotgpost.Resolve(ctx, struct{}{}, noteView)
+	post, err := env.ConvertNoteViewToTelegramPost(ctx, noteView)
 	if err != nil {
 		return fmt.Errorf("failed to convert note to telegram post: %w", err)
 	}
