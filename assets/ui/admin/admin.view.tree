@@ -1,6 +1,6 @@
 $trip2g_admin $trip2g_auth
-	title @ \Admin Panel | trip2g
 	AppView $trip2g_admin_app
+		title => title
 		ProfileEmail <= ProfileInfo $mol_button_major
 			title <= me_user_email
 		SignOutButton <= SignOut $mol_button_major
