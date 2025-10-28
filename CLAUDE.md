@@ -130,7 +130,7 @@ The system uses 6-field cron expressions (with seconds):
 
 ## Golang
 
-Don’t write
+Don't write
 
 ```golang
 if err := ...; err != nil
@@ -585,3 +585,5 @@ For frontend development patterns, admin CRUD interfaces, and UI components, see
 ## Mol Framework
 
 For detailed Mol framework documentation including $mol_view properties, view.tree syntax, and component patterns, see [Mol Framework Documentation](docs/mol.md).
+
+- To memorize, but translate to english first.

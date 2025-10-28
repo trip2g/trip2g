@@ -3,30 +3,42 @@ namespace $.$$ {
 	const HOUR = 60 * MINUTE
 	const DAY = 24 * HOUR
 
-	function pluralize( num: number, singular: string, plural: string ) {
-		return num === 1 ? singular : plural
+	function pluralizeRussian( num: number, form1: string, form2: string, form5: string ) {
+		const n = Math.abs(num) % 100
+		const n1 = n % 10
+		
+		if (n > 10 && n < 20) return form5
+		if (n1 > 1 && n1 < 5) return form2
+		if (n1 === 1) return form1
+		return form5
 	}
 
 	export class $trip2g_time_remining extends $.$trip2g_time_remining {
 		override text(): string {
 			const s = this.seconds()
+			const absS = Math.abs(s)
+			const isNegative = s < 0
 
-			if( s < MINUTE ) {
-				return `${ s } ${ pluralize( s, 'second', 's' ) } left`
+			if( absS < MINUTE ) {
+				const timeText = `${ absS } ${ pluralizeRussian( absS, 'секунда', 'секунды', 'секунд' ) }`
+				return isNegative ? `${ timeText } назад` : `осталось ${ timeText }`
 			}
 
-			if( s < HOUR ) {
-				const minutes = Math.floor( s / MINUTE )
-				return `${ minutes } ${ pluralize( minutes, 'minute', 'minutes' ) } left`
+			if( absS < HOUR ) {
+				const minutes = Math.floor( absS / MINUTE )
+				const timeText = `${ minutes } ${ pluralizeRussian( minutes, 'минута', 'минуты', 'минут' ) }`
+				return isNegative ? `${ timeText } назад` : `осталось ${ timeText }`
 			}
 
-			if( s < DAY ) {
-				const hours = Math.floor( s / HOUR )
-				return `${ hours } ${ pluralize( hours, 'hour', 'hours' ) } left`
+			if( absS < DAY ) {
+				const hours = Math.floor( absS / HOUR )
+				const timeText = `${ hours } ${ pluralizeRussian( hours, 'час', 'часа', 'часов' ) }`
+				return isNegative ? `${ timeText } назад` : `осталось ${ timeText }`
 			}
 
-			const days = Math.floor( s / DAY )
-			return `${ days } ${ pluralize( days, 'day', 'days' ) } left`
+			const days = Math.floor( absS / DAY )
+			const timeText = `${ days } ${ pluralizeRussian( days, 'день', 'дня', 'дней' ) }`
+			return isNegative ? `${ timeText } назад` : `осталось ${ timeText }`
 		}
 	}
 }
