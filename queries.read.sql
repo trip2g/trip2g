@@ -821,7 +821,8 @@ select tsm.chat_id
   from telegram_publish_sent_messages tsm
   join tg_bot_chats c on tsm.chat_id = c.id
   join note_paths p on tsm.note_path_id = p.id
- where tsm.chat_id = ?;
+ where tsm.chat_id = ?
+ order by tsm.created_at asc;
 
 -- name: GetTelegramPublishNoteByNotePathID :one
 select *

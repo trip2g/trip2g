@@ -4,4 +4,4 @@ telegram_publish_tags:
   - my_group
 ---
 Post 5.
-v1
+v2

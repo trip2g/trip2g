@@ -119,17 +119,15 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 			}
 		}
 
-		if !instant {
-			sentParams := db.InsertTelegramPublishSentMessageParams{
-				NotePathID: notePathID,
-				ChatID:     chat.ID,
-				MessageID:  messageID,
-			}
+		sentParams := db.InsertTelegramPublishSentMessageParams{
+			NotePathID: notePathID,
+			ChatID:     chat.ID,
+			MessageID:  messageID,
+		}
 
-			insertErr := env.InsertTelegramPublishSentMessage(ctx, sentParams)
-			if insertErr != nil {
-				return fmt.Errorf("failed to record sent message for chat %d: %w", chat.ID, insertErr)
-			}
+		insertErr := env.InsertTelegramPublishSentMessage(ctx, sentParams)
+		if insertErr != nil {
+			return fmt.Errorf("failed to record sent message for chat %d: %w", chat.ID, insertErr)
 		}
 	}
 

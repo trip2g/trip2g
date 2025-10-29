@@ -145,11 +145,13 @@ func TestResolve(t *testing.T) {
 						require.Contains(t, []int64{1, 2}, chatID)
 						return 100 + chatID, nil
 					},
-					// Instant posts should not call these functions
+					// Instant posts should now save sent messages
 					InsertTelegramPublishSentMessageFunc: func(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error {
-						t.Error("InsertTelegramPublishSentMessage should not be called for instant posts")
+						require.Equal(t, int64(123), arg.NotePathID)
+						require.Contains(t, []int64{1, 2}, arg.ChatID)
 						return nil
 					},
+					// But should not mark note as published
 					UpdateTelegramPublishNoteAsPublishedFunc: func(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error {
 						t.Error("UpdateTelegramPublishNoteAsPublished should not be called for instant posts")
 						return nil

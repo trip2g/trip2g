@@ -27,7 +27,9 @@
       "Bash(go fmt:*)",
       "Bash(gofmt:*)",
       "Bash(npm install:*)",
-      "Bash(go list:*)"
+      "Bash(go list:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   },
