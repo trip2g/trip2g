@@ -58,7 +58,13 @@ hello`),
 		publicURL: "https://example.com",
 	}
 
-	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, nvs.List[0], 123)
+	source := model.TelegramPostSource{
+		NoteView: nvs.List[0],
+		ChatID:   123,
+		Instant:  false,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
 	require.NoError(t, err)
 
 	require.Empty(t, post.Warnings)

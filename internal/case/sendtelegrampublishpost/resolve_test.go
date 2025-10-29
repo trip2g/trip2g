@@ -85,7 +85,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView, chatID int64) (*model.TelegramPost, error) {
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
 							Warnings: []string{},
@@ -128,7 +128,7 @@ func TestResolve(t *testing.T) {
 			instant: true,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView, chatID int64) (*model.TelegramPost, error) {
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
 							Warnings: []string{},
@@ -164,7 +164,7 @@ func TestResolve(t *testing.T) {
 			instant: true,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView, chatID int64) (*model.TelegramPost, error) {
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
 							Warnings: []string{},
@@ -186,7 +186,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView, chatID int64) (*model.TelegramPost, error) {
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
 							Warnings: []string{},
@@ -206,7 +206,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView, chatID int64) (*model.TelegramPost, error) {
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
 							Warnings: []string{},
@@ -229,7 +229,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView, chatID int64) (*model.TelegramPost, error) {
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
 							Warnings: []string{},
@@ -252,7 +252,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView, chatID int64) (*model.TelegramPost, error) {
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
 							Warnings: []string{},
@@ -278,7 +278,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView, chatID int64) (*model.TelegramPost, error) {
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
 							Warnings: []string{},
@@ -307,7 +307,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, noteView *model.NoteView, chatID int64) (*model.TelegramPost, error) {
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
 							Warnings: []string{},

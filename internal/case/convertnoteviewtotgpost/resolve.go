@@ -19,10 +19,10 @@ type Env interface {
 	PublicURL() string
 }
 
-func Resolve(ctx context.Context, env Env, nv *model.NoteView, chatID int64) (*model.TelegramPost, error) {
+func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*model.TelegramPost, error) {
 	logger := logger.WithPrefix(env.Logger(), "convertnoteviewtotgpost")
 
-	sentMsgs, err := env.ListTelegramPublishSentMessagesByChatID(ctx, chatID)
+	sentMsgs, err := env.ListTelegramPublishSentMessagesByChatID(ctx, source.ChatID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list all telegram publish sent messages: %w", err)
 	}
@@ -35,7 +35,7 @@ func Resolve(ctx context.Context, env Env, nv *model.NoteView, chatID int64) (*m
 
 	nvs := env.LatestNoteViews()
 
-	allowExternalLinks := getAllowExternalLinks(nv)
+	allowExternalLinks := getAllowExternalLinks(source.NoteView) || source.Instant
 	publicURL := env.PublicURL()
 
 	tr := markdownv2.HTMLConverter{}
@@ -67,7 +67,7 @@ func Resolve(ctx context.Context, env Env, nv *model.NoteView, chatID int64) (*m
 		return url, nil
 	})
 
-	res := tr.Process(nv)
+	res := tr.Process(source.NoteView)
 
 	return &model.TelegramPost{
 		Content:  res.Content,

@@ -25,7 +25,7 @@ type Env interface {
 	// Telegram bot methods for sending messages
 	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
 
-	ConvertNoteViewToTelegramPost(ctx context.Context, noteView *model.NoteView, chatID int64) (*model.TelegramPost, error)
+	ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
 
 	// Content access methods
 	LatestNoteViews() *model.NoteViews
@@ -61,8 +61,14 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 
 	// Send the post to each chat
 	for _, chat := range chats {
+		source := model.TelegramPostSource{
+			NoteView: noteView,
+			ChatID:   chat.ID,
+			Instant:  instant,
+		}
+
 		// Convert note to Telegram post
-		post, convertErr := env.ConvertNoteViewToTelegramPost(ctx, noteView, chat.ID)
+		post, convertErr := env.ConvertNoteViewToTelegramPost(ctx, source)
 		if convertErr != nil {
 			return fmt.Errorf("failed to convert note to telegram post: %w", convertErr)
 		}

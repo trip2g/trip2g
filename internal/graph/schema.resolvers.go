@@ -1306,7 +1306,13 @@ func (r *adminTelegramPublishNoteResolver) Post(ctx context.Context, obj *db.Tel
 		return nil, errors.New("no chats associated with this telegram publish note")
 	}
 
-	return convertnoteviewtotgpost.Resolve(ctx, r.env(ctx), nv, chats[0].ID)
+	source := appmodel.TelegramPostSource{
+		NoteView: nv,
+		ChatID:   chats[0].ID,
+		Instant:  true,
+	}
+
+	return convertnoteviewtotgpost.Resolve(ctx, r.env(ctx), source)
 }
 
 // Tags is the resolver for the tags field.
