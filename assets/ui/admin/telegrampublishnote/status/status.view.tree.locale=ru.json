@@ -1,0 +1,6 @@
+{
+	"$trip2g_admin_telegrampublishnote_status_statuses_Pending": "В ожидании",
+	"$trip2g_admin_telegrampublishnote_status_statuses_Scheduled": "Запланировано",
+	"$trip2g_admin_telegrampublishnote_status_statuses_Outdated": "Устарело",
+	"$trip2g_admin_telegrampublishnote_status_statuses_Sent": "Отправлено"
+}

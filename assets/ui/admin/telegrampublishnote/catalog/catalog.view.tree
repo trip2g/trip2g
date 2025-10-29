@@ -29,8 +29,8 @@ $trip2g_admin_telegrampublishnote_catalog $trip2g_admin_catalog
 							content <= row_publish_at* \publish_at
 					<= Row_status_labeler* $mol_labeler
 						title @ \Status
-						Content <= Row_status* $trip2g_admin_cell
-							content <= row_status* \status
+						Content <= Row_status* $trip2g_admin_telegrampublishnote_status
+							value <= row_status* \status
 					<= Row_seconds_until_publish_labeler* $mol_labeler
 						title @ \Seconds Until Publish
 						Content <= Row_seconds_until_publish* $trip2g_admin_cell

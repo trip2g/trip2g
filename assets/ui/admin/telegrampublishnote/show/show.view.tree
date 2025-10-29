@@ -26,8 +26,8 @@ $trip2g_admin_telegrampublishnote_show $mol_page
 						content <= publish_at \
 				<= Status_labeler $mol_labeler
 					title @ \Status
-					Content <= Status $trip2g_admin_cell
-						content <= status \
+					Content <= Status $trip2g_admin_telegrampublishnote_status
+						value <= status \
 				<= Chats_labeler $mol_labeler
 					title @ \Chats
 					Content <= Chats $trip2g_admin_cell

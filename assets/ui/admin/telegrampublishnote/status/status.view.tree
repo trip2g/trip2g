@@ -1,0 +1,8 @@
+$trip2g_admin_telegrampublishnote_status $trip2g_admin_cell
+	value \Pending
+	statuses *
+		Pending @ \Pending
+		Scheduled @ \Scheduled
+		Outdated @ \Outdated
+		Sent @ \Sent
+	sub / <= status \
