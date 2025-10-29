@@ -160,7 +160,7 @@ func sendPhoto(ctx context.Context, env Env, params sendPhotoParams) (int64, err
 	if !params.stream {
 		file = tgbotapi.FileURL(params.url)
 	} else {
-		req, err := http.NewRequestWithContext(ctx, "GET", params.url, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, params.url, nil)
 		if err != nil {
 			return 0, fmt.Errorf("failed to create request for image URL: %w", err)
 		}

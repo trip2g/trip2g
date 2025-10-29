@@ -20,7 +20,7 @@ func (n *HighlightAST) Dump(source []byte, level int) {
 	gast.DumpHelper(n, source, level, nil, nil)
 }
 
-// KindHighlightAST is a NodeKind of the HighlightAST node.
+// KindHighlight is a NodeKind of the HighlightAST node.
 var KindHighlight = gast.NewNodeKind("Highlight")
 
 // Kind implements Node.Kind.

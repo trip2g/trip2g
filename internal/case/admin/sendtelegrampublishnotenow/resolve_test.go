@@ -53,7 +53,7 @@ func TestResolve(t *testing.T) {
 				}
 				mock.SendTelegramPublishPostFunc = func(ctx context.Context, notePathID int64, instant bool) error {
 					require.Equal(t, int64(1), notePathID)
-					require.Equal(t, false, instant)
+					require.False(t, instant)
 					return nil
 				}
 				return mock

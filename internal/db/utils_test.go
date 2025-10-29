@@ -5,12 +5,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
+
+	"github.com/stretchr/testify/require"
 )
 
-// setupTestDB creates a temporary test database with migrations applied
+// setupTestDB creates a temporary test database with migrations applied.
 func setupTestDB(t *testing.T) (*sql.DB, *db.Queries, func()) {
 	t.Helper()
 
@@ -39,7 +40,7 @@ func setupTestDB(t *testing.T) (*sql.DB, *db.Queries, func()) {
 	return conn, queries, cleanup
 }
 
-// mustExec executes a SQL statement and fails the test on error
+// mustExec executes a SQL statement and fails the test on error.
 func mustExec(t *testing.T, db *sql.DB, query string, args ...interface{}) {
 	t.Helper()
 
@@ -47,7 +48,7 @@ func mustExec(t *testing.T, db *sql.DB, query string, args ...interface{}) {
 	require.NoError(t, err, "Failed to execute query: %s", query)
 }
 
-// insertTestUser creates a test user and returns the ID
+// insertTestUser creates a test user and returns the ID.
 func insertTestUser(t *testing.T, db *sql.DB, email string) int64 {
 	t.Helper()
 
@@ -62,7 +63,7 @@ func insertTestUser(t *testing.T, db *sql.DB, email string) int64 {
 	return userID
 }
 
-// insertTestNotePath creates a test note path and returns the ID
+// insertTestNotePath creates a test note path and returns the ID.
 func insertTestNotePath(t *testing.T, db *sql.DB, path string) int64 {
 	t.Helper()
 
@@ -77,7 +78,7 @@ func insertTestNotePath(t *testing.T, db *sql.DB, path string) int64 {
 	return pathID
 }
 
-// insertTestNoteVersion creates a test note version
+// insertTestNoteVersion creates a test note version.
 func insertTestNoteVersion(t *testing.T, db *sql.DB, pathID int64, content string) int64 {
 	t.Helper()
 

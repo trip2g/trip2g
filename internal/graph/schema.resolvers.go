@@ -1259,7 +1259,7 @@ func (r *adminTelegramPublishNoteResolver) Status(ctx context.Context, obj *db.T
 
 	post, err := r.Post(ctx, obj)
 	if err != nil {
-		return "Error: " + err.Error(), nil
+		return "", fmt.Errorf("failed to get post: %w", err)
 	}
 
 	if len(post.Warnings) > 0 {

@@ -35,7 +35,7 @@ func (c *HTMLConverter) SetLinkResolver(resolver LinkResolver) {
 	c.linkResolver = resolver
 }
 
-// Write writes string to the current buffer (last in stack)
+// Write writes string to the current buffer (last in stack).
 func (c *HTMLConverter) Write(s string) {
 	if len(c.bufStack) > 0 {
 		c.bufStack[len(c.bufStack)-1].WriteString(s)
@@ -105,7 +105,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			}
 
 		case *ast.Emphasis:
-			tag := ""
+			var tag string
 			if node.Level == 1 {
 				if entering {
 					tag = "<i>"
@@ -122,7 +122,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			c.Write(tag)
 
 		case *extast.Strikethrough:
-			tag := ""
+			var tag string
 			if entering {
 				tag = "<s>"
 			} else {
@@ -131,7 +131,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			c.Write(tag)
 
 		case *ast.CodeSpan:
-			tag := ""
+			var tag string
 			if entering {
 				tag = "<code>"
 			} else {

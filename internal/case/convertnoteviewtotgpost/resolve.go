@@ -3,6 +3,7 @@ package convertnoteviewtotgpost
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -61,7 +62,7 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 		}
 
 		// remove -100 prefix
-		chatID := strings.TrimPrefix(fmt.Sprintf("%d", msg.TelegramChatID), "-100")
+		chatID := strings.TrimPrefix(strconv.FormatInt(msg.TelegramChatID, 10), "-100")
 		url := fmt.Sprintf("https://t.me/c/%s/%d", chatID, msg.MessageID)
 
 		return url, nil

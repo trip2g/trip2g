@@ -4,6 +4,7 @@ package createconfigversion
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -31,7 +32,7 @@ func validateRequest(r *Input) *model.ErrorPayload {
 func validateTimezone(value interface{}) error {
 	timezone, ok := value.(string)
 	if !ok {
-		return fmt.Errorf("timezone must be a string")
+		return errors.New("timezone must be a string")
 	}
 
 	_, err := time.LoadLocation(timezone)

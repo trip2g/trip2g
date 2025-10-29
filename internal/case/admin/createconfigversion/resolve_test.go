@@ -97,7 +97,7 @@ func TestResolve(t *testing.T) {
 				// Verify config version parameters
 				params := mockEnv.InsertConfigVersionCalls()[0].Params
 				require.Equal(t, int64(123), params.CreatedBy)
-				require.Equal(t, true, params.ShowDraftVersions)
+				require.True(t, params.ShowDraftVersions)
 				require.Equal(t, "grid", params.DefaultLayout)
 				require.Equal(t, "America/New_York", params.Timezone)
 			},
@@ -144,7 +144,7 @@ func TestResolve(t *testing.T) {
 
 				params := mockEnv.InsertConfigVersionCalls()[0].Params
 				require.Equal(t, int64(456), params.CreatedBy)
-				require.Equal(t, false, params.ShowDraftVersions)
+				require.False(t, params.ShowDraftVersions)
 				require.Equal(t, "list", params.DefaultLayout)
 				require.Equal(t, "UTC", params.Timezone)
 			},
@@ -213,8 +213,8 @@ func TestResolve(t *testing.T) {
 
 				params := mockEnv.InsertConfigVersionCalls()[0].Params
 				require.Equal(t, int64(789), params.CreatedBy)
-				require.Equal(t, true, params.ShowDraftVersions)
-				require.Equal(t, "", params.DefaultLayout)
+				require.True(t, params.ShowDraftVersions)
+				require.Empty(t, params.DefaultLayout)
 				require.Equal(t, "UTC", params.Timezone)
 			},
 		},
