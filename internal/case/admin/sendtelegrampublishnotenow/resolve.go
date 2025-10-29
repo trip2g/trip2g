@@ -46,8 +46,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get telegram publish note: %w", err)
 	}
 
-	// Send the post immediately (instant = true)
-	err = env.SendTelegramPublishPost(ctx, input.ID, true)
+	err = env.SendTelegramPublishPost(ctx, input.ID, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send telegram publish post: %w", err)
 	}
