@@ -28,77 +28,100 @@ type Env interface {
 type tagIDCache map[string]int64
 
 func Resolve(ctx context.Context, env Env, changedPathIDs []int64) error {
-	tagIDs := tagIDCache{}
 	timeLocation := env.TimeLocation()
 	nvs := env.LatestNoteViews()
 
+	p := &processor{
+		timeLocation: timeLocation,
+		tagIDs:       tagIDCache{},
+
+		nvs: nvs,
+		ctx: ctx,
+		env: env,
+	}
+
+	changedNoteIDs := make(map[int64]struct{})
+
+	for _, id := range changedPathIDs {
+		changedNoteIDs[id] = struct{}{}
+	}
+
 	for _, note := range nvs.List {
-		changed := false
-
-		for _, changedPathID := range changedPathIDs {
-			if note.PathID == changedPathID {
-				changed = true
-				break
-			}
-		}
-
+		_, changed := changedNoteIDs[note.PathID]
 		if !changed {
 			continue
 		}
 
-		// telegram_publish_at: 2024-07-02T23:02:00
-		at, atOk := extractTime(note, timeLocation)
-		// telegram_publish_tags: string[]
-		tags, tagsOk := extractTags(note)
-
-		if !atOk && !tagsOk {
-			continue
+		err := p.process(note)
+		if err != nil {
+			return fmt.Errorf("failed to process note %q: %w", note.Path, err)
 		}
+	}
 
-		if atOk != tagsOk {
-			const msg = "incomplete telegram publish metadata, both telegram_publish_at and telegram_publish_tags must be present"
-			note.AddWarning(model.NoteWarningWarning, msg)
-			continue
+	return nil
+}
+
+type processor struct {
+	tagIDs       tagIDCache
+	timeLocation *time.Location
+	nvs          *model.NoteViews
+	ctx          context.Context
+	env          Env
+}
+
+func (p *processor) process(note *model.NoteView) error {
+	// telegram_publish_at: 2024-07-02T23:02:00
+	at, atOk := extractTime(note, p.timeLocation)
+	// telegram_publish_tags: string[]
+	tags, tagsOk := extractTags(note)
+
+	if !atOk && !tagsOk {
+		return nil
+	}
+
+	if atOk != tagsOk {
+		const msg = "incomplete telegram publish metadata, both telegram_publish_at and telegram_publish_tags must be present"
+		note.AddWarning(model.NoteWarningWarning, msg)
+		return nil
+	}
+
+	for _, tag := range tags {
+		upsertErr := p.tagIDs.upsert(p.ctx, p.env, tag)
+		if upsertErr != nil {
+			return fmt.Errorf("failed to upsert telegram publish tag %q: %w", tag, upsertErr)
 		}
+	}
 
-		for _, tag := range tags {
-			upsertErr := tagIDs.upsert(ctx, env, tag)
-			if upsertErr != nil {
-				return fmt.Errorf("failed to upsert telegram publish tag %q: %w", tag, upsertErr)
-			}
-		}
+	noteParams := db.UpsertTelegramPublishNoteParams{
+		NotePathID: note.PathID,
+		PublishAt:  at.UTC(),
+	}
 
-		noteParams := db.UpsertTelegramPublishNoteParams{
+	err := p.env.UpsertTelegramPublishNote(p.ctx, noteParams)
+	if err != nil {
+		return fmt.Errorf("failed to UpsertTelegramPublishNote: %w", err)
+	}
+
+	err = p.env.DeleteTelegramPublishNoteTagsByPathID(p.ctx, note.PathID)
+	if err != nil {
+		return fmt.Errorf("failed to DeleteTelegramPublishNoteTagsByPathID: %w", err)
+	}
+
+	for _, tag := range tags {
+		tagParams := db.UpsertTelegramPublishNoteTagParams{
 			NotePathID: note.PathID,
-			PublishAt:  at.UTC(),
+			TagID:      p.tagIDs[tag],
 		}
 
-		err := env.UpsertTelegramPublishNote(ctx, noteParams)
+		err = p.env.UpsertTelegramPublishNoteTag(p.ctx, tagParams)
 		if err != nil {
-			return fmt.Errorf("failed to upsert telegram publish note %q: %w", note.Path, err)
+			return fmt.Errorf("failed to UpsertTelegramPublishNoteTag for tag %q: %w", tag, err)
 		}
+	}
 
-		err = env.DeleteTelegramPublishNoteTagsByPathID(ctx, note.PathID)
-		if err != nil {
-			return fmt.Errorf("failed to delete telegram publish note tags for %q: %w", note.Path, err)
-		}
-
-		for _, tag := range tags {
-			tagParams := db.UpsertTelegramPublishNoteTagParams{
-				NotePathID: note.PathID,
-				TagID:      tagIDs[tag],
-			}
-
-			err = env.UpsertTelegramPublishNoteTag(ctx, tagParams)
-			if err != nil {
-				return fmt.Errorf("failed to upsert telegram publish note tag %q for note %q: %w", tag, note.Path, err)
-			}
-		}
-
-		err = env.SendTelegramPublishPost(ctx, note.PathID, true)
-		if err != nil {
-			return fmt.Errorf("failed to send telegram publish post for note %q: %w", note.Path, err)
-		}
+	err = p.env.SendTelegramPublishPost(p.ctx, note.PathID, true)
+	if err != nil {
+		return fmt.Errorf("failed to SendTelegramPublishPost for note %q: %w", note.Path, err)
 	}
 
 	return nil
