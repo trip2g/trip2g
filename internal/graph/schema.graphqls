@@ -1805,7 +1805,7 @@ input SendTelegramPublishNoteNowInput {
 }
 
 type SendTelegramPublishNoteNowPayload {
-  success: Boolean!
+  publishNote: AdminTelegramPublishNote!
 }
 
 union SendTelegramPublishNoteNowOrErrorPayload = SendTelegramPublishNoteNowPayload | ErrorPayload

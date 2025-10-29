@@ -1043,7 +1043,7 @@ type SendTelegramPublishNoteNowInput struct {
 }
 
 type SendTelegramPublishNoteNowPayload struct {
-	Success bool `json:"success"`
+	PublishNote *db.TelegramPublishNote `json:"publishNote"`
 }
 
 func (SendTelegramPublishNoteNowPayload) IsSendTelegramPublishNoteNowOrErrorPayload() {}

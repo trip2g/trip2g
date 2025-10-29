@@ -997,7 +997,7 @@ type ComplexityRoot struct {
 	}
 
 	SendTelegramPublishNoteNowPayload struct {
-		Success func(childComplexity int) int
+		PublishNote func(childComplexity int) int
 	}
 
 	SetBoostyTierSubgraphsPayload struct {
@@ -5451,12 +5451,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SearchResult.URL(childComplexity), true
 
-	case "SendTelegramPublishNoteNowPayload.success":
-		if e.complexity.SendTelegramPublishNoteNowPayload.Success == nil {
+	case "SendTelegramPublishNoteNowPayload.publishNote":
+		if e.complexity.SendTelegramPublishNoteNowPayload.PublishNote == nil {
 			break
 		}
 
-		return e.complexity.SendTelegramPublishNoteNowPayload.Success(childComplexity), true
+		return e.complexity.SendTelegramPublishNoteNowPayload.PublishNote(childComplexity), true
 
 	case "SetBoostyTierSubgraphsPayload.success":
 		if e.complexity.SetBoostyTierSubgraphsPayload.Success == nil {
@@ -32599,8 +32599,8 @@ func (ec *executionContext) fieldContext_SearchResult_document(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _SendTelegramPublishNoteNowPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.SendTelegramPublishNoteNowPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_SendTelegramPublishNoteNowPayload_success(ctx, field)
+func (ec *executionContext) _SendTelegramPublishNoteNowPayload_publishNote(ctx context.Context, field graphql.CollectedField, obj *model.SendTelegramPublishNoteNowPayload) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SendTelegramPublishNoteNowPayload_publishNote(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -32613,7 +32613,7 @@ func (ec *executionContext) _SendTelegramPublishNoteNowPayload_success(ctx conte
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Success, nil
+		return obj.PublishNote, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -32625,19 +32625,43 @@ func (ec *executionContext) _SendTelegramPublishNoteNowPayload_success(ctx conte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*db.TelegramPublishNote)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNAdminTelegramPublishNote2ᚖtrip2gᚋinternalᚋdbᚐTelegramPublishNote(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_SendTelegramPublishNoteNowPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_SendTelegramPublishNoteNowPayload_publishNote(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SendTelegramPublishNoteNowPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTelegramPublishNote_id(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTelegramPublishNote_createdAt(ctx, field)
+			case "publishAt":
+				return ec.fieldContext_AdminTelegramPublishNote_publishAt(ctx, field)
+			case "secondsUntilPublish":
+				return ec.fieldContext_AdminTelegramPublishNote_secondsUntilPublish(ctx, field)
+			case "publishedAt":
+				return ec.fieldContext_AdminTelegramPublishNote_publishedAt(ctx, field)
+			case "publishedVersionID":
+				return ec.fieldContext_AdminTelegramPublishNote_publishedVersionID(ctx, field)
+			case "status":
+				return ec.fieldContext_AdminTelegramPublishNote_status(ctx, field)
+			case "noteView":
+				return ec.fieldContext_AdminTelegramPublishNote_noteView(ctx, field)
+			case "post":
+				return ec.fieldContext_AdminTelegramPublishNote_post(ctx, field)
+			case "tags":
+				return ec.fieldContext_AdminTelegramPublishNote_tags(ctx, field)
+			case "chats":
+				return ec.fieldContext_AdminTelegramPublishNote_chats(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramPublishNote", field.Name)
 		},
 	}
 	return fc, nil
@@ -55749,8 +55773,8 @@ func (ec *executionContext) _SendTelegramPublishNoteNowPayload(ctx context.Conte
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SendTelegramPublishNoteNowPayload")
-		case "success":
-			out.Values[i] = ec._SendTelegramPublishNoteNowPayload_success(ctx, field, obj)
+		case "publishNote":
+			out.Values[i] = ec._SendTelegramPublishNoteNowPayload_publishNote(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

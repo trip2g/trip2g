@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"testing"
+	"time"
 
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/db"
@@ -20,6 +21,13 @@ func TestResolve(t *testing.T) {
 	adminToken := &usertoken.Data{
 		ID:   1,
 		Role: "admin",
+	}
+
+	now := time.Now()
+	testNote := db.TelegramPublishNote{
+		NotePathID: 1,
+		PublishAt:  now,
+		CreatedAt:  now,
 	}
 
 	tests := []struct {
@@ -41,9 +49,7 @@ func TestResolve(t *testing.T) {
 				}
 				mock.GetTelegramPublishNoteByNotePathIDFunc = func(ctx context.Context, notePathID int64) (db.TelegramPublishNote, error) {
 					require.Equal(t, int64(1), notePathID)
-					return db.TelegramPublishNote{
-						NotePathID: 1,
-					}, nil
+					return testNote, nil
 				}
 				mock.SendTelegramPublishPostFunc = func(ctx context.Context, notePathID int64, instant bool) error {
 					require.Equal(t, int64(1), notePathID)
@@ -53,7 +59,7 @@ func TestResolve(t *testing.T) {
 				return mock
 			},
 			want: &model.SendTelegramPublishNoteNowPayload{
-				Success: true,
+				PublishNote: &testNote,
 			},
 			wantErr: false,
 		},
@@ -150,7 +156,8 @@ func TestResolve(t *testing.T) {
 				switch wantPayload := tt.want.(type) {
 				case *model.SendTelegramPublishNoteNowPayload:
 					gotPayload := got.(*model.SendTelegramPublishNoteNowPayload)
-					require.Equal(t, wantPayload.Success, gotPayload.Success)
+					require.NotNil(t, gotPayload.PublishNote)
+					require.Equal(t, wantPayload.PublishNote.NotePathID, gotPayload.PublishNote.NotePathID)
 				case *model.ErrorPayload:
 					gotPayload := got.(*model.ErrorPayload)
 					require.Equal(t, wantPayload.Message, gotPayload.Message)

@@ -38,7 +38,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	// Check if the publish note exists
-	_, err = env.GetTelegramPublishNoteByNotePathID(ctx, input.ID)
+	publishNote, err := env.GetTelegramPublishNoteByNotePathID(ctx, input.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return &model.ErrorPayload{Message: "Telegram publish note not found"}, nil
@@ -52,7 +52,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	payload := model.SendTelegramPublishNoteNowPayload{
-		Success: true,
+		PublishNote: &publishNote,
 	}
 
 	return &payload, nil

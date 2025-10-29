@@ -4,7 +4,10 @@ namespace $.$$ {
 			admin {
 				payload: sendTelegramPublishNoteNow(input: $input) {
 					... on SendTelegramPublishNoteNowPayload {
-						success
+						publishNote {
+							id
+						}
+
 					}
 					... on ErrorPayload {
 						message
