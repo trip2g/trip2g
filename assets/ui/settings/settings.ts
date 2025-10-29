@@ -1,6 +1,7 @@
 namespace $ {
 	const default_settings = {
 		is_dev_mode: true,
+		title: 'trip2g',
 	}
 
 	const page_settings = typeof window !== 'undefined' && (window as any).__trip2g_settings || {}
@@ -19,6 +20,10 @@ namespace $ {
 
 		static dev_value( v: string ) {
 			return $trip2g_settings.is_dev_mode() ? v : ''
+		}
+
+		static title(): string {
+			return $trip2g_settings.settings().title || 'trip2g'
 		}
 	}
 }

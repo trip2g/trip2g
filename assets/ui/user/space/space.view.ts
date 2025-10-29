@@ -4,6 +4,10 @@ namespace $.$$ {
 			return this.$.$trip2g_auth_viewer.current()
 		}
 
+		override title() {
+			return $trip2g_settings.title()
+		}
+
 		override open_button() {
 			const viewer = this.viewer()
 			return viewer.user ? this.OpenButton() : this.SignInButton()
