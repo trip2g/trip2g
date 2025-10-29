@@ -1330,6 +1330,9 @@ func (r *adminTelegramPublishNotesConnectionResolver) Nodes(ctx context.Context,
 
 		if obj.Filter.IncludeOutdated != nil {
 			params.ShowOutdated = *obj.Filter.IncludeOutdated
+			if *obj.Filter.IncludeOutdated {
+				params.ShowScheduled = false
+			}
 		}
 	}
 

@@ -1,9 +1,14 @@
 {
-	"$trip2g_admin_telegrampublishnote_show_PublishAt_labeler_title": "Время публикации",
+	"$trip2g_admin_telegrampublishnote_show_PublishAt_labeler_title": "Время планируемой публикации",
 	"$trip2g_admin_telegrampublishnote_show_Status_labeler_title": "Статус",
 	"$trip2g_admin_telegrampublishnote_show_Chats_labeler_title": "Чаты",
 	"$trip2g_admin_telegrampublishnote_show_TimeRemaining_labeler_title": "Время до публикации",
 	"$trip2g_admin_telegrampublishnote_show_Warnings_labeler_title": "Предупреждения",
-	"$trip2g_admin_telegrampublishnote_show_warnings": "Нет предупреждений",
-	"$trip2g_admin_telegrampublishnote_show_Content_labeler_title": "Содержимое поста"
+	"$trip2g_admin_telegrampublishnote_show_CreatedAt_labeler_title": "Время создания",
+	"$trip2g_admin_telegrampublishnote_show_warnings": "Все хорошо",
+	"$trip2g_admin_telegrampublishnote_show_Content_labeler_title": "Содержимое поста",
+	"$trip2g_admin_telegrampublishnote_show_statuses_Pending": "В ожидании",
+	"$trip2g_admin_telegrampublishnote_show_statuses_Scheduled": "Запланировано",
+	"$trip2g_admin_telegrampublishnote_show_statuses_Outdated": "Устарело",
+	"$trip2g_admin_telegrampublishnote_show_statuses_Sent": "Отправлено"
 }

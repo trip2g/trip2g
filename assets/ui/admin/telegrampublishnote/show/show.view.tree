@@ -6,6 +6,11 @@ $trip2g_admin_telegrampublishnote_show $mol_page
 			note_path_id <= telegrampublishnote_id
 		<= SendButton $trip2g_admin_telegrampublishnote_button_send
 			note_path_id <= telegrampublishnote_id
+	statuses *
+		Pending @ \Pending
+		Scheduled @ \Scheduled
+		Outdated @ \Outdated
+		Sent @ \Sent
 	body /
 		<= Info $mol_view
 			style *

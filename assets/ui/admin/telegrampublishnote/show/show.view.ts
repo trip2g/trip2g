@@ -63,7 +63,8 @@ namespace $.$$ {
 		}
 
 		override status(): string {
-			return this.data().status
+			const v = this.data().status as keyof ReturnType<typeof this.statuses>
+			return this.statuses()[v] || v
 		}
 
 		override chats(): string {
