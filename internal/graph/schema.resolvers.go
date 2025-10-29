@@ -1297,13 +1297,21 @@ func (r *adminTelegramPublishNoteResolver) Post(ctx context.Context, obj *db.Tel
 		return nil, err
 	}
 
-	chats, err := r.Chats(ctx, obj)
+	// instant chats
+	chats, err := r.env(ctx).ListTgBotInstantChatsByTelegramPublishNotePathID(ctx, obj.NotePathID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list tg bot instant chats: %w", err)
 	}
 
 	if len(chats) == 0 {
-		return nil, errors.New("no chats associated with this telegram publish note")
+		chats, err = r.Chats(ctx, obj)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(chats) == 0 {
+			return nil, errors.New("no chats associated with this telegram publish note")
+		}
 	}
 
 	source := appmodel.TelegramPostSource{

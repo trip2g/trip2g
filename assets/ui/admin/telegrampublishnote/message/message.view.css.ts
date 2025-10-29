@@ -1,11 +1,11 @@
 namespace $.$$ {
 	$mol_style_define( $trip2g_admin_telegrampublishnote_message, {
-		Link: {
-			padding: 0,
-			minWidth: 0,
-			minHeight: 0,
-			display: 'inline-block',
-		},
+		// Link: {
+		// 	padding: 0,
+		// 	minWidth: 0,
+		// 	minHeight: 0,
+		// 	display: 'inline-block',
+		// },
 		Message: {
 			padding: $mol_gap.block,
 			border: {
