@@ -23,6 +23,7 @@ type Env interface {
 	LatestNoteViews() *model.NoteViews
 
 	SendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error
+	UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error
 }
 
 type tagIDCache map[string]int64
@@ -119,10 +120,27 @@ func (p *processor) process(note *model.NoteView) error {
 		}
 	}
 
+	// send a  preview immediately
 	err = p.env.SendTelegramPublishPost(p.ctx, note.PathID, true)
 	if err != nil {
-		return fmt.Errorf("failed to SendTelegramPublishPost for note %q: %w", note.Path, err)
+		return fmt.Errorf("failed to SendTelegramPublishPost: %w", err)
 	}
+
+	err = p.env.UpdateTelegramPublishPost(p.ctx, note.PathID)
+	if err != nil {
+		return fmt.Errorf("failed to UpdateTelegramPublishPost: %w", err)
+	}
+
+	// sentMsgs, err := p.env.ListTelegramPublishSentMessagesByNotePathID(p.ctx, note.PathID)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to ListTelegramPublishSentMessagesByNotePathID: %w", err)
+	// }
+	//
+	// // update sent messages if needed
+	// for _, msg := range sentMsgs {
+	//
+	// 	fmt.Println("need to update", msg)
+	// }
 
 	return nil
 }

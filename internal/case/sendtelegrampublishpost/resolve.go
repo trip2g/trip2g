@@ -119,10 +119,16 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 			}
 		}
 
+		instantInt := int64(0)
+		if instant {
+			instantInt = 1
+		}
+
 		sentParams := db.InsertTelegramPublishSentMessageParams{
 			NotePathID: notePathID,
 			ChatID:     chat.ID,
 			MessageID:  messageID,
+			Instant:    instantInt,
 		}
 
 		insertErr := env.InsertTelegramPublishSentMessage(ctx, sentParams)

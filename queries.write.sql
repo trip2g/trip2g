@@ -677,8 +677,8 @@ update telegram_publish_notes
  where note_path_id = ?;
 
 -- name: InsertTelegramPublishSentMessage :exec
-insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id)
-values (?, ?, ?);
+insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id, instant)
+values (?, ?, ?, ?);
 
 -- name: ResetTelegramPublishNote :exec
 update telegram_publish_notes

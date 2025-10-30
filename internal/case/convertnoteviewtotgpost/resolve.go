@@ -36,14 +36,18 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 
 	nvs := env.LatestNoteViews()
 
-	allowExternalLinks := getAllowExternalLinks(source.NoteView) || source.Instant
+	// allowExternalLinks := getAllowExternalLinks(source.NoteView) || source.Instant
+	// always allow external links
+	allowExternalLinks := true
+
 	publicURL := env.PublicURL()
 
 	tr := markdownv2.HTMLConverter{}
 	tr.SetLinkResolver(func(target string) (string, error) {
 		linkedNV, ok := nvs.Map[target]
 		if !ok {
-			return "", fmt.Errorf("note not found for target: %s", target)
+			return publicURL, nil
+			// return "", fmt.Errorf("note not found for target: %s", target)
 		}
 
 		msg, ok := sentMap[linkedNV.PathID]

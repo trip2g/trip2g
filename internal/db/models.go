@@ -415,6 +415,7 @@ type TelegramPublishSentMessage struct {
 	ChatID     int64     `json:"chat_id"`
 	CreatedAt  time.Time `json:"created_at"`
 	MessageID  int64     `json:"message_id"`
+	Instant    int64     `json:"instant"`
 }
 
 type TelegramPublishTag struct {
