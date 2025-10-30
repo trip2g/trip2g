@@ -492,7 +492,7 @@ CREATE TABLE IF NOT EXISTS "telegram_publish_sent_messages" (
   chat_id integer not null references tg_bot_chats(id) on delete restrict,
   created_at datetime not null default current_timestamp,
   message_id integer not null
-, instant integer not null default 0, content_hash text not null default '');
+, instant integer not null default 0, content_hash text not null default '', content text not null default '');
 CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
 CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
 CREATE INDEX idx_releases_is_live on releases(is_live);
@@ -592,4 +592,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251025034145'),
   ('20251029103550'),
   ('20251029150445'),
-  ('20251030012221');
+  ('20251030012221'),
+  ('20251030151751');

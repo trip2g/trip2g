@@ -1155,8 +1155,8 @@ func (q *WriteQueries) InsertTelegramPublishInstantChat(ctx context.Context, arg
 }
 
 const insertTelegramPublishSentMessage = `-- name: InsertTelegramPublishSentMessage :exec
-insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id, instant, content_hash)
-values (?, ?, ?, ?, ?)
+insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id, instant, content_hash, content)
+values (?, ?, ?, ?, ?, ?)
 `
 
 type InsertTelegramPublishSentMessageParams struct {
@@ -1165,6 +1165,7 @@ type InsertTelegramPublishSentMessageParams struct {
 	MessageID   int64  `json:"message_id"`
 	Instant     int64  `json:"instant"`
 	ContentHash string `json:"content_hash"`
+	Content     string `json:"content"`
 }
 
 func (q *WriteQueries) InsertTelegramPublishSentMessage(ctx context.Context, arg InsertTelegramPublishSentMessageParams) error {
@@ -1174,6 +1175,7 @@ func (q *WriteQueries) InsertTelegramPublishSentMessage(ctx context.Context, arg
 		arg.MessageID,
 		arg.Instant,
 		arg.ContentHash,
+		arg.Content,
 	)
 	return err
 }

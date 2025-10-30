@@ -123,6 +123,7 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 			MessageID:   messageID,
 			Instant:     instantInt,
 			ContentHash: contentHash,
+			Content:     post.Content,
 		}
 
 		insertErr := env.InsertTelegramPublishSentMessage(ctx, sentParams)
