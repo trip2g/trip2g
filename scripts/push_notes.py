@@ -144,22 +144,22 @@ def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash:
     if not os.path.exists(asset_path):
         print(f"⚠️ Asset file not found: {asset_path}")
         return False
-    
+
     query = """
-    mutation($input: UploadNoteAssetInput!) { 
-        uploadNoteAsset(input: $input) { 
-            ... on ErrorPayload { 
+    mutation($input: UploadNoteAssetInput!) {
+        uploadNoteAsset(input: $input) {
+            ... on ErrorPayload {
                 __typename
-                message 
-            } 
-            ... on UploadNoteAssetPayload { 
+                message
+            }
+            ... on UploadNoteAssetPayload {
                 __typename
-                uploadSkipped 
-            } 
-        } 
+                uploadSkipped
+            }
+        }
     }
     """
-    
+
     operations = json.dumps({
         "variables": {
             "input": {
@@ -172,21 +172,21 @@ def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash:
         },
         "query": query
     })
-    
+
     files_map = json.dumps({"0": ["variables.input.file"]})
-    
+
     try:
         with open(asset_path, 'rb') as f:
-            files = OrderedDict([
-                ('operations', (None, operations)),
-                ('map', (None, files_map)),
+            files = [
+                ('operations', (None, operations, 'application/json')),
+                ('map', (None, files_map, 'application/json')),
                 ('0', (os.path.basename(asset_path), f, 'application/octet-stream'))
-            ])
-            
+            ]
+
             upload_headers = {
                 "X-API-Key": API_KEY,
             }
-            
+
             response = requests.post(GRAPHQL_URL, headers=upload_headers, files=files)
             response.raise_for_status()
             
@@ -252,7 +252,7 @@ def process_note_assets(notes, base_path):
             relative_path = asset['path']
             server_hash = asset.get('sha256Hash', '')
             stats['total_assets'] += 1
-            
+
             absolute_path = resolve_asset_path(relative_path, note_path, base_path)
             
             if not os.path.exists(absolute_path):
