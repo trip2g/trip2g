@@ -25,13 +25,10 @@ type Env interface {
 	Logger() logger.Logger
 	PutAssetObject(ctx context.Context, reader io.Reader, info db.NoteAsset) error
 	DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error
-	InsertNoteAsset(ctx context.Context, arg db.InsertNoteAssetParams) (db.NoteAsset, error)
-	UpsertNoteVersionAsset(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error
+	CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) error
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
 	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
-	AcquireTxEnvInRequest(ctx context.Context, label string) error
-	ReleaseTxEnvInRequest(ctx context.Context, commit bool) error
 }
 
 func calcHash(content []byte) string {
@@ -78,16 +75,7 @@ func TestResolve(t *testing.T) {
 					NoteAssetByPathAndHashFunc: func(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error) {
 						return db.NoteAsset{}, sql.ErrNoRows
 					},
-					InsertNoteAssetFunc: func(ctx context.Context, arg db.InsertNoteAssetParams) (db.NoteAsset, error) {
-						return db.NoteAsset{
-							ID:           1,
-							AbsolutePath: arg.AbsolutePath,
-							FileName:     arg.FileName,
-							Sha256Hash:   arg.Sha256Hash,
-							Size:         arg.Size,
-						}, nil
-					},
-					UpsertNoteVersionAssetFunc: func(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error {
+					CreateNoteAssetFunc: func(ctx context.Context, params db.CreateNoteAssetParams) error {
 						return nil
 					},
 					PutAssetObjectFunc: func(ctx context.Context, reader io.Reader, info db.NoteAsset) error {
@@ -101,12 +89,6 @@ func TestResolve(t *testing.T) {
 					PrepareLatestNotesFunc: func(ctx context.Context) (*appmodel.NoteViews, error) {
 						return &appmodel.NoteViews{}, nil
 					},
-					AcquireTxEnvInRequestFunc: func(ctx context.Context, label string) error {
-						return nil
-					},
-					ReleaseTxEnvInRequestFunc: func(ctx context.Context, commit bool) error {
-						return nil
-					},
 				}
 			},
 			wantErr: false,
@@ -115,15 +97,10 @@ func TestResolve(t *testing.T) {
 				p := payload.(*model.UploadNoteAssetPayload)
 				require.False(t, p.UploadSkipped)
 
-				// Verify InsertNoteAsset was called
-				require.Len(t, env.InsertNoteAssetCalls(), 1)
+				// Verify CreateNoteAsset was called
+				require.Len(t, env.CreateNoteAssetCalls(), 1)
 				// Verify PutAssetObject was called
 				require.Len(t, env.PutAssetObjectCalls(), 1)
-				// Verify transaction was started
-				require.Len(t, env.AcquireTxEnvInRequestCalls(), 1)
-				// Verify transaction was committed
-				require.Len(t, env.ReleaseTxEnvInRequestCalls(), 1)
-				require.True(t, env.ReleaseTxEnvInRequestCalls()[0].Commit, "Transaction should be committed")
 			},
 		},
 		{
@@ -152,31 +129,12 @@ func TestResolve(t *testing.T) {
 					NoteAssetByPathAndHashFunc: func(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error) {
 						return db.NoteAsset{}, sql.ErrNoRows
 					},
-					InsertNoteAssetFunc: func(ctx context.Context, arg db.InsertNoteAssetParams) (db.NoteAsset, error) {
-						// This record will remain in DB even though hash check fails
-						return db.NoteAsset{
-							ID:           1,
-							AbsolutePath: arg.AbsolutePath,
-							FileName:     arg.FileName,
-							Sha256Hash:   arg.Sha256Hash,
-							Size:         arg.Size,
-						}, nil
-					},
-					UpsertNoteVersionAssetFunc: func(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error {
-						return nil
-					},
 					PutAssetObjectFunc: func(ctx context.Context, reader io.Reader, info db.NoteAsset) error {
 						// Must consume the reader to simulate actual upload
 						_, err := io.ReadAll(reader)
 						return err
 					},
 					DeleteAssetObjectFunc: func(ctx context.Context, asset db.NoteAsset) error {
-						return nil
-					},
-					AcquireTxEnvInRequestFunc: func(ctx context.Context, label string) error {
-						return nil
-					},
-					ReleaseTxEnvInRequestFunc: func(ctx context.Context, commit bool) error {
 						return nil
 					},
 				}
@@ -186,14 +144,10 @@ func TestResolve(t *testing.T) {
 				require.Contains(t, err.Error(), "hash mismatch")
 			},
 			validate: func(t *testing.T, payload model.UploadNoteAssetOrErrorPayload, env *EnvMock) {
-				// Fixed: InsertNoteAsset was NOT called - no DB garbage
-				require.Len(t, env.InsertNoteAssetCalls(), 0, "DB record was NOT inserted")
-				// Fixed: UpsertNoteVersionAsset was NOT called - no DB garbage
-				require.Len(t, env.UpsertNoteVersionAssetCalls(), 0, "note_version_asset was NOT inserted")
+				// Fixed: CreateNoteAsset was NOT called - no DB garbage
+				require.Empty(t, env.CreateNoteAssetCalls(), "DB record was NOT inserted")
 				// DeleteAssetObject was called to cleanup storage
 				require.Len(t, env.DeleteAssetObjectCalls(), 1)
-				// Transaction was never started since upload failed
-				require.Len(t, env.AcquireTxEnvInRequestCalls(), 0, "Transaction should not be started")
 			},
 		},
 		{
@@ -222,27 +176,8 @@ func TestResolve(t *testing.T) {
 					NoteAssetByPathAndHashFunc: func(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error) {
 						return db.NoteAsset{}, sql.ErrNoRows
 					},
-					InsertNoteAssetFunc: func(ctx context.Context, arg db.InsertNoteAssetParams) (db.NoteAsset, error) {
-						// This record will remain in DB even though upload fails
-						return db.NoteAsset{
-							ID:           1,
-							AbsolutePath: arg.AbsolutePath,
-							FileName:     arg.FileName,
-							Sha256Hash:   arg.Sha256Hash,
-							Size:         arg.Size,
-						}, nil
-					},
-					UpsertNoteVersionAssetFunc: func(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error {
-						return nil
-					},
 					PutAssetObjectFunc: func(ctx context.Context, reader io.Reader, info db.NoteAsset) error {
 						return errors.New("upload failed")
-					},
-					AcquireTxEnvInRequestFunc: func(ctx context.Context, label string) error {
-						return nil
-					},
-					ReleaseTxEnvInRequestFunc: func(ctx context.Context, commit bool) error {
-						return nil
 					},
 				}
 			},
@@ -251,12 +186,8 @@ func TestResolve(t *testing.T) {
 				require.Contains(t, err.Error(), "failed to upload asset")
 			},
 			validate: func(t *testing.T, payload model.UploadNoteAssetOrErrorPayload, env *EnvMock) {
-				// Fixed: InsertNoteAsset was NOT called - no DB garbage
-				require.Len(t, env.InsertNoteAssetCalls(), 0, "DB record was NOT inserted")
-				// Fixed: UpsertNoteVersionAsset was NOT called - no DB garbage
-				require.Len(t, env.UpsertNoteVersionAssetCalls(), 0, "note_version_asset was NOT inserted")
-				// Transaction was never started since upload failed
-				require.Len(t, env.AcquireTxEnvInRequestCalls(), 0, "Transaction should not be started")
+				// Fixed: CreateNoteAsset was NOT called - no DB garbage
+				require.Empty(t, env.CreateNoteAssetCalls(), "DB record was NOT inserted")
 			},
 		},
 	}

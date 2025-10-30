@@ -23,14 +23,11 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //
 //		// make and configure a mocked uploadnoteasset.Env
 //		mockedEnv := &EnvMock{
-//			AcquireTxEnvInRequestFunc: func(ctx context.Context, label string) error {
-//				panic("mock out the AcquireTxEnvInRequest method")
+//			CreateNoteAssetFunc: func(ctx context.Context, params db.CreateNoteAssetParams) error {
+//				panic("mock out the CreateNoteAsset method")
 //			},
 //			DeleteAssetObjectFunc: func(ctx context.Context, asset db.NoteAsset) error {
 //				panic("mock out the DeleteAssetObject method")
-//			},
-//			InsertNoteAssetFunc: func(ctx context.Context, arg db.InsertNoteAssetParams) (db.NoteAsset, error) {
-//				panic("mock out the InsertNoteAsset method")
 //			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
@@ -47,12 +44,6 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //			PutAssetObjectFunc: func(ctx context.Context, reader io.Reader, info db.NoteAsset) error {
 //				panic("mock out the PutAssetObject method")
 //			},
-//			ReleaseTxEnvInRequestFunc: func(ctx context.Context, commit bool) error {
-//				panic("mock out the ReleaseTxEnvInRequest method")
-//			},
-//			UpsertNoteVersionAssetFunc: func(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error {
-//				panic("mock out the UpsertNoteVersionAsset method")
-//			},
 //		}
 //
 //		// use mockedEnv in code that requires uploadnoteasset.Env
@@ -60,14 +51,11 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
-	// AcquireTxEnvInRequestFunc mocks the AcquireTxEnvInRequest method.
-	AcquireTxEnvInRequestFunc func(ctx context.Context, label string) error
+	// CreateNoteAssetFunc mocks the CreateNoteAsset method.
+	CreateNoteAssetFunc func(ctx context.Context, params db.CreateNoteAssetParams) error
 
 	// DeleteAssetObjectFunc mocks the DeleteAssetObject method.
 	DeleteAssetObjectFunc func(ctx context.Context, asset db.NoteAsset) error
-
-	// InsertNoteAssetFunc mocks the InsertNoteAsset method.
-	InsertNoteAssetFunc func(ctx context.Context, arg db.InsertNoteAssetParams) (db.NoteAsset, error)
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -84,20 +72,14 @@ type EnvMock struct {
 	// PutAssetObjectFunc mocks the PutAssetObject method.
 	PutAssetObjectFunc func(ctx context.Context, reader io.Reader, info db.NoteAsset) error
 
-	// ReleaseTxEnvInRequestFunc mocks the ReleaseTxEnvInRequest method.
-	ReleaseTxEnvInRequestFunc func(ctx context.Context, commit bool) error
-
-	// UpsertNoteVersionAssetFunc mocks the UpsertNoteVersionAsset method.
-	UpsertNoteVersionAssetFunc func(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error
-
 	// calls tracks calls to the methods.
 	calls struct {
-		// AcquireTxEnvInRequest holds details about calls to the AcquireTxEnvInRequest method.
-		AcquireTxEnvInRequest []struct {
+		// CreateNoteAsset holds details about calls to the CreateNoteAsset method.
+		CreateNoteAsset []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// Label is the label argument value.
-			Label string
+			// Params is the params argument value.
+			Params db.CreateNoteAssetParams
 		}
 		// DeleteAssetObject holds details about calls to the DeleteAssetObject method.
 		DeleteAssetObject []struct {
@@ -105,13 +87,6 @@ type EnvMock struct {
 			Ctx context.Context
 			// Asset is the asset argument value.
 			Asset db.NoteAsset
-		}
-		// InsertNoteAsset holds details about calls to the InsertNoteAsset method.
-		InsertNoteAsset []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Arg is the arg argument value.
-			Arg db.InsertNoteAssetParams
 		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
@@ -144,66 +119,49 @@ type EnvMock struct {
 			// Info is the info argument value.
 			Info db.NoteAsset
 		}
-		// ReleaseTxEnvInRequest holds details about calls to the ReleaseTxEnvInRequest method.
-		ReleaseTxEnvInRequest []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Commit is the commit argument value.
-			Commit bool
-		}
-		// UpsertNoteVersionAsset holds details about calls to the UpsertNoteVersionAsset method.
-		UpsertNoteVersionAsset []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Arg is the arg argument value.
-			Arg db.UpsertNoteVersionAssetParams
-		}
 	}
-	lockAcquireTxEnvInRequest  sync.RWMutex
+	lockCreateNoteAsset        sync.RWMutex
 	lockDeleteAssetObject      sync.RWMutex
-	lockInsertNoteAsset        sync.RWMutex
 	lockLogger                 sync.RWMutex
 	lockNoteAssetByPathAndHash sync.RWMutex
 	lockNoteVersionAssetPaths  sync.RWMutex
 	lockPrepareLatestNotes     sync.RWMutex
 	lockPutAssetObject         sync.RWMutex
-	lockReleaseTxEnvInRequest  sync.RWMutex
-	lockUpsertNoteVersionAsset sync.RWMutex
 }
 
-// AcquireTxEnvInRequest calls AcquireTxEnvInRequestFunc.
-func (mock *EnvMock) AcquireTxEnvInRequest(ctx context.Context, label string) error {
-	if mock.AcquireTxEnvInRequestFunc == nil {
-		panic("EnvMock.AcquireTxEnvInRequestFunc: method is nil but Env.AcquireTxEnvInRequest was just called")
+// CreateNoteAsset calls CreateNoteAssetFunc.
+func (mock *EnvMock) CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) error {
+	if mock.CreateNoteAssetFunc == nil {
+		panic("EnvMock.CreateNoteAssetFunc: method is nil but Env.CreateNoteAsset was just called")
 	}
 	callInfo := struct {
-		Ctx   context.Context
-		Label string
+		Ctx    context.Context
+		Params db.CreateNoteAssetParams
 	}{
-		Ctx:   ctx,
-		Label: label,
+		Ctx:    ctx,
+		Params: params,
 	}
-	mock.lockAcquireTxEnvInRequest.Lock()
-	mock.calls.AcquireTxEnvInRequest = append(mock.calls.AcquireTxEnvInRequest, callInfo)
-	mock.lockAcquireTxEnvInRequest.Unlock()
-	return mock.AcquireTxEnvInRequestFunc(ctx, label)
+	mock.lockCreateNoteAsset.Lock()
+	mock.calls.CreateNoteAsset = append(mock.calls.CreateNoteAsset, callInfo)
+	mock.lockCreateNoteAsset.Unlock()
+	return mock.CreateNoteAssetFunc(ctx, params)
 }
 
-// AcquireTxEnvInRequestCalls gets all the calls that were made to AcquireTxEnvInRequest.
+// CreateNoteAssetCalls gets all the calls that were made to CreateNoteAsset.
 // Check the length with:
 //
-//	len(mockedEnv.AcquireTxEnvInRequestCalls())
-func (mock *EnvMock) AcquireTxEnvInRequestCalls() []struct {
-	Ctx   context.Context
-	Label string
+//	len(mockedEnv.CreateNoteAssetCalls())
+func (mock *EnvMock) CreateNoteAssetCalls() []struct {
+	Ctx    context.Context
+	Params db.CreateNoteAssetParams
 } {
 	var calls []struct {
-		Ctx   context.Context
-		Label string
+		Ctx    context.Context
+		Params db.CreateNoteAssetParams
 	}
-	mock.lockAcquireTxEnvInRequest.RLock()
-	calls = mock.calls.AcquireTxEnvInRequest
-	mock.lockAcquireTxEnvInRequest.RUnlock()
+	mock.lockCreateNoteAsset.RLock()
+	calls = mock.calls.CreateNoteAsset
+	mock.lockCreateNoteAsset.RUnlock()
 	return calls
 }
 
@@ -240,42 +198,6 @@ func (mock *EnvMock) DeleteAssetObjectCalls() []struct {
 	mock.lockDeleteAssetObject.RLock()
 	calls = mock.calls.DeleteAssetObject
 	mock.lockDeleteAssetObject.RUnlock()
-	return calls
-}
-
-// InsertNoteAsset calls InsertNoteAssetFunc.
-func (mock *EnvMock) InsertNoteAsset(ctx context.Context, arg db.InsertNoteAssetParams) (db.NoteAsset, error) {
-	if mock.InsertNoteAssetFunc == nil {
-		panic("EnvMock.InsertNoteAssetFunc: method is nil but Env.InsertNoteAsset was just called")
-	}
-	callInfo := struct {
-		Ctx context.Context
-		Arg db.InsertNoteAssetParams
-	}{
-		Ctx: ctx,
-		Arg: arg,
-	}
-	mock.lockInsertNoteAsset.Lock()
-	mock.calls.InsertNoteAsset = append(mock.calls.InsertNoteAsset, callInfo)
-	mock.lockInsertNoteAsset.Unlock()
-	return mock.InsertNoteAssetFunc(ctx, arg)
-}
-
-// InsertNoteAssetCalls gets all the calls that were made to InsertNoteAsset.
-// Check the length with:
-//
-//	len(mockedEnv.InsertNoteAssetCalls())
-func (mock *EnvMock) InsertNoteAssetCalls() []struct {
-	Ctx context.Context
-	Arg db.InsertNoteAssetParams
-} {
-	var calls []struct {
-		Ctx context.Context
-		Arg db.InsertNoteAssetParams
-	}
-	mock.lockInsertNoteAsset.RLock()
-	calls = mock.calls.InsertNoteAsset
-	mock.lockInsertNoteAsset.RUnlock()
 	return calls
 }
 
@@ -447,77 +369,5 @@ func (mock *EnvMock) PutAssetObjectCalls() []struct {
 	mock.lockPutAssetObject.RLock()
 	calls = mock.calls.PutAssetObject
 	mock.lockPutAssetObject.RUnlock()
-	return calls
-}
-
-// ReleaseTxEnvInRequest calls ReleaseTxEnvInRequestFunc.
-func (mock *EnvMock) ReleaseTxEnvInRequest(ctx context.Context, commit bool) error {
-	if mock.ReleaseTxEnvInRequestFunc == nil {
-		panic("EnvMock.ReleaseTxEnvInRequestFunc: method is nil but Env.ReleaseTxEnvInRequest was just called")
-	}
-	callInfo := struct {
-		Ctx    context.Context
-		Commit bool
-	}{
-		Ctx:    ctx,
-		Commit: commit,
-	}
-	mock.lockReleaseTxEnvInRequest.Lock()
-	mock.calls.ReleaseTxEnvInRequest = append(mock.calls.ReleaseTxEnvInRequest, callInfo)
-	mock.lockReleaseTxEnvInRequest.Unlock()
-	return mock.ReleaseTxEnvInRequestFunc(ctx, commit)
-}
-
-// ReleaseTxEnvInRequestCalls gets all the calls that were made to ReleaseTxEnvInRequest.
-// Check the length with:
-//
-//	len(mockedEnv.ReleaseTxEnvInRequestCalls())
-func (mock *EnvMock) ReleaseTxEnvInRequestCalls() []struct {
-	Ctx    context.Context
-	Commit bool
-} {
-	var calls []struct {
-		Ctx    context.Context
-		Commit bool
-	}
-	mock.lockReleaseTxEnvInRequest.RLock()
-	calls = mock.calls.ReleaseTxEnvInRequest
-	mock.lockReleaseTxEnvInRequest.RUnlock()
-	return calls
-}
-
-// UpsertNoteVersionAsset calls UpsertNoteVersionAssetFunc.
-func (mock *EnvMock) UpsertNoteVersionAsset(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error {
-	if mock.UpsertNoteVersionAssetFunc == nil {
-		panic("EnvMock.UpsertNoteVersionAssetFunc: method is nil but Env.UpsertNoteVersionAsset was just called")
-	}
-	callInfo := struct {
-		Ctx context.Context
-		Arg db.UpsertNoteVersionAssetParams
-	}{
-		Ctx: ctx,
-		Arg: arg,
-	}
-	mock.lockUpsertNoteVersionAsset.Lock()
-	mock.calls.UpsertNoteVersionAsset = append(mock.calls.UpsertNoteVersionAsset, callInfo)
-	mock.lockUpsertNoteVersionAsset.Unlock()
-	return mock.UpsertNoteVersionAssetFunc(ctx, arg)
-}
-
-// UpsertNoteVersionAssetCalls gets all the calls that were made to UpsertNoteVersionAsset.
-// Check the length with:
-//
-//	len(mockedEnv.UpsertNoteVersionAssetCalls())
-func (mock *EnvMock) UpsertNoteVersionAssetCalls() []struct {
-	Ctx context.Context
-	Arg db.UpsertNoteVersionAssetParams
-} {
-	var calls []struct {
-		Ctx context.Context
-		Arg db.UpsertNoteVersionAssetParams
-	}
-	mock.lockUpsertNoteVersionAsset.RLock()
-	calls = mock.calls.UpsertNoteVersionAsset
-	mock.lockUpsertNoteVersionAsset.RUnlock()
 	return calls
 }

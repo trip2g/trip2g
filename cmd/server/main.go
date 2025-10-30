@@ -641,6 +641,40 @@ func (a *app) CurrentTx() *sql.Tx {
 	return a.currentTx
 }
 
+// WithTransaction runs the given function within a database transaction.
+// fn should return true to commit the transaction, false to rollback.
+func (a *app) WithTransaction(ctx context.Context, fn func(env *app) (bool, error)) error {
+	tx, err := a.conn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to BeginTx: %w", err)
+	}
+
+	defer tx.Rollback()
+
+	queries := db.NewWriteQueries(db.WithLogger(tx, logger.WithPrefix(a.log, "tx")))
+
+	newEnv := *a //nolint:govet // I will fix this later (copy mutex)
+	newEnv.queries = queries.Queries
+	newEnv.Queries = queries.Queries
+	newEnv.WriteQueries = queries
+	newEnv.currentTx = tx
+
+	commit, err := fn(&newEnv)
+	if commit {
+		commitErr := tx.Commit()
+		if commitErr != nil {
+			return fmt.Errorf("failed to commit transaction: %w", commitErr)
+		}
+	} else {
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			a.log.Error("failed to rollback transaction", "error", rollbackErr)
+		}
+	}
+
+	return err
+}
+
 func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {
