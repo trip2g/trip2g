@@ -1,6 +1,6 @@
 node_modules
 tmp
-server
+./server
 data*.sqlite3
 data*.sqlite3-journal
 data*.sqlite3-shm

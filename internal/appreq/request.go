@@ -38,6 +38,7 @@ func (c *Request) Reset() {
 	c.Req = nil
 	c.TokenManager = nil
 	c.token = nil
+	c.Path = ""
 	c.tokenExtracted = false
 }
 

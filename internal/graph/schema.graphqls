@@ -22,6 +22,8 @@ directive @goExtraField(
 	description: String
 ) repeatable on OBJECT | INPUT_OBJECT
 
+directive @skipTx on FIELD_DEFINITION
+
 type Vector2 {
   x: Float!
   y: Float!

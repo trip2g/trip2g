@@ -704,6 +704,7 @@ func (a *app) ReleaseTxEnvInRequest(ctx context.Context, commit bool) error {
 
 	err = tx.Rollback()
 	if err != nil {
+		a.log.Error("failed to rollback transaction", "error", err)
 		return fmt.Errorf("failed to rollback transaction: %w", err)
 	}
 
