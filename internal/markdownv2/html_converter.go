@@ -239,6 +239,44 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 				return ast.WalkSkipChildren, nil
 			}
 
+		case *ast.List:
+			if entering && n.HasBlankPreviousLines() {
+				lines = append(lines, "\n")
+			}
+
+		case *ast.ListItem:
+			if entering {
+				// Get the parent list
+				parent := node.Parent()
+				if list, ok := parent.(*ast.List); ok {
+					if list.IsOrdered() {
+						// For ordered lists, calculate item number based on child index
+						itemNum := 1
+						for prev := node.PreviousSibling(); prev != nil; prev = prev.PreviousSibling() {
+							itemNum++
+						}
+						c.Write(fmt.Sprintf("%d. ", itemNum))
+					} else {
+						// For unordered lists, use dash
+						c.Write("- ")
+					}
+				}
+			} else if len(c.bufStack) == 1 {
+				// End of list item - flush to lines
+				current := c.bufStack[0]
+				if current.Len() > 0 {
+					lines = append(lines, current.String())
+					current.Reset()
+					// Add newline if not the last item
+					if node.NextSibling() != nil {
+						lines = append(lines, "\n")
+					}
+				}
+			}
+
+		case *ast.TextBlock:
+			// TextBlock is a container for text within list items - just pass through
+
 		default:
 			if entering {
 				msg := fmt.Sprintf("unexpected markdown node: %s", n.Kind())

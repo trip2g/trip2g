@@ -1586,6 +1586,10 @@ func (a *app) startServer() {
 		},
 	}
 
+	s.ReadTimeout = 10 * time.Second
+	s.WriteTimeout = 30 * time.Second
+	s.IdleTimeout = 120 * time.Second
+
 	runServer := func() {
 		if len(a.config.AcmeDomains) == 0 {
 			err := s.ListenAndServe(a.config.ListenAddr)

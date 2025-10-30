@@ -137,6 +137,58 @@ title: "Test"
 	}
 }
 
+func TestHTMLList(t *testing.T) {
+	tests := []struct {
+		name     string
+		markdown string
+		expected string
+	}{
+		{
+			name: "simple unordered list",
+			markdown: `- first item
+- second item
+- third item`,
+			expected: `- first item
+- second item
+- third item`,
+		},
+		{
+			name: "simple ordered list",
+			markdown: `1. first item
+2. second item
+3. third item`,
+			expected: `1. first item
+2. second item
+3. third item`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mdOptions := mdloader.Options{
+				Sources: []mdloader.SourceFile{{
+					Content: []byte(`---
+free: true
+title: "Test"
+---
+` + tt.markdown),
+				}},
+				Log:     &logger.TestLogger{},
+				Version: "latest",
+			}
+
+			nvs, err := mdloader.Load(mdOptions)
+			require.NoError(t, err)
+
+			convertor := markdownv2.HTMLConverter{}
+			res := convertor.Process(nvs.List[0])
+
+			require.Empty(t, res.Warnings)
+			require.Equal(t, tt.expected, res.Content)
+		})
+	}
+}
+
 func TestHTMLWikilinks(t *testing.T) {
 	tests := []struct {
 		name         string
