@@ -4,7 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"trip2g/internal/appreq"
+	"trip2g/internal/db"
+	"trip2g/internal/model"
 )
 
 func resolveOne[T any, K any](
@@ -41,4 +44,23 @@ func checkAdmin(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (r *queryResolver) convertSearchResultsToNotePath(ctx context.Context, nodes []model.SearchResult) ([]db.NotePath, error) {
+	res := []db.NotePath{}
+
+	for _, result := range nodes {
+		if result.NoteView != nil {
+			pathID := result.NoteView.PathID
+
+			notePath, selectErr := r.env(ctx).NotePathByID(ctx, pathID)
+			if selectErr != nil {
+				return nil, fmt.Errorf("failed to get note path by ID %d: %w", pathID, selectErr)
+			}
+
+			res = append(res, notePath)
+		}
+	}
+
+	return res, nil
 }

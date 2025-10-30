@@ -1155,15 +1155,16 @@ func (q *WriteQueries) InsertTelegramPublishInstantChat(ctx context.Context, arg
 }
 
 const insertTelegramPublishSentMessage = `-- name: InsertTelegramPublishSentMessage :exec
-insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id, instant)
-values (?, ?, ?, ?)
+insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id, instant, content_hash)
+values (?, ?, ?, ?, ?)
 `
 
 type InsertTelegramPublishSentMessageParams struct {
-	NotePathID int64 `json:"note_path_id"`
-	ChatID     int64 `json:"chat_id"`
-	MessageID  int64 `json:"message_id"`
-	Instant    int64 `json:"instant"`
+	NotePathID  int64  `json:"note_path_id"`
+	ChatID      int64  `json:"chat_id"`
+	MessageID   int64  `json:"message_id"`
+	Instant     int64  `json:"instant"`
+	ContentHash string `json:"content_hash"`
 }
 
 func (q *WriteQueries) InsertTelegramPublishSentMessage(ctx context.Context, arg InsertTelegramPublishSentMessageParams) error {
@@ -1172,6 +1173,7 @@ func (q *WriteQueries) InsertTelegramPublishSentMessage(ctx context.Context, arg
 		arg.ChatID,
 		arg.MessageID,
 		arg.Instant,
+		arg.ContentHash,
 	)
 	return err
 }
@@ -2668,11 +2670,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-  *Queries
+	*Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-  return &WriteQueries{
-    Queries: New(db),
-  }
+	return &WriteQueries{
+		Queries: New(db),
+	}
 }

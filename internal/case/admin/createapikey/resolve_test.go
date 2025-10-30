@@ -2,6 +2,8 @@ package createapikey_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"reflect"
 	"testing"
@@ -23,9 +25,15 @@ func assertAPIKeyPayload(t *testing.T, want, got model.CreateAPIKeyOrErrorPayloa
 	// Skip time comparison for CreatedAt field
 	if payload, ok := got.(*model.CreateAPIKeyPayload); ok {
 		if wantPayload, wantOk := want.(*model.CreateAPIKeyPayload); wantOk {
+			// Value should be plain text (returned to user)
 			require.Equal(t, wantPayload.Value, payload.Value)
 			require.Equal(t, wantPayload.APIKey.ID, payload.APIKey.ID)
-			require.Equal(t, wantPayload.APIKey.Value, payload.APIKey.Value)
+
+			// APIKey.Value should be hashed in the database
+			hash := sha256.Sum256([]byte(wantPayload.Value))
+			hashedValue := hex.EncodeToString(hash[:])
+			require.Equal(t, hashedValue, payload.APIKey.Value)
+
 			require.Equal(t, wantPayload.APIKey.CreatedBy, payload.APIKey.CreatedBy)
 			require.Equal(t, wantPayload.APIKey.Description, payload.APIKey.Description)
 			return
@@ -103,9 +111,11 @@ func TestResolve(t *testing.T) {
 				require.Len(t, mockEnv.GenerateAPIKeyCalls(), 1)
 				require.Len(t, mockEnv.InsertAPIKeyCalls(), 1)
 
-				// Verify API key parameters
+				// Verify API key parameters - value should be hashed
 				params := mockEnv.InsertAPIKeyCalls()[0].Params
-				require.Equal(t, "api-key-12345", params.Value)
+				hash := sha256.Sum256([]byte("api-key-12345"))
+				hashedValue := hex.EncodeToString(hash[:])
+				require.Equal(t, hashedValue, params.Value)
 				require.Equal(t, int64(123), params.CreatedBy)
 				require.Equal(t, "Test API Key", params.Description)
 			},

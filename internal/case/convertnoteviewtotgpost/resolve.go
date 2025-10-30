@@ -80,6 +80,7 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	}, nil
 }
 
+/*
 func getAllowExternalLinks(nv *model.NoteView) bool {
 	val, ok := nv.RawMeta["telegram_publish_allow_external_links"]
 	if ok {
@@ -93,3 +94,4 @@ func getAllowExternalLinks(nv *model.NoteView) bool {
 
 	return false
 }
+*/

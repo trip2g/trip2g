@@ -2,6 +2,8 @@ package createapikey
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
@@ -25,8 +27,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	apiKey := env.GenerateAPIKey()
 
+	// Hash the API key before storing (like git tokens)
+	hash := sha256.Sum256([]byte(apiKey))
+	hashedValue := hex.EncodeToString(hash[:])
+
 	params := db.InsertAPIKeyParams{
-		Value:       apiKey,
+		Value:       hashedValue,
 		CreatedBy:   int64(token.ID),
 		Description: input.Description,
 	}
@@ -37,7 +43,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	response := model.CreateAPIKeyPayload{
-		Value:  apiKey,
+		Value:  apiKey, // Return the plain text key to user (only time they see it)
 		APIKey: &createdKey,
 	}
 

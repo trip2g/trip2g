@@ -56,14 +56,16 @@ func TestResolve(t *testing.T) {
 
 	mockSentMessages := []db.ListTelegramPublishSentMessagesByNotePathIDRow{
 		{
-			ChatID:     1,
-			MessageID:  101,
-			TelegramID: -1001234567890,
+			ChatID:      1,
+			MessageID:   101,
+			TelegramID:  -1001234567890,
+			ContentHash: "oldhash1",
 		},
 		{
-			ChatID:     2,
-			MessageID:  102,
-			TelegramID: -1001234567891,
+			ChatID:      2,
+			MessageID:   102,
+			TelegramID:  -1001234567891,
+			ContentHash: "oldhash2",
 		},
 	}
 
@@ -273,6 +275,42 @@ func TestResolve(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "failed to edit telegram message in chat 1: telegram API error",
+		},
+		{
+			name:   "success - skip update when content hash matches",
+			noteID: 123,
+			setupEnv: func() *EnvMock {
+				// Hash for "Updated test note content"
+				expectedHash := "79c1b725091cf8266eff024a296e4fd7ff8ce3001aa1958fe591773246f072ad"
+
+				// Create a message with matching hash
+				msgWithMatchingHash := db.ListTelegramPublishSentMessagesByNotePathIDRow{
+					ChatID:      1,
+					MessageID:   101,
+					TelegramID:  -1001234567890,
+					ContentHash: expectedHash,
+				}
+
+				return &EnvMock{
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
+						return []db.ListTelegramPublishSentMessagesByNotePathIDRow{msgWithMatchingHash}, nil
+					},
+					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
+						return &model.TelegramPost{
+							Content:  "Updated test note content",
+							Warnings: []string{},
+						}, nil
+					},
+					SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+						require.Fail(t, "SendTelegramRequest should not be called when content hash matches")
+						return nil
+					},
+				}
+			},
+			wantErr: false,
 		},
 	}
 

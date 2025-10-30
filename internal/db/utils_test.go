@@ -48,21 +48,6 @@ func mustExec(t *testing.T, db *sql.DB, query string, args ...interface{}) {
 	require.NoError(t, err, "Failed to execute query: %s", query)
 }
 
-// insertTestUser creates a test user and returns the ID.
-func insertTestUser(t *testing.T, db *sql.DB, email string) int64 {
-	t.Helper()
-
-	var userID int64
-	err := db.QueryRow(`
-		insert into users (email, created_via) 
-		values (?, 'test')
-		returning id
-	`, email).Scan(&userID)
-	require.NoError(t, err, "Failed to insert test user")
-
-	return userID
-}
-
 // insertTestNotePath creates a test note path and returns the ID.
 func insertTestNotePath(t *testing.T, db *sql.DB, path string) int64 {
 	t.Helper()

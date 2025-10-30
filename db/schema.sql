@@ -508,7 +508,7 @@ CREATE TABLE IF NOT EXISTS "telegram_publish_sent_messages" (
   chat_id integer not null references tg_bot_chats(id) on delete restrict,
   created_at datetime not null default current_timestamp,
   message_id integer not null
-, instant integer not null default 0);
+, instant integer not null default 0, content_hash text not null default '');
 CREATE INDEX idx_telegram_publish_sent_messages_chat_id on telegram_publish_sent_messages(chat_id);
 CREATE INDEX idx_telegram_publish_sent_messages_note_path_id on telegram_publish_sent_messages(note_path_id);
 -- Dbmate schema migrations
@@ -591,4 +591,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251024123641'),
   ('20251025034145'),
   ('20251029103550'),
-  ('20251029150445');
+  ('20251029150445'),
+  ('20251030012221');

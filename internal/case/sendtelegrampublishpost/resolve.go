@@ -2,7 +2,9 @@ package sendtelegrampublishpost
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -124,11 +126,16 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 			instantInt = 1
 		}
 
+		// Calculate content hash
+		hash := sha256.Sum256([]byte(post.Content))
+		contentHash := hex.EncodeToString(hash[:])
+
 		sentParams := db.InsertTelegramPublishSentMessageParams{
-			NotePathID: notePathID,
-			ChatID:     chat.ID,
-			MessageID:  messageID,
-			Instant:    instantInt,
+			NotePathID:  notePathID,
+			ChatID:      chat.ID,
+			MessageID:   messageID,
+			Instant:     instantInt,
+			ContentHash: contentHash,
 		}
 
 		insertErr := env.InsertTelegramPublishSentMessage(ctx, sentParams)

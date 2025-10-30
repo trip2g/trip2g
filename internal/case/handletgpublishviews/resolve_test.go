@@ -73,6 +73,10 @@ func prepare(t *testing.T, nvs *model.NoteViews) *EnvMock {
 		SendTelegramPublishPostFunc: func(ctx context.Context, pathID int64, instant bool) error {
 			return nil
 		},
+
+		UpdateTelegramPublishPostFunc: func(ctx context.Context, pathID int64) error {
+			return nil
+		},
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)

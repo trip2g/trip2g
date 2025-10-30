@@ -2,6 +2,8 @@ package checkapikey
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"trip2g/internal/appreq"
@@ -29,13 +31,27 @@ func Resolve(ctx context.Context, env Env, action string) (*db.ApiKey, error) {
 		return nil, ErrMissingKey
 	}
 
-	apiKey, err := env.ApiKeyByValue(ctx, string(apiKeyValue))
+	plainKey := string(apiKeyValue)
+
+	// First, try hashed version (new API keys)
+	hash := sha256.Sum256([]byte(plainKey))
+	hashedValue := hex.EncodeToString(hash[:])
+
+	apiKey, err := env.ApiKeyByValue(ctx, hashedValue)
 	if err != nil {
 		if db.IsNoFound(err) {
-			return nil, ErrInvalidKey
-		}
+			// Backward compatibility: try plain text (old API keys)
+			apiKey, err = env.ApiKeyByValue(ctx, plainKey)
+			if err != nil {
+				if db.IsNoFound(err) {
+					return nil, ErrInvalidKey
+				}
 
-		return nil, fmt.Errorf("failed to resolve API key: %w", err)
+				return nil, fmt.Errorf("failed to resolve API key: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to resolve API key: %w", err)
+		}
 	}
 
 	err = env.UpsertAPIKeyLogAction(ctx, action)

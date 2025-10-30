@@ -807,7 +807,7 @@ select c.*
    and c.removed_at is null;
 
 -- name: ListTelegramPublishSentMessagesByNotePathID :many
-select tsm.chat_id, tsm.message_id, c.telegram_id
+select tsm.chat_id, tsm.message_id, tsm.content_hash, c.telegram_id
   from telegram_publish_sent_messages tsm
   join tg_bot_chats c on tsm.chat_id = c.id
  where tsm.note_path_id = ?

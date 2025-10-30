@@ -1891,22 +1891,7 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 				return nil, searchErr
 			}
 
-			res := []db.NotePath{}
-
-			for _, result := range conn.Nodes {
-				if result.NoteView != nil {
-					pathID := result.NoteView.PathID
-
-					notePath, selectErr := r.env(ctx).NotePathByID(ctx, pathID)
-					if selectErr != nil {
-						return nil, fmt.Errorf("failed to get note path by ID %d: %w", pathID, selectErr)
-					}
-
-					res = append(res, notePath)
-				}
-			}
-
-			return res, nil
+			return r.convertSearchResultsToNotePath(ctx, conn.Nodes)
 		}
 
 		if filter.Like != nil {

@@ -3136,7 +3136,7 @@ func (q *Queries) ListTelegramPublishSentMessagesByChatID(ctx context.Context, c
 }
 
 const listTelegramPublishSentMessagesByNotePathID = `-- name: ListTelegramPublishSentMessagesByNotePathID :many
-select tsm.chat_id, tsm.message_id, c.telegram_id
+select tsm.chat_id, tsm.message_id, tsm.content_hash, c.telegram_id
   from telegram_publish_sent_messages tsm
   join tg_bot_chats c on tsm.chat_id = c.id
  where tsm.note_path_id = ?
@@ -3144,9 +3144,10 @@ select tsm.chat_id, tsm.message_id, c.telegram_id
 `
 
 type ListTelegramPublishSentMessagesByNotePathIDRow struct {
-	ChatID     int64 `json:"chat_id"`
-	MessageID  int64 `json:"message_id"`
-	TelegramID int64 `json:"telegram_id"`
+	ChatID      int64  `json:"chat_id"`
+	MessageID   int64  `json:"message_id"`
+	ContentHash string `json:"content_hash"`
+	TelegramID  int64  `json:"telegram_id"`
 }
 
 func (q *Queries) ListTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) ([]ListTelegramPublishSentMessagesByNotePathIDRow, error) {
@@ -3158,7 +3159,12 @@ func (q *Queries) ListTelegramPublishSentMessagesByNotePathID(ctx context.Contex
 	var items []ListTelegramPublishSentMessagesByNotePathIDRow
 	for rows.Next() {
 		var i ListTelegramPublishSentMessagesByNotePathIDRow
-		if err := rows.Scan(&i.ChatID, &i.MessageID, &i.TelegramID); err != nil {
+		if err := rows.Scan(
+			&i.ChatID,
+			&i.MessageID,
+			&i.ContentHash,
+			&i.TelegramID,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

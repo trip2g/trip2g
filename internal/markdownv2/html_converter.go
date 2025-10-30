@@ -56,6 +56,7 @@ func (c *HTMLConverter) popBuffer() string {
 	return result
 }
 
+//nolint:nestif,gocognit // ast traversal always looks like this
 func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 	res := ConverterResult{}
 	src := nv.Content
@@ -200,7 +201,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 				lines = append(lines, "\n")
 
 				language := string(node.Language(src))
-				code := string(node.Text(src))
+				code := string(node.Lines().Value(src))
 
 				var codeHTML string
 				if language != "" {

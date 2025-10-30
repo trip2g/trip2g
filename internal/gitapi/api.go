@@ -289,8 +289,20 @@ func (api *API) checkAuth(ctx *fasthttp.RequestCtx) error {
 		return ErrNoAuth
 	}
 
-	// TODO: check password
-	api.logger.Info("auth success", "token", parts[1])
+	token := parts[1]
+
+	// Hash the provided token
+	hash := sha256.Sum256([]byte(token))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	// Verify token exists in database
+	_, err = api.env.GitTokenByValueSha256(api.ctx, tokenHash)
+	if err != nil {
+		api.logger.Debug("invalid token", "error", err)
+		return ErrNoAuth
+	}
+
+	api.logger.Info("auth success")
 
 	return nil
 }

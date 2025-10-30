@@ -142,7 +142,7 @@ func (c *CommonConverter) Process(nv *model.NoteView) ConverterResult {
 				buf.WriteString("```")
 				buf.Write(node.Language(src))
 				buf.WriteString("\n")
-				buf.Write(node.Text(src))
+				buf.Write(node.Lines().Value(src))
 				buf.WriteString("```")
 				c.state = needNewline
 			}

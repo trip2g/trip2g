@@ -411,11 +411,12 @@ type TelegramPublishNoteTag struct {
 }
 
 type TelegramPublishSentMessage struct {
-	NotePathID int64     `json:"note_path_id"`
-	ChatID     int64     `json:"chat_id"`
-	CreatedAt  time.Time `json:"created_at"`
-	MessageID  int64     `json:"message_id"`
-	Instant    int64     `json:"instant"`
+	NotePathID  int64     `json:"note_path_id"`
+	ChatID      int64     `json:"chat_id"`
+	CreatedAt   time.Time `json:"created_at"`
+	MessageID   int64     `json:"message_id"`
+	Instant     int64     `json:"instant"`
+	ContentHash string    `json:"content_hash"`
 }
 
 type TelegramPublishTag struct {
