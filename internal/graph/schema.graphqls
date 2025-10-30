@@ -1048,7 +1048,7 @@ type Mutation {
   """
   X-Api-Key header must be set.
   """
-  uploadNoteAsset(input: UploadNoteAssetInput!): UploadNoteAssetOrErrorPayload!
+  uploadNoteAsset(input: UploadNoteAssetInput!): UploadNoteAssetOrErrorPayload! @skipTx
 
   generateTgAttachCode(input: GenerateTgAttachCodeInput!): GenerateTgAttachCodeOrErrorPayload!
 

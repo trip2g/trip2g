@@ -139,6 +139,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
+	SkipTx func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
 }
 
 type ComplexityRoot struct {
@@ -28810,8 +28811,30 @@ func (ec *executionContext) _Mutation_uploadNoteAsset(ctx context.Context, field
 		}
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UploadNoteAsset(rctx, fc.Args["input"].(model.UploadNoteAssetInput))
+		directive0 := func(rctx context.Context) (any, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().UploadNoteAsset(rctx, fc.Args["input"].(model.UploadNoteAssetInput))
+		}
+
+		directive1 := func(ctx context.Context) (any, error) {
+			if ec.directives.SkipTx == nil {
+				var zeroVal model.UploadNoteAssetOrErrorPayload
+				return zeroVal, errors.New("directive skipTx is not implemented")
+			}
+			return ec.directives.SkipTx(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(model.UploadNoteAssetOrErrorPayload); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be trip2g/internal/graph/model.UploadNoteAssetOrErrorPayload`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)

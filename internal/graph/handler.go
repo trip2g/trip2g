@@ -11,11 +11,34 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
+func skipTx(operationContext *graphql.OperationContext) bool {
+	for _, selection := range operationContext.Operation.SelectionSet {
+		if field, ok := selection.(*ast.Field); ok {
+			for _, directive := range field.Directives {
+				if directive.Name == "skipTx" {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
 func NewHandler(env Env) *handler.Server {
 	log := env.Logger()
 
 	resolver := Resolver{DefaultEnv: env}
-	srv := handler.New(NewExecutableSchema(Config{Resolvers: &resolver}))
+
+	config := Config{
+		Resolvers: &resolver,
+	}
+
+	config.Directives.SkipTx = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
+		return next(ctx)
+	}
+
+	srv := handler.New(NewExecutableSchema(config))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -43,7 +66,7 @@ func NewHandler(env Env) *handler.Server {
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		operationContext := graphql.GetOperationContext(ctx)
 
-		if operationContext.Operation.Operation != ast.Mutation {
+		if operationContext.Operation.Operation != ast.Mutation || skipTx(operationContext) {
 			return next(ctx)
 		}
 
