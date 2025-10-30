@@ -38,7 +38,7 @@ func (c *HTMLConverter) SetLinkResolver(resolver LinkResolver) {
 // Write writes string to the current buffer (last in stack).
 func (c *HTMLConverter) Write(s string) {
 	if len(c.bufStack) > 0 {
-		c.bufStack[len(c.bufStack)-1].WriteString(s)
+		_, _ = c.bufStack[len(c.bufStack)-1].WriteString(s)
 	}
 }
 
@@ -56,7 +56,7 @@ func (c *HTMLConverter) popBuffer() string {
 	return result
 }
 
-//nolint:nestif,gocognit // ast traversal always looks like this
+//nolint:nestif,gocognit,gocyclo,cyclop,funlen // ast traversal always looks like this
 func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 	res := ConverterResult{}
 	src := nv.Content

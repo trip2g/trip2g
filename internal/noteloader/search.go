@@ -137,6 +137,8 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 // extractText extracts plain text from a Markdown AST.
 // This version is optimized for getting the minimal text content
 // without complex formatting like newlines and indentation.
+//
+//nolint:gocognit // ast traversal is always complex
 func extractText(doc ast.Node, src []byte) string {
 	var buf bytes.Buffer
 	var lastNode ast.Node

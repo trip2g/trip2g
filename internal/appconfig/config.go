@@ -201,36 +201,10 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 // defineFlags sets up all command-line flags.
 func (c *Config) defineFlags() {
 	// Server flags
-	flag.StringVar(&c.ListenAddr, "listen-addr", c.ListenAddr, "Listen address")
-	flag.StringVar(&c.DatabaseFile, "db-file", c.DatabaseFile, "Database file")
-	flag.StringVar(&c.AdminJSURL, "admin-js-url", c.AdminJSURL, "Admin JS URL")
-	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Log level")
-	flag.BoolVar(&c.DevMode, "dev", c.DevMode, "Development mode")
-	flag.BoolVar(&c.LatestLive, "latest-live", c.LatestLive, "Use latest release as live version")
-	flag.DurationVar(&c.ShutdownGracePeriod, "shutdown-grace-period", 50*time.Millisecond, "Shutdown grace period")
-	flag.DurationVar(&c.ShutdownTimeout, "shutdown-timeout", 1*time.Second, "Shutdown timeout")
-	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
+	c.defineServerFlags()
 
 	// MinIO storage flags
-	flag.StringVar(&c.Storage.Endpoint, "minio-endpoint", c.Storage.Endpoint, "MinIO endpoint")
-	flag.StringVar(&c.Storage.AccessKey, "minio-access-key-id", c.Storage.AccessKey, "MinIO access key ID")
-	flag.StringVar(&c.Storage.SecretKey, "minio-secret-key", c.Storage.SecretKey, "MinIO secret key")
-	flag.StringVar(&c.Storage.Bucket, "minio-bucket", c.Storage.Bucket, "MinIO bucket name")
-	flag.StringVar(&c.Storage.Region, "minio-region", c.Storage.Region, "MinIO region")
-	flag.StringVar(&c.Storage.Prefix, "minio-prefix", c.Storage.Prefix, "MinIO object key prefix")
-	flag.BoolVar(&c.Storage.UseSSL, "minio-use-ssl", c.Storage.UseSSL, "Use SSL for MinIO")
-	flag.DurationVar(
-		&c.Storage.InitTimeout,
-		"minio-init-timeout",
-		c.Storage.InitTimeout,
-		"MinIO init timeout (check and make bucket)",
-	)
-	flag.DurationVar(
-		&c.Storage.URLExpiresIn,
-		"minio-url-expires-in",
-		c.Storage.URLExpiresIn,
-		"MinIO presigned URL expiration time",
-	)
+	c.defineMinioFlags()
 
 	// ACME domains (multiple values allowed)
 	flag.Var(&c.AcmeDomains, "acme-domain", "ACME domains (multiple values allowed)")
@@ -391,6 +365,40 @@ func (c *Config) defineFlags() {
 	notionDefaults := notion.DefaultConfig()
 
 	flag.DurationVar(&c.Notion.RequestTimeout, "notion-request-timeout", notionDefaults.RequestTimeout, "Notion API request timeout")
+}
+
+func (c *Config) defineServerFlags() {
+	flag.StringVar(&c.ListenAddr, "listen-addr", c.ListenAddr, "Listen address")
+	flag.StringVar(&c.DatabaseFile, "db-file", c.DatabaseFile, "Database file")
+	flag.StringVar(&c.AdminJSURL, "admin-js-url", c.AdminJSURL, "Admin JS URL")
+	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Log level")
+	flag.BoolVar(&c.DevMode, "dev", c.DevMode, "Development mode")
+	flag.BoolVar(&c.LatestLive, "latest-live", c.LatestLive, "Use latest release as live version")
+	flag.DurationVar(&c.ShutdownGracePeriod, "shutdown-grace-period", 50*time.Millisecond, "Shutdown grace period")
+	flag.DurationVar(&c.ShutdownTimeout, "shutdown-timeout", 1*time.Second, "Shutdown timeout")
+	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
+}
+
+func (c *Config) defineMinioFlags() {
+	flag.StringVar(&c.Storage.Endpoint, "minio-endpoint", c.Storage.Endpoint, "MinIO endpoint")
+	flag.StringVar(&c.Storage.AccessKey, "minio-access-key-id", c.Storage.AccessKey, "MinIO access key ID")
+	flag.StringVar(&c.Storage.SecretKey, "minio-secret-key", c.Storage.SecretKey, "MinIO secret key")
+	flag.StringVar(&c.Storage.Bucket, "minio-bucket", c.Storage.Bucket, "MinIO bucket name")
+	flag.StringVar(&c.Storage.Region, "minio-region", c.Storage.Region, "MinIO region")
+	flag.StringVar(&c.Storage.Prefix, "minio-prefix", c.Storage.Prefix, "MinIO object key prefix")
+	flag.BoolVar(&c.Storage.UseSSL, "minio-use-ssl", c.Storage.UseSSL, "Use SSL for MinIO")
+	flag.DurationVar(
+		&c.Storage.InitTimeout,
+		"minio-init-timeout",
+		c.Storage.InitTimeout,
+		"MinIO init timeout (check and make bucket)",
+	)
+	flag.DurationVar(
+		&c.Storage.URLExpiresIn,
+		"minio-url-expires-in",
+		c.Storage.URLExpiresIn,
+		"MinIO presigned URL expiration time",
+	)
 }
 
 func (c *Config) Prepare() {

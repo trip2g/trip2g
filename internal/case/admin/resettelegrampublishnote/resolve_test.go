@@ -8,6 +8,7 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/stretchr/testify/require"
 
 	"trip2g/internal/case/admin/resettelegrampublishnote"
 	"trip2g/internal/db"
@@ -15,6 +16,49 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/usertoken"
 )
+
+func assertResetPayloadEquals(
+	t *testing.T,
+	got, want *model.ResetTelegramPublishNotePayload,
+) {
+	t.Helper()
+	require.Equal(t, want.PublishNote.NotePathID, got.PublishNote.NotePathID)
+	require.Equal(t, want.PublishNote.PublishedAt.Valid, got.PublishNote.PublishedAt.Valid)
+	require.Equal(
+		t,
+		want.PublishNote.PublishedVersionID.Valid,
+		got.PublishNote.PublishedVersionID.Valid,
+	)
+}
+
+func assertErrorPayloadEquals(t *testing.T, got, want *model.ErrorPayload) {
+	t.Helper()
+	require.Equal(t, want.Message, got.Message)
+}
+
+func assertPayloadMatches(t *testing.T, got, want resettelegrampublishnote.Payload) {
+	t.Helper()
+
+	if want == nil {
+		require.Nil(t, got)
+		return
+	}
+
+	require.NotNil(t, got)
+
+	switch wantPayload := want.(type) {
+	case *model.ResetTelegramPublishNotePayload:
+		gotPayload, ok := got.(*model.ResetTelegramPublishNotePayload)
+		require.True(t, ok, "expected *model.ResetTelegramPublishNotePayload, got %T", got)
+		assertResetPayloadEquals(t, gotPayload, wantPayload)
+	case *model.ErrorPayload:
+		gotPayload, ok := got.(*model.ErrorPayload)
+		require.True(t, ok, "expected *model.ErrorPayload, got %T", got)
+		assertErrorPayloadEquals(t, gotPayload, wantPayload)
+	default:
+		t.Fatalf("unexpected payload type: %T", want)
+	}
+}
 
 func TestResolve(t *testing.T) {
 	ctx := context.Background()
@@ -270,45 +314,13 @@ func TestResolve(t *testing.T) {
 			env := tt.env()
 			got, err := resettelegrampublishnote.Resolve(ctx, env, tt.input)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Resolve() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
 			if tt.wantErr {
+				require.Error(t, err)
 				return
 			}
 
-			if got == nil && tt.want != nil {
-				t.Errorf("Resolve() got = nil, want = %v", tt.want)
-				return
-			}
-
-			if tt.want == nil && got != nil {
-				t.Errorf("Resolve() got = %v, want = nil", got)
-				return
-			}
-
-			switch gotPayload := got.(type) {
-			case *model.ResetTelegramPublishNotePayload:
-				wantPayload := tt.want.(*model.ResetTelegramPublishNotePayload)
-				if gotPayload.PublishNote.NotePathID != wantPayload.PublishNote.NotePathID {
-					t.Errorf("Resolve() got NotePathID = %v, want NotePathID = %v", gotPayload.PublishNote.NotePathID, wantPayload.PublishNote.NotePathID)
-				}
-				if gotPayload.PublishNote.PublishedAt.Valid != wantPayload.PublishNote.PublishedAt.Valid {
-					t.Errorf("Resolve() got PublishedAt.Valid = %v, want PublishedAt.Valid = %v", gotPayload.PublishNote.PublishedAt.Valid, wantPayload.PublishNote.PublishedAt.Valid)
-				}
-				if gotPayload.PublishNote.PublishedVersionID.Valid != wantPayload.PublishNote.PublishedVersionID.Valid {
-					t.Errorf("Resolve() got PublishedVersionID.Valid = %v, want PublishedVersionID.Valid = %v", gotPayload.PublishNote.PublishedVersionID.Valid, wantPayload.PublishNote.PublishedVersionID.Valid)
-				}
-			case *model.ErrorPayload:
-				wantPayload := tt.want.(*model.ErrorPayload)
-				if gotPayload.Message != wantPayload.Message {
-					t.Errorf("Resolve() got Message = %v, want Message = %v", gotPayload.Message, wantPayload.Message)
-				}
-			default:
-				t.Errorf("Resolve() got unexpected type = %T", got)
-			}
+			require.NoError(t, err)
+			assertPayloadMatches(t, got, tt.want)
 		})
 	}
 }

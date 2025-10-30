@@ -31,6 +31,7 @@ type CommonConverter struct {
 	state            lineState
 }
 
+//nolint:gocognit,cyclop,gocyclo // ast traversal always looks like this
 func (c *CommonConverter) Process(nv *model.NoteView) ConverterResult {
 	res := ConverterResult{}
 	src := nv.Content

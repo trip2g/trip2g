@@ -8,11 +8,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"github.com/valyala/fasthttp"
+
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/db"
-
-	"github.com/valyala/fasthttp"
 )
 
 //go:generate go run github.com/matryer/moq -out mocks_test.go -pkg checkapikey_test . Env
@@ -22,6 +23,42 @@ type Env interface {
 	InsertAPIKeyLog(ctx context.Context, arg db.InsertAPIKeyLogParams) error
 	UpsertAPIKeyLogAction(ctx context.Context, name string) error
 	UpsertAPIKeyLogIP(ctx context.Context, ip string) error
+}
+
+func setupRequestContext(apiKeyInReq string) *fasthttp.RequestCtx {
+	reqCtx := &fasthttp.RequestCtx{}
+	reqCtx.Request.Header.Set("X-API-Key", apiKeyInReq)
+	reqCtx.Request.SetRequestURI("http://example.com/test")
+
+	req := &appreq.Request{Req: reqCtx}
+	req.StoreInContext()
+
+	return reqCtx
+}
+
+func assertErrorMatches(t *testing.T, err, wantErr error) {
+	t.Helper()
+
+	require.Error(t, err)
+
+	if errors.Is(err, wantErr) {
+		return
+	}
+
+	expectedMsg := wantErr.Error()
+	isWrappedError := expectedMsg == "failed to resolve API key" ||
+		expectedMsg == "failed to upsert API key log action"
+	if isWrappedError {
+		return
+	}
+
+	require.Equal(t, wantErr, err)
+}
+
+func assertAPIKeyResult(t *testing.T, apiKey *db.ApiKey, wantKeyID int64) {
+	t.Helper()
+	require.NotNil(t, apiKey)
+	require.Equal(t, wantKeyID, apiKey.ID)
 }
 
 func TestResolve(t *testing.T) {
@@ -165,57 +202,17 @@ func TestResolve(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := tt.setupEnv()
+			ctx := setupRequestContext(tt.apiKeyInReq)
 
-			// Create fasthttp request context
-			reqCtx := &fasthttp.RequestCtx{}
-			reqCtx.Request.Header.Set("X-API-Key", tt.apiKeyInReq)
-			reqCtx.Request.SetRequestURI("http://example.com/test")
-
-			// Create appreq and store in context
-			req := &appreq.Request{Req: reqCtx}
-			req.StoreInContext()
-
-			ctx := reqCtx
-
-			// Execute
 			apiKey, err := checkapikey.Resolve(ctx, env, tt.action)
 
-			// Check error
 			if tt.wantErr != nil {
-				if err == nil {
-					t.Fatalf("expected error %v, got nil", tt.wantErr)
-				}
-				// Check if error is the expected type or contains expected message
-				if !errors.Is(err, tt.wantErr) {
-					// For wrapped errors, check if the error message contains the expected message
-					expectedMsg := tt.wantErr.Error()
-					actualMsg := err.Error()
-					if len(expectedMsg) > 0 && len(actualMsg) > 0 {
-						// Just ensure the error occurred, exact message may vary due to wrapping
-						if expectedMsg == "failed to resolve API key" || expectedMsg == "failed to upsert API key log action" {
-							// Accept any error that contains this prefix
-							if len(actualMsg) > 0 {
-								return // Test passes
-							}
-						}
-					}
-					t.Fatalf("expected error %v, got %v", tt.wantErr, err)
-				}
+				assertErrorMatches(t, err, tt.wantErr)
 				return
 			}
 
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			// Check result
-			if apiKey == nil {
-				t.Fatal("expected non-nil API key")
-			}
-
-			if apiKey.ID != tt.wantKeyID {
-				t.Errorf("expected API key ID %d, got %d", tt.wantKeyID, apiKey.ID)
-			}
+			require.NoError(t, err)
+			assertAPIKeyResult(t, apiKey, tt.wantKeyID)
 		})
 	}
 }

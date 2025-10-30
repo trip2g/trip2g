@@ -79,39 +79,20 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 			return fmt.Errorf("conversion produced warnings: %v", post.Warnings)
 		}
 
-		var firstImageURL *string
 		var messageID int64
 
-		for path := range noteView.Assets {
-			_, ok := noteView.AssetReplaces[path]
-			if !ok {
-				continue
-			}
-
-			firstImageURL = &noteView.AssetReplaces[path].URL
-			break
+		params := sendPhotoParams{
+			chat: &chat,
+			post: post,
+			url:  getFirstImageURL(noteView),
 		}
 
-		if firstImageURL != nil {
-			params := sendPhotoParams{
-				chat: &chat,
-				post: post,
-				url:  *firstImageURL,
-			}
+		messageID, sendErr := tryToSendPhono(ctx, env, params)
+		if sendErr != nil {
+			return sendErr
+		}
 
-			messageID, convertErr = sendPhoto(ctx, env, params)
-			if convertErr != nil {
-				// workaround for localhost minio or something similar.
-				if strings.Contains(convertErr.Error(), "wrong HTTP URL specified") {
-					params.stream = true
-					messageID, convertErr = sendPhoto(ctx, env, params)
-				}
-
-				if convertErr != nil {
-					return fmt.Errorf("failed to send photo message to chat %d: %w", chat.ID, convertErr)
-				}
-			}
-		} else {
+		if messageID == 0 {
 			msg := tgbotapi.NewMessage(chat.TelegramID, post.Content)
 			msg.ParseMode = "HTML"
 
@@ -127,6 +108,7 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 		}
 
 		// Calculate content hash
+		// TODO: add a hash of media too
 		hash := sha256.Sum256([]byte(post.Content))
 		contentHash := hex.EncodeToString(hash[:])
 
@@ -160,10 +142,44 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 	return nil
 }
 
+func getFirstImageURL(noteView *model.NoteView) *string {
+	for path := range noteView.Assets {
+		_, ok := noteView.AssetReplaces[path]
+		if !ok {
+			continue
+		}
+
+		return &noteView.AssetReplaces[path].URL
+	}
+
+	return nil
+}
+
+func tryToSendPhono(ctx context.Context, env Env, params sendPhotoParams) (int64, error) {
+	if params.url == nil {
+		return 0, nil
+	}
+
+	messageID, convertErr := sendPhoto(ctx, env, params)
+	if convertErr != nil {
+		// workaround for localhost minio or something similar.
+		if strings.Contains(convertErr.Error(), "wrong HTTP URL specified") {
+			params.stream = true
+			messageID, convertErr = sendPhoto(ctx, env, params)
+		}
+
+		if convertErr != nil {
+			return 0, fmt.Errorf("failed to sendPhoto: %w", convertErr)
+		}
+	}
+
+	return messageID, nil
+}
+
 type sendPhotoParams struct {
 	chat   *db.TgBotChat
 	post   *model.TelegramPost
-	url    string
+	url    *string
 	stream bool
 }
 
@@ -171,9 +187,9 @@ func sendPhoto(ctx context.Context, env Env, params sendPhotoParams) (int64, err
 	var file tgbotapi.RequestFileData
 
 	if !params.stream {
-		file = tgbotapi.FileURL(params.url)
+		file = tgbotapi.FileURL(*params.url)
 	} else {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, params.url, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, *params.url, nil)
 		if err != nil {
 			return 0, fmt.Errorf("failed to create request for image URL: %w", err)
 		}
@@ -186,7 +202,7 @@ func sendPhoto(ctx context.Context, env Env, params sendPhotoParams) (int64, err
 		defer resp.Body.Close()
 
 		file = tgbotapi.FileReader{
-			Name:   filepath.Base(params.url),
+			Name:   filepath.Base(*params.url),
 			Reader: resp.Body,
 		}
 	}

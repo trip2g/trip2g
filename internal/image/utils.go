@@ -2,6 +2,7 @@ package image
 
 import "path/filepath"
 
+//nolint:gochecknoglobals // readonly constant map
 var exts = map[string]struct{}{
 	".apng":  {},
 	".avif":  {},

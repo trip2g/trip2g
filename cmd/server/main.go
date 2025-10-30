@@ -15,7 +15,7 @@ import (
 	"math/big"
 	"net"
 	"net/http"
-	_ "net/http/pprof"
+	_ "net/http/pprof" //nolint:gosec // exposed by internal server only
 	"net/url"
 	"os"
 	"os/signal"
@@ -978,6 +978,15 @@ func (a *app) AuditLogger() logger.Logger {
 	return a.auditLogger
 }
 
+func (a *app) DB() *sql.DB {
+	return a.conn
+}
+
+func (a *app) VacuumDB(ctx context.Context) error {
+	_, err := a.conn.ExecContext(ctx, "VACUUM")
+	return err
+}
+
 func (a *app) RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {
 	err := db.WithRetry(ctx, 3, func() error {
 		return a.doRecordUserNoteView(ctx, userID, note, referrerVersionID)
@@ -1460,54 +1469,68 @@ func (a *app) handlePurchaseTokens(ctx *fasthttp.RequestCtx) bool {
 	return false
 }
 
-func (a *app) startServer() {
+// Middleware should return true if the request is fully handled.
+type Middleware func(req *appreq.Request) bool
+
+func (a *app) prepareMiddlewares() []Middleware {
 	fsHandler := a.assetsFS.NewRequestHandler()
+
+	return []Middleware{
+		func(req *appreq.Request) bool {
+			return a.handleCors(req.Req)
+		},
+		func(req *appreq.Request) bool {
+			return a.handleDebugAPI(req.Req)
+		},
+		func(req *appreq.Request) bool {
+			return a.gitAPI.HandleRequest(req.Req)
+		},
+		func(req *appreq.Request) bool {
+			return a.handleAdminAssets(req, req.Path)
+		},
+		func(req *appreq.Request) bool {
+			if strings.HasPrefix(req.Path, "/assets/") {
+				fsHandler(req.Req)
+				return true
+			}
+
+			return false
+		},
+		func(req *appreq.Request) bool {
+			return a.handlePurchaseTokens(req.Req)
+		},
+		func(req *appreq.Request) bool {
+			return signinbytgauthtoken.Process(req.Req, a)
+		},
+		func(req *appreq.Request) bool {
+			return a.TgBots.ProcessWebhookRequest(req.Path, func() []byte { return req.Req.PostBody() })
+		},
+	}
+}
+
+func (a *app) startServer() {
 	handleGraphQL := a.prepareGraphQLHandler()
 
 	rtr := router.New(a)
+
+	middlewares := a.prepareMiddlewares()
 
 	s := &fasthttp.Server{
 		Handler: func(ctx *fasthttp.RequestCtx) {
 			path := string(ctx.Path())
 
-			if a.handleCors(ctx) {
-				return
-			}
-
-			if a.handleDebugAPI(ctx) {
-				return
-			}
-
-			if a.gitAPI.HandleRequest(ctx) {
-				return
-			}
-
 			req := appreq.Acquire()
 			req.Env = a
 			req.Req = ctx
+			req.Path = path
 			req.TokenManager = a.tokenManager
 			req.StoreInContext() // appreq.FromCtx(ctx)
 			defer appreq.Release(req)
 
-			if a.handleAdminAssets(req, path) {
-				return
-			}
-
-			if strings.HasPrefix(path, "/assets/") {
-				fsHandler(ctx)
-				return
-			}
-
-			if a.handlePurchaseTokens(ctx) {
-				return
-			}
-
-			if signinbytgauthtoken.Process(ctx, a) {
-				return
-			}
-
-			if a.TgBots.ProcessWebhookRequest(path, func() []byte { return ctx.PostBody() }) {
-				return
+			for _, mw := range middlewares {
+				if mw(req) {
+					return
+				}
 			}
 
 			// handle hot auth token from ?hot=...

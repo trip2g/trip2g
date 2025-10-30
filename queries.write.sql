@@ -688,3 +688,4 @@ update telegram_publish_notes
 
 -- name: DeleteTelegramPublishSentMessagesByNotePathID :exec
 delete from telegram_publish_sent_messages where note_path_id = ?;
+

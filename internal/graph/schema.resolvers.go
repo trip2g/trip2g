@@ -1884,26 +1884,24 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 		return nil, err
 	}
 
-	if filter != nil {
-		if filter.Search != nil {
-			conn, searchErr := r.Search(ctx, model.SearchInput{Query: *filter.Search})
-			if searchErr != nil {
-				return nil, searchErr
-			}
-
-			return r.convertSearchResultsToNotePath(ctx, conn.Nodes)
+	if filter != nil && filter.Search != nil {
+		conn, searchErr := r.Search(ctx, model.SearchInput{Query: *filter.Search})
+		if searchErr != nil {
+			return nil, searchErr
 		}
 
-		if filter.Like != nil {
-			pattern := *filter.Like
+		return r.convertSearchResultsToNotePath(ctx, conn.Nodes)
+	}
 
-			// Prevent potential DoS attacks with excessive wildcards
-			if strings.Count(pattern, "%") > 5 || strings.Count(pattern, "_") > 10 {
-				return nil, errors.New("too many wildcard characters in pattern")
-			}
+	if filter != nil && filter.Like != nil {
+		pattern := *filter.Like
 
-			return r.env(ctx).ListNotePathsLike(ctx, pattern)
+		// Prevent potential DoS attacks with excessive wildcards
+		if strings.Count(pattern, "%") > 5 || strings.Count(pattern, "_") > 10 {
+			return nil, errors.New("too many wildcard characters in pattern")
 		}
+
+		return r.env(ctx).ListNotePathsLike(ctx, pattern)
 	}
 
 	return r.env(ctx).AllVisibleNotePaths(ctx)

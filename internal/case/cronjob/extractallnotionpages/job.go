@@ -24,8 +24,12 @@ func (j *Job) ExecuteAfterStart() bool {
 
 func (j *Job) Execute(ctx context.Context, env any) (any, error) {
 	params := extractnotionpages.Params{PageID: nil}
-	if err := extractnotionpages.Resolve(ctx, env.(extractnotionpages.Env), params); err != nil {
+
+	//nolint:errcheck // env is guaranteed to be of type extractnotionpages.Env
+	err := extractnotionpages.Resolve(ctx, env.(extractnotionpages.Env), params)
+	if err != nil {
 		return nil, err
 	}
+
 	return nil, nil
 }

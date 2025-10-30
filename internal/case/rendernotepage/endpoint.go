@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/case/renderlayout"
 
 	"github.com/CloudyKit/jet/v6"
+	"github.com/valyala/fasthttp"
 )
 
 //go:generate go tool github.com/valyala/quicktemplate/qtc -dir=. -ext=html
@@ -91,22 +92,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	if resp.Note.Layout != "" {
-		layout, layoutExists := env.Layouts().Map["/"+resp.Note.Layout]
-		if layoutExists {
-			vars := make(jet.VarMap)
-			vars["note"] = reflect.ValueOf(resp.Note)
-
-			viewErr := layout.View.Execute(ctx, vars, resp)
-			if viewErr != nil {
-				if resp.IsAdmin {
-					_, _ = ctx.WriteString(viewErr.Error())
-				} else {
-					return nil, fmt.Errorf("failed to execute view: %w", viewErr)
-				}
-			}
-
-			return nil, nil
-		}
+		return nil, renderLayout(ctx, env, resp)
 	}
 
 	return renderlayout.Handle(req, layoutParams, func() {
@@ -120,4 +106,29 @@ func (Endpoint) Path() string {
 
 func (Endpoint) Method() string {
 	return http.MethodGet
+}
+
+func renderLayout(
+	ctx *fasthttp.RequestCtx,
+	env Env,
+	resp *Response,
+) error {
+	layout, layoutExists := env.Layouts().Map["/"+resp.Note.Layout]
+	if !layoutExists {
+		return nil
+	}
+
+	vars := make(jet.VarMap)
+	vars["note"] = reflect.ValueOf(resp.Note)
+
+	viewErr := layout.View.Execute(ctx, vars, resp)
+	if viewErr != nil {
+		if resp.IsAdmin {
+			_, _ = ctx.WriteString(viewErr.Error())
+			return nil
+		}
+		return fmt.Errorf("failed to execute view: %w", viewErr)
+	}
+
+	return nil
 }

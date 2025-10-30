@@ -48,7 +48,7 @@ func upsertTelegramPublishNoteTag(ctx context.Context, params db.UpsertTelegramP
 	return nil
 }
 
-var timeLocation = time.FixedZone("testzone", 7*3600)
+var timeLocation = time.FixedZone("testzone", 7*3600) //nolint:gochecknoglobals // it's ok for tests
 
 func prepare(t *testing.T, nvs *model.NoteViews) *EnvMock {
 	env := &EnvMock{

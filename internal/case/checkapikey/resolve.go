@@ -38,19 +38,19 @@ func Resolve(ctx context.Context, env Env, action string) (*db.ApiKey, error) {
 	hashedValue := hex.EncodeToString(hash[:])
 
 	apiKey, err := env.ApiKeyByValue(ctx, hashedValue)
-	if err != nil {
-		if db.IsNoFound(err) {
-			// Backward compatibility: try plain text (old API keys)
-			apiKey, err = env.ApiKeyByValue(ctx, plainKey)
-			if err != nil {
-				if db.IsNoFound(err) {
-					return nil, ErrInvalidKey
-				}
+	if err != nil && !db.IsNoFound(err) {
+		return nil, fmt.Errorf("failed to resolve API key: %w", err)
+	}
 
-				return nil, fmt.Errorf("failed to resolve API key: %w", err)
-			}
-		} else {
+	// Backward compatibility: try plain text (old API keys) if hashed not found
+	if db.IsNoFound(err) {
+		apiKey, err = env.ApiKeyByValue(ctx, plainKey)
+		if err != nil && !db.IsNoFound(err) {
 			return nil, fmt.Errorf("failed to resolve API key: %w", err)
+		}
+
+		if db.IsNoFound(err) {
+			return nil, ErrInvalidKey
 		}
 	}
 

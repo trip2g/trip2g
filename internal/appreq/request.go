@@ -24,6 +24,8 @@ type Request struct {
 	Env interface{}
 	Req *fasthttp.RequestCtx
 
+	Path string
+
 	TokenManager *usertoken.Manager
 
 	token *usertoken.Data
