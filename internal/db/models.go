@@ -133,6 +133,7 @@ type ConfigVersion struct {
 	ShowDraftVersions bool      `json:"show_draft_versions"`
 	DefaultLayout     string    `json:"default_layout"`
 	Timezone          string    `json:"timezone"`
+	RobotsTxt         string    `json:"robots_txt"`
 }
 
 type CronJob struct {

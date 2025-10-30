@@ -490,6 +490,7 @@ type CreateConfigVersionInput struct {
 	ShowDraftVersions bool   `json:"showDraftVersions"`
 	DefaultLayout     string `json:"defaultLayout"`
 	Timezone          string `json:"timezone"`
+	RobotsTxt         string `json:"robotsTxt"`
 }
 
 type CreateConfigVersionPayload struct {

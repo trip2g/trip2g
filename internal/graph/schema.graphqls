@@ -607,6 +607,7 @@ type AdminConfigVersion @goModel(model: "trip2g/internal/db.ConfigVersion") {
 	showDraftVersions: Boolean!
 	defaultLayout: String!
   timezone: String!
+  robotsTxt: String!
 }
 
 type AdminConfigVersionsConnection {
@@ -1776,6 +1777,7 @@ input CreateConfigVersionInput {
   showDraftVersions: Boolean!
   defaultLayout: String!
   timezone: String!
+  robotsTxt: String!
 }
 
 type CreateConfigVersionPayload {

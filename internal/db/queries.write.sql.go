@@ -640,9 +640,9 @@ func (q *WriteQueries) InsertBoostyTierSubgraph(ctx context.Context, arg InsertB
 }
 
 const insertConfigVersion = `-- name: InsertConfigVersion :one
-insert into config_versions (created_by, show_draft_versions, default_layout, timezone)
-values (?, ?, ?, ?)
-returning id, created_at, created_by, show_draft_versions, default_layout, timezone
+insert into config_versions (created_by, show_draft_versions, default_layout, timezone, robots_txt)
+values (?, ?, ?, ?, ?)
+returning id, created_at, created_by, show_draft_versions, default_layout, timezone, robots_txt
 `
 
 type InsertConfigVersionParams struct {
@@ -650,6 +650,7 @@ type InsertConfigVersionParams struct {
 	ShowDraftVersions bool   `json:"show_draft_versions"`
 	DefaultLayout     string `json:"default_layout"`
 	Timezone          string `json:"timezone"`
+	RobotsTxt         string `json:"robots_txt"`
 }
 
 func (q *WriteQueries) InsertConfigVersion(ctx context.Context, arg InsertConfigVersionParams) (ConfigVersion, error) {
@@ -658,6 +659,7 @@ func (q *WriteQueries) InsertConfigVersion(ctx context.Context, arg InsertConfig
 		arg.ShowDraftVersions,
 		arg.DefaultLayout,
 		arg.Timezone,
+		arg.RobotsTxt,
 	)
 	var i ConfigVersion
 	err := row.Scan(
@@ -667,6 +669,7 @@ func (q *WriteQueries) InsertConfigVersion(ctx context.Context, arg InsertConfig
 		&i.ShowDraftVersions,
 		&i.DefaultLayout,
 		&i.Timezone,
+		&i.RobotsTxt,
 	)
 	return i, err
 }
@@ -2215,6 +2218,34 @@ type UpdateTelegramPublishNoteAsPublishedParams struct {
 
 func (q *WriteQueries) UpdateTelegramPublishNoteAsPublished(ctx context.Context, arg UpdateTelegramPublishNoteAsPublishedParams) error {
 	_, err := q.db.ExecContext(ctx, updateTelegramPublishNoteAsPublished, arg.PublishedVersionID, arg.NotePathID)
+	return err
+}
+
+const updateTelegramPublishSentMessageContent = `-- name: UpdateTelegramPublishSentMessageContent :exec
+update telegram_publish_sent_messages
+   set content_hash = ?
+     , content = ?
+ where note_path_id = ?
+   and chat_id = ?
+   and message_id = ?
+`
+
+type UpdateTelegramPublishSentMessageContentParams struct {
+	ContentHash string `json:"content_hash"`
+	Content     string `json:"content"`
+	NotePathID  int64  `json:"note_path_id"`
+	ChatID      int64  `json:"chat_id"`
+	MessageID   int64  `json:"message_id"`
+}
+
+func (q *WriteQueries) UpdateTelegramPublishSentMessageContent(ctx context.Context, arg UpdateTelegramPublishSentMessageContentParams) error {
+	_, err := q.db.ExecContext(ctx, updateTelegramPublishSentMessageContent,
+		arg.ContentHash,
+		arg.Content,
+		arg.NotePathID,
+		arg.ChatID,
+		arg.MessageID,
+	)
 	return err
 }
 

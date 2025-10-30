@@ -456,7 +456,7 @@ CREATE TABLE config_versions (
   created_by integer not null references admins(user_id) on delete restrict,
   show_draft_versions boolean not null default false,
   default_layout text not null default ''
-, timezone text not null default 'UTC');
+, timezone text not null default 'UTC', robots_txt text not null default 'open');
 CREATE TABLE telegram_publish_tags (
   id integer primary key autoincrement,
   created_at datetime not null default current_timestamp,
@@ -593,4 +593,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251029103550'),
   ('20251029150445'),
   ('20251030012221'),
-  ('20251030151751');
+  ('20251030151751'),
+  ('20251030152642');

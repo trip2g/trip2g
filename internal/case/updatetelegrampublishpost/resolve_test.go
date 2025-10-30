@@ -107,6 +107,12 @@ func TestResolve(t *testing.T) {
 
 						return nil
 					},
+					UpdateTelegramPublishSentMessageContentFunc: func(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error {
+						require.Contains(t, []int64{1, 2}, arg.ChatID)
+						require.Equal(t, "Updated test note content", arg.Content)
+						require.NotEmpty(t, arg.ContentHash)
+						return nil
+					},
 				}
 			},
 			wantErr: false,
@@ -159,6 +165,12 @@ func TestResolve(t *testing.T) {
 						require.Equal(t, "HTML", editMsg.ParseMode)
 						require.Contains(t, editMsg.Caption, "Updated test note content")
 
+						return nil
+					},
+					UpdateTelegramPublishSentMessageContentFunc: func(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error {
+						require.Equal(t, int64(1), arg.ChatID)
+						require.Equal(t, "Updated test note content", arg.Content)
+						require.NotEmpty(t, arg.ContentHash)
 						return nil
 					},
 				}

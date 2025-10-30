@@ -244,6 +244,7 @@ type ComplexityRoot struct {
 		CreatedBy         func(childComplexity int) int
 		DefaultLayout     func(childComplexity int) int
 		ID                func(childComplexity int) int
+		RobotsTxt         func(childComplexity int) int
 		ShowDraftVersions func(childComplexity int) int
 		Timezone          func(childComplexity int) int
 	}
@@ -2042,6 +2043,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminConfigVersion.ID(childComplexity), true
+
+	case "AdminConfigVersion.robotsTxt":
+		if e.complexity.AdminConfigVersion.RobotsTxt == nil {
+			break
+		}
+
+		return e.complexity.AdminConfigVersion.RobotsTxt(childComplexity), true
 
 	case "AdminConfigVersion.showDraftVersions":
 		if e.complexity.AdminConfigVersion.ShowDraftVersions == nil {
@@ -10900,6 +10908,50 @@ func (ec *executionContext) fieldContext_AdminConfigVersion_timezone(_ context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminConfigVersion_robotsTxt(ctx context.Context, field graphql.CollectedField, obj *db.ConfigVersion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AdminConfigVersion_robotsTxt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RobotsTxt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AdminConfigVersion_robotsTxt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminConfigVersion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminConfigVersionsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigVersionsConnection) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_AdminConfigVersionsConnection_nodes(ctx, field)
 	if err != nil {
@@ -10951,6 +11003,8 @@ func (ec *executionContext) fieldContext_AdminConfigVersionsConnection_nodes(_ c
 				return ec.fieldContext_AdminConfigVersion_defaultLayout(ctx, field)
 			case "timezone":
 				return ec.fieldContext_AdminConfigVersion_timezone(ctx, field)
+			case "robotsTxt":
+				return ec.fieldContext_AdminConfigVersion_robotsTxt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminConfigVersion", field.Name)
 		},
@@ -20370,6 +20424,8 @@ func (ec *executionContext) fieldContext_AdminQuery_latestConfig(_ context.Conte
 				return ec.fieldContext_AdminConfigVersion_defaultLayout(ctx, field)
 			case "timezone":
 				return ec.fieldContext_AdminConfigVersion_timezone(ctx, field)
+			case "robotsTxt":
+				return ec.fieldContext_AdminConfigVersion_robotsTxt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminConfigVersion", field.Name)
 		},
@@ -26803,6 +26859,8 @@ func (ec *executionContext) fieldContext_CreateConfigVersionPayload_configVersio
 				return ec.fieldContext_AdminConfigVersion_defaultLayout(ctx, field)
 			case "timezone":
 				return ec.fieldContext_AdminConfigVersion_timezone(ctx, field)
+			case "robotsTxt":
+				return ec.fieldContext_AdminConfigVersion_robotsTxt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminConfigVersion", field.Name)
 		},
@@ -38242,7 +38300,7 @@ func (ec *executionContext) unmarshalInputCreateConfigVersionInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"showDraftVersions", "defaultLayout", "timezone"}
+	fieldsInOrder := [...]string{"showDraftVersions", "defaultLayout", "timezone", "robotsTxt"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -38270,6 +38328,13 @@ func (ec *executionContext) unmarshalInputCreateConfigVersionInput(ctx context.C
 				return it, err
 			}
 			it.Timezone = data
+		case "robotsTxt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("robotsTxt"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RobotsTxt = data
 		}
 	}
 
@@ -43300,6 +43365,11 @@ func (ec *executionContext) _AdminConfigVersion(ctx context.Context, sel ast.Sel
 			}
 		case "timezone":
 			out.Values[i] = ec._AdminConfigVersion_timezone(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "robotsTxt":
+			out.Values[i] = ec._AdminConfigVersion_robotsTxt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

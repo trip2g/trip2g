@@ -28,6 +28,7 @@ func assertConfigVersionPayload(t *testing.T, want, got model.CreateConfigVersio
 			require.Equal(t, wantPayload.ConfigVersion.ShowDraftVersions, payload.ConfigVersion.ShowDraftVersions)
 			require.Equal(t, wantPayload.ConfigVersion.DefaultLayout, payload.ConfigVersion.DefaultLayout)
 			require.Equal(t, wantPayload.ConfigVersion.Timezone, payload.ConfigVersion.Timezone)
+			require.Equal(t, wantPayload.ConfigVersion.RobotsTxt, payload.ConfigVersion.RobotsTxt)
 			return
 		}
 	}
@@ -67,6 +68,7 @@ func TestResolve(t *testing.T) {
 						ShowDraftVersions: params.ShowDraftVersions,
 						DefaultLayout:     params.DefaultLayout,
 						Timezone:          params.Timezone,
+						RobotsTxt:         params.RobotsTxt,
 						CreatedAt:         time.Now(),
 					}, nil
 				},
@@ -77,6 +79,7 @@ func TestResolve(t *testing.T) {
 					ShowDraftVersions: true,
 					DefaultLayout:     "grid",
 					Timezone:          "America/New_York",
+					RobotsTxt:         "open",
 				},
 			},
 			want: &model.CreateConfigVersionPayload{
@@ -86,6 +89,7 @@ func TestResolve(t *testing.T) {
 					ShowDraftVersions: true,
 					DefaultLayout:     "grid",
 					Timezone:          "America/New_York",
+					RobotsTxt:         "open",
 					CreatedAt:         time.Time{}, // will be set by test
 				},
 			},
@@ -115,6 +119,7 @@ func TestResolve(t *testing.T) {
 						ShowDraftVersions: params.ShowDraftVersions,
 						DefaultLayout:     params.DefaultLayout,
 						Timezone:          params.Timezone,
+						RobotsTxt:         params.RobotsTxt,
 						CreatedAt:         time.Now(),
 					}, nil
 				},
@@ -125,6 +130,7 @@ func TestResolve(t *testing.T) {
 					ShowDraftVersions: false,
 					DefaultLayout:     "list",
 					Timezone:          "UTC",
+					RobotsTxt:         "open",
 				},
 			},
 			want: &model.CreateConfigVersionPayload{
@@ -134,6 +140,7 @@ func TestResolve(t *testing.T) {
 					ShowDraftVersions: false,
 					DefaultLayout:     "list",
 					Timezone:          "UTC",
+					RobotsTxt:         "open",
 					CreatedAt:         time.Time{},
 				},
 			},
@@ -158,6 +165,7 @@ func TestResolve(t *testing.T) {
 					ShowDraftVersions: true,
 					DefaultLayout:     "grid",
 					Timezone:          "",
+					RobotsTxt:         "open",
 				},
 			},
 			want: &model.ErrorPayload{
@@ -184,6 +192,7 @@ func TestResolve(t *testing.T) {
 						ShowDraftVersions: params.ShowDraftVersions,
 						DefaultLayout:     params.DefaultLayout,
 						Timezone:          params.Timezone,
+						RobotsTxt:         params.RobotsTxt,
 						CreatedAt:         time.Now(),
 					}, nil
 				},
@@ -194,6 +203,7 @@ func TestResolve(t *testing.T) {
 					ShowDraftVersions: true,
 					DefaultLayout:     "",
 					Timezone:          "UTC",
+					RobotsTxt:         "open",
 				},
 			},
 			want: &model.CreateConfigVersionPayload{
@@ -203,6 +213,7 @@ func TestResolve(t *testing.T) {
 					ShowDraftVersions: true,
 					DefaultLayout:     "",
 					Timezone:          "UTC",
+					RobotsTxt:         "open",
 					CreatedAt:         time.Time{},
 				},
 			},
@@ -227,6 +238,7 @@ func TestResolve(t *testing.T) {
 					ShowDraftVersions: true,
 					DefaultLayout:     "grid",
 					Timezone:          "Invalid/Timezone",
+					RobotsTxt:         "open",
 				},
 			},
 			want: &model.ErrorPayload{
@@ -249,6 +261,7 @@ func TestResolve(t *testing.T) {
 					ShowDraftVersions: true,
 					DefaultLayout:     "",
 					Timezone:          "",
+					RobotsTxt:         "open",
 				},
 			},
 			want: &model.ErrorPayload{
@@ -275,6 +288,7 @@ func TestResolve(t *testing.T) {
 					ShowDraftVersions: true,
 					DefaultLayout:     "grid",
 					Timezone:          "UTC",
+					RobotsTxt:         "open",
 				},
 			},
 			want:    nil,
@@ -300,6 +314,7 @@ func TestResolve(t *testing.T) {
 					ShowDraftVersions: true,
 					DefaultLayout:     "grid",
 					Timezone:          "UTC",
+					RobotsTxt:         "open",
 				},
 			},
 			want:    nil,

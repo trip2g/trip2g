@@ -26,6 +26,7 @@ type Payload = model.CreateConfigVersionOrErrorPayload
 func validateRequest(r *Input) *model.ErrorPayload {
 	return model.NewOzzoError(validation.ValidateStruct(r,
 		validation.Field(&r.Timezone, validation.Required, validation.By(validateTimezone)),
+		validation.Field(&r.RobotsTxt, validation.Required),
 	))
 }
 
@@ -59,6 +60,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		ShowDraftVersions: input.ShowDraftVersions,
 		DefaultLayout:     input.DefaultLayout,
 		Timezone:          input.Timezone,
+		RobotsTxt:         input.RobotsTxt,
 	}
 
 	createdConfigVersion, err := env.InsertConfigVersion(ctx, params)

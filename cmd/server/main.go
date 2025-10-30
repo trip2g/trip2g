@@ -1470,6 +1470,34 @@ func (a *app) handlePurchaseTokens(ctx *fasthttp.RequestCtx) bool {
 	return false
 }
 
+const robotsTxtContentOpened = `User-agent: *
+Disallow:`
+
+const robotsTxtContentClosed = `User-agent: *
+Disallow: /`
+
+func (a *app) handleRobotsTxt(req *appreq.Request) bool {
+	if req.Path == "/robots.txt" {
+		req.Req.SetContentType("text/plain")
+		req.Req.SetStatusCode(http.StatusOK)
+
+		txt := a.LatestConfig().RobotsTxt
+
+		switch txt {
+		case "closed":
+			req.Req.SetBodyString(robotsTxtContentClosed)
+		case "open":
+			req.Req.SetBodyString(robotsTxtContentOpened)
+		default:
+			req.Req.SetBodyString(txt)
+		}
+
+		return true
+	}
+
+	return false
+}
+
 // Middleware should return true if the request is fully handled.
 type Middleware func(req *appreq.Request) bool
 
@@ -1477,6 +1505,7 @@ func (a *app) prepareMiddlewares() []Middleware {
 	fsHandler := a.assetsFS.NewRequestHandler()
 
 	return []Middleware{
+		a.handleRobotsTxt,
 		func(req *appreq.Request) bool {
 			return a.handleCors(req.Req)
 		},

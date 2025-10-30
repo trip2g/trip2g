@@ -17,6 +17,7 @@ import (
 type Env interface {
 	// Database methods for getting sent messages
 	ListTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error)
+	UpdateTelegramPublishSentMessageContent(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error
 
 	// Telegram bot methods for editing messages
 	SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
@@ -101,11 +102,38 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 
 		if sendErr != nil {
 			if strings.Contains(sendErr.Error(), "are exactly the same as a current content") {
-				// TODO: update sent message content hash in DB
+				// Content is the same, update the hash in DB to avoid retrying
+				updateParams := db.UpdateTelegramPublishSentMessageContentParams{
+					ContentHash: currentHash,
+					Content:     post.Content,
+					NotePathID:  notePathID,
+					ChatID:      sentMsg.ChatID,
+					MessageID:   sentMsg.MessageID,
+				}
+
+				updateErr := env.UpdateTelegramPublishSentMessageContent(ctx, updateParams)
+				if updateErr != nil {
+					return fmt.Errorf("failed to update sent message content in DB for chat %d: %w", sentMsg.ChatID, updateErr)
+				}
+
 				continue
 			}
 
 			return fmt.Errorf("failed to edit telegram message in chat %d: %w", sentMsg.ChatID, sendErr)
+		}
+
+		// Update the content and hash in the database
+		updateParams := db.UpdateTelegramPublishSentMessageContentParams{
+			ContentHash: currentHash,
+			Content:     post.Content,
+			NotePathID:  notePathID,
+			ChatID:      sentMsg.ChatID,
+			MessageID:   sentMsg.MessageID,
+		}
+
+		updateErr := env.UpdateTelegramPublishSentMessageContent(ctx, updateParams)
+		if updateErr != nil {
+			return fmt.Errorf("failed to update sent message content in DB for chat %d: %w", sentMsg.ChatID, updateErr)
 		}
 	}
 

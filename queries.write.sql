@@ -634,8 +634,8 @@ update notion_integrations
  where id = ?;
 
 -- name: InsertConfigVersion :one
-insert into config_versions (created_by, show_draft_versions, default_layout, timezone)
-values (?, ?, ?, ?)
+insert into config_versions (created_by, show_draft_versions, default_layout, timezone, robots_txt)
+values (?, ?, ?, ?, ?)
 returning *;
 
 -- name: InsertTelegramPublishTags :exec
@@ -688,4 +688,12 @@ update telegram_publish_notes
 
 -- name: DeleteTelegramPublishSentMessagesByNotePathID :exec
 delete from telegram_publish_sent_messages where note_path_id = ?;
+
+-- name: UpdateTelegramPublishSentMessageContent :exec
+update telegram_publish_sent_messages
+   set content_hash = ?
+     , content = ?
+ where note_path_id = ?
+   and chat_id = ?
+   and message_id = ?;
 

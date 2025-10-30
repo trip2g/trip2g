@@ -1236,7 +1236,7 @@ func (q *Queries) GetHTMLInjection(ctx context.Context, id int64) (HtmlInjection
 }
 
 const getLatestConfig = `-- name: GetLatestConfig :one
-select id, created_at, created_by, show_draft_versions, default_layout, timezone
+select id, created_at, created_by, show_draft_versions, default_layout, timezone, robots_txt
   from config_versions
  order by id desc
  limit 1
@@ -1252,6 +1252,7 @@ func (q *Queries) GetLatestConfig(ctx context.Context) (ConfigVersion, error) {
 		&i.ShowDraftVersions,
 		&i.DefaultLayout,
 		&i.Timezone,
+		&i.RobotsTxt,
 	)
 	return i, err
 }
@@ -2218,7 +2219,7 @@ func (q *Queries) ListAllAdmins(ctx context.Context) ([]Admin, error) {
 }
 
 const listAllConfigVersions = `-- name: ListAllConfigVersions :many
-select id, created_at, created_by, show_draft_versions, default_layout, timezone
+select id, created_at, created_by, show_draft_versions, default_layout, timezone, robots_txt
   from config_versions
  order by id desc
  limit 50
@@ -2240,6 +2241,7 @@ func (q *Queries) ListAllConfigVersions(ctx context.Context) ([]ConfigVersion, e
 			&i.ShowDraftVersions,
 			&i.DefaultLayout,
 			&i.Timezone,
+			&i.RobotsTxt,
 		); err != nil {
 			return nil, err
 		}
@@ -3136,7 +3138,7 @@ func (q *Queries) ListTelegramPublishSentMessagesByChatID(ctx context.Context, c
 }
 
 const listTelegramPublishSentMessagesByNotePathID = `-- name: ListTelegramPublishSentMessagesByNotePathID :many
-select tsm.chat_id, tsm.message_id, tsm.content_hash, c.telegram_id
+select tsm.chat_id, tsm.message_id, tsm.content_hash, tsm.content, c.telegram_id
   from telegram_publish_sent_messages tsm
   join tg_bot_chats c on tsm.chat_id = c.id
  where tsm.note_path_id = ?
@@ -3147,6 +3149,7 @@ type ListTelegramPublishSentMessagesByNotePathIDRow struct {
 	ChatID      int64  `json:"chat_id"`
 	MessageID   int64  `json:"message_id"`
 	ContentHash string `json:"content_hash"`
+	Content     string `json:"content"`
 	TelegramID  int64  `json:"telegram_id"`
 }
 
@@ -3163,6 +3166,7 @@ func (q *Queries) ListTelegramPublishSentMessagesByNotePathID(ctx context.Contex
 			&i.ChatID,
 			&i.MessageID,
 			&i.ContentHash,
+			&i.Content,
 			&i.TelegramID,
 		); err != nil {
 			return nil, err
