@@ -94,7 +94,7 @@ type NoteView struct {
 
 	Description *string // meta description for SEO
 
-	InLinks map[string]struct{}
+	InLinks map[string]struct{} // permlinks of notes linking to this note
 	RawMeta map[string]interface{}
 
 	ResolvedLinks map[string]string // local link to absolute link mapping

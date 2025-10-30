@@ -179,7 +179,7 @@ func TestResolve(t *testing.T) {
 			errMsg:  "note view not found for path ID 999",
 		},
 		{
-			name:   "error - no sent messages found",
+			name:   "success - no sent messages (nothing to update)",
 			noteID: 123,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
@@ -191,8 +191,7 @@ func TestResolve(t *testing.T) {
 					},
 				}
 			},
-			wantErr: true,
-			errMsg:  "no sent messages found for note path ID 123",
+			wantErr: false,
 		},
 		{
 			name:   "error - failed to get sent messages",

@@ -5,3 +5,5 @@ telegram_publish_tags:
 ---
 Post 6.
 v10 [[tg_post5|тут!]]
+
+[[tg_post7]] Пока еще не опубликован!

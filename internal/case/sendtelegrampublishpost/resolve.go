@@ -31,10 +31,15 @@ type Env interface {
 
 	// Content access methods
 	LatestNoteViews() *model.NoteViews
+
+	// Update linked posts
+	UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error
 }
 
 func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error {
-	noteView := env.LatestNoteViews().GetByPathID(notePathID)
+	nvs := env.LatestNoteViews()
+
+	noteView := nvs.GetByPathID(notePathID)
 	if noteView == nil {
 		return fmt.Errorf("note view not found for path ID %d", notePathID)
 	}
@@ -136,6 +141,16 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 		err = env.UpdateTelegramPublishNoteAsPublished(ctx, updateParams)
 		if err != nil {
 			return fmt.Errorf("failed to mark note as published: %w", err)
+		}
+	}
+
+	for inLink := range noteView.InLinks {
+		inNote, ok := nvs.Map[inLink]
+		if ok && inNote.IsTelegramPublishPost() {
+			err = env.UpdateTelegramPublishPost(ctx, inNote.PathID)
+			if err != nil {
+				return fmt.Errorf("failed to update linked telegram publish post for note path ID %d: %w", inNote.PathID, err)
+			}
 		}
 	}
 

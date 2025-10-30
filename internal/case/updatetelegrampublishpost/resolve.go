@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
 
@@ -39,7 +40,7 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 	}
 
 	if len(sentMessages) == 0 {
-		return fmt.Errorf("no sent messages found for note path ID %d", notePathID)
+		return nil
 	}
 
 	// Get first image URL if exists
@@ -81,23 +82,30 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 			continue
 		}
 
+		var sendErr error
+
 		// Edit the message
 		if firstImageURL != nil {
 			// Edit caption for photo message
 			editMsg := tgbotapi.NewEditMessageCaption(sentMsg.TelegramID, int(sentMsg.MessageID), post.Content)
 			editMsg.ParseMode = "HTML"
 
-			convertErr = env.SendTelegramRequest(ctx, sentMsg.ChatID, editMsg)
+			sendErr = env.SendTelegramRequest(ctx, sentMsg.ChatID, editMsg)
 		} else {
 			// Edit text for text message
 			editMsg := tgbotapi.NewEditMessageText(sentMsg.TelegramID, int(sentMsg.MessageID), post.Content)
 			editMsg.ParseMode = "HTML"
 
-			convertErr = env.SendTelegramRequest(ctx, sentMsg.ChatID, editMsg)
+			sendErr = env.SendTelegramRequest(ctx, sentMsg.ChatID, editMsg)
 		}
 
-		if convertErr != nil {
-			return fmt.Errorf("failed to edit telegram message in chat %d: %w", sentMsg.ChatID, convertErr)
+		if sendErr != nil {
+			if strings.Contains(sendErr.Error(), "are exactly the same as a current content") {
+				// TODO: update sent message content hash in DB
+				continue
+			}
+
+			return fmt.Errorf("failed to edit telegram message in chat %d: %w", sentMsg.ChatID, sendErr)
 		}
 	}
 
