@@ -2,6 +2,12 @@
 export PATH="./scripts:$PATH:$(go env GOPATH)/bin"
 ```
 
+## Telegram Errors
+
+```
+sendscheduledtelegrampublishposts: failed to SendTelegramPublishPostWithTx error="failed to send telegram message to chat 2: failed to send Telegram message: Too Many Requests: retry after 15" note_path_id=98
+```
+
 ## Conversations
 
 ```sql

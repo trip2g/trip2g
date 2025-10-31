@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"trip2g/internal/db"
+	"trip2g/internal/image"
 	"trip2g/internal/logger"
 	"trip2g/internal/markdownv2"
 	"trip2g/internal/model"
@@ -41,9 +42,12 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	allowExternalLinks := true
 
 	publicURL := env.PublicURL()
+	post := model.TelegramPost{}
 
 	tr := markdownv2.HTMLConverter{}
 	tr.SetLinkResolver(func(target string) (string, error) {
+		post.LinkCount++
+
 		linkedNV, ok := nvs.Map[target]
 		if !ok {
 			return publicURL, nil
@@ -57,6 +61,8 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 					logger.Warn("public URL is not set, cannot generate external link")
 					return "", nil
 				}
+
+				post.ExternalLinkCount++
 
 				externalURL := publicURL + linkedNV.Permalink
 				return externalURL, nil
@@ -74,10 +80,32 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 
 	res := tr.Process(source.NoteView)
 
-	return &model.TelegramPost{
-		Content:  res.Content,
-		Warnings: res.Warnings,
-	}, nil
+	post.Content = res.Content
+	post.Warnings = res.Warnings
+
+	firstImageURL := getFirstImageURL(source.NoteView)
+	if firstImageURL != nil {
+		post.Images = append(post.Images, *firstImageURL)
+	}
+
+	return &post, nil
+}
+
+func getFirstImageURL(noteView *model.NoteView) *string {
+	for path := range noteView.Assets {
+		if !image.IsRightExtension(path) {
+			continue
+		}
+
+		_, ok := noteView.AssetReplaces[path]
+		if !ok {
+			continue
+		}
+
+		return &noteView.AssetReplaces[path].URL
+	}
+
+	return nil
 }
 
 /*

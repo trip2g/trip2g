@@ -1644,11 +1644,11 @@ func (a *app) startServer() {
 	}
 
 	s := &fasthttp.Server{
-		Handler: fasthttp.TimeoutHandler(handler, time.Second*30, "timeout"),
+		Handler: fasthttp.TimeoutHandler(handler, time.Second*60, "timeout"),
 	}
 
-	s.ReadTimeout = 30 * time.Second
-	s.WriteTimeout = 30 * time.Second
+	s.ReadTimeout = 60 * time.Second
+	s.WriteTimeout = 60 * time.Second
 	s.IdleTimeout = 120 * time.Second
 
 	runServer := func() {
