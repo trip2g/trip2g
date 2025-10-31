@@ -649,7 +649,12 @@ func (a *app) WithTransaction(ctx context.Context, fn func(*app) (bool, error)) 
 		return fmt.Errorf("failed to BeginTx: %w", err)
 	}
 
-	defer tx.Rollback()
+	defer func() {
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil && !errors.Is(rollbackErr, sql.ErrTxDone) {
+			a.log.Error("failed to rollback transaction", "error", rollbackErr)
+		}
+	}()
 
 	queries := db.NewWriteQueries(db.WithLogger(tx, logger.WithPrefix(a.log, "tx")))
 

@@ -217,7 +217,7 @@ func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, asse
 
 	path := a.NoteAssetPath(asset)
 
-	_, err := a.minioClient.PutObject(context.Background(), a.config.Bucket, path, reader, asset.Size, options)
+	_, err := a.minioClient.PutObject(ctx, a.config.Bucket, path, reader, asset.Size, options)
 	if err != nil {
 		return fmt.Errorf("failed to put object: %w", err)
 	}
@@ -237,7 +237,7 @@ func (a *FileStorage) PutPrivateObject(ctx context.Context, reader io.Reader, ob
 		DisableMultipart: false,
 	}
 
-	_, err := a.minioClient.PutObject(context.Background(), a.config.Bucket, objectID, reader, -1, options)
+	_, err := a.minioClient.PutObject(ctx, a.config.Bucket, objectID, reader, -1, options)
 	if err != nil {
 		return fmt.Errorf("failed to put private object: %w", err)
 	}

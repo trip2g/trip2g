@@ -140,12 +140,16 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 		}
 	}
 
+	return updateLinkedPosts(ctx, env, nvs, noteView)
+}
+
+func updateLinkedPosts(ctx context.Context, env Env, nvs *model.NoteViews, noteView *model.NoteView) error {
 	for inLink := range noteView.InLinks {
 		inNote, ok := nvs.Map[inLink]
 		if ok && inNote.IsTelegramPublishPost() {
-			err = env.UpdateTelegramPublishPost(ctx, inNote.PathID)
+			err := env.UpdateTelegramPublishPost(ctx, inNote.PathID)
 			if err != nil {
-				return fmt.Errorf("failed to update linked telegram publish post for note path ID %d: %w", inNote.PathID, err)
+				return fmt.Errorf("failed to UpdateTelegramPublishPost %d: %w", inNote.PathID, err)
 			}
 		}
 	}

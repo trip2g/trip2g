@@ -75,7 +75,7 @@ func TestWithTransaction(t *testing.T) {
 	err = a.ReleaseTxEnvInRequest(fctx, false)
 	require.NoError(t, err)
 
-	selectedUser, err = a.UserByID(fctx, user.ID)
+	_, err = a.UserByID(fctx, user.ID)
 	require.ErrorIs(t, err, sql.ErrNoRows)
 
 	// test commit

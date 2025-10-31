@@ -32,15 +32,15 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 	res := Result{}
 
 	for _, id := range ids {
-		err := env.SendTelegramPublishPostWithTx(ctx, id, false)
+		sendErr := env.SendTelegramPublishPostWithTx(ctx, id, false)
 
 		res.Posts = append(res.Posts, ResultPost{
 			NotePathID: id,
-			Error:      err,
+			Error:      sendErr,
 		})
 
-		if err != nil {
-			logger.Error("failed to SendTelegramPublishPostWithTx", "note_path_id", id, "error", err)
+		if sendErr != nil {
+			logger.Error("failed to SendTelegramPublishPostWithTx", "note_path_id", id, "error", sendErr)
 		}
 	}
 
