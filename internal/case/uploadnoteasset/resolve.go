@@ -98,7 +98,6 @@ func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName st
 		AbsolutePath: input.AbsolutePath,
 		FileName:     fileName,
 		Sha256Hash:   input.Sha256Hash,
-		Size:         input.File.Size,
 	}
 
 	err := env.PutAssetObject(ctx, teeReader, tempAsset)

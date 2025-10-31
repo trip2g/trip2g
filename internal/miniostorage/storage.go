@@ -17,6 +17,7 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/valyala/fasthttp"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -118,6 +119,31 @@ func New(ctx context.Context, config Config) (*FileStorage, error) {
 	return &s, nil
 }
 
+// ctx creates a safe context for MinIO operations.
+//
+// WHY THIS IS NEEDED:
+// When using fasthttpadaptor to convert fasthttp requests to net/http (for GraphQL),
+// the fasthttp.RequestCtx is passed directly as context.Context to the net/http handler.
+// MinIO SDK uses net/http client which creates persistent HTTP connections with goroutines.
+// These goroutines may outlive the fasthttp request. When fasthttp finishes the request,
+// it calls RequestCtx.Reset() which causes a DATA RACE:
+//   - fasthttp goroutine: writes to RequestCtx.userData (in Reset())
+//   - MinIO HTTP goroutine: reads from RequestCtx.userData (for cancellation)
+//
+// SOLUTION:
+// Detect fasthttp.RequestCtx and replace it with an independent context.Background()
+// with timeout, so MinIO HTTP connections don't hold references to the recycled RequestCtx.
+func (a *FileStorage) ctx(ctx context.Context) (context.Context, context.CancelFunc) {
+	// Check if this is a fasthttp context
+	if _, ok := ctx.(*fasthttp.RequestCtx); ok {
+		// Create independent context with timeout to avoid data race
+		return context.WithTimeout(context.Background(), 60*time.Second)
+	}
+
+	// For non-fasthttp contexts, use as-is but add timeout for safety
+	return context.WithTimeout(ctx, 60*time.Second)
+}
+
 func (a *FileStorage) NoteAssetPath(asset db.NoteAsset) string {
 	return fmt.Sprintf("%sna/%d/%s", a.config.Prefix, asset.ID, asset.FileName)
 }
@@ -140,10 +166,13 @@ func (a *FileStorage) OnURLExpiring(callback func()) {
 }
 
 func (a *FileStorage) NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error) {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
 	objectID := a.NoteAssetPath(asset)
 
 	stats, err := a.minioClient.StatObject(
-		ctx,
+		safeCtx,
 		a.config.Bucket,
 		objectID,
 		minio.StatObjectOptions{},
@@ -161,8 +190,11 @@ func (a *FileStorage) NoteAssetExists(ctx context.Context, asset db.NoteAsset) (
 }
 
 func (a *FileStorage) NoteAssetURL(ctx context.Context, asset db.NoteAsset) (string, error) {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
 	presignedURL, err := a.minioClient.PresignedGetObject(
-		ctx,
+		safeCtx,
 		a.config.Bucket,
 		a.NoteAssetPath(asset),
 		a.config.URLExpiresIn,
@@ -177,9 +209,12 @@ func (a *FileStorage) NoteAssetURL(ctx context.Context, asset db.NoteAsset) (str
 }
 
 func (a *FileStorage) DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
 	path := a.NoteAssetPath(asset)
 
-	err := a.minioClient.RemoveObject(ctx, a.config.Bucket, path, minio.RemoveObjectOptions{})
+	err := a.minioClient.RemoveObject(safeCtx, a.config.Bucket, path, minio.RemoveObjectOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to remove object: %w", err)
 	}
@@ -200,9 +235,12 @@ func detectContentType(fileName string) string {
 }
 
 func (a *FileStorage) GetAssetObject(ctx context.Context, asset db.NoteAsset) (io.ReadCloser, error) {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
 	objectID := a.NoteAssetPath(asset)
 
-	object, err := a.minioClient.GetObject(ctx, a.config.Bucket, objectID, minio.GetObjectOptions{})
+	object, err := a.minioClient.GetObject(safeCtx, a.config.Bucket, objectID, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get asset object: %w", err)
 	}
@@ -211,13 +249,16 @@ func (a *FileStorage) GetAssetObject(ctx context.Context, asset db.NoteAsset) (i
 }
 
 func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, asset db.NoteAsset) error {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
 	options := minio.PutObjectOptions{
 		ContentType: detectContentType(asset.FileName),
 	}
 
 	path := a.NoteAssetPath(asset)
 
-	_, err := a.minioClient.PutObject(ctx, a.config.Bucket, path, reader, asset.Size, options)
+	_, err := a.minioClient.PutObject(safeCtx, a.config.Bucket, path, reader, asset.Size, options)
 	if err != nil {
 		return fmt.Errorf("failed to put object: %w", err)
 	}
@@ -227,6 +268,9 @@ func (a *FileStorage) PutAssetObject(ctx context.Context, reader io.Reader, asse
 
 // PutPrivateObject uploads a private object that is not publicly accessible.
 func (a *FileStorage) PutPrivateObject(ctx context.Context, reader io.Reader, objectID string) error {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
 	objectID = a.config.Prefix + objectID
 
 	options := minio.PutObjectOptions{
@@ -237,7 +281,7 @@ func (a *FileStorage) PutPrivateObject(ctx context.Context, reader io.Reader, ob
 		DisableMultipart: false,
 	}
 
-	_, err := a.minioClient.PutObject(ctx, a.config.Bucket, objectID, reader, -1, options)
+	_, err := a.minioClient.PutObject(safeCtx, a.config.Bucket, objectID, reader, -1, options)
 	if err != nil {
 		return fmt.Errorf("failed to put private object: %w", err)
 	}
@@ -246,10 +290,13 @@ func (a *FileStorage) PutPrivateObject(ctx context.Context, reader io.Reader, ob
 }
 
 func (a *FileStorage) PrivateObjectExists(ctx context.Context, objectID string) (bool, error) {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
 	objectID = a.config.Prefix + objectID
 
 	stats, err := a.minioClient.StatObject(
-		ctx,
+		safeCtx,
 		a.config.Bucket,
 		objectID,
 		minio.StatObjectOptions{},
@@ -267,9 +314,12 @@ func (a *FileStorage) PrivateObjectExists(ctx context.Context, objectID string) 
 }
 
 func (a *FileStorage) GetPrivateObject(ctx context.Context, objectID string) (io.ReadCloser, error) {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
 	objectID = a.config.Prefix + objectID
 
-	object, err := a.minioClient.GetObject(ctx, a.config.Bucket, objectID, minio.GetObjectOptions{})
+	object, err := a.minioClient.GetObject(safeCtx, a.config.Bucket, objectID, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get private object: %w", err)
 	}
@@ -280,13 +330,16 @@ func (a *FileStorage) GetPrivateObject(ctx context.Context, objectID string) (io
 // PutLock creates a lock file atomically.
 // Returns error if lock already exists.
 func (a *FileStorage) PutLock(ctx context.Context, objectID string, ttl time.Duration) error {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
 	objectID = a.config.Prefix + objectID
 
 	// Check if lock exists and get its state
-	expired, ownedByUs, etag, err := a.isLockExpired(ctx, objectID, ttl)
+	expired, ownedByUs, etag, err := a.isLockExpired(safeCtx, objectID, ttl)
 	if err != nil {
 		// If we can't read the lock, assume it doesn't exist and try to create new one
-		return a.createNewLock(ctx, objectID, ttl, "")
+		return a.createNewLock(safeCtx, objectID, ttl, "")
 	}
 
 	if !expired && !ownedByUs {
@@ -296,16 +349,16 @@ func (a *FileStorage) PutLock(ctx context.Context, objectID string, ttl time.Dur
 
 	if expired && !ownedByUs {
 		// Lock exists but expired and owned by someone else - try to replace it
-		return a.createNewLock(ctx, objectID, ttl, etag)
+		return a.createNewLock(safeCtx, objectID, ttl, etag)
 	}
 
 	if ownedByUs {
 		// We own this lock - renew it using the current ETag
-		return a.renewLock(ctx, objectID, ttl, etag)
+		return a.renewLock(safeCtx, objectID, ttl, etag)
 	}
 
 	// This shouldn't happen, but fallback to creating new lock
-	return a.createNewLock(ctx, objectID, ttl, "")
+	return a.createNewLock(safeCtx, objectID, ttl, "")
 }
 
 // createNewLock creates a new lock, optionally replacing an existing one with the given ETag.
@@ -373,9 +426,12 @@ func (a *FileStorage) renewLock(ctx context.Context, objectID string, ttl time.D
 
 // RemoveLock removes the lock file.
 func (a *FileStorage) RemoveLock(ctx context.Context, objectID string) error {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
 	objectID = a.config.Prefix + objectID
 
-	err := a.minioClient.RemoveObject(ctx, a.config.Bucket, objectID, minio.RemoveObjectOptions{})
+	err := a.minioClient.RemoveObject(safeCtx, a.config.Bucket, objectID, minio.RemoveObjectOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to remove lock: %w", err)
 	}
