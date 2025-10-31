@@ -107,11 +107,6 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 			}
 		}
 
-		instantInt := int64(0)
-		if instant {
-			instantInt = 1
-		}
-
 		// Calculate content hash
 		// TODO: add a hash of media too
 		hash := sha256.Sum256([]byte(post.Content))
@@ -121,7 +116,7 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 			NotePathID:  notePathID,
 			ChatID:      chat.ID,
 			MessageID:   messageID,
-			Instant:     instantInt,
+			Instant:     instant,
 			ContentHash: contentHash,
 			Content:     post.Content,
 		}

@@ -110,7 +110,7 @@ func TestResolve(t *testing.T) {
 						require.Equal(t, int64(123), arg.NotePathID)
 						require.Contains(t, []int64{1, 2}, arg.ChatID)
 						require.Contains(t, []int64{101, 102}, arg.MessageID) // Expected message IDs
-						require.Equal(t, int64(0), arg.Instant)               // Regular posts are not instant
+						require.Equal(t, false, arg.Instant)                  // Regular posts are not instant
 						return nil
 					},
 					UpdateTelegramPublishNoteAsPublishedFunc: func(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error {
@@ -150,7 +150,7 @@ func TestResolve(t *testing.T) {
 					InsertTelegramPublishSentMessageFunc: func(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error {
 						require.Equal(t, int64(123), arg.NotePathID)
 						require.Contains(t, []int64{1, 2}, arg.ChatID)
-						require.Equal(t, int64(1), arg.Instant) // Instant posts have instant=1
+						require.Equal(t, true, arg.Instant) // Instant posts have instant=true
 						return nil
 					},
 					// But should not mark note as published

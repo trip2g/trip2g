@@ -643,7 +643,7 @@ func (a *app) CurrentTx() *sql.Tx {
 
 // WithTransaction runs the given function within a database transaction.
 // fn should return true to commit the transaction, false to rollback.
-func (a *app) WithTransaction(ctx context.Context, fn func(env *app) (bool, error)) error {
+func (a *app) WithTransaction[T any](ctx context.Context, fn func(T) (bool, error)) error {
 	tx, err := a.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to BeginTx: %w", err)

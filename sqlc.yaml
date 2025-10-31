@@ -15,6 +15,8 @@ sql:
             go_type: "string"
           - column: "offers.lifetime"
             go_type: "*trip2g/internal/model.Lifetime"
+          - column: "telegram_publish_sent_messages.instant"
+            go_type: "bool"
 
   - engine: "sqlite"
     queries: "queries.write.sql"

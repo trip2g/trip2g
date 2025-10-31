@@ -3,10 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"trip2g/internal/case/convertnoteviewtotgpost"
-	"trip2g/internal/case/sendtelegrampublishpost"
-	"trip2g/internal/case/updatetelegrampublishpost"
-	"trip2g/internal/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -109,18 +105,6 @@ func (a *app) UnbanTelegramChatMember(ctx context.Context, chatID, userID int64)
 	}
 
 	return nil
-}
-
-func (a *app) UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error {
-	return updatetelegrampublishpost.Resolve(ctx, a, notePathID)
-}
-
-func (a *app) SendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error {
-	return sendtelegrampublishpost.Resolve(ctx, a, notePathID, instant)
-}
-
-func (a *app) ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
-	return convertnoteviewtotgpost.Resolve(ctx, a, source)
 }
 
 func (a *app) BotStartLink(botID int64, param string) (string, error) {
