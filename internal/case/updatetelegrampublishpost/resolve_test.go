@@ -110,11 +110,11 @@ func TestResolve_Success_SkipUnchanged(t *testing.T) {
 	doc := parser.Parse(reader)
 
 	testNote := &model.NoteView{
-		Path:      "/test-note",
-		PathID:    123,
-		Content:   content,
-		InLinks:   map[string]struct{}{},
-		Assets:    map[string]struct{}{},
+		Path:    "/test-note",
+		PathID:  123,
+		Content: content,
+		InLinks: map[string]struct{}{},
+		Assets:  map[string]struct{}{},
 	}
 	testNote.SetAst(doc)
 
@@ -158,7 +158,7 @@ func TestResolve_Success_SkipUnchanged(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify EnqueueUpdateTelegramPost was NOT called
-	require.Len(t, env.EnqueueUpdateTelegramPostCalls(), 0)
+	require.Empty(t, env.EnqueueUpdateTelegramPostCalls())
 }
 
 func TestResolve_Error_NoteNotFound(t *testing.T) {
@@ -213,7 +213,7 @@ func TestResolve_Success_NoSentMessages(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify EnqueueUpdateTelegramPost was NOT called
-	require.Len(t, env.EnqueueUpdateTelegramPostCalls(), 0)
+	require.Empty(t, env.EnqueueUpdateTelegramPostCalls())
 }
 
 func TestResolve_Error_ListSentMessages(t *testing.T) {

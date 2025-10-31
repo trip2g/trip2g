@@ -74,9 +74,9 @@ func Resolve(ctx context.Context, env Env, params model.TelegramSendPostParams) 
 		for inLink := range noteView.InLinks {
 			inNote, ok := nvs.Map[inLink]
 			if ok && inNote.IsTelegramPublishPost() {
-				err := env.UpdateTelegramPublishPost(ctx, inNote.PathID)
-				if err != nil {
-					return fmt.Errorf("failed to update linked post %d: %w", inNote.PathID, err)
+				updateErr := env.UpdateTelegramPublishPost(ctx, inNote.PathID)
+				if updateErr != nil {
+					return fmt.Errorf("failed to update linked post %d: %w", inNote.PathID, updateErr)
 				}
 			}
 		}

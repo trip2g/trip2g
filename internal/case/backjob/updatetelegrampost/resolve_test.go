@@ -205,7 +205,11 @@ func TestResolve_Success_ContentSameError(t *testing.T) {
 	env := &EnvMock{
 		SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
 			// Telegram returns this error when content is the same
-			return errors.New("Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message")
+			return errors.New(
+				"Bad Request: message is not modified: " +
+					"specified new message content and reply markup are exactly the same as " +
+					"a current content and reply markup of the message",
+			)
 		},
 		UpdateTelegramPublishSentMessageContentFunc: func(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error {
 			// Should still update the hash in DB even when content is same

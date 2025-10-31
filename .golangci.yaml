@@ -469,3 +469,11 @@ linters:
       - path: 'internal/mdloader/highlight/'
         linters:
           - gochecknoglobals  # Package-level variables needed for goldmark extension registration
+      - path: 'cmd/testgoqite/'
+        linters:
+          - cyclop       # Test code can be complex
+          - depguard     # Test code can use any dependencies
+          - funlen       # Test code can have long functions
+          - gocognit     # Test code can be complex
+          - gosec        # Test code doesn't need security checks
+          - govet        # Allow variable shadowing in test code

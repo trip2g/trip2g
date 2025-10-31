@@ -22,7 +22,7 @@ type TelegramPostSource struct {
 	Instant  bool
 }
 
-// TelegramSendPostParams contains parameters for sending a telegram post
+// TelegramSendPostParams contains parameters for sending a telegram post.
 type TelegramSendPostParams struct {
 	NotePathID     int64 `json:"note_path_id"`
 	DBChatID       int64 `json:"chat_id"`
@@ -33,7 +33,7 @@ type TelegramSendPostParams struct {
 	UpdateLinkedPosts bool         `json:"update_linked_posts"`
 }
 
-// TelegramUpdatePostParams contains parameters for updating a telegram post
+// TelegramUpdatePostParams contains parameters for updating a telegram post.
 type TelegramUpdatePostParams struct {
 	TelegramSendPostParams
 

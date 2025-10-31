@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 	"trip2g/internal/case/backjob/sendtelegrampost"
 	"trip2g/internal/case/backjob/updatetelegrampost"
@@ -41,7 +44,24 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 			return fmt.Errorf("failed to unmarshal send_telegram_post params: %w", err)
 		}
 
-		return sendtelegrampost.Resolve(ctx, a, params)
+		err = sendtelegrampost.Resolve(ctx, a, params)
+		if err != nil {
+			shouldRetry, delay := handleTelegramRateLimit(err)
+			if shouldRetry {
+				a.log.Warn("telegram rate limit hit, retrying after delay",
+					"delay", delay,
+					"job", sendTelegramPostJobID,
+				)
+				time.Sleep(delay)
+				err = sendtelegrampost.Resolve(ctx, a, params)
+			}
+
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
 
 	a.telegramRunner.Register(updateTelegramPostJobID, func(ctx context.Context, m []byte) error {
@@ -52,7 +72,24 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 			return fmt.Errorf("failed to unmarshal update_telegram_post params: %w", err)
 		}
 
-		return updatetelegrampost.Resolve(ctx, a, params)
+		err = updatetelegrampost.Resolve(ctx, a, params)
+		if err != nil {
+			shouldRetry, delay := handleTelegramRateLimit(err)
+			if shouldRetry {
+				a.log.Warn("telegram rate limit hit, retrying after delay",
+					"delay", delay,
+					"job", updateTelegramPostJobID,
+				)
+				time.Sleep(delay)
+				err = updatetelegrampost.Resolve(ctx, a, params)
+			}
+
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
 
 	// Start the shared runner
@@ -198,4 +235,31 @@ func (a *app) BotStartLink(botID int64, param string) (string, error) {
 		return "", fmt.Errorf("bot with ID %d not found or not active", botID)
 	}
 	return handlerIO.BotStartLink(param), nil
+}
+
+// handleTelegramRateLimit checks if error is "Too Many Requests" and returns retry delay.
+func handleTelegramRateLimit(err error) (bool, time.Duration) {
+	if err == nil {
+		return false, 0
+	}
+
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "Too Many Requests") {
+		return false, 0
+	}
+
+	// Try to parse "retry after X" from error message
+	re := regexp.MustCompile(`retry after (\d+)`)
+	matches := re.FindStringSubmatch(errMsg)
+
+	seconds := 10 // default delay
+	if len(matches) > 1 {
+		parsed, parseErr := strconv.Atoi(matches[1])
+		if parseErr == nil {
+			seconds = parsed
+		}
+	}
+
+	// Add +1 second to the delay
+	return true, time.Duration(seconds+1) * time.Second
 }
