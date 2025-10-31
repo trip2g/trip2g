@@ -1584,78 +1584,80 @@ func (a *app) startServer() {
 
 	middlewares := a.prepareMiddlewares()
 
-	s := &fasthttp.Server{
-		Handler: func(ctx *fasthttp.RequestCtx) {
-			path := string(ctx.Path())
+	handler := func(ctx *fasthttp.RequestCtx) {
+		path := string(ctx.Path())
 
-			req := appreq.Acquire()
-			req.Env = a
-			req.Req = ctx
-			req.Path = path
-			req.TokenManager = a.tokenManager
-			req.StoreInContext() // appreq.FromCtx(ctx)
-			defer appreq.Release(req)
+		req := appreq.Acquire()
+		req.Env = a
+		req.Req = ctx
+		req.Path = path
+		req.TokenManager = a.tokenManager
+		req.StoreInContext() // appreq.FromCtx(ctx)
+		defer appreq.Release(req)
 
-			for _, mw := range middlewares {
-				if mw(req) {
-					return
-				}
-			}
-
-			// handle hot auth token from ?hot=...
-			// hatAuthToken := string(ctx.QueryArgs().Peek("hat")) // TODO: use b2s
-			// if hatAuthToken != "" {
-			// 	hatErr := signinbyhat.Resolve(ctx, a, hatAuthToken)
-			// 	if hatErr != nil {
-			// 		a.log.Warn("failed to resolve hot auth token", "error", hatErr)
-			// 	}
-			//
-			// 	parsedURL, err := url.Parse(string(ctx.Request.Header.RequestURI()))
-			// 	if err != nil {
-			// 		a.log.Warn("failed to parse URL", "error", err)
-			// 		ctx.SetStatusCode(http.StatusBadRequest)
-			// 		return
-			// 	}
-			//
-			// 	query := parsedURL.Query()
-			// 	query.Del("hat")
-			// 	parsedURL.RawQuery = query.Encode()
-			//
-			// 	ctx.Redirect(parsedURL.String(), http.StatusFound)
-			// 	return
-			// }
-
-			if handleGraphQL(ctx, path) {
+		for _, mw := range middlewares {
+			if mw(req) {
 				return
 			}
+		}
 
-			newPath := a.redirectManager.Match(path)
-			if newPath != nil {
-				ctx.SetStatusCode(http.StatusFound)
-				ctx.Response.Header.Set("Location", *newPath)
-				return
-			}
+		// handle hot auth token from ?hot=...
+		// hatAuthToken := string(ctx.QueryArgs().Peek("hat")) // TODO: use b2s
+		// if hatAuthToken != "" {
+		// 	hatErr := signinbyhat.Resolve(ctx, a, hatAuthToken)
+		// 	if hatErr != nil {
+		// 		a.log.Warn("failed to resolve hot auth token", "error", hatErr)
+		// 	}
+		//
+		// 	parsedURL, err := url.Parse(string(ctx.Request.Header.RequestURI()))
+		// 	if err != nil {
+		// 		a.log.Warn("failed to parse URL", "error", err)
+		// 		ctx.SetStatusCode(http.StatusBadRequest)
+		// 		return
+		// 	}
+		//
+		// 	query := parsedURL.Query()
+		// 	query.Del("hat")
+		// 	parsedURL.RawQuery = query.Encode()
+		//
+		// 	ctx.Redirect(parsedURL.String(), http.StatusFound)
+		// 	return
+		// }
 
-			handled, handleErr := rtr.Handle(req)
-			if handleErr != nil {
-				a.log.Error("failed to handle request", "error", handleErr)
-				ctx.SetStatusCode(http.StatusServiceUnavailable)
-				ctx.SetBodyString("500 Internal Server Error")
-				return
-			}
+		if handleGraphQL(ctx, path) {
+			return
+		}
 
-			// TODO: remove this code because rendernotepage handles 404
-			if handled {
-				a.log.Debug("router handled request", "path", path)
-				return
-			}
+		newPath := a.redirectManager.Match(path)
+		if newPath != nil {
+			ctx.SetStatusCode(http.StatusFound)
+			ctx.Response.Header.Set("Location", *newPath)
+			return
+		}
 
-			ctx.SetStatusCode(http.StatusNotFound)
-			ctx.SetBodyString("404 Not Found")
-		},
+		handled, handleErr := rtr.Handle(req)
+		if handleErr != nil {
+			a.log.Error("failed to handle request", "error", handleErr)
+			ctx.SetStatusCode(http.StatusServiceUnavailable)
+			ctx.SetBodyString("500 Internal Server Error")
+			return
+		}
+
+		// TODO: remove this code because rendernotepage handles 404
+		if handled {
+			a.log.Debug("router handled request", "path", path)
+			return
+		}
+
+		ctx.SetStatusCode(http.StatusNotFound)
+		ctx.SetBodyString("404 Not Found")
 	}
 
-	s.ReadTimeout = 10 * time.Second
+	s := &fasthttp.Server{
+		Handler: fasthttp.TimeoutHandler(handler, time.Second*30, "timeout"),
+	}
+
+	s.ReadTimeout = 30 * time.Second
 	s.WriteTimeout = 30 * time.Second
 	s.IdleTimeout = 120 * time.Second
 

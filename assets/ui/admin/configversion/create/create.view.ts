@@ -46,6 +46,7 @@ namespace $.$$ {
 					showDraftVersions: this.show_draft_versions(),
 					defaultLayout: this.default_layout(),
 					timezone: this.timezone(),
+					robotsTxt: 'open', // TODO: add UI
 				},
 			})
 

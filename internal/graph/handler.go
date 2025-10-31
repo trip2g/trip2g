@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"trip2g/internal/logger"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -63,14 +64,20 @@ func NewHandler(env Env) *handler.Server {
 		}
 	}
 
+	logger := logger.WithPrefix(env.Logger(), "GraphQL:")
+
 	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		operationContext := graphql.GetOperationContext(ctx)
 
-		if operationContext.Operation.Operation != ast.Mutation || skipTx(operationContext) {
+		op := operationContext.Operation
+
+		logger.Debug("process", "operotion", op.Operation, "name", op.Name)
+
+		if op.Operation != ast.Mutation || skipTx(operationContext) {
 			return next(ctx)
 		}
 
-		err := env.AcquireTxEnvInRequest(ctx, operationContext.Operation.Name)
+		err := env.AcquireTxEnvInRequest(ctx, op.Name)
 		if err != nil {
 			log.Error("failed to acquire transactioned env", "error", err)
 			return graphqlErr(err)

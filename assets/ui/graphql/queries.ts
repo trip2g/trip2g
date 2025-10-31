@@ -152,6 +152,7 @@ export type AdminConfigVersion = {
   createdBy: AdminUser;
   defaultLayout: Scalars['String']['output'];
   id: Scalars['Int64']['output'];
+  robotsTxt: Scalars['String']['output'];
   showDraftVersions: Scalars['Boolean']['output'];
   timezone: Scalars['String']['output'];
 };
@@ -1140,6 +1141,7 @@ export type CreateBoostyCredentialsPayload = {
 
 export type CreateConfigVersionInput = {
   defaultLayout: Scalars['String']['input'];
+  robotsTxt: Scalars['String']['input'];
   showDraftVersions: Scalars['Boolean']['input'];
   timezone: Scalars['String']['input'];
 };

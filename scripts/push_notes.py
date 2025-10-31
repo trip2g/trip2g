@@ -28,7 +28,7 @@ def sha256_urlsafe_base64(content: bytes) -> str:
 
 def fetch_server_hashes():
     query = """
-    query {
+    query NotePaths {
       notePaths {
         path: value
         hash: latestContentHash
@@ -146,7 +146,7 @@ def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash:
         return False
 
     query = """
-    mutation($input: UploadNoteAssetInput!) {
+    mutation UploadAsset($input: UploadNoteAssetInput!) {
         uploadNoteAsset(input: $input) {
             ... on ErrorPayload {
                 __typename
