@@ -1,7 +1,8 @@
 package model
 
 type TelegramPost struct {
-	NotePathID int64 `json:"note_path_id"`
+	MessageID  *int64 `json:"message_id,omitempty"`
+	NotePathID int64  `json:"note_path_id"`
 
 	DBChatID       int64 `json:"chat_id"`
 	TelegramChatID int64 `json:"telegram_chat_id"`
@@ -19,4 +20,22 @@ type TelegramPostSource struct {
 	NoteView *NoteView
 	ChatID   int64
 	Instant  bool
+}
+
+// TelegramSendPostParams contains parameters for sending a telegram post
+type TelegramSendPostParams struct {
+	NotePathID     int64 `json:"note_path_id"`
+	DBChatID       int64 `json:"chat_id"`
+	TelegramChatID int64 `json:"telegram_chat_id"`
+
+	Post              TelegramPost `json:"post"`
+	Instant           bool         `json:"instant"`
+	UpdateLinkedPosts bool         `json:"update_linked_posts"`
+}
+
+// TelegramUpdatePostParams contains parameters for updating a telegram post
+type TelegramUpdatePostParams struct {
+	TelegramSendPostParams
+
+	MessageID int64 `json:"message_id"`
 }

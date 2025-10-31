@@ -2,17 +2,10 @@ package sendtelegrampublishpost
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
-	"net/http"
-	"path/filepath"
-	"strings"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 //go:generate go run github.com/matryer/moq -out mocks_test.go -pkg sendtelegrampublishpost_test . Env
@@ -22,18 +15,14 @@ type Env interface {
 	ListTgBotChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]db.TgBotChat, error)
 	ListTgBotInstantChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]db.TgBotChat, error)
 	UpdateTelegramPublishNoteAsPublished(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error
-	InsertTelegramPublishSentMessage(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error
 
-	// Telegram bot methods for sending messages
-	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
+	// Telegram post queue
+	EnqueueSendTelegramPost(ctx context.Context, params model.TelegramSendPostParams) error
 
 	ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
 
 	// Content access methods
 	LatestNoteViews() *model.NoteViews
-
-	// Update linked posts
-	UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error
 }
 
 func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error {
@@ -84,46 +73,20 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 			return fmt.Errorf("conversion produced warnings: %v", post.Warnings)
 		}
 
-		var messageID int64
-
-		params := sendPhotoParams{
-			chat: &chat,
-			post: post,
-			url:  getFirstImageURL(noteView),
+		// Prepare send params
+		params := model.TelegramSendPostParams{
+			NotePathID:        notePathID,
+			DBChatID:          chat.ID,
+			TelegramChatID:    chat.TelegramID,
+			Post:              *post,
+			Instant:           instant,
+			UpdateLinkedPosts: true, // Always update linked posts when sending
 		}
 
-		messageID, sendErr := tryToSendPhono(ctx, env, params)
+		// Enqueue the post to be sent via telegram queue
+		sendErr := env.EnqueueSendTelegramPost(ctx, params)
 		if sendErr != nil {
-			return sendErr
-		}
-
-		if messageID == 0 {
-			msg := tgbotapi.NewMessage(chat.TelegramID, post.Content)
-			msg.ParseMode = "HTML"
-
-			messageID, convertErr = env.SendTelegramMessage(ctx, chat.ID, msg)
-			if convertErr != nil {
-				return fmt.Errorf("failed to send telegram message to chat %d: %w", chat.ID, convertErr)
-			}
-		}
-
-		// Calculate content hash
-		// TODO: add a hash of media too
-		hash := sha256.Sum256([]byte(post.Content))
-		contentHash := hex.EncodeToString(hash[:])
-
-		sentParams := db.InsertTelegramPublishSentMessageParams{
-			NotePathID:  notePathID,
-			ChatID:      chat.ID,
-			MessageID:   messageID,
-			Instant:     instant,
-			ContentHash: contentHash,
-			Content:     post.Content,
-		}
-
-		insertErr := env.InsertTelegramPublishSentMessage(ctx, sentParams)
-		if insertErr != nil {
-			return fmt.Errorf("failed to record sent message for chat %d: %w", chat.ID, insertErr)
+			return fmt.Errorf("failed to enqueue telegram post for chat %d: %w", chat.ID, sendErr)
 		}
 	}
 
@@ -140,91 +103,5 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 		}
 	}
 
-	return updateLinkedPosts(ctx, env, nvs, noteView)
-}
-
-func updateLinkedPosts(ctx context.Context, env Env, nvs *model.NoteViews, noteView *model.NoteView) error {
-	for inLink := range noteView.InLinks {
-		inNote, ok := nvs.Map[inLink]
-		if ok && inNote.IsTelegramPublishPost() {
-			err := env.UpdateTelegramPublishPost(ctx, inNote.PathID)
-			if err != nil {
-				return fmt.Errorf("failed to UpdateTelegramPublishPost %d: %w", inNote.PathID, err)
-			}
-		}
-	}
-
 	return nil
-}
-
-func getFirstImageURL(noteView *model.NoteView) *string {
-	for path := range noteView.Assets {
-		_, ok := noteView.AssetReplaces[path]
-		if !ok {
-			continue
-		}
-
-		return &noteView.AssetReplaces[path].URL
-	}
-
-	return nil
-}
-
-func tryToSendPhono(ctx context.Context, env Env, params sendPhotoParams) (int64, error) {
-	if params.url == nil {
-		return 0, nil
-	}
-
-	messageID, convertErr := sendPhoto(ctx, env, params)
-	if convertErr != nil {
-		// workaround for localhost minio or something similar.
-		if strings.Contains(convertErr.Error(), "wrong HTTP URL specified") {
-			params.stream = true
-			messageID, convertErr = sendPhoto(ctx, env, params)
-		}
-
-		if convertErr != nil {
-			return 0, fmt.Errorf("failed to sendPhoto: %w", convertErr)
-		}
-	}
-
-	return messageID, nil
-}
-
-type sendPhotoParams struct {
-	chat   *db.TgBotChat
-	post   *model.TelegramPost
-	url    *string
-	stream bool
-}
-
-func sendPhoto(ctx context.Context, env Env, params sendPhotoParams) (int64, error) {
-	var file tgbotapi.RequestFileData
-
-	if !params.stream {
-		file = tgbotapi.FileURL(*params.url)
-	} else {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, *params.url, nil)
-		if err != nil {
-			return 0, fmt.Errorf("failed to create request for image URL: %w", err)
-		}
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return 0, fmt.Errorf("failed to fetch image URL: %w", err)
-		}
-
-		defer resp.Body.Close()
-
-		file = tgbotapi.FileReader{
-			Name:   filepath.Base(*params.url),
-			Reader: resp.Body,
-		}
-	}
-
-	photo := tgbotapi.NewPhoto(params.chat.TelegramID, file)
-	photo.Caption = params.post.Content
-	photo.ParseMode = "HTML"
-
-	return env.SendTelegramMessage(ctx, params.chat.ID, photo)
 }

@@ -39,7 +39,6 @@ import (
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/case/handletgpublishviews"
-	"trip2g/internal/case/handletgupdate"
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/pushnotes"
@@ -72,7 +71,6 @@ import (
 	"trip2g/internal/zerologger"
 
 	"github.com/99designs/gqlgen/graphql/playground"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/vektah/gqlparser/gqlerror"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
@@ -112,8 +110,9 @@ type app struct {
 
 	graphTxs *graphTransactions
 
-	queries *db.Queries
-	conn    *sql.DB
+	queries   *db.Queries
+	conn      *sql.DB
+	writeConn *sql.DB
 
 	currentTx *sql.Tx
 
@@ -123,6 +122,9 @@ type app struct {
 
 	goqiteQueue  *goqite.Queue
 	goqiteRunner *jobs.Runner
+
+	telegramQueue  *goqite.Queue
+	telegramRunner *jobs.Runner
 
 	// mail *mailyak.MailYak
 
@@ -246,6 +248,8 @@ func main() {
 		conn:    conn,
 		// mail:    mailyak.New(mailAddr, mailAuth),
 
+		writeConn: conn,
+
 		UserBans: userbans.New(queries),
 
 		nowpaymentsClient: nowpaymentsClient,
@@ -261,7 +265,6 @@ func main() {
 
 	a.initPatreon(ctx)
 	a.initBoosty(ctx)
-	a.initTelegramBots(ctx)
 
 	// Create shared queue and runner to prevent SQLITE_BUSY issues
 	a.goqiteQueue = goqite.New(goqite.NewOpts{
@@ -278,6 +281,11 @@ func main() {
 
 	// Start the shared runner
 	go a.goqiteRunner.Start(ctx)
+
+	err = a.initTelegramDeps(ctx)
+	if err != nil {
+		panic(fmt.Errorf("failed to initialize telegram dependencies: %w", err))
+	}
 
 	a.CronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
 	if err != nil {
@@ -322,27 +330,6 @@ func main() {
 	a.setFileStorageExpiringCallback(ctx)
 
 	a.startServer()
-}
-
-func (a *app) initTelegramBots(ctx context.Context) {
-	var err error
-
-	a.TgBots, err = tgbots.New(ctx, a, tgbots.DefaultConfig())
-	if err != nil {
-		panic(fmt.Errorf("failed to create Telegram bots: %w", err))
-	}
-
-	a.TgBots.SetHandler(func(ctx context.Context, io *tgbots.HandlerIO, update tgbotapi.Update) error {
-		var be struct {
-			*app
-			*tgbots.HandlerIO
-		}
-
-		be.app = a
-		be.HandlerIO = io
-
-		return handletgupdate.Resolve(ctx, be, update)
-	})
 }
 
 func (a *app) initPatreon(ctx context.Context) {
@@ -498,6 +485,37 @@ func (a *app) EnqueueJob(ctx context.Context, jobID string, data any) error {
 	a.log.Debug("enqueueing job in global env", "job_id", jobID, "data", string(rawData))
 
 	return jobs.Create(ctx, a.goqiteQueue, jobID, rawData)
+}
+
+func (a *app) enqueueJobToQ(ctx context.Context, q *goqite.Queue, jobID string, data any) error {
+	rawData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal job data: %w", err)
+	}
+
+	req, err := appreq.FromCtx(ctx)
+	if err != nil && !errors.Is(err, appreq.ErrNotFound) {
+		return fmt.Errorf("failed to get request from context: %w", err)
+	}
+
+	if req != nil {
+		env, ok := req.Env.(*app)
+		if ok && env.CurrentTx() != nil {
+			a.log.Debug("enqueueing job in request env", "job_id", jobID, "data", string(rawData))
+
+			return jobs.CreateTx(ctx, env.currentTx, q, jobID, rawData)
+		}
+	}
+
+	if a.currentTx != nil {
+		a.log.Debug("enqueueing job in app.currentTx", "job_id", jobID, "data", string(rawData))
+
+		return jobs.CreateTx(ctx, a.currentTx, q, jobID, rawData)
+	}
+
+	a.log.Debug("enqueueing job in global env", "job_id", jobID, "data", string(rawData))
+
+	return jobs.Create(ctx, q, jobID, rawData)
 }
 
 func (a *app) RegisterJob(id string, handler func(ctx context.Context, m []byte) error) {

@@ -5,27 +5,17 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"strings"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 //go:generate go run github.com/matryer/moq -out mocks_test.go -pkg updatetelegrampublishpost_test . Env
 
 type Env interface {
-	// Database methods for getting sent messages
-	ListTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error)
-	UpdateTelegramPublishSentMessageContent(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error
-
-	// Telegram bot methods for editing messages
-	SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
-
-	ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
-
-	// Content access methods
 	LatestNoteViews() *model.NoteViews
+	ListTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error)
+	ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
+	EnqueueUpdateTelegramPost(ctx context.Context, params model.TelegramUpdatePostParams) error
 }
 
 func Resolve(ctx context.Context, env Env, notePathID int64) error {
@@ -44,19 +34,7 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 		return nil
 	}
 
-	// Get first image URL if exists
-	var firstImageURL *string
-	for path := range noteView.Assets {
-		_, ok := noteView.AssetReplaces[path]
-		if !ok {
-			continue
-		}
-
-		firstImageURL = &noteView.AssetReplaces[path].URL
-		break
-	}
-
-	// Update each sent message
+	// Enqueue update for each sent message
 	for _, sentMsg := range sentMessages {
 		source := model.TelegramPostSource{
 			NoteView: noteView,
@@ -83,57 +61,23 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 			continue
 		}
 
-		var sendErr error
-
-		// Edit the message
-		if firstImageURL != nil {
-			// Edit caption for photo message
-			editMsg := tgbotapi.NewEditMessageCaption(sentMsg.TelegramID, int(sentMsg.MessageID), post.Content)
-			editMsg.ParseMode = "HTML"
-
-			sendErr = env.SendTelegramRequest(ctx, sentMsg.ChatID, editMsg)
-		} else {
-			// Edit text for text message
-			editMsg := tgbotapi.NewEditMessageText(sentMsg.TelegramID, int(sentMsg.MessageID), post.Content)
-			editMsg.ParseMode = "HTML"
-
-			sendErr = env.SendTelegramRequest(ctx, sentMsg.ChatID, editMsg)
+		// Prepare update params
+		params := model.TelegramUpdatePostParams{
+			TelegramSendPostParams: model.TelegramSendPostParams{
+				NotePathID:        notePathID,
+				DBChatID:          sentMsg.ChatID,
+				TelegramChatID:    sentMsg.TelegramID,
+				Post:              *post,
+				Instant:           false,
+				UpdateLinkedPosts: false,
+			},
+			MessageID: sentMsg.MessageID,
 		}
 
-		if sendErr != nil {
-			if strings.Contains(sendErr.Error(), "are exactly the same as a current content") {
-				// Content is the same, update the hash in DB to avoid retrying
-				updateParams := db.UpdateTelegramPublishSentMessageContentParams{
-					ContentHash: currentHash,
-					Content:     post.Content,
-					NotePathID:  notePathID,
-					ChatID:      sentMsg.ChatID,
-					MessageID:   sentMsg.MessageID,
-				}
-
-				updateErr := env.UpdateTelegramPublishSentMessageContent(ctx, updateParams)
-				if updateErr != nil {
-					return fmt.Errorf("failed to update sent message content in DB for chat %d: %w", sentMsg.ChatID, updateErr)
-				}
-
-				continue
-			}
-
-			return fmt.Errorf("failed to edit telegram message in chat %d: %w", sentMsg.ChatID, sendErr)
-		}
-
-		// Update the content and hash in the database
-		updateParams := db.UpdateTelegramPublishSentMessageContentParams{
-			ContentHash: currentHash,
-			Content:     post.Content,
-			NotePathID:  notePathID,
-			ChatID:      sentMsg.ChatID,
-			MessageID:   sentMsg.MessageID,
-		}
-
-		updateErr := env.UpdateTelegramPublishSentMessageContent(ctx, updateParams)
-		if updateErr != nil {
-			return fmt.Errorf("failed to update sent message content in DB for chat %d: %w", sentMsg.ChatID, updateErr)
+		// Enqueue the update job
+		enqueueErr := env.EnqueueUpdateTelegramPost(ctx, params)
+		if enqueueErr != nil {
+			return fmt.Errorf("failed to enqueue update job for chat %d: %w", sentMsg.ChatID, enqueueErr)
 		}
 	}
 

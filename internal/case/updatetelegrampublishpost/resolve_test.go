@@ -9,13 +9,15 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/model"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/stretchr/testify/require"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/text"
 )
 
-func TestResolve(t *testing.T) {
+func TestResolve_Success(t *testing.T) {
+	ctx := context.Background()
+	notePathID := int64(123)
+
 	// Create a proper AST for the test content
 	content := []byte("Updated test note content")
 	reader := text.NewReader(content)
@@ -40,8 +42,6 @@ func TestResolve(t *testing.T) {
 		Assets:        map[string]struct{}{},
 		AssetReplaces: map[string]*model.NoteAssetReplace{},
 	}
-
-	// Set the AST using the SetAst method
 	testNote.SetAst(doc)
 
 	// Create NoteViews containing the test note
@@ -69,275 +69,336 @@ func TestResolve(t *testing.T) {
 		},
 	}
 
-	tests := []struct {
-		name     string
-		noteID   int64
-		setupEnv func() *EnvMock
-		wantErr  bool
-		errMsg   string
-	}{
-		{
-			name:   "success - update multiple messages",
-			noteID: 123,
-			setupEnv: func() *EnvMock {
-				return &EnvMock{
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
-						return &model.TelegramPost{
-							Content:  "Updated test note content",
-							Warnings: []string{},
-						}, nil
-					},
-					LatestNoteViewsFunc: func() *model.NoteViews {
-						return noteViews
-					},
-					ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
-						require.Equal(t, int64(123), notePathID)
-						return mockSentMessages, nil
-					},
-					SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
-						require.Contains(t, []int64{1, 2}, chatID)
-
-						// Check if it's an EditMessageTextConfig
-						editMsg, ok := msg.(tgbotapi.EditMessageTextConfig)
-						require.True(t, ok, "expected EditMessageTextConfig")
-						require.Equal(t, "HTML", editMsg.ParseMode)
-						require.Contains(t, editMsg.Text, "Updated test note content")
-						require.Contains(t, []int64{-1001234567890, -1001234567891}, editMsg.ChatID)
-						require.Contains(t, []int{101, 102}, editMsg.MessageID)
-
-						return nil
-					},
-					UpdateTelegramPublishSentMessageContentFunc: func(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error {
-						require.Contains(t, []int64{1, 2}, arg.ChatID)
-						require.Equal(t, "Updated test note content", arg.Content)
-						require.NotEmpty(t, arg.ContentHash)
-						return nil
-					},
-				}
-			},
-			wantErr: false,
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *model.NoteViews {
+			return noteViews
 		},
-		{
-			name:   "success - update message with photo (edit caption)",
-			noteID: 123,
-			setupEnv: func() *EnvMock {
-				// Create note view with image asset
-				noteWithImage := &model.NoteView{
-					Path:      "/test-note",
-					Title:     "Test Note",
-					PathID:    123,
-					VersionID: 456,
-					Content:   content,
-					Assets:    map[string]struct{}{"image.jpg": {}},
-					AssetReplaces: map[string]*model.NoteAssetReplace{
-						"image.jpg": {
-							URL: "https://example.com/image.jpg",
-						},
-					},
-					InLinks: map[string]struct{}{},
-				}
-				noteWithImage.SetAst(doc)
-
-				noteViewsWithImage := &model.NoteViews{
-					Map:       map[string]*model.NoteView{"/test-note": noteWithImage},
-					List:      []*model.NoteView{noteWithImage},
-					Subgraphs: map[string]*model.NoteSubgraph{},
-					Version:   "latest",
-				}
-
-				return &EnvMock{
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
-						return &model.TelegramPost{
-							Content:  "Updated test note content",
-							Warnings: []string{},
-						}, nil
-					},
-					LatestNoteViewsFunc: func() *model.NoteViews {
-						return noteViewsWithImage
-					},
-					ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
-						return []db.ListTelegramPublishSentMessagesByNotePathIDRow{mockSentMessages[0]}, nil
-					},
-					SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
-						// Check if it's an EditMessageCaptionConfig
-						editMsg, ok := msg.(tgbotapi.EditMessageCaptionConfig)
-						require.True(t, ok, "expected EditMessageCaptionConfig for photo message")
-						require.Equal(t, "HTML", editMsg.ParseMode)
-						require.Contains(t, editMsg.Caption, "Updated test note content")
-
-						return nil
-					},
-					UpdateTelegramPublishSentMessageContentFunc: func(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error {
-						require.Equal(t, int64(1), arg.ChatID)
-						require.Equal(t, "Updated test note content", arg.Content)
-						require.NotEmpty(t, arg.ContentHash)
-						return nil
-					},
-				}
-			},
-			wantErr: false,
+		ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, id int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
+			require.Equal(t, notePathID, id)
+			return mockSentMessages, nil
 		},
-		{
-			name:   "error - note view not found",
-			noteID: 999, // Non-existent note ID
-			setupEnv: func() *EnvMock {
-				return &EnvMock{
-					LatestNoteViewsFunc: func() *model.NoteViews {
-						return noteViews
-					},
-				}
-			},
-			wantErr: true,
-			errMsg:  "note view not found for path ID 999",
+		ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
+			return &model.TelegramPost{
+				Content:  "Updated test note content",
+				Warnings: []string{},
+			}, nil
 		},
-		{
-			name:   "success - no sent messages (nothing to update)",
-			noteID: 123,
-			setupEnv: func() *EnvMock {
-				return &EnvMock{
-					LatestNoteViewsFunc: func() *model.NoteViews {
-						return noteViews
-					},
-					ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
-						return []db.ListTelegramPublishSentMessagesByNotePathIDRow{}, nil
-					},
-				}
-			},
-			wantErr: false,
-		},
-		{
-			name:   "error - failed to get sent messages",
-			noteID: 123,
-			setupEnv: func() *EnvMock {
-				return &EnvMock{
-					LatestNoteViewsFunc: func() *model.NoteViews {
-						return noteViews
-					},
-					ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
-						return nil, errors.New("database error")
-					},
-				}
-			},
-			wantErr: true,
-			errMsg:  "failed to get sent messages for note: database error",
-		},
-		{
-			name:   "error - failed to convert note to telegram post",
-			noteID: 123,
-			setupEnv: func() *EnvMock {
-				return &EnvMock{
-					LatestNoteViewsFunc: func() *model.NoteViews {
-						return noteViews
-					},
-					ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
-						return []db.ListTelegramPublishSentMessagesByNotePathIDRow{mockSentMessages[0]}, nil
-					},
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
-						return nil, errors.New("conversion error")
-					},
-				}
-			},
-			wantErr: true,
-			errMsg:  "failed to convert note to telegram post: conversion error",
-		},
-		{
-			name:   "error - conversion produced warnings",
-			noteID: 123,
-			setupEnv: func() *EnvMock {
-				return &EnvMock{
-					LatestNoteViewsFunc: func() *model.NoteViews {
-						return noteViews
-					},
-					ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
-						return []db.ListTelegramPublishSentMessagesByNotePathIDRow{mockSentMessages[0]}, nil
-					},
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
-						return &model.TelegramPost{
-							Content:  "Updated test note content",
-							Warnings: []string{"unsupported markdown feature"},
-						}, nil
-					},
-				}
-			},
-			wantErr: true,
-			errMsg:  "conversion produced warnings: [unsupported markdown feature]",
-		},
-		{
-			name:   "error - failed to edit telegram message",
-			noteID: 123,
-			setupEnv: func() *EnvMock {
-				return &EnvMock{
-					LatestNoteViewsFunc: func() *model.NoteViews {
-						return noteViews
-					},
-					ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
-						return []db.ListTelegramPublishSentMessagesByNotePathIDRow{mockSentMessages[0]}, nil
-					},
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
-						return &model.TelegramPost{
-							Content:  "Updated test note content",
-							Warnings: []string{},
-						}, nil
-					},
-					SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
-						return errors.New("telegram API error")
-					},
-				}
-			},
-			wantErr: true,
-			errMsg:  "failed to edit telegram message in chat 1: telegram API error",
-		},
-		{
-			name:   "success - skip update when content hash matches",
-			noteID: 123,
-			setupEnv: func() *EnvMock {
-				// Hash for "Updated test note content"
-				expectedHash := "79c1b725091cf8266eff024a296e4fd7ff8ce3001aa1958fe591773246f072ad"
-
-				// Create a message with matching hash
-				msgWithMatchingHash := db.ListTelegramPublishSentMessagesByNotePathIDRow{
-					ChatID:      1,
-					MessageID:   101,
-					TelegramID:  -1001234567890,
-					ContentHash: expectedHash,
-				}
-
-				return &EnvMock{
-					LatestNoteViewsFunc: func() *model.NoteViews {
-						return noteViews
-					},
-					ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
-						return []db.ListTelegramPublishSentMessagesByNotePathIDRow{msgWithMatchingHash}, nil
-					},
-					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
-						return &model.TelegramPost{
-							Content:  "Updated test note content",
-							Warnings: []string{},
-						}, nil
-					},
-					SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
-						require.Fail(t, "SendTelegramRequest should not be called when content hash matches")
-						return nil
-					},
-				}
-			},
-			wantErr: false,
+		EnqueueUpdateTelegramPostFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
+			// Verify params
+			require.Equal(t, notePathID, params.NotePathID)
+			require.Equal(t, "Updated test note content", params.Post.Content)
+			require.False(t, params.Instant)
+			require.False(t, params.UpdateLinkedPosts)
+			return nil
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			env := tt.setupEnv()
-			ctx := context.Background()
+	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
+	require.NoError(t, err)
 
-			err := updatetelegrampublishpost.Resolve(ctx, env, tt.noteID)
+	// Verify EnqueueUpdateTelegramPost was called twice (for each sent message)
+	require.Len(t, env.EnqueueUpdateTelegramPostCalls(), 2)
+}
 
-			if tt.wantErr {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tt.errMsg)
-			} else {
-				require.NoError(t, err)
-			}
-		})
+func TestResolve_Success_SkipUnchanged(t *testing.T) {
+	ctx := context.Background()
+	notePathID := int64(123)
+
+	content := []byte("Updated test note content")
+	reader := text.NewReader(content)
+	parser := goldmark.New().Parser()
+	doc := parser.Parse(reader)
+
+	testNote := &model.NoteView{
+		Path:      "/test-note",
+		PathID:    123,
+		Content:   content,
+		InLinks:   map[string]struct{}{},
+		Assets:    map[string]struct{}{},
 	}
+	testNote.SetAst(doc)
+
+	noteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{"/test-note": testNote},
+	}
+
+	// Hash for "Updated test note content"
+	expectedHash := "79c1b725091cf8266eff024a296e4fd7ff8ce3001aa1958fe591773246f072ad"
+
+	// Message with matching hash
+	mockSentMessages := []db.ListTelegramPublishSentMessagesByNotePathIDRow{
+		{
+			ChatID:      1,
+			MessageID:   101,
+			TelegramID:  -1001234567890,
+			ContentHash: expectedHash, // Same hash, should skip
+		},
+	}
+
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *model.NoteViews {
+			return noteViews
+		},
+		ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, id int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
+			return mockSentMessages, nil
+		},
+		ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
+			return &model.TelegramPost{
+				Content:  "Updated test note content",
+				Warnings: []string{},
+			}, nil
+		},
+		EnqueueUpdateTelegramPostFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
+			require.Fail(t, "EnqueueUpdateTelegramPost should not be called when hash matches")
+			return nil
+		},
+	}
+
+	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
+	require.NoError(t, err)
+
+	// Verify EnqueueUpdateTelegramPost was NOT called
+	require.Len(t, env.EnqueueUpdateTelegramPostCalls(), 0)
+}
+
+func TestResolve_Error_NoteNotFound(t *testing.T) {
+	ctx := context.Background()
+	notePathID := int64(999)
+
+	noteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{},
+	}
+
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *model.NoteViews {
+			return noteViews
+		},
+	}
+
+	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "note view not found")
+}
+
+func TestResolve_Success_NoSentMessages(t *testing.T) {
+	ctx := context.Background()
+	notePathID := int64(123)
+
+	content := []byte("Test content")
+	reader := text.NewReader(content)
+	parser := goldmark.New().Parser()
+	doc := parser.Parse(reader)
+
+	testNote := &model.NoteView{
+		Path:    "/test-note",
+		PathID:  123,
+		Content: content,
+	}
+	testNote.SetAst(doc)
+
+	noteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{"/test-note": testNote},
+	}
+
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *model.NoteViews {
+			return noteViews
+		},
+		ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, id int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
+			return []db.ListTelegramPublishSentMessagesByNotePathIDRow{}, nil
+		},
+	}
+
+	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
+	require.NoError(t, err)
+
+	// Verify EnqueueUpdateTelegramPost was NOT called
+	require.Len(t, env.EnqueueUpdateTelegramPostCalls(), 0)
+}
+
+func TestResolve_Error_ListSentMessages(t *testing.T) {
+	ctx := context.Background()
+	notePathID := int64(123)
+
+	content := []byte("Test content")
+	reader := text.NewReader(content)
+	parser := goldmark.New().Parser()
+	doc := parser.Parse(reader)
+
+	testNote := &model.NoteView{
+		Path:    "/test-note",
+		PathID:  123,
+		Content: content,
+	}
+	testNote.SetAst(doc)
+
+	noteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{"/test-note": testNote},
+	}
+
+	expectedErr := errors.New("database error")
+
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *model.NoteViews {
+			return noteViews
+		},
+		ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, id int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
+			return nil, expectedErr
+		},
+	}
+
+	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to get sent messages")
+}
+
+func TestResolve_Error_ConvertPost(t *testing.T) {
+	ctx := context.Background()
+	notePathID := int64(123)
+
+	content := []byte("Test content")
+	reader := text.NewReader(content)
+	parser := goldmark.New().Parser()
+	doc := parser.Parse(reader)
+
+	testNote := &model.NoteView{
+		Path:    "/test-note",
+		PathID:  123,
+		Content: content,
+	}
+	testNote.SetAst(doc)
+
+	noteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{"/test-note": testNote},
+	}
+
+	mockSentMessages := []db.ListTelegramPublishSentMessagesByNotePathIDRow{
+		{
+			ChatID:      1,
+			MessageID:   101,
+			TelegramID:  -1001234567890,
+			ContentHash: "oldhash",
+		},
+	}
+
+	expectedErr := errors.New("conversion error")
+
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *model.NoteViews {
+			return noteViews
+		},
+		ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, id int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
+			return mockSentMessages, nil
+		},
+		ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
+			return nil, expectedErr
+		},
+	}
+
+	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to convert note to telegram post")
+}
+
+func TestResolve_Error_ConversionWarnings(t *testing.T) {
+	ctx := context.Background()
+	notePathID := int64(123)
+
+	content := []byte("Test content")
+	reader := text.NewReader(content)
+	parser := goldmark.New().Parser()
+	doc := parser.Parse(reader)
+
+	testNote := &model.NoteView{
+		Path:    "/test-note",
+		PathID:  123,
+		Content: content,
+	}
+	testNote.SetAst(doc)
+
+	noteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{"/test-note": testNote},
+	}
+
+	mockSentMessages := []db.ListTelegramPublishSentMessagesByNotePathIDRow{
+		{
+			ChatID:      1,
+			MessageID:   101,
+			TelegramID:  -1001234567890,
+			ContentHash: "oldhash",
+		},
+	}
+
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *model.NoteViews {
+			return noteViews
+		},
+		ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, id int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
+			return mockSentMessages, nil
+		},
+		ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
+			return &model.TelegramPost{
+				Content:  "Test content",
+				Warnings: []string{"unsupported markdown feature"},
+			}, nil
+		},
+	}
+
+	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "conversion produced warnings")
+}
+
+func TestResolve_Error_EnqueueUpdate(t *testing.T) {
+	ctx := context.Background()
+	notePathID := int64(123)
+
+	content := []byte("Updated test note content")
+	reader := text.NewReader(content)
+	parser := goldmark.New().Parser()
+	doc := parser.Parse(reader)
+
+	testNote := &model.NoteView{
+		Path:    "/test-note",
+		PathID:  123,
+		Content: content,
+	}
+	testNote.SetAst(doc)
+
+	noteViews := &model.NoteViews{
+		Map: map[string]*model.NoteView{"/test-note": testNote},
+	}
+
+	mockSentMessages := []db.ListTelegramPublishSentMessagesByNotePathIDRow{
+		{
+			ChatID:      1,
+			MessageID:   101,
+			TelegramID:  -1001234567890,
+			ContentHash: "oldhash",
+		},
+	}
+
+	expectedErr := errors.New("enqueue error")
+
+	env := &EnvMock{
+		LatestNoteViewsFunc: func() *model.NoteViews {
+			return noteViews
+		},
+		ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, id int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
+			return mockSentMessages, nil
+		},
+		ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
+			return &model.TelegramPost{
+				Content:  "Updated test note content",
+				Warnings: []string{},
+			}, nil
+		},
+		EnqueueUpdateTelegramPostFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
+			return expectedErr
+		},
+	}
+
+	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to enqueue update job")
 }
