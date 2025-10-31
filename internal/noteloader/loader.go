@@ -65,7 +65,11 @@ func New(version string, env Env, config mdloader.Config) *Loader {
 	}
 }
 
-func (l *Loader) Load(ctx context.Context) error {
+type LoadOptions struct {
+	SkipSearchIndex bool
+}
+
+func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	notes, err := l.env.RawNotes(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get notes: %w", err)
@@ -172,9 +176,13 @@ func (l *Loader) Load(ctx context.Context) error {
 		return fmt.Errorf("failed to load layouts: %w", err)
 	}
 
-	searchIndex, err := l.buildSearchIndex(nvs)
-	if err != nil {
-		return fmt.Errorf("failed to build search index: %w", err)
+	var searchIndex bleve.Index
+
+	if !options.SkipSearchIndex {
+		searchIndex, err = l.buildSearchIndex(nvs)
+		if err != nil {
+			return fmt.Errorf("failed to build search index: %w", err)
+		}
 	}
 
 	l.Lock()

@@ -32,6 +32,62 @@ var reUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9_.-]`)
 type Input = model.UploadNoteAssetInput
 type Payload = model.UploadNoteAssetOrErrorPayload
 
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	// Step 1: Validation
+	assetPaths, err := env.NoteVersionAssetPaths(ctx, input.NoteID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get note version asset paths: %w", err)
+	}
+
+	_, exists := assetPaths[input.Path]
+	if !exists {
+		names := []string{}
+
+		for name := range assetPaths {
+			names = append(names, name)
+		}
+
+		assets := strings.Join(names, ", ")
+
+		return &model.ErrorPayload{Message: "unknown asset path. Assets: " + assets}, nil
+	}
+
+	findAssetParams := db.NoteAssetByPathAndHashParams{
+		AbsolutePath: input.AbsolutePath,
+		Sha256Hash:   input.Sha256Hash,
+	}
+
+	fileName := translit.ToASCII(filepath.Base(input.Path))
+	fileName = reUnsafeChars.ReplaceAllString(fileName, "_")
+
+	// Step 2: Check if asset already exists
+	_, err = env.NoteAssetByPathAndHash(ctx, findAssetParams)
+	if err != nil && !db.IsNoFound(err) {
+		return nil, fmt.Errorf("failed to find note asset: %w", err)
+	}
+
+	alreadyUploaded := !db.IsNoFound(err)
+
+	if !alreadyUploaded {
+		err = uploadAndCreateAsset(ctx, env, input, fileName)
+		if err != nil {
+			return nil, err
+		}
+
+		// Prepare latest notes only when new asset was uploaded (transactional)
+		_, err = env.PrepareLatestNotes(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to prepare notes: %w", err)
+		}
+	}
+
+	response := model.UploadNoteAssetPayload{
+		UploadSkipped: alreadyUploaded,
+	}
+
+	return &response, nil
+}
+
 func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName string) error {
 	// Step 3: Upload file and validate hash
 	hasher := sha256.New()
@@ -84,60 +140,4 @@ func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName st
 	}
 
 	return nil
-}
-
-func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
-	// Step 1: Validation
-	assetPaths, err := env.NoteVersionAssetPaths(ctx, input.NoteID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get note version asset paths: %w", err)
-	}
-
-	_, exists := assetPaths[input.Path]
-	if !exists {
-		names := []string{}
-
-		for name := range assetPaths {
-			names = append(names, name)
-		}
-
-		assets := strings.Join(names, ", ")
-
-		return &model.ErrorPayload{Message: "unknown asset path. Assets: " + assets}, nil
-	}
-
-	findAssetParams := db.NoteAssetByPathAndHashParams{
-		AbsolutePath: input.AbsolutePath,
-		Sha256Hash:   input.Sha256Hash,
-	}
-
-	fileName := translit.ToASCII(filepath.Base(input.Path))
-	fileName = reUnsafeChars.ReplaceAllString(fileName, "_")
-
-	// Step 2: Check if asset already exists
-	_, err = env.NoteAssetByPathAndHash(ctx, findAssetParams)
-	if err != nil && !db.IsNoFound(err) {
-		return nil, fmt.Errorf("failed to find note asset: %w", err)
-	}
-
-	alreadyUploaded := !db.IsNoFound(err)
-
-	if !alreadyUploaded {
-		err = uploadAndCreateAsset(ctx, env, input, fileName)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Prepare latest notes (transactional)
-	_, err = env.PrepareLatestNotes(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to prepare notes: %w", err)
-	}
-
-	response := model.UploadNoteAssetPayload{
-		UploadSkipped: alreadyUploaded,
-	}
-
-	return &response, nil
 }

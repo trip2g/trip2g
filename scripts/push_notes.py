@@ -177,24 +177,27 @@ def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash:
 
     try:
         with open(asset_path, 'rb') as f:
-            files = [
+            # Create multipart data with explicit ordering
+            # Using OrderedDict-like list to preserve order
+            files_ordered = [
                 ('operations', (None, operations, 'application/json')),
                 ('map', (None, files_map, 'application/json')),
-                ('0', (os.path.basename(asset_path), f, 'application/octet-stream'))
+                ('0', (os.path.basename(asset_path), f.read(), 'application/octet-stream'))
             ]
 
             upload_headers = {
                 "X-API-Key": API_KEY,
             }
 
-            response = requests.post(GRAPHQL_URL, headers=upload_headers, files=files)
+            response = requests.post(GRAPHQL_URL, headers=upload_headers, files=files_ordered)
             response.raise_for_status()
-            
+
             result = response.json()
+
             if result.get('errors'):
                 print(f"❌ Asset upload error for {relative_path}: {result['errors']}")
                 return False
-            
+
             payload = result.get('data', {}).get('uploadNoteAsset', {})
             if payload.get('__typename') == 'ErrorPayload':
                 print(f"❌ Asset upload failed: {payload.get('message')}")

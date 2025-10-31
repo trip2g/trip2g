@@ -620,14 +620,14 @@ func (a *app) loadAllNotes(ctx context.Context) error {
 	startCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	err := a.liveNoteLoader.Load(startCtx)
+	err := a.liveNoteLoader.Load(startCtx, noteloader.LoadOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to load live notes: %w", err)
 	}
 
 	a.log.Info("loaded live notes", "count", len(a.liveNoteLoader.NoteViews().List))
 
-	err = a.latestNoteLoader.Load(startCtx)
+	err = a.latestNoteLoader.Load(startCtx, noteloader.LoadOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to load latest notes: %w", err)
 	}
@@ -643,7 +643,7 @@ func (a *app) CurrentTx() *sql.Tx {
 
 // WithTransaction runs the given function within a database transaction.
 // fn should return true to commit the transaction, false to rollback.
-func (a *app) WithTransaction[T any](ctx context.Context, fn func(T) (bool, error)) error {
+func (a *app) WithTransaction(ctx context.Context, fn func(*app) (bool, error)) error {
 	tx, err := a.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to BeginTx: %w", err)
@@ -819,7 +819,7 @@ func (a *app) LoadNoteViewByVersionID(ctx context.Context, id int64) (*model.Not
 	wrapper := makeSingleNoteLoaderWrapper(a, id)
 	loader := noteloader.New("single", wrapper, a.config.MDLoaderConfig)
 
-	err := loader.Load(ctx)
+	err := loader.Load(ctx, noteloader.LoadOptions{SkipSearchIndex: true})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load note version %d: %w", id, err)
 	}
@@ -831,7 +831,7 @@ func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]s
 	wrapper := makeSingleNoteLoaderWrapper(a, id)
 	loader := noteloader.New("single", wrapper, a.config.MDLoaderConfig)
 
-	err := loader.Load(ctx)
+	err := loader.Load(ctx, noteloader.LoadOptions{SkipSearchIndex: true})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load note version %d: %w", id, err)
 	}
@@ -964,7 +964,7 @@ func (a *app) SearchLatestNotes(query string) ([]model.SearchResult, error) {
 }
 
 func (a *app) PrepareLatestNotes(ctx context.Context) (*model.NoteViews, error) {
-	err := a.latestNoteLoader.Load(ctx)
+	err := a.latestNoteLoader.Load(ctx, noteloader.LoadOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load latest notes: %w", err)
 	}
@@ -973,7 +973,7 @@ func (a *app) PrepareLatestNotes(ctx context.Context) (*model.NoteViews, error) 
 }
 
 func (a *app) PrepareLiveNotes(ctx context.Context) (*model.NoteViews, error) {
-	err := a.liveNoteLoader.Load(ctx)
+	err := a.liveNoteLoader.Load(ctx, noteloader.LoadOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load live notes: %w", err)
 	}
