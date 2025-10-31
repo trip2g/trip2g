@@ -2,10 +2,6 @@ package miniostorage
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -49,17 +45,10 @@ func (c *Config) ValidateConfig() error {
 	)
 }
 
-type lockInfo struct {
-	OwnerID   string    `json:"owner_id"`
-	CreatedAt time.Time `json:"created_at"`
-	TTL       int64     `json:"ttl_seconds"`
-}
-
 type FileStorage struct {
 	config Config
 
 	minioClient *minio.Client
-	instanceID  string
 }
 
 func New(ctx context.Context, config Config) (*FileStorage, error) {
@@ -103,17 +92,10 @@ func New(ctx context.Context, config Config) (*FileStorage, error) {
 		config.Prefix += "/"
 	}
 
-	// Generate unique instance ID
-	instanceID, err := generateInstanceID()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate instance ID: %w", err)
-	}
-
 	s := FileStorage{
 		config: config,
 
 		minioClient: minioClient,
-		instanceID:  instanceID,
 	}
 
 	return &s, nil
@@ -325,174 +307,4 @@ func (a *FileStorage) GetPrivateObject(ctx context.Context, objectID string) (io
 	}
 
 	return object, nil
-}
-
-// PutLock creates a lock file atomically.
-// Returns error if lock already exists.
-func (a *FileStorage) PutLock(ctx context.Context, objectID string, ttl time.Duration) error {
-	safeCtx, cancel := a.ctx(ctx)
-	defer cancel()
-
-	objectID = a.config.Prefix + objectID
-
-	// Check if lock exists and get its state
-	expired, ownedByUs, etag, err := a.isLockExpired(safeCtx, objectID, ttl)
-	if err != nil {
-		// If we can't read the lock, assume it doesn't exist and try to create new one
-		return a.createNewLock(safeCtx, objectID, ttl, "")
-	}
-
-	if !expired && !ownedByUs {
-		// Lock exists, not expired, and not owned by us - can't acquire
-		return errors.New("lock already exists and is owned by another instance")
-	}
-
-	if expired && !ownedByUs {
-		// Lock exists but expired and owned by someone else - try to replace it
-		return a.createNewLock(safeCtx, objectID, ttl, etag)
-	}
-
-	if ownedByUs {
-		// We own this lock - renew it using the current ETag
-		return a.renewLock(safeCtx, objectID, ttl, etag)
-	}
-
-	// This shouldn't happen, but fallback to creating new lock
-	return a.createNewLock(safeCtx, objectID, ttl, "")
-}
-
-// createNewLock creates a new lock, optionally replacing an existing one with the given ETag.
-func (a *FileStorage) createNewLock(ctx context.Context, objectID string, ttl time.Duration, expectedETag string) error {
-	lock := lockInfo{
-		OwnerID:   a.instanceID,
-		CreatedAt: time.Now().UTC(),
-		TTL:       int64(ttl.Seconds()),
-	}
-
-	lockData, err := json.Marshal(lock)
-	if err != nil {
-		return fmt.Errorf("failed to marshal lock data: %w", err)
-	}
-
-	options := minio.PutObjectOptions{
-		ContentType: "application/json",
-	}
-
-	if expectedETag == "" {
-		// Creating new lock - should not exist
-		options.SetMatchETagExcept("*")
-	} else {
-		// Replacing existing lock - must match expected ETag
-		options.SetMatchETag(expectedETag)
-	}
-
-	content := strings.NewReader(string(lockData))
-	_, err = a.minioClient.PutObject(ctx, a.config.Bucket, objectID, content, int64(len(lockData)), options)
-	if err != nil {
-		return fmt.Errorf("failed to create lock: %w", err)
-	}
-
-	return nil
-}
-
-// renewLock renews an existing lock that we own.
-func (a *FileStorage) renewLock(ctx context.Context, objectID string, ttl time.Duration, expectedETag string) error {
-	lock := lockInfo{
-		OwnerID:   a.instanceID,
-		CreatedAt: time.Now().UTC(),
-		TTL:       int64(ttl.Seconds()),
-	}
-
-	lockData, err := json.Marshal(lock)
-	if err != nil {
-		return fmt.Errorf("failed to marshal lock data: %w", err)
-	}
-
-	options := minio.PutObjectOptions{
-		ContentType: "application/json",
-	}
-
-	// Must match the current ETag to ensure we're still the owner
-	options.SetMatchETag(expectedETag)
-
-	content := strings.NewReader(string(lockData))
-	_, err = a.minioClient.PutObject(ctx, a.config.Bucket, objectID, content, int64(len(lockData)), options)
-	if err != nil {
-		return fmt.Errorf("failed to renew lock: %w", err)
-	}
-
-	return nil
-}
-
-// RemoveLock removes the lock file.
-func (a *FileStorage) RemoveLock(ctx context.Context, objectID string) error {
-	safeCtx, cancel := a.ctx(ctx)
-	defer cancel()
-
-	objectID = a.config.Prefix + objectID
-
-	err := a.minioClient.RemoveObject(safeCtx, a.config.Bucket, objectID, minio.RemoveObjectOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to remove lock: %w", err)
-	}
-
-	return nil
-}
-
-// generateInstanceID creates a unique identifier for this storage instance.
-func generateInstanceID() (string, error) {
-	bytes := make([]byte, 16)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
-}
-
-// getLockInfo reads and parses lock information from the object.
-func (a *FileStorage) getLockInfo(ctx context.Context, objectID string) (*lockInfo, string, error) {
-	obj, err := a.minioClient.GetObject(ctx, a.config.Bucket, objectID, minio.GetObjectOptions{})
-	if err != nil {
-		return nil, "", err
-	}
-	defer obj.Close()
-
-	// Get object info to extract ETag
-	objInfo, err := obj.Stat()
-	if err != nil {
-		return nil, "", err
-	}
-
-	// Read object content
-	content, err := io.ReadAll(obj)
-	if err != nil {
-		return nil, "", err
-	}
-
-	var lock lockInfo
-	err = json.Unmarshal(content, &lock)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return &lock, objInfo.ETag, nil
-}
-
-// isLockExpired checks if a lock exists and if it's expired
-// Returns: (expired, ownedByUs, etag, error).
-func (a *FileStorage) isLockExpired(ctx context.Context, objectID string, _ time.Duration) (bool, bool, string, error) {
-	lock, etag, err := a.getLockInfo(ctx, objectID)
-	if err != nil {
-		// If object doesn't exist, consider it as expired
-		return true, false, "", fmt.Errorf("failed to get lock info: %w", err)
-	}
-
-	// Check if we own this lock
-	ownedByUs := lock.OwnerID == a.instanceID
-
-	// Check if lock is expired
-	expiresAt := lock.CreatedAt.Add(time.Duration(lock.TTL) * time.Second)
-	expired := time.Now().UTC().After(expiresAt)
-
-	return expired, ownedByUs, etag, nil
 }

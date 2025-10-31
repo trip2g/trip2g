@@ -20,7 +20,6 @@ import (
 	"trip2g/internal/notion"
 	"trip2g/internal/patreonjobs"
 	"trip2g/internal/purchasetoken"
-	"trip2g/internal/storagelocker"
 	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/usertoken"
 
@@ -98,8 +97,6 @@ type Config struct {
 
 	TgAuthToken tgauthtoken.Config
 
-	StorageLocker storagelocker.Config
-
 	GitAPI gitapi.Config
 
 	Notion notion.Config
@@ -141,14 +138,13 @@ func DefaultStorageConfig() miniostorage.Config {
 // DefaultConfig returns a configuration with default values.
 func DefaultConfig() *Config {
 	return &Config{
-		ListenAddr:    DefaultListenAddr,
-		DatabaseFile:  DefaultDatabaseFile,
-		DevMode:       DefaultDevMode,
-		AdminJSURL:    DefaultAdminJSURL,
-		LogLevel:      DefaultLogLevel,
-		AcmeDomains:   ArrayFlags{},
-		Storage:       DefaultStorageConfig(),
-		StorageLocker: storagelocker.DefaultConfig(),
+		ListenAddr:   DefaultListenAddr,
+		DatabaseFile: DefaultDatabaseFile,
+		DevMode:      DefaultDevMode,
+		AdminJSURL:   DefaultAdminJSURL,
+		LogLevel:     DefaultLogLevel,
+		AcmeDomains:  ArrayFlags{},
+		Storage:      DefaultStorageConfig(),
 	}
 }
 
@@ -328,30 +324,6 @@ func (c *Config) defineFlags() {
 		"tg-auth-token-expires-in",
 		tgAuthTokenDefaults.ExpiresIn,
 		"telegram auth token expiration duration",
-	)
-
-	// Storage Locker
-	storageLockerDefaults := storagelocker.DefaultConfig()
-
-	flag.BoolVar(
-		&c.StorageLocker.Enabled,
-		"storage-locker-enabled",
-		storageLockerDefaults.Enabled,
-		"enable storage locker to prevent multiple instances",
-	)
-
-	flag.StringVar(
-		&c.StorageLocker.Name,
-		"storage-locker-name",
-		storageLockerDefaults.Name,
-		"name for the storage locker instance",
-	)
-
-	flag.DurationVar(
-		&c.StorageLocker.TTL,
-		"storage-locker-ttl",
-		storageLockerDefaults.TTL,
-		"ttl for the storage locker",
 	)
 
 	// Git API
