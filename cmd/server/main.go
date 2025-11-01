@@ -268,18 +268,13 @@ func main() {
 	a.initPatreon(ctx)
 	a.initBoosty(ctx)
 
-	// Create shared queue and runner to prevent SQLITE_BUSY issues
-	a.goqiteQueue = goqite.New(goqite.NewOpts{
-		DB:   writeConn,
-		Name: "jobs",
+	globalQ := a.createQueue(ctx, "global_jobs", jobs.NewRunnerOpts{
+		Limit:        5,
+		PollInterval: time.Second,
 	})
 
-	a.goqiteRunner = jobs.NewRunner(jobs.NewRunnerOpts{
-		Limit:        5, // Allow more concurrent jobs across all types
-		Log:          logger.WithPrefix(log, "shared-runner:"),
-		PollInterval: time.Second,
-		Queue:        a.goqiteQueue,
-	})
+	a.goqiteQueue = globalQ.q
+	a.goqiteRunner = globalQ.runner
 
 	// Start the shared runner
 	go a.goqiteRunner.Start(ctx)

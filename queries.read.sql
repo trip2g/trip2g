@@ -829,3 +829,33 @@ select tsm.chat_id
 select *
   from telegram_publish_notes
  where note_path_id = ?;
+
+-- name: GetGoqiteQueueStats :one
+select queue
+     , count(*) as total_jobs
+     , count(case when received = 0 then 1 end) as pending_count
+     , count(case when received > 0 then 1 end) as retry_count
+  from goqite
+ where queue = ?
+ group by queue;
+
+-- name: ListGoqiteAllQueueStats :many
+select queue
+     , count(*) as total_jobs
+     , count(case when received = 0 then 1 end) as pending_count
+     , count(case when received > 0 then 1 end) as retry_count
+  from goqite
+ group by queue
+ order by queue;
+
+-- name: ListGoqiteJobsByQueue :many
+select id
+     , queue
+     , body
+     , created
+     , received
+     , timeout
+  from goqite
+ where queue = ?
+ order by created desc
+ limit ?;

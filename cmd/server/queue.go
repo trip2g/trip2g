@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"trip2g/internal/logger"
+	"trip2g/internal/model"
 
 	"maragu.dev/goqite"
 	"maragu.dev/goqite/jobs"
@@ -65,4 +66,65 @@ func (a *appQueue) start() {
 	a.cancel = cancel
 
 	go a.runner.Start(ctx)
+}
+
+func (a *appQueue) isStopped() bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	return a.cancel == nil
+}
+
+func (a *appQueue) toModel() *model.BackgroundQueue {
+	return &model.BackgroundQueue{
+		Name:    a.name,
+		Stopped: a.isStopped(),
+	}
+}
+
+func (a *app) getBackgroundQueue(name string) (*appQueue, error) {
+	q, ok := a.appQueues[name]
+	if !ok {
+		return nil, fmt.Errorf("queue %s not found", name)
+	}
+
+	return q, nil
+}
+
+func (a *app) GetBackgroundQueue(ctx context.Context, name string) (*model.BackgroundQueue, error) {
+	q, err := a.getBackgroundQueue(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return q.toModel(), nil
+}
+
+func (a *app) ListBackgroundQueues(ctx context.Context) []model.BackgroundQueue {
+	queues := make([]model.BackgroundQueue, 0, len(a.appQueues))
+	for _, q := range a.appQueues {
+		queues = append(queues, *q.toModel())
+	}
+
+	return queues
+}
+
+func (a *app) StopBackgroundQueue(ctx context.Context, name string) error {
+	q, err := a.getBackgroundQueue(name)
+	if err != nil {
+		return err
+	}
+
+	q.stop()
+	return nil
+}
+
+func (a *app) StartBackgroundQueue(ctx context.Context, name string) error {
+	q, err := a.getBackgroundQueue(name)
+	if err != nil {
+		return err
+	}
+
+	q.start()
+	return nil
 }

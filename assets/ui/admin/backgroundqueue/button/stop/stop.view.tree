@@ -1,0 +1,3 @@
+$trip2g_admin_backgroundqueue_button_stop $mol_button_major
+	queue_id \
+	title @ \Stop Queue

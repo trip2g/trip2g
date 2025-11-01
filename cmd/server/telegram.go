@@ -22,7 +22,7 @@ const sendTelegramPostJobID = "send_message"
 const updateTelegramPostJobID = "update_message"
 
 func (a *app) initTelegramDeps(ctx context.Context) error {
-	appQ := a.createQueue(ctx, "telegram_jobs", jobs.NewRunnerOpts{
+	appQ := a.createQueue(ctx, "tg_jobs", jobs.NewRunnerOpts{
 		Limit:        1,
 		PollInterval: time.Second,
 	})
@@ -86,7 +86,7 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 		return nil
 	})
 
-	appQ.start() // after register all handlers
+	// appQ.start() // after register all handlers
 
 	return a.initTelegramBots(ctx)
 }

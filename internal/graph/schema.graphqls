@@ -652,8 +652,20 @@ type AdminTelegramPublishNotesConnection
   count: Int64! @goField(forceResolver: true)
 }
 
-type AdminBackgroundQueue {
+type AdminBackgroundJob {
   id: String!
+  name: String!
+  params: String! # json
+  retryCount: Int64!
+}
+
+type AdminBackgroundQueue @goModel(model: "trip2g/internal/model.BackgroundQueue") {
+  id: String!
+  pendingCount: Int64!
+  retryCount: Int64!
+  stopped: Boolean!
+
+  jobs: [AdminBackgroundJob!]!
 }
 
 type AdminBackgroundQueuesConnection {
@@ -1825,6 +1837,27 @@ type SendTelegramPublishNoteNowPayload {
 
 union SendTelegramPublishNoteNowOrErrorPayload = SendTelegramPublishNoteNowPayload | ErrorPayload
 
+# Background Queue management
+input StopBackgroundQueueInput {
+  id: String!
+}
+
+type StopBackgroundQueuePayload {
+  queue: AdminBackgroundQueue!
+}
+
+union StopBackgroundQueueOrErrorPayload = StopBackgroundQueuePayload | ErrorPayload
+
+input StartBackgroundQueueInput {
+  id: String!
+}
+
+type StartBackgroundQueuePayload {
+  queue: AdminBackgroundQueue!
+}
+
+union StartBackgroundQueueOrErrorPayload = StartBackgroundQueuePayload | ErrorPayload
+
 type AdminMutation {
   createUser(input: CreateUserInput!): CreateUserOrErrorPayload!
   updateUser(input: UpdateUserInput!): UpdateUserOrErrorPayload!
@@ -1897,4 +1930,8 @@ type AdminMutation {
 
   # Config Version mutations
   createConfigVersion(input: CreateConfigVersionInput!): CreateConfigVersionOrErrorPayload!
+
+  # Background Queue mutations
+  stopBackgroundQueue(input: StopBackgroundQueueInput!): StopBackgroundQueueOrErrorPayload!
+  startBackgroundQueue(input: StartBackgroundQueueInput!): StartBackgroundQueueOrErrorPayload!
 }

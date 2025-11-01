@@ -1,0 +1,30 @@
+$trip2g_admin_backgroundqueue_catalog $trip2g_admin_catalog
+	menu_title @ \Background Queues
+	close_button null $mol_view
+	param \id
+	Menu_links_empty $mol_view
+		sub / <= empty_text @ \Empty
+	Content* $trip2g_admin_backgroundqueue_show
+		queue_id <= row_id* 0
+	menu_link_content* / <= BackgroundQueueItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Row_name_labeler* $mol_labeler
+						title @ \Queue Name
+						Content <= Row_name* $trip2g_admin_cell
+							content <= row_name* \name
+					<= Row_pending_labeler* $mol_labeler
+						title @ \Pending
+						Content <= Row_pending* $trip2g_admin_cell
+							content <= row_pending* \0
+					<= Row_retry_labeler* $mol_labeler
+						title @ \Retry
+						Content <= Row_retry* $trip2g_admin_cell
+							content <= row_retry* \0
+					<= Row_status_labeler* $mol_labeler
+						title @ \Status
+						Content <= Row_status* $trip2g_admin_cell
+							content <= row_status* \Running

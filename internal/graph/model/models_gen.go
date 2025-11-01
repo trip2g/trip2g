@@ -194,6 +194,14 @@ type SignOutOrErrorPayload interface {
 	IsSignOutOrErrorPayload()
 }
 
+type StartBackgroundQueueOrErrorPayload interface {
+	IsStartBackgroundQueueOrErrorPayload()
+}
+
+type StopBackgroundQueueOrErrorPayload interface {
+	IsStopBackgroundQueueOrErrorPayload()
+}
+
 type ToggleFavoriteNoteOrErrorPayload interface {
 	IsToggleFavoriteNoteOrErrorPayload()
 }
@@ -287,6 +295,17 @@ type AdminAuditLogsFilterInput struct {
 	Limit     *int64                    `json:"limit,omitempty"`
 	Offset    *int64                    `json:"offset,omitempty"`
 	CreatedAt *AdminAuditLogsDateFilter `json:"createdAt,omitempty"`
+}
+
+type AdminBackgroundJob struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Params     string `json:"params"`
+	RetryCount int64  `json:"retryCount"`
+}
+
+type AdminBackgroundQueuesConnection struct {
+	Nodes []model.BackgroundQueue `json:"nodes"`
 }
 
 type AdminBoostyCredentialsConnection struct {
@@ -824,6 +843,10 @@ func (ErrorPayload) IsResetTelegramPublishNoteOrErrorPayload() {}
 
 func (ErrorPayload) IsSendTelegramPublishNoteNowOrErrorPayload() {}
 
+func (ErrorPayload) IsStopBackgroundQueueOrErrorPayload() {}
+
+func (ErrorPayload) IsStartBackgroundQueueOrErrorPayload() {}
+
 type FieldMessage struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -1142,6 +1165,26 @@ type SignOutPayload struct {
 }
 
 func (SignOutPayload) IsSignOutOrErrorPayload() {}
+
+type StartBackgroundQueueInput struct {
+	ID string `json:"id"`
+}
+
+type StartBackgroundQueuePayload struct {
+	Queue *model.BackgroundQueue `json:"queue"`
+}
+
+func (StartBackgroundQueuePayload) IsStartBackgroundQueueOrErrorPayload() {}
+
+type StopBackgroundQueueInput struct {
+	ID string `json:"id"`
+}
+
+type StopBackgroundQueuePayload struct {
+	Queue *model.BackgroundQueue `json:"queue"`
+}
+
+func (StopBackgroundQueuePayload) IsStopBackgroundQueueOrErrorPayload() {}
 
 type SubgraphWaitList struct {
 	TgBotURL     *string `json:"tgBotUrl,omitempty"`

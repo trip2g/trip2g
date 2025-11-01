@@ -51,6 +51,8 @@ type ResolverRoot interface {
 	AdminApiKeysConnection() AdminApiKeysConnectionResolver
 	AdminAuditLog() AdminAuditLogResolver
 	AdminAuditLogsConnection() AdminAuditLogsConnectionResolver
+	AdminBackgroundQueue() AdminBackgroundQueueResolver
+	AdminBackgroundQueuesConnection() AdminBackgroundQueuesConnectionResolver
 	AdminBoostyCredentials() AdminBoostyCredentialsResolver
 	AdminBoostyCredentialsConnection() AdminBoostyCredentialsConnectionResolver
 	AdminBoostyMember() AdminBoostyMemberResolver
@@ -190,6 +192,25 @@ type ComplexityRoot struct {
 	}
 
 	AdminAuditLogsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminBackgroundJob struct {
+		ID         func(childComplexity int) int
+		Name       func(childComplexity int) int
+		Params     func(childComplexity int) int
+		RetryCount func(childComplexity int) int
+	}
+
+	AdminBackgroundQueue struct {
+		ID           func(childComplexity int) int
+		Jobs         func(childComplexity int) int
+		PendingCount func(childComplexity int) int
+		RetryCount   func(childComplexity int) int
+		Stopped      func(childComplexity int) int
+	}
+
+	AdminBackgroundQueuesConnection struct {
 		Nodes func(childComplexity int) int
 	}
 
@@ -352,6 +373,8 @@ type ComplexityRoot struct {
 		SetTgChatPublishTags         func(childComplexity int, input model.SetTgChatPublishTagsInput) int
 		SetTgChatSubgraphInvites     func(childComplexity int, input model.SetTgChatSubgraphInvitesInput) int
 		SetTgChatSubgraphs           func(childComplexity int, input model.SetTgChatSubgraphsInput) int
+		StartBackgroundQueue         func(childComplexity int, input model.StartBackgroundQueueInput) int
+		StopBackgroundQueue          func(childComplexity int, input model.StopBackgroundQueueInput) int
 		UnbanUser                    func(childComplexity int, input model.UnbanUserInput) int
 		UpdateBoostyCredentials      func(childComplexity int, input model.UpdateBoostyCredentialsInput) int
 		UpdateCronJob                func(childComplexity int, input model.UpdateCronJobInput) int
@@ -491,6 +514,7 @@ type ComplexityRoot struct {
 		ActiveUserSubgraphs        func(childComplexity int, id int64) int
 		AllAPIKeys                 func(childComplexity int) int
 		AllAdmins                  func(childComplexity int) int
+		AllBackgroundQueues        func(childComplexity int) int
 		AllBoostyCredentials       func(childComplexity int, filter *model.AdminBoostyCredentialsFilterInput) int
 		AllConfigVersions          func(childComplexity int) int
 		AllCronJobs                func(childComplexity int) int
@@ -515,6 +539,7 @@ type ComplexityRoot struct {
 		AllWaitListEmailRequests   func(childComplexity int) int
 		AllWaitListTgBotRequests   func(childComplexity int) int
 		AuditLogs                  func(childComplexity int, filter model.AdminAuditLogsFilterInput) int
+		BackgroundQueue            func(childComplexity int, id string) int
 		BoostyCredentials          func(childComplexity int, id int64) int
 		CronJob                    func(childComplexity int, id int64) int
 		HTMLInjection              func(childComplexity int, id int64) int
@@ -1041,6 +1066,14 @@ type ComplexityRoot struct {
 		Viewer func(childComplexity int) int
 	}
 
+	StartBackgroundQueuePayload struct {
+		Queue func(childComplexity int) int
+	}
+
+	StopBackgroundQueuePayload struct {
+		Queue func(childComplexity int) int
+	}
+
 	Subgraph struct {
 		HomePath func(childComplexity int) int
 		Name     func(childComplexity int) int
@@ -1184,6 +1217,16 @@ type AdminAuditLogResolver interface {
 type AdminAuditLogsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminAuditLogsConnection) ([]db.AuditLog, error)
 }
+type AdminBackgroundQueueResolver interface {
+	ID(ctx context.Context, obj *model1.BackgroundQueue) (string, error)
+	PendingCount(ctx context.Context, obj *model1.BackgroundQueue) (int64, error)
+	RetryCount(ctx context.Context, obj *model1.BackgroundQueue) (int64, error)
+
+	Jobs(ctx context.Context, obj *model1.BackgroundQueue) ([]model.AdminBackgroundJob, error)
+}
+type AdminBackgroundQueuesConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminBackgroundQueuesConnection) ([]model1.BackgroundQueue, error)
+}
 type AdminBoostyCredentialsResolver interface {
 	CreatedBy(ctx context.Context, obj *db.BoostyCredential) (*db.User, error)
 	DeletedAt(ctx context.Context, obj *db.BoostyCredential) (*time.Time, error)
@@ -1306,6 +1349,8 @@ type AdminMutationResolver interface {
 	UpdateCronJob(ctx context.Context, obj *model1.AdminMutation, input model.UpdateCronJobInput) (model.UpdateCronJobOrErrorPayload, error)
 	RunCronJob(ctx context.Context, obj *model1.AdminMutation, input model.RunCronJobInput) (model.RunCronJobOrErrorPayload, error)
 	CreateConfigVersion(ctx context.Context, obj *model1.AdminMutation, input model.CreateConfigVersionInput) (model.CreateConfigVersionOrErrorPayload, error)
+	StopBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.StopBackgroundQueueInput) (model.StopBackgroundQueueOrErrorPayload, error)
+	StartBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.StartBackgroundQueueInput) (model.StartBackgroundQueueOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -1413,6 +1458,8 @@ type AdminQueryResolver interface {
 	CronJob(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.CronJob, error)
 	TelegramPublishNote(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.TelegramPublishNote, error)
 	ActiveUserSubgraphs(ctx context.Context, obj *model1.AdminQuery, id int64) ([]string, error)
+	AllBackgroundQueues(ctx context.Context, obj *model1.AdminQuery) (*model.AdminBackgroundQueuesConnection, error)
+	BackgroundQueue(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.BackgroundQueue, error)
 }
 type AdminRedirectResolver interface {
 	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
@@ -1805,6 +1852,69 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminAuditLogsConnection.Nodes(childComplexity), true
+
+	case "AdminBackgroundJob.id":
+		if e.complexity.AdminBackgroundJob.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminBackgroundJob.ID(childComplexity), true
+	case "AdminBackgroundJob.name":
+		if e.complexity.AdminBackgroundJob.Name == nil {
+			break
+		}
+
+		return e.complexity.AdminBackgroundJob.Name(childComplexity), true
+	case "AdminBackgroundJob.params":
+		if e.complexity.AdminBackgroundJob.Params == nil {
+			break
+		}
+
+		return e.complexity.AdminBackgroundJob.Params(childComplexity), true
+	case "AdminBackgroundJob.retryCount":
+		if e.complexity.AdminBackgroundJob.RetryCount == nil {
+			break
+		}
+
+		return e.complexity.AdminBackgroundJob.RetryCount(childComplexity), true
+
+	case "AdminBackgroundQueue.id":
+		if e.complexity.AdminBackgroundQueue.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminBackgroundQueue.ID(childComplexity), true
+	case "AdminBackgroundQueue.jobs":
+		if e.complexity.AdminBackgroundQueue.Jobs == nil {
+			break
+		}
+
+		return e.complexity.AdminBackgroundQueue.Jobs(childComplexity), true
+	case "AdminBackgroundQueue.pendingCount":
+		if e.complexity.AdminBackgroundQueue.PendingCount == nil {
+			break
+		}
+
+		return e.complexity.AdminBackgroundQueue.PendingCount(childComplexity), true
+	case "AdminBackgroundQueue.retryCount":
+		if e.complexity.AdminBackgroundQueue.RetryCount == nil {
+			break
+		}
+
+		return e.complexity.AdminBackgroundQueue.RetryCount(childComplexity), true
+	case "AdminBackgroundQueue.stopped":
+		if e.complexity.AdminBackgroundQueue.Stopped == nil {
+			break
+		}
+
+		return e.complexity.AdminBackgroundQueue.Stopped(childComplexity), true
+
+	case "AdminBackgroundQueuesConnection.nodes":
+		if e.complexity.AdminBackgroundQueuesConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminBackgroundQueuesConnection.Nodes(childComplexity), true
 
 	case "AdminBoostyCredentials.blogName":
 		if e.complexity.AdminBoostyCredentials.BlogName == nil {
@@ -2645,6 +2755,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.SetTgChatSubgraphs(childComplexity, args["input"].(model.SetTgChatSubgraphsInput)), true
+	case "AdminMutation.startBackgroundQueue":
+		if e.complexity.AdminMutation.StartBackgroundQueue == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_startBackgroundQueue_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.StartBackgroundQueue(childComplexity, args["input"].(model.StartBackgroundQueueInput)), true
+	case "AdminMutation.stopBackgroundQueue":
+		if e.complexity.AdminMutation.StopBackgroundQueue == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_stopBackgroundQueue_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.StopBackgroundQueue(childComplexity, args["input"].(model.StopBackgroundQueueInput)), true
 	case "AdminMutation.unbanUser":
 		if e.complexity.AdminMutation.UnbanUser == nil {
 			break
@@ -3260,6 +3392,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AllAdmins(childComplexity), true
+	case "AdminQuery.allBackgroundQueues":
+		if e.complexity.AdminQuery.AllBackgroundQueues == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllBackgroundQueues(childComplexity), true
 	case "AdminQuery.allBoostyCredentials":
 		if e.complexity.AdminQuery.AllBoostyCredentials == nil {
 			break
@@ -3429,6 +3567,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AuditLogs(childComplexity, args["filter"].(model.AdminAuditLogsFilterInput)), true
+	case "AdminQuery.backgroundQueue":
+		if e.complexity.AdminQuery.BackgroundQueue == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_backgroundQueue_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.BackgroundQueue(childComplexity, args["id"].(string)), true
 	case "AdminQuery.boostyCredentials":
 		if e.complexity.AdminQuery.BoostyCredentials == nil {
 			break
@@ -5206,6 +5355,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SignOutPayload.Viewer(childComplexity), true
 
+	case "StartBackgroundQueuePayload.queue":
+		if e.complexity.StartBackgroundQueuePayload.Queue == nil {
+			break
+		}
+
+		return e.complexity.StartBackgroundQueuePayload.Queue(childComplexity), true
+
+	case "StopBackgroundQueuePayload.queue":
+		if e.complexity.StopBackgroundQueuePayload.Queue == nil {
+			break
+		}
+
+		return e.complexity.StopBackgroundQueuePayload.Queue(childComplexity), true
+
 	case "Subgraph.homePath":
 		if e.complexity.Subgraph.HomePath == nil {
 			break
@@ -5587,6 +5750,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSetTgChatSubgraphInvitesInput,
 		ec.unmarshalInputSetTgChatSubgraphsInput,
 		ec.unmarshalInputSignInByEmailInput,
+		ec.unmarshalInputStartBackgroundQueueInput,
+		ec.unmarshalInputStopBackgroundQueueInput,
 		ec.unmarshalInputToggleFavoriteNoteInput,
 		ec.unmarshalInputUnbanUserInput,
 		ec.unmarshalInputUpdateBoostyCredentialsInput,
@@ -6115,6 +6280,28 @@ func (ec *executionContext) field_AdminMutation_setTgChatSubgraphs_args(ctx cont
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminMutation_startBackgroundQueue_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNStartBackgroundQueueInput2trip2gᚋinternalᚋgraphᚋmodelᚐStartBackgroundQueueInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_stopBackgroundQueue_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNStopBackgroundQueueInput2trip2gᚋinternalᚋgraphᚋmodelᚐStopBackgroundQueueInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminMutation_unbanUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -6321,6 +6508,17 @@ func (ec *executionContext) field_AdminQuery_auditLogs_args(ctx context.Context,
 		return nil, err
 	}
 	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminQuery_backgroundQueue_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -7482,6 +7680,318 @@ func (ec *executionContext) fieldContext_AdminAuditLogsConnection_nodes(_ contex
 				return ec.fieldContext_AdminAuditLog_params(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminAuditLog", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBackgroundJob_id(ctx context.Context, field graphql.CollectedField, obj *model.AdminBackgroundJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminBackgroundJob_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminBackgroundJob_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBackgroundJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBackgroundJob_name(ctx context.Context, field graphql.CollectedField, obj *model.AdminBackgroundJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminBackgroundJob_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminBackgroundJob_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBackgroundJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBackgroundJob_params(ctx context.Context, field graphql.CollectedField, obj *model.AdminBackgroundJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminBackgroundJob_params,
+		func(ctx context.Context) (any, error) {
+			return obj.Params, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminBackgroundJob_params(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBackgroundJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBackgroundJob_retryCount(ctx context.Context, field graphql.CollectedField, obj *model.AdminBackgroundJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminBackgroundJob_retryCount,
+		func(ctx context.Context) (any, error) {
+			return obj.RetryCount, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminBackgroundJob_retryCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBackgroundJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBackgroundQueue_id(ctx context.Context, field graphql.CollectedField, obj *model1.BackgroundQueue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminBackgroundQueue_id,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminBackgroundQueue().ID(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminBackgroundQueue_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBackgroundQueue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBackgroundQueue_pendingCount(ctx context.Context, field graphql.CollectedField, obj *model1.BackgroundQueue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminBackgroundQueue_pendingCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminBackgroundQueue().PendingCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminBackgroundQueue_pendingCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBackgroundQueue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBackgroundQueue_retryCount(ctx context.Context, field graphql.CollectedField, obj *model1.BackgroundQueue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminBackgroundQueue_retryCount,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminBackgroundQueue().RetryCount(ctx, obj)
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminBackgroundQueue_retryCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBackgroundQueue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBackgroundQueue_stopped(ctx context.Context, field graphql.CollectedField, obj *model1.BackgroundQueue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminBackgroundQueue_stopped,
+		func(ctx context.Context) (any, error) {
+			return obj.Stopped, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminBackgroundQueue_stopped(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBackgroundQueue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBackgroundQueue_jobs(ctx context.Context, field graphql.CollectedField, obj *model1.BackgroundQueue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminBackgroundQueue_jobs,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminBackgroundQueue().Jobs(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminBackgroundJob2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBackgroundJobᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminBackgroundQueue_jobs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBackgroundQueue",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBackgroundJob_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminBackgroundJob_name(ctx, field)
+			case "params":
+				return ec.fieldContext_AdminBackgroundJob_params(ctx, field)
+			case "retryCount":
+				return ec.fieldContext_AdminBackgroundJob_retryCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBackgroundJob", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminBackgroundQueuesConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminBackgroundQueuesConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminBackgroundQueuesConnection_nodes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminBackgroundQueuesConnection().Nodes(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminBackgroundQueue2ᚕtrip2gᚋinternalᚋmodelᚐBackgroundQueueᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminBackgroundQueuesConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBackgroundQueuesConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBackgroundQueue_id(ctx, field)
+			case "pendingCount":
+				return ec.fieldContext_AdminBackgroundQueue_pendingCount(ctx, field)
+			case "retryCount":
+				return ec.fieldContext_AdminBackgroundQueue_retryCount(ctx, field)
+			case "stopped":
+				return ec.fieldContext_AdminBackgroundQueue_stopped(ctx, field)
+			case "jobs":
+				return ec.fieldContext_AdminBackgroundQueue_jobs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBackgroundQueue", field.Name)
 		},
 	}
 	return fc, nil
@@ -11798,6 +12308,88 @@ func (ec *executionContext) fieldContext_AdminMutation_createConfigVersion(ctx c
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_createConfigVersion_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_stopBackgroundQueue(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_stopBackgroundQueue,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().StopBackgroundQueue(ctx, obj, fc.Args["input"].(model.StopBackgroundQueueInput))
+		},
+		nil,
+		ec.marshalNStopBackgroundQueueOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐStopBackgroundQueueOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_stopBackgroundQueue(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type StopBackgroundQueueOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_stopBackgroundQueue_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_startBackgroundQueue(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_startBackgroundQueue,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().StartBackgroundQueue(ctx, obj, fc.Args["input"].(model.StartBackgroundQueueInput))
+		},
+		nil,
+		ec.marshalNStartBackgroundQueueOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐStartBackgroundQueueOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_startBackgroundQueue(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type StartBackgroundQueueOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_startBackgroundQueue_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -16138,6 +16730,92 @@ func (ec *executionContext) fieldContext_AdminQuery_activeUserSubgraphs(ctx cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_activeUserSubgraphs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allBackgroundQueues(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_allBackgroundQueues,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().AllBackgroundQueues(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminBackgroundQueuesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBackgroundQueuesConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allBackgroundQueues(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminBackgroundQueuesConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBackgroundQueuesConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_backgroundQueue(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_backgroundQueue,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().BackgroundQueue(ctx, obj, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOAdminBackgroundQueue2ᚖtrip2gᚋinternalᚋmodelᚐBackgroundQueue,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_backgroundQueue(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBackgroundQueue_id(ctx, field)
+			case "pendingCount":
+				return ec.fieldContext_AdminBackgroundQueue_pendingCount(ctx, field)
+			case "retryCount":
+				return ec.fieldContext_AdminBackgroundQueue_retryCount(ctx, field)
+			case "stopped":
+				return ec.fieldContext_AdminBackgroundQueue_stopped(ctx, field)
+			case "jobs":
+				return ec.fieldContext_AdminBackgroundQueue_jobs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBackgroundQueue", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_backgroundQueue_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -21659,6 +22337,10 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_runCronJob(ctx, field)
 			case "createConfigVersion":
 				return ec.fieldContext_AdminMutation_createConfigVersion(ctx, field)
+			case "stopBackgroundQueue":
+				return ec.fieldContext_AdminMutation_stopBackgroundQueue(ctx, field)
+			case "startBackgroundQueue":
+				return ec.fieldContext_AdminMutation_startBackgroundQueue(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -23202,6 +23884,10 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_telegramPublishNote(ctx, field)
 			case "activeUserSubgraphs":
 				return ec.fieldContext_AdminQuery_activeUserSubgraphs(ctx, field)
+			case "allBackgroundQueues":
+				return ec.fieldContext_AdminQuery_allBackgroundQueues(ctx, field)
+			case "backgroundQueue":
+				return ec.fieldContext_AdminQuery_backgroundQueue(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -24841,6 +25527,88 @@ func (ec *executionContext) fieldContext_SignOutPayload_viewer(_ context.Context
 				return ec.fieldContext_Viewer_tgBots(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Viewer", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StartBackgroundQueuePayload_queue(ctx context.Context, field graphql.CollectedField, obj *model.StartBackgroundQueuePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StartBackgroundQueuePayload_queue,
+		func(ctx context.Context) (any, error) {
+			return obj.Queue, nil
+		},
+		nil,
+		ec.marshalNAdminBackgroundQueue2ᚖtrip2gᚋinternalᚋmodelᚐBackgroundQueue,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StartBackgroundQueuePayload_queue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StartBackgroundQueuePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBackgroundQueue_id(ctx, field)
+			case "pendingCount":
+				return ec.fieldContext_AdminBackgroundQueue_pendingCount(ctx, field)
+			case "retryCount":
+				return ec.fieldContext_AdminBackgroundQueue_retryCount(ctx, field)
+			case "stopped":
+				return ec.fieldContext_AdminBackgroundQueue_stopped(ctx, field)
+			case "jobs":
+				return ec.fieldContext_AdminBackgroundQueue_jobs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBackgroundQueue", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StopBackgroundQueuePayload_queue(ctx context.Context, field graphql.CollectedField, obj *model.StopBackgroundQueuePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StopBackgroundQueuePayload_queue,
+		func(ctx context.Context) (any, error) {
+			return obj.Queue, nil
+		},
+		nil,
+		ec.marshalNAdminBackgroundQueue2ᚖtrip2gᚋinternalᚋmodelᚐBackgroundQueue,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_StopBackgroundQueuePayload_queue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StopBackgroundQueuePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBackgroundQueue_id(ctx, field)
+			case "pendingCount":
+				return ec.fieldContext_AdminBackgroundQueue_pendingCount(ctx, field)
+			case "retryCount":
+				return ec.fieldContext_AdminBackgroundQueue_retryCount(ctx, field)
+			case "stopped":
+				return ec.fieldContext_AdminBackgroundQueue_stopped(ctx, field)
+			case "jobs":
+				return ec.fieldContext_AdminBackgroundQueue_jobs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBackgroundQueue", field.Name)
 		},
 	}
 	return fc, nil
@@ -29840,6 +30608,60 @@ func (ec *executionContext) unmarshalInputSignInByEmailInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputStartBackgroundQueueInput(ctx context.Context, obj any) (model.StartBackgroundQueueInput, error) {
+	var it model.StartBackgroundQueueInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputStopBackgroundQueueInput(ctx context.Context, obj any) (model.StopBackgroundQueueInput, error) {
+	var it model.StopBackgroundQueueInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputToggleFavoriteNoteInput(ctx context.Context, obj any) (model.ToggleFavoriteNoteInput, error) {
 	var it model.ToggleFavoriteNoteInput
 	asMap := map[string]any{}
@@ -31549,6 +32371,52 @@ func (ec *executionContext) _SignOutOrErrorPayload(ctx context.Context, sel ast.
 	}
 }
 
+func (ec *executionContext) _StartBackgroundQueueOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.StartBackgroundQueueOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.StartBackgroundQueuePayload:
+		return ec._StartBackgroundQueuePayload(ctx, sel, &obj)
+	case *model.StartBackgroundQueuePayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._StartBackgroundQueuePayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _StopBackgroundQueueOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.StopBackgroundQueueOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.StopBackgroundQueuePayload:
+		return ec._StopBackgroundQueuePayload(ctx, sel, &obj)
+	case *model.StopBackgroundQueuePayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._StopBackgroundQueuePayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _ToggleFavoriteNoteOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.ToggleFavoriteNoteOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -32602,6 +33470,313 @@ func (ec *executionContext) _AdminAuditLogsConnection(ctx context.Context, sel a
 					}
 				}()
 				res = ec._AdminAuditLogsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminBackgroundJobImplementors = []string{"AdminBackgroundJob"}
+
+func (ec *executionContext) _AdminBackgroundJob(ctx context.Context, sel ast.SelectionSet, obj *model.AdminBackgroundJob) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminBackgroundJobImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminBackgroundJob")
+		case "id":
+			out.Values[i] = ec._AdminBackgroundJob_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._AdminBackgroundJob_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "params":
+			out.Values[i] = ec._AdminBackgroundJob_params(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "retryCount":
+			out.Values[i] = ec._AdminBackgroundJob_retryCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminBackgroundQueueImplementors = []string{"AdminBackgroundQueue"}
+
+func (ec *executionContext) _AdminBackgroundQueue(ctx context.Context, sel ast.SelectionSet, obj *model1.BackgroundQueue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminBackgroundQueueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminBackgroundQueue")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBackgroundQueue_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "pendingCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBackgroundQueue_pendingCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "retryCount":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBackgroundQueue_retryCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "stopped":
+			out.Values[i] = ec._AdminBackgroundQueue_stopped(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "jobs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBackgroundQueue_jobs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminBackgroundQueuesConnectionImplementors = []string{"AdminBackgroundQueuesConnection"}
+
+func (ec *executionContext) _AdminBackgroundQueuesConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminBackgroundQueuesConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminBackgroundQueuesConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminBackgroundQueuesConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminBackgroundQueuesConnection_nodes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -36369,6 +37544,78 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "stopBackgroundQueue":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_stopBackgroundQueue(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "startBackgroundQueue":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_startBackgroundQueue(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -39792,6 +41039,75 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allBackgroundQueues":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allBackgroundQueues(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "backgroundQueue":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_backgroundQueue(ctx, field, obj)
 				return res
 			}
 
@@ -43881,7 +45197,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -46452,6 +47768,84 @@ func (ec *executionContext) _SignOutPayload(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var startBackgroundQueuePayloadImplementors = []string{"StartBackgroundQueuePayload", "StartBackgroundQueueOrErrorPayload"}
+
+func (ec *executionContext) _StartBackgroundQueuePayload(ctx context.Context, sel ast.SelectionSet, obj *model.StartBackgroundQueuePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, startBackgroundQueuePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StartBackgroundQueuePayload")
+		case "queue":
+			out.Values[i] = ec._StartBackgroundQueuePayload_queue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var stopBackgroundQueuePayloadImplementors = []string{"StopBackgroundQueuePayload", "StopBackgroundQueueOrErrorPayload"}
+
+func (ec *executionContext) _StopBackgroundQueuePayload(ctx context.Context, sel ast.SelectionSet, obj *model.StopBackgroundQueuePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, stopBackgroundQueuePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StopBackgroundQueuePayload")
+		case "queue":
+			out.Values[i] = ec._StopBackgroundQueuePayload_queue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var subgraphImplementors = []string{"Subgraph"}
 
 func (ec *executionContext) _Subgraph(ctx context.Context, sel ast.SelectionSet, obj *db.Subgraph) graphql.Marshaler {
@@ -48633,6 +50027,126 @@ func (ec *executionContext) marshalNAdminAuditLogsConnection2ᚖtrip2gᚋinterna
 func (ec *executionContext) unmarshalNAdminAuditLogsFilterInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminAuditLogsFilterInput(ctx context.Context, v any) (model.AdminAuditLogsFilterInput, error) {
 	res, err := ec.unmarshalInputAdminAuditLogsFilterInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAdminBackgroundJob2trip2gᚋinternalᚋgraphᚋmodelᚐAdminBackgroundJob(ctx context.Context, sel ast.SelectionSet, v model.AdminBackgroundJob) graphql.Marshaler {
+	return ec._AdminBackgroundJob(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminBackgroundJob2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBackgroundJobᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminBackgroundJob) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminBackgroundJob2trip2gᚋinternalᚋgraphᚋmodelᚐAdminBackgroundJob(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminBackgroundQueue2trip2gᚋinternalᚋmodelᚐBackgroundQueue(ctx context.Context, sel ast.SelectionSet, v model1.BackgroundQueue) graphql.Marshaler {
+	return ec._AdminBackgroundQueue(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminBackgroundQueue2ᚕtrip2gᚋinternalᚋmodelᚐBackgroundQueueᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.BackgroundQueue) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminBackgroundQueue2trip2gᚋinternalᚋmodelᚐBackgroundQueue(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminBackgroundQueue2ᚖtrip2gᚋinternalᚋmodelᚐBackgroundQueue(ctx context.Context, sel ast.SelectionSet, v *model1.BackgroundQueue) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminBackgroundQueue(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminBackgroundQueuesConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminBackgroundQueuesConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminBackgroundQueuesConnection) graphql.Marshaler {
+	return ec._AdminBackgroundQueuesConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminBackgroundQueuesConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminBackgroundQueuesConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminBackgroundQueuesConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminBackgroundQueuesConnection(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNAdminBoostyCredentials2trip2gᚋinternalᚋdbᚐBoostyCredential(ctx context.Context, sel ast.SelectionSet, v db.BoostyCredential) graphql.Marshaler {
@@ -52203,6 +53717,36 @@ func (ec *executionContext) marshalNSignOutOrErrorPayload2trip2gᚋinternalᚋgr
 	return ec._SignOutOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNStartBackgroundQueueInput2trip2gᚋinternalᚋgraphᚋmodelᚐStartBackgroundQueueInput(ctx context.Context, v any) (model.StartBackgroundQueueInput, error) {
+	res, err := ec.unmarshalInputStartBackgroundQueueInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNStartBackgroundQueueOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐStartBackgroundQueueOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.StartBackgroundQueueOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._StartBackgroundQueueOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNStopBackgroundQueueInput2trip2gᚋinternalᚋgraphᚋmodelᚐStopBackgroundQueueInput(ctx context.Context, v any) (model.StopBackgroundQueueInput, error) {
+	res, err := ec.unmarshalInputStopBackgroundQueueInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNStopBackgroundQueueOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐStopBackgroundQueueOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.StopBackgroundQueueOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._StopBackgroundQueueOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -53022,6 +54566,13 @@ func (ec *executionContext) unmarshalOAdminAuditLogsDateFilter2ᚖtrip2gᚋinter
 	}
 	res, err := ec.unmarshalInputAdminAuditLogsDateFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOAdminBackgroundQueue2ᚖtrip2gᚋinternalᚋmodelᚐBackgroundQueue(ctx context.Context, sel ast.SelectionSet, v *model1.BackgroundQueue) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminBackgroundQueue(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminBoostyCredentials2ᚖtrip2gᚋinternalᚋdbᚐBoostyCredential(ctx context.Context, sel ast.SelectionSet, v *db.BoostyCredential) graphql.Marshaler {

@@ -1,0 +1,51 @@
+$trip2g_admin_backgroundqueue_show $mol_page
+	queue_id \
+	title <= queue_name \Background Queue
+	tools /
+		<= StopButton $trip2g_admin_backgroundqueue_button_stop
+			queue_id <= queue_id
+		<= StartButton $trip2g_admin_backgroundqueue_button_start
+			queue_id <= queue_id
+	body /
+		<= Info $mol_view
+			style *
+				flexDirection \column
+			sub /
+				<= QueueName_labeler $mol_labeler
+					title @ \Queue Name
+					Content <= QueueName $trip2g_admin_cell
+						content <= queue_name_value \
+				<= Status_labeler $mol_labeler
+					title @ \Status
+					Content <= Status $trip2g_admin_cell
+						content <= status_text \
+				<= PendingCount_labeler $mol_labeler
+					title @ \Pending Jobs
+					Content <= PendingCount $trip2g_admin_cell
+						content <= pending_count_text \
+				<= RetryCount_labeler $mol_labeler
+					title @ \Retry Jobs
+					Content <= RetryCount $trip2g_admin_cell
+						content <= retry_count_text \
+				<= Jobs $mol_list
+					rows <= job_rows /$mol_view
+						<= Job*0 $trip2g_admin_backgroundqueue_show_job
+							data <= job_data* null $trip2g_graphql_AdminBackgroundQueueJob
+
+$trip2g_admin_backgroundqueue_show_job $mol_view
+	data null $trip2g_graphql_AdminBackgroundQueueJob
+	sub /
+		<= Row $mol_row
+			sub /
+				<= JobID_labeler $mol_labeler
+					title @ \ID
+					Content <= JobID $trip2g_admin_cell
+						content <= job_id \
+				<= JobName_labeler $mol_labeler
+					title @ \Name
+					Content <= JobName $trip2g_admin_cell
+						content <= job_name \
+				<= JobParams_labeler $mol_labeler
+					title @ \Params
+					Content <= JobParams $trip2g_admin_cell
+						content <= job_params \

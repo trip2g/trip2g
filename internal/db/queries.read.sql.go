@@ -1214,6 +1214,35 @@ func (q *Queries) GetBoostyTiers(ctx context.Context) ([]BoostyTier, error) {
 	return items, nil
 }
 
+const getGoqiteQueueStats = `-- name: GetGoqiteQueueStats :one
+select queue
+     , count(*) as total_jobs
+     , count(case when received = 0 then 1 end) as pending_count
+     , count(case when received > 0 then 1 end) as retry_count
+  from goqite
+ where queue = ?
+ group by queue
+`
+
+type GetGoqiteQueueStatsRow struct {
+	Queue        string `json:"queue"`
+	TotalJobs    int64  `json:"total_jobs"`
+	PendingCount int64  `json:"pending_count"`
+	RetryCount   int64  `json:"retry_count"`
+}
+
+func (q *Queries) GetGoqiteQueueStats(ctx context.Context, queue string) (GetGoqiteQueueStatsRow, error) {
+	row := q.db.QueryRowContext(ctx, getGoqiteQueueStats, queue)
+	var i GetGoqiteQueueStatsRow
+	err := row.Scan(
+		&i.Queue,
+		&i.TotalJobs,
+		&i.PendingCount,
+		&i.RetryCount,
+	)
+	return i, err
+}
+
 const getHTMLInjection = `-- name: GetHTMLInjection :one
 select id, created_at, active_from, active_to, description, position, placement, content from html_injections
 where id = ?
@@ -2861,6 +2890,108 @@ func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listGoqiteAllQueueStats = `-- name: ListGoqiteAllQueueStats :many
+select queue
+     , count(*) as total_jobs
+     , count(case when received = 0 then 1 end) as pending_count
+     , count(case when received > 0 then 1 end) as retry_count
+  from goqite
+ group by queue
+ order by queue
+`
+
+type ListGoqiteAllQueueStatsRow struct {
+	Queue        string `json:"queue"`
+	TotalJobs    int64  `json:"total_jobs"`
+	PendingCount int64  `json:"pending_count"`
+	RetryCount   int64  `json:"retry_count"`
+}
+
+func (q *Queries) ListGoqiteAllQueueStats(ctx context.Context) ([]ListGoqiteAllQueueStatsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listGoqiteAllQueueStats)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListGoqiteAllQueueStatsRow
+	for rows.Next() {
+		var i ListGoqiteAllQueueStatsRow
+		if err := rows.Scan(
+			&i.Queue,
+			&i.TotalJobs,
+			&i.PendingCount,
+			&i.RetryCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listGoqiteJobsByQueue = `-- name: ListGoqiteJobsByQueue :many
+select id
+     , queue
+     , body
+     , created
+     , received
+     , timeout
+  from goqite
+ where queue = ?
+ order by created desc
+ limit ?
+`
+
+type ListGoqiteJobsByQueueParams struct {
+	Queue string `json:"queue"`
+	Limit int64  `json:"limit"`
+}
+
+type ListGoqiteJobsByQueueRow struct {
+	ID       string `json:"id"`
+	Queue    string `json:"queue"`
+	Body     []byte `json:"body"`
+	Created  string `json:"created"`
+	Received int64  `json:"received"`
+	Timeout  string `json:"timeout"`
+}
+
+func (q *Queries) ListGoqiteJobsByQueue(ctx context.Context, arg ListGoqiteJobsByQueueParams) ([]ListGoqiteJobsByQueueRow, error) {
+	rows, err := q.db.QueryContext(ctx, listGoqiteJobsByQueue, arg.Queue, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListGoqiteJobsByQueueRow
+	for rows.Next() {
+		var i ListGoqiteJobsByQueueRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Queue,
+			&i.Body,
+			&i.Created,
+			&i.Received,
+			&i.Timeout,
 		); err != nil {
 			return nil, err
 		}

@@ -192,15 +192,19 @@ function buildTypePath(pathArray, operationType, operationName, isSingle = false
 
 	const baseType = `${operationName}${prefix}`
 
-	// Build path like GetPostsQuery['admin']['posts'] or GetPostsQuery['admin']['posts'][0]
-	const pathSegments = pathArray.map(segment => `['${segment}']`)
+	// Build path with NonNullable wrapping for each level
+	// Example: NonNullable<NonNullable<Query['admin']>['backgroundQueue']>['jobs'][0]
+	let typePath = baseType
+	for (const segment of pathArray) {
+		typePath = `NonNullable<${typePath}>['${segment}']`
+	}
 
 	if (isSingle) {
 		// For single: true, add [0] to get the element type
-		return `${baseType}${pathSegments.join('')}[0]`
+		return `${typePath}[0]`
 	} else {
 		// For single: false (default), return the array type itself
-		return `${baseType}${pathSegments.join('')}`
+		return typePath
 	}
 }
 
