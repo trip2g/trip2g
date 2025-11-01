@@ -652,6 +652,14 @@ type AdminTelegramPublishNotesConnection
   count: Int64! @goField(forceResolver: true)
 }
 
+type AdminBackgroundQueue {
+  id: String!
+}
+
+type AdminBackgroundQueuesConnection {
+  nodes: [AdminBackgroundQueue!]! @goField(forceResolver: true)
+}
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -707,6 +715,9 @@ type AdminQuery {
   telegramPublishNote(id: Int64!): AdminTelegramPublishNote
 
   activeUserSubgraphs(id: Int64!): [String!]!
+
+  allBackgroundQueues: AdminBackgroundQueuesConnection!
+  backgroundQueue(id: String!): AdminBackgroundQueue
 }
 
 enum Role {
