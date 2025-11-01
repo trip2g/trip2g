@@ -161,6 +161,8 @@ type app struct {
 	boostyClientManager  *boosty.ClientManager
 
 	gitAPI *gitapi.API
+
+	appQueues map[string]*appQueue
 }
 
 func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB) {
@@ -1031,8 +1033,25 @@ func (a *app) DB() *sql.DB {
 }
 
 func (a *app) VacuumDB(ctx context.Context) error {
-	_, err := a.conn.ExecContext(ctx, "VACUUM")
-	return err
+	// 1. Checkpoint WAL file before vacuum
+	_, err := a.conn.ExecContext(ctx, "PRAGMA wal_checkpoint(TRUNCATE)")
+	if err != nil {
+		return fmt.Errorf("failed to checkpoint WAL: %w", err)
+	}
+
+	// 2. Reclaim unused space
+	_, err = a.conn.ExecContext(ctx, "VACUUM")
+	if err != nil {
+		return fmt.Errorf("failed to vacuum: %w", err)
+	}
+
+	// 3. Update query planner statistics
+	_, err = a.conn.ExecContext(ctx, "ANALYZE")
+	if err != nil {
+		return fmt.Errorf("failed to analyze: %w", err)
+	}
+
+	return nil
 }
 
 func (a *app) RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) {

@@ -11,12 +11,10 @@ import (
 	"trip2g/internal/case/backjob/sendtelegrampost"
 	"trip2g/internal/case/backjob/updatetelegrampost"
 	"trip2g/internal/case/handletgupdate"
-	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/tgbots"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"maragu.dev/goqite"
 	"maragu.dev/goqite/jobs"
 )
 
@@ -24,17 +22,13 @@ const sendTelegramPostJobID = "send_message"
 const updateTelegramPostJobID = "update_message"
 
 func (a *app) initTelegramDeps(ctx context.Context) error {
-	a.telegramQueue = goqite.New(goqite.NewOpts{
-		DB:   a.writeConn,
-		Name: "telegram_jobs",
+	appQ := a.createQueue(ctx, "telegram_jobs", jobs.NewRunnerOpts{
+		Limit:        1,
+		PollInterval: time.Second,
 	})
 
-	a.telegramRunner = jobs.NewRunner(jobs.NewRunnerOpts{
-		Limit:        1,
-		Log:          logger.WithPrefix(a.log, "telegram-runner:"),
-		PollInterval: time.Second,
-		Queue:        a.telegramQueue,
-	})
+	a.telegramQueue = appQ.q
+	a.telegramRunner = appQ.runner
 
 	a.telegramRunner.Register(sendTelegramPostJobID, func(ctx context.Context, m []byte) error {
 		var params model.TelegramSendPostParams
@@ -92,8 +86,7 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 		return nil
 	})
 
-	// Start the shared runner
-	go a.telegramRunner.Start(ctx)
+	appQ.start() // after register all handlers
 
 	return a.initTelegramBots(ctx)
 }
