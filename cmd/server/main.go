@@ -275,6 +275,7 @@ func main() {
 
 	a.goqiteQueue = globalQ.q
 	a.goqiteRunner = globalQ.runner
+	globalQ.start()
 
 	err = a.initTelegramDeps(ctx)
 	if err != nil {

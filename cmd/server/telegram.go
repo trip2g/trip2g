@@ -20,6 +20,7 @@ import (
 
 const sendTelegramPostJobID = "send_message"
 const updateTelegramPostJobID = "update_message"
+const sendPublishPostJobID = "send_publish_post"
 
 func (a *app) initTelegramDeps(ctx context.Context) error {
 	appQ := a.createQueue(ctx, "tg_jobs", jobs.NewRunnerOpts{
@@ -48,7 +49,7 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 		if err != nil {
 			shouldRetry, delay := handleTelegramRateLimit(err)
 			if shouldRetry {
-				a.log.Warn("telegram rate limit hit, retrying after delay",
+				a.log.Info("telegram rate limit hit, retrying after delay",
 					"delay", delay,
 					"job", sendTelegramPostJobID,
 				)
@@ -80,7 +81,7 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 		if err != nil {
 			shouldRetry, delay := handleTelegramRateLimit(err)
 			if shouldRetry {
-				a.log.Warn("telegram rate limit hit, retrying after delay",
+				a.log.Info("telegram rate limit hit, retrying after delay",
 					"delay", delay,
 					"job", updateTelegramPostJobID,
 				)
@@ -96,7 +97,25 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 		return nil
 	})
 
-	// appQ.start() // after register all handlers
+	a.telegramRunner.Register(sendPublishPostJobID, func(ctx context.Context, m []byte) error {
+		var params struct {
+			NotePathID int64 `json:"note_path_id"`
+			Instant    bool  `json:"instant"`
+		}
+
+		err := json.Unmarshal(m, &params)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal send_publish_post params: %w", err)
+		}
+
+		// independent timeout context from stop cancelations
+		jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
+		defer cancel()
+
+		return a.SendTelegramPublishPostWithTx(jobCtx, params.NotePathID, params.Instant)
+	})
+
+	appQ.start() // after register all handlers
 
 	return a.initTelegramBots(ctx)
 }
@@ -107,6 +126,17 @@ func (a *app) EnqueueSendTelegramPost(ctx context.Context, params model.Telegram
 
 func (a *app) EnqueueUpdateTelegramPost(ctx context.Context, params model.TelegramUpdatePostParams) error {
 	return a.enqueueJobToQ(ctx, a.telegramQueue, updateTelegramPostJobID, params)
+}
+
+func (a *app) EnqueueSendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error {
+	params := struct {
+		NotePathID int64 `json:"note_path_id"`
+		Instant    bool  `json:"instant"`
+	}{
+		NotePathID: notePathID,
+		Instant:    instant,
+	}
+	return a.enqueueJobToQ(ctx, a.telegramQueue, sendPublishPostJobID, params)
 }
 
 func (a *app) initTelegramBots(ctx context.Context) error {

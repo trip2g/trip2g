@@ -69,6 +69,8 @@ func Resolve(ctx context.Context, env Env, params model.TelegramUpdatePostParams
 		logger.Info("already up-to-date", "note_path_id", params.NotePathID, "chat_id", params.DBChatID, "message_id", params.MessageID)
 	}
 
+	logger.Debug("updated", "note_path_id", params.NotePathID, "chat_id", params.DBChatID, "message_id", params.MessageID)
+
 	// Update the database with new content hash
 	updateParams := db.UpdateTelegramPublishSentMessageContentParams{
 		ContentHash: newContentHash,

@@ -9,7 +9,7 @@ import (
 type Env interface {
 	Logger() logger.Logger
 	ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int64, error)
-	SendTelegramPublishPostWithTx(ctx context.Context, notePathID int64, instant bool) error
+	EnqueueSendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error
 }
 
 type ResultPost struct {
@@ -31,8 +31,10 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 
 	res := Result{}
 
+	logger.Debug("posts found", "count", len(ids))
+
 	for _, id := range ids {
-		sendErr := env.SendTelegramPublishPostWithTx(ctx, id, false)
+		sendErr := env.EnqueueSendTelegramPublishPost(ctx, id, false)
 
 		res.Posts = append(res.Posts, ResultPost{
 			NotePathID: id,
@@ -40,7 +42,7 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 		})
 
 		if sendErr != nil {
-			logger.Error("failed to SendTelegramPublishPostWithTx", "note_path_id", id, "error", sendErr)
+			logger.Error("failed to EnqueueSendTelegramPublishPost", "note_path_id", id, "error", sendErr)
 		}
 	}
 

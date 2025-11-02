@@ -88,6 +88,7 @@ namespace $.$$ {
 		}
 
 		override job_params(): string {
+			// return JSON.stringify(JSON.parse(this.data().params), null, 2)
 			return truncate(this.data().params, 30)
 		}
 	}
