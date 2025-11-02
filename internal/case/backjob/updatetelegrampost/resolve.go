@@ -61,15 +61,17 @@ func Resolve(ctx context.Context, env Env, params model.TelegramUpdatePostParams
 	}
 
 	if editErr != nil {
+		logger.Debug("edit error", "error", editErr.Error(), "note_path_id", params.NotePathID, "chat_id", params.DBChatID, "message_id", params.MessageID)
+
 		// If Telegram says content is the same, it's not an error - just update hash in DB
 		if !strings.Contains(editErr.Error(), "are exactly the same as a current content") {
 			return fmt.Errorf("failed to edit telegram message: %w", editErr)
 		}
 
 		logger.Info("already up-to-date", "note_path_id", params.NotePathID, "chat_id", params.DBChatID, "message_id", params.MessageID)
+	} else {
+		logger.Debug("updated", "note_path_id", params.NotePathID, "chat_id", params.DBChatID, "message_id", params.MessageID)
 	}
-
-	logger.Debug("updated", "note_path_id", params.NotePathID, "chat_id", params.DBChatID, "message_id", params.MessageID)
 
 	// Update the database with new content hash
 	updateParams := db.UpdateTelegramPublishSentMessageContentParams{

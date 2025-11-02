@@ -158,6 +158,8 @@ func (a *app) initTelegramBots(ctx context.Context) error {
 }
 
 func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
+	a.log.Debug("sending telegram message", "chat_id", chatID, "msg", msg)
+
 	chat, err := a.TgBotChat(ctx, chatID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get Telegram chat: %w", err)
@@ -178,6 +180,8 @@ func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotap
 }
 
 func (a *app) SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+	a.log.Debug("sending telegram request", "chat_id", chatID, "msg", msg)
+
 	chat, err := a.TgBotChat(ctx, chatID)
 	if err != nil {
 		return fmt.Errorf("failed to get Telegram chat: %w", err)
@@ -189,10 +193,13 @@ func (a *app) SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotap
 		return fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
 	}
 
-	_, err = handlerIO.Request(msg)
+	resp, err := handlerIO.Request(msg)
 	if err != nil {
+		a.log.Debug("telegram request error", "chat_id", chatID, "error", err.Error())
 		return fmt.Errorf("failed to send Telegram message: %w", err)
 	}
+
+	a.log.Debug("telegram request success", "chat_id", chatID, "ok", resp.Ok, "description", resp.Description)
 
 	return nil
 }
