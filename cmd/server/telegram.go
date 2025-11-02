@@ -199,7 +199,7 @@ func (a *app) SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotap
 		return fmt.Errorf("failed to send Telegram message: %w", err)
 	}
 
-	a.log.Debug("telegram request success", "chat_id", chatID, "ok", resp.Ok, "description", resp.Description)
+	a.log.Debug("telegram request success", "chat_id", chatID, "resp", resp)
 
 	return nil
 }
