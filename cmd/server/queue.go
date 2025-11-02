@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -102,9 +103,17 @@ func (a *app) GetBackgroundQueue(ctx context.Context, name string) (*model.Backg
 }
 
 func (a *app) ListBackgroundQueues(ctx context.Context) []model.BackgroundQueue {
+	// Get and sort queue names
+	names := make([]string, 0, len(a.appQueues))
+	for name := range a.appQueues {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	// Build result in sorted order
 	queues := make([]model.BackgroundQueue, 0, len(a.appQueues))
-	for _, q := range a.appQueues {
-		queues = append(queues, *q.toModel())
+	for _, name := range names {
+		queues = append(queues, *a.appQueues[name].toModel())
 	}
 
 	return queues
