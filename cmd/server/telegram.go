@@ -22,18 +22,22 @@ const sendTelegramPostJobID = "send_message"
 const updateTelegramPostJobID = "update_message"
 const sendPublishPostJobID = "send_publish_post"
 
+type sendPublishPostParams struct {
+	NotePathID int64 `json:"note_path_id"`
+	Instant    bool  `json:"instant"`
+}
+
 func (a *app) initTelegramDeps(ctx context.Context) error {
 	appQ := a.createQueue(ctx, "tg_jobs", jobs.NewRunnerOpts{
 		Limit:        1,
 		PollInterval: time.Second,
 	})
 
-	a.telegramQueue = appQ.q
-	a.telegramRunner = appQ.runner
+	a.telegramQueue = appQ
 
 	jobTimeout := time.Minute
 
-	a.telegramRunner.Register(sendTelegramPostJobID, func(ctx context.Context, m []byte) error {
+	a.telegramQueue.runner.Register(sendTelegramPostJobID, func(ctx context.Context, m []byte) error {
 		var params model.TelegramSendPostParams
 
 		err := json.Unmarshal(m, &params)
@@ -65,7 +69,7 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 		return nil
 	})
 
-	a.telegramRunner.Register(updateTelegramPostJobID, func(ctx context.Context, m []byte) error {
+	a.telegramQueue.runner.Register(updateTelegramPostJobID, func(ctx context.Context, m []byte) error {
 		var params model.TelegramUpdatePostParams
 
 		err := json.Unmarshal(m, &params)
@@ -97,11 +101,8 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 		return nil
 	})
 
-	a.telegramRunner.Register(sendPublishPostJobID, func(ctx context.Context, m []byte) error {
-		var params struct {
-			NotePathID int64 `json:"note_path_id"`
-			Instant    bool  `json:"instant"`
-		}
+	a.telegramQueue.runner.Register(sendPublishPostJobID, func(ctx context.Context, m []byte) error {
+		var params sendPublishPostParams
 
 		err := json.Unmarshal(m, &params)
 		if err != nil {
@@ -129,13 +130,7 @@ func (a *app) EnqueueUpdateTelegramPost(ctx context.Context, params model.Telegr
 }
 
 func (a *app) EnqueueSendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error {
-	params := struct {
-		NotePathID int64 `json:"note_path_id"`
-		Instant    bool  `json:"instant"`
-	}{
-		NotePathID: notePathID,
-		Instant:    instant,
-	}
+	params := sendPublishPostParams{NotePathID: notePathID, Instant: instant}
 	return a.enqueueJobToQ(ctx, a.telegramQueue, sendPublishPostJobID, params)
 }
 

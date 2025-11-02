@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 )
 
@@ -23,9 +24,12 @@ type Env interface {
 
 	// Content access methods
 	LatestNoteViews() *model.NoteViews
+
+	Logger() logger.Logger
 }
 
 func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error {
+	logger := logger.WithPrefix(env.Logger(), "sendtelegrampublishpost:")
 	nvs := env.LatestNoteViews()
 
 	noteView := nvs.GetByPathID(notePathID)
@@ -54,6 +58,8 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 
 		return fmt.Errorf("no chat IDs found for note path ID %d", notePathID)
 	}
+
+	logger.Info("sending", "note_path_id", notePathID, "instant", instant, "chat_count", len(chats))
 
 	// Send the post to each chat
 	for _, chat := range chats {

@@ -74,7 +74,6 @@ import (
 	"github.com/vektah/gqlparser/gqlerror"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
-	"maragu.dev/goqite"
 	"maragu.dev/goqite/jobs"
 
 	"github.com/oklog/ulid/v2"
@@ -120,11 +119,8 @@ type app struct {
 
 	auditLogger logger.Logger
 
-	goqiteQueue  *goqite.Queue
-	goqiteRunner *jobs.Runner
-
-	telegramQueue  *goqite.Queue
-	telegramRunner *jobs.Runner
+	globalQueue   *appQueue
+	telegramQueue *appQueue
 
 	// mail *mailyak.MailYak
 
@@ -268,14 +264,10 @@ func main() {
 	a.initPatreon(ctx)
 	a.initBoosty(ctx)
 
-	globalQ := a.createQueue(ctx, "global_jobs", jobs.NewRunnerOpts{
+	a.globalQueue = a.createQueue(ctx, "global_jobs", jobs.NewRunnerOpts{
 		Limit:        5,
 		PollInterval: time.Second,
 	})
-
-	a.goqiteQueue = globalQ.q
-	a.goqiteRunner = globalQ.runner
-	globalQ.start()
 
 	err = a.initTelegramDeps(ctx)
 	if err != nil {
@@ -323,6 +315,8 @@ func main() {
 	a.setupAssets()
 	a.setTokenValidator()
 	a.setFileStorageExpiringCallback(ctx)
+
+	a.globalQueue.start()
 
 	a.startServer()
 }
@@ -458,31 +452,10 @@ func (a *app) InsertNote(ctx context.Context, note model.RawNote) error {
 }
 
 func (a *app) EnqueueJob(ctx context.Context, jobID string, data any) error {
-	rawData, err := json.Marshal(data)
-	if err != nil {
-		return fmt.Errorf("failed to marshal job data: %w", err)
-	}
-
-	req, err := appreq.FromCtx(ctx)
-	if err != nil && !errors.Is(err, appreq.ErrNotFound) {
-		return fmt.Errorf("failed to get request from context: %w", err)
-	}
-
-	if req != nil {
-		env, ok := req.Env.(*app)
-		if ok && env.CurrentTx() != nil {
-			a.log.Debug("enqueueing job in request env", "job_id", jobID, "data", string(rawData))
-
-			return jobs.CreateTx(ctx, env.currentTx, env.goqiteQueue, jobID, rawData)
-		}
-	}
-
-	a.log.Debug("enqueueing job in global env", "job_id", jobID, "data", string(rawData))
-
-	return jobs.Create(ctx, a.goqiteQueue, jobID, rawData)
+	return a.enqueueJobToQ(ctx, a.globalQueue, jobID, data)
 }
 
-func (a *app) enqueueJobToQ(ctx context.Context, q *goqite.Queue, jobID string, data any) error {
+func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, jobID string, data any) error {
 	rawData, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal job data: %w", err)
@@ -496,26 +469,27 @@ func (a *app) enqueueJobToQ(ctx context.Context, q *goqite.Queue, jobID string, 
 	if req != nil {
 		env, ok := req.Env.(*app)
 		if ok && env.CurrentTx() != nil {
-			a.log.Debug("enqueueing job in request env", "job_id", jobID, "data", string(rawData))
+			a.log.Debug("enqueueing in request env", "job_id", jobID, "data", string(rawData), "queue", aq.name)
+			a.log.Debug("enqueueing in request env", "job_id", jobID, "data", string(rawData), "queue", aq.name)
 
-			return jobs.CreateTx(ctx, env.currentTx, q, jobID, rawData)
+			return jobs.CreateTx(ctx, env.currentTx, aq.q, jobID, rawData)
 		}
 	}
 
 	if a.currentTx != nil {
-		a.log.Debug("enqueueing job in app.currentTx", "job_id", jobID, "data", string(rawData))
+		a.log.Debug("enqueueing in app.currentTx", "job_id", jobID, "data", string(rawData), "queue", aq.name)
 
-		return jobs.CreateTx(ctx, a.currentTx, q, jobID, rawData)
+		return jobs.CreateTx(ctx, a.currentTx, aq.q, jobID, rawData)
 	}
 
-	a.log.Debug("enqueueing job in global env", "job_id", jobID, "data", string(rawData))
+	a.log.Debug("enqueueing in global env", "job_id", jobID, "data", string(rawData), "queue", aq.name)
 
-	return jobs.Create(ctx, q, jobID, rawData)
+	return jobs.Create(ctx, aq.q, jobID, rawData)
 }
 
 func (a *app) RegisterJob(id string, handler func(ctx context.Context, m []byte) error) {
 	a.log.Info("registering job handler", "id", id)
-	a.goqiteRunner.Register(id, handler)
+	a.globalQueue.runner.Register(id, handler)
 }
 
 func (a *app) createOwnerIfNotExists(ctx context.Context) error {

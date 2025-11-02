@@ -22,6 +22,8 @@ type appQueue struct {
 	cancel context.CancelFunc
 	runner *jobs.Runner
 
+	logger logger.Logger
+
 	mu sync.Mutex
 }
 
@@ -31,8 +33,10 @@ func (a *app) createQueue(ctx context.Context, name string, runnerOpts jobs.NewR
 		Name: name,
 	})
 
+	logger := logger.WithPrefix(a.log, name+":")
+
 	runnerOpts.Queue = q
-	runnerOpts.Log = logger.WithPrefix(a.log, fmt.Sprintf("%s_runner:", name))
+	runnerOpts.Log = logger
 
 	runner := jobs.NewRunner(runnerOpts)
 
@@ -41,6 +45,7 @@ func (a *app) createQueue(ctx context.Context, name string, runnerOpts jobs.NewR
 		rootCtx: ctx, // for app graceful shutdown
 		name:    name,
 		runner:  runner,
+		logger:  logger,
 	}
 
 	if a.appQueues == nil {
