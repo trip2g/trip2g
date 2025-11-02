@@ -136,6 +136,14 @@ func (q *WriteQueries) DeleteBoostyTierSubgraphsByTierID(ctx context.Context, ti
 	return err
 }
 
+const deleteGoqiteJobsByQueue = `-- name: DeleteGoqiteJobsByQueue :execresult
+delete from goqite where queue = ?
+`
+
+func (q *WriteQueries) DeleteGoqiteJobsByQueue(ctx context.Context, queue string) (sql.Result, error) {
+	return q.db.ExecContext(ctx, deleteGoqiteJobsByQueue, queue)
+}
+
 const deleteHTMLInjection = `-- name: DeleteHTMLInjection :exec
 delete from html_injections
 where id = ?
@@ -2703,11 +2711,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-  *Queries
+	*Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-  return &WriteQueries{
-    Queries: New(db),
-  }
+	return &WriteQueries{
+		Queries: New(db),
+	}
 }

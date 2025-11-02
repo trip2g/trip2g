@@ -697,3 +697,7 @@ update telegram_publish_sent_messages
    and chat_id = ?
    and message_id = ?;
 
+
+
+-- name: DeleteGoqiteJobsByQueue :execresult
+delete from goqite where queue = ?;

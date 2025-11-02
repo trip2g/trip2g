@@ -9,6 +9,7 @@ import (
 	"sync"
 	"trip2g/internal/case/backjob/updatetelegrampost"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 )
 
 // Ensure, that EnvMock does implement updatetelegrampost.Env.
@@ -21,6 +22,12 @@ var _ updatetelegrampost.Env = &EnvMock{}
 //
 //		// make and configure a mocked updatetelegrampost.Env
 //		mockedEnv := &EnvMock{
+//			GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
+//				panic("mock out the GetTelegramPublishSentMessageContentHash method")
+//			},
+//			LoggerFunc: func() logger.Logger {
+//				panic("mock out the Logger method")
+//			},
 //			SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
 //				panic("mock out the SendTelegramRequest method")
 //			},
@@ -34,6 +41,12 @@ var _ updatetelegrampost.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// GetTelegramPublishSentMessageContentHashFunc mocks the GetTelegramPublishSentMessageContentHash method.
+	GetTelegramPublishSentMessageContentHashFunc func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error)
+
+	// LoggerFunc mocks the Logger method.
+	LoggerFunc func() logger.Logger
+
 	// SendTelegramRequestFunc mocks the SendTelegramRequest method.
 	SendTelegramRequestFunc func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
 
@@ -42,6 +55,16 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// GetTelegramPublishSentMessageContentHash holds details about calls to the GetTelegramPublishSentMessageContentHash method.
+		GetTelegramPublishSentMessageContentHash []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetTelegramPublishSentMessageContentHashParams
+		}
+		// Logger holds details about calls to the Logger method.
+		Logger []struct {
+		}
 		// SendTelegramRequest holds details about calls to the SendTelegramRequest method.
 		SendTelegramRequest []struct {
 			// Ctx is the ctx argument value.
@@ -59,8 +82,73 @@ type EnvMock struct {
 			Arg db.UpdateTelegramPublishSentMessageContentParams
 		}
 	}
-	lockSendTelegramRequest                     sync.RWMutex
-	lockUpdateTelegramPublishSentMessageContent sync.RWMutex
+	lockGetTelegramPublishSentMessageContentHash sync.RWMutex
+	lockLogger                                   sync.RWMutex
+	lockSendTelegramRequest                      sync.RWMutex
+	lockUpdateTelegramPublishSentMessageContent  sync.RWMutex
+}
+
+// GetTelegramPublishSentMessageContentHash calls GetTelegramPublishSentMessageContentHashFunc.
+func (mock *EnvMock) GetTelegramPublishSentMessageContentHash(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
+	if mock.GetTelegramPublishSentMessageContentHashFunc == nil {
+		panic("EnvMock.GetTelegramPublishSentMessageContentHashFunc: method is nil but Env.GetTelegramPublishSentMessageContentHash was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetTelegramPublishSentMessageContentHashParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetTelegramPublishSentMessageContentHash.Lock()
+	mock.calls.GetTelegramPublishSentMessageContentHash = append(mock.calls.GetTelegramPublishSentMessageContentHash, callInfo)
+	mock.lockGetTelegramPublishSentMessageContentHash.Unlock()
+	return mock.GetTelegramPublishSentMessageContentHashFunc(ctx, arg)
+}
+
+// GetTelegramPublishSentMessageContentHashCalls gets all the calls that were made to GetTelegramPublishSentMessageContentHash.
+// Check the length with:
+//
+//	len(mockedEnv.GetTelegramPublishSentMessageContentHashCalls())
+func (mock *EnvMock) GetTelegramPublishSentMessageContentHashCalls() []struct {
+	Ctx context.Context
+	Arg db.GetTelegramPublishSentMessageContentHashParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetTelegramPublishSentMessageContentHashParams
+	}
+	mock.lockGetTelegramPublishSentMessageContentHash.RLock()
+	calls = mock.calls.GetTelegramPublishSentMessageContentHash
+	mock.lockGetTelegramPublishSentMessageContentHash.RUnlock()
+	return calls
+}
+
+// Logger calls LoggerFunc.
+func (mock *EnvMock) Logger() logger.Logger {
+	if mock.LoggerFunc == nil {
+		panic("EnvMock.LoggerFunc: method is nil but Env.Logger was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLogger.Lock()
+	mock.calls.Logger = append(mock.calls.Logger, callInfo)
+	mock.lockLogger.Unlock()
+	return mock.LoggerFunc()
+}
+
+// LoggerCalls gets all the calls that were made to Logger.
+// Check the length with:
+//
+//	len(mockedEnv.LoggerCalls())
+func (mock *EnvMock) LoggerCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLogger.RLock()
+	calls = mock.calls.Logger
+	mock.lockLogger.RUnlock()
+	return calls
 }
 
 // SendTelegramRequest calls SendTelegramRequestFunc.

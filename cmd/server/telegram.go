@@ -30,6 +30,8 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 	a.telegramQueue = appQ.q
 	a.telegramRunner = appQ.runner
 
+	jobTimeout := time.Minute
+
 	a.telegramRunner.Register(sendTelegramPostJobID, func(ctx context.Context, m []byte) error {
 		var params model.TelegramSendPostParams
 
@@ -38,7 +40,11 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 			return fmt.Errorf("failed to unmarshal send_telegram_post params: %w", err)
 		}
 
-		err = sendtelegrampost.Resolve(ctx, a, params)
+		// independent timeout context from stop cancelations
+		jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
+		defer cancel()
+
+		err = sendtelegrampost.Resolve(jobCtx, a, params)
 		if err != nil {
 			shouldRetry, delay := handleTelegramRateLimit(err)
 			if shouldRetry {
@@ -66,7 +72,11 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 			return fmt.Errorf("failed to unmarshal update_telegram_post params: %w", err)
 		}
 
-		err = updatetelegrampost.Resolve(ctx, a, params)
+		// independent timeout context from stop cancelations
+		jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
+		defer cancel()
+
+		err = updatetelegrampost.Resolve(jobCtx, a, params)
 		if err != nil {
 			shouldRetry, delay := handleTelegramRateLimit(err)
 			if shouldRetry {

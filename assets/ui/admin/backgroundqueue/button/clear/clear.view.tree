@@ -1,0 +1,3 @@
+$trip2g_admin_backgroundqueue_button_clear $mol_button_major
+	queue_id \
+	title @ \Clear Queue

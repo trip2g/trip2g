@@ -6,12 +6,8 @@ telegram_publish_tags:
 
 dummy
 
+[[dummy0]]
+
 [[dummy2]]
 
-[[dummy3]]
-
-[[dummy4]]
-
-[[dummy5]]
-
-[[dummy6]]
+v2

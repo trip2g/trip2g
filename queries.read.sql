@@ -830,6 +830,13 @@ select *
   from telegram_publish_notes
  where note_path_id = ?;
 
+-- name: GetTelegramPublishSentMessageContentHash :one
+select content_hash
+  from telegram_publish_sent_messages
+ where note_path_id = ?
+   and chat_id = ?
+   and message_id = ?;
+
 -- name: GetGoqiteQueueStats :one
 select queue
      , count(*) as total_jobs

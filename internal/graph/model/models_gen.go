@@ -18,6 +18,10 @@ type BanUserOrErrorPayload interface {
 	IsBanUserOrErrorPayload()
 }
 
+type ClearBackgroundQueueOrErrorPayload interface {
+	IsClearBackgroundQueueOrErrorPayload()
+}
+
 type CreateAPIKeyOrErrorPayload interface {
 	IsCreateAPIKeyOrErrorPayload()
 }
@@ -482,6 +486,17 @@ type BanUserPayload struct {
 
 func (BanUserPayload) IsBanUserOrErrorPayload() {}
 
+type ClearBackgroundQueueInput struct {
+	ID string `json:"id"`
+}
+
+type ClearBackgroundQueuePayload struct {
+	Queue        *model.BackgroundQueue `json:"queue"`
+	DeletedCount int64                  `json:"deletedCount"`
+}
+
+func (ClearBackgroundQueuePayload) IsClearBackgroundQueueOrErrorPayload() {}
+
 type CreateAPIKeyInput struct {
 	Description string `json:"description"`
 }
@@ -846,6 +861,8 @@ func (ErrorPayload) IsSendTelegramPublishNoteNowOrErrorPayload() {}
 func (ErrorPayload) IsStopBackgroundQueueOrErrorPayload() {}
 
 func (ErrorPayload) IsStartBackgroundQueueOrErrorPayload() {}
+
+func (ErrorPayload) IsClearBackgroundQueueOrErrorPayload() {}
 
 type FieldMessage struct {
 	Name  string `json:"name"`

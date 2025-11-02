@@ -48,7 +48,9 @@ namespace $.$$ {
 		}
 
 		override tools() {
-			const items: $mol_view[] = []
+			const items: $mol_view[] = [
+				this.ClearButton(),
+			]
 
 			if( this.data().stopped ) {
 				items.push( this.StartButton() )

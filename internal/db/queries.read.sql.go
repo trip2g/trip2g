@@ -1568,6 +1568,27 @@ func (q *Queries) GetTelegramPublishNoteByNotePathID(ctx context.Context, notePa
 	return i, err
 }
 
+const getTelegramPublishSentMessageContentHash = `-- name: GetTelegramPublishSentMessageContentHash :one
+select content_hash
+  from telegram_publish_sent_messages
+ where note_path_id = ?
+   and chat_id = ?
+   and message_id = ?
+`
+
+type GetTelegramPublishSentMessageContentHashParams struct {
+	NotePathID int64 `json:"note_path_id"`
+	ChatID     int64 `json:"chat_id"`
+	MessageID  int64 `json:"message_id"`
+}
+
+func (q *Queries) GetTelegramPublishSentMessageContentHash(ctx context.Context, arg GetTelegramPublishSentMessageContentHashParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, getTelegramPublishSentMessageContentHash, arg.NotePathID, arg.ChatID, arg.MessageID)
+	var content_hash string
+	err := row.Scan(&content_hash)
+	return content_hash, err
+}
+
 const gitTokenByValueSHA256 = `-- name: GitTokenByValueSHA256 :one
 select id, created_at, last_used_at, admin_id, value_sha256, description, can_pull, can_push, usage_count, disabled_at, disabled_by from git_tokens where value_sha256 = ? and disabled_at is null limit 1
 `

@@ -338,6 +338,7 @@ type ComplexityRoot struct {
 
 	AdminMutation struct {
 		BanUser                      func(childComplexity int, input model.BanUserInput) int
+		ClearBackgroundQueue         func(childComplexity int, input model.ClearBackgroundQueueInput) int
 		CreateAPIKey                 func(childComplexity int, input model.CreateAPIKeyInput) int
 		CreateBoostyCredentials      func(childComplexity int, input model.CreateBoostyCredentialsInput) int
 		CreateConfigVersion          func(childComplexity int, input model.CreateConfigVersionInput) int
@@ -758,6 +759,11 @@ type ComplexityRoot struct {
 	BanUserPayload struct {
 		User   func(childComplexity int) int
 		UserID func(childComplexity int) int
+	}
+
+	ClearBackgroundQueuePayload struct {
+		DeletedCount func(childComplexity int) int
+		Queue        func(childComplexity int) int
 	}
 
 	CreateApiKeyPayload struct {
@@ -1351,6 +1357,7 @@ type AdminMutationResolver interface {
 	CreateConfigVersion(ctx context.Context, obj *model1.AdminMutation, input model.CreateConfigVersionInput) (model.CreateConfigVersionOrErrorPayload, error)
 	StopBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.StopBackgroundQueueInput) (model.StopBackgroundQueueOrErrorPayload, error)
 	StartBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.StartBackgroundQueueInput) (model.StartBackgroundQueueOrErrorPayload, error)
+	ClearBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.ClearBackgroundQueueInput) (model.ClearBackgroundQueueOrErrorPayload, error)
 }
 type AdminNotFoundIgnoredPatternResolver interface {
 	CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error)
@@ -2370,6 +2377,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.BanUser(childComplexity, args["input"].(model.BanUserInput)), true
+	case "AdminMutation.clearBackgroundQueue":
+		if e.complexity.AdminMutation.ClearBackgroundQueue == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_clearBackgroundQueue_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.ClearBackgroundQueue(childComplexity, args["input"].(model.ClearBackgroundQueueInput)), true
 	case "AdminMutation.createApiKey":
 		if e.complexity.AdminMutation.CreateAPIKey == nil {
 			break
@@ -4462,6 +4480,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.BanUserPayload.UserID(childComplexity), true
 
+	case "ClearBackgroundQueuePayload.deletedCount":
+		if e.complexity.ClearBackgroundQueuePayload.DeletedCount == nil {
+			break
+		}
+
+		return e.complexity.ClearBackgroundQueuePayload.DeletedCount(childComplexity), true
+	case "ClearBackgroundQueuePayload.queue":
+		if e.complexity.ClearBackgroundQueuePayload.Queue == nil {
+			break
+		}
+
+		return e.complexity.ClearBackgroundQueuePayload.Queue(childComplexity), true
+
 	case "CreateApiKeyPayload.apiKey":
 		if e.complexity.CreateApiKeyPayload.APIKey == nil {
 			break
@@ -5703,6 +5734,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAdminTgChatSubgraphAccessesFilterInput,
 		ec.unmarshalInputApiKeyLogsFilterInput,
 		ec.unmarshalInputBanUserInput,
+		ec.unmarshalInputClearBackgroundQueueInput,
 		ec.unmarshalInputCreateApiKeyInput,
 		ec.unmarshalInputCreateBoostyCredentialsInput,
 		ec.unmarshalInputCreateConfigVersionInput,
@@ -5888,6 +5920,17 @@ func (ec *executionContext) field_AdminMutation_banUser_args(ctx context.Context
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNBanUserInput2trip2gᚋinternalᚋgraphᚋmodelᚐBanUserInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_clearBackgroundQueue_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNClearBackgroundQueueInput2trip2gᚋinternalᚋgraphᚋmodelᚐClearBackgroundQueueInput)
 	if err != nil {
 		return nil, err
 	}
@@ -12390,6 +12433,47 @@ func (ec *executionContext) fieldContext_AdminMutation_startBackgroundQueue(ctx 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_startBackgroundQueue_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_clearBackgroundQueue(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_clearBackgroundQueue,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().ClearBackgroundQueue(ctx, obj, fc.Args["input"].(model.ClearBackgroundQueueInput))
+		},
+		nil,
+		ec.marshalNClearBackgroundQueueOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐClearBackgroundQueueOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_clearBackgroundQueue(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ClearBackgroundQueueOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_clearBackgroundQueue_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -20526,6 +20610,76 @@ func (ec *executionContext) fieldContext_BanUserPayload_user(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _ClearBackgroundQueuePayload_queue(ctx context.Context, field graphql.CollectedField, obj *model.ClearBackgroundQueuePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClearBackgroundQueuePayload_queue,
+		func(ctx context.Context) (any, error) {
+			return obj.Queue, nil
+		},
+		nil,
+		ec.marshalNAdminBackgroundQueue2ᚖtrip2gᚋinternalᚋmodelᚐBackgroundQueue,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClearBackgroundQueuePayload_queue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClearBackgroundQueuePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminBackgroundQueue_id(ctx, field)
+			case "pendingCount":
+				return ec.fieldContext_AdminBackgroundQueue_pendingCount(ctx, field)
+			case "retryCount":
+				return ec.fieldContext_AdminBackgroundQueue_retryCount(ctx, field)
+			case "stopped":
+				return ec.fieldContext_AdminBackgroundQueue_stopped(ctx, field)
+			case "jobs":
+				return ec.fieldContext_AdminBackgroundQueue_jobs(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminBackgroundQueue", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ClearBackgroundQueuePayload_deletedCount(ctx context.Context, field graphql.CollectedField, obj *model.ClearBackgroundQueuePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ClearBackgroundQueuePayload_deletedCount,
+		func(ctx context.Context) (any, error) {
+			return obj.DeletedCount, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ClearBackgroundQueuePayload_deletedCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClearBackgroundQueuePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreateApiKeyPayload_value(ctx context.Context, field graphql.CollectedField, obj *model.CreateAPIKeyPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -22341,6 +22495,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_stopBackgroundQueue(ctx, field)
 			case "startBackgroundQueue":
 				return ec.fieldContext_AdminMutation_startBackgroundQueue(ctx, field)
+			case "clearBackgroundQueue":
+				return ec.fieldContext_AdminMutation_clearBackgroundQueue(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminMutation", field.Name)
 		},
@@ -29080,6 +29236,33 @@ func (ec *executionContext) unmarshalInputBanUserInput(ctx context.Context, obj 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputClearBackgroundQueueInput(ctx context.Context, obj any) (model.ClearBackgroundQueueInput, error) {
+	var it model.ClearBackgroundQueueInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateApiKeyInput(ctx context.Context, obj any) (model.CreateAPIKeyInput, error) {
 	var it model.CreateAPIKeyInput
 	asMap := map[string]any{}
@@ -31361,6 +31544,29 @@ func (ec *executionContext) _BanUserOrErrorPayload(ctx context.Context, sel ast.
 			return graphql.Null
 		}
 		return ec._BanUserPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _ClearBackgroundQueueOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.ClearBackgroundQueueOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.ClearBackgroundQueuePayload:
+		return ec._ClearBackgroundQueuePayload(ctx, sel, &obj)
+	case *model.ClearBackgroundQueuePayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ClearBackgroundQueuePayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -37590,6 +37796,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_startBackgroundQueue(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "clearBackgroundQueue":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_clearBackgroundQueue(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -44294,6 +44536,50 @@ func (ec *executionContext) _BanUserPayload(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var clearBackgroundQueuePayloadImplementors = []string{"ClearBackgroundQueuePayload", "ClearBackgroundQueueOrErrorPayload"}
+
+func (ec *executionContext) _ClearBackgroundQueuePayload(ctx context.Context, sel ast.SelectionSet, obj *model.ClearBackgroundQueuePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, clearBackgroundQueuePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ClearBackgroundQueuePayload")
+		case "queue":
+			out.Values[i] = ec._ClearBackgroundQueuePayload_queue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deletedCount":
+			out.Values[i] = ec._ClearBackgroundQueuePayload_deletedCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createApiKeyPayloadImplementors = []string{"CreateApiKeyPayload", "CreateApiKeyOrErrorPayload"}
 
 func (ec *executionContext) _CreateApiKeyPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateAPIKeyPayload) graphql.Marshaler {
@@ -45197,7 +45483,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -52296,6 +52582,21 @@ func (ec *executionContext) unmarshalNBoostyCredentialsStateEnum2trip2gᚋintern
 
 func (ec *executionContext) marshalNBoostyCredentialsStateEnum2trip2gᚋinternalᚋgraphᚋmodelᚐBoostyCredentialsStateEnum(ctx context.Context, sel ast.SelectionSet, v model.BoostyCredentialsStateEnum) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) unmarshalNClearBackgroundQueueInput2trip2gᚋinternalᚋgraphᚋmodelᚐClearBackgroundQueueInput(ctx context.Context, v any) (model.ClearBackgroundQueueInput, error) {
+	res, err := ec.unmarshalInputClearBackgroundQueueInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNClearBackgroundQueueOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐClearBackgroundQueueOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.ClearBackgroundQueueOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ClearBackgroundQueueOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNCreateApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateAPIKeyInput(ctx context.Context, v any) (model.CreateAPIKeyInput, error) {

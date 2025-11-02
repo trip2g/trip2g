@@ -1858,6 +1858,17 @@ type StartBackgroundQueuePayload {
 
 union StartBackgroundQueueOrErrorPayload = StartBackgroundQueuePayload | ErrorPayload
 
+input ClearBackgroundQueueInput {
+  id: String!
+}
+
+type ClearBackgroundQueuePayload {
+  queue: AdminBackgroundQueue!
+  deletedCount: Int64!
+}
+
+union ClearBackgroundQueueOrErrorPayload = ClearBackgroundQueuePayload | ErrorPayload
+
 type AdminMutation {
   createUser(input: CreateUserInput!): CreateUserOrErrorPayload!
   updateUser(input: UpdateUserInput!): UpdateUserOrErrorPayload!
@@ -1934,4 +1945,5 @@ type AdminMutation {
   # Background Queue mutations
   stopBackgroundQueue(input: StopBackgroundQueueInput!): StopBackgroundQueueOrErrorPayload!
   startBackgroundQueue(input: StartBackgroundQueueInput!): StartBackgroundQueueOrErrorPayload!
+  clearBackgroundQueue(input: ClearBackgroundQueueInput!): ClearBackgroundQueueOrErrorPayload!
 }

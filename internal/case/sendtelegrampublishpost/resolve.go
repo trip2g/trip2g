@@ -80,7 +80,7 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 			TelegramChatID:    chat.TelegramID,
 			Post:              *post,
 			Instant:           instant,
-			UpdateLinkedPosts: true, // Always update linked posts when sending
+			UpdateLinkedPosts: !instant,
 		}
 
 		// Enqueue the post to be sent via telegram queue

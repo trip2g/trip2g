@@ -1,0 +1,9 @@
+{
+	"$trip2g_admin_backgroundqueue_show_QueueName_labeler_title": "Название очереди",
+	"$trip2g_admin_backgroundqueue_show_Status_labeler_title": "Статус",
+	"$trip2g_admin_backgroundqueue_show_PendingCount_labeler_title": "Ожидающих задач",
+	"$trip2g_admin_backgroundqueue_show_RetryCount_labeler_title": "Повторных задач",
+	"$trip2g_admin_backgroundqueue_show_job_JobID_labeler_title": "ID",
+	"$trip2g_admin_backgroundqueue_show_job_JobName_labeler_title": "Название",
+	"$trip2g_admin_backgroundqueue_show_job_JobParams_labeler_title": "Параметры"
+}

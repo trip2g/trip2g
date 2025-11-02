@@ -56,6 +56,7 @@ func (a *appQueue) stop() {
 	defer a.mu.Unlock()
 
 	a.cancel()
+	a.cancel = nil
 }
 
 func (a *appQueue) start() {
@@ -127,4 +128,45 @@ func (a *app) StartBackgroundQueue(ctx context.Context, name string) error {
 
 	q.start()
 	return nil
+}
+
+func (a *app) ClearBackgroundQueue(ctx context.Context, name string) (int64, error) {
+	q, err := a.getBackgroundQueue(name)
+	if err != nil {
+		return 0, err
+	}
+
+	// Remember if queue was running
+	wasRunning := !q.isStopped()
+
+	// Stop queue if running
+	if wasRunning {
+		q.stop()
+	}
+
+	// Delete all jobs from this queue
+	result, err := a.writeConn.ExecContext(ctx, "DELETE FROM goqite WHERE queue = ?", name)
+	if err != nil {
+		// Try to restart queue if it was running
+		if wasRunning {
+			q.start()
+		}
+		return 0, fmt.Errorf("failed to delete jobs: %w", err)
+	}
+
+	deletedCount, err := result.RowsAffected()
+	if err != nil {
+		// Try to restart queue if it was running
+		if wasRunning {
+			q.start()
+		}
+		return 0, fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	// Restart queue if it was running
+	if wasRunning {
+		q.start()
+	}
+
+	return deletedCount, nil
 }

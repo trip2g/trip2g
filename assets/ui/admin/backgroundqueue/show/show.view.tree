@@ -6,6 +6,8 @@ $trip2g_admin_backgroundqueue_show $mol_page
 			queue_id <= queue_id
 		<= StartButton $trip2g_admin_backgroundqueue_button_start
 			queue_id <= queue_id
+		<= ClearButton $trip2g_admin_backgroundqueue_button_clear
+			queue_id <= queue_id
 	body /
 		<= Info $mol_view
 			style *

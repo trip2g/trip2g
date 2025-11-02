@@ -7,6 +7,7 @@ import (
 
 	"trip2g/internal/case/backjob/updatetelegrampost"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -31,6 +32,13 @@ func TestResolve_Success_TextMessage(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
+			// Return different hash to trigger update
+			return "old_hash", nil
+		},
 		SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
 			if chatID != 456 {
 				t.Errorf("expected chatID 456, got %d", chatID)
@@ -113,6 +121,12 @@ func TestResolve_Success_PhotoMessage(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
+			return "old_hash", nil
+		},
 		SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
 			// Verify it's an edit message caption request
 			editMsg, ok := msg.(tgbotapi.EditMessageCaptionConfig)
@@ -163,6 +177,12 @@ func TestResolve_Error_SendTelegramRequest(t *testing.T) {
 	expectedErr := errors.New("telegram API error")
 
 	env := &EnvMock{
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
+			return "old_hash", nil
+		},
 		SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
 			return expectedErr
 		},
@@ -203,6 +223,12 @@ func TestResolve_Success_ContentSameError(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
+			return "old_hash", nil
+		},
 		SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
 			// Telegram returns this error when content is the same
 			return errors.New(
@@ -247,6 +273,12 @@ func TestResolve_Error_UpdateDB(t *testing.T) {
 	expectedErr := errors.New("database error")
 
 	env := &EnvMock{
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
+			return "old_hash", nil
+		},
 		SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
 			return nil
 		},
@@ -262,5 +294,59 @@ func TestResolve_Error_UpdateDB(t *testing.T) {
 
 	if !errors.Is(err, expectedErr) {
 		t.Errorf("expected error to wrap %v, got %v", expectedErr, err)
+	}
+}
+
+func TestResolve_SkipUpdate_SameContentHash(t *testing.T) {
+	ctx := context.Background()
+
+	params := model.TelegramUpdatePostParams{
+		TelegramSendPostParams: model.TelegramSendPostParams{
+			NotePathID:     123,
+			DBChatID:       456,
+			TelegramChatID: 789,
+			Post: model.TelegramPost{
+				Content: "Same message",
+				Images:  []string{},
+			},
+		},
+		MessageID: 111,
+	}
+
+	// Calculate expected hash for "Same message"
+	// This will be the same hash returned by GetTelegramPublishSentMessageContentHashFunc
+	expectedHash := "23f5a7f782386a8c730eb36f2327c14f6bea6fa98226ea9a20dcdc8b76f008a4"
+
+	env := &EnvMock{
+		LoggerFunc: func() logger.Logger {
+			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
+			// Return same hash as new content
+			return expectedHash, nil
+		},
+		SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
+			t.Error("should not send telegram request when content hash is same")
+			return nil
+		},
+		UpdateTelegramPublishSentMessageContentFunc: func(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error {
+			t.Error("should not update DB when content hash is same")
+			return nil
+		},
+	}
+
+	err := updatetelegrampost.Resolve(ctx, env, params)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify no Telegram request was made
+	if len(env.SendTelegramRequestCalls()) != 0 {
+		t.Errorf("expected SendTelegramRequest not to be called, got %d calls", len(env.SendTelegramRequestCalls()))
+	}
+
+	// Verify no DB update was made
+	if len(env.UpdateTelegramPublishSentMessageContentCalls()) != 0 {
+		t.Errorf("expected UpdateTelegramPublishSentMessageContent not to be called, got %d calls", len(env.UpdateTelegramPublishSentMessageContentCalls()))
 	}
 }

@@ -276,9 +276,6 @@ func main() {
 	a.goqiteQueue = globalQ.q
 	a.goqiteRunner = globalQ.runner
 
-	// Start the shared runner
-	go a.goqiteRunner.Start(ctx)
-
 	err = a.initTelegramDeps(ctx)
 	if err != nil {
 		panic(fmt.Errorf("failed to initialize telegram dependencies: %w", err))

@@ -812,6 +812,25 @@ func (r *adminMutationResolver) StartBackgroundQueue(ctx context.Context, obj *a
 	}, nil
 }
 
+// ClearBackgroundQueue is the resolver for the clearBackgroundQueue field.
+func (r *adminMutationResolver) ClearBackgroundQueue(ctx context.Context, obj *appmodel.AdminMutation, input model.ClearBackgroundQueueInput) (model.ClearBackgroundQueueOrErrorPayload, error) {
+	deletedCount, err := r.env(ctx).ClearBackgroundQueue(ctx, input.ID)
+	if err != nil {
+		//nolint:nilerr // ErrorPayload is the GraphQL way to return user-facing errors
+		return &model.ErrorPayload{Message: err.Error()}, nil
+	}
+
+	q, err := r.env(ctx).GetBackgroundQueue(ctx, input.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get queue after clear: %w", err)
+	}
+
+	return &model.ClearBackgroundQueuePayload{
+		Queue:        q,
+		DeletedCount: deletedCount,
+	}, nil
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminNotFoundIgnoredPatternResolver) CreatedBy(ctx context.Context, obj *db.NotFoundIgnoredPattern) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
