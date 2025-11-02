@@ -40,10 +40,11 @@ func NewClient(apiKey string, l logger.Logger) (*Client, error) {
 		},
 	}
 
-	err := client.Status()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get status: %w", err)
-	}
+	// Check API key validity
+	// err := client.Status()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get status: %w", err)
+	// }
 
 	// TODO: maybe need to check if the API key is working
 
