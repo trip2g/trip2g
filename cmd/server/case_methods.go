@@ -19,7 +19,10 @@ func (a *app) SendTelegramPublishPost(ctx context.Context, notePathID int64, ins
 func (a *app) SendTelegramPublishPostWithTx(ctx context.Context, notePathID int64, instant bool) error {
 	return a.WithTransaction(ctx, func(env *app) (bool, error) {
 		err := sendtelegrampublishpost.Resolve(ctx, env, notePathID, instant)
-		return err != nil, err
+		if err != nil {
+			return false, err
+		}
+		return true, nil
 	})
 }
 

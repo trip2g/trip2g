@@ -7,6 +7,10 @@ import (
 
 func (a *app) CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) error {
 	return a.WithTransaction(ctx, func(env *app) (bool, error) {
-		return true, env.WriteQueries.CreateNoteAsset(ctx, params)
+		err := env.WriteQueries.CreateNoteAsset(ctx, params)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
 	})
 }
