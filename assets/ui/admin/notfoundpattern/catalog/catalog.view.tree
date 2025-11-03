@@ -15,19 +15,15 @@ $trip2g_admin_notfoundpattern_catalog $trip2g_admin_catalog
 				minimal_height 24
 				minimal_width 600
 				sub <= row_content* /
-					<= Row_id_labeler* $mol_labeler
-						title \ID
-						Content <= Row_id* $trip2g_admin_cell
-							content <= row_id_string* \
+					<= Id* $trip2g_admin_labeler_id
+						value <= row_id_string* \id
 					<= Row_pattern_labeler* $mol_labeler
 						title \Pattern
 						Content <= Row_pattern* $trip2g_admin_cell
 							content <= row_pattern* \pattern
-					<= Row_created_at_labeler* $mol_labeler
-						title \Created At
-						Content <= Row_created_at* $trip2g_admin_cell
-							content <= row_created_at* \created_at
-					<= Row_created_by_labeler* $mol_labeler
-						title \Created By
-						Content <= Row_created_by* $trip2g_admin_cell
-							content <= row_created_by* \created_by
+					<= CreatedAt* $trip2g_admin_labeler_moment
+						title @ \Created At
+						value <= row_created_at* \created_at
+					<= CreatedBy* $trip2g_admin_labeler_email
+						title @ \Created By
+						value <= row_created_by* \created_by

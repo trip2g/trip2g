@@ -50,6 +50,7 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 
 		linkedNV, ok := nvs.Map[target]
 		if !ok {
+			post.UnresolvedLinkCount++
 			return publicURL, nil
 			// return "", fmt.Errorf("note not found for target: %s", target)
 		}

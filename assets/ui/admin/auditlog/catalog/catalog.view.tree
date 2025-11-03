@@ -8,10 +8,9 @@ $trip2g_admin_auditlog_catalog $mol_page
 					minimal_height 24
 					minimal_width 600
 					sub <= row_content* /
-						<= Row_created_at_labeler* $mol_labeler
-							title \Time
-							Content <= Row_created_at* $trip2g_admin_cell
-								content <= row_created_at* \created_at
+						<= CreatedAt* $trip2g_admin_labeler_moment
+							title @ \Time
+							value <= row_created_at* \created_at
 						<= Row_level_labeler* $mol_labeler
 							title \Level
 							Content <= Row_level* $trip2g_admin_cell

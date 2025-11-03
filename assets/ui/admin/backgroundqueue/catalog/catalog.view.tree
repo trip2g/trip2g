@@ -12,10 +12,9 @@ $trip2g_admin_backgroundqueue_catalog $trip2g_admin_catalog
 				minimal_height 24
 				minimal_width 600
 				sub <= row_content* /
-					<= Row_name_labeler* $mol_labeler
+					<= Name* $trip2g_admin_labeler_name
 						title @ \Queue Name
-						Content <= Row_name* $trip2g_admin_cell
-							content <= row_name* \name
+						value <= row_name* \name
 					<= Row_pending_labeler* $mol_labeler
 						title @ \Pending
 						Content <= Row_pending* $trip2g_admin_cell

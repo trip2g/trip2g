@@ -7,14 +7,11 @@ $trip2g_admin_waitlistemailrequest_catalog $trip2g_admin_catalog
 					minimal_height 24
 					minimal_width 600
 					sub <= row_content* /
-						<= Row_email_labeler* $mol_labeler
-							title \Email
-							Content <= Row_email* $trip2g_admin_cell
-								content <= row_email* \email
-						<= Row_created_at_labeler* $mol_labeler
-							title \Created At
-							Content <= Row_created_at* $trip2g_admin_cell
-								content <= row_created_at* \created_at
+						<= Email* $trip2g_admin_labeler_email
+							value <= row_email* \email
+						<= CreatedAt* $trip2g_admin_labeler_moment
+							title @ \Created At
+							value <= row_created_at* \created_at
 						<= Row_ip_labeler* $mol_labeler
 							title \IP Address
 							Content <= Row_ip* $trip2g_admin_cell

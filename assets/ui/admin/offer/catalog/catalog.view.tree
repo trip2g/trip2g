@@ -15,10 +15,8 @@ $trip2g_admin_offer_catalog $trip2g_admin_catalog
 				minimal_height 24
 				minimal_width 600
 				sub <= row_content* /
-					<= Row_id_labeler* $mol_labeler
-						title \ID
-						Content <= Row_id* $trip2g_admin_cell
-							content <= row_id_string* \
+					<= Id* $trip2g_admin_labeler_id
+						value <= row_id_string* \id
 					<= Row_public_id_labeler* $mol_labeler
 						title \Public ID
 						Content <= Row_public_id* $trip2g_admin_cell
@@ -27,10 +25,9 @@ $trip2g_admin_offer_catalog $trip2g_admin_catalog
 						title \Public ID
 						Content <= Row_subgraphs* $trip2g_admin_cell
 							content <= row_subgraphs* \subgraphs
-					<= Row_created_at_labeler* $mol_labeler
-						title \Created At
-						Content <= Row_created_at* $trip2g_admin_cell
-							content <= row_created_at* \created_at
+					<= CreatedAt* $trip2g_admin_labeler_moment
+						title @ \Created At
+						value <= row_created_at* \created_at
 					<= Row_price_usd_labeler* $mol_labeler
 						title \Price USD
 						Content <= Row_price_usd* $trip2g_admin_cell

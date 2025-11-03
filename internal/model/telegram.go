@@ -12,8 +12,9 @@ type TelegramPost struct {
 
 	Warnings []string `json:"warnings"`
 
-	LinkCount         int64 `json:"link_count"`
-	ExternalLinkCount int64 `json:"external_link_count"`
+	LinkCount           int64 `json:"link_count"`
+	UnresolvedLinkCount int64 `json:"unresolved_link_count"`
+	ExternalLinkCount   int64 `json:"external_link_count"`
 }
 
 type TelegramPostSource struct {

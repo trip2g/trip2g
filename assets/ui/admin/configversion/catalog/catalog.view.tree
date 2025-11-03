@@ -27,11 +27,9 @@ $trip2g_admin_configversion_catalog $trip2g_admin_catalog
 						title \Timezone
 						Content <= Row_timezone* $trip2g_admin_cell
 							content <= row_timezone* \timezone
-					<= Row_created_at_labeler* $mol_labeler
-						title \Created At
-						Content <= Row_created_at* $trip2g_admin_cell
-							content <= row_created_at* \created_at
-					<= Row_created_by_labeler* $mol_labeler
-						title \Created By
-						Content <= Row_created_by* $trip2g_admin_cell
-							content <= row_created_by* \created_by
+					<= CreatedAt* $trip2g_admin_labeler_moment
+						title @ \Created At
+						value <= row_created_at* \created_at
+					<= CreatedBy* $trip2g_admin_labeler_email
+						title @ \Created By
+						value <= row_created_by* \created_by

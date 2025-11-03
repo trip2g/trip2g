@@ -7,16 +7,6 @@ namespace $.$$ {
 				grow: 1,
 			},
 		},
-		Row_id_labeler: {
-			flex: {
-				basis: rem(3),
-			},
-		},
-		Row_name_labeler: {
-			flex: {
-				basis: rem(12),
-			},
-		},
 		Row_enabled_labeler: {
 			flex: {
 				basis: rem(5),

@@ -1,0 +1,4 @@
+$trip2g_admin_labeler_description $mol_labeler
+	title @ \Description
+	Content <= Cell $trip2g_admin_cell
+		content <= value \description

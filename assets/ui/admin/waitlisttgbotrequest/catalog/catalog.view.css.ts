@@ -12,11 +12,6 @@ namespace $.$$ {
 				basis: rem(8), // Standard width for bot names
 			},
 		},
-		Row_created_at_labeler: {
-			flex: {
-				basis: rem(8), // Standard width for dates
-			},
-		},
 		Row_note_path_labeler: {
 			flex: {
 				basis: rem(15), // Wider for path content

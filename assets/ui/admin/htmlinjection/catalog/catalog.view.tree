@@ -17,14 +17,10 @@ $trip2g_admin_htmlinjection_catalog $trip2g_admin_catalog
 				minimal_height 24
 				minimal_width 600
 				sub <= row_content* /
-					<= Row_id_labeler* $mol_labeler
-						title \ID
-						Content <= Row_id* $trip2g_admin_cell
-							content <= row_id_string* \
-					<= Row_description_labeler* $mol_labeler
-						title \Description
-						Content <= Row_description* $trip2g_admin_cell
-							content <= row_description* \description
+					<= Id* $trip2g_admin_labeler_id
+						value <= row_id_string* \id
+					<= Description* $trip2g_admin_labeler_description
+						value <= row_description* \description
 					<= Row_placement_labeler* $mol_labeler
 						title \Placement
 						Content <= Row_placement* $trip2g_admin_cell
@@ -41,7 +37,6 @@ $trip2g_admin_htmlinjection_catalog $trip2g_admin_catalog
 						title \Active To
 						Content <= Row_active_to* $trip2g_admin_cell
 							content <= row_active_to* \active_to
-					<= Row_created_at_labeler* $mol_labeler
-						title \Created At
-						Content <= Row_created_at* $trip2g_admin_cell
-							content <= row_created_at* \created_at
+					<= CreatedAt* $trip2g_admin_labeler_moment
+						title @ \Created At
+						value <= row_created_at* \created_at

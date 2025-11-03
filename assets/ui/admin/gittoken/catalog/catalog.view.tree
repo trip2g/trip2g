@@ -16,18 +16,14 @@ $trip2g_admin_gittoken_catalog $trip2g_admin_catalog
 				minimal_height 24
 				minimal_width 600
 				sub <= row_content* /
-					<= Row_id_labeler* $mol_labeler
-						title \ID
-						Content <= Row_id* $trip2g_admin_cell
-							content <= row_id_string* \
-					<= Row_created_at_labeler* $mol_labeler
-						title \Created At
-						Content <= Row_created_at* $trip2g_admin_cell
-							content <= row_created_at* \created_at
-					<= Row_created_by_labeler* $mol_labeler
-						title \Created By
-						Content <= Row_created_by* $trip2g_admin_cell
-							content <= row_created_by* \created_by
+					<= Id* $trip2g_admin_labeler_id
+						value <= row_id_string* \id
+					<= CreatedAt* $trip2g_admin_labeler_moment
+						title @ \Created At
+						value <= row_created_at* \created_at
+					<= CreatedBy* $trip2g_admin_labeler_email
+						title @ \Created By
+						value <= row_created_by* \created_by
 					<= Row_can_pull_labeler* $mol_labeler
 						title \Can Pull
 						Content <= Row_can_pull* $trip2g_admin_cell
@@ -36,13 +32,11 @@ $trip2g_admin_gittoken_catalog $trip2g_admin_catalog
 						title \Can Push
 						Content <= Row_can_push* $trip2g_admin_cell
 							content <= row_can_push* \can_push
-					<= Row_disabled_at_labeler* $mol_labeler
-						title \Disabled At
-						Content <= Row_disabled_at* $trip2g_admin_cell
-							content <= row_disabled_at* \disabled_at
-							attr *
-								title <= row_disabled_by* \disabled_by
-					<= Row_description_labeler* $mol_labeler
-						title \Description
-						Content <= Row_description* $trip2g_admin_cell
-							content <= row_description* \description
+					<= DisabledAt* $trip2g_admin_labeler_moment
+						title @ \Disabled At
+						value <= row_disabled_at* \disabled_at
+					<= DisabledBy* $trip2g_admin_labeler_email
+						title @ \Disabled By
+						value <= row_disabled_by* \disabled_by
+					<= Description* $trip2g_admin_labeler_description
+						value <= row_description* \description
