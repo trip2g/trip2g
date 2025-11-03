@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 	"trip2g/internal/case/handletgupdate"
 	"trip2g/internal/tgbots"
 
@@ -18,7 +19,7 @@ func (a *app) RegisterTelegramJob(id string, handler func(ctx context.Context, m
 func (a *app) initTelegramDeps(ctx context.Context) error {
 	appQ := a.createQueue(ctx, "tg_jobs", jobs.NewRunnerOpts{
 		Limit:        1,
-		PollInterval: 1,
+		PollInterval: time.Second * 1,
 	})
 
 	a.telegramQueue = appQ

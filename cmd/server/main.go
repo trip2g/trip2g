@@ -274,7 +274,7 @@ func main() {
 
 	a.globalQueue = a.createQueue(ctx, "global_jobs", jobs.NewRunnerOpts{
 		Limit:        5,
-		PollInterval: time.Second,
+		PollInterval: time.Millisecond * 901,
 	})
 
 	err = a.initTelegramDeps(ctx)

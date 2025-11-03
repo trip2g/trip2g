@@ -3278,6 +3278,7 @@ select tsm.chat_id
   join tg_bot_chats c on tsm.chat_id = c.id
   join note_paths p on tsm.note_path_id = p.id
  where tsm.chat_id = ?
+   and p.hidden_at is null
  order by tsm.created_at asc
 `
 

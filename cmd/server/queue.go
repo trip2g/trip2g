@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
@@ -34,6 +35,10 @@ func (a *app) createQueue(ctx context.Context, name string, runnerOpts jobs.NewR
 	})
 
 	logger := logger.WithPrefix(a.log, name+":")
+
+	if runnerOpts.PollInterval < 50*time.Millisecond {
+		panic("too small pool internal. Are you sure?")
+	}
 
 	runnerOpts.Queue = q
 	runnerOpts.Log = logger
