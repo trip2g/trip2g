@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"strings"
+	"time"
 	"trip2g/internal/mdloader/highlight"
 	"trip2g/internal/model"
 
@@ -13,7 +14,13 @@ import (
 	"go.abhg.dev/goldmark/wikilink"
 )
 
-type LinkResolver func(string) (string, error)
+type LinkResolverResult struct {
+	URL       string
+	Label     string
+	PublishAt *time.Time
+}
+
+type LinkResolver func(string) (*LinkResolverResult, error)
 
 type LinkResolverError struct {
 	Target string
@@ -24,11 +31,18 @@ func (e *LinkResolverError) Error() string {
 	return fmt.Sprintf("failed to resolve link '%s': %s", e.Target, e.Reason)
 }
 
+type unpublishedLink struct {
+	label     string
+	publishAt time.Time
+}
+
 type HTMLConverter struct {
 	CommonConverter
-	bufStack       []*strings.Builder
-	linkResolver   LinkResolver
-	skipClosingTag map[ast.Node]bool
+	bufStack          []*strings.Builder
+	linkResolver      LinkResolver
+	skipClosingTag    map[ast.Node]bool
+	unpublishedLinks  []unpublishedLink
+	isUnpublishedLink map[ast.Node]bool
 }
 
 func (c *HTMLConverter) SetLinkResolver(resolver LinkResolver) {
@@ -63,6 +77,8 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 	c.state = lineStart
 	c.skipClosingTag = make(map[ast.Node]bool)
+	c.isUnpublishedLink = make(map[ast.Node]bool)
+	c.unpublishedLinks = nil
 	c.bufStack = nil
 	c.pushBuffer() // Initialize with root buffer
 
@@ -220,19 +236,55 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			if c.linkResolver != nil && !node.Embed {
 				if entering {
 					dest := string(node.Target)
-					url, err := c.linkResolver(dest)
+					link, err := c.linkResolver(dest)
 					if err != nil {
 						res.Warnings = append(res.Warnings, err.Error())
 						c.skipClosingTag[n] = true
 						return ast.WalkSkipChildren, nil
 					}
 
-					c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(url)))
+					// Check if this is an unpublished link (no URL but has PublishAt)
+					switch {
+					case link.URL == "" && link.PublishAt != nil:
+						// Get label from wikilink (fragment text or target)
+						label := link.Label
+						if label == "" {
+							label = dest
+						}
+
+						// Add to unpublished links list
+						c.unpublishedLinks = append(c.unpublishedLinks, unpublishedLink{
+							label:     label,
+							publishAt: *link.PublishAt,
+						})
+
+						// Mark this node as unpublished link
+						c.isUnpublishedLink[n] = true
+
+						// Write underlined text with label instead of link
+						c.Write(fmt.Sprintf("<u>%s</u>", html.EscapeString(label)))
+
+						// Skip children since we already wrote the label
+						c.skipClosingTag[n] = true
+						return ast.WalkSkipChildren, nil
+					case link.URL != "":
+						c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(link.URL)))
+					default:
+						// No URL and no PublishAt - skip
+						c.skipClosingTag[n] = true
+						return ast.WalkSkipChildren, nil
+					}
 				} else {
 					if !c.skipClosingTag[n] {
-						c.Write("</a>")
+						// Check if this was an unpublished link (underlined text)
+						if c.isUnpublishedLink[n] {
+							c.Write("</u>")
+						} else {
+							c.Write("</a>")
+						}
 					}
 					delete(c.skipClosingTag, n)
+					delete(c.isUnpublishedLink, n)
 				}
 			} else {
 				// No link resolver or embed - skip this node
@@ -294,7 +346,29 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 		lines = append(lines, c.bufStack[0].String())
 	}
 
+	// Add unpublished links footer if any
+	if len(c.unpublishedLinks) > 0 {
+		lines = append(lines, "\n\n—————————\n🔜 Скоро выйдут:")
+		for _, link := range c.unpublishedLinks {
+			// Format date: "5 ноября, 14:30"
+			publishStr := formatPublishDate(link.publishAt)
+			lines = append(lines, fmt.Sprintf("\n• <u>%s</u> — %s", html.EscapeString(link.label), publishStr))
+		}
+		lines = append(lines, "\n\n📬 Подпишитесь, чтобы не пропустить")
+	}
+
 	res.Content = strings.Join(lines, "")
 
 	return res
+}
+
+func formatPublishDate(t time.Time) string {
+	// Format: "5 ноября, 14:30"
+	months := []string{
+		"января", "февраля", "марта", "апреля", "мая", "июня",
+		"июля", "августа", "сентября", "октября", "ноября", "декабря",
+	}
+
+	month := months[t.Month()-1]
+	return fmt.Sprintf("%d %s, %02d:%02d", t.Day(), month, t.Hour(), t.Minute())
 }

@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 	"trip2g/internal/logger"
 	"trip2g/internal/markdownv2"
 	"trip2g/internal/mdloader"
@@ -267,6 +268,73 @@ func TestHTMLWikilinks(t *testing.T) {
 				}, nil
 			},
 			expected: `<blockquote>Read <a href="https://example.com/first">Fragment Text</a> here</blockquote>`,
+			warnings: 0,
+		},
+		{
+			name:     "unpublished link with PublishAt",
+			markdown: "See [[future-note]] for details",
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
+				publishAt := time.Date(2025, 11, 5, 14, 30, 0, 0, time.UTC)
+				return &markdownv2.LinkResolverResult{
+					URL:       "",
+					Label:     "future-note",
+					PublishAt: &publishAt,
+				}, nil
+			},
+			expected: "See <u>future-note</u> for details\n\n—————————\n🔜 Скоро выйдут:\n• <u>future-note</u> — 5 ноября, 14:30\n\n📬 Подпишитесь, чтобы не пропустить",
+			warnings: 0,
+		},
+		{
+			name:     "multiple unpublished links",
+			markdown: "Read [[first-post]] and [[second-post]]",
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
+				var publishAt time.Time
+				if target == "first-post" {
+					publishAt = time.Date(2025, 11, 5, 14, 30, 0, 0, time.UTC)
+				} else {
+					publishAt = time.Date(2025, 11, 7, 10, 0, 0, 0, time.UTC)
+				}
+				return &markdownv2.LinkResolverResult{
+					URL:       "",
+					Label:     target,
+					PublishAt: &publishAt,
+				}, nil
+			},
+			expected: "Read <u>first-post</u> and <u>second-post</u>\n\n—————————\n🔜 Скоро выйдут:\n• <u>first-post</u> — 5 ноября, 14:30\n• <u>second-post</u> — 7 ноября, 10:00\n\n📬 Подпишитесь, чтобы не пропустить",
+			warnings: 0,
+		},
+		{
+			name:     "mixed published and unpublished links",
+			markdown: "Read [[published]] and [[unpublished]]",
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
+				if target == "published" {
+					return &markdownv2.LinkResolverResult{
+						URL:   "https://example.com/published",
+						Label: "published",
+					}, nil
+				}
+				publishAt := time.Date(2025, 11, 5, 14, 30, 0, 0, time.UTC)
+				return &markdownv2.LinkResolverResult{
+					URL:       "",
+					Label:     "unpublished",
+					PublishAt: &publishAt,
+				}, nil
+			},
+			expected: "Read <a href=\"https://example.com/published\">published</a> and <u>unpublished</u>\n\n—————————\n🔜 Скоро выйдут:\n• <u>unpublished</u> — 5 ноября, 14:30\n\n📬 Подпишитесь, чтобы не пропустить",
+			warnings: 0,
+		},
+		{
+			name:     "unpublished link with custom label",
+			markdown: "Read [[future-note|Custom Label]]",
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
+				publishAt := time.Date(2025, 12, 25, 18, 0, 0, 0, time.UTC)
+				return &markdownv2.LinkResolverResult{
+					URL:       "",
+					Label:     "Custom Label",
+					PublishAt: &publishAt,
+				}, nil
+			},
+			expected: "Read <u>Custom Label</u>\n\n—————————\n🔜 Скоро выйдут:\n• <u>Custom Label</u> — 25 декабря, 18:00\n\n📬 Подпишитесь, чтобы не пропустить",
 			warnings: 0,
 		},
 	}

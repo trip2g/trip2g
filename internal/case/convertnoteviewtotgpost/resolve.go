@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/image"
 	"trip2g/internal/logger"
@@ -18,6 +19,8 @@ type Env interface {
 	LatestNoteViews() *model.NoteViews
 	Logger() logger.Logger
 	ListTelegramPublishSentMessagesByChatID(ctx context.Context, chatID int64) ([]SentMessage, error)
+
+	TimeLocation() *time.Location
 	PublicURL() string
 }
 
@@ -45,38 +48,50 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	post := model.TelegramPost{}
 
 	tr := markdownv2.HTMLConverter{}
-	tr.SetLinkResolver(func(target string) (string, error) {
+	tr.SetLinkResolver(func(target string) (*markdownv2.LinkResolverResult, error) {
 		post.LinkCount++
 
 		linkedNV, ok := nvs.Map[target]
 		if !ok {
 			post.UnresolvedLinkCount++
-			return publicURL, nil
+			return &markdownv2.LinkResolverResult{URL: publicURL}, nil
 			// return "", fmt.Errorf("note not found for target: %s", target)
 		}
 
 		msg, ok := sentMap[linkedNV.PathID]
-		if !ok {
-			if allowExternalLinks {
-				if publicURL == "" {
-					logger.Warn("public URL is not set, cannot generate external link")
-					return "", nil
-				}
-
-				post.ExternalLinkCount++
-
-				externalURL := publicURL + linkedNV.Permalink
-				return externalURL, nil
-			}
-
-			return "", fmt.Errorf("note not published: %s", target)
+		if ok {
+			// Already published - return telegram link
+			chatID := strings.TrimPrefix(strconv.FormatInt(msg.TelegramChatID, 10), "-100")
+			url := fmt.Sprintf("https://t.me/c/%s/%d", chatID, msg.MessageID)
+			return &markdownv2.LinkResolverResult{URL: url}, nil
 		}
 
-		// remove -100 prefix
-		chatID := strings.TrimPrefix(strconv.FormatInt(msg.TelegramChatID, 10), "-100")
-		url := fmt.Sprintf("https://t.me/c/%s/%d", chatID, msg.MessageID)
+		// Not published yet
+		if linkedNV.IsTelegramPublishPost() {
+			publishAt, hasPublishAt := linkedNV.ExtractTelegramPublishAt(env.TimeLocation())
+			if hasPublishAt {
+				// Return unpublished link with publish date
+				return &markdownv2.LinkResolverResult{
+					Label:     linkedNV.Title,
+					PublishAt: &publishAt,
+				}, nil
+			}
+			return &markdownv2.LinkResolverResult{}, nil
+		}
 
-		return url, nil
+		if allowExternalLinks {
+			if publicURL == "" {
+				logger.Warn("public URL is not set, cannot generate external link")
+				return &markdownv2.LinkResolverResult{}, nil
+			}
+
+			post.ExternalLinkCount++
+
+			externalURL := publicURL + linkedNV.Permalink
+			return &markdownv2.LinkResolverResult{URL: externalURL}, nil
+		}
+
+		return nil, fmt.Errorf("note not published: %s", target)
 	})
 
 	res := tr.Process(source.NoteView)
