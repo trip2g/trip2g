@@ -1,0 +1,6 @@
+$trip2g_admin_labeler_moment $mol_labeler
+	title @ \Date
+	format \YYYY-MM-DD
+	value \2025-01-01T00:00:00Z
+	Content <= Cell $trip2g_admin_cell
+		content <= formatted_value \date

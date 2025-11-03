@@ -33,7 +33,7 @@ $trip2g_admin_tgbot_show_publishtags $mol_view
 								content <= row_member_count*? \
 						<= Tags_labeler* $mol_labeler
 							title \Tags
-							Content <= tags* null $mol_view
+							Content <= tags* $mol_view
 						<= InstantTags_labeler* $mol_labeler
 							title \Instant Tags
-							Content <= instant_tags* null $mol_view
+							Content <= instant_tags* $mol_view

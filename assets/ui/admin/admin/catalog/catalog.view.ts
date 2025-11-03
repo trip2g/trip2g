@@ -47,8 +47,7 @@ namespace $.$$ {
 		}
 
 		override row_granted_at( id: any ): string {
-			const m = new $mol_time_moment( this.row( id ).grantedAt )
-			return m.toString( 'YYYY-MM-DD' )
+			return this.row( id ).grantedAt
 		}
 	}
 }

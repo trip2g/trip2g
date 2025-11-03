@@ -10,15 +10,10 @@ $trip2g_admin_admin_catalog $trip2g_admin_catalog
 				minimal_height 24
 				minimal_width 600
 				sub <= row_content* /
-					<= Row_id_labeler* $mol_labeler
-						title \ID
-						Content <= Row_id* $trip2g_admin_cell
-							content <= row_id_string* \
-					<= Row_user_email_labeler* $mol_labeler
-						title \Email
-						Content <= Row_user_email* $trip2g_admin_cell
-							content <= row_user_email* \user_email
-					<= Row_granted_at_labeler* $mol_labeler
-						title \Granted At
-						Content <= Row_granted_at* $trip2g_admin_cell
-							content <= row_granted_at* \granted_at
+					<= Id* $trip2g_admin_labeler_id
+						value <= row_id_string* \id
+					<= Email* $trip2g_admin_labeler_email
+						value <= row_user_email* \email
+					<= GrantedAt* $trip2g_admin_labeler_moment
+						title @ \Granted At
+						value <= row_granted_at* \granted_at

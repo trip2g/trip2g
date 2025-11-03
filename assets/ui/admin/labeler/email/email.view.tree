@@ -1,0 +1,4 @@
+$trip2g_admin_labeler_email $mol_labeler
+	title @ \Email
+	Content <= Cell $trip2g_admin_cell
+		content <= value \email

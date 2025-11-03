@@ -5,7 +5,7 @@ $trip2g_admin_backgroundqueue_catalog $trip2g_admin_catalog
 	Menu_links_empty $mol_view
 		sub / <= empty_text @ \Empty
 	Content* $trip2g_admin_backgroundqueue_show
-		queue_id <= row_id* 0
+		queue_id <= row_id* \
 	menu_link_content* / <= BackgroundQueueItem* $mol_view
 		sub /
 			<= Rows* $mol_row

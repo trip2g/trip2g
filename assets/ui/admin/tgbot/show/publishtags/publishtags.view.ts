@@ -89,7 +89,7 @@ namespace $.$$ {
 			return ['channel', 'supergroup'].includes( this.row( id ).chatType )
 		}
 
-		override instant_tags(id: any): $mol_view | null {
+		override instant_tags(id: any) {
 			if (this.supported(id)) {
 				return this.InstantTags(id)
 			}
@@ -97,7 +97,7 @@ namespace $.$$ {
 			return this.NotSupported(`instant_${id}`)
 		}
 
-		override tags(id: any): $mol_view | null {
+		override tags(id: any) {
 			if (this.supported(id)) {
 				return this.Tags(id)
 			}

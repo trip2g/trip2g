@@ -17,7 +17,7 @@ namespace $.$$ {
 	export class $trip2g_admin_backgroundqueue_catalog extends $.$trip2g_admin_backgroundqueue_catalog {
 		@$mol_mem
 		data( reset?: null ) {
-			const res = data_request({})
+			const res = data_request()
 
 			return $trip2g_graphql_make_map( res.admin.allBackgroundQueues.nodes )
 		}
@@ -39,7 +39,7 @@ namespace $.$$ {
 			return this.data().get( id )
 		}
 
-		override row_id( id: any ): string {
+		override row_id( id: any ) {
 			return id
 		}
 

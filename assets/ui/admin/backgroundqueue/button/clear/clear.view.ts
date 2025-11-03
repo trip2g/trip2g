@@ -27,12 +27,14 @@ namespace $.$$ {
 				return
 			}
 
-			// Show success message with deleted count
-			const deletedCount = res.admin.payload.deletedCount
-			this.$.$mol_log3_rise({
-				message: `Successfully cleared queue. Deleted ${deletedCount} job(s).`,
-				place: this,
-			})
+			if (res.admin.payload.__typename === 'ClearBackgroundQueuePayload') {
+				// Show success message with deleted count
+				const { deletedCount } = res.admin.payload
+				this.$.$mol_log3_rise({
+					message: `Successfully cleared queue. Deleted ${deletedCount} job(s).`,
+					place: this,
+				})
+			}
 		}
 	}
 }
