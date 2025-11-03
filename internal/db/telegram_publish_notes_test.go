@@ -102,3 +102,128 @@ func TestListAllTelegramPublishNotes(t *testing.T) {
 		}
 	})
 }
+
+func TestTelegramPublishSentMessagesPartialUniqueIndex(t *testing.T) {
+	conn, _, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Create test data
+	notePath1 := insertTestNotePath(t, conn, "/test/unique-index-1")
+	notePath2 := insertTestNotePath(t, conn, "/test/unique-index-2")
+
+	// Create admin user
+	var adminUserID int64
+	err := conn.QueryRow(`
+		insert into users (email, created_via)
+		values ('admin@test.com', 'test')
+		returning id
+	`).Scan(&adminUserID)
+	require.NoError(t, err)
+
+	_, err = conn.Exec(`
+		insert into admins (user_id)
+		values (?)
+	`, adminUserID)
+	require.NoError(t, err)
+
+	// Create telegram bot
+	var botID int64
+	err = conn.QueryRow(`
+		insert into tg_bots (name, token, created_by)
+		values ('test_bot', 'test_token', ?)
+		returning id
+	`, adminUserID).Scan(&botID)
+	require.NoError(t, err)
+
+	// Create telegram chat
+	var chatID int64
+	err = conn.QueryRow(`
+		insert into tg_bot_chats (bot_id, telegram_id, chat_type, chat_title)
+		values (?, 123456, 'supergroup', 'Test Chat')
+		returning id
+	`, botID).Scan(&chatID)
+	require.NoError(t, err)
+
+	t.Run("can_insert_only_one_scheduled_message_per_chat_and_note", func(t *testing.T) {
+		// Insert first scheduled message (instant = 0)
+		_, err := conn.Exec(`
+			insert into telegram_publish_sent_messages
+			(note_path_id, chat_id, message_id, instant, content_hash, content)
+			values (?, ?, 1001, 0, 'hash1', 'content1')
+		`, notePath1, chatID)
+		require.NoError(t, err, "First scheduled message should insert successfully")
+
+		// Try to insert duplicate scheduled message (instant = 0) - should FAIL
+		_, err = conn.Exec(`
+			insert into telegram_publish_sent_messages
+			(note_path_id, chat_id, message_id, instant, content_hash, content)
+			values (?, ?, 1002, 0, 'hash2', 'content2')
+		`, notePath1, chatID)
+		require.Error(t, err, "Duplicate scheduled message should fail")
+		require.Contains(t, err.Error(), "UNIQUE constraint failed", "Error should mention unique constraint")
+	})
+
+	t.Run("can_insert_multiple_instant_messages_per_chat_and_note", func(t *testing.T) {
+		// Insert first instant message (instant = 1)
+		_, err := conn.Exec(`
+			insert into telegram_publish_sent_messages
+			(note_path_id, chat_id, message_id, instant, content_hash, content)
+			values (?, ?, 2001, 1, 'instant_hash1', 'instant_content1')
+		`, notePath2, chatID)
+		require.NoError(t, err, "First instant message should insert successfully")
+
+		// Insert second instant message (instant = 1) - should SUCCEED
+		_, err = conn.Exec(`
+			insert into telegram_publish_sent_messages
+			(note_path_id, chat_id, message_id, instant, content_hash, content)
+			values (?, ?, 2002, 1, 'instant_hash2', 'instant_content2')
+		`, notePath2, chatID)
+		require.NoError(t, err, "Multiple instant messages should be allowed")
+
+		// Insert third instant message (instant = 1) - should SUCCEED
+		_, err = conn.Exec(`
+			insert into telegram_publish_sent_messages
+			(note_path_id, chat_id, message_id, instant, content_hash, content)
+			values (?, ?, 2003, 1, 'instant_hash3', 'instant_content3')
+		`, notePath2, chatID)
+		require.NoError(t, err, "Multiple instant messages should be allowed")
+
+		// Verify all 3 instant messages exist
+		var count int
+		err = conn.QueryRow(`
+			select count(*)
+			from telegram_publish_sent_messages
+			where note_path_id = ? and chat_id = ? and instant = 1
+		`, notePath2, chatID).Scan(&count)
+		require.NoError(t, err)
+		require.Equal(t, 3, count, "Should have 3 instant messages")
+	})
+
+	t.Run("unique_constraint_only_applies_to_scheduled_messages", func(t *testing.T) {
+		notePath3 := insertTestNotePath(t, conn, "/test/unique-index-3")
+
+		// Insert scheduled message (instant = 0)
+		_, err := conn.Exec(`
+			insert into telegram_publish_sent_messages
+			(note_path_id, chat_id, message_id, instant, content_hash, content)
+			values (?, ?, 3001, 0, 'scheduled_hash', 'scheduled_content')
+		`, notePath3, chatID)
+		require.NoError(t, err)
+
+		// Insert instant message with same chat_id and note_path_id - should SUCCEED
+		_, err = conn.Exec(`
+			insert into telegram_publish_sent_messages
+			(note_path_id, chat_id, message_id, instant, content_hash, content)
+			values (?, ?, 3002, 1, 'instant_hash', 'instant_content')
+		`, notePath3, chatID)
+		require.NoError(t, err, "Instant message should coexist with scheduled message")
+
+		// Try to insert another scheduled message - should FAIL
+		_, err = conn.Exec(`
+			insert into telegram_publish_sent_messages
+			(note_path_id, chat_id, message_id, instant, content_hash, content)
+			values (?, ?, 3003, 0, 'scheduled_hash2', 'scheduled_content2')
+		`, notePath3, chatID)
+		require.Error(t, err, "Second scheduled message should fail")
+	})
+}

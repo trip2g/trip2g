@@ -512,8 +512,11 @@ CREATE TABLE IF NOT EXISTS "telegram_publish_sent_messages" (
   content_hash text not null default '',
   content text not null default ''
 );
-CREATE INDEX idx_telegram_publish_sent_messages_chat_id on telegram_publish_sent_messages(chat_id);
-CREATE INDEX idx_telegram_publish_sent_messages_note_path_id on telegram_publish_sent_messages(note_path_id);
+CREATE UNIQUE INDEX idx_telegram_publish_sent_messages_unique_scheduled
+ON telegram_publish_sent_messages(chat_id, note_path_id)
+WHERE instant = 0;
+CREATE INDEX idx_telegram_publish_sent_messages_chat_id ON telegram_publish_sent_messages(chat_id);
+CREATE INDEX idx_telegram_publish_sent_messages_note_path_id ON telegram_publish_sent_messages(note_path_id);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -598,4 +601,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251030012221'),
   ('20251030151751'),
   ('20251030152642'),
-  ('20251031015532');
+  ('20251031015532'),
+  ('20251103094933');

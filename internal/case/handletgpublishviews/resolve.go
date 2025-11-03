@@ -126,6 +126,7 @@ func (p *processor) process(note *model.NoteView) error {
 		return fmt.Errorf("failed to SendTelegramPublishPost: %w", err)
 	}
 
+	// update existing post if it was already published
 	err = p.env.UpdateTelegramPublishPost(p.ctx, note.PathID)
 	if err != nil {
 		return fmt.Errorf("failed to UpdateTelegramPublishPost: %w", err)
