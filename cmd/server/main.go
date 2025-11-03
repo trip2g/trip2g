@@ -869,8 +869,8 @@ func (a *app) IDHash(entity string, id int64) string {
 	return hex.EncodeToString(sha256.Sum(nil))
 }
 
-func (a *app) HandleLatestNotesAfterSave(changedPathIDs []int64) error {
-	err := handletgpublishviews.Resolve(a.ctx, a, changedPathIDs)
+func (a *app) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error {
+	err := handletgpublishviews.Resolve(ctx, a, changedPathIDs)
 	if err != nil {
 		return fmt.Errorf("failed to handle Telegram publish views: %w", err)
 	}

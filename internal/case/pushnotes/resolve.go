@@ -17,7 +17,7 @@ type Env interface {
 	InsertNote(ctx context.Context, update appmodel.RawNote) error
 	InsertSubgraph(ctx context.Context, name string) error
 	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
-	HandleLatestNotesAfterSave(changedPathIDs []int64) error
+	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
 	Layouts() *appmodel.Layouts
 }
 
@@ -77,7 +77,7 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		}
 	}
 
-	err = env.HandleLatestNotesAfterSave(pathIDs)
+	err = env.HandleLatestNotesAfterSave(ctx, pathIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to handle latest notes after save: %w", err)
 	}

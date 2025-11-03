@@ -21,7 +21,7 @@ var _ pushnotes.Env = &EnvMock{}
 //
 //		// make and configure a mocked pushnotes.Env
 //		mockedEnv := &EnvMock{
-//			HandleLatestNotesAfterSaveFunc: func(changedPathIDs []int64) error {
+//			HandleLatestNotesAfterSaveFunc: func(ctx context.Context, changedPathIDs []int64) error {
 //				panic("mock out the HandleLatestNotesAfterSave method")
 //			},
 //			InsertNoteFunc: func(ctx context.Context, update appmodel.RawNote) error {
@@ -47,7 +47,7 @@ var _ pushnotes.Env = &EnvMock{}
 //	}
 type EnvMock struct {
 	// HandleLatestNotesAfterSaveFunc mocks the HandleLatestNotesAfterSave method.
-	HandleLatestNotesAfterSaveFunc func(changedPathIDs []int64) error
+	HandleLatestNotesAfterSaveFunc func(ctx context.Context, changedPathIDs []int64) error
 
 	// InsertNoteFunc mocks the InsertNote method.
 	InsertNoteFunc func(ctx context.Context, update appmodel.RawNote) error
@@ -68,6 +68,8 @@ type EnvMock struct {
 	calls struct {
 		// HandleLatestNotesAfterSave holds details about calls to the HandleLatestNotesAfterSave method.
 		HandleLatestNotesAfterSave []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// ChangedPathIDs is the changedPathIDs argument value.
 			ChangedPathIDs []int64
 		}
@@ -106,19 +108,21 @@ type EnvMock struct {
 }
 
 // HandleLatestNotesAfterSave calls HandleLatestNotesAfterSaveFunc.
-func (mock *EnvMock) HandleLatestNotesAfterSave(changedPathIDs []int64) error {
+func (mock *EnvMock) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error {
 	if mock.HandleLatestNotesAfterSaveFunc == nil {
 		panic("EnvMock.HandleLatestNotesAfterSaveFunc: method is nil but Env.HandleLatestNotesAfterSave was just called")
 	}
 	callInfo := struct {
+		Ctx            context.Context
 		ChangedPathIDs []int64
 	}{
+		Ctx:            ctx,
 		ChangedPathIDs: changedPathIDs,
 	}
 	mock.lockHandleLatestNotesAfterSave.Lock()
 	mock.calls.HandleLatestNotesAfterSave = append(mock.calls.HandleLatestNotesAfterSave, callInfo)
 	mock.lockHandleLatestNotesAfterSave.Unlock()
-	return mock.HandleLatestNotesAfterSaveFunc(changedPathIDs)
+	return mock.HandleLatestNotesAfterSaveFunc(ctx, changedPathIDs)
 }
 
 // HandleLatestNotesAfterSaveCalls gets all the calls that were made to HandleLatestNotesAfterSave.
@@ -126,9 +130,11 @@ func (mock *EnvMock) HandleLatestNotesAfterSave(changedPathIDs []int64) error {
 //
 //	len(mockedEnv.HandleLatestNotesAfterSaveCalls())
 func (mock *EnvMock) HandleLatestNotesAfterSaveCalls() []struct {
+	Ctx            context.Context
 	ChangedPathIDs []int64
 } {
 	var calls []struct {
+		Ctx            context.Context
 		ChangedPathIDs []int64
 	}
 	mock.lockHandleLatestNotesAfterSave.RLock()

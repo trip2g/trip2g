@@ -84,7 +84,7 @@ func TestResolve(t *testing.T) {
 							Subgraphs: map[string]*appmodel.NoteSubgraph{},
 						}, nil
 					},
-					HandleLatestNotesAfterSaveFunc: func(changedPathIDs []int64) error {
+					HandleLatestNotesAfterSaveFunc: func(ctx context.Context, changedPathIDs []int64) error {
 						return nil
 					},
 					LayoutsFunc: func() *appmodel.Layouts {
