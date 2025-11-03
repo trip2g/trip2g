@@ -837,6 +837,11 @@ select content_hash
    and chat_id = ?
    and message_id = ?;
 
+-- name: ListDistinctChatIDsFromSentMessages :many
+select distinct chat_id
+  from telegram_publish_sent_messages
+ where instant = 0;
+
 -- name: GetGoqiteQueueStats :one
 select queue
      , count(*) as total_jobs

@@ -18,7 +18,7 @@ type Env interface {
 	UpdateTelegramPublishNoteAsPublished(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error
 
 	// Telegram post queue
-	EnqueueSendTelegramPost(ctx context.Context, params model.TelegramSendPostParams) error
+	QueueSendTelegramPost(ctx context.Context, params model.TelegramSendPostParams) error
 
 	ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
 
@@ -90,7 +90,7 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 		}
 
 		// Enqueue the post to be sent via telegram queue
-		sendErr := env.EnqueueSendTelegramPost(ctx, params)
+		sendErr := env.QueueSendTelegramPost(ctx, params)
 		if sendErr != nil {
 			return fmt.Errorf("failed to enqueue telegram post for chat %d: %w", chat.ID, sendErr)
 		}

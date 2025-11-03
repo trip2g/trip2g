@@ -2,136 +2,30 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
-	"trip2g/internal/case/backjob/sendtelegrampost"
-	"trip2g/internal/case/backjob/updatetelegrampost"
 	"trip2g/internal/case/handletgupdate"
-	"trip2g/internal/model"
 	"trip2g/internal/tgbots"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"maragu.dev/goqite/jobs"
 )
 
-const sendTelegramPostJobID = "send_message"
-const updateTelegramPostJobID = "update_message"
-const sendPublishPostJobID = "send_publish_post"
-
-type sendPublishPostParams struct {
-	NotePathID int64 `json:"note_path_id"`
-	Instant    bool  `json:"instant"`
+func (a *app) RegisterTelegramJob(id string, handler func(ctx context.Context, m []byte) error) {
+	a.log.Info("registering telegram job handler", "id", id)
+	a.telegramQueue.runner.Register(id, handler)
 }
 
 func (a *app) initTelegramDeps(ctx context.Context) error {
 	appQ := a.createQueue(ctx, "tg_jobs", jobs.NewRunnerOpts{
 		Limit:        1,
-		PollInterval: time.Second,
+		PollInterval: 1,
 	})
 
 	a.telegramQueue = appQ
 
-	jobTimeout := time.Minute
-
-	a.telegramQueue.runner.Register(sendTelegramPostJobID, func(ctx context.Context, m []byte) error {
-		var params model.TelegramSendPostParams
-
-		err := json.Unmarshal(m, &params)
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal send_telegram_post params: %w", err)
-		}
-
-		// independent timeout context from stop cancelations
-		jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
-		defer cancel()
-
-		err = sendtelegrampost.Resolve(jobCtx, a, params)
-		if err != nil {
-			shouldRetry, delay := handleTelegramRateLimit(err)
-			if shouldRetry {
-				a.log.Info("telegram rate limit hit, retrying after delay",
-					"delay", delay,
-					"job", sendTelegramPostJobID,
-				)
-				time.Sleep(delay)
-				err = sendtelegrampost.Resolve(ctx, a, params)
-			}
-
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-
-	a.telegramQueue.runner.Register(updateTelegramPostJobID, func(ctx context.Context, m []byte) error {
-		var params model.TelegramUpdatePostParams
-
-		err := json.Unmarshal(m, &params)
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal update_telegram_post params: %w", err)
-		}
-
-		// independent timeout context from stop cancelations
-		jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
-		defer cancel()
-
-		err = updatetelegrampost.Resolve(jobCtx, a, params)
-		if err != nil {
-			shouldRetry, delay := handleTelegramRateLimit(err)
-			if shouldRetry {
-				a.log.Info("telegram rate limit hit, retrying after delay",
-					"delay", delay,
-					"job", updateTelegramPostJobID,
-				)
-				time.Sleep(delay)
-				err = updatetelegrampost.Resolve(ctx, a, params)
-			}
-
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-
-	a.telegramQueue.runner.Register(sendPublishPostJobID, func(ctx context.Context, m []byte) error {
-		var params sendPublishPostParams
-
-		err := json.Unmarshal(m, &params)
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal send_publish_post params: %w", err)
-		}
-
-		// independent timeout context from stop cancelations
-		jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
-		defer cancel()
-
-		return a.SendTelegramPublishPostWithTx(jobCtx, params.NotePathID, params.Instant)
-	})
-
 	appQ.start() // after register all handlers
 
 	return a.initTelegramBots(ctx)
-}
-
-func (a *app) EnqueueSendTelegramPost(ctx context.Context, params model.TelegramSendPostParams) error {
-	return a.enqueueJobToQ(ctx, a.telegramQueue, sendTelegramPostJobID, params)
-}
-
-func (a *app) EnqueueUpdateTelegramPost(ctx context.Context, params model.TelegramUpdatePostParams) error {
-	return a.enqueueJobToQ(ctx, a.telegramQueue, updateTelegramPostJobID, params)
-}
-
-func (a *app) EnqueueSendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error {
-	params := sendPublishPostParams{NotePathID: notePathID, Instant: instant}
-	return a.enqueueJobToQ(ctx, a.telegramQueue, sendPublishPostJobID, params)
 }
 
 func (a *app) initTelegramBots(ctx context.Context) error {
@@ -270,31 +164,4 @@ func (a *app) BotStartLink(botID int64, param string) (string, error) {
 		return "", fmt.Errorf("bot with ID %d not found or not active", botID)
 	}
 	return handlerIO.BotStartLink(param), nil
-}
-
-// handleTelegramRateLimit checks if error is "Too Many Requests" and returns retry delay.
-func handleTelegramRateLimit(err error) (bool, time.Duration) {
-	if err == nil {
-		return false, 0
-	}
-
-	errMsg := err.Error()
-	if !strings.Contains(errMsg, "Too Many Requests") {
-		return false, 0
-	}
-
-	// Try to parse "retry after X" from error message
-	re := regexp.MustCompile(`retry after (\d+)`)
-	matches := re.FindStringSubmatch(errMsg)
-
-	seconds := 10 // default delay
-	if len(matches) > 1 {
-		parsed, parseErr := strconv.Atoi(matches[1])
-		if parseErr == nil {
-			seconds = parsed
-		}
-	}
-
-	// Add +1 second to the delay
-	return true, time.Duration(seconds+1) * time.Second
 }

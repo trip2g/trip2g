@@ -5,6 +5,7 @@ import (
 	"trip2g/internal/case/cronjob/clearcronjobexecutionhistory"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/cronjob/sendscheduledtelegrampublishposts"
+	"trip2g/internal/case/cronjob/updatetelegrampublishposts"
 	"trip2g/internal/case/cronjob/vacuumdatabase"
 	"trip2g/internal/cronjobs"
 )
@@ -17,6 +18,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		_ clearcronjobexecutionhistory.Env = app
 
 		_ sendscheduledtelegrampublishposts.Env = app
+		_ updatetelegrampublishposts.Env        = app
 		_ vacuumdatabase.Env                    = app
 		// _ extractallnotionpages.Env        = app
 		// _ otherjob.Env = app
@@ -28,6 +30,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		&removeexpiredtgchatmembers.Job{},
 		&clearcronjobexecutionhistory.Job{},
 		&sendscheduledtelegrampublishposts.Job{},
+		&updatetelegrampublishposts.Job{},
 		&vacuumdatabase.Job{},
 		// &extractallnotionpages.Job{},
 		// &otherjob.Job{},

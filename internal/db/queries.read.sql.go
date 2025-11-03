@@ -2890,6 +2890,35 @@ func (q *Queries) ListCronJobExecutionsByJobID(ctx context.Context, jobID int64)
 	return items, nil
 }
 
+const listDistinctChatIDsFromSentMessages = `-- name: ListDistinctChatIDsFromSentMessages :many
+select distinct chat_id
+  from telegram_publish_sent_messages
+ where instant = 0
+`
+
+func (q *Queries) ListDistinctChatIDsFromSentMessages(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listDistinctChatIDsFromSentMessages)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var chat_id int64
+		if err := rows.Scan(&chat_id); err != nil {
+			return nil, err
+		}
+		items = append(items, chat_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEnabledTgBots = `-- name: ListEnabledTgBots :many
 select id, token, enabled, description, created_at, created_by, name from tg_bots where enabled = true
 `

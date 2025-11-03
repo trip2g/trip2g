@@ -1,5 +1,13 @@
 $trip2g_admin_tgbot_show_publishtags $mol_view
 	bot_id 0
+	Tags* $trip2g_admin_tgbot_show_publishtags_tags
+		chat_id <= row_id* 0
+		current_ids <= row_publish_tag_ids* /number
+	InstantTags* $trip2g_admin_tgbot_show_publishtags_instanttags
+		chat_id <= row_id* 0
+		current_ids <= row_publish_instant_tag_ids* /number
+	NotSupported* $trip2g_admin_cell
+		sub / \Not Supported
 	sub /
 		<= Rows $mol_list
 			item_width_min* 200
@@ -25,11 +33,7 @@ $trip2g_admin_tgbot_show_publishtags $mol_view
 								content <= row_member_count*? \
 						<= Tags_labeler* $mol_labeler
 							title \Tags
-							Content <= Tags* $trip2g_admin_tgbot_show_publishtags_tags
-								chat_id <= row_id* 0
-								current_ids <= row_publish_tag_ids* /number
+							Content <= tags* null $mol_view
 						<= InstantTags_labeler* $mol_labeler
 							title \Instant Tags
-							Content <= InstantTags* $trip2g_admin_tgbot_show_publishtags_instanttags
-								chat_id <= row_id* 0
-								current_ids <= row_publish_instant_tag_ids* /number
+							Content <= instant_tags* null $mol_view

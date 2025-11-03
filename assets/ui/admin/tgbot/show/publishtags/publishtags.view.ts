@@ -84,5 +84,25 @@ namespace $.$$ {
 		override row_publish_instant_tag_ids( id: any ) {
 			return this.row(id).publishInstantTags.map( tag => tag.id )
 		}
+
+		supported(id: any) {
+			return ['channel', 'supergroup'].includes( this.row( id ).chatType )
+		}
+
+		override instant_tags(id: any): $mol_view | null {
+			if (this.supported(id)) {
+				return this.InstantTags(id)
+			}
+			
+			return this.NotSupported(`instant_${id}`)
+		}
+
+		override tags(id: any): $mol_view | null {
+			if (this.supported(id)) {
+				return this.Tags(id)
+			}
+
+			return this.NotSupported(id)
+		}
 	}
 }

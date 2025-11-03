@@ -15,7 +15,7 @@ type Env interface {
 	LatestNoteViews() *model.NoteViews
 	ListTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error)
 	ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
-	EnqueueUpdateTelegramPost(ctx context.Context, params model.TelegramUpdatePostParams) error
+	QueueUpdateTelegramPost(ctx context.Context, params model.TelegramUpdatePostParams) error
 }
 
 func Resolve(ctx context.Context, env Env, notePathID int64) error {
@@ -58,6 +58,7 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 
 		// Skip update if content hasn't changed
 		if currentHash == sentMsg.ContentHash {
+			// TODO: add logging here
 			continue
 		}
 
@@ -75,7 +76,7 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 		}
 
 		// Enqueue the update job
-		enqueueErr := env.EnqueueUpdateTelegramPost(ctx, params)
+		enqueueErr := env.QueueUpdateTelegramPost(ctx, params)
 		if enqueueErr != nil {
 			return fmt.Errorf("failed to enqueue update job for chat %d: %w", sentMsg.ChatID, enqueueErr)
 		}

@@ -34,7 +34,11 @@ import (
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/case/backjob/extractnotionpages"
+	"trip2g/internal/case/backjob/sendpublishpost"
 	"trip2g/internal/case/backjob/sendsignincode"
+	"trip2g/internal/case/backjob/sendtelegrampost"
+	"trip2g/internal/case/backjob/updateallchattelegrampublishposts"
+	"trip2g/internal/case/backjob/updatetelegrampost"
 	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
@@ -99,7 +103,11 @@ type app struct {
 	*tgbots.TgBots
 	*cronjobs.CronJobs
 	*sendsignincode.SendSignInCodeJob
+	*sendpublishpost.SendPublishPostJob
+	*sendtelegrampost.SendTelegramPostJob
+	*updatetelegrampost.UpdateTelegramPostJob
 	*extractnotionpages.ExtractNotionPagesJob
+	*updateallchattelegrampublishposts.UpdateAllChatTelegramPublishPostsJob
 
 	sigChan     chan os.Signal
 	shutdownCtx context.Context
@@ -274,13 +282,18 @@ func main() {
 		panic(fmt.Errorf("failed to initialize telegram dependencies: %w", err))
 	}
 
+	a.SendTelegramPostJob = sendtelegrampost.New(a)
+	a.UpdateTelegramPostJob = updatetelegrampost.New(a)
+
 	a.CronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
 	if err != nil {
 		panic(fmt.Errorf("failed to create cron jobs: %w", err))
 	}
 
 	a.SendSignInCodeJob = sendsignincode.New(a)
+	a.SendPublishPostJob = sendpublishpost.New(a)
 	a.ExtractNotionPagesJob = extractnotionpages.New(a)
+	a.UpdateAllChatTelegramPublishPostsJob = updateallchattelegrampublishposts.New(a)
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)
 	if err != nil {
@@ -453,6 +466,10 @@ func (a *app) InsertNote(ctx context.Context, note model.RawNote) error {
 
 func (a *app) EnqueueJob(ctx context.Context, jobID string, data any) error {
 	return a.enqueueJobToQ(ctx, a.globalQueue, jobID, data)
+}
+
+func (a *app) EnqueueTelegramJob(ctx context.Context, jobID string, data any) error {
+	return a.enqueueJobToQ(ctx, a.telegramQueue, jobID, data)
 }
 
 func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, jobID string, data any) error {
@@ -1039,29 +1056,10 @@ func (a *app) RecordUserNoteView(ctx context.Context, userID int64, note *model.
 }
 
 func (a *app) doRecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) error {
-	tx, err := a.conn.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("failed to begin RecordUserNoteView transaction: %w", err)
-	}
-
-	queries := db.NewWriteQueries(db.WithLogger(tx, logger.WithPrefix(a.log, "tx RecordUserNoteView:")))
-
-	err = a.recordUserNoteViewTx(ctx, queries, userID, note, referrerVersionID)
-	if err != nil {
-		rollbackErr := tx.Rollback()
-		if rollbackErr != nil {
-			a.log.Error("failed to rollback RecordUserNoteView transaction", "error", rollbackErr)
-		}
-
-		return fmt.Errorf("failed to record user note view: %w", err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return fmt.Errorf("failed to commit RecordUserNoteView transaction: %w", err)
-	}
-
-	return nil
+	return a.WithTransaction(ctx, func(env *app) (bool, error) {
+		err := a.recordUserNoteViewTx(ctx, env.WriteQueries, userID, note, referrerVersionID)
+		return err == nil, err
+	})
 }
 
 func (a *app) recordUserNoteViewTx(

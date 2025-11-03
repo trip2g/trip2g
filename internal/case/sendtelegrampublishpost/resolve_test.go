@@ -7,6 +7,7 @@ import (
 
 	"trip2g/internal/case/sendtelegrampublishpost"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
 	"github.com/stretchr/testify/require"
@@ -82,6 +83,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					LoggerFunc: func() logger.Logger { return &logger.TestLogger{} },
 					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
@@ -96,7 +98,7 @@ func TestResolve(t *testing.T) {
 						require.Equal(t, int64(123), notePathID)
 						return mockChats, nil
 					},
-					EnqueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
+					QueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
 						require.Equal(t, int64(123), params.NotePathID)
 						require.Contains(t, []int64{1, 2}, params.DBChatID)
 						require.False(t, params.Instant)
@@ -119,6 +121,7 @@ func TestResolve(t *testing.T) {
 			instant: true,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					LoggerFunc: func() logger.Logger { return &logger.TestLogger{} },
 					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
@@ -133,11 +136,11 @@ func TestResolve(t *testing.T) {
 						require.Equal(t, int64(123), notePathID)
 						return mockChats, nil
 					},
-					EnqueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
+					QueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
 						require.Equal(t, int64(123), params.NotePathID)
 						require.Contains(t, []int64{1, 2}, params.DBChatID)
 						require.True(t, params.Instant)
-						require.True(t, params.UpdateLinkedPosts)
+						require.False(t, params.UpdateLinkedPosts)
 						return nil
 					},
 					UpdateTelegramPublishNoteAsPublishedFunc: func(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error {
@@ -154,6 +157,7 @@ func TestResolve(t *testing.T) {
 			instant: true,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					LoggerFunc: func() logger.Logger { return &logger.TestLogger{} },
 					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
@@ -176,6 +180,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					LoggerFunc: func() logger.Logger { return &logger.TestLogger{} },
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -190,6 +195,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					LoggerFunc: func() logger.Logger { return &logger.TestLogger{} },
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -207,6 +213,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					LoggerFunc: func() logger.Logger { return &logger.TestLogger{} },
 					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -224,6 +231,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					LoggerFunc: func() logger.Logger { return &logger.TestLogger{} },
 					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
@@ -237,7 +245,7 @@ func TestResolve(t *testing.T) {
 					ListTgBotChatsByTelegramPublishNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.TgBotChat, error) {
 						return []db.TgBotChat{mockChats[0]}, nil
 					},
-					EnqueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
+					QueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
 						return errors.New("queue error")
 					},
 				}
@@ -251,6 +259,7 @@ func TestResolve(t *testing.T) {
 			instant: false,
 			setupEnv: func() *EnvMock {
 				return &EnvMock{
+					LoggerFunc: func() logger.Logger { return &logger.TestLogger{} },
 					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
@@ -264,7 +273,7 @@ func TestResolve(t *testing.T) {
 					ListTgBotChatsByTelegramPublishNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.TgBotChat, error) {
 						return []db.TgBotChat{mockChats[0]}, nil
 					},
-					EnqueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
+					QueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
 						return nil
 					},
 					UpdateTelegramPublishNoteAsPublishedFunc: func(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error {
