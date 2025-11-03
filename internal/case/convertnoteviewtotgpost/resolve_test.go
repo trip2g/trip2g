@@ -3,6 +3,7 @@ package convertnoteviewtotgpost_test
 import (
 	"context"
 	"testing"
+	"time"
 	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -33,6 +34,10 @@ func (e *testEnv) ListTelegramPublishSentMessagesByChatID(ctx context.Context, c
 
 func (e *testEnv) PublicURL() string {
 	return e.publicURL
+}
+
+func (e *testEnv) TimeLocation() *time.Location {
+	return time.UTC
 }
 
 func TestContent(t *testing.T) {

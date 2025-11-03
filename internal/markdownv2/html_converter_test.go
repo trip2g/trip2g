@@ -200,11 +200,14 @@ func TestHTMLWikilinks(t *testing.T) {
 		{
 			name:     "wikilink with resolver",
 			markdown: "See [[internal-note]] for details",
-			linkResolver: func(target string) (string, error) {
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
 				if target == "internal-note" {
-					return "https://example.com/notes/internal-note", nil
+					return &markdownv2.LinkResolverResult{
+						URL:   "https://example.com/notes/internal-note",
+						Label: "internal-note",
+					}, nil
 				}
-				return "", nil
+				return nil, nil
 			},
 			expected: `See <a href="https://example.com/notes/internal-note">internal-note</a> for details`,
 			warnings: 0,
@@ -212,8 +215,11 @@ func TestHTMLWikilinks(t *testing.T) {
 		{
 			name:     "wikilink with fragment (custom text)",
 			markdown: "See [[internal-note|Custom Text]] here",
-			linkResolver: func(target string) (string, error) {
-				return "https://example.com/notes/" + target, nil
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
+				return &markdownv2.LinkResolverResult{
+					URL:   "https://example.com/notes/" + target,
+					Label: "Custom Text",
+				}, nil
 			},
 			expected: `See <a href="https://example.com/notes/internal-note">Custom Text</a> here`,
 			warnings: 0,
@@ -221,8 +227,8 @@ func TestHTMLWikilinks(t *testing.T) {
 		{
 			name:     "wikilink with resolver error",
 			markdown: "See [[missing-note]] here",
-			linkResolver: func(target string) (string, error) {
-				return "", &markdownv2.LinkResolverError{Target: target, Reason: "not found"}
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
+				return nil, &markdownv2.LinkResolverError{Target: target, Reason: "not found"}
 			},
 			expected: `See  here`,
 			warnings: 1,
@@ -230,8 +236,11 @@ func TestHTMLWikilinks(t *testing.T) {
 		{
 			name:     "multiple wikilinks",
 			markdown: "Read [[first]] and [[second]]",
-			linkResolver: func(target string) (string, error) {
-				return "https://example.com/" + target, nil
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
+				return &markdownv2.LinkResolverResult{
+					URL:   "https://example.com/" + target,
+					Label: target,
+				}, nil
 			},
 			expected: `Read <a href="https://example.com/first">first</a> and <a href="https://example.com/second">second</a>`,
 			warnings: 0,
@@ -239,8 +248,11 @@ func TestHTMLWikilinks(t *testing.T) {
 		{
 			name:     "wikilink in blockquote",
 			markdown: "> Check [[note]] here",
-			linkResolver: func(target string) (string, error) {
-				return "https://example.com/" + target, nil
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
+				return &markdownv2.LinkResolverResult{
+					URL:   "https://example.com/" + target,
+					Label: target,
+				}, nil
 			},
 			expected: `<blockquote>Check <a href="https://example.com/note">note</a> here</blockquote>`,
 			warnings: 0,
@@ -248,8 +260,11 @@ func TestHTMLWikilinks(t *testing.T) {
 		{
 			name:     "wikilink with fragment in blockquote",
 			markdown: "> Read [[first|Fragment Text]] here",
-			linkResolver: func(target string) (string, error) {
-				return "https://example.com/" + target, nil
+			linkResolver: func(target string) (*markdownv2.LinkResolverResult, error) {
+				return &markdownv2.LinkResolverResult{
+					URL:   "https://example.com/" + target,
+					Label: "Fragment Text",
+				}, nil
 			},
 			expected: `<blockquote>Read <a href="https://example.com/first">Fragment Text</a> here</blockquote>`,
 			warnings: 0,
