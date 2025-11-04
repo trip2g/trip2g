@@ -88,6 +88,11 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+type txEnvKeyType struct{}
+
+//nolint:gochecknoglobals // Context key for transactional env
+var txEnvKey = txEnvKeyType{}
+
 type graphTransactions struct {
 	sync.Mutex
 	EnvMap map[*app]*sql.Tx
@@ -478,6 +483,14 @@ func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, jobID string, dat
 		return fmt.Errorf("failed to marshal job data: %w", err)
 	}
 
+	// First check context for transactional env (works for both HTTP and background jobs)
+	if txEnv, ok := ctx.Value(txEnvKey).(*app); ok && txEnv.currentTx != nil {
+		a.log.Debug("enqueueing in context tx env", "job_id", jobID, "data", string(rawData), "queue", aq.name)
+
+		return jobs.CreateTx(ctx, txEnv.currentTx, aq.q, jobID, rawData)
+	}
+
+	// Fallback: check request context (for HTTP requests)
 	req, err := appreq.FromCtx(ctx)
 	if err != nil && !errors.Is(err, appreq.ErrNotFound) {
 		return fmt.Errorf("failed to get request from context: %w", err)
@@ -487,12 +500,12 @@ func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, jobID string, dat
 		env, ok := req.Env.(*app)
 		if ok && env.CurrentTx() != nil {
 			a.log.Debug("enqueueing in request env", "job_id", jobID, "data", string(rawData), "queue", aq.name)
-			a.log.Debug("enqueueing in request env", "job_id", jobID, "data", string(rawData), "queue", aq.name)
 
 			return jobs.CreateTx(ctx, env.currentTx, aq.q, jobID, rawData)
 		}
 	}
 
+	// Fallback: check global app (should rarely be used now)
 	if a.currentTx != nil {
 		a.log.Debug("enqueueing in app.currentTx", "job_id", jobID, "data", string(rawData), "queue", aq.name)
 
@@ -637,7 +650,7 @@ func (a *app) CurrentTx() *sql.Tx {
 
 // WithTransaction runs the given function within a database transaction.
 // fn should return true to commit the transaction, false to rollback.
-func (a *app) WithTransaction(ctx context.Context, fn func(*app) (bool, error)) error {
+func (a *app) WithTransaction(ctx context.Context, fn func(context.Context, *app) (bool, error)) error {
 	tx, err := a.conn.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to BeginTx: %w", err)
@@ -658,7 +671,10 @@ func (a *app) WithTransaction(ctx context.Context, fn func(*app) (bool, error)) 
 	newEnv.WriteQueries = queries
 	newEnv.currentTx = tx
 
-	commit, err := fn(&newEnv)
+	// Store transactional env in context so background jobs can access it
+	txCtx := context.WithValue(ctx, txEnvKey, &newEnv)
+
+	commit, err := fn(txCtx, &newEnv)
 	if commit {
 		commitErr := tx.Commit()
 		if commitErr != nil {
@@ -1056,8 +1072,8 @@ func (a *app) RecordUserNoteView(ctx context.Context, userID int64, note *model.
 }
 
 func (a *app) doRecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64) error {
-	return a.WithTransaction(ctx, func(env *app) (bool, error) {
-		err := a.recordUserNoteViewTx(ctx, env.WriteQueries, userID, note, referrerVersionID)
+	return a.WithTransaction(ctx, func(txCtx context.Context, env *app) (bool, error) {
+		err := a.recordUserNoteViewTx(txCtx, env.WriteQueries, userID, note, referrerVersionID)
 		return err == nil, err
 	})
 }
