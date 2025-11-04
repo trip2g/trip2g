@@ -7,7 +7,6 @@ import (
 	"html/template"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader/highlight"
@@ -47,10 +46,6 @@ type loader struct {
 	linkResolver *myLinkResolver
 
 	config Config
-
-	// parseMu protects goldmark parser from concurrent access
-	// goldmark-enclave transformer is not thread-safe
-	parseMu sync.Mutex
 }
 
 type Config struct {
@@ -336,11 +331,7 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		content = NormalizeWikilinks(content)
 	}
 
-	// Lock parser to prevent concurrent access to goldmark-enclave transformer
-	// which has race conditions
-	ldr.parseMu.Lock()
 	doc := ldr.md.Parser().Parse(text.NewReader(content), parser.WithContext(context))
-	ldr.parseMu.Unlock()
 
 	pp := model.NoteView{
 		Path:      src.Path,
