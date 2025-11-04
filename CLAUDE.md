@@ -185,7 +185,11 @@ git add .
 git commit -m "type(scope): brief description"
 ```
 
-Do not add co-author comments or generated signatures unless specifically requested.
+**IMPORTANT**: Do NOT add these lines to commit messages:
+- `🤖 Generated with [Claude Code](https://claude.com/claude-code)`
+- `Co-Authored-By: Claude <noreply@anthropic.com>`
+
+Keep commit messages clean and concise without AI-generated signatures.
 
 ## Technology Stack
 
