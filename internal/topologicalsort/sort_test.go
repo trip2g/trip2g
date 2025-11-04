@@ -197,3 +197,110 @@ No links`),
 	require.Equal(t, nvs.Map["/note2"].PathID, sorted[2], "note2 should be third")
 	require.Equal(t, nvs.Map["/note1"].PathID, sorted[3], "note1 should be last")
 }
+
+func TestTopologicalSortWithTableOfContents(t *testing.T) {
+	// Create 4 notes where note 4 is a table of contents linking to all others:
+	// Note 1 -> [2, 3] (links to note2 and note3)
+	// Note 2 -> [1, 3] (links to note1 and note3)
+	// Note 3 -> [1, 2] (links to note1 and note2)
+	// Note 4 -> [1, 2, 3] (table of contents linking to all)
+	// Expected: notes 1, 2, 3 published first (in any order), then note 4
+
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{
+			{
+				Path:   "note1.md",
+				PathID: 1,
+				Content: []byte(`---
+free: true
+title: "Note 1"
+telegram_publish_tags: ["tag"]
+---
+Links to [[note2]] and [[note3]]`),
+			},
+			{
+				Path:   "note2.md",
+				PathID: 2,
+				Content: []byte(`---
+free: true
+title: "Note 2"
+telegram_publish_tags: ["tag"]
+---
+Links to [[note1]] and [[note3]]`),
+			},
+			{
+				Path:   "note3.md",
+				PathID: 3,
+				Content: []byte(`---
+free: true
+title: "Note 3"
+telegram_publish_tags: ["tag"]
+---
+Links to [[note1]] and [[note2]]`),
+			},
+			{
+				Path:   "note4.md",
+				PathID: 4,
+				Content: []byte(`---
+free: true
+title: "Table of Contents"
+telegram_publish_tags: ["tag"]
+---
+Table of contents:
+- [[note1]]
+- [[note2]]
+- [[note3]]`),
+			},
+		},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+	require.Len(t, nvs.List, 4)
+
+	// Input in random order
+	ids := []int64{
+		nvs.Map["/note4"].PathID,
+		nvs.Map["/note2"].PathID,
+		nvs.Map["/note1"].PathID,
+		nvs.Map["/note3"].PathID,
+	}
+
+	// Sort to minimize updates
+	sorted := topologicalsort.ReverseSort(nvs, ids)
+
+	// Verify result
+	require.Len(t, sorted, 4, "All 4 posts should be in result")
+
+	// Build position map for checking order constraints
+	position := make(map[int64]int)
+	for i, id := range sorted {
+		position[id] = i
+	}
+
+	// Verify all posts are present
+	require.Contains(t, position, nvs.Map["/note1"].PathID)
+	require.Contains(t, position, nvs.Map["/note2"].PathID)
+	require.Contains(t, position, nvs.Map["/note3"].PathID)
+	require.Contains(t, position, nvs.Map["/note4"].PathID)
+
+	// Key constraint: note4 (table of contents) references all others,
+	// so notes 1, 2, 3 should all be published before note4
+	require.Less(t, position[nvs.Map["/note1"].PathID], position[nvs.Map["/note4"].PathID],
+		"note1 should be published before note4 (note4 references note1)")
+	require.Less(t, position[nvs.Map["/note2"].PathID], position[nvs.Map["/note4"].PathID],
+		"note2 should be published before note4 (note4 references note2)")
+	require.Less(t, position[nvs.Map["/note3"].PathID], position[nvs.Map["/note4"].PathID],
+		"note3 should be published before note4 (note4 references note3)")
+
+	// Note 4 should be last
+	require.Equal(t, nvs.Map["/note4"].PathID, sorted[3], "note4 (table of contents) should be last")
+
+	// Notes 1, 2, 3 form a cycle, so their order among themselves is determined by PathID
+	// Since they all have equal out_degree (2), algorithm picks by smallest PathID
+	require.Equal(t, nvs.Map["/note1"].PathID, sorted[0], "note1 should be first (smallest PathID in cycle)")
+	require.Equal(t, nvs.Map["/note2"].PathID, sorted[1], "note2 should be second")
+	require.Equal(t, nvs.Map["/note3"].PathID, sorted[2], "note3 should be third")
+}
