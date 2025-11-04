@@ -78,6 +78,7 @@ import (
 	"github.com/vektah/gqlparser/gqlerror"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
+	"maragu.dev/goqite"
 	"maragu.dev/goqite/jobs"
 
 	"github.com/oklog/ulid/v2"
@@ -470,24 +471,32 @@ func (a *app) InsertNote(ctx context.Context, note model.RawNote) error {
 }
 
 func (a *app) EnqueueJob(ctx context.Context, jobID string, data any) error {
-	return a.enqueueJobToQ(ctx, a.globalQueue, jobID, data)
+	msg := queueMessage{JobID: jobID, Data: data}
+	return a.enqueueJobToQ(ctx, a.globalQueue, msg)
 }
 
-func (a *app) EnqueueTelegramJob(ctx context.Context, jobID string, data any) error {
-	return a.enqueueJobToQ(ctx, a.telegramQueue, jobID, data)
+func (a *app) EnqueueTelegramJob(ctx context.Context, jobID string, data any, priority int) error {
+	msg := queueMessage{JobID: jobID, Data: data, Priority: priority}
+	return a.enqueueJobToQ(ctx, a.telegramQueue, msg)
 }
 
-func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, jobID string, data any) error {
-	rawData, err := json.Marshal(data)
+func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, msg queueMessage) error {
+	rawData, err := json.Marshal(msg.Data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal job data: %w", err)
 	}
 
+	gqMsg := goqite.Message{
+		Body:     rawData,
+		Priority: msg.Priority,
+	}
+
 	// First check context for transactional env (works for both HTTP and background jobs)
 	if txEnv, ok := ctx.Value(txEnvKey).(*app); ok && txEnv.currentTx != nil {
-		a.log.Debug("enqueueing in context tx env", "job_id", jobID, "data", string(rawData), "queue", aq.name)
+		a.log.Debug("enqueueing in context tx env", "job_id", msg.JobID, "data", string(rawData), "queue", aq.name)
 
-		return jobs.CreateTx(ctx, txEnv.currentTx, aq.q, jobID, rawData)
+		_, err = jobs.CreateTx(ctx, txEnv.currentTx, aq.q, msg.JobID, gqMsg)
+		return err
 	}
 
 	// Fallback: check request context (for HTTP requests)
@@ -499,22 +508,25 @@ func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, jobID string, dat
 	if req != nil {
 		env, ok := req.Env.(*app)
 		if ok && env.CurrentTx() != nil {
-			a.log.Debug("enqueueing in request env", "job_id", jobID, "data", string(rawData), "queue", aq.name)
+			a.log.Debug("enqueueing in request env", "job_id", msg.JobID, "data", string(rawData), "queue", aq.name)
 
-			return jobs.CreateTx(ctx, env.currentTx, aq.q, jobID, rawData)
+			_, err = jobs.CreateTx(ctx, env.currentTx, aq.q, msg.JobID, gqMsg)
+			return err
 		}
 	}
 
 	// Fallback: check global app (should rarely be used now)
 	if a.currentTx != nil {
-		a.log.Debug("enqueueing in app.currentTx", "job_id", jobID, "data", string(rawData), "queue", aq.name)
+		a.log.Debug("enqueueing in app.currentTx", "job_id", msg.JobID, "data", string(rawData), "queue", aq.name)
 
-		return jobs.CreateTx(ctx, a.currentTx, aq.q, jobID, rawData)
+		_, err = jobs.CreateTx(ctx, a.currentTx, aq.q, msg.JobID, gqMsg)
+		return err
 	}
 
-	a.log.Debug("enqueueing in global env", "job_id", jobID, "data", string(rawData), "queue", aq.name)
+	a.log.Debug("enqueueing in global env", "job_id", msg.JobID, "data", string(rawData), "queue", aq.name)
 
-	return jobs.Create(ctx, aq.q, jobID, rawData)
+	_, err = jobs.Create(ctx, aq.q, msg.JobID, gqMsg)
+	return err
 }
 
 func (a *app) RegisterJob(id string, handler func(ctx context.Context, m []byte) error) {

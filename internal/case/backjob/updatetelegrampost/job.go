@@ -16,7 +16,7 @@ type UpdateTelegramPostEnv interface {
 	Env
 
 	RegisterTelegramJob(id string, handler func(ctx context.Context, m []byte) error)
-	EnqueueTelegramJob(ctx context.Context, jobID string, data any) error
+	EnqueueTelegramJob(ctx context.Context, jobID string, data any, priroity int) error
 	Logger() logger.Logger
 }
 
@@ -65,5 +65,5 @@ func New(env UpdateTelegramPostEnv) *UpdateTelegramPostJob {
 }
 
 func (t UpdateTelegramPostJob) QueueUpdateTelegramPost(ctx context.Context, params model.TelegramUpdatePostParams) error {
-	return t.env.EnqueueTelegramJob(ctx, ID, params)
+	return t.env.EnqueueTelegramJob(ctx, ID, params, 0)
 }

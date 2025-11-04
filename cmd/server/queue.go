@@ -13,6 +13,12 @@ import (
 	"maragu.dev/goqite/jobs"
 )
 
+type queueMessage struct {
+	JobID    string
+	Data     any
+	Priority int //  Higher priority messages are received first
+}
+
 type appQueue struct {
 	name string
 
