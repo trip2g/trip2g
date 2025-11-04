@@ -260,7 +260,7 @@ func main() {
 		conn:    conn,
 		// mail:    mailyak.New(mailAddr, mailAuth),
 
-		writeConn: conn,
+		writeConn: writeConn,
 
 		UserBans: userbans.New(queries),
 

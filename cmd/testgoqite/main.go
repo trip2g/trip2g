@@ -45,8 +45,8 @@ func main() {
 	}
 	defer writeConn.Close()
 
-	readQueries := db.New(readConn)
-	writeQueries := db.NewWriteQueries(writeConn)
+	// readQueries := db.New(readConn)
+	// writeQueries := db.NewWriteQueries(writeConn)
 
 	log.Info("database connections created")
 
@@ -63,18 +63,18 @@ func main() {
 
 	log.Info("created two goqite queues")
 
-	// Create two separate runners with more aggressive settings
+	// Create two separate runners with production-like settings to reproduce SQLITE_BUSY
 	runner1 := jobs.NewRunner(jobs.NewRunnerOpts{
-		Limit:        10, // More concurrent jobs
+		Limit:        1, // Like tg_jobs in production
 		Log:          logger.WithPrefix(log, "runner1:"),
-		PollInterval: time.Millisecond * 10, // Poll more frequently
+		PollInterval: time.Millisecond * 901, // Like global_jobs in production
 		Queue:        queue1,
 	})
 
 	runner2 := jobs.NewRunner(jobs.NewRunnerOpts{
-		Limit:        10, // More concurrent jobs
+		Limit:        1, // Like tg_jobs in production
 		Log:          logger.WithPrefix(log, "runner2:"),
-		PollInterval: time.Millisecond * 10, // Poll more frequently
+		PollInterval: time.Second * 1, // Like tg_jobs in production (1000ms)
 		Queue:        queue2,
 	})
 
@@ -105,89 +105,25 @@ func main() {
 	time.Sleep(time.Second)
 
 	var wg sync.WaitGroup
-	var insertErrors sync.Map
-	var listErrors sync.Map
 	var jobErrors sync.Map
 
-	insertCount := 0
-	listCount := 0
 	job1Count := 0
 	job2Count := 0
 
-	var insertMu sync.Mutex
-	var listMu sync.Mutex
 	var job1Mu sync.Mutex
 	var job2Mu sync.Mutex
 
-	// Goroutine to insert users every 2ms (more aggressive)
+	// Skip insert/list operations to focus on queue conflicts
+	log.Info("skipping user insert/list operations to focus on queue conflicts")
+
+	// Goroutine to enqueue jobs to queue1 (very frequently to increase load)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ticker := time.NewTicker(2 * time.Millisecond)
+		ticker := time.NewTicker(10 * time.Millisecond) // Much faster to create contention
 		defer ticker.Stop()
 
-		timeout := time.After(30 * time.Second)
-
-		for {
-			select {
-			case <-timeout:
-				log.Info("insert goroutine stopping")
-				return
-			case <-ticker.C:
-				email := fmt.Sprintf("user%d@example.com", time.Now().UnixNano())
-				_, err := writeQueries.InsertUserWithEmail(ctx, db.InsertUserWithEmailParams{
-					Email:      email,
-					CreatedVia: "test",
-				})
-				if err != nil {
-					log.Error("failed to insert user", "error", err, "email", email)
-					insertErrors.Store(time.Now().UnixNano(), err.Error())
-				} else {
-					insertMu.Lock()
-					insertCount++
-					insertMu.Unlock()
-				}
-			}
-		}
-	}()
-
-	// Goroutine to list users every 1ms (more aggressive)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		ticker := time.NewTicker(1 * time.Millisecond)
-		defer ticker.Stop()
-
-		timeout := time.After(30 * time.Second)
-
-		for {
-			select {
-			case <-timeout:
-				log.Info("list goroutine stopping")
-				return
-			case <-ticker.C:
-				users, err := readQueries.ListAllUsers(ctx)
-				if err != nil {
-					log.Error("failed to list users", "error", err)
-					listErrors.Store(time.Now().UnixNano(), err.Error())
-				} else {
-					listMu.Lock()
-					listCount++
-					listMu.Unlock()
-					log.Debug("listed users", "count", len(users))
-				}
-			}
-		}
-	}()
-
-	// Goroutine to enqueue jobs to queue1 (more frequently)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		ticker := time.NewTicker(100 * time.Millisecond)
-		defer ticker.Stop()
-
-		timeout := time.After(30 * time.Second)
+		timeout := time.After(60 * time.Second) // Run for 60 seconds
 
 		for {
 			select {
@@ -196,7 +132,7 @@ func main() {
 				return
 			case <-ticker.C:
 				jobData := []byte(fmt.Sprintf("job1-%d", rand.Int()))
-				err := jobs.Create(ctx, queue1, "job1", jobData)
+				_, err := jobs.Create(ctx, queue1, "job1", goqite.Message{Body: jobData})
 				if err != nil {
 					log.Error("failed to enqueue job1", "error", err)
 					jobErrors.Store(fmt.Sprintf("job1-%d", time.Now().UnixNano()), err.Error())
@@ -209,14 +145,14 @@ func main() {
 		}
 	}()
 
-	// Goroutine to enqueue jobs to queue2 (more frequently)
+	// Goroutine to enqueue jobs to queue2 (very frequently to increase load)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ticker := time.NewTicker(100 * time.Millisecond)
+		ticker := time.NewTicker(10 * time.Millisecond) // Much faster to create contention
 		defer ticker.Stop()
 
-		timeout := time.After(30 * time.Second)
+		timeout := time.After(60 * time.Second) // Run for 60 seconds
 
 		for {
 			select {
@@ -225,7 +161,7 @@ func main() {
 				return
 			case <-ticker.C:
 				jobData := []byte(fmt.Sprintf("job2-%d", rand.Int()))
-				err := jobs.Create(ctx, queue2, "job2", jobData)
+				_, err := jobs.Create(ctx, queue2, "job2", goqite.Message{Body: jobData})
 				if err != nil {
 					log.Error("failed to enqueue job2", "error", err)
 					jobErrors.Store(fmt.Sprintf("job2-%d", time.Now().UnixNano()), err.Error())
@@ -238,31 +174,17 @@ func main() {
 		}
 	}()
 
-	log.Info("all goroutines started, waiting for 30 seconds")
+	log.Info("all goroutines started, waiting for 60 seconds")
 
 	// Wait for all goroutines to finish
 	wg.Wait()
 
 	log.Info("test completed",
-		"inserts", insertCount,
-		"lists", listCount,
 		"job1_enqueued", job1Count,
 		"job2_enqueued", job2Count,
 	)
 
 	// Count errors
-	insertErrorCount := 0
-	insertErrors.Range(func(key, value interface{}) bool {
-		insertErrorCount++
-		return true
-	})
-
-	listErrorCount := 0
-	listErrors.Range(func(key, value interface{}) bool {
-		listErrorCount++
-		return true
-	})
-
 	jobErrorCount := 0
 	jobErrors.Range(func(key, value interface{}) bool {
 		jobErrorCount++
@@ -270,39 +192,17 @@ func main() {
 	})
 
 	log.Info("error summary",
-		"insert_errors", insertErrorCount,
-		"list_errors", listErrorCount,
 		"job_errors", jobErrorCount,
 	)
 
-	if insertErrorCount > 0 {
-		log.Info("sample insert errors (first 3):")
-		count := 0
-		insertErrors.Range(func(key, value interface{}) bool {
-			log.Error("insert error", "error", value)
-			count++
-			return count < 3
-		})
-	}
-
-	if listErrorCount > 0 {
-		log.Info("sample list errors (first 3):")
-		count := 0
-		listErrors.Range(func(key, value interface{}) bool {
-			log.Error("list error", "error", value)
-			count++
-			return count < 3
-		})
-	}
-
 	if jobErrorCount > 0 {
-		log.Info("sample job errors (first 3):")
-		count := 0
+		log.Info("ALL job errors:")
 		jobErrors.Range(func(key, value interface{}) bool {
 			log.Error("job error", "key", key, "error", value)
-			count++
-			return count < 3
+			return true
 		})
+	} else {
+		log.Info("✅ NO ERRORS! Test passed.")
 	}
 
 	// Give runners time to finish processing
