@@ -69,13 +69,7 @@ namespace $.$$ {
 		}
 
 		override row_disabled_at( id: any ): string {
-			const v = this.row(id).disabledAt
-			if (!v) {
-				return '-'
-			}
-
-			const m = new $mol_time_moment( v )
-			return m.toString( 'YYYY-MM-DD' )
+			return this.row(id).disabledAt
 		}
 
 		override row_disabled_by( id: any ): string {

@@ -34,7 +34,7 @@ $trip2g_admin_gittoken_catalog $trip2g_admin_catalog
 							content <= row_can_push* \can_push
 					<= DisabledAt* $trip2g_admin_labeler_moment
 						title @ \Disabled At
-						value <= row_disabled_at* \disabled_at
+						value <= row_disabled_at* null string|null
 					<= DisabledBy* $trip2g_admin_labeler_email
 						title @ \Disabled By
 						value <= row_disabled_by* \disabled_by

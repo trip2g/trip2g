@@ -78,7 +78,6 @@ import (
 	"github.com/vektah/gqlparser/gqlerror"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
-	"golang.org/x/sync/singleflight"
 	"maragu.dev/goqite"
 	"maragu.dev/goqite/jobs"
 
@@ -147,8 +146,6 @@ type app struct {
 
 	hotAuthTokenManager *hotauthtoken.Manager
 	tgAuthTokenManager  *tgauthtoken.Manager
-
-	noteViewLoader singleflight.Group
 
 	notionClientManager *notion.ClientManager
 
@@ -846,25 +843,15 @@ func (a *app) UserCSSURLs() []string {
 }
 
 func (a *app) LoadNoteViewByVersionID(ctx context.Context, id int64) (*model.NoteView, error) {
-	key := fmt.Sprintf("note_version:%d", id)
+	wrapper := makeSingleNoteLoaderWrapper(a, id)
+	loader := noteloader.New("single", wrapper, a.config.MDLoaderConfig)
 
-	result, err, _ := a.noteViewLoader.Do(key, func() (interface{}, error) {
-		wrapper := makeSingleNoteLoaderWrapper(a, id)
-		loader := noteloader.New("single", wrapper, a.config.MDLoaderConfig)
-
-		err := loader.Load(ctx, noteloader.LoadOptions{SkipSearchIndex: true})
-		if err != nil {
-			return nil, fmt.Errorf("failed to load note version %d: %w", id, err)
-		}
-
-		return loader.NoteViews().List[0], nil
-	})
-
+	err := loader.Load(ctx, noteloader.LoadOptions{SkipSearchIndex: true})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load note version %d: %w", id, err)
 	}
 
-	return result.(*model.NoteView), nil
+	return loader.NoteViews().List[0], nil
 }
 
 func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error) {
