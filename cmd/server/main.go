@@ -336,6 +336,7 @@ func main() {
 	a.setFileStorageExpiringCallback(ctx)
 
 	a.globalQueue.start()
+	a.telegramQueue.start()
 
 	a.startServer()
 }

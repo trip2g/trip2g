@@ -24,8 +24,6 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 
 	a.telegramQueue = appQ
 
-	appQ.start() // after register all handlers
-
 	return a.initTelegramBots(ctx)
 }
 
