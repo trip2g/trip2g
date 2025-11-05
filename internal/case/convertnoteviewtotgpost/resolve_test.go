@@ -215,7 +215,10 @@ type testEnvWithTracking struct {
 	onListCalled func()
 }
 
-func (e *testEnvWithTracking) ListTelegramPublishSentMessagesByChatID(ctx context.Context, chatID int64) ([]db.ListTelegramPublishSentMessagesByChatIDRow, error) {
+func (e *testEnvWithTracking) ListTelegramPublishSentMessagesByChatID(
+	ctx context.Context,
+	chatID int64,
+) ([]db.ListTelegramPublishSentMessagesByChatIDRow, error) {
 	if e.onListCalled != nil {
 		e.onListCalled()
 	}

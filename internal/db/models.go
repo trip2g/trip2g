@@ -404,6 +404,7 @@ type TelegramPublishNote struct {
 	PublishAt          time.Time     `json:"publish_at"`
 	PublishedVersionID sql.NullInt64 `json:"published_version_id"`
 	PublishedAt        sql.NullTime  `json:"published_at"`
+	ErrorCount         int64         `json:"error_count"`
 }
 
 type TelegramPublishNoteTag struct {

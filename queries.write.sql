@@ -644,9 +644,11 @@ values (?)
 on conflict(label) do nothing;
 
 -- name: UpsertTelegramPublishNote :exec
-insert into telegram_publish_notes (note_path_id, publish_at)
-values (?, ?)
-on conflict(note_path_id) do update set publish_at = excluded.publish_at;
+insert into telegram_publish_notes (note_path_id, publish_at, error_count)
+values (?, ?, ?)
+on conflict(note_path_id) do update set
+  publish_at = excluded.publish_at,
+  error_count = excluded.error_count;
 
 -- name: DeleteTelegramPublishNoteTagsByPathID :exec
 delete from telegram_publish_note_tags where note_path_id = ?;

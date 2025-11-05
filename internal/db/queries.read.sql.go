@@ -1571,7 +1571,7 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 }
 
 const getTelegramPublishNoteByNotePathID = `-- name: GetTelegramPublishNoteByNotePathID :one
-select note_path_id, created_at, publish_at, published_version_id, published_at
+select note_path_id, created_at, publish_at, published_version_id, published_at, error_count
   from telegram_publish_notes
  where note_path_id = ?
 `
@@ -1585,6 +1585,7 @@ func (q *Queries) GetTelegramPublishNoteByNotePathID(ctx context.Context, notePa
 		&i.PublishAt,
 		&i.PublishedVersionID,
 		&i.PublishedAt,
+		&i.ErrorCount,
 	)
 	return i, err
 }
@@ -2642,7 +2643,7 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 }
 
 const listAllTelegramPublishNotes = `-- name: ListAllTelegramPublishNotes :many
-select n.note_path_id, n.created_at, n.publish_at, n.published_version_id, n.published_at
+select n.note_path_id, n.created_at, n.publish_at, n.published_version_id, n.published_at, n.error_count
   from telegram_publish_notes n
   join note_paths p on n.note_path_id = p.id
  where p.hidden_by is null
@@ -2673,6 +2674,7 @@ func (q *Queries) ListAllTelegramPublishNotes(ctx context.Context, arg ListAllTe
 			&i.PublishAt,
 			&i.PublishedVersionID,
 			&i.PublishedAt,
+			&i.ErrorCount,
 		); err != nil {
 			return nil, err
 		}
@@ -3161,6 +3163,7 @@ select note_path_id
   where p.hidden_by is null
    and publish_at <= datetime('now')
    and published_at is null
+   and error_count = 0
 `
 
 func (q *Queries) ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int64, error) {

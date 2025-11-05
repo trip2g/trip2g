@@ -475,7 +475,7 @@ CREATE TABLE telegram_publish_notes (
   publish_at datetime not null,
   published_version_id integer references note_versions(id) on delete restrict,
   published_at datetime
-);
+, error_count integer not null default 0);
 CREATE TABLE telegram_publish_note_tags (
   note_path_id integer not null references telegram_publish_notes(note_path_id) on delete cascade,
   tag_id integer not null references telegram_publish_tags(id) on delete cascade,
@@ -602,4 +602,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251030151751'),
   ('20251030152642'),
   ('20251031015532'),
-  ('20251103094933');
+  ('20251103094933'),
+  ('20251105114403');

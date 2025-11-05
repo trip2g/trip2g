@@ -2602,18 +2602,21 @@ func (q *WriteQueries) UpsertPatreonTier(ctx context.Context, arg UpsertPatreonT
 }
 
 const upsertTelegramPublishNote = `-- name: UpsertTelegramPublishNote :exec
-insert into telegram_publish_notes (note_path_id, publish_at)
-values (?, ?)
-on conflict(note_path_id) do update set publish_at = excluded.publish_at
+insert into telegram_publish_notes (note_path_id, publish_at, error_count)
+values (?, ?, ?)
+on conflict(note_path_id) do update set
+  publish_at = excluded.publish_at,
+  error_count = excluded.error_count
 `
 
 type UpsertTelegramPublishNoteParams struct {
 	NotePathID int64     `json:"note_path_id"`
 	PublishAt  time.Time `json:"publish_at"`
+	ErrorCount int64     `json:"error_count"`
 }
 
 func (q *WriteQueries) UpsertTelegramPublishNote(ctx context.Context, arg UpsertTelegramPublishNoteParams) error {
-	_, err := q.db.ExecContext(ctx, upsertTelegramPublishNote, arg.NotePathID, arg.PublishAt)
+	_, err := q.db.ExecContext(ctx, upsertTelegramPublishNote, arg.NotePathID, arg.PublishAt, arg.ErrorCount)
 	return err
 }
 
@@ -2711,11 +2714,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-	*Queries
+  *Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-	return &WriteQueries{
-		Queries: New(db),
-	}
+  return &WriteQueries{
+    Queries: New(db),
+  }
 }

@@ -788,7 +788,8 @@ select note_path_id
   join note_paths p on n.note_path_id = p.id
   where p.hidden_by is null
    and publish_at <= datetime('now')
-   and published_at is null;
+   and published_at is null
+   and error_count = 0;
 
 -- name: ListTgBotChatsByTelegramPublishNotePathID :many
 select c.*
