@@ -23,6 +23,7 @@ type Env interface {
 
 	TimeLocation() *time.Location
 	PublicURL() string
+	Now() time.Time
 }
 
 func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*model.TelegramPost, error) {
@@ -73,7 +74,17 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 		if linkedNV.IsTelegramPublishPost() {
 			publishAt, hasPublishAt := linkedNV.ExtractTelegramPublishAt(env.TimeLocation())
 			if hasPublishAt {
-				// Return unpublished link with publish date
+				now := env.Now()
+				threshold := now.Add(30 * time.Minute)
+
+				// If publish time is in the past or within 30 minutes, render as underlined text without footer
+				if publishAt.Before(threshold) || publishAt.Equal(threshold) {
+					return &markdownv2.LinkResolverResult{
+						Label: linkedNV.Title,
+					}, nil
+				}
+
+				// Publish time is more than 30 minutes away - add to footer
 				return &markdownv2.LinkResolverResult{
 					Label:     linkedNV.Title,
 					PublishAt: &publishAt,

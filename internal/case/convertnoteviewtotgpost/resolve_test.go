@@ -18,6 +18,7 @@ type testEnv struct {
 	logger    logger.Logger
 	sentMsgs  []db.ListTelegramPublishSentMessagesByChatIDRow
 	publicURL string
+	now       time.Time
 }
 
 func (e *testEnv) LatestNoteViews() *model.NoteViews {
@@ -38,6 +39,14 @@ func (e *testEnv) PublicURL() string {
 
 func (e *testEnv) TimeLocation() *time.Location {
 	return time.UTC
+}
+
+func (e *testEnv) Now() time.Time {
+	// Default to a fixed time if not set
+	if e.now.IsZero() {
+		return time.Date(2025, 11, 5, 14, 0, 0, 0, time.UTC)
+	}
+	return e.now
 }
 
 func TestContent(t *testing.T) {
@@ -77,6 +86,11 @@ hello`),
 }
 
 func TestUnpublishedLinkUsesTitle(t *testing.T) {
+	// Current time: 2025-11-05 14:00:00
+	now := time.Date(2025, 11, 5, 14, 0, 0, 0, time.UTC)
+	// Publish time: 2025-11-05 15:15:00 (75 minutes away - more than 30 minutes)
+	publishAt := now.Add(75 * time.Minute)
+
 	// Load main note
 	mdOptions := mdloader.Options{
 		Sources: []mdloader.SourceFile{
@@ -104,7 +118,7 @@ title: "Main Note"
 				Content: []byte(`---
 free: true
 title: "Метод Фейнмана в обучении языкам"
-telegram_publish_at: "2025-11-05T14:15:00"
+telegram_publish_at: "` + publishAt.Format("2006-01-02T15:04:05") + `"
 telegram_publish_tags: ["tag1"]
 ---
 Future content`),
@@ -128,6 +142,7 @@ Future content`),
 		logger:    &logger.TestLogger{},
 		sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
 		publicURL: "https://example.com",
+		now:       now,
 	}
 
 	// Find main note
@@ -156,8 +171,8 @@ Future content`),
 	require.Contains(t, post.Content, "Метод Фейнмана в обучении языкам")
 	require.NotContains(t, post.Content, "second_reconsolidation3/metod_fejnmana_v_obuchenii_yazyikam")
 
-	// Check date formatting
-	require.Contains(t, post.Content, "5 ноября, 14:15")
+	// Check date formatting (15:15 because publish time is 75 minutes away from 14:00)
+	require.Contains(t, post.Content, "5 ноября, 15:15")
 
 	// Check footer structure
 	require.Contains(t, post.Content, "🔜 Скоро выйдут:")
@@ -208,6 +223,315 @@ hello`),
 
 	// Verify that ListTelegramPublishSentMessagesByChatID was NOT called
 	require.False(t, called, "ListTelegramPublishSentMessagesByChatID should not be called when ChatID is 0")
+}
+
+func TestUnpublishedLinkMoreThan30MinutesAway(t *testing.T) {
+	// Current time: 2025-11-05 14:00:00
+	now := time.Date(2025, 11, 5, 14, 0, 0, 0, time.UTC)
+	// Publish time: 2025-11-05 15:00:00 (60 minutes away)
+	publishAt := now.Add(60 * time.Minute)
+
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{
+			{
+				Path: "main.md",
+				Content: []byte(`---
+free: true
+title: "Main Note"
+---
+Link to future post: [[future_post]].`),
+			},
+		},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	// Load unpublished note separately
+	mdOptionsUnpub := mdloader.Options{
+		Sources: []mdloader.SourceFile{
+			{
+				Path: "future_post.md",
+				Content: []byte(`---
+free: true
+title: "Future Post"
+telegram_publish_at: "` + publishAt.Format("2006-01-02T15:04:05") + `"
+telegram_publish_tags: ["tag1"]
+---
+Future content`),
+			},
+		},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvsUnpub, err := mdloader.Load(mdOptionsUnpub)
+	require.NoError(t, err)
+	require.Len(t, nvsUnpub.List, 1)
+
+	// Add unpublished note to the map
+	unpubNote := nvsUnpub.List[0]
+	unpubNote.PathID = 999
+	nvs.Map["future_post"] = unpubNote
+
+	env := &testEnv{
+		nvs:       nvs,
+		logger:    &logger.TestLogger{},
+		sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
+		publicURL: "https://example.com",
+		now:       now,
+	}
+
+	mainNote := nvs.List[0]
+	source := model.TelegramPostSource{
+		NoteView: mainNote,
+		ChatID:   123,
+		Instant:  false,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.NoError(t, err)
+
+	// Should have underlined text in content
+	require.Contains(t, post.Content, "<u>Future Post</u>")
+
+	// Should have footer with publish date (more than 30 minutes away)
+	require.Contains(t, post.Content, "🔜 Скоро выйдут:")
+	require.Contains(t, post.Content, "Future Post")
+	require.Contains(t, post.Content, "5 ноября, 15:00")
+}
+
+func TestUnpublishedLinkExactly30MinutesAway(t *testing.T) {
+	// Current time: 2025-11-05 14:00:00
+	now := time.Date(2025, 11, 5, 14, 0, 0, 0, time.UTC)
+	// Publish time: 2025-11-05 14:30:00 (exactly 30 minutes away)
+	publishAt := now.Add(30 * time.Minute)
+
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{
+			{
+				Path: "main.md",
+				Content: []byte(`---
+free: true
+title: "Main Note"
+---
+Link to soon post: [[soon_post]].`),
+			},
+		},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	// Load unpublished note separately
+	mdOptionsUnpub := mdloader.Options{
+		Sources: []mdloader.SourceFile{
+			{
+				Path: "soon_post.md",
+				Content: []byte(`---
+free: true
+title: "Soon Post"
+telegram_publish_at: "` + publishAt.Format("2006-01-02T15:04:05") + `"
+telegram_publish_tags: ["tag1"]
+---
+Soon content`),
+			},
+		},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvsUnpub, err := mdloader.Load(mdOptionsUnpub)
+	require.NoError(t, err)
+	require.Len(t, nvsUnpub.List, 1)
+
+	// Add unpublished note to the map
+	unpubNote := nvsUnpub.List[0]
+	unpubNote.PathID = 999
+	nvs.Map["soon_post"] = unpubNote
+
+	env := &testEnv{
+		nvs:       nvs,
+		logger:    &logger.TestLogger{},
+		sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
+		publicURL: "https://example.com",
+		now:       now,
+	}
+
+	mainNote := nvs.List[0]
+	source := model.TelegramPostSource{
+		NoteView: mainNote,
+		ChatID:   123,
+		Instant:  false,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.NoError(t, err)
+
+	// Should have underlined text in content
+	require.Contains(t, post.Content, "<u>Soon Post</u>")
+
+	// Should NOT have footer (within 30 minutes)
+	require.NotContains(t, post.Content, "🔜 Скоро выйдут:")
+	require.NotContains(t, post.Content, "14:30")
+}
+
+func TestUnpublishedLinkLessThan30MinutesAway(t *testing.T) {
+	// Current time: 2025-11-05 14:00:00
+	now := time.Date(2025, 11, 5, 14, 0, 0, 0, time.UTC)
+	// Publish time: 2025-11-05 14:15:00 (15 minutes away)
+	publishAt := now.Add(15 * time.Minute)
+
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{
+			{
+				Path: "main.md",
+				Content: []byte(`---
+free: true
+title: "Main Note"
+---
+Link to very soon post: [[very_soon_post]].`),
+			},
+		},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	// Load unpublished note separately
+	mdOptionsUnpub := mdloader.Options{
+		Sources: []mdloader.SourceFile{
+			{
+				Path: "very_soon_post.md",
+				Content: []byte(`---
+free: true
+title: "Very Soon Post"
+telegram_publish_at: "` + publishAt.Format("2006-01-02T15:04:05") + `"
+telegram_publish_tags: ["tag1"]
+---
+Very soon content`),
+			},
+		},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvsUnpub, err := mdloader.Load(mdOptionsUnpub)
+	require.NoError(t, err)
+	require.Len(t, nvsUnpub.List, 1)
+
+	// Add unpublished note to the map
+	unpubNote := nvsUnpub.List[0]
+	unpubNote.PathID = 999
+	nvs.Map["very_soon_post"] = unpubNote
+
+	env := &testEnv{
+		nvs:       nvs,
+		logger:    &logger.TestLogger{},
+		sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
+		publicURL: "https://example.com",
+		now:       now,
+	}
+
+	mainNote := nvs.List[0]
+	source := model.TelegramPostSource{
+		NoteView: mainNote,
+		ChatID:   123,
+		Instant:  false,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.NoError(t, err)
+
+	// Should have underlined text in content
+	require.Contains(t, post.Content, "<u>Very Soon Post</u>")
+
+	// Should NOT have footer (within 30 minutes)
+	require.NotContains(t, post.Content, "🔜 Скоро выйдут:")
+	require.NotContains(t, post.Content, "14:15")
+}
+
+func TestUnpublishedLinkInThePast(t *testing.T) {
+	// Current time: 2025-11-05 14:00:00
+	now := time.Date(2025, 11, 5, 14, 0, 0, 0, time.UTC)
+	// Publish time: 2025-11-05 13:00:00 (1 hour in the past)
+	publishAt := now.Add(-60 * time.Minute)
+
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{
+			{
+				Path: "main.md",
+				Content: []byte(`---
+free: true
+title: "Main Note"
+---
+Link to past post: [[past_post]].`),
+			},
+		},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	// Load unpublished note separately
+	mdOptionsUnpub := mdloader.Options{
+		Sources: []mdloader.SourceFile{
+			{
+				Path: "past_post.md",
+				Content: []byte(`---
+free: true
+title: "Past Post"
+telegram_publish_at: "` + publishAt.Format("2006-01-02T15:04:05") + `"
+telegram_publish_tags: ["tag1"]
+---
+Past content`),
+			},
+		},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvsUnpub, err := mdloader.Load(mdOptionsUnpub)
+	require.NoError(t, err)
+	require.Len(t, nvsUnpub.List, 1)
+
+	// Add unpublished note to the map
+	unpubNote := nvsUnpub.List[0]
+	unpubNote.PathID = 999
+	nvs.Map["past_post"] = unpubNote
+
+	env := &testEnv{
+		nvs:       nvs,
+		logger:    &logger.TestLogger{},
+		sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
+		publicURL: "https://example.com",
+		now:       now,
+	}
+
+	mainNote := nvs.List[0]
+	source := model.TelegramPostSource{
+		NoteView: mainNote,
+		ChatID:   123,
+		Instant:  false,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.NoError(t, err)
+
+	// Should have underlined text in content
+	require.Contains(t, post.Content, "<u>Past Post</u>")
+
+	// Should NOT have footer (publish time in the past)
+	require.NotContains(t, post.Content, "🔜 Скоро выйдут:")
+	require.NotContains(t, post.Content, "13:00")
 }
 
 type testEnvWithTracking struct {

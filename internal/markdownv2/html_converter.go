@@ -243,20 +243,22 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 						return ast.WalkSkipChildren, nil
 					}
 
-					// Check if this is an unpublished link (no URL but has PublishAt)
+					// Handle different link types
 					switch {
-					case link.URL == "" && link.PublishAt != nil:
-						// Get label from wikilink (fragment text or target)
+					case link.URL != "":
+						// Regular link with URL
+						c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(link.URL)))
+					case link.Label != "":
+						// Unpublished link with label (with or without PublishAt)
 						label := link.Label
-						if label == "" {
-							label = dest
-						}
 
-						// Add to unpublished links list
-						c.unpublishedLinks = append(c.unpublishedLinks, unpublishedLink{
-							label:     label,
-							publishAt: *link.PublishAt,
-						})
+						// If has PublishAt, add to footer list
+						if link.PublishAt != nil {
+							c.unpublishedLinks = append(c.unpublishedLinks, unpublishedLink{
+								label:     label,
+								publishAt: *link.PublishAt,
+							})
+						}
 
 						// Mark this node as unpublished link
 						c.isUnpublishedLink[n] = true
@@ -267,10 +269,8 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 						// Skip children since we already wrote the label
 						c.skipClosingTag[n] = true
 						return ast.WalkSkipChildren, nil
-					case link.URL != "":
-						c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(link.URL)))
 					default:
-						// No URL and no PublishAt - skip
+						// No URL and no Label - skip
 						c.skipClosingTag[n] = true
 						return ast.WalkSkipChildren, nil
 					}
