@@ -70,7 +70,7 @@ func prepare(t *testing.T, nvs *model.NoteViews) *EnvMock {
 
 		DeleteTelegramPublishNoteTagsByPathIDFunc: deleteTelegramPublishNoteTagsByPathID,
 
-		SendTelegramPublishPostFunc: func(ctx context.Context, pathID int64, instant bool) error {
+		SendTelegramPublishPostFunc: func(ctx context.Context, params model.SendTelegramPublishPostParams) error {
 			return nil
 		},
 
@@ -152,8 +152,8 @@ func TestMetaExtractrs(t *testing.T) {
 	require.Equal(t, time.Date(2024, 7, 2, 20, 2, 0, 0, time.UTC), env.calls.UpsertTelegramPublishNote[1].Params.PublishAt)
 
 	require.Len(t, env.calls.SendTelegramPublishPost, 2)
-	require.Equal(t, int64(7), env.calls.SendTelegramPublishPost[0].NotePathID)
-	require.Equal(t, int64(9), env.calls.SendTelegramPublishPost[1].NotePathID)
-	require.True(t, env.calls.SendTelegramPublishPost[0].Instant)
-	require.True(t, env.calls.SendTelegramPublishPost[0].Instant)
+	require.Equal(t, int64(7), env.calls.SendTelegramPublishPost[0].Params.NotePathID)
+	require.Equal(t, int64(9), env.calls.SendTelegramPublishPost[1].Params.NotePathID)
+	require.True(t, env.calls.SendTelegramPublishPost[0].Params.Instant)
+	require.True(t, env.calls.SendTelegramPublishPost[1].Params.Instant)
 }

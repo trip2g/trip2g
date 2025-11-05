@@ -11,7 +11,7 @@ import (
 type Env interface {
 	Logger() logger.Logger
 	ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int64, error)
-	EnqueueSendPublishPost(ctx context.Context, notePathID int64, instant bool) error
+	EnqueueSendPublishPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
 	LatestNoteViews() *model.NoteViews
 }
 
@@ -42,7 +42,12 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 	}
 
 	for _, id := range ids {
-		sendErr := env.EnqueueSendPublishPost(ctx, id, false)
+		params := model.SendTelegramPublishPostParams{
+			NotePathID:        id,
+			Instant:           false,
+			UpdateLinkedPosts: true,
+		}
+		sendErr := env.EnqueueSendPublishPost(ctx, params)
 
 		res.Posts = append(res.Posts, ResultPost{
 			NotePathID: id,

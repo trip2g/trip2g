@@ -22,7 +22,7 @@ type Env interface {
 	TimeLocation() *time.Location
 	LatestNoteViews() *model.NoteViews
 
-	SendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error
+	SendTelegramPublishPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
 	UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error
 }
 
@@ -121,7 +121,12 @@ func (p *processor) process(note *model.NoteView) error {
 	}
 
 	// send a  preview immediately
-	err = p.env.SendTelegramPublishPost(p.ctx, note.PathID, true)
+	params := model.SendTelegramPublishPostParams{
+		NotePathID:        note.PathID,
+		Instant:           true,
+		UpdateLinkedPosts: false,
+	}
+	err = p.env.SendTelegramPublishPost(p.ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed to SendTelegramPublishPost: %w", err)
 	}

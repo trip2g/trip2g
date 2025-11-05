@@ -291,7 +291,12 @@ func TestResolve(t *testing.T) {
 			env := tt.setupEnv()
 			ctx := context.Background()
 
-			err := sendtelegrampublishpost.Resolve(ctx, env, tt.noteID, tt.instant)
+			params := model.SendTelegramPublishPostParams{
+				NotePathID:        tt.noteID,
+				Instant:           tt.instant,
+				UpdateLinkedPosts: !tt.instant,
+			}
+			err := sendtelegrampublishpost.Resolve(ctx, env, params)
 
 			if tt.wantErr {
 				require.Error(t, err)

@@ -562,7 +562,7 @@ func (a *app) SendMail(ctx context.Context, data model.Mail) error {
 		Text:    string(data.Plain),
 	}
 
-	_, err := client.Emails.Send(params)
+	_, err := client.Emails.SendWithContext(ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed to send email: %w", err)
 	}

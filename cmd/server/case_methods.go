@@ -12,13 +12,13 @@ func (a *app) UpdateTelegramPublishPost(ctx context.Context, notePathID int64) e
 	return updatetelegrampublishpost.Resolve(ctx, a, notePathID)
 }
 
-func (a *app) SendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error {
-	return sendtelegrampublishpost.Resolve(ctx, a, notePathID, instant)
+func (a *app) SendTelegramPublishPost(ctx context.Context, params model.SendTelegramPublishPostParams) error {
+	return sendtelegrampublishpost.Resolve(ctx, a, params)
 }
 
-func (a *app) SendTelegramPublishPostWithTx(ctx context.Context, notePathID int64, instant bool) error {
+func (a *app) SendTelegramPublishPostWithTx(ctx context.Context, params model.SendTelegramPublishPostParams) error {
 	return a.WithTransaction(ctx, func(txCtx context.Context, env *app) (bool, error) {
-		err := sendtelegrampublishpost.Resolve(txCtx, env, notePathID, instant)
+		err := sendtelegrampublishpost.Resolve(txCtx, env, params)
 		return err == nil, err
 	})
 }

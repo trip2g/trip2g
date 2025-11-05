@@ -28,23 +28,23 @@ type Env interface {
 	Logger() logger.Logger
 }
 
-func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error {
+func Resolve(ctx context.Context, env Env, params model.SendTelegramPublishPostParams) error {
 	logger := logger.WithPrefix(env.Logger(), "sendtelegrampublishpost:")
 	nvs := env.LatestNoteViews()
 
-	noteView := nvs.GetByPathID(notePathID)
+	noteView := nvs.GetByPathID(params.NotePathID)
 	if noteView == nil {
-		return fmt.Errorf("note view not found for path ID %d", notePathID)
+		return fmt.Errorf("note view not found for path ID %d", params.NotePathID)
 	}
 
 	// Get chat IDs that should receive this post
 	var chats []db.TgBotChat
 	var err error
 
-	if instant {
-		chats, err = env.ListTgBotInstantChatsByTelegramPublishNotePathID(ctx, notePathID)
+	if params.Instant {
+		chats, err = env.ListTgBotInstantChatsByTelegramPublishNotePathID(ctx, params.NotePathID)
 	} else {
-		chats, err = env.ListTgBotChatsByTelegramPublishNotePathID(ctx, notePathID)
+		chats, err = env.ListTgBotChatsByTelegramPublishNotePathID(ctx, params.NotePathID)
 	}
 
 	if err != nil {
@@ -52,21 +52,21 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 	}
 
 	if len(chats) == 0 {
-		if instant {
+		if params.Instant {
 			return nil
 		}
 
-		return fmt.Errorf("no chat IDs found for note path ID %d", notePathID)
+		return fmt.Errorf("no chat IDs found for note path ID %d", params.NotePathID)
 	}
 
-	logger.Info("sending", "note_path_id", notePathID, "instant", instant, "chat_count", len(chats))
+	logger.Info("sending", "note_path_id", params.NotePathID, "instant", params.Instant, "chat_count", len(chats))
 
 	// Send the post to each chat
 	for _, chat := range chats {
 		source := model.TelegramPostSource{
 			NoteView: noteView,
 			ChatID:   chat.ID,
-			Instant:  instant,
+			Instant:  params.Instant,
 		}
 
 		// Convert note to Telegram post
@@ -80,27 +80,27 @@ func Resolve(ctx context.Context, env Env, notePathID int64, instant bool) error
 		}
 
 		// Prepare send params
-		params := model.TelegramSendPostParams{
-			NotePathID:        notePathID,
+		sendParams := model.TelegramSendPostParams{
+			NotePathID:        params.NotePathID,
 			DBChatID:          chat.ID,
 			TelegramChatID:    chat.TelegramID,
 			Post:              *post,
-			Instant:           instant,
-			UpdateLinkedPosts: !instant,
+			Instant:           params.Instant,
+			UpdateLinkedPosts: params.UpdateLinkedPosts,
 		}
 
 		// Enqueue the post to be sent via telegram queue
-		sendErr := env.EnqueueSendTelegramPost(ctx, params)
+		sendErr := env.EnqueueSendTelegramPost(ctx, sendParams)
 		if sendErr != nil {
 			return fmt.Errorf("failed to enqueue telegram post for chat %d: %w", chat.ID, sendErr)
 		}
 	}
 
-	if !instant {
+	if !params.Instant {
 		// Mark the note as published
 		updateParams := db.UpdateTelegramPublishNoteAsPublishedParams{
 			PublishedVersionID: sql.NullInt64{Int64: noteView.VersionID, Valid: true},
-			NotePathID:         notePathID,
+			NotePathID:         params.NotePathID,
 		}
 
 		err = env.UpdateTelegramPublishNoteAsPublished(ctx, updateParams)

@@ -20,6 +20,6 @@ func New(env jobs.Env) *SendPublishPostJob {
 	}
 }
 
-func (t SendPublishPostJob) EnqueueSendPublishPost(ctx context.Context, notePathID int64, instant bool) error {
-	return t.enqueue(ctx, Params{NotePathID: notePathID, Instant: instant})
+func (t SendPublishPostJob) EnqueueSendPublishPost(ctx context.Context, params model.SendTelegramPublishPostParams) error {
+	return t.enqueue(ctx, params)
 }

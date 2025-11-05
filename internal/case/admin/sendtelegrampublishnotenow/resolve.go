@@ -8,6 +8,7 @@ import (
 
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 )
 
@@ -15,7 +16,7 @@ import (
 
 type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
-	SendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error
+	SendTelegramPublishPost(ctx context.Context, params appmodel.SendTelegramPublishPostParams) error
 	GetTelegramPublishNoteByNotePathID(ctx context.Context, notePathID int64) (db.TelegramPublishNote, error)
 }
 
@@ -46,7 +47,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get telegram publish note: %w", err)
 	}
 
-	err = env.SendTelegramPublishPost(ctx, input.ID, false)
+	params := appmodel.SendTelegramPublishPostParams{
+		NotePathID:        input.ID,
+		Instant:           false,
+		UpdateLinkedPosts: true,
+	}
+	err = env.SendTelegramPublishPost(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send telegram publish post: %w", err)
 	}

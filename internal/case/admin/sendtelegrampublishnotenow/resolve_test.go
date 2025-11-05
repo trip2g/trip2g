@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 
 	"github.com/stretchr/testify/require"
@@ -51,9 +52,9 @@ func TestResolve(t *testing.T) {
 					require.Equal(t, int64(1), notePathID)
 					return testNote, nil
 				}
-				mock.SendTelegramPublishPostFunc = func(ctx context.Context, notePathID int64, instant bool) error {
-					require.Equal(t, int64(1), notePathID)
-					require.False(t, instant)
+				mock.SendTelegramPublishPostFunc = func(ctx context.Context, params appmodel.SendTelegramPublishPostParams) error {
+					require.Equal(t, int64(1), params.NotePathID)
+					require.False(t, params.Instant)
 					return nil
 				}
 				return mock
@@ -131,7 +132,7 @@ func TestResolve(t *testing.T) {
 						NotePathID: 1,
 					}, nil
 				}
-				mock.SendTelegramPublishPostFunc = func(ctx context.Context, notePathID int64, instant bool) error {
+				mock.SendTelegramPublishPostFunc = func(ctx context.Context, params appmodel.SendTelegramPublishPostParams) error {
 					return errors.New("telegram send error")
 				}
 				return mock

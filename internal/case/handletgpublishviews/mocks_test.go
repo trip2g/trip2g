@@ -35,7 +35,7 @@ var _ handletgpublishviews.Env = &EnvMock{}
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
-//			SendTelegramPublishPostFunc: func(ctx context.Context, notePathID int64, instant bool) error {
+//			SendTelegramPublishPostFunc: func(ctx context.Context, params model.SendTelegramPublishPostParams) error {
 //				panic("mock out the SendTelegramPublishPost method")
 //			},
 //			TelegramPublishTagByLabelFunc: func(ctx context.Context, label string) (db.TelegramPublishTag, error) {
@@ -73,7 +73,7 @@ type EnvMock struct {
 	LoggerFunc func() logger.Logger
 
 	// SendTelegramPublishPostFunc mocks the SendTelegramPublishPost method.
-	SendTelegramPublishPostFunc func(ctx context.Context, notePathID int64, instant bool) error
+	SendTelegramPublishPostFunc func(ctx context.Context, params model.SendTelegramPublishPostParams) error
 
 	// TelegramPublishTagByLabelFunc mocks the TelegramPublishTagByLabel method.
 	TelegramPublishTagByLabelFunc func(ctx context.Context, label string) (db.TelegramPublishTag, error)
@@ -116,10 +116,8 @@ type EnvMock struct {
 		SendTelegramPublishPost []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// NotePathID is the notePathID argument value.
-			NotePathID int64
-			// Instant is the instant argument value.
-			Instant bool
+			// Params is the params argument value.
+			Params model.SendTelegramPublishPostParams
 		}
 		// TelegramPublishTagByLabel holds details about calls to the TelegramPublishTagByLabel method.
 		TelegramPublishTagByLabel []struct {
@@ -292,23 +290,21 @@ func (mock *EnvMock) LoggerCalls() []struct {
 }
 
 // SendTelegramPublishPost calls SendTelegramPublishPostFunc.
-func (mock *EnvMock) SendTelegramPublishPost(ctx context.Context, notePathID int64, instant bool) error {
+func (mock *EnvMock) SendTelegramPublishPost(ctx context.Context, params model.SendTelegramPublishPostParams) error {
 	if mock.SendTelegramPublishPostFunc == nil {
 		panic("EnvMock.SendTelegramPublishPostFunc: method is nil but Env.SendTelegramPublishPost was just called")
 	}
 	callInfo := struct {
-		Ctx        context.Context
-		NotePathID int64
-		Instant    bool
+		Ctx    context.Context
+		Params model.SendTelegramPublishPostParams
 	}{
-		Ctx:        ctx,
-		NotePathID: notePathID,
-		Instant:    instant,
+		Ctx:    ctx,
+		Params: params,
 	}
 	mock.lockSendTelegramPublishPost.Lock()
 	mock.calls.SendTelegramPublishPost = append(mock.calls.SendTelegramPublishPost, callInfo)
 	mock.lockSendTelegramPublishPost.Unlock()
-	return mock.SendTelegramPublishPostFunc(ctx, notePathID, instant)
+	return mock.SendTelegramPublishPostFunc(ctx, params)
 }
 
 // SendTelegramPublishPostCalls gets all the calls that were made to SendTelegramPublishPost.
@@ -316,14 +312,12 @@ func (mock *EnvMock) SendTelegramPublishPost(ctx context.Context, notePathID int
 //
 //	len(mockedEnv.SendTelegramPublishPostCalls())
 func (mock *EnvMock) SendTelegramPublishPostCalls() []struct {
-	Ctx        context.Context
-	NotePathID int64
-	Instant    bool
+	Ctx    context.Context
+	Params model.SendTelegramPublishPostParams
 } {
 	var calls []struct {
-		Ctx        context.Context
-		NotePathID int64
-		Instant    bool
+		Ctx    context.Context
+		Params model.SendTelegramPublishPostParams
 	}
 	mock.lockSendTelegramPublishPost.RLock()
 	calls = mock.calls.SendTelegramPublishPost
