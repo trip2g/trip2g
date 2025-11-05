@@ -37,6 +37,8 @@ func HandleRateLimit(err error) (bool, time.Duration) {
 
 // GetTelegramLength returns the length of text as counted by Telegram.
 // Telegram counts message length in UTF-16 code units, not bytes.
+// NOTE: This counts all characters including HTML tags.
+// For visible length (without tags), use GetVisibleTelegramLength.
 func GetTelegramLength(text string) int {
 	// Convert string to []rune (Unicode code points)
 	runes := []rune(text)
@@ -48,9 +50,39 @@ func GetTelegramLength(text string) int {
 	return len(utf16Encoded)
 }
 
+// StripHTMLTags removes all HTML tags from the text.
+func StripHTMLTags(text string) string {
+	var result strings.Builder
+	inTag := false
+
+	for i := range len(text) {
+		if text[i] == '<' {
+			inTag = true
+			continue
+		}
+		if text[i] == '>' {
+			inTag = false
+			continue
+		}
+		if !inTag {
+			result.WriteByte(text[i])
+		}
+	}
+
+	return result.String()
+}
+
+// GetVisibleTelegramLength returns the visible length of text (without HTML tags).
+// Telegram counts message length in UTF-16 code units, excluding HTML markup.
+func GetVisibleTelegramLength(text string) int {
+	stripped := StripHTMLTags(text)
+	return GetTelegramLength(stripped)
+}
+
 // TruncateContent truncates content to Telegram limits.
 // Text messages: 4096 chars, Photo captions: 1024 chars.
 // Reserve 3 chars for '...' if truncation is needed.
+// Telegram counts visible length (without HTML tags).
 // Removes unclosed HTML tags after truncation.
 func TruncateContent(content string, hasImages bool) string {
 	maxLength := 4096
@@ -61,22 +93,32 @@ func TruncateContent(content string, hasImages bool) string {
 	// Reserve 3 chars for ellipsis
 	maxLength -= 3
 
-	if GetTelegramLength(content) <= maxLength {
+	// Check visible length (without HTML tags)
+	if GetVisibleTelegramLength(content) <= maxLength {
 		return content
 	}
 
-	// Truncate by runes to avoid cutting in the middle of a character
+	// Need to truncate - find the right position
+	// We'll binary search for the right truncation point
 	runes := []rune(content)
-	utf16Encoded := utf16.Encode(runes)
+	left := 0
+	right := len(runes)
+	bestPos := 0
 
-	// Truncate to maxLength UTF-16 code units
-	if len(utf16Encoded) > maxLength {
-		utf16Encoded = utf16Encoded[:maxLength]
+	for left <= right {
+		mid := (left + right) / 2
+		candidate := string(runes[:mid])
+		visibleLen := GetVisibleTelegramLength(candidate)
+
+		if visibleLen <= maxLength {
+			bestPos = mid
+			left = mid + 1
+		} else {
+			right = mid - 1
+		}
 	}
 
-	// Decode back to runes
-	truncatedRunes := utf16.Decode(utf16Encoded)
-	truncated := string(truncatedRunes)
+	truncated := string(runes[:bestPos])
 
 	// Remove all unclosed HTML tags (may need multiple passes for nested tags)
 	for {
@@ -88,7 +130,7 @@ func TruncateContent(content string, hasImages bool) string {
 		truncated = cleaned
 	}
 
-	// Convert back to string and add ellipsis
+	// Add ellipsis
 	return truncated + "..."
 }
 

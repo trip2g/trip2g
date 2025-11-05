@@ -120,12 +120,13 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 
 	// Validate content length limits
 	// Telegram limits: 4096 chars for text-only messages, 1024 chars for photo captions
+	// Telegram counts visible length (without HTML tags)
 	maxLength := 4096
 	if len(post.Images) > 0 {
 		maxLength = 1024
 	}
 
-	contentLength := telegram.GetTelegramLength(post.Content)
+	contentLength := telegram.GetVisibleTelegramLength(post.Content)
 	if contentLength > maxLength {
 		msgType := "text message"
 		if len(post.Images) > 0 {

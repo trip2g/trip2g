@@ -196,3 +196,114 @@ func TestGetTelegramLength_Mixed(t *testing.T) {
 		t.Errorf("expected length %d, got %d", expected, length)
 	}
 }
+
+func TestStripHTMLTags_NoTags(t *testing.T) {
+	content := "Hello world"
+	result := telegram.StripHTMLTags(content)
+	if result != content {
+		t.Errorf("expected %q, got %q", content, result)
+	}
+}
+
+func TestStripHTMLTags_SimpleTags(t *testing.T) {
+	content := "<b>Bold</b> and <i>italic</i>"
+	result := telegram.StripHTMLTags(content)
+	expected := "Bold and italic"
+	if result != expected {
+		t.Errorf("expected %q, got %q", expected, result)
+	}
+}
+
+func TestStripHTMLTags_NestedTags(t *testing.T) {
+	content := "<b>Bold <i>and italic</i></b>"
+	result := telegram.StripHTMLTags(content)
+	expected := "Bold and italic"
+	if result != expected {
+		t.Errorf("expected %q, got %q", expected, result)
+	}
+}
+
+func TestStripHTMLTags_TagWithAttributes(t *testing.T) {
+	content := `<a href="https://example.com">Link</a>`
+	result := telegram.StripHTMLTags(content)
+	expected := "Link"
+	if result != expected {
+		t.Errorf("expected %q, got %q", expected, result)
+	}
+}
+
+func TestStripHTMLTags_SelfClosingTags(t *testing.T) {
+	content := "Text <br/> more text"
+	result := telegram.StripHTMLTags(content)
+	expected := "Text  more text"
+	if result != expected {
+		t.Errorf("expected %q, got %q", expected, result)
+	}
+}
+
+func TestGetVisibleTelegramLength_NoTags(t *testing.T) {
+	content := "Hello world"
+	length := telegram.GetVisibleTelegramLength(content)
+	if length != 11 {
+		t.Errorf("expected length 11, got %d", length)
+	}
+}
+
+func TestGetVisibleTelegramLength_WithTags(t *testing.T) {
+	content := "<b>Hello</b> <i>world</i>"
+	length := telegram.GetVisibleTelegramLength(content)
+	// Visible: "Hello world" = 11
+	if length != 11 {
+		t.Errorf("expected length 11, got %d", length)
+	}
+}
+
+func TestGetVisibleTelegramLength_TagsWithCyrillic(t *testing.T) {
+	content := "<b>Привет</b> мир"
+	length := telegram.GetVisibleTelegramLength(content)
+	// Visible: "Привет мир" = "Привет" (6) + " мир" (4) = 10
+	if length != 10 {
+		t.Errorf("expected length 10, got %d", length)
+	}
+}
+
+func TestTruncateContent_WithHTMLTags(t *testing.T) {
+	// Content with HTML tags that fits within limit
+	content := "<b>Bold</b> " + strings.Repeat("a", 4080)
+	result := telegram.TruncateContent(content, false)
+
+	// Should not be truncated (visible length is 4084, which is < 4093)
+	if strings.HasSuffix(result, "...") {
+		t.Error("expected no truncation for content within visible limit")
+	}
+}
+
+func TestTruncateContent_WithHTMLTagsExceedsLimit(t *testing.T) {
+	// Content with HTML tags that exceeds visible limit
+	content := "<b>Bold</b> " + strings.Repeat("a", 4090)
+	result := telegram.TruncateContent(content, false)
+
+	// Should be truncated
+	if !strings.HasSuffix(result, "...") {
+		t.Error("expected truncation for content exceeding visible limit")
+	}
+
+	// Visible length should be <= 4093
+	visibleLength := telegram.GetVisibleTelegramLength(strings.TrimSuffix(result, "..."))
+	if visibleLength > 4093 {
+		t.Errorf("expected visible length <= 4093, got %d", visibleLength)
+	}
+}
+
+func TestTruncateContent_LongTagsDontCount(t *testing.T) {
+	// Create content where tags take up a lot of space but visible text is short
+	longAttr := strings.Repeat("x", 1000)
+	content := `<a href="` + longAttr + `">Short visible text</a>`
+
+	result := telegram.TruncateContent(content, false)
+
+	// Should not be truncated because visible text is only 17 chars
+	if strings.HasSuffix(result, "...") {
+		t.Error("expected no truncation - visible text is short even though tags are long")
+	}
+}
