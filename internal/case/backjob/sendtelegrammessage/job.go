@@ -2,13 +2,14 @@ package sendtelegrammessage
 
 import (
 	"context"
+	"trip2g/internal/case/backjob/updatetelegrammessage"
 	"trip2g/internal/jobs"
 	"trip2g/internal/model"
 )
 
 const JobID = "send_message"
 const QueueID = model.BackgroundTelegramAPICallQueue
-const Priority = 1 // shoud process before updates
+const Priority = updatetelegrammessage.Priority + 1
 
 type SendTelegramMessageJob struct {
 	enqueue jobs.EnqueueFunc
