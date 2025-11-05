@@ -9,6 +9,7 @@ import (
 	"sync"
 	"trip2g/internal/case/backjob/sendtelegrampost"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 )
 
@@ -27,6 +28,9 @@ var _ sendtelegrampost.Env = &EnvMock{}
 //			},
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
+//			},
+//			LoggerFunc: func() logger.Logger {
+//				panic("mock out the Logger method")
 //			},
 //			SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 //				panic("mock out the SendTelegramMessage method")
@@ -47,6 +51,9 @@ type EnvMock struct {
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
 
+	// LoggerFunc mocks the Logger method.
+	LoggerFunc func() logger.Logger
+
 	// SendTelegramMessageFunc mocks the SendTelegramMessage method.
 	SendTelegramMessageFunc func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
 
@@ -64,6 +71,9 @@ type EnvMock struct {
 		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
+		}
+		// Logger holds details about calls to the Logger method.
+		Logger []struct {
 		}
 		// SendTelegramMessage holds details about calls to the SendTelegramMessage method.
 		SendTelegramMessage []struct {
@@ -84,6 +94,7 @@ type EnvMock struct {
 	}
 	lockInsertTelegramPublishSentMessage sync.RWMutex
 	lockLatestNoteViews                  sync.RWMutex
+	lockLogger                           sync.RWMutex
 	lockSendTelegramMessage              sync.RWMutex
 	lockUpdateTelegramPublishPost        sync.RWMutex
 }
@@ -148,6 +159,33 @@ func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 	mock.lockLatestNoteViews.RLock()
 	calls = mock.calls.LatestNoteViews
 	mock.lockLatestNoteViews.RUnlock()
+	return calls
+}
+
+// Logger calls LoggerFunc.
+func (mock *EnvMock) Logger() logger.Logger {
+	if mock.LoggerFunc == nil {
+		panic("EnvMock.LoggerFunc: method is nil but Env.Logger was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLogger.Lock()
+	mock.calls.Logger = append(mock.calls.Logger, callInfo)
+	mock.lockLogger.Unlock()
+	return mock.LoggerFunc()
+}
+
+// LoggerCalls gets all the calls that were made to Logger.
+// Check the length with:
+//
+//	len(mockedEnv.LoggerCalls())
+func (mock *EnvMock) LoggerCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLogger.RLock()
+	calls = mock.calls.Logger
+	mock.lockLogger.RUnlock()
 	return calls
 }
 

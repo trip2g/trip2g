@@ -6,9 +6,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/telegram"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -23,6 +25,32 @@ type Env interface {
 }
 
 func Resolve(ctx context.Context, env Env, params model.TelegramUpdatePostParams) error {
+	jobTimeout := time.Minute
+
+	jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
+	defer cancel()
+
+	err := Resolve1(jobCtx, env, params)
+	if err != nil {
+		shouldRetry, delay := telegram.HandleRateLimit(err)
+		if shouldRetry {
+			env.Logger().Info("telegram rate limit hit, retrying after delay",
+				"delay", delay,
+				"job", JobID,
+			)
+			time.Sleep(delay)
+			err = Resolve(ctx, env, params)
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParams) error {
 	logger := logger.WithPrefix(env.Logger(), "backjob/updatetelegrampost:")
 	post := params.Post
 

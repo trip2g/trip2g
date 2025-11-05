@@ -11,16 +11,6 @@ import (
 	"maragu.dev/goqite/jobs"
 )
 
-func (a *app) RegisterTelegramAPIJob(id string, handler func(ctx context.Context, m []byte) error) {
-	a.log.Info("registering telegram API job handler", "id", id)
-	a.telegramAPIQueue.runner.Register(id, handler)
-}
-
-func (a *app) RegisterTelegramTaskJob(id string, handler func(ctx context.Context, m []byte) error) {
-	a.log.Info("registering telegram task job handler", "id", id)
-	a.telegramTaskQueue.runner.Register(id, handler)
-}
-
 func (a *app) initTelegramDeps(ctx context.Context) error {
 	// API queue - for Telegram API calls (send messages, edit messages, etc.)
 	// Limited to 1 concurrent job to avoid rate limits
@@ -31,11 +21,11 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 	a.telegramAPIQueue = apiQueue
 
 	// Task queue - for telegram-related background tasks (processing posts, etc.)
-	// Can run multiple jobs in parallel
 	taskQueue := a.createQueue(ctx, "tg_task_jobs", jobs.NewRunnerOpts{
-		Limit:        5,
+		Limit:        1,
 		PollInterval: time.Second * 1,
 	})
+
 	a.telegramTaskQueue = taskQueue
 
 	return a.initTelegramBots(ctx)
