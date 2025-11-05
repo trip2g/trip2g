@@ -98,7 +98,7 @@ func TestResolve(t *testing.T) {
 						require.Equal(t, int64(123), notePathID)
 						return mockChats, nil
 					},
-					EnqueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
+					EnqueueSendTelegramMessageFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
 						require.Equal(t, int64(123), params.NotePathID)
 						require.Contains(t, []int64{1, 2}, params.DBChatID)
 						require.False(t, params.Instant)
@@ -136,7 +136,7 @@ func TestResolve(t *testing.T) {
 						require.Equal(t, int64(123), notePathID)
 						return mockChats, nil
 					},
-					EnqueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
+					EnqueueSendTelegramMessageFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
 						require.Equal(t, int64(123), params.NotePathID)
 						require.Contains(t, []int64{1, 2}, params.DBChatID)
 						require.True(t, params.Instant)
@@ -245,7 +245,7 @@ func TestResolve(t *testing.T) {
 					ListTgBotChatsByTelegramPublishNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.TgBotChat, error) {
 						return []db.TgBotChat{mockChats[0]}, nil
 					},
-					EnqueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
+					EnqueueSendTelegramMessageFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
 						return errors.New("queue error")
 					},
 				}
@@ -273,7 +273,7 @@ func TestResolve(t *testing.T) {
 					ListTgBotChatsByTelegramPublishNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.TgBotChat, error) {
 						return []db.TgBotChat{mockChats[0]}, nil
 					},
-					EnqueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
+					EnqueueSendTelegramMessageFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
 						return nil
 					},
 					UpdateTelegramPublishNoteAsPublishedFunc: func(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error {

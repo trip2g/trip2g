@@ -14,7 +14,12 @@ type UpdateTelegramMessageJob struct {
 	enqueue jobs.EnqueueFunc
 }
 
-func New(env jobs.Env) *UpdateTelegramMessageJob {
+type UpdateTelegramMessageEnv interface {
+	jobs.Env
+	Env
+}
+
+func New(env UpdateTelegramMessageEnv) *UpdateTelegramMessageJob {
 	return &UpdateTelegramMessageJob{
 		enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
 	}

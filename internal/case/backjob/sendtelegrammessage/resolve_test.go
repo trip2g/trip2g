@@ -1,21 +1,26 @@
-package sendtelegrampost_test
+package sendtelegrammessage_test
 
 import (
 	"context"
 	"errors"
 	"testing"
-	"trip2g/internal/case/backjob/sendtelegrampost"
+	"trip2g/internal/case/backjob/sendtelegrammessage"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg sendtelegrampost_test . Env
+//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg sendtelegrammessage_test . Env
 
 type Env interface {
 	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
 	InsertTelegramPublishSentMessage(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error
+	CheckTelegramPublishSentMessageExists(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error)
+	LatestNoteViews() *model.NoteViews
+	UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error
+	Logger() logger.Logger
 }
 
 func TestResolve_Success_TextOnly(t *testing.T) {
@@ -62,7 +67,7 @@ func TestResolve_Success_TextOnly(t *testing.T) {
 		},
 	}
 
-	err := sendtelegrampost.Resolve(ctx, env, params)
+	err := sendtelegrammessage.Resolve(ctx, env, params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -102,7 +107,7 @@ func TestResolve_Success_Instant(t *testing.T) {
 		},
 	}
 
-	err := sendtelegrampost.Resolve(ctx, env, params)
+	err := sendtelegrammessage.Resolve(ctx, env, params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -135,7 +140,7 @@ func TestResolve_Success_WithImages(t *testing.T) {
 		},
 	}
 
-	err := sendtelegrampost.Resolve(ctx, env, params)
+	err := sendtelegrammessage.Resolve(ctx, env, params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -167,7 +172,7 @@ func TestResolve_Error_SendMessage(t *testing.T) {
 		},
 	}
 
-	err := sendtelegrampost.Resolve(ctx, env, params)
+	err := sendtelegrammessage.Resolve(ctx, env, params)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -206,7 +211,7 @@ func TestResolve_Error_InsertSentMessage(t *testing.T) {
 		},
 	}
 
-	err := sendtelegrampost.Resolve(ctx, env, params)
+	err := sendtelegrammessage.Resolve(ctx, env, params)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -245,7 +250,7 @@ func TestResolve_ContentHash_Consistency(t *testing.T) {
 	}
 
 	// Run twice with same content
-	err := sendtelegrampost.Resolve(ctx, env, params)
+	err := sendtelegrammessage.Resolve(ctx, env, params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -256,7 +261,7 @@ func TestResolve_ContentHash_Consistency(t *testing.T) {
 		return nil
 	}
 
-	err = sendtelegrampost.Resolve(ctx, env, params)
+	err = sendtelegrammessage.Resolve(ctx, env, params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -295,7 +300,7 @@ func TestResolve_EmptyContent(t *testing.T) {
 		},
 	}
 
-	err := sendtelegrampost.Resolve(ctx, env, params)
+	err := sendtelegrammessage.Resolve(ctx, env, params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

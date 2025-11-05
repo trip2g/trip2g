@@ -14,7 +14,12 @@ type SendSignInCodeJob struct {
 	enqueue jobs.EnqueueFunc
 }
 
-func New(env jobs.Env) *SendSignInCodeJob {
+type SendSignInCodeEnv interface {
+	jobs.Env
+	Env
+}
+
+func New(env SendSignInCodeEnv) *SendSignInCodeJob {
 	return &SendSignInCodeJob{
 		enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
 	}

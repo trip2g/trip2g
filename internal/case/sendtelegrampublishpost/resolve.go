@@ -17,8 +17,8 @@ type Env interface {
 	ListTgBotInstantChatsByTelegramPublishNotePathID(ctx context.Context, notePathID int64) ([]db.TgBotChat, error)
 	UpdateTelegramPublishNoteAsPublished(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error
 
-	// Telegram post queue
-	EnqueueSendTelegramPost(ctx context.Context, params model.TelegramSendPostParams) error
+	// Telegram message queue
+	EnqueueSendTelegramMessage(ctx context.Context, params model.TelegramSendPostParams) error
 
 	ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
 
@@ -89,8 +89,8 @@ func Resolve(ctx context.Context, env Env, params model.SendTelegramPublishPostP
 			UpdateLinkedPosts: params.UpdateLinkedPosts,
 		}
 
-		// Enqueue the post to be sent via telegram queue
-		sendErr := env.EnqueueSendTelegramPost(ctx, sendParams)
+		// Enqueue the message to be sent via telegram queue
+		sendErr := env.EnqueueSendTelegramMessage(ctx, sendParams)
 		if sendErr != nil {
 			return fmt.Errorf("failed to enqueue telegram post for chat %d: %w", chat.ID, sendErr)
 		}

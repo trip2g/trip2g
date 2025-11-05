@@ -13,7 +13,7 @@ type Env interface {
 	ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int64, error)
 	LatestNoteViews() *model.NoteViews
 
-	EnqueueSendPublishPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
+	EnqueueSendTelegramPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
 	EnqueueUpdateTelegramPost(ctx context.Context, notePathID int64) error
 }
 
@@ -52,7 +52,7 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 			Instant:           false,
 			UpdateLinkedPosts: false,
 		}
-		sendErr := env.EnqueueSendPublishPost(ctx, params)
+		sendErr := env.EnqueueSendTelegramPost(ctx, params)
 
 		res.Posts = append(res.Posts, ResultPost{
 			NotePathID: id,
@@ -60,7 +60,7 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 		})
 
 		if sendErr != nil {
-			return nil, fmt.Errorf("failed to EnqueueSendPublishPost for note_path_id %d: %w", id, sendErr)
+			return nil, fmt.Errorf("failed to EnqueueSendTelegramPost for note_path_id %d: %w", id, sendErr)
 		}
 
 		noteView := nvs.GetByPathID(id)

@@ -23,7 +23,7 @@ func Register[T any, P any](
 ) EnqueueFunc {
 	_, ok := env.(T)
 	if !ok {
-		panic("the provided env does not implement the required interface")
+		panic(fmt.Sprintf("the provided env does not implement the required interface: %T", new(T)))
 	}
 
 	env.RegisterJob(qID, jobID, func(ctx context.Context, m []byte) error {

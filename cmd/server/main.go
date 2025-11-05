@@ -34,8 +34,8 @@ import (
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/case/backjob/extractnotionpages"
-	"trip2g/internal/case/backjob/sendpublishpost"
 	"trip2g/internal/case/backjob/sendsignincode"
+	"trip2g/internal/case/backjob/sendtelegrammessage"
 	"trip2g/internal/case/backjob/sendtelegrampost"
 	"trip2g/internal/case/backjob/updateallchattelegrampublishposts"
 	"trip2g/internal/case/backjob/updatetelegrammessage"
@@ -109,9 +109,9 @@ type app struct {
 	*tgbots.TgBots
 	*cronjobs.CronJobs
 	*sendsignincode.SendSignInCodeJob
-	*sendpublishpost.SendPublishPostJob
-	*updatetelegrampost.UpdateTelegramPostJob
 	*sendtelegrampost.SendTelegramPostJob
+	*updatetelegrampost.UpdateTelegramPostJob
+	*sendtelegrammessage.SendTelegramMessageJob
 	*updatetelegrammessage.UpdateTelegramMessageJob
 	*extractnotionpages.ExtractNotionPagesJob
 	*updateallchattelegrampublishposts.UpdateAllChatTelegramPublishPostsJob
@@ -292,7 +292,7 @@ func main() {
 		panic(fmt.Errorf("failed to initialize telegram dependencies: %w", err))
 	}
 
-	a.SendTelegramPostJob = sendtelegrampost.New(a)
+	a.SendTelegramMessageJob = sendtelegrammessage.New(a)
 	a.UpdateTelegramMessageJob = updatetelegrammessage.New(a)
 
 	a.CronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
@@ -301,7 +301,7 @@ func main() {
 	}
 
 	a.SendSignInCodeJob = sendsignincode.New(a)
-	a.SendPublishPostJob = sendpublishpost.New(a)
+	a.SendTelegramPostJob = sendtelegrampost.New(a)
 	a.UpdateTelegramPostJob = updatetelegrampost.New(a)
 	a.ExtractNotionPagesJob = extractnotionpages.New(a)
 	a.UpdateAllChatTelegramPublishPostsJob = updateallchattelegrampublishposts.New(a)

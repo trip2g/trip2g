@@ -14,7 +14,12 @@ type ExtractNotionPagesJob struct {
 	enqueue jobs.EnqueueFunc
 }
 
-func New(env jobs.Env) *ExtractNotionPagesJob {
+type ExtractNotionPagesEnv interface {
+	jobs.Env
+	Env
+}
+
+func New(env ExtractNotionPagesEnv) *ExtractNotionPagesJob {
 	return &ExtractNotionPagesJob{
 		enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
 	}
