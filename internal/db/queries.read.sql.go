@@ -969,6 +969,27 @@ func (q *Queries) BoostyTierByID(ctx context.Context, id int64) (BoostyTier, err
 	return i, err
 }
 
+const checkTelegramPublishSentMessageExists = `-- name: CheckTelegramPublishSentMessageExists :one
+select exists(
+  select 1
+    from telegram_publish_sent_messages
+   where note_path_id = ?
+     and chat_id = ?
+) as message_exists
+`
+
+type CheckTelegramPublishSentMessageExistsParams struct {
+	NotePathID int64 `json:"note_path_id"`
+	ChatID     int64 `json:"chat_id"`
+}
+
+func (q *Queries) CheckTelegramPublishSentMessageExists(ctx context.Context, arg CheckTelegramPublishSentMessageExistsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, checkTelegramPublishSentMessageExists, arg.NotePathID, arg.ChatID)
+	var message_exists int64
+	err := row.Scan(&message_exists)
+	return message_exists, err
+}
+
 const countActiveSignInCodes = `-- name: CountActiveSignInCodes :one
 select count(*) from sign_in_codes
  where user_id = ?

@@ -838,6 +838,14 @@ select content_hash
    and chat_id = ?
    and message_id = ?;
 
+-- name: CheckTelegramPublishSentMessageExists :one
+select exists(
+  select 1
+    from telegram_publish_sent_messages
+   where note_path_id = ?
+     and chat_id = ?
+) as message_exists;
+
 -- name: ListDistinctChatIDsFromSentMessages :many
 select distinct chat_id
   from telegram_publish_sent_messages

@@ -22,6 +22,7 @@ import (
 type Env interface {
 	SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
 	InsertTelegramPublishSentMessage(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error
+	CheckTelegramPublishSentMessageExists(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (bool, error)
 	LatestNoteViews() *model.NoteViews
 	UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error
 	Logger() logger.Logger
@@ -54,9 +55,26 @@ func Resolve(ctx context.Context, env Env, params model.TelegramSendPostParams) 
 }
 
 func Resolve1(ctx context.Context, env Env, params model.TelegramSendPostParams) error {
+	// Check if message already exists before sending to avoid duplicate messages
+	exists, err := env.CheckTelegramPublishSentMessageExists(ctx, db.CheckTelegramPublishSentMessageExistsParams{
+		NotePathID: params.NotePathID,
+		ChatID:     params.DBChatID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to check if message exists: %w", err)
+	}
+
+	// If message already exists, skip sending (this can happen with job retries)
+	if exists {
+		env.Logger().Info("telegram message already sent, skipping",
+			"note_path_id", params.NotePathID,
+			"chat_id", params.DBChatID,
+		)
+		return nil
+	}
+
 	var (
 		messageID int64
-		err       error
 	)
 
 	post := params.Post

@@ -23,6 +23,9 @@ var _ sendtelegrampost.Env = &EnvMock{}
 //
 //		// make and configure a mocked sendtelegrampost.Env
 //		mockedEnv := &EnvMock{
+//			CheckTelegramPublishSentMessageExistsFunc: func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (bool, error) {
+//				panic("mock out the CheckTelegramPublishSentMessageExists method")
+//			},
 //			InsertTelegramPublishSentMessageFunc: func(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error {
 //				panic("mock out the InsertTelegramPublishSentMessage method")
 //			},
@@ -45,6 +48,9 @@ var _ sendtelegrampost.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// CheckTelegramPublishSentMessageExistsFunc mocks the CheckTelegramPublishSentMessageExists method.
+	CheckTelegramPublishSentMessageExistsFunc func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (bool, error)
+
 	// InsertTelegramPublishSentMessageFunc mocks the InsertTelegramPublishSentMessage method.
 	InsertTelegramPublishSentMessageFunc func(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error
 
@@ -62,6 +68,13 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// CheckTelegramPublishSentMessageExists holds details about calls to the CheckTelegramPublishSentMessageExists method.
+		CheckTelegramPublishSentMessageExists []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.CheckTelegramPublishSentMessageExistsParams
+		}
 		// InsertTelegramPublishSentMessage holds details about calls to the InsertTelegramPublishSentMessage method.
 		InsertTelegramPublishSentMessage []struct {
 			// Ctx is the ctx argument value.
@@ -92,11 +105,48 @@ type EnvMock struct {
 			NotePathID int64
 		}
 	}
-	lockInsertTelegramPublishSentMessage sync.RWMutex
-	lockLatestNoteViews                  sync.RWMutex
-	lockLogger                           sync.RWMutex
-	lockSendTelegramMessage              sync.RWMutex
-	lockUpdateTelegramPublishPost        sync.RWMutex
+	lockCheckTelegramPublishSentMessageExists sync.RWMutex
+	lockInsertTelegramPublishSentMessage      sync.RWMutex
+	lockLatestNoteViews                       sync.RWMutex
+	lockLogger                                sync.RWMutex
+	lockSendTelegramMessage                   sync.RWMutex
+	lockUpdateTelegramPublishPost             sync.RWMutex
+}
+
+// CheckTelegramPublishSentMessageExists calls CheckTelegramPublishSentMessageExistsFunc.
+func (mock *EnvMock) CheckTelegramPublishSentMessageExists(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (bool, error) {
+	if mock.CheckTelegramPublishSentMessageExistsFunc == nil {
+		panic("EnvMock.CheckTelegramPublishSentMessageExistsFunc: method is nil but Env.CheckTelegramPublishSentMessageExists was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.CheckTelegramPublishSentMessageExistsParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockCheckTelegramPublishSentMessageExists.Lock()
+	mock.calls.CheckTelegramPublishSentMessageExists = append(mock.calls.CheckTelegramPublishSentMessageExists, callInfo)
+	mock.lockCheckTelegramPublishSentMessageExists.Unlock()
+	return mock.CheckTelegramPublishSentMessageExistsFunc(ctx, arg)
+}
+
+// CheckTelegramPublishSentMessageExistsCalls gets all the calls that were made to CheckTelegramPublishSentMessageExists.
+// Check the length with:
+//
+//	len(mockedEnv.CheckTelegramPublishSentMessageExistsCalls())
+func (mock *EnvMock) CheckTelegramPublishSentMessageExistsCalls() []struct {
+	Ctx context.Context
+	Arg db.CheckTelegramPublishSentMessageExistsParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.CheckTelegramPublishSentMessageExistsParams
+	}
+	mock.lockCheckTelegramPublishSentMessageExists.RLock()
+	calls = mock.calls.CheckTelegramPublishSentMessageExists
+	mock.lockCheckTelegramPublishSentMessageExists.RUnlock()
+	return calls
 }
 
 // InsertTelegramPublishSentMessage calls InsertTelegramPublishSentMessageFunc.
