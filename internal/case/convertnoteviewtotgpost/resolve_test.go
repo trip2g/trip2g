@@ -163,3 +163,61 @@ Future content`),
 	require.Contains(t, post.Content, "🔜 Скоро выйдут:")
 	require.Contains(t, post.Content, "📬 Подпишитесь, чтобы не пропустить")
 }
+
+func TestChatIDZeroSkipsDBQuery(t *testing.T) {
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Content: []byte(`---
+free: true
+title: "Sample Note"
+---
+hello`),
+		}},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	// Create a custom env that tracks if ListTelegramPublishSentMessagesByChatID was called
+	called := false
+	env := &testEnvWithTracking{
+		testEnv: testEnv{
+			nvs:       nvs,
+			logger:    &logger.TestLogger{},
+			sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
+			publicURL: "https://example.com",
+		},
+		onListCalled: func() {
+			called = true
+		},
+	}
+
+	source := model.TelegramPostSource{
+		NoteView: nvs.List[0],
+		ChatID:   0, // ChatID is 0
+		Instant:  false,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.NoError(t, err)
+
+	require.Empty(t, post.Warnings)
+	require.Equal(t, "hello", post.Content)
+
+	// Verify that ListTelegramPublishSentMessagesByChatID was NOT called
+	require.False(t, called, "ListTelegramPublishSentMessagesByChatID should not be called when ChatID is 0")
+}
+
+type testEnvWithTracking struct {
+	testEnv
+	onListCalled func()
+}
+
+func (e *testEnvWithTracking) ListTelegramPublishSentMessagesByChatID(ctx context.Context, chatID int64) ([]db.ListTelegramPublishSentMessagesByChatIDRow, error) {
+	if e.onListCalled != nil {
+		e.onListCalled()
+	}
+	return e.testEnv.ListTelegramPublishSentMessagesByChatID(ctx, chatID)
+}
