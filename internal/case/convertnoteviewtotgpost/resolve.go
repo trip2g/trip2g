@@ -27,15 +27,17 @@ type Env interface {
 func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*model.TelegramPost, error) {
 	logger := logger.WithPrefix(env.Logger(), "convertnoteviewtotgpost")
 
-	sentMsgs, err := env.ListTelegramPublishSentMessagesByChatID(ctx, source.ChatID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list all telegram publish sent messages: %w", err)
-	}
-
 	sentMap := make(map[int64]*SentMessage)
 
-	for _, msg := range sentMsgs {
-		sentMap[msg.NotePathID] = &msg
+	if source.ChatID != 0 {
+		sentMsgs, err := env.ListTelegramPublishSentMessagesByChatID(ctx, source.ChatID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list all telegram publish sent messages: %w", err)
+		}
+
+		for _, msg := range sentMsgs {
+			sentMap[msg.NotePathID] = &msg
+		}
 	}
 
 	nvs := env.LatestNoteViews()

@@ -32,6 +32,8 @@ type TelegramSendPostParams struct {
 	Post              TelegramPost `json:"post"`
 	Instant           bool         `json:"instant"`
 	UpdateLinkedPosts bool         `json:"update_linked_posts"`
+
+	DisableNotification bool `json:"disable_notification"`
 }
 
 // TelegramUpdatePostParams contains parameters for updating a telegram post.

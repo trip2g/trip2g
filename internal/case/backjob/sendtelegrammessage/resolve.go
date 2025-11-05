@@ -84,6 +84,7 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramSendPostParams)
 	} else {
 		msg := tgbotapi.NewMessage(params.TelegramChatID, post.Content)
 		msg.ParseMode = "HTML"
+		msg.DisableNotification = params.DisableNotification
 
 		messageID, err = env.SendTelegramMessage(ctx, params.DBChatID, msg)
 	}
@@ -178,6 +179,7 @@ func sendPhoto(ctx context.Context, env Env, params model.TelegramSendPostParams
 	photo := tgbotapi.NewPhoto(params.TelegramChatID, file)
 	photo.Caption = params.Post.Content
 	photo.ParseMode = "HTML"
+	photo.DisableNotification = params.DisableNotification
 
 	return env.SendTelegramMessage(ctx, params.DBChatID, photo)
 }

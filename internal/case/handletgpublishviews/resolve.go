@@ -86,6 +86,8 @@ func (p *processor) process(note *model.NoteView) error {
 		return nil
 	}
 
+	p.checkContent(note)
+
 	for _, tag := range tags {
 		upsertErr := p.tagIDs.upsert(p.ctx, p.env, tag)
 		if upsertErr != nil {
@@ -138,6 +140,9 @@ func (p *processor) process(note *model.NoteView) error {
 	}
 
 	return nil
+}
+
+func (p *processor) checkContent(note *model.NoteView) {
 }
 
 func (c tagIDCache) upsert(ctx context.Context, env Env, label string) error {
