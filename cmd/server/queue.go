@@ -193,18 +193,6 @@ func (a *app) ClearBackgroundQueue(ctx context.Context, name string) (int64, err
 	return deletedCount, nil
 }
 
-func (a *app) EnqueueJob(ctx context.Context, job model.BackgroundTask) error {
-	return a.enqueueJobToQ(ctx, a.globalQueue, job)
-}
-
-func (a *app) EnqueueTelegramAPIJob(ctx context.Context, job model.BackgroundTask) error {
-	return a.enqueueJobToQ(ctx, a.telegramAPIQueue, job)
-}
-
-func (a *app) EnqueueTelegramTaskJob(ctx context.Context, job model.BackgroundTask) error {
-	return a.enqueueJobToQ(ctx, a.telegramTaskQueue, job)
-}
-
 func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, job model.BackgroundTask) error {
 	rawData, err := json.Marshal(job.Data)
 	if err != nil {
@@ -252,6 +240,19 @@ func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, job model.Backgro
 
 	_, err = jobs.Create(ctx, aq.q, job.ID, gqMsg)
 	return err
+}
+
+func (a *app) EnqueueJob(ctx context.Context, job model.BackgroundTask) error {
+	switch job.Queue {
+	case model.BackgroundDefaultQueue:
+		return a.enqueueJobToQ(ctx, a.globalQueue, job)
+	case model.BackgroundTelegramJobQueue:
+		return a.enqueueJobToQ(ctx, a.telegramTaskQueue, job)
+	case model.BackgroundTelegramAPICallQueue:
+		return a.enqueueJobToQ(ctx, a.telegramAPIQueue, job)
+	}
+
+	return fmt.Errorf("unknown queue: %d", job.Queue)
 }
 
 func (a *app) RegisterJob(qID model.BackgroundQueueID, id string, handler func(ctx context.Context, m []byte) error) {
