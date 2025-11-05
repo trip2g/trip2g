@@ -126,7 +126,7 @@ func TestResolve(t *testing.T) { //nolint:gocognit // test complexity is accepta
 				ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 					return &model.TelegramPost{Content: "test"}, nil
 				},
-				EnqueueUpdateTelegramPostFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
+				EnqueueUpdateTelegramMessageFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
 					updateCalls++
 					if err, ok := tt.updateErrs[params.NotePathID]; ok {
 						return err

@@ -6,8 +6,8 @@ import (
 	"trip2g/internal/model"
 )
 
-const JobID = "update_message"
-const QueueID = model.BackgroundTelegramAPICallQueue
+const JobID = "update_telegram_post"
+const QueueID = model.BackgroundTelegramJobQueue
 const Priority = 0
 
 type UpdateTelegramPostJob struct {
@@ -20,6 +20,6 @@ func New(env jobs.Env) *UpdateTelegramPostJob {
 	}
 }
 
-func (t UpdateTelegramPostJob) EnqueueUpdateTelegramPost(ctx context.Context, params model.TelegramUpdatePostParams) error {
-	return t.enqueue(ctx, params)
+func (t UpdateTelegramPostJob) EnqueueUpdateTelegramPost(ctx context.Context, notePathID int64) error {
+	return t.enqueue(ctx, notePathID)
 }

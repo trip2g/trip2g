@@ -83,7 +83,7 @@ func TestResolve_Success(t *testing.T) {
 				Warnings: []string{},
 			}, nil
 		},
-		EnqueueUpdateTelegramPostFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
+		EnqueueUpdateTelegramMessageFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
 			// Verify params
 			require.Equal(t, notePathID, params.NotePathID)
 			require.Equal(t, "Updated test note content", params.Post.Content)
@@ -96,8 +96,8 @@ func TestResolve_Success(t *testing.T) {
 	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
 	require.NoError(t, err)
 
-	// Verify EnqueueUpdateTelegramPost was called twice (for each sent message)
-	require.Len(t, env.EnqueueUpdateTelegramPostCalls(), 2)
+	// Verify EnqueueUpdateTelegramMessage was called twice (for each sent message)
+	require.Len(t, env.EnqueueUpdateTelegramMessageCalls(), 2)
 }
 
 func TestResolve_Success_SkipUnchanged(t *testing.T) {
@@ -148,8 +148,8 @@ func TestResolve_Success_SkipUnchanged(t *testing.T) {
 				Warnings: []string{},
 			}, nil
 		},
-		EnqueueUpdateTelegramPostFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
-			require.Fail(t, "EnqueueUpdateTelegramPost should not be called when hash matches")
+		EnqueueUpdateTelegramMessageFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
+			require.Fail(t, "EnqueueUpdateTelegramMessage should not be called when hash matches")
 			return nil
 		},
 	}
@@ -157,8 +157,8 @@ func TestResolve_Success_SkipUnchanged(t *testing.T) {
 	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
 	require.NoError(t, err)
 
-	// Verify EnqueueUpdateTelegramPost was NOT called
-	require.Empty(t, env.EnqueueUpdateTelegramPostCalls())
+	// Verify EnqueueUpdateTelegramMessage was NOT called
+	require.Empty(t, env.EnqueueUpdateTelegramMessageCalls())
 }
 
 func TestResolve_Error_NoteNotFound(t *testing.T) {
@@ -212,8 +212,8 @@ func TestResolve_Success_NoSentMessages(t *testing.T) {
 	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
 	require.NoError(t, err)
 
-	// Verify EnqueueUpdateTelegramPost was NOT called
-	require.Empty(t, env.EnqueueUpdateTelegramPostCalls())
+	// Verify EnqueueUpdateTelegramMessage was NOT called
+	require.Empty(t, env.EnqueueUpdateTelegramMessageCalls())
 }
 
 func TestResolve_Error_ListSentMessages(t *testing.T) {
@@ -393,7 +393,7 @@ func TestResolve_Error_EnqueueUpdate(t *testing.T) {
 				Warnings: []string{},
 			}, nil
 		},
-		EnqueueUpdateTelegramPostFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
+		EnqueueUpdateTelegramMessageFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
 			return expectedErr
 		},
 	}

@@ -1,11 +1,11 @@
-package updatetelegrampost_test
+package updatetelegrammessage_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"trip2g/internal/case/backjob/updatetelegrampost"
+	"trip2g/internal/case/backjob/updatetelegrammessage"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -88,7 +88,7 @@ func TestResolve_Success_TextMessage(t *testing.T) {
 		},
 	}
 
-	err := updatetelegrampost.Resolve(ctx, env, params)
+	err := updatetelegrammessage.Resolve(ctx, env, params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestResolve_Success_PhotoMessage(t *testing.T) {
 		},
 	}
 
-	err := updatetelegrampost.Resolve(ctx, env, params)
+	err := updatetelegrammessage.Resolve(ctx, env, params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -192,7 +192,7 @@ func TestResolve_Error_SendTelegramRequest(t *testing.T) {
 		},
 	}
 
-	err := updatetelegrampost.Resolve(ctx, env, params)
+	err := updatetelegrammessage.Resolve(ctx, env, params)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -243,7 +243,7 @@ func TestResolve_Success_ContentSameError(t *testing.T) {
 		},
 	}
 
-	err := updatetelegrampost.Resolve(ctx, env, params)
+	err := updatetelegrammessage.Resolve(ctx, env, params)
 	if err != nil {
 		t.Fatalf("unexpected error when content is same: %v", err)
 	}
@@ -287,7 +287,7 @@ func TestResolve_Error_UpdateDB(t *testing.T) {
 		},
 	}
 
-	err := updatetelegrampost.Resolve(ctx, env, params)
+	err := updatetelegrammessage.Resolve(ctx, env, params)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -335,7 +335,7 @@ func TestResolve_SkipUpdate_SameContentHash(t *testing.T) {
 		},
 	}
 
-	err := updatetelegrampost.Resolve(ctx, env, params)
+	err := updatetelegrammessage.Resolve(ctx, env, params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

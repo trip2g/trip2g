@@ -38,6 +38,7 @@ import (
 	"trip2g/internal/case/backjob/sendsignincode"
 	"trip2g/internal/case/backjob/sendtelegrampost"
 	"trip2g/internal/case/backjob/updateallchattelegrampublishposts"
+	"trip2g/internal/case/backjob/updatetelegrammessage"
 	"trip2g/internal/case/backjob/updatetelegrampost"
 	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/getboostyuser"
@@ -109,8 +110,9 @@ type app struct {
 	*cronjobs.CronJobs
 	*sendsignincode.SendSignInCodeJob
 	*sendpublishpost.SendPublishPostJob
-	*sendtelegrampost.SendTelegramPostJob
 	*updatetelegrampost.UpdateTelegramPostJob
+	*sendtelegrampost.SendTelegramPostJob
+	*updatetelegrammessage.UpdateTelegramMessageJob
 	*extractnotionpages.ExtractNotionPagesJob
 	*updateallchattelegrampublishposts.UpdateAllChatTelegramPublishPostsJob
 
@@ -291,7 +293,7 @@ func main() {
 	}
 
 	a.SendTelegramPostJob = sendtelegrampost.New(a)
-	a.UpdateTelegramPostJob = updatetelegrampost.New(a)
+	a.UpdateTelegramMessageJob = updatetelegrammessage.New(a)
 
 	a.CronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
 	if err != nil {
@@ -300,6 +302,7 @@ func main() {
 
 	a.SendSignInCodeJob = sendsignincode.New(a)
 	a.SendPublishPostJob = sendpublishpost.New(a)
+	a.UpdateTelegramPostJob = updatetelegrampost.New(a)
 	a.ExtractNotionPagesJob = extractnotionpages.New(a)
 	a.UpdateAllChatTelegramPublishPostsJob = updateallchattelegrampublishposts.New(a)
 
