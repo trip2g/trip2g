@@ -88,7 +88,16 @@ func (p *processor) process(note *model.NoteView) error {
 		return nil
 	}
 
-	p.checkContent(note)
+	// Validate telegram post content
+	source := model.TelegramPostSource{
+		NoteView: note,
+		ChatID:   0, // ChatID=0 skips DB query for sent messages
+		Instant:  false,
+	}
+	_, err := p.env.ConvertNoteViewToTelegramPost(p.ctx, source)
+	if err != nil {
+		note.AddWarning(model.NoteWarningCritical, "failed to convert note to telegram post: %v", err)
+	}
 
 	for _, tag := range tags {
 		upsertErr := p.tagIDs.upsert(p.ctx, p.env, tag)
@@ -111,7 +120,7 @@ func (p *processor) process(note *model.NoteView) error {
 		ErrorCount: errorCount,
 	}
 
-	err := p.env.UpsertTelegramPublishNote(p.ctx, noteParams)
+	err = p.env.UpsertTelegramPublishNote(p.ctx, noteParams)
 	if err != nil {
 		return fmt.Errorf("failed to UpsertTelegramPublishNote: %w", err)
 	}
@@ -151,37 +160,6 @@ func (p *processor) process(note *model.NoteView) error {
 	}
 
 	return nil
-}
-
-func (p *processor) checkContent(note *model.NoteView) {
-	// Convert note to telegram post to validate content
-	source := model.TelegramPostSource{
-		NoteView: note,
-		ChatID:   0, // ChatID=0 skips DB query for sent messages
-		Instant:  false,
-	}
-
-	post, err := p.env.ConvertNoteViewToTelegramPost(p.ctx, source)
-	if err != nil {
-		note.AddWarning(model.NoteWarningCritical, "failed to convert note to telegram post: %v", err)
-		return
-	}
-
-	// Check content length limits
-	// Telegram limits: 4096 chars for text-only messages, 1024 chars for photo captions
-	maxLength := 4000
-	if len(post.Images) > 0 {
-		maxLength = 1024
-	}
-
-	contentLength := len(post.Content)
-	if contentLength > maxLength {
-		msgType := "text message"
-		if len(post.Images) > 0 {
-			msgType = "photo caption"
-		}
-		note.AddWarning(model.NoteWarningCritical, "telegram %s content exceeds limit: %d characters (max %d)", msgType, contentLength, maxLength)
-	}
 }
 
 func (c tagIDCache) upsert(ctx context.Context, env Env, label string) error {

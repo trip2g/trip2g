@@ -19,6 +19,7 @@ namespace $.$$ {
 						secondsUntilPublish
 						publishedAt
 						status
+						errorCount
 						noteView {
 							title
 						}
@@ -93,6 +94,10 @@ namespace $.$$ {
 
 		override row_status( id: any ): string {
 			return this.row( id ).status
+		}
+
+		override row_error_count( id: any ): string {
+			return this.row( id ).errorCount.toString()
 		}
 
 		override row_seconds_until_publish( id: any ): string {

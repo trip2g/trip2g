@@ -35,3 +35,7 @@ $trip2g_admin_telegrampublishnote_catalog $trip2g_admin_catalog
 						title @ \Seconds Until Publish
 						Content <= Row_seconds_until_publish* $trip2g_admin_cell
 							content <= row_seconds_until_publish* \seconds_until_publish
+					<= Row_error_count_labeler* $mol_labeler
+						title @ \Errors
+						Content <= Row_error_count* $trip2g_admin_cell
+							content <= row_error_count* \error_count
