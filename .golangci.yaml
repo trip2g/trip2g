@@ -477,3 +477,6 @@ linters:
           - gocognit     # Test code can be complex
           - gosec        # Test code doesn't need security checks
           - govet        # Allow variable shadowing in test code
+      - path: 'go\.mod'
+        linters:
+          - gomoddirectives  # Allow replace directive for forked goqite dependency

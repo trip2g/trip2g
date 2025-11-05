@@ -24,14 +24,14 @@ var _ updatetelegrampublishpost.Env = &EnvMock{}
 //			ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 //				panic("mock out the ConvertNoteViewToTelegramPost method")
 //			},
+//			EnqueueUpdateTelegramPostFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
+//				panic("mock out the EnqueueUpdateTelegramPost method")
+//			},
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
 //			ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
 //				panic("mock out the ListTelegramPublishSentMessagesByNotePathID method")
-//			},
-//			QueueUpdateTelegramPostFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
-//				panic("mock out the QueueUpdateTelegramPost method")
 //			},
 //		}
 //
@@ -43,14 +43,14 @@ type EnvMock struct {
 	// ConvertNoteViewToTelegramPostFunc mocks the ConvertNoteViewToTelegramPost method.
 	ConvertNoteViewToTelegramPostFunc func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
 
+	// EnqueueUpdateTelegramPostFunc mocks the EnqueueUpdateTelegramPost method.
+	EnqueueUpdateTelegramPostFunc func(ctx context.Context, params model.TelegramUpdatePostParams) error
+
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
 
 	// ListTelegramPublishSentMessagesByNotePathIDFunc mocks the ListTelegramPublishSentMessagesByNotePathID method.
 	ListTelegramPublishSentMessagesByNotePathIDFunc func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error)
-
-	// QueueUpdateTelegramPostFunc mocks the QueueUpdateTelegramPost method.
-	QueueUpdateTelegramPostFunc func(ctx context.Context, params model.TelegramUpdatePostParams) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -60,6 +60,13 @@ type EnvMock struct {
 			Ctx context.Context
 			// Source is the source argument value.
 			Source model.TelegramPostSource
+		}
+		// EnqueueUpdateTelegramPost holds details about calls to the EnqueueUpdateTelegramPost method.
+		EnqueueUpdateTelegramPost []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Params is the params argument value.
+			Params model.TelegramUpdatePostParams
 		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
@@ -71,18 +78,11 @@ type EnvMock struct {
 			// NotePathID is the notePathID argument value.
 			NotePathID int64
 		}
-		// QueueUpdateTelegramPost holds details about calls to the QueueUpdateTelegramPost method.
-		QueueUpdateTelegramPost []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Params is the params argument value.
-			Params model.TelegramUpdatePostParams
-		}
 	}
 	lockConvertNoteViewToTelegramPost               sync.RWMutex
+	lockEnqueueUpdateTelegramPost                   sync.RWMutex
 	lockLatestNoteViews                             sync.RWMutex
 	lockListTelegramPublishSentMessagesByNotePathID sync.RWMutex
-	lockQueueUpdateTelegramPost                     sync.RWMutex
 }
 
 // ConvertNoteViewToTelegramPost calls ConvertNoteViewToTelegramPostFunc.
@@ -118,6 +118,42 @@ func (mock *EnvMock) ConvertNoteViewToTelegramPostCalls() []struct {
 	mock.lockConvertNoteViewToTelegramPost.RLock()
 	calls = mock.calls.ConvertNoteViewToTelegramPost
 	mock.lockConvertNoteViewToTelegramPost.RUnlock()
+	return calls
+}
+
+// EnqueueUpdateTelegramPost calls EnqueueUpdateTelegramPostFunc.
+func (mock *EnvMock) EnqueueUpdateTelegramPost(ctx context.Context, params model.TelegramUpdatePostParams) error {
+	if mock.EnqueueUpdateTelegramPostFunc == nil {
+		panic("EnvMock.EnqueueUpdateTelegramPostFunc: method is nil but Env.EnqueueUpdateTelegramPost was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		Params model.TelegramUpdatePostParams
+	}{
+		Ctx:    ctx,
+		Params: params,
+	}
+	mock.lockEnqueueUpdateTelegramPost.Lock()
+	mock.calls.EnqueueUpdateTelegramPost = append(mock.calls.EnqueueUpdateTelegramPost, callInfo)
+	mock.lockEnqueueUpdateTelegramPost.Unlock()
+	return mock.EnqueueUpdateTelegramPostFunc(ctx, params)
+}
+
+// EnqueueUpdateTelegramPostCalls gets all the calls that were made to EnqueueUpdateTelegramPost.
+// Check the length with:
+//
+//	len(mockedEnv.EnqueueUpdateTelegramPostCalls())
+func (mock *EnvMock) EnqueueUpdateTelegramPostCalls() []struct {
+	Ctx    context.Context
+	Params model.TelegramUpdatePostParams
+} {
+	var calls []struct {
+		Ctx    context.Context
+		Params model.TelegramUpdatePostParams
+	}
+	mock.lockEnqueueUpdateTelegramPost.RLock()
+	calls = mock.calls.EnqueueUpdateTelegramPost
+	mock.lockEnqueueUpdateTelegramPost.RUnlock()
 	return calls
 }
 
@@ -181,41 +217,5 @@ func (mock *EnvMock) ListTelegramPublishSentMessagesByNotePathIDCalls() []struct
 	mock.lockListTelegramPublishSentMessagesByNotePathID.RLock()
 	calls = mock.calls.ListTelegramPublishSentMessagesByNotePathID
 	mock.lockListTelegramPublishSentMessagesByNotePathID.RUnlock()
-	return calls
-}
-
-// QueueUpdateTelegramPost calls QueueUpdateTelegramPostFunc.
-func (mock *EnvMock) QueueUpdateTelegramPost(ctx context.Context, params model.TelegramUpdatePostParams) error {
-	if mock.QueueUpdateTelegramPostFunc == nil {
-		panic("EnvMock.QueueUpdateTelegramPostFunc: method is nil but Env.QueueUpdateTelegramPost was just called")
-	}
-	callInfo := struct {
-		Ctx    context.Context
-		Params model.TelegramUpdatePostParams
-	}{
-		Ctx:    ctx,
-		Params: params,
-	}
-	mock.lockQueueUpdateTelegramPost.Lock()
-	mock.calls.QueueUpdateTelegramPost = append(mock.calls.QueueUpdateTelegramPost, callInfo)
-	mock.lockQueueUpdateTelegramPost.Unlock()
-	return mock.QueueUpdateTelegramPostFunc(ctx, params)
-}
-
-// QueueUpdateTelegramPostCalls gets all the calls that were made to QueueUpdateTelegramPost.
-// Check the length with:
-//
-//	len(mockedEnv.QueueUpdateTelegramPostCalls())
-func (mock *EnvMock) QueueUpdateTelegramPostCalls() []struct {
-	Ctx    context.Context
-	Params model.TelegramUpdatePostParams
-} {
-	var calls []struct {
-		Ctx    context.Context
-		Params model.TelegramUpdatePostParams
-	}
-	mock.lockQueueUpdateTelegramPost.RLock()
-	calls = mock.calls.QueueUpdateTelegramPost
-	mock.lockQueueUpdateTelegramPost.RUnlock()
 	return calls
 }

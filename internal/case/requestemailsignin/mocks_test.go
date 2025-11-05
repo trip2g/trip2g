@@ -25,8 +25,8 @@ var _ Env = &EnvMock{}
 //			CreateSignInCodeFunc: func(ctx context.Context, userID int64) (string, error) {
 //				panic("mock out the CreateSignInCode method")
 //			},
-//			QueueRequestSignInEmailFunc: func(ctx context.Context, email string, code string) error {
-//				panic("mock out the QueueRequestSignInEmail method")
+//			EnqueueRequestSignInEmailFunc: func(ctx context.Context, email string, code string) error {
+//				panic("mock out the EnqueueRequestSignInEmail method")
 //			},
 //			TryToAutoRegisterUserFunc: func(ctx context.Context, email string) (*db.User, error) {
 //				panic("mock out the TryToAutoRegisterUser method")
@@ -50,8 +50,8 @@ type EnvMock struct {
 	// CreateSignInCodeFunc mocks the CreateSignInCode method.
 	CreateSignInCodeFunc func(ctx context.Context, userID int64) (string, error)
 
-	// QueueRequestSignInEmailFunc mocks the QueueRequestSignInEmail method.
-	QueueRequestSignInEmailFunc func(ctx context.Context, email string, code string) error
+	// EnqueueRequestSignInEmailFunc mocks the EnqueueRequestSignInEmail method.
+	EnqueueRequestSignInEmailFunc func(ctx context.Context, email string, code string) error
 
 	// TryToAutoRegisterUserFunc mocks the TryToAutoRegisterUser method.
 	TryToAutoRegisterUserFunc func(ctx context.Context, email string) (*db.User, error)
@@ -78,8 +78,8 @@ type EnvMock struct {
 			// UserID is the userID argument value.
 			UserID int64
 		}
-		// QueueRequestSignInEmail holds details about calls to the QueueRequestSignInEmail method.
-		QueueRequestSignInEmail []struct {
+		// EnqueueRequestSignInEmail holds details about calls to the EnqueueRequestSignInEmail method.
+		EnqueueRequestSignInEmail []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Email is the email argument value.
@@ -109,12 +109,12 @@ type EnvMock struct {
 			Email string
 		}
 	}
-	lockCountActiveSignInCodes  sync.RWMutex
-	lockCreateSignInCode        sync.RWMutex
-	lockQueueRequestSignInEmail sync.RWMutex
-	lockTryToAutoRegisterUser   sync.RWMutex
-	lockUserBanByUserID         sync.RWMutex
-	lockUserByEmail             sync.RWMutex
+	lockCountActiveSignInCodes    sync.RWMutex
+	lockCreateSignInCode          sync.RWMutex
+	lockEnqueueRequestSignInEmail sync.RWMutex
+	lockTryToAutoRegisterUser     sync.RWMutex
+	lockUserBanByUserID           sync.RWMutex
+	lockUserByEmail               sync.RWMutex
 }
 
 // CountActiveSignInCodes calls CountActiveSignInCodesFunc.
@@ -189,10 +189,10 @@ func (mock *EnvMock) CreateSignInCodeCalls() []struct {
 	return calls
 }
 
-// QueueRequestSignInEmail calls QueueRequestSignInEmailFunc.
-func (mock *EnvMock) QueueRequestSignInEmail(ctx context.Context, email string, code string) error {
-	if mock.QueueRequestSignInEmailFunc == nil {
-		panic("EnvMock.QueueRequestSignInEmailFunc: method is nil but Env.QueueRequestSignInEmail was just called")
+// EnqueueRequestSignInEmail calls EnqueueRequestSignInEmailFunc.
+func (mock *EnvMock) EnqueueRequestSignInEmail(ctx context.Context, email string, code string) error {
+	if mock.EnqueueRequestSignInEmailFunc == nil {
+		panic("EnvMock.EnqueueRequestSignInEmailFunc: method is nil but Env.EnqueueRequestSignInEmail was just called")
 	}
 	callInfo := struct {
 		Ctx   context.Context
@@ -203,17 +203,17 @@ func (mock *EnvMock) QueueRequestSignInEmail(ctx context.Context, email string, 
 		Email: email,
 		Code:  code,
 	}
-	mock.lockQueueRequestSignInEmail.Lock()
-	mock.calls.QueueRequestSignInEmail = append(mock.calls.QueueRequestSignInEmail, callInfo)
-	mock.lockQueueRequestSignInEmail.Unlock()
-	return mock.QueueRequestSignInEmailFunc(ctx, email, code)
+	mock.lockEnqueueRequestSignInEmail.Lock()
+	mock.calls.EnqueueRequestSignInEmail = append(mock.calls.EnqueueRequestSignInEmail, callInfo)
+	mock.lockEnqueueRequestSignInEmail.Unlock()
+	return mock.EnqueueRequestSignInEmailFunc(ctx, email, code)
 }
 
-// QueueRequestSignInEmailCalls gets all the calls that were made to QueueRequestSignInEmail.
+// EnqueueRequestSignInEmailCalls gets all the calls that were made to EnqueueRequestSignInEmail.
 // Check the length with:
 //
-//	len(mockedEnv.QueueRequestSignInEmailCalls())
-func (mock *EnvMock) QueueRequestSignInEmailCalls() []struct {
+//	len(mockedEnv.EnqueueRequestSignInEmailCalls())
+func (mock *EnvMock) EnqueueRequestSignInEmailCalls() []struct {
 	Ctx   context.Context
 	Email string
 	Code  string
@@ -223,9 +223,9 @@ func (mock *EnvMock) QueueRequestSignInEmailCalls() []struct {
 		Email string
 		Code  string
 	}
-	mock.lockQueueRequestSignInEmail.RLock()
-	calls = mock.calls.QueueRequestSignInEmail
-	mock.lockQueueRequestSignInEmail.RUnlock()
+	mock.lockEnqueueRequestSignInEmail.RLock()
+	calls = mock.calls.EnqueueRequestSignInEmail
+	mock.lockEnqueueRequestSignInEmail.RUnlock()
 	return calls
 }
 

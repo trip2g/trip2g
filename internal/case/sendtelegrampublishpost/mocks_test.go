@@ -25,6 +25,9 @@ var _ sendtelegrampublishpost.Env = &EnvMock{}
 //			ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 //				panic("mock out the ConvertNoteViewToTelegramPost method")
 //			},
+//			EnqueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
+//				panic("mock out the EnqueueSendTelegramPost method")
+//			},
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
@@ -36,9 +39,6 @@ var _ sendtelegrampublishpost.Env = &EnvMock{}
 //			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
-//			},
-//			QueueSendTelegramPostFunc: func(ctx context.Context, params model.TelegramSendPostParams) error {
-//				panic("mock out the QueueSendTelegramPost method")
 //			},
 //			UpdateTelegramPublishNoteAsPublishedFunc: func(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error {
 //				panic("mock out the UpdateTelegramPublishNoteAsPublished method")
@@ -53,6 +53,9 @@ type EnvMock struct {
 	// ConvertNoteViewToTelegramPostFunc mocks the ConvertNoteViewToTelegramPost method.
 	ConvertNoteViewToTelegramPostFunc func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
 
+	// EnqueueSendTelegramPostFunc mocks the EnqueueSendTelegramPost method.
+	EnqueueSendTelegramPostFunc func(ctx context.Context, params model.TelegramSendPostParams) error
+
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
 
@@ -65,9 +68,6 @@ type EnvMock struct {
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
 
-	// QueueSendTelegramPostFunc mocks the QueueSendTelegramPost method.
-	QueueSendTelegramPostFunc func(ctx context.Context, params model.TelegramSendPostParams) error
-
 	// UpdateTelegramPublishNoteAsPublishedFunc mocks the UpdateTelegramPublishNoteAsPublished method.
 	UpdateTelegramPublishNoteAsPublishedFunc func(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error
 
@@ -79,6 +79,13 @@ type EnvMock struct {
 			Ctx context.Context
 			// Source is the source argument value.
 			Source model.TelegramPostSource
+		}
+		// EnqueueSendTelegramPost holds details about calls to the EnqueueSendTelegramPost method.
+		EnqueueSendTelegramPost []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Params is the params argument value.
+			Params model.TelegramSendPostParams
 		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
@@ -100,13 +107,6 @@ type EnvMock struct {
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
-		// QueueSendTelegramPost holds details about calls to the QueueSendTelegramPost method.
-		QueueSendTelegramPost []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Params is the params argument value.
-			Params model.TelegramSendPostParams
-		}
 		// UpdateTelegramPublishNoteAsPublished holds details about calls to the UpdateTelegramPublishNoteAsPublished method.
 		UpdateTelegramPublishNoteAsPublished []struct {
 			// Ctx is the ctx argument value.
@@ -116,11 +116,11 @@ type EnvMock struct {
 		}
 	}
 	lockConvertNoteViewToTelegramPost                    sync.RWMutex
+	lockEnqueueSendTelegramPost                          sync.RWMutex
 	lockLatestNoteViews                                  sync.RWMutex
 	lockListTgBotChatsByTelegramPublishNotePathID        sync.RWMutex
 	lockListTgBotInstantChatsByTelegramPublishNotePathID sync.RWMutex
 	lockLogger                                           sync.RWMutex
-	lockQueueSendTelegramPost                            sync.RWMutex
 	lockUpdateTelegramPublishNoteAsPublished             sync.RWMutex
 }
 
@@ -157,6 +157,42 @@ func (mock *EnvMock) ConvertNoteViewToTelegramPostCalls() []struct {
 	mock.lockConvertNoteViewToTelegramPost.RLock()
 	calls = mock.calls.ConvertNoteViewToTelegramPost
 	mock.lockConvertNoteViewToTelegramPost.RUnlock()
+	return calls
+}
+
+// EnqueueSendTelegramPost calls EnqueueSendTelegramPostFunc.
+func (mock *EnvMock) EnqueueSendTelegramPost(ctx context.Context, params model.TelegramSendPostParams) error {
+	if mock.EnqueueSendTelegramPostFunc == nil {
+		panic("EnvMock.EnqueueSendTelegramPostFunc: method is nil but Env.EnqueueSendTelegramPost was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		Params model.TelegramSendPostParams
+	}{
+		Ctx:    ctx,
+		Params: params,
+	}
+	mock.lockEnqueueSendTelegramPost.Lock()
+	mock.calls.EnqueueSendTelegramPost = append(mock.calls.EnqueueSendTelegramPost, callInfo)
+	mock.lockEnqueueSendTelegramPost.Unlock()
+	return mock.EnqueueSendTelegramPostFunc(ctx, params)
+}
+
+// EnqueueSendTelegramPostCalls gets all the calls that were made to EnqueueSendTelegramPost.
+// Check the length with:
+//
+//	len(mockedEnv.EnqueueSendTelegramPostCalls())
+func (mock *EnvMock) EnqueueSendTelegramPostCalls() []struct {
+	Ctx    context.Context
+	Params model.TelegramSendPostParams
+} {
+	var calls []struct {
+		Ctx    context.Context
+		Params model.TelegramSendPostParams
+	}
+	mock.lockEnqueueSendTelegramPost.RLock()
+	calls = mock.calls.EnqueueSendTelegramPost
+	mock.lockEnqueueSendTelegramPost.RUnlock()
 	return calls
 }
 
@@ -283,42 +319,6 @@ func (mock *EnvMock) LoggerCalls() []struct {
 	mock.lockLogger.RLock()
 	calls = mock.calls.Logger
 	mock.lockLogger.RUnlock()
-	return calls
-}
-
-// QueueSendTelegramPost calls QueueSendTelegramPostFunc.
-func (mock *EnvMock) QueueSendTelegramPost(ctx context.Context, params model.TelegramSendPostParams) error {
-	if mock.QueueSendTelegramPostFunc == nil {
-		panic("EnvMock.QueueSendTelegramPostFunc: method is nil but Env.QueueSendTelegramPost was just called")
-	}
-	callInfo := struct {
-		Ctx    context.Context
-		Params model.TelegramSendPostParams
-	}{
-		Ctx:    ctx,
-		Params: params,
-	}
-	mock.lockQueueSendTelegramPost.Lock()
-	mock.calls.QueueSendTelegramPost = append(mock.calls.QueueSendTelegramPost, callInfo)
-	mock.lockQueueSendTelegramPost.Unlock()
-	return mock.QueueSendTelegramPostFunc(ctx, params)
-}
-
-// QueueSendTelegramPostCalls gets all the calls that were made to QueueSendTelegramPost.
-// Check the length with:
-//
-//	len(mockedEnv.QueueSendTelegramPostCalls())
-func (mock *EnvMock) QueueSendTelegramPostCalls() []struct {
-	Ctx    context.Context
-	Params model.TelegramSendPostParams
-} {
-	var calls []struct {
-		Ctx    context.Context
-		Params model.TelegramSendPostParams
-	}
-	mock.lockQueueSendTelegramPost.RLock()
-	calls = mock.calls.QueueSendTelegramPost
-	mock.lockQueueSendTelegramPost.RUnlock()
 	return calls
 }
 

@@ -4,20 +4,29 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"trip2g/internal/model"
 )
 
 type Env interface {
-	RegisterJob(id string, handler func(ctx context.Context, m []byte) error)
-	EnqueueJob(ctx context.Context, jobID string, data any) error
+	RegisterJob(qID model.BackgroundQueueID, id string, handler func(ctx context.Context, m []byte) error)
+	EnqueueJob(ctx context.Context, job model.BackgroundTask) error
 }
 
-func Register[T any, P any](env Env, jobID string, resolveFunc func(context.Context, T, P) error) {
+type EnqueueFunc func(ctx context.Context, data any) error
+
+func Register[T any, P any](
+	env Env,
+	qID model.BackgroundQueueID,
+	jobID string,
+	priority int,
+	resolveFunc func(context.Context, T, P) error,
+) EnqueueFunc {
 	_, ok := env.(T)
 	if !ok {
 		panic("the provided env does not implement the required interface")
 	}
 
-	env.RegisterJob(jobID, func(ctx context.Context, m []byte) error {
+	env.RegisterJob(qID, jobID, func(ctx context.Context, m []byte) error {
 		var params P
 
 		err := json.Unmarshal(m, &params)
@@ -32,4 +41,13 @@ func Register[T any, P any](env Env, jobID string, resolveFunc func(context.Cont
 
 		return nil
 	})
+
+	return func(ctx context.Context, data any) error {
+		return env.EnqueueJob(ctx, model.BackgroundTask{
+			ID:       jobID,
+			Queue:    qID,
+			Data:     data,
+			Priority: priority,
+		})
+	}
 }

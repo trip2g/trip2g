@@ -2,22 +2,19 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
 	"time"
+	"trip2g/internal/appreq"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
 	"maragu.dev/goqite"
 	"maragu.dev/goqite/jobs"
 )
-
-type queueMessage struct {
-	JobID    string
-	Data     any
-	Priority int //  Higher priority messages are received first
-}
 
 type appQueue struct {
 	name string
@@ -194,4 +191,80 @@ func (a *app) ClearBackgroundQueue(ctx context.Context, name string) (int64, err
 	}
 
 	return deletedCount, nil
+}
+
+func (a *app) EnqueueJob(ctx context.Context, job model.BackgroundTask) error {
+	return a.enqueueJobToQ(ctx, a.globalQueue, job)
+}
+
+func (a *app) EnqueueTelegramAPIJob(ctx context.Context, job model.BackgroundTask) error {
+	return a.enqueueJobToQ(ctx, a.telegramAPIQueue, job)
+}
+
+func (a *app) EnqueueTelegramTaskJob(ctx context.Context, job model.BackgroundTask) error {
+	return a.enqueueJobToQ(ctx, a.telegramTaskQueue, job)
+}
+
+func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, job model.BackgroundTask) error {
+	rawData, err := json.Marshal(job.Data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal job data: %w", err)
+	}
+
+	gqMsg := goqite.Message{
+		Body:     rawData,
+		Priority: job.Priority,
+	}
+
+	// First check context for transactional env (works for both HTTP and background jobs)
+	if txEnv, ok := ctx.Value(txEnvKey).(*app); ok && txEnv.currentTx != nil {
+		a.log.Debug("enqueueing in context tx env", "job_id", job.ID, "data", string(rawData), "queue", aq.name)
+
+		_, err = jobs.CreateTx(ctx, txEnv.currentTx, aq.q, job.ID, gqMsg)
+		return err
+	}
+
+	// Fallback: check request context (for HTTP requests)
+	req, err := appreq.FromCtx(ctx)
+	if err != nil && !errors.Is(err, appreq.ErrNotFound) {
+		return fmt.Errorf("failed to get request from context: %w", err)
+	}
+
+	if req != nil {
+		env, ok := req.Env.(*app)
+		if ok && env.CurrentTx() != nil {
+			a.log.Debug("enqueueing in request env", "job_id", job.ID, "data", string(rawData), "queue", aq.name)
+
+			_, err = jobs.CreateTx(ctx, env.currentTx, aq.q, job.ID, gqMsg)
+			return err
+		}
+	}
+
+	// Fallback: check global app (should rarely be used now)
+	if a.currentTx != nil {
+		a.log.Debug("enqueueing in app.currentTx", "job_id", job.ID, "data", string(rawData), "queue", aq.name)
+
+		_, err = jobs.CreateTx(ctx, a.currentTx, aq.q, job.ID, gqMsg)
+		return err
+	}
+
+	a.log.Debug("enqueueing in global env", "job_id", job.ID, "data", string(rawData), "queue", aq.name)
+
+	_, err = jobs.Create(ctx, aq.q, job.ID, gqMsg)
+	return err
+}
+
+func (a *app) RegisterJob(qID model.BackgroundQueueID, id string, handler func(ctx context.Context, m []byte) error) {
+	a.log.Info("registering job handler", "id", id, "queue", qID.String())
+
+	switch qID {
+	case model.BackgroundDefaultQueue:
+		a.globalQueue.runner.Register(id, handler)
+	case model.BackgroundTelegramJobQueue:
+		a.telegramTaskQueue.runner.Register(id, handler)
+	case model.BackgroundTelegramAPICallQueue:
+		a.telegramAPIQueue.runner.Register(id, handler)
+	default:
+		panic(fmt.Sprintf("unknown queue: %d", qID))
+	}
 }

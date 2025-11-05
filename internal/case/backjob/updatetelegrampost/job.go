@@ -10,26 +10,29 @@ import (
 	"trip2g/internal/telegram"
 )
 
-const ID = "update_message"
+const JobID = "update_message"
+const QueueID = model.BackgroundTelegramAPICallQueue
+const Priority = 0
 
 type UpdateTelegramPostEnv interface {
 	Env
-
-	RegisterTelegramJob(id string, handler func(ctx context.Context, m []byte) error)
-	EnqueueTelegramJob(ctx context.Context, jobID string, data any, priroity int) error
 	Logger() logger.Logger
+	RegisterJob(qID model.BackgroundQueueID, id string, handler func(ctx context.Context, m []byte) error)
+	EnqueueJob(ctx context.Context, job model.BackgroundTask) error
 }
 
 type UpdateTelegramPostJob struct {
-	env UpdateTelegramPostEnv
+	env     UpdateTelegramPostEnv
+	enqueue func(ctx context.Context, params model.TelegramUpdatePostParams) error
 }
 
 func New(env UpdateTelegramPostEnv) *UpdateTelegramPostJob {
-	task := UpdateTelegramPostJob{env: env}
+	task := &UpdateTelegramPostJob{env: env}
 
 	jobTimeout := time.Minute
 
-	env.RegisterTelegramJob(ID, func(ctx context.Context, m []byte) error {
+	// Register the job handler with custom logic for rate limiting
+	env.RegisterJob(QueueID, JobID, func(ctx context.Context, m []byte) error {
 		var params model.TelegramUpdatePostParams
 
 		err := json.Unmarshal(m, &params)
@@ -47,7 +50,7 @@ func New(env UpdateTelegramPostEnv) *UpdateTelegramPostJob {
 			if shouldRetry {
 				env.Logger().Info("telegram rate limit hit, retrying after delay",
 					"delay", delay,
-					"job", ID,
+					"job", JobID,
 				)
 				time.Sleep(delay)
 				err = Resolve(ctx, env, params)
@@ -61,9 +64,19 @@ func New(env UpdateTelegramPostEnv) *UpdateTelegramPostJob {
 		return nil
 	})
 
-	return &task
+	// Create the enqueue function
+	task.enqueue = func(ctx context.Context, params model.TelegramUpdatePostParams) error {
+		return env.EnqueueJob(ctx, model.BackgroundTask{
+			ID:       JobID,
+			Queue:    QueueID,
+			Data:     params,
+			Priority: Priority,
+		})
+	}
+
+	return task
 }
 
-func (t UpdateTelegramPostJob) QueueUpdateTelegramPost(ctx context.Context, params model.TelegramUpdatePostParams) error {
-	return t.env.EnqueueTelegramJob(ctx, ID, params, 0)
+func (t UpdateTelegramPostJob) EnqueueUpdateTelegramPost(ctx context.Context, params model.TelegramUpdatePostParams) error {
+	return t.enqueue(ctx, params)
 }

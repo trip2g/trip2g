@@ -3,26 +3,23 @@ package sendsignincode
 import (
 	"context"
 	"trip2g/internal/jobs"
+	"trip2g/internal/model"
 )
 
-const ID = "backjobs:send_sign_in_code"
-
-type SendSignInCodeEnv interface {
-	Env
-
-	jobs.Env
-}
+const JobID = "send_sign_in_code"
+const QueueID = model.BackgroundDefaultQueue
+const Priority = 0
 
 type SendSignInCodeJob struct {
-	env SendSignInCodeEnv
+	enqueue jobs.EnqueueFunc
 }
 
-func New(env SendSignInCodeEnv) *SendSignInCodeJob {
-	task := SendSignInCodeJob{env: env}
-	jobs.Register(env, ID, Resolve)
-	return &task
+func New(env jobs.Env) *SendSignInCodeJob {
+	return &SendSignInCodeJob{
+		enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
+	}
 }
 
-func (t SendSignInCodeJob) QueueRequestSignInEmail(ctx context.Context, email string, code string) error {
-	return t.env.EnqueueJob(ctx, ID, Params{Email: email, Code: code})
+func (t SendSignInCodeJob) EnqueueRequestSignInEmail(ctx context.Context, email string, code string) error {
+	return t.enqueue(ctx, Params{Email: email, Code: code})
 }

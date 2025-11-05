@@ -38,6 +38,9 @@ var _ createpaymentlink.Env = &EnvMock{}
 //			CurrentUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentUserToken method")
 //			},
+//			EnqueueRequestSignInEmailFunc: func(ctx context.Context, email string, code string) error {
+//				panic("mock out the EnqueueRequestSignInEmail method")
+//			},
 //			GenerateHotAuthTokenFunc: func(ctx context.Context, data appmodel.HotAuthToken) (string, error) {
 //				panic("mock out the GenerateHotAuthToken method")
 //			},
@@ -49,9 +52,6 @@ var _ createpaymentlink.Env = &EnvMock{}
 //			},
 //			PublicURLFunc: func() string {
 //				panic("mock out the PublicURL method")
-//			},
-//			QueueRequestSignInEmailFunc: func(ctx context.Context, email string, code string) error {
-//				panic("mock out the QueueRequestSignInEmail method")
 //			},
 //			StorePurchaseTokenFunc: func(ctx context.Context, data appmodel.PurchaseToken) (string, error) {
 //				panic("mock out the StorePurchaseToken method")
@@ -90,6 +90,9 @@ type EnvMock struct {
 	// CurrentUserTokenFunc mocks the CurrentUserToken method.
 	CurrentUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
 
+	// EnqueueRequestSignInEmailFunc mocks the EnqueueRequestSignInEmail method.
+	EnqueueRequestSignInEmailFunc func(ctx context.Context, email string, code string) error
+
 	// GenerateHotAuthTokenFunc mocks the GenerateHotAuthToken method.
 	GenerateHotAuthTokenFunc func(ctx context.Context, data appmodel.HotAuthToken) (string, error)
 
@@ -101,9 +104,6 @@ type EnvMock struct {
 
 	// PublicURLFunc mocks the PublicURL method.
 	PublicURLFunc func() string
-
-	// QueueRequestSignInEmailFunc mocks the QueueRequestSignInEmail method.
-	QueueRequestSignInEmailFunc func(ctx context.Context, email string, code string) error
 
 	// StorePurchaseTokenFunc mocks the StorePurchaseToken method.
 	StorePurchaseTokenFunc func(ctx context.Context, data appmodel.PurchaseToken) (string, error)
@@ -153,6 +153,15 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// EnqueueRequestSignInEmail holds details about calls to the EnqueueRequestSignInEmail method.
+		EnqueueRequestSignInEmail []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Email is the email argument value.
+			Email string
+			// Code is the code argument value.
+			Code string
+		}
 		// GenerateHotAuthToken holds details about calls to the GenerateHotAuthToken method.
 		GenerateHotAuthToken []struct {
 			// Ctx is the ctx argument value.
@@ -172,15 +181,6 @@ type EnvMock struct {
 		}
 		// PublicURL holds details about calls to the PublicURL method.
 		PublicURL []struct {
-		}
-		// QueueRequestSignInEmail holds details about calls to the QueueRequestSignInEmail method.
-		QueueRequestSignInEmail []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Email is the email argument value.
-			Email string
-			// Code is the code argument value.
-			Code string
 		}
 		// StorePurchaseToken holds details about calls to the StorePurchaseToken method.
 		StorePurchaseToken []struct {
@@ -218,21 +218,21 @@ type EnvMock struct {
 			ID int64
 		}
 	}
-	lockActiveOfferByPublicID    sync.RWMutex
-	lockCountActiveSignInCodes   sync.RWMutex
-	lockCreateNowpaymentsInvoice sync.RWMutex
-	lockCreateSignInCode         sync.RWMutex
-	lockCurrentUserToken         sync.RWMutex
-	lockGenerateHotAuthToken     sync.RWMutex
-	lockGeneratePurchaseID       sync.RWMutex
-	lockInsertPurchase           sync.RWMutex
-	lockPublicURL                sync.RWMutex
-	lockQueueRequestSignInEmail  sync.RWMutex
-	lockStorePurchaseToken       sync.RWMutex
-	lockTryToAutoRegisterUser    sync.RWMutex
-	lockUserBanByUserID          sync.RWMutex
-	lockUserByEmail              sync.RWMutex
-	lockUserByID                 sync.RWMutex
+	lockActiveOfferByPublicID     sync.RWMutex
+	lockCountActiveSignInCodes    sync.RWMutex
+	lockCreateNowpaymentsInvoice  sync.RWMutex
+	lockCreateSignInCode          sync.RWMutex
+	lockCurrentUserToken          sync.RWMutex
+	lockEnqueueRequestSignInEmail sync.RWMutex
+	lockGenerateHotAuthToken      sync.RWMutex
+	lockGeneratePurchaseID        sync.RWMutex
+	lockInsertPurchase            sync.RWMutex
+	lockPublicURL                 sync.RWMutex
+	lockStorePurchaseToken        sync.RWMutex
+	lockTryToAutoRegisterUser     sync.RWMutex
+	lockUserBanByUserID           sync.RWMutex
+	lockUserByEmail               sync.RWMutex
+	lockUserByID                  sync.RWMutex
 }
 
 // ActiveOfferByPublicID calls ActiveOfferByPublicIDFunc.
@@ -407,6 +407,46 @@ func (mock *EnvMock) CurrentUserTokenCalls() []struct {
 	return calls
 }
 
+// EnqueueRequestSignInEmail calls EnqueueRequestSignInEmailFunc.
+func (mock *EnvMock) EnqueueRequestSignInEmail(ctx context.Context, email string, code string) error {
+	if mock.EnqueueRequestSignInEmailFunc == nil {
+		panic("EnvMock.EnqueueRequestSignInEmailFunc: method is nil but Env.EnqueueRequestSignInEmail was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		Email string
+		Code  string
+	}{
+		Ctx:   ctx,
+		Email: email,
+		Code:  code,
+	}
+	mock.lockEnqueueRequestSignInEmail.Lock()
+	mock.calls.EnqueueRequestSignInEmail = append(mock.calls.EnqueueRequestSignInEmail, callInfo)
+	mock.lockEnqueueRequestSignInEmail.Unlock()
+	return mock.EnqueueRequestSignInEmailFunc(ctx, email, code)
+}
+
+// EnqueueRequestSignInEmailCalls gets all the calls that were made to EnqueueRequestSignInEmail.
+// Check the length with:
+//
+//	len(mockedEnv.EnqueueRequestSignInEmailCalls())
+func (mock *EnvMock) EnqueueRequestSignInEmailCalls() []struct {
+	Ctx   context.Context
+	Email string
+	Code  string
+} {
+	var calls []struct {
+		Ctx   context.Context
+		Email string
+		Code  string
+	}
+	mock.lockEnqueueRequestSignInEmail.RLock()
+	calls = mock.calls.EnqueueRequestSignInEmail
+	mock.lockEnqueueRequestSignInEmail.RUnlock()
+	return calls
+}
+
 // GenerateHotAuthToken calls GenerateHotAuthTokenFunc.
 func (mock *EnvMock) GenerateHotAuthToken(ctx context.Context, data appmodel.HotAuthToken) (string, error) {
 	if mock.GenerateHotAuthTokenFunc == nil {
@@ -530,46 +570,6 @@ func (mock *EnvMock) PublicURLCalls() []struct {
 	mock.lockPublicURL.RLock()
 	calls = mock.calls.PublicURL
 	mock.lockPublicURL.RUnlock()
-	return calls
-}
-
-// QueueRequestSignInEmail calls QueueRequestSignInEmailFunc.
-func (mock *EnvMock) QueueRequestSignInEmail(ctx context.Context, email string, code string) error {
-	if mock.QueueRequestSignInEmailFunc == nil {
-		panic("EnvMock.QueueRequestSignInEmailFunc: method is nil but Env.QueueRequestSignInEmail was just called")
-	}
-	callInfo := struct {
-		Ctx   context.Context
-		Email string
-		Code  string
-	}{
-		Ctx:   ctx,
-		Email: email,
-		Code:  code,
-	}
-	mock.lockQueueRequestSignInEmail.Lock()
-	mock.calls.QueueRequestSignInEmail = append(mock.calls.QueueRequestSignInEmail, callInfo)
-	mock.lockQueueRequestSignInEmail.Unlock()
-	return mock.QueueRequestSignInEmailFunc(ctx, email, code)
-}
-
-// QueueRequestSignInEmailCalls gets all the calls that were made to QueueRequestSignInEmail.
-// Check the length with:
-//
-//	len(mockedEnv.QueueRequestSignInEmailCalls())
-func (mock *EnvMock) QueueRequestSignInEmailCalls() []struct {
-	Ctx   context.Context
-	Email string
-	Code  string
-} {
-	var calls []struct {
-		Ctx   context.Context
-		Email string
-		Code  string
-	}
-	mock.lockQueueRequestSignInEmail.RLock()
-	calls = mock.calls.QueueRequestSignInEmail
-	mock.lockQueueRequestSignInEmail.RUnlock()
 	return calls
 }
 

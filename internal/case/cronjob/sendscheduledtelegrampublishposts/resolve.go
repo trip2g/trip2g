@@ -11,7 +11,7 @@ import (
 type Env interface {
 	Logger() logger.Logger
 	ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int64, error)
-	QueueSendPublishPost(ctx context.Context, notePathID int64, instant bool) error
+	EnqueueSendPublishPost(ctx context.Context, notePathID int64, instant bool) error
 	LatestNoteViews() *model.NoteViews
 }
 
@@ -42,7 +42,7 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 	}
 
 	for _, id := range ids {
-		sendErr := env.QueueSendPublishPost(ctx, id, false)
+		sendErr := env.EnqueueSendPublishPost(ctx, id, false)
 
 		res.Posts = append(res.Posts, ResultPost{
 			NotePathID: id,
@@ -50,7 +50,7 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 		})
 
 		if sendErr != nil {
-			logger.Error("failed to QueueSendPublishPost", "note_path_id", id, "error", sendErr)
+			logger.Error("failed to EnqueueSendPublishPost", "note_path_id", id, "error", sendErr)
 		}
 	}
 

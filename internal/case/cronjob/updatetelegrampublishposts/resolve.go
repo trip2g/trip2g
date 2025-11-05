@@ -11,7 +11,7 @@ import (
 type Env interface {
 	Logger() logger.Logger
 	ListDistinctChatIDsFromSentMessages(ctx context.Context) ([]int64, error)
-	QueueUpdateAllChatTelegramPublishPosts(ctx context.Context, chatID int64) error
+	EnqueueUpdateAllChatTelegramPublishPosts(ctx context.Context, chatID int64) error
 }
 
 type ResultChat struct {
@@ -36,7 +36,7 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 	logger.Debug("chats found", "count", len(chatIDs))
 
 	for _, chatID := range chatIDs {
-		enqueueErr := env.QueueUpdateAllChatTelegramPublishPosts(ctx, chatID)
+		enqueueErr := env.EnqueueUpdateAllChatTelegramPublishPosts(ctx, chatID)
 
 		res.Chats = append(res.Chats, ResultChat{
 			ChatID: chatID,
@@ -44,7 +44,7 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 		})
 
 		if enqueueErr != nil {
-			logger.Error("failed to QueueUpdateAllChatTelegramPublishPosts", "chat_id", chatID, "error", enqueueErr)
+			logger.Error("failed to EnqueueUpdateAllChatTelegramPublishPosts", "chat_id", chatID, "error", enqueueErr)
 		}
 	}
 

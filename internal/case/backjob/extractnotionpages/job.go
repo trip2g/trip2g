@@ -3,26 +3,23 @@ package extractnotionpages
 import (
 	"context"
 	"trip2g/internal/jobs"
+	"trip2g/internal/model"
 )
 
-const ID = "backjobs:extract_notion_pages"
-
-type ExtractNotionPagesEnv interface {
-	Env
-
-	jobs.Env
-}
+const JobID = "extract_notion_pages"
+const QueueID = model.BackgroundDefaultQueue
+const Priority = 0
 
 type ExtractNotionPagesJob struct {
-	env ExtractNotionPagesEnv
+	enqueue jobs.EnqueueFunc
 }
 
-func New(env ExtractNotionPagesEnv) *ExtractNotionPagesJob {
-	task := ExtractNotionPagesJob{env: env}
-	jobs.Register(env, ID, Resolve)
-	return &task
+func New(env jobs.Env) *ExtractNotionPagesJob {
+	return &ExtractNotionPagesJob{
+		enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
+	}
 }
 
-func (t ExtractNotionPagesJob) QueueExtractNotionPages(ctx context.Context, pageID *string) error {
-	return t.env.EnqueueJob(ctx, ID, Params{PageID: pageID})
+func (t ExtractNotionPagesJob) EnqueueExtractNotionPages(ctx context.Context, pageID *string) error {
+	return t.enqueue(ctx, Params{PageID: pageID})
 }

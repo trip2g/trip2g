@@ -8,6 +8,7 @@ import (
 	"sync"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
+	"trip2g/internal/model"
 
 	"github.com/robfig/cron/v3"
 )
@@ -35,8 +36,8 @@ type Env interface {
 	CronJobByName(ctx context.Context, name string) (db.CronJob, error)
 	Logger() logger.Logger
 
-	EnqueueJob(ctx context.Context, jobID string, data any) error
-	RegisterJob(id string, handler func(ctx context.Context, m []byte) error)
+	EnqueueJob(ctx context.Context, job model.BackgroundTask) error
+	RegisterJob(qID model.BackgroundQueueID, id string, handler func(ctx context.Context, m []byte) error)
 }
 
 type jobItem struct {
@@ -97,7 +98,7 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 
 		// Register job with cronjobs prefix
 		jobName := jobQueueID(name)
-		cj.env.RegisterJob(jobName, func(ctx context.Context, m []byte) error {
+		cj.env.RegisterJob(model.BackgroundDefaultQueue, jobName, func(ctx context.Context, m []byte) error {
 			_, execErr := cj.executeJob(dbJob.ID)
 			return execErr
 		})
@@ -129,7 +130,11 @@ func (cj *CronJobs) scheduleJob(jobID int64) {
 	}
 
 	jobName := jobQueueID(job.job.Name())
-	err := cj.env.EnqueueJob(cj.ctx, jobName, nil)
+	err := cj.env.EnqueueJob(cj.ctx, model.BackgroundTask{
+		ID:    jobName,
+		Queue: model.BackgroundDefaultQueue,
+		Data:  nil,
+	})
 	if err != nil {
 		cj.log.Error("failed to create job", "job_id", jobID, "job_name", jobName, "error", err)
 	}

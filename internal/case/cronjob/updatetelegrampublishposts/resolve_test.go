@@ -70,7 +70,7 @@ func TestResolve(t *testing.T) { //nolint:gocognit // test complexity is accepta
 					}
 					return tt.chatIDs, nil
 				},
-				QueueUpdateAllChatTelegramPublishPostsFunc: func(ctx context.Context, chatID int64) error {
+				EnqueueUpdateAllChatTelegramPublishPostsFunc: func(ctx context.Context, chatID int64) error {
 					enqueueCalls++
 					if err, ok := tt.enqueueErrs[chatID]; ok {
 						return err

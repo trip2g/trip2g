@@ -40,3 +40,9 @@ type TelegramUpdatePostParams struct {
 
 	MessageID int64 `json:"message_id"`
 }
+
+type SendTelegramPublishPostParams struct {
+	NotePathID        int64 `json:"note_path_id"`
+	Instant           bool  `json:"instant"`
+	UpdateLinkedPosts bool  `json:"update_linked_posts"`
+}

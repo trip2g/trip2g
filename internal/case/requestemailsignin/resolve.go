@@ -14,7 +14,7 @@ import (
 )
 
 type Env interface {
-	QueueRequestSignInEmail(ctx context.Context, email string, code string) error
+	EnqueueRequestSignInEmail(ctx context.Context, email string, code string) error
 	UserByEmail(ctx context.Context, email string) (db.User, error)
 	CountActiveSignInCodes(ctx context.Context, userID int64) (int64, error)
 	CreateSignInCode(ctx context.Context, userID int64) (string, error)
@@ -90,7 +90,7 @@ func Resolve(ctx context.Context, env Env, input Input) (model.RequestEmailSignI
 		return nil, fmt.Errorf("failed to create signin code: %w", err)
 	}
 
-	err = env.QueueRequestSignInEmail(ctx, input.Email, code)
+	err = env.EnqueueRequestSignInEmail(ctx, input.Email, code)
 	if err != nil {
 		return nil, fmt.Errorf("failed to queue signin email: %w", err)
 	}

@@ -3,26 +3,23 @@ package updateallchattelegrampublishposts
 import (
 	"context"
 	"trip2g/internal/jobs"
+	"trip2g/internal/model"
 )
 
-const ID = "backjobs:update_all_chat_telegram_publish_posts"
-
-type UpdateAllChatTelegramPublishPostsEnv interface {
-	Env
-
-	jobs.Env
-}
+const JobID = "update_all_chat_telegram_publish_posts"
+const QueueID = model.BackgroundTelegramJobQueue
+const Priority = 0
 
 type UpdateAllChatTelegramPublishPostsJob struct {
-	env UpdateAllChatTelegramPublishPostsEnv
+	enqueue jobs.EnqueueFunc
 }
 
-func New(env UpdateAllChatTelegramPublishPostsEnv) *UpdateAllChatTelegramPublishPostsJob {
-	task := UpdateAllChatTelegramPublishPostsJob{env: env}
-	jobs.Register(env, ID, Resolve)
-	return &task
+func New(env jobs.Env) *UpdateAllChatTelegramPublishPostsJob {
+	return &UpdateAllChatTelegramPublishPostsJob{
+		enqueue: jobs.Register(env, QueueID, JobID, Priority, Resolve),
+	}
 }
 
-func (t UpdateAllChatTelegramPublishPostsJob) QueueUpdateAllChatTelegramPublishPosts(ctx context.Context, chatID int64) error {
-	return t.env.EnqueueJob(ctx, ID, Params{ChatID: chatID})
+func (t UpdateAllChatTelegramPublishPostsJob) EnqueueUpdateAllChatTelegramPublishPosts(ctx context.Context, chatID int64) error {
+	return t.enqueue(ctx, Params{ChatID: chatID})
 }

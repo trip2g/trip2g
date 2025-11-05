@@ -78,7 +78,6 @@ import (
 	"github.com/vektah/gqlparser/gqlerror"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
-	"maragu.dev/goqite"
 	"maragu.dev/goqite/jobs"
 
 	"github.com/oklog/ulid/v2"
@@ -133,8 +132,9 @@ type app struct {
 
 	auditLogger logger.Logger
 
-	globalQueue   *appQueue
-	telegramQueue *appQueue
+	globalQueue       *appQueue
+	telegramAPIQueue  *appQueue
+	telegramTaskQueue *appQueue
 
 	// mail *mailyak.MailYak
 
@@ -338,7 +338,8 @@ func main() {
 	a.setFileStorageExpiringCallback(ctx)
 
 	a.globalQueue.start()
-	a.telegramQueue.start()
+	a.telegramTaskQueue.start()
+	a.telegramAPIQueue.start()
 
 	a.startServer()
 }
@@ -471,70 +472,6 @@ func (a *app) UploadNoteAsset(ctx context.Context, input graphmodel.UploadNoteAs
 
 func (a *app) InsertNote(ctx context.Context, note model.RawNote) error {
 	return insertnote.Resolve(ctx, a, note)
-}
-
-func (a *app) EnqueueJob(ctx context.Context, jobID string, data any) error {
-	msg := queueMessage{JobID: jobID, Data: data}
-	return a.enqueueJobToQ(ctx, a.globalQueue, msg)
-}
-
-func (a *app) EnqueueTelegramJob(ctx context.Context, jobID string, data any, priority int) error {
-	msg := queueMessage{JobID: jobID, Data: data, Priority: priority}
-	return a.enqueueJobToQ(ctx, a.telegramQueue, msg)
-}
-
-func (a *app) enqueueJobToQ(ctx context.Context, aq *appQueue, msg queueMessage) error {
-	rawData, err := json.Marshal(msg.Data)
-	if err != nil {
-		return fmt.Errorf("failed to marshal job data: %w", err)
-	}
-
-	gqMsg := goqite.Message{
-		Body:     rawData,
-		Priority: msg.Priority,
-	}
-
-	// First check context for transactional env (works for both HTTP and background jobs)
-	if txEnv, ok := ctx.Value(txEnvKey).(*app); ok && txEnv.currentTx != nil {
-		a.log.Debug("enqueueing in context tx env", "job_id", msg.JobID, "data", string(rawData), "queue", aq.name)
-
-		_, err = jobs.CreateTx(ctx, txEnv.currentTx, aq.q, msg.JobID, gqMsg)
-		return err
-	}
-
-	// Fallback: check request context (for HTTP requests)
-	req, err := appreq.FromCtx(ctx)
-	if err != nil && !errors.Is(err, appreq.ErrNotFound) {
-		return fmt.Errorf("failed to get request from context: %w", err)
-	}
-
-	if req != nil {
-		env, ok := req.Env.(*app)
-		if ok && env.CurrentTx() != nil {
-			a.log.Debug("enqueueing in request env", "job_id", msg.JobID, "data", string(rawData), "queue", aq.name)
-
-			_, err = jobs.CreateTx(ctx, env.currentTx, aq.q, msg.JobID, gqMsg)
-			return err
-		}
-	}
-
-	// Fallback: check global app (should rarely be used now)
-	if a.currentTx != nil {
-		a.log.Debug("enqueueing in app.currentTx", "job_id", msg.JobID, "data", string(rawData), "queue", aq.name)
-
-		_, err = jobs.CreateTx(ctx, a.currentTx, aq.q, msg.JobID, gqMsg)
-		return err
-	}
-
-	a.log.Debug("enqueueing in global env", "job_id", msg.JobID, "data", string(rawData), "queue", aq.name)
-
-	_, err = jobs.Create(ctx, aq.q, msg.JobID, gqMsg)
-	return err
-}
-
-func (a *app) RegisterJob(id string, handler func(ctx context.Context, m []byte) error) {
-	a.log.Info("registering job handler", "id", id)
-	a.globalQueue.runner.Register(id, handler)
 }
 
 func (a *app) createOwnerIfNotExists(ctx context.Context) error {
