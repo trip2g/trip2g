@@ -47,6 +47,8 @@ type Config struct {
 	ListenAddr   string
 	DatabaseFile string
 
+	LogQueries bool
+
 	// Application settings
 	DevMode    bool
 	LatestLive bool // use the latest release as live version
@@ -342,6 +344,7 @@ func (c *Config) defineFlags() {
 func (c *Config) defineServerFlags() {
 	flag.StringVar(&c.ListenAddr, "listen-addr", c.ListenAddr, "Listen address")
 	flag.StringVar(&c.DatabaseFile, "db-file", c.DatabaseFile, "Database file")
+	flag.BoolVar(&c.LogQueries, "log-queries", c.LogQueries, "Log database queries")
 	flag.StringVar(&c.AdminJSURL, "admin-js-url", c.AdminJSURL, "Admin JS URL")
 	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Log level")
 	flag.BoolVar(&c.DevMode, "dev", c.DevMode, "Development mode")

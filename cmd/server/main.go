@@ -176,20 +176,22 @@ type app struct {
 }
 
 func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB) {
-	conn, err := db.Setup(db.SetupConfig{
+	dbConfig := db.SetupConfig{
 		DatabaseFile: config.DatabaseFile,
 		Logger:       log,
+		LogQueries:   config.LogQueries,
 		ReadOnly:     true,
-	})
+	}
+
+	conn, err := db.Setup(dbConfig)
 	if err != nil {
 		panic(fmt.Errorf("failed to setup database: %w", err))
 	}
 
-	writeConn, err := db.Setup(db.SetupConfig{
-		DatabaseFile: config.DatabaseFile,
-		Logger:       log,
-		SkipDump:     true,
-	})
+	dbConfig.ReadOnly = false
+	dbConfig.CheckStatus = true
+
+	writeConn, err := db.Setup(dbConfig)
 	if err != nil {
 		panic(fmt.Errorf("failed to setup database: %w", err))
 	}
@@ -664,7 +666,8 @@ func (a *app) CurrentTx() *sql.Tx {
 // WithTransaction runs the given function within a database transaction.
 // fn should return true to commit the transaction, false to rollback.
 func (a *app) WithTransaction(ctx context.Context, fn func(context.Context, *app) (bool, error)) error {
-	tx, err := a.conn.BeginTx(ctx, nil)
+	// not sure but I guess transactions should run on writeConn
+	tx, err := a.writeConn.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to BeginTx: %w", err)
 	}

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/url"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/amacneil/dbmate/v2/pkg/dbmate"
 	_ "modernc.org/sqlite"
+
+	sqldblogger "github.com/simukti/sqldb-logger"
 )
 
 // SetupConfig contains configuration for database setup.
@@ -21,6 +24,8 @@ type SetupConfig struct {
 	DatabaseFile string
 	Logger       logger.Logger
 	ReadOnly     bool
+	LogQueries   bool
+	CheckStatus  bool
 }
 
 // Setup initializes the database with migrations, pragmas, and validation.
@@ -32,8 +37,20 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
+	var queryLogger logger.Logger
+
+	if config.LogQueries && config.Logger != nil {
+		prefix := "[WRITE DB]:"
+
+		if config.ReadOnly {
+			prefix = "[READ-ONLY DB]:"
+		}
+
+		queryLogger = logger.WithPrefix(config.Logger, prefix)
+	}
+
 	// Open database connection
-	conn, err := openConnection(config.DatabaseFile)
+	conn, err := openConnection(config.DatabaseFile, queryLogger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
@@ -56,17 +73,19 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to enable pragmas: %w", err)
 	}
 
-	// Check foreign key constraints
-	err = checkForeignKeys(conn)
-	if err != nil {
-		return nil, fmt.Errorf("foreign key check failed: %w", err)
-	}
+	if config.CheckStatus {
+		// Check foreign key constraints
+		err = checkForeignKeys(conn)
+		if err != nil {
+			return nil, fmt.Errorf("foreign key check failed: %w", err)
+		}
 
-	// Show SQLite version (optional, for debugging)
-	if config.Logger != nil && !config.ReadOnly {
-		version, versionErr := getSQLiteVersion(conn)
-		if versionErr == nil {
-			config.Logger.Info("SQLite database initialized", "version", version, "file", config.DatabaseFile)
+		// Show SQLite version
+		if config.Logger != nil {
+			version, versionErr := getSQLiteVersion(conn)
+			if versionErr == nil {
+				config.Logger.Info("SQLite database initialized", "version", version, "file", config.DatabaseFile)
+			}
 		}
 	}
 
@@ -93,8 +112,16 @@ func runMigrations(databaseFile string, skipDump bool) error {
 	return nil
 }
 
+type loggerProxy struct {
+	logger logger.Logger
+}
+
+func (p *loggerProxy) Log(ctx context.Context, level sqldblogger.Level, msg string, data map[string]interface{}) {
+	p.logger.Debug(msg, "level", level, "data", data)
+}
+
 // openConnection opens a SQLite database connection with optimized settings.
-func openConnection(databaseFile string) (*sql.DB, error) {
+func openConnection(databaseFile string, logger logger.Logger) (*sql.DB, error) {
 	// build url with params
 	url := &url.URL{Path: databaseFile}
 	q := url.Query()
@@ -113,6 +140,10 @@ func openConnection(databaseFile string) (*sql.DB, error) {
 	if err != nil {
 		_ = conn.Close() // Ignore close error since we're already handling ping error
 		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	if logger != nil {
+		conn = sqldblogger.OpenDriver(url.String(), conn.Driver(), &loggerProxy{logger: logger})
 	}
 
 	return conn, nil
