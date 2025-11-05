@@ -54,8 +54,11 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParam
 	logger := logger.WithPrefix(env.Logger(), "backjob/updatetelegrammessage:")
 	post := params.Post
 
+	// Truncate content to telegram limits (minus 3 for '...')
+	content := telegram.TruncateContent(post.Content, len(post.Images) > 0)
+
 	// Calculate content hash for new content
-	hash := sha256.Sum256([]byte(post.Content))
+	hash := sha256.Sum256([]byte(content))
 	newContentHash := hex.EncodeToString(hash[:])
 
 	// Get current content hash from database
@@ -78,12 +81,12 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParam
 	var editErr error
 	if len(post.Images) > 0 {
 		// Edit caption for photo message
-		editMsg := tgbotapi.NewEditMessageCaption(params.TelegramChatID, int(params.MessageID), post.Content)
+		editMsg := tgbotapi.NewEditMessageCaption(params.TelegramChatID, int(params.MessageID), content)
 		editMsg.ParseMode = "HTML"
 		editErr = env.SendTelegramRequest(ctx, params.DBChatID, editMsg)
 	} else {
 		// Edit text for text message
-		editMsg := tgbotapi.NewEditMessageText(params.TelegramChatID, int(params.MessageID), post.Content)
+		editMsg := tgbotapi.NewEditMessageText(params.TelegramChatID, int(params.MessageID), content)
 		editMsg.ParseMode = "HTML"
 		editErr = env.SendTelegramRequest(ctx, params.DBChatID, editMsg)
 	}
@@ -104,7 +107,7 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParam
 	// Update the database with new content hash
 	updateParams := db.UpdateTelegramPublishSentMessageContentParams{
 		ContentHash: newContentHash,
-		Content:     post.Content,
+		Content:     content,
 		NotePathID:  params.NotePathID,
 		ChatID:      params.DBChatID,
 		MessageID:   params.MessageID,

@@ -13,7 +13,6 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/telegram"
-	"unicode/utf16"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -81,7 +80,7 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramSendPostParams)
 	post := params.Post
 
 	// Truncate content to telegram limits (minus 3 for '...')
-	content := truncateContent(post.Content, len(post.Images) > 0)
+	content := telegram.TruncateContent(post.Content, len(post.Images) > 0)
 
 	if len(post.Images) > 0 {
 		// Update params with truncated content for photo caption
@@ -190,49 +189,4 @@ func sendPhoto(ctx context.Context, env Env, params model.TelegramSendPostParams
 	photo.DisableNotification = params.DisableNotification
 
 	return env.SendTelegramMessage(ctx, params.DBChatID, photo)
-}
-
-// getTelegramLength returns the length of text as counted by Telegram.
-// Telegram counts message length in UTF-16 code units, not bytes.
-func getTelegramLength(text string) int {
-	// Convert string to []rune (Unicode code points)
-	runes := []rune(text)
-
-	// Encode to UTF-16
-	utf16Encoded := utf16.Encode(runes)
-
-	// Return the number of UTF-16 code units
-	return len(utf16Encoded)
-}
-
-// truncateContent truncates content to Telegram limits.
-// Text messages: 4096 chars, Photo captions: 1024 chars.
-// Reserve 3 chars for '...' if truncation is needed.
-func truncateContent(content string, hasImages bool) string {
-	maxLength := 4096
-	if hasImages {
-		maxLength = 1024
-	}
-
-	// Reserve 3 chars for ellipsis
-	maxLength -= 3
-
-	if getTelegramLength(content) <= maxLength {
-		return content
-	}
-
-	// Truncate by runes to avoid cutting in the middle of a character
-	runes := []rune(content)
-	utf16Encoded := utf16.Encode(runes)
-
-	// Truncate to maxLength UTF-16 code units
-	if len(utf16Encoded) > maxLength {
-		utf16Encoded = utf16Encoded[:maxLength]
-	}
-
-	// Decode back to runes
-	truncatedRunes := utf16.Decode(utf16Encoded)
-
-	// Convert back to string and add ellipsis
-	return string(truncatedRunes) + "..."
 }

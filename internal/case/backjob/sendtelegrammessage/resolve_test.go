@@ -38,6 +38,9 @@ func TestResolve_Success_TextOnly(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		CheckTelegramPublishSentMessageExistsFunc: func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error) {
+			return 0, nil // Message doesn't exist yet
+		},
 		SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 			if chatID != 456 {
 				t.Errorf("expected chatID 456, got %d", chatID)
@@ -96,6 +99,9 @@ func TestResolve_Success_Instant(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		CheckTelegramPublishSentMessageExistsFunc: func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error) {
+			return 0, nil
+		},
 		SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 			return 222, nil
 		},
@@ -128,6 +134,9 @@ func TestResolve_Success_WithImages(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		CheckTelegramPublishSentMessageExistsFunc: func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error) {
+			return 0, nil
+		},
 		SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 			// Should send photo
 			return 333, nil
@@ -163,6 +172,9 @@ func TestResolve_Error_SendMessage(t *testing.T) {
 	expectedErr := errors.New("telegram API error")
 
 	env := &EnvMock{
+		CheckTelegramPublishSentMessageExistsFunc: func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error) {
+			return 0, nil
+		},
 		SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 			return 0, expectedErr
 		},
@@ -203,6 +215,9 @@ func TestResolve_Error_InsertSentMessage(t *testing.T) {
 	expectedErr := errors.New("database error")
 
 	env := &EnvMock{
+		CheckTelegramPublishSentMessageExistsFunc: func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error) {
+			return 0, nil
+		},
 		SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 			return 444, nil
 		},
@@ -238,6 +253,9 @@ func TestResolve_ContentHash_Consistency(t *testing.T) {
 	var firstHash string
 
 	env := &EnvMock{
+		CheckTelegramPublishSentMessageExistsFunc: func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error) {
+			return 0, nil
+		},
 		SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 			return 555, nil
 		},
@@ -256,6 +274,9 @@ func TestResolve_ContentHash_Consistency(t *testing.T) {
 	}
 
 	secondHash := ""
+	env.CheckTelegramPublishSentMessageExistsFunc = func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error) {
+		return 0, nil
+	}
 	env.InsertTelegramPublishSentMessageFunc = func(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error {
 		secondHash = arg.ContentHash
 		return nil
@@ -286,6 +307,9 @@ func TestResolve_EmptyContent(t *testing.T) {
 	}
 
 	env := &EnvMock{
+		CheckTelegramPublishSentMessageExistsFunc: func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error) {
+			return 0, nil
+		},
 		SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 			return 666, nil
 		},

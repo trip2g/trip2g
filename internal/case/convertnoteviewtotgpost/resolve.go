@@ -11,7 +11,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/markdownv2"
 	"trip2g/internal/model"
-	"unicode/utf16"
+	"trip2g/internal/telegram"
 )
 
 type SentMessage = db.ListTelegramPublishSentMessagesByChatIDRow
@@ -125,7 +125,7 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 		maxLength = 1024
 	}
 
-	contentLength := getTelegramLength(post.Content)
+	contentLength := telegram.GetTelegramLength(post.Content)
 	if contentLength > maxLength {
 		msgType := "text message"
 		if len(post.Images) > 0 {
@@ -135,19 +135,6 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	}
 
 	return &post, nil
-}
-
-// getTelegramLength returns the length of text as counted by Telegram.
-// Telegram counts message length in UTF-16 code units, not bytes.
-func getTelegramLength(text string) int {
-	// Convert string to []rune (Unicode code points)
-	runes := []rune(text)
-
-	// Encode to UTF-16
-	utf16Encoded := utf16.Encode(runes)
-
-	// Return the number of UTF-16 code units
-	return len(utf16Encoded)
 }
 
 func getFirstImageURL(noteView *model.NoteView) *string {
