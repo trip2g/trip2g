@@ -119,7 +119,7 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 		if len(post.Images) > 0 {
 			msgType = "photo caption"
 		}
-		source.NoteView.AddWarning(model.NoteWarningCritical, "telegram %s content exceeds limit: %d characters (max %d)", msgType, contentLength, maxLength)
+		post.Warnings = append(post.Warnings, fmt.Sprintf("telegram %s content exceeds limit: %d characters (max %d)", msgType, contentLength, maxLength))
 	}
 
 	return &post, nil

@@ -94,10 +94,7 @@ func (p *processor) process(note *model.NoteView) error {
 		ChatID:   0, // ChatID=0 skips DB query for sent messages
 		Instant:  false,
 	}
-	_, err := p.env.ConvertNoteViewToTelegramPost(p.ctx, source)
-	if err != nil {
-		note.AddWarning(model.NoteWarningCritical, "failed to convert note to telegram post: %v", err)
-	}
+	post, err := p.env.ConvertNoteViewToTelegramPost(p.ctx, source)
 
 	for _, tag := range tags {
 		upsertErr := p.tagIDs.upsert(p.ctx, p.env, tag)
@@ -106,8 +103,20 @@ func (p *processor) process(note *model.NoteView) error {
 		}
 	}
 
-	// Count Critical-level warnings (errors)
+	// Count errors: post.Warnings + Critical-level warnings from noteView
 	errorCount := int64(0)
+
+	// Count conversion errors
+	if err != nil {
+		errorCount++
+	}
+
+	// Count post warnings (content validation errors)
+	if post != nil {
+		errorCount += int64(len(post.Warnings))
+	}
+
+	// Count Critical-level warnings from noteView
 	for _, warning := range note.Warnings {
 		if warning.Level == model.NoteWarningCritical {
 			errorCount++
