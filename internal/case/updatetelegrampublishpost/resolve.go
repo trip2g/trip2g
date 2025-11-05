@@ -48,9 +48,9 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 			return fmt.Errorf("failed to convert note to telegram post: %w", convertErr)
 		}
 
-		if len(post.Warnings) > 0 {
-			return fmt.Errorf("conversion produced warnings: %v", post.Warnings)
-		}
+		// if len(post.Warnings) > 0 {
+		// 	return fmt.Errorf("conversion produced warnings: %v", post.Warnings)
+		// }
 
 		// Calculate current content hash
 		hash := sha256.Sum256([]byte(post.Content))

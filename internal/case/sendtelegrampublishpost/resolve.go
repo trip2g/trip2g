@@ -75,9 +75,9 @@ func Resolve(ctx context.Context, env Env, params model.SendTelegramPublishPostP
 			return fmt.Errorf("failed to convert note to telegram post: %w", convertErr)
 		}
 
-		if len(post.Warnings) > 0 {
-			return fmt.Errorf("conversion produced warnings: %v", post.Warnings)
-		}
+		// if len(post.Warnings) > 0 {
+		// 	return fmt.Errorf("conversion produced warnings: %v", post.Warnings)
+		// }
 
 		// Prepare send params
 		sendParams := model.TelegramSendPostParams{
