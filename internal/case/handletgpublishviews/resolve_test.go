@@ -70,6 +70,13 @@ func prepare(t *testing.T, nvs *model.NoteViews) *EnvMock {
 
 		DeleteTelegramPublishNoteTagsByPathIDFunc: deleteTelegramPublishNoteTagsByPathID,
 
+		ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
+			return &model.TelegramPost{
+				Content:  "test content",
+				Warnings: []string{},
+			}, nil
+		},
+
 		SendTelegramPublishPostFunc: func(ctx context.Context, params model.SendTelegramPublishPostParams) error {
 			return nil
 		},
