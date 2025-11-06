@@ -27,6 +27,8 @@ func TestListAllTelegramPublishNotes(t *testing.T) {
 	// Create necessary telegram infrastructure for query to work
 	var adminUserID, botID, chatID, tagID int64
 	var err error
+	var notes []db.TelegramPublishNote
+	var noteIDs []int64
 
 	err = conn.QueryRow(`
 		insert into users (email, created_via)
@@ -53,7 +55,7 @@ func TestListAllTelegramPublishNotes(t *testing.T) {
 
 	// Create a tag for the chat
 	err = conn.QueryRow(`
-		insert into telegram_publish_tags (name)
+		insert into telegram_publish_tags (label)
 		values ('test_tag')
 		returning id
 	`).Scan(&tagID)
@@ -61,22 +63,22 @@ func TestListAllTelegramPublishNotes(t *testing.T) {
 
 	// Associate the chat with the tag
 	mustExec(t, conn, `
-		insert into telegram_publish_chats (chat_id, tag_id)
-		values (?, ?)
-	`, chatID, tagID)
+		insert into telegram_publish_chats (chat_id, tag_id, created_by)
+		values (?, ?, ?)
+	`, chatID, tagID, adminUserID)
+
+	// Insert telegram publish notes FIRST (required by foreign key in note_tags)
+	// 1. Scheduled for PAST (should appear in scheduled - ready to send)
+	mustExec(t, conn, `
+		insert into telegram_publish_notes (note_path_id, created_at, publish_at, published_at)
+		values (?, datetime('now', '-2 hours'), datetime('now', '-1 hour'), null)
+	`, path1)
 
 	// Tag path1 with the test tag (so it will be included in scheduled list)
 	mustExec(t, conn, `
 		insert into telegram_publish_note_tags (note_path_id, tag_id)
 		values (?, ?)
 	`, path1, tagID)
-
-	// Insert telegram publish notes
-	// 1. Scheduled for PAST (should appear in scheduled - ready to send)
-	mustExec(t, conn, `
-		insert into telegram_publish_notes (note_path_id, created_at, publish_at, published_at)
-		values (?, datetime('now', '-2 hours'), datetime('now', '-1 hour'), null)
-	`, path1)
 
 	// 2. Already published (should not appear in scheduled)
 	mustExec(t, conn, `
@@ -96,7 +98,7 @@ func TestListAllTelegramPublishNotes(t *testing.T) {
 			ShowSent:      false,
 			ShowOutdated:  true,
 		}
-		notes, err := queries.ListAllTelegramPublishNotes(ctx, params)
+		notes, err = queries.ListAllTelegramPublishNotes(ctx, params)
 		require.NoError(t, err)
 
 		// Should return path1 and path3 (unpublished)
@@ -117,7 +119,7 @@ func TestListAllTelegramPublishNotes(t *testing.T) {
 			ShowSent:      true,
 			ShowOutdated:  true,
 		}
-		notes, err := queries.ListAllTelegramPublishNotes(ctx, params)
+		notes, err = queries.ListAllTelegramPublishNotes(ctx, params)
 		require.NoError(t, err)
 
 		// Should include all notes (path1, path2, path3)
@@ -135,7 +137,7 @@ func TestListAllTelegramPublishNotes(t *testing.T) {
 	})
 
 	t.Run("ListScheduledTelegramPublishNoteIDs_critical_bug_test", func(t *testing.T) {
-		noteIDs, err := queries.ListSheduledTelegarmPublishNoteIDs(ctx)
+		noteIDs, err = queries.ListSheduledTelegarmPublishNoteIDs(ctx)
 		require.NoError(t, err)
 
 		// Should ONLY return path1 (publish_at has passed - ready to send)

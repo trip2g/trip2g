@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"trip2g/internal/enclavefix"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader/highlight"
 	"trip2g/internal/model"
 
-	enclave "github.com/quailyquaily/goldmark-enclave"
 	enclavecore "github.com/quailyquaily/goldmark-enclave/core"
 
 	"github.com/yuin/goldmark"
@@ -90,7 +90,7 @@ func Load(options Options) (*model.NoteViews, error) {
 				Resolver: ldr.linkResolver,
 			},
 			extension.GFM,
-			enclave.New(&enclavecore.Config{}),
+			enclavefix.New(&enclavecore.Config{}),
 			meta.Meta,
 		),
 	)

@@ -1,7 +1,6 @@
 package markdownv2_test
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -72,10 +71,6 @@ title: "Sample Note"
 	convertor := markdownv2.HTMLConverter{}
 
 	res := convertor.Process(nvs.List[0])
-
-	fmt.Println(string(telegramHTML))
-	fmt.Println("----")
-	fmt.Println(res.Content)
 
 	require.Empty(t, res.Warnings)
 	require.Equal(t, strings.Trim(string(telegramHTML), "\n"), res.Content)

@@ -117,10 +117,11 @@ func (c *CommonConverter) Process(nv *model.NoteView) ConverterResult {
 
 			if entering {
 				buf.WriteString("![")
-			} else {
+				buf.WriteString(node.Alt)
 				buf.WriteString("](")
 				buf.WriteString(dest)
 				buf.WriteString(")")
+				return ast.WalkSkipChildren, nil
 			}
 
 		case *ast.RawHTML:

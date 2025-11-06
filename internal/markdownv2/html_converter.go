@@ -191,7 +191,22 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			if strings.HasPrefix(dest, "tg://emoji?id=") {
 				emojiID := strings.TrimPrefix(dest, "tg://emoji?id=")
 				if entering {
-					c.Write(fmt.Sprintf("\n"+`<tg-emoji emoji-id="%s">`, html.EscapeString(emojiID)))
+					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">%s</tg-emoji>`,
+						html.EscapeString(emojiID), html.EscapeString(node.Alt)))
+					return ast.WalkSkipChildren, nil
+				}
+			} else {
+				msg := fmt.Sprintf("unsupported image source: %s", dest)
+				res.Warnings = append(res.Warnings, msg)
+				return ast.WalkSkipChildren, nil
+			}
+
+		case *ast.Image:
+			dest := string(node.Destination)
+			if strings.HasPrefix(dest, "tg://emoji?id=") {
+				emojiID := strings.TrimPrefix(dest, "tg://emoji?id=")
+				if entering {
+					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">`, html.EscapeString(emojiID)))
 				} else {
 					c.Write("</tg-emoji>")
 				}

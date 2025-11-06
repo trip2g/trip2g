@@ -480,3 +480,9 @@ linters:
       - path: 'go\.mod'
         linters:
           - gomoddirectives  # Allow replace directive for forked goqite dependency
+    # Exclude entire directories from linting
+    paths:
+      # Temporary fork of goldmark-enclave with bug fixes
+      # TODO: Remove this exclusion when upstream fixes are merged
+      # See: https://github.com/quailyquaily/goldmark-enclave/issues/4
+      - internal/enclavefix/
