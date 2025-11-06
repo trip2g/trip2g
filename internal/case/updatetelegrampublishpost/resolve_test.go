@@ -300,7 +300,7 @@ func TestResolve_Error_ConvertPost(t *testing.T) {
 	require.Contains(t, err.Error(), "failed to convert note to telegram post")
 }
 
-func TestResolve_Error_ConversionWarnings(t *testing.T) {
+func TestResolve_Success_WithConversionWarnings(t *testing.T) {
 	ctx := context.Background()
 	notePathID := int64(123)
 
@@ -342,11 +342,20 @@ func TestResolve_Error_ConversionWarnings(t *testing.T) {
 				Warnings: []string{"unsupported markdown feature"},
 			}, nil
 		},
+		EnqueueUpdateTelegramMessageFunc: func(ctx context.Context, params model.TelegramUpdatePostParams) error {
+			// Verify params even with warnings
+			require.Equal(t, notePathID, params.NotePathID)
+			require.Equal(t, "Test content", params.Post.Content)
+			return nil
+		},
 	}
 
+	// Warnings should not cause errors - update should proceed
 	err := updatetelegrampublishpost.Resolve(ctx, env, notePathID)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "conversion produced warnings")
+	require.NoError(t, err)
+
+	// Verify EnqueueUpdateTelegramMessage was called despite warnings
+	require.Len(t, env.EnqueueUpdateTelegramMessageCalls(), 1)
 }
 
 func TestResolve_Error_EnqueueUpdate(t *testing.T) {

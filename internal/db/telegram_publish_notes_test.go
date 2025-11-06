@@ -24,6 +24,53 @@ func TestListAllTelegramPublishNotes(t *testing.T) {
 	version2 := insertTestNoteVersion(t, conn, path2, "Published note content")
 	insertTestNoteVersion(t, conn, path3, "Invalid note content")
 
+	// Create necessary telegram infrastructure for query to work
+	var adminUserID, botID, chatID, tagID int64
+	var err error
+
+	err = conn.QueryRow(`
+		insert into users (email, created_via)
+		values ('admin@test.com', 'test')
+		returning id
+	`).Scan(&adminUserID)
+	require.NoError(t, err)
+
+	mustExec(t, conn, `insert into admins (user_id) values (?)`, adminUserID)
+
+	err = conn.QueryRow(`
+		insert into tg_bots (name, token, created_by)
+		values ('test_bot', 'test_token', ?)
+		returning id
+	`, adminUserID).Scan(&botID)
+	require.NoError(t, err)
+
+	err = conn.QueryRow(`
+		insert into tg_bot_chats (bot_id, telegram_id, chat_type, chat_title)
+		values (?, -1001234567890, 'supergroup', 'Test Chat')
+		returning id
+	`, botID).Scan(&chatID)
+	require.NoError(t, err)
+
+	// Create a tag for the chat
+	err = conn.QueryRow(`
+		insert into telegram_publish_tags (name)
+		values ('test_tag')
+		returning id
+	`).Scan(&tagID)
+	require.NoError(t, err)
+
+	// Associate the chat with the tag
+	mustExec(t, conn, `
+		insert into telegram_publish_chats (chat_id, tag_id)
+		values (?, ?)
+	`, chatID, tagID)
+
+	// Tag path1 with the test tag (so it will be included in scheduled list)
+	mustExec(t, conn, `
+		insert into telegram_publish_note_tags (note_path_id, tag_id)
+		values (?, ?)
+	`, path1, tagID)
+
 	// Insert telegram publish notes
 	// 1. Scheduled for PAST (should appear in scheduled - ready to send)
 	mustExec(t, conn, `
