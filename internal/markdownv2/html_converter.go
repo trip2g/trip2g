@@ -191,7 +191,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 			if strings.HasPrefix(dest, "tg://emoji?id=") {
 				emojiID := strings.TrimPrefix(dest, "tg://emoji?id=")
 				if entering {
-					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">`, html.EscapeString(emojiID)))
+					c.Write(fmt.Sprintf("\n"+`<tg-emoji emoji-id="%s">`, html.EscapeString(emojiID)))
 				} else {
 					c.Write("</tg-emoji>")
 				}

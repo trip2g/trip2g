@@ -1,6 +1,7 @@
 package markdownv2_test
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -39,6 +40,42 @@ title: "Sample Note"
 	convertor := markdownv2.HTMLConverter{}
 
 	res := convertor.Process(nvs.List[0])
+
+	require.Empty(t, res.Warnings)
+	require.Equal(t, strings.Trim(string(telegramHTML), "\n"), res.Content)
+}
+
+func TestHTMLContentEmoji(t *testing.T) {
+	obsidianMarkdown, err := os.ReadFile("obsidian_emoji.md")
+	require.NoError(t, err)
+
+	telegramHTML, err := os.ReadFile("telegram_emoji.html")
+	require.NoError(t, err)
+
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Content: []byte(`---
+free: true
+title: "Sample Note"
+---
+` + string(obsidianMarkdown)),
+		}},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	nvs.List[0].Ast().Dump(nvs.List[0].Content, 2)
+
+	convertor := markdownv2.HTMLConverter{}
+
+	res := convertor.Process(nvs.List[0])
+
+	fmt.Println(string(telegramHTML))
+	fmt.Println("----")
+	fmt.Println(res.Content)
 
 	require.Empty(t, res.Warnings)
 	require.Equal(t, strings.Trim(string(telegramHTML), "\n"), res.Content)
