@@ -199,6 +199,7 @@ type ComplexityRoot struct {
 		ID         func(childComplexity int) int
 		Name       func(childComplexity int) int
 		Params     func(childComplexity int) int
+		Priority   func(childComplexity int) int
 		RetryCount func(childComplexity int) int
 	}
 
@@ -1880,6 +1881,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminBackgroundJob.Params(childComplexity), true
+	case "AdminBackgroundJob.priority":
+		if e.complexity.AdminBackgroundJob.Priority == nil {
+			break
+		}
+
+		return e.complexity.AdminBackgroundJob.Priority(childComplexity), true
 	case "AdminBackgroundJob.retryCount":
 		if e.complexity.AdminBackgroundJob.RetryCount == nil {
 			break
@@ -7823,6 +7830,35 @@ func (ec *executionContext) fieldContext_AdminBackgroundJob_params(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminBackgroundJob_priority(ctx context.Context, field graphql.CollectedField, obj *model.AdminBackgroundJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminBackgroundJob_priority,
+		func(ctx context.Context) (any, error) {
+			return obj.Priority, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminBackgroundJob_priority(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminBackgroundJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminBackgroundJob_retryCount(ctx context.Context, field graphql.CollectedField, obj *model.AdminBackgroundJob) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7998,6 +8034,8 @@ func (ec *executionContext) fieldContext_AdminBackgroundQueue_jobs(_ context.Con
 				return ec.fieldContext_AdminBackgroundJob_name(ctx, field)
 			case "params":
 				return ec.fieldContext_AdminBackgroundJob_params(ctx, field)
+			case "priority":
+				return ec.fieldContext_AdminBackgroundJob_priority(ctx, field)
 			case "retryCount":
 				return ec.fieldContext_AdminBackgroundJob_retryCount(ctx, field)
 			}
@@ -33793,6 +33831,11 @@ func (ec *executionContext) _AdminBackgroundJob(ctx context.Context, sel ast.Sel
 			}
 		case "params":
 			out.Values[i] = ec._AdminBackgroundJob_params(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "priority":
+			out.Values[i] = ec._AdminBackgroundJob_priority(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

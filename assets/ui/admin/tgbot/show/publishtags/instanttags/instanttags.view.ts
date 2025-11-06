@@ -40,12 +40,12 @@ namespace $.$$ {
 		}
 
 		save( chat_ids: number[] ) {
-			const res = save_request({
+			const res = save_request( {
 				input: {
 					chatId: this.chat_id(),
 					tagIds: chat_ids,
 				},
-			})
+			} )
 
 			const { data } = res.admin
 
@@ -58,38 +58,24 @@ namespace $.$$ {
 			}
 		}
 
-		override sub() {
-			return this.data().map( s => this.Row( s.id ) )
-		}
-
-		row( id: any ) {
-			const row = this.data().find( s => s.id === id )
-			if( !row ) {
-				throw new Error( `Tag with id ${ id } not found` )
+		@$mol_mem
+		override value( next?: string[] ) {
+			if( next !== undefined ) {
+				this.save( next.map( id => parseInt( id ) ) )
 			}
 
-			return row
+			return next || this.current_ids().map( id => id.toString() )
 		}
 
+		@$mol_mem
+		override values(): Record<string, string> {
+			const vals: Record<string, string> = {}
 
-		@$mol_mem_key
-		override item_check( id: any, next?: boolean ): boolean {
-			if( next === undefined ) {
-				return this.current_ids().includes( id )
-			}
+			this.data().forEach( s => {
+				vals[ s.id ] = s.label
+			} )
 
-			const new_ids = this.data().filter( s => s.id !== id && this.item_check( s.id ) ).map( s => s.id )
-			if( next ) {
-				new_ids.push( id )
-			}
-
-			this.save( new_ids )
-
-			return next
-		}
-
-		override item_title( id: any ): string {
-			return this.row( id ).label
+			return vals
 		}
 	}
 }

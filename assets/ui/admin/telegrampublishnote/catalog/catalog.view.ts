@@ -35,7 +35,7 @@ namespace $.$$ {
 			const res = data_request({
 				filter: {
 					includeSent: this.show_sent(),
-					includeOutdated: this.show_outdated(),
+					// includeOutdated: this.show_outdated(),
 				},
 			})
 
@@ -69,11 +69,11 @@ namespace $.$$ {
 			return super.show_sent_title().replace( '{count}', count.toString() )
 		}
 
-		override show_outdated_title(): string {
-			const res = count_request({ filter: { includeOutdated: true } })
-			const count = res.admin.allTelegramPublishNotes.count
-			return super.show_outdated_title().replace( '{count}', count.toString() )
-		}
+		// override show_outdated_title(): string {
+		// 	const res = count_request({ filter: { includeOutdated: true } })
+		// 	const count = res.admin.allTelegramPublishNotes.count
+		// 	return super.show_outdated_title().replace( '{count}', count.toString() )
+		// }
 
 		// override show_sent( next?: boolean ): boolean {
 		// 	return this.$.$trip2g_state_arg.bool_value('sent', next)

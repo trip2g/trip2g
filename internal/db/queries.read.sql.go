@@ -3031,7 +3031,7 @@ select id
      , timeout
   from goqite
  where queue = ?
- order by created desc
+ order by priority desc, created desc
  limit ?
 `
 
@@ -3157,10 +3157,14 @@ func (q *Queries) ListNotePathsLike(ctx context.Context, value string) ([]NotePa
 }
 
 const listSheduledTelegarmPublishNoteIDs = `-- name: ListSheduledTelegarmPublishNoteIDs :many
-select note_path_id
+select n.note_path_id
   from telegram_publish_notes n
   join note_paths p on n.note_path_id = p.id
+  -- the note must be tagged with at least one chat
+  join telegram_publish_note_tags nt on n.note_path_id = nt.note_path_id
+  join telegram_publish_chats pc on nt.tag_id = pc.tag_id
   where p.hidden_by is null
+   and publish_at <= datetime('now')
    and published_at is null
    and error_count = 0
 `

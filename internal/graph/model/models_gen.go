@@ -305,6 +305,7 @@ type AdminBackgroundJob struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`
 	Params     string `json:"params"`
+	Priority   int64  `json:"priority"`
 	RetryCount int64  `json:"retryCount"`
 }
 

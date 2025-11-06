@@ -5,9 +5,10 @@ $trip2g_admin_telegrampublishnote_catalog $trip2g_admin_catalog
 		<= ShowSent $mol_check_box
 			title <= show_sent_title @ \Show Sent ({count})
 			checked? <=> show_sent? false
-		<= ShowOutdated $mol_check_box
-			title <= show_outdated_title @ \Show Outdated ({count})
-			checked? <=> show_outdated? false
+		-
+			<= ShowOutdated $mol_check_box
+				title <= show_outdated_title @ \Show Outdated ({count})
+				checked? <=> show_outdated? false
 	param \id
 	Menu_links_empty $mol_view
 		sub / <= empty_text @ \Empty
