@@ -487,6 +487,15 @@ CREATE TABLE telegram_publish_instant_chats (
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete restrict
 );
+CREATE TABLE IF NOT EXISTS "telegram_publish_sent_messages" (
+  note_path_id integer not null references note_paths(id) on delete restrict,
+  chat_id integer not null references tg_bot_chats(id) on delete restrict,
+  created_at datetime not null default current_timestamp,
+  message_id integer not null,
+  instant integer not null default 0 check (instant in (0, 1)),
+  content_hash text not null default '',
+  content text not null default ''
+);
 CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
 CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
 CREATE INDEX idx_releases_is_live on releases(is_live);
@@ -500,23 +509,14 @@ CREATE INDEX idx_tg_chat_members_chat_id on tg_chat_members(chat_id);
 CREATE INDEX idx_audit_logs_created_at on audit_logs (created_at);
 CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
 CREATE INDEX goqite_queue_priority_created_idx on goqite (queue, priority desc, created);
-CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
-  update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
-end;
-CREATE TABLE IF NOT EXISTS "telegram_publish_sent_messages" (
-  note_path_id integer not null references note_paths(id) on delete restrict,
-  chat_id integer not null references tg_bot_chats(id) on delete restrict,
-  created_at datetime not null default current_timestamp,
-  message_id integer not null,
-  instant integer not null default 0 check (instant in (0, 1)),
-  content_hash text not null default '',
-  content text not null default ''
-);
 CREATE UNIQUE INDEX idx_telegram_publish_sent_messages_unique_scheduled
 ON telegram_publish_sent_messages(chat_id, note_path_id)
 WHERE instant = 0;
 CREATE INDEX idx_telegram_publish_sent_messages_chat_id ON telegram_publish_sent_messages(chat_id);
 CREATE INDEX idx_telegram_publish_sent_messages_note_path_id ON telegram_publish_sent_messages(note_path_id);
+CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
+  update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
+end;
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),

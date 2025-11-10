@@ -12,18 +12,20 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 )
 
-func skipTx(operationContext *graphql.OperationContext) bool {
-	for _, selection := range operationContext.Operation.SelectionSet {
-		if field, ok := selection.(*ast.Field); ok {
-			for _, directive := range field.Directives {
-				if directive.Name == "skipTx" {
-					return true
-				}
-			}
+func buildSkipTxMap(schema graphql.ExecutableSchema) map[string]struct{} {
+	skipTxMutations := make(map[string]struct{})
+
+	if schema.Schema().Mutation == nil {
+		return skipTxMutations
+	}
+
+	for _, field := range schema.Schema().Mutation.Fields {
+		if field.Directives.ForName("skipTx") != nil {
+			skipTxMutations[field.Name] = struct{}{}
 		}
 	}
 
-	return false
+	return skipTxMutations
 }
 
 func NewHandler(env Env) *handler.Server {
@@ -39,7 +41,10 @@ func NewHandler(env Env) *handler.Server {
 		return next(ctx)
 	}
 
-	srv := handler.New(NewExecutableSchema(config))
+	schema := NewExecutableSchema(config)
+	skipTxMutations := buildSkipTxMap(schema)
+
+	srv := handler.New(schema)
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
@@ -73,7 +78,20 @@ func NewHandler(env Env) *handler.Server {
 
 		logger.Debug("process", "operotion", op.Operation, "name", op.Name)
 
-		if op.Operation != ast.Mutation || skipTx(operationContext) {
+		// Check if this mutation should skip transaction
+		skipTransaction := false
+		if op.Operation == ast.Mutation {
+			for _, selection := range op.SelectionSet {
+				if field, ok := selection.(*ast.Field); ok {
+					if _, shouldSkip := skipTxMutations[field.Name]; shouldSkip {
+						skipTransaction = true
+						break
+					}
+				}
+			}
+		}
+
+		if op.Operation != ast.Mutation || skipTransaction {
 			return next(ctx)
 		}
 
