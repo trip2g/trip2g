@@ -92,6 +92,9 @@ func TestResolve(t *testing.T) {
 					DeleteAssetObjectFunc: func(ctx context.Context, asset db.NoteAsset) error {
 						return nil
 					},
+					DeleteNoteAssetFunc: func(ctx context.Context, id int64) error {
+						return nil
+					},
 					PrepareLatestNotesFunc: func(ctx context.Context) (*appmodel.NoteViews, error) {
 						return &appmodel.NoteViews{}, nil
 					},
@@ -152,6 +155,9 @@ func TestResolve(t *testing.T) {
 					DeleteAssetObjectFunc: func(ctx context.Context, asset db.NoteAsset) error {
 						return nil
 					},
+					DeleteNoteAssetFunc: func(ctx context.Context, id int64) error {
+						return nil
+					},
 				}
 			},
 			wantErr: true,
@@ -163,8 +169,10 @@ func TestResolve(t *testing.T) {
 				require.Len(t, env.CreateNoteAssetCalls(), 1)
 				// PutAssetObject was called
 				require.Len(t, env.PutAssetObjectCalls(), 1)
-				// DeleteAssetObject was called to cleanup both file and DB record
+				// DeleteAssetObject was called to cleanup file
 				require.Len(t, env.DeleteAssetObjectCalls(), 1)
+				// DeleteNoteAsset was called to cleanup DB record
+				require.Len(t, env.DeleteNoteAssetCalls(), 1)
 			},
 		},
 		{
@@ -208,6 +216,9 @@ func TestResolve(t *testing.T) {
 					DeleteAssetObjectFunc: func(ctx context.Context, asset db.NoteAsset) error {
 						return nil
 					},
+					DeleteNoteAssetFunc: func(ctx context.Context, id int64) error {
+						return nil
+					},
 				}
 			},
 			wantErr: true,
@@ -217,8 +228,8 @@ func TestResolve(t *testing.T) {
 			validate: func(t *testing.T, payload model.UploadNoteAssetOrErrorPayload, env *EnvMock) {
 				// CreateNoteAsset was called
 				require.Len(t, env.CreateNoteAssetCalls(), 1)
-				// DeleteAssetObject was called for cleanup
-				require.Len(t, env.DeleteAssetObjectCalls(), 1)
+				// DeleteNoteAsset was called for DB cleanup (file not uploaded yet)
+				require.Len(t, env.DeleteNoteAssetCalls(), 1)
 			},
 		},
 	}

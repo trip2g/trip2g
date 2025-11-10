@@ -703,3 +703,7 @@ update telegram_publish_sent_messages
 
 -- name: DeleteGoqiteJobsByQueue :execresult
 delete from goqite where queue = ?;
+
+
+-- name: DeleteNoteAsset :exec
+delete from note_assets where id = ?;

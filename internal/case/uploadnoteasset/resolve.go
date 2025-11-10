@@ -20,6 +20,7 @@ type Env interface {
 	Logger() logger.Logger
 	PutAssetObject(ctx context.Context, reader io.Reader, info db.NoteAsset) error
 	DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error
+	DeleteNoteAsset(ctx context.Context, id int64) error
 	CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error)
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
@@ -112,10 +113,10 @@ func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName st
 
 	err = env.PutAssetObject(ctx, teeReader, asset)
 	if err != nil {
-		// Cleanup DB record since upload failed
-		deleteErr := env.DeleteAssetObject(ctx, asset)
+		// Cleanup: delete DB record (best effort, log if fails)
+		deleteErr := env.DeleteNoteAsset(ctx, asset.ID)
 		if deleteErr != nil {
-			env.Logger().Error("failed to delete asset after upload failure", "asset", asset, "error", deleteErr)
+			env.Logger().Error("failed to delete DB record after upload failure", "assetID", asset.ID, "error", deleteErr)
 		}
 		return fmt.Errorf("failed to upload asset: %w", err)
 	}
@@ -123,10 +124,15 @@ func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName st
 	// Step 5: Validate hash after upload
 	actualHash := hex.EncodeToString(hasher.Sum(nil))
 	if actualHash != input.Sha256Hash {
-		// Delete both file and DB record
-		deleteErr := env.DeleteAssetObject(ctx, asset)
-		if deleteErr != nil {
-			env.Logger().Error("failed to delete asset after hash mismatch", "asset", asset, "error", deleteErr)
+		// Cleanup: delete file from MinIO (best effort, log if fails)
+		deleteFileErr := env.DeleteAssetObject(ctx, asset)
+		if deleteFileErr != nil {
+			env.Logger().Error("failed to delete file after hash mismatch", "asset", asset, "error", deleteFileErr)
+		}
+		// Cleanup: delete DB record (best effort, log if fails)
+		deleteDBErr := env.DeleteNoteAsset(ctx, asset.ID)
+		if deleteDBErr != nil {
+			env.Logger().Error("failed to delete DB record after hash mismatch", "assetID", asset.ID, "error", deleteDBErr)
 		}
 		return fmt.Errorf("hash mismatch: expected %s, got %s", input.Sha256Hash, actualHash)
 	}

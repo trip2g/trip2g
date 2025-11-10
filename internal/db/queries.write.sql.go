@@ -163,6 +163,15 @@ func (q *WriteQueries) DeleteNotFoundIgnoredPattern(ctx context.Context, id int6
 	return err
 }
 
+const deleteNoteAsset = `-- name: DeleteNoteAsset :exec
+delete from note_assets where id = ?
+`
+
+func (q *WriteQueries) DeleteNoteAsset(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteNoteAsset, id)
+	return err
+}
+
 const deleteOffer = `-- name: DeleteOffer :one
 update offers
    set ends_at = datetime('now')

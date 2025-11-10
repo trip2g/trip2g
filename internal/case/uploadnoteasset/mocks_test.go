@@ -29,6 +29,9 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //			DeleteAssetObjectFunc: func(ctx context.Context, asset db.NoteAsset) error {
 //				panic("mock out the DeleteAssetObject method")
 //			},
+//			DeleteNoteAssetFunc: func(ctx context.Context, id int64) error {
+//				panic("mock out the DeleteNoteAsset method")
+//			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
@@ -56,6 +59,9 @@ type EnvMock struct {
 
 	// DeleteAssetObjectFunc mocks the DeleteAssetObject method.
 	DeleteAssetObjectFunc func(ctx context.Context, asset db.NoteAsset) error
+
+	// DeleteNoteAssetFunc mocks the DeleteNoteAsset method.
+	DeleteNoteAssetFunc func(ctx context.Context, id int64) error
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -87,6 +93,13 @@ type EnvMock struct {
 			Ctx context.Context
 			// Asset is the asset argument value.
 			Asset db.NoteAsset
+		}
+		// DeleteNoteAsset holds details about calls to the DeleteNoteAsset method.
+		DeleteNoteAsset []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
 		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
@@ -122,6 +135,7 @@ type EnvMock struct {
 	}
 	lockCreateNoteAsset        sync.RWMutex
 	lockDeleteAssetObject      sync.RWMutex
+	lockDeleteNoteAsset        sync.RWMutex
 	lockLogger                 sync.RWMutex
 	lockNoteAssetByPathAndHash sync.RWMutex
 	lockNoteVersionAssetPaths  sync.RWMutex
@@ -198,6 +212,42 @@ func (mock *EnvMock) DeleteAssetObjectCalls() []struct {
 	mock.lockDeleteAssetObject.RLock()
 	calls = mock.calls.DeleteAssetObject
 	mock.lockDeleteAssetObject.RUnlock()
+	return calls
+}
+
+// DeleteNoteAsset calls DeleteNoteAssetFunc.
+func (mock *EnvMock) DeleteNoteAsset(ctx context.Context, id int64) error {
+	if mock.DeleteNoteAssetFunc == nil {
+		panic("EnvMock.DeleteNoteAssetFunc: method is nil but Env.DeleteNoteAsset was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockDeleteNoteAsset.Lock()
+	mock.calls.DeleteNoteAsset = append(mock.calls.DeleteNoteAsset, callInfo)
+	mock.lockDeleteNoteAsset.Unlock()
+	return mock.DeleteNoteAssetFunc(ctx, id)
+}
+
+// DeleteNoteAssetCalls gets all the calls that were made to DeleteNoteAsset.
+// Check the length with:
+//
+//	len(mockedEnv.DeleteNoteAssetCalls())
+func (mock *EnvMock) DeleteNoteAssetCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockDeleteNoteAsset.RLock()
+	calls = mock.calls.DeleteNoteAsset
+	mock.lockDeleteNoteAsset.RUnlock()
 	return calls
 }
 
