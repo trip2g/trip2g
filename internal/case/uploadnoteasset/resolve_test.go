@@ -232,6 +232,63 @@ func TestResolve(t *testing.T) {
 				require.Len(t, env.DeleteNoteAssetCalls(), 1)
 			},
 		},
+	{
+		name: "success - asset reuse (same asset in different versions)",
+		input: model.UploadNoteAssetInput{
+			NoteID:       456, // Different note version
+			Path:         "images/test.png",
+			AbsolutePath: "/absolute/path/test.png",
+			Sha256Hash:   testHash,
+			File: graphql.Upload{
+				File:     bytes.NewReader(testContent),
+				Filename: "test.png",
+				Size:     int64(len(testContent)),
+			},
+		},
+		setupEnv: func() *EnvMock {
+			return &EnvMock{
+				LoggerFunc: func() logger.Logger {
+					return &logger.TestLogger{}
+				},
+				NoteVersionAssetPathsFunc: func(ctx context.Context, id int64) (map[string]struct{}, error) {
+					return map[string]struct{}{
+						"images/test.png": {},
+					}, nil
+				},
+				NoteAssetByPathAndHashFunc: func(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error) {
+					// Asset already exists from previous version
+					return db.NoteAsset{
+						ID:           99,
+						AbsolutePath: arg.AbsolutePath,
+						FileName:     "test.png",
+						Sha256Hash:   arg.Sha256Hash,
+						Size:         int64(len(testContent)),
+					}, nil
+				},
+				UpsertNoteVersionAssetFunc: func(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error {
+					return nil
+				},
+				PrepareLatestNotesFunc: func(ctx context.Context) (*appmodel.NoteViews, error) {
+					return &appmodel.NoteViews{}, nil
+				},
+			}
+		},
+		wantErr: false,
+		validate: func(t *testing.T, payload model.UploadNoteAssetOrErrorPayload, env *EnvMock) {
+			require.IsType(t, &model.UploadNoteAssetPayload{}, payload)
+			p := payload.(*model.UploadNoteAssetPayload)
+			require.True(t, p.UploadSkipped)
+
+			// CreateNoteAsset should NOT be called (asset already exists)
+			require.Len(t, env.CreateNoteAssetCalls(), 0)
+			// PutAssetObject should NOT be called (no upload needed)
+			require.Len(t, env.PutAssetObjectCalls(), 0)
+			// UpsertNoteVersionAsset SHOULD be called to link existing asset
+			require.Len(t, env.UpsertNoteVersionAssetCalls(), 1)
+			// PrepareLatestNotes should be called to update views
+			require.Len(t, env.PrepareLatestNotesCalls(), 1)
+		},
+	},
 	}
 
 	for _, tt := range tests {

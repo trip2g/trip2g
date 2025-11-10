@@ -47,6 +47,9 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //			PutAssetObjectFunc: func(ctx context.Context, reader io.Reader, info db.NoteAsset) error {
 //				panic("mock out the PutAssetObject method")
 //			},
+//			UpsertNoteVersionAssetFunc: func(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error {
+//				panic("mock out the UpsertNoteVersionAsset method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires uploadnoteasset.Env
@@ -77,6 +80,9 @@ type EnvMock struct {
 
 	// PutAssetObjectFunc mocks the PutAssetObject method.
 	PutAssetObjectFunc func(ctx context.Context, reader io.Reader, info db.NoteAsset) error
+
+	// UpsertNoteVersionAssetFunc mocks the UpsertNoteVersionAsset method.
+	UpsertNoteVersionAssetFunc func(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -132,6 +138,13 @@ type EnvMock struct {
 			// Info is the info argument value.
 			Info db.NoteAsset
 		}
+		// UpsertNoteVersionAsset holds details about calls to the UpsertNoteVersionAsset method.
+		UpsertNoteVersionAsset []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpsertNoteVersionAssetParams
+		}
 	}
 	lockCreateNoteAsset        sync.RWMutex
 	lockDeleteAssetObject      sync.RWMutex
@@ -141,6 +154,7 @@ type EnvMock struct {
 	lockNoteVersionAssetPaths  sync.RWMutex
 	lockPrepareLatestNotes     sync.RWMutex
 	lockPutAssetObject         sync.RWMutex
+	lockUpsertNoteVersionAsset sync.RWMutex
 }
 
 // CreateNoteAsset calls CreateNoteAssetFunc.
@@ -419,5 +433,41 @@ func (mock *EnvMock) PutAssetObjectCalls() []struct {
 	mock.lockPutAssetObject.RLock()
 	calls = mock.calls.PutAssetObject
 	mock.lockPutAssetObject.RUnlock()
+	return calls
+}
+
+// UpsertNoteVersionAsset calls UpsertNoteVersionAssetFunc.
+func (mock *EnvMock) UpsertNoteVersionAsset(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error {
+	if mock.UpsertNoteVersionAssetFunc == nil {
+		panic("EnvMock.UpsertNoteVersionAssetFunc: method is nil but Env.UpsertNoteVersionAsset was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpsertNoteVersionAssetParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpsertNoteVersionAsset.Lock()
+	mock.calls.UpsertNoteVersionAsset = append(mock.calls.UpsertNoteVersionAsset, callInfo)
+	mock.lockUpsertNoteVersionAsset.Unlock()
+	return mock.UpsertNoteVersionAssetFunc(ctx, arg)
+}
+
+// UpsertNoteVersionAssetCalls gets all the calls that were made to UpsertNoteVersionAsset.
+// Check the length with:
+//
+//	len(mockedEnv.UpsertNoteVersionAssetCalls())
+func (mock *EnvMock) UpsertNoteVersionAssetCalls() []struct {
+	Ctx context.Context
+	Arg db.UpsertNoteVersionAssetParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpsertNoteVersionAssetParams
+	}
+	mock.lockUpsertNoteVersionAsset.RLock()
+	calls = mock.calls.UpsertNoteVersionAsset
+	mock.lockUpsertNoteVersionAsset.RUnlock()
 	return calls
 }

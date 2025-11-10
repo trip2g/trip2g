@@ -22,6 +22,7 @@ type Env interface {
 	DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error
 	DeleteNoteAsset(ctx context.Context, id int64) error
 	CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error)
+	UpsertNoteVersionAsset(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
 	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
@@ -62,24 +63,39 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	fileName = reUnsafeChars.ReplaceAllString(fileName, "_")
 
 	// Step 2: Check if asset already exists
-	_, err = env.NoteAssetByPathAndHash(ctx, findAssetParams)
+	existingAsset, err := env.NoteAssetByPathAndHash(ctx, findAssetParams)
 	if err != nil && !db.IsNoFound(err) {
 		return nil, fmt.Errorf("failed to find note asset: %w", err)
 	}
 
 	alreadyUploaded := !db.IsNoFound(err)
 
+	// Handle asset reuse scenario:
+	// v1: uploads asset A -> creates note_assets record + note_version_assets link
+	// v2: uploads asset B -> creates new note_assets record + new link
+	// v3: uploads asset A again -> asset already exists, just create new link to v3
+	// This allows the same asset (by path+hash) to be used in multiple note versions
 	if !alreadyUploaded {
 		err = uploadAndCreateAsset(ctx, env, input, fileName)
 		if err != nil {
 			return nil, err
 		}
-
-		// Prepare latest notes only when new asset was uploaded (transactional)
-		_, err = env.PrepareLatestNotes(ctx)
+	} else {
+		// Asset already exists, just link it to this note version
+		err = env.UpsertNoteVersionAsset(ctx, db.UpsertNoteVersionAssetParams{
+			AssetID:   existingAsset.ID,
+			VersionID: input.NoteID,
+			Path:      input.Path,
+		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to prepare notes: %w", err)
+			return nil, fmt.Errorf("failed to link existing asset to note version: %w", err)
 		}
+	}
+
+	// Prepare latest notes after any asset changes (upload or linking)
+	_, err = env.PrepareLatestNotes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}
 
 	response := model.UploadNoteAssetPayload{
