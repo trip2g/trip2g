@@ -91,6 +91,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName string) error {
 	// Step 3: Create asset in database first to get ID (transactional)
+	// IMPORTANT: Client MUST provide correct hash. We cannot read entire file
+	// before upload to verify hash (memory inefficient for multi-GB files).
+	// Hash is verified AFTER upload using TeeReader. If mismatch occurs,
+	// both file and DB record are deleted (client error).
 	createParams := db.CreateNoteAssetParams{
 		Asset: db.InsertNoteAssetParams{
 			AbsolutePath: input.AbsolutePath,
