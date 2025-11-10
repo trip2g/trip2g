@@ -42,7 +42,6 @@ func NewHandler(env Env) *handler.Server {
 	}
 
 	schema := NewExecutableSchema(config)
-	skipTxMutations := buildSkipTxMap(schema)
 
 	srv := handler.New(schema)
 
@@ -70,28 +69,27 @@ func NewHandler(env Env) *handler.Server {
 	}
 
 	logger := logger.WithPrefix(env.Logger(), "GraphQL:")
+	skipTxMutations := buildSkipTxMap(schema)
 
-	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+	srv.AroundOperations(makeAroundOperations(logger, skipTxMutations, env, graphqlErr))
+
+	return srv
+}
+
+func makeAroundOperations(
+	log logger.Logger,
+	skipTxMutations map[string]struct{},
+	env Env,
+	graphqlErr func(err error) graphql.ResponseHandler,
+) graphql.OperationMiddleware {
+	return func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		operationContext := graphql.GetOperationContext(ctx)
 
 		op := operationContext.Operation
 
-		logger.Debug("process", "operotion", op.Operation, "name", op.Name)
+		log.Debug("process", "operotion", op.Operation, "name", op.Name)
 
-		// Check if this mutation should skip transaction
-		skipTransaction := false
-		if op.Operation == ast.Mutation {
-			for _, selection := range op.SelectionSet {
-				if field, ok := selection.(*ast.Field); ok {
-					if _, shouldSkip := skipTxMutations[field.Name]; shouldSkip {
-						skipTransaction = true
-						break
-					}
-				}
-			}
-		}
-
-		if op.Operation != ast.Mutation || skipTransaction {
+		if shouldSkipTx(op, skipTxMutations) {
 			return next(ctx)
 		}
 
@@ -129,7 +127,21 @@ func NewHandler(env Env) *handler.Server {
 
 			return resp
 		}
-	})
+	}
+}
 
-	return srv
+func shouldSkipTx(op *ast.OperationDefinition, skipTxMutations map[string]struct{}) bool {
+	if op.Operation != ast.Mutation {
+		return false
+	}
+
+	for _, selection := range op.SelectionSet {
+		if field, ok := selection.(*ast.Field); ok {
+			if _, shouldSkip := skipTxMutations[field.Name]; shouldSkip {
+				return true
+			}
+		}
+	}
+
+	return false
 }
