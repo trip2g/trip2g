@@ -23,7 +23,7 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //
 //		// make and configure a mocked uploadnoteasset.Env
 //		mockedEnv := &EnvMock{
-//			CreateNoteAssetFunc: func(ctx context.Context, params db.CreateNoteAssetParams) error {
+//			CreateNoteAssetFunc: func(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error) {
 //				panic("mock out the CreateNoteAsset method")
 //			},
 //			DeleteAssetObjectFunc: func(ctx context.Context, asset db.NoteAsset) error {
@@ -52,7 +52,7 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //	}
 type EnvMock struct {
 	// CreateNoteAssetFunc mocks the CreateNoteAsset method.
-	CreateNoteAssetFunc func(ctx context.Context, params db.CreateNoteAssetParams) error
+	CreateNoteAssetFunc func(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error)
 
 	// DeleteAssetObjectFunc mocks the DeleteAssetObject method.
 	DeleteAssetObjectFunc func(ctx context.Context, asset db.NoteAsset) error
@@ -130,7 +130,7 @@ type EnvMock struct {
 }
 
 // CreateNoteAsset calls CreateNoteAssetFunc.
-func (mock *EnvMock) CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) error {
+func (mock *EnvMock) CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error) {
 	if mock.CreateNoteAssetFunc == nil {
 		panic("EnvMock.CreateNoteAssetFunc: method is nil but Env.CreateNoteAsset was just called")
 	}

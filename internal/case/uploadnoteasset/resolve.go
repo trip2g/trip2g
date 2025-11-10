@@ -20,7 +20,7 @@ type Env interface {
 	Logger() logger.Logger
 	PutAssetObject(ctx context.Context, reader io.Reader, info db.NoteAsset) error
 	DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error
-	CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) error
+	CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error)
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
 	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
@@ -89,35 +89,19 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 }
 
 func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName string) error {
-	// Step 3: Upload file and validate hash
+	// Step 3: Validate hash by reading file
 	hasher := sha256.New()
-	teeReader := io.TeeReader(input.File.File, hasher)
-
-	// Create temporary asset info for upload path (ID will be 0)
-	tempAsset := db.NoteAsset{
-		AbsolutePath: input.AbsolutePath,
-		FileName:     fileName,
-		Sha256Hash:   input.Sha256Hash,
-		Size:         input.File.Size,
-	}
-
-	err := env.PutAssetObject(ctx, teeReader, tempAsset)
+	_, err := io.Copy(hasher, input.File.File)
 	if err != nil {
-		return fmt.Errorf("failed to upload asset: %w", err)
+		return fmt.Errorf("failed to read file for hash validation: %w", err)
 	}
 
-	// Validate hash
 	actualHash := hex.EncodeToString(hasher.Sum(nil))
 	if actualHash != input.Sha256Hash {
-		// Delete from storage - no DB cleanup needed since we haven't inserted yet
-		deleteErr := env.DeleteAssetObject(ctx, tempAsset)
-		if deleteErr != nil {
-			env.Logger().Error("failed to delete asset object after hash mismatch", "asset", tempAsset, "error", deleteErr)
-		}
 		return fmt.Errorf("hash mismatch: expected %s, got %s", input.Sha256Hash, actualHash)
 	}
 
-	// Step 4: Create asset in database (transactional)
+	// Step 4: Create asset in database first to get ID (transactional)
 	createParams := db.CreateNoteAssetParams{
 		Asset: db.InsertNoteAssetParams{
 			AbsolutePath: input.AbsolutePath,
@@ -129,14 +113,30 @@ func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName st
 		Path:      input.Path,
 	}
 
-	err = env.CreateNoteAsset(ctx, createParams)
+	asset, err := env.CreateNoteAsset(ctx, createParams)
 	if err != nil {
-		// Cleanup uploaded file since DB operation failed
-		deleteErr := env.DeleteAssetObject(ctx, tempAsset)
-		if deleteErr != nil {
-			env.Logger().Error("failed to delete asset object after DB failure", "asset", tempAsset, "error", deleteErr)
-		}
 		return fmt.Errorf("failed to create note asset: %w", err)
+	}
+
+	// Step 5: Seek back to start and upload file with real ID
+	_, err = input.File.File.Seek(0, io.SeekStart)
+	if err != nil {
+		// Cleanup DB record since we can't upload
+		deleteErr := env.DeleteAssetObject(ctx, asset)
+		if deleteErr != nil {
+			env.Logger().Error("failed to delete asset after seek failure", "asset", asset, "error", deleteErr)
+		}
+		return fmt.Errorf("failed to seek to beginning of file: %w", err)
+	}
+
+	err = env.PutAssetObject(ctx, input.File.File, asset)
+	if err != nil {
+		// Cleanup DB record since upload failed
+		deleteErr := env.DeleteAssetObject(ctx, asset)
+		if deleteErr != nil {
+			env.Logger().Error("failed to delete asset after upload failure", "asset", asset, "error", deleteErr)
+		}
+		return fmt.Errorf("failed to upload asset: %w", err)
 	}
 
 	return nil

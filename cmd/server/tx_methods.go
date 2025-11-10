@@ -5,9 +5,12 @@ import (
 	"trip2g/internal/db"
 )
 
-func (a *app) CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) error {
-	return a.WithTransaction(ctx, func(txCtx context.Context, env *app) (bool, error) {
-		err := env.WriteQueries.CreateNoteAsset(txCtx, params)
-		return err == nil, err
+func (a *app) CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error) {
+	var asset db.NoteAsset
+	err := a.WithTransaction(ctx, func(txCtx context.Context, env *app) (bool, error) {
+		var txErr error
+		asset, txErr = env.WriteQueries.CreateNoteAsset(txCtx, params)
+		return txErr == nil, txErr
 	})
+	return asset, err
 }

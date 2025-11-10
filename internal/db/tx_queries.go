@@ -13,10 +13,10 @@ type CreateNoteAssetParams struct {
 	Path      string
 }
 
-func (a *WriteQueries) CreateNoteAsset(ctx context.Context, params CreateNoteAssetParams) error {
+func (a *WriteQueries) CreateNoteAsset(ctx context.Context, params CreateNoteAssetParams) (NoteAsset, error) {
 	asset, err := a.InsertNoteAsset(ctx, params.Asset)
 	if err != nil {
-		return fmt.Errorf("failed to InsertNoteAsset: %w", err)
+		return NoteAsset{}, fmt.Errorf("failed to InsertNoteAsset: %w", err)
 	}
 
 	noteVersionAssetParams := UpsertNoteVersionAssetParams{
@@ -27,8 +27,8 @@ func (a *WriteQueries) CreateNoteAsset(ctx context.Context, params CreateNoteAss
 
 	err = a.UpsertNoteVersionAsset(ctx, noteVersionAssetParams)
 	if err != nil {
-		return fmt.Errorf("failed to UpsertNoteVersionAsset: %w", err)
+		return NoteAsset{}, fmt.Errorf("failed to UpsertNoteVersionAsset: %w", err)
 	}
 
-	return nil
+	return asset, nil
 }
