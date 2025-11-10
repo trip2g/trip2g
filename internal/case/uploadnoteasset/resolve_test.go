@@ -135,6 +135,15 @@ func TestResolve(t *testing.T) {
 					NoteAssetByPathAndHashFunc: func(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error) {
 						return db.NoteAsset{}, sql.ErrNoRows
 					},
+					CreateNoteAssetFunc: func(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error) {
+						return db.NoteAsset{
+							ID:           1,
+							AbsolutePath: params.Asset.AbsolutePath,
+							FileName:     params.Asset.FileName,
+							Sha256Hash:   params.Asset.Sha256Hash,
+							Size:         params.Asset.Size,
+						}, nil
+					},
 					PutAssetObjectFunc: func(ctx context.Context, reader io.Reader, info db.NoteAsset) error {
 						// Must consume the reader to simulate actual upload
 						_, err := io.ReadAll(reader)
@@ -150,10 +159,12 @@ func TestResolve(t *testing.T) {
 				require.Contains(t, err.Error(), "hash mismatch")
 			},
 			validate: func(t *testing.T, payload model.UploadNoteAssetOrErrorPayload, env *EnvMock) {
-				// CreateNoteAsset was NOT called because hash mismatch happens before DB insert
-				require.Empty(t, env.CreateNoteAssetCalls(), "DB record was NOT inserted")
-				// DeleteAssetObject was NOT called because nothing was uploaded yet
-				require.Empty(t, env.DeleteAssetObjectCalls())
+				// CreateNoteAsset was called
+				require.Len(t, env.CreateNoteAssetCalls(), 1)
+				// PutAssetObject was called
+				require.Len(t, env.PutAssetObjectCalls(), 1)
+				// DeleteAssetObject was called to cleanup both file and DB record
+				require.Len(t, env.DeleteAssetObjectCalls(), 1)
 			},
 		},
 		{

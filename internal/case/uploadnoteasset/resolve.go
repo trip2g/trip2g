@@ -89,19 +89,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 }
 
 func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName string) error {
-	// Step 3: Validate hash by reading file
-	hasher := sha256.New()
-	_, err := io.Copy(hasher, input.File.File)
-	if err != nil {
-		return fmt.Errorf("failed to read file for hash validation: %w", err)
-	}
-
-	actualHash := hex.EncodeToString(hasher.Sum(nil))
-	if actualHash != input.Sha256Hash {
-		return fmt.Errorf("hash mismatch: expected %s, got %s", input.Sha256Hash, actualHash)
-	}
-
-	// Step 4: Create asset in database first to get ID (transactional)
+	// Step 3: Create asset in database first to get ID (transactional)
 	createParams := db.CreateNoteAssetParams{
 		Asset: db.InsertNoteAssetParams{
 			AbsolutePath: input.AbsolutePath,
@@ -118,18 +106,11 @@ func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName st
 		return fmt.Errorf("failed to create note asset: %w", err)
 	}
 
-	// Step 5: Seek back to start and upload file with real ID
-	_, err = input.File.File.Seek(0, io.SeekStart)
-	if err != nil {
-		// Cleanup DB record since we can't upload
-		deleteErr := env.DeleteAssetObject(ctx, asset)
-		if deleteErr != nil {
-			env.Logger().Error("failed to delete asset after seek failure", "asset", asset, "error", deleteErr)
-		}
-		return fmt.Errorf("failed to seek to beginning of file: %w", err)
-	}
+	// Step 4: Upload file and calculate hash simultaneously using TeeReader
+	hasher := sha256.New()
+	teeReader := io.TeeReader(input.File.File, hasher)
 
-	err = env.PutAssetObject(ctx, input.File.File, asset)
+	err = env.PutAssetObject(ctx, teeReader, asset)
 	if err != nil {
 		// Cleanup DB record since upload failed
 		deleteErr := env.DeleteAssetObject(ctx, asset)
@@ -137,6 +118,17 @@ func uploadAndCreateAsset(ctx context.Context, env Env, input Input, fileName st
 			env.Logger().Error("failed to delete asset after upload failure", "asset", asset, "error", deleteErr)
 		}
 		return fmt.Errorf("failed to upload asset: %w", err)
+	}
+
+	// Step 5: Validate hash after upload
+	actualHash := hex.EncodeToString(hasher.Sum(nil))
+	if actualHash != input.Sha256Hash {
+		// Delete both file and DB record
+		deleteErr := env.DeleteAssetObject(ctx, asset)
+		if deleteErr != nil {
+			env.Logger().Error("failed to delete asset after hash mismatch", "asset", asset, "error", deleteErr)
+		}
+		return fmt.Errorf("hash mismatch: expected %s, got %s", input.Sha256Hash, actualHash)
 	}
 
 	return nil
