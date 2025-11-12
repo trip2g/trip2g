@@ -92,7 +92,14 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	if resp.Note.Layout != "" {
-		return nil, renderLayout(ctx, env, resp)
+		processed, layoutErr := renderLayout(ctx, env, resp)
+		if layoutErr != nil {
+			return nil, layoutErr
+		}
+
+		if processed {
+			return nil, nil
+		}
 	}
 
 	return renderlayout.Handle(req, layoutParams, func() {
@@ -112,10 +119,11 @@ func renderLayout(
 	ctx *fasthttp.RequestCtx,
 	env Env,
 	resp *Response,
-) error {
+) (bool, error) {
 	layout, layoutExists := env.Layouts().Map["/"+resp.Note.Layout]
 	if !layoutExists {
-		return nil
+		env.Logger().Warn("layout not found: " + resp.Note.Layout)
+		return false, nil
 	}
 
 	vars := make(jet.VarMap)
@@ -125,10 +133,10 @@ func renderLayout(
 	if viewErr != nil {
 		if resp.IsAdmin {
 			_, _ = ctx.WriteString(viewErr.Error())
-			return nil
+			return true, nil
 		}
-		return fmt.Errorf("failed to execute view: %w", viewErr)
+		return false, fmt.Errorf("failed to execute view: %w", viewErr)
 	}
 
-	return nil
+	return true, nil
 }
