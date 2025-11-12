@@ -340,3 +340,7 @@ html {
 .embedded-note__blue h2 {
   @apply mt-8 mb-3 text-2xl;
 }
+
+.prose code {
+  @apply bg-gray-100 dark:bg-gray-700 px-1 rounded;
+}

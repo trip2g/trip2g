@@ -61,7 +61,7 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) error {
 	}
 
 	if notePath.VersionCount > 0 && notePath.LatestContentHash == contentHash {
-		return ErrNoteVersionAlreadyExists
+		return fmt.Errorf("note %s already exists", arg.Path)
 	}
 
 	increaseParams := db.IncrementNoteVersionCountParams{

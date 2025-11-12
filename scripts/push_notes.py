@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 # get first arg or http://localhost:8081
 
-GRAPHQL_URL = "http://localhost:8081/graphql"
+GRAPHQL_URL = os.getenv("ENDPOINT", "http://localhost:8081/graphql")
 API_KEY = os.getenv("API_KEY", None)
 
 if not API_KEY:
