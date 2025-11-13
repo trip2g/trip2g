@@ -83,10 +83,6 @@ namespace $.$$ {
 			return this.row(id).disabledAt
 		}
 
-		override row_disabled_by( id: any ) {
-			return this.row( id ).disabledBy?.email
-		}
-
 		override row_disabled(id: any): boolean {
 			return !!this.row( id ).disabledAt
 		}

@@ -4,5 +4,6 @@
 	"$trip2g_admin_backgroundqueue_catalog_Row_pending_labeler_title": "Ожидающих",
 	"$trip2g_admin_backgroundqueue_catalog_Row_retry_labeler_title": "Повторных",
 	"$trip2g_admin_backgroundqueue_catalog_Row_status_labeler_title": "Статус",
+	"$trip2g_admin_backgroundqueue_catalog_StopAllButton_title": "Остановить всё",
 	"$trip2g_admin_backgroundqueue_catalog_menu_title": "Фоновые очереди"
 }

@@ -1075,11 +1075,11 @@ type ComplexityRoot struct {
 	}
 
 	StartBackgroundQueuePayload struct {
-		Queue func(childComplexity int) int
+		Queues func(childComplexity int) int
 	}
 
 	StopBackgroundQueuePayload struct {
-		Queue func(childComplexity int) int
+		Queues func(childComplexity int) int
 	}
 
 	Subgraph struct {
@@ -5401,19 +5401,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.SignOutPayload.Viewer(childComplexity), true
 
-	case "StartBackgroundQueuePayload.queue":
-		if e.complexity.StartBackgroundQueuePayload.Queue == nil {
+	case "StartBackgroundQueuePayload.queues":
+		if e.complexity.StartBackgroundQueuePayload.Queues == nil {
 			break
 		}
 
-		return e.complexity.StartBackgroundQueuePayload.Queue(childComplexity), true
+		return e.complexity.StartBackgroundQueuePayload.Queues(childComplexity), true
 
-	case "StopBackgroundQueuePayload.queue":
-		if e.complexity.StopBackgroundQueuePayload.Queue == nil {
+	case "StopBackgroundQueuePayload.queues":
+		if e.complexity.StopBackgroundQueuePayload.Queues == nil {
 			break
 		}
 
-		return e.complexity.StopBackgroundQueuePayload.Queue(childComplexity), true
+		return e.complexity.StopBackgroundQueuePayload.Queues(childComplexity), true
 
 	case "Subgraph.homePath":
 		if e.complexity.Subgraph.HomePath == nil {
@@ -25771,23 +25771,23 @@ func (ec *executionContext) fieldContext_SignOutPayload_viewer(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _StartBackgroundQueuePayload_queue(ctx context.Context, field graphql.CollectedField, obj *model.StartBackgroundQueuePayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _StartBackgroundQueuePayload_queues(ctx context.Context, field graphql.CollectedField, obj *model.StartBackgroundQueuePayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_StartBackgroundQueuePayload_queue,
+		ec.fieldContext_StartBackgroundQueuePayload_queues,
 		func(ctx context.Context) (any, error) {
-			return obj.Queue, nil
+			return obj.Queues, nil
 		},
 		nil,
-		ec.marshalNAdminBackgroundQueue2ᚖtrip2gᚋinternalᚋmodelᚐBackgroundQueue,
+		ec.marshalNAdminBackgroundQueue2ᚕtrip2gᚋinternalᚋmodelᚐBackgroundQueueᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_StartBackgroundQueuePayload_queue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_StartBackgroundQueuePayload_queues(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StartBackgroundQueuePayload",
 		Field:      field,
@@ -25812,23 +25812,23 @@ func (ec *executionContext) fieldContext_StartBackgroundQueuePayload_queue(_ con
 	return fc, nil
 }
 
-func (ec *executionContext) _StopBackgroundQueuePayload_queue(ctx context.Context, field graphql.CollectedField, obj *model.StopBackgroundQueuePayload) (ret graphql.Marshaler) {
+func (ec *executionContext) _StopBackgroundQueuePayload_queues(ctx context.Context, field graphql.CollectedField, obj *model.StopBackgroundQueuePayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_StopBackgroundQueuePayload_queue,
+		ec.fieldContext_StopBackgroundQueuePayload_queues,
 		func(ctx context.Context) (any, error) {
-			return obj.Queue, nil
+			return obj.Queues, nil
 		},
 		nil,
-		ec.marshalNAdminBackgroundQueue2ᚖtrip2gᚋinternalᚋmodelᚐBackgroundQueue,
+		ec.marshalNAdminBackgroundQueue2ᚕtrip2gᚋinternalᚋmodelᚐBackgroundQueueᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_StopBackgroundQueuePayload_queue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_StopBackgroundQueuePayload_queues(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StopBackgroundQueuePayload",
 		Field:      field,
@@ -48158,8 +48158,8 @@ func (ec *executionContext) _StartBackgroundQueuePayload(ctx context.Context, se
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("StartBackgroundQueuePayload")
-		case "queue":
-			out.Values[i] = ec._StartBackgroundQueuePayload_queue(ctx, field, obj)
+		case "queues":
+			out.Values[i] = ec._StartBackgroundQueuePayload_queues(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -48197,8 +48197,8 @@ func (ec *executionContext) _StopBackgroundQueuePayload(ctx context.Context, sel
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("StopBackgroundQueuePayload")
-		case "queue":
-			out.Values[i] = ec._StopBackgroundQueuePayload_queue(ctx, field, obj)
+		case "queues":
+			out.Values[i] = ec._StopBackgroundQueuePayload_queues(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

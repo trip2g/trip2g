@@ -1841,21 +1841,25 @@ union SendTelegramPublishNoteNowOrErrorPayload = SendTelegramPublishNoteNowPaylo
 
 # Background Queue management
 input StopBackgroundQueueInput {
+  # Queue name to stop. Use "*" to stop all queues.
   id: String!
 }
 
 type StopBackgroundQueuePayload {
-  queue: AdminBackgroundQueue!
+  # The stopped queue(s). Returns all queues when id is "*".
+  queues: [AdminBackgroundQueue!]!
 }
 
 union StopBackgroundQueueOrErrorPayload = StopBackgroundQueuePayload | ErrorPayload
 
 input StartBackgroundQueueInput {
+  # Queue name to start. Use "*" to start all queues.
   id: String!
 }
 
 type StartBackgroundQueuePayload {
-  queue: AdminBackgroundQueue!
+  # The started queue(s). Returns all queues when id is "*".
+  queues: [AdminBackgroundQueue!]!
 }
 
 union StartBackgroundQueueOrErrorPayload = StartBackgroundQueuePayload | ErrorPayload

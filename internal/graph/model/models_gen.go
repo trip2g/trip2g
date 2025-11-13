@@ -1189,7 +1189,7 @@ type StartBackgroundQueueInput struct {
 }
 
 type StartBackgroundQueuePayload struct {
-	Queue *model.BackgroundQueue `json:"queue"`
+	Queues []model.BackgroundQueue `json:"queues"`
 }
 
 func (StartBackgroundQueuePayload) IsStartBackgroundQueueOrErrorPayload() {}
@@ -1199,7 +1199,7 @@ type StopBackgroundQueueInput struct {
 }
 
 type StopBackgroundQueuePayload struct {
-	Queue *model.BackgroundQueue `json:"queue"`
+	Queues []model.BackgroundQueue `json:"queues"`
 }
 
 func (StopBackgroundQueuePayload) IsStopBackgroundQueueOrErrorPayload() {}

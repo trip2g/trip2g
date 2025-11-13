@@ -39,6 +39,8 @@ import (
 	"trip2g/internal/case/admin/settgchatpublishtags"
 	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
+	"trip2g/internal/case/admin/startbackgroundqueue"
+	"trip2g/internal/case/admin/stopbackgroundqueue"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatecronjob"
@@ -213,6 +215,8 @@ type Env interface {
 	sendtelegrampublishnotenow.Env
 	convertnoteviewtotgpost.Env
 	createconfigversion.Env
+	startbackgroundqueue.Env
+	stopbackgroundqueue.Env
 
 	// Boosty credentials
 	createboostycredentials.Env

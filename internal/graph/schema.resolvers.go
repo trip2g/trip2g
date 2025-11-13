@@ -49,6 +49,8 @@ import (
 	"trip2g/internal/case/admin/settgchatpublishtags"
 	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
+	"trip2g/internal/case/admin/startbackgroundqueue"
+	"trip2g/internal/case/admin/stopbackgroundqueue"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatecronjob"
@@ -778,38 +780,12 @@ func (r *adminMutationResolver) CreateConfigVersion(ctx context.Context, obj *ap
 
 // StopBackgroundQueue is the resolver for the stopBackgroundQueue field.
 func (r *adminMutationResolver) StopBackgroundQueue(ctx context.Context, obj *appmodel.AdminMutation, input model.StopBackgroundQueueInput) (model.StopBackgroundQueueOrErrorPayload, error) {
-	err := r.env(ctx).StopBackgroundQueue(ctx, input.ID)
-	if err != nil {
-		//nolint:nilerr // ErrorPayload is the GraphQL way to return user-facing errors
-		return &model.ErrorPayload{Message: err.Error()}, nil
-	}
-
-	q, err := r.env(ctx).GetBackgroundQueue(ctx, input.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get queue after stop: %w", err)
-	}
-
-	return &model.StopBackgroundQueuePayload{
-		Queue: q,
-	}, nil
+	return stopbackgroundqueue.Resolve(ctx, r.env(ctx), input)
 }
 
 // StartBackgroundQueue is the resolver for the startBackgroundQueue field.
 func (r *adminMutationResolver) StartBackgroundQueue(ctx context.Context, obj *appmodel.AdminMutation, input model.StartBackgroundQueueInput) (model.StartBackgroundQueueOrErrorPayload, error) {
-	err := r.env(ctx).StartBackgroundQueue(ctx, input.ID)
-	if err != nil {
-		//nolint:nilerr // ErrorPayload is the GraphQL way to return user-facing errors
-		return &model.ErrorPayload{Message: err.Error()}, nil
-	}
-
-	q, err := r.env(ctx).GetBackgroundQueue(ctx, input.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get queue after start: %w", err)
-	}
-
-	return &model.StartBackgroundQueuePayload{
-		Queue: q,
-	}, nil
+	return startbackgroundqueue.Resolve(ctx, r.env(ctx), input)
 }
 
 // ClearBackgroundQueue is the resolver for the clearBackgroundQueue field.

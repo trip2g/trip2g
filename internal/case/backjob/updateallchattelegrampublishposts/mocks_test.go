@@ -103,7 +103,7 @@ type EnvMock struct {
 		}
 	}
 	lockConvertNoteViewToTelegramPost               sync.RWMutex
-	lockEnqueueUpdateTelegramMessage                   sync.RWMutex
+	lockEnqueueUpdateTelegramMessage                sync.RWMutex
 	lockLatestNoteViews                             sync.RWMutex
 	lockListTelegramPublishSentMessagesByChatID     sync.RWMutex
 	lockListTelegramPublishSentMessagesByNotePathID sync.RWMutex

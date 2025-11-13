@@ -2,6 +2,10 @@ $trip2g_admin_backgroundqueue_catalog $trip2g_admin_catalog
 	menu_title @ \Background Queues
 	close_button null $mol_view
 	param \id
+	actions /
+		<= StopAllButton $trip2g_admin_backgroundqueue_button_stop
+			queue_id \*
+			title @ \Stop All Queues
 	Menu_links_empty $mol_view
 		sub / <= empty_text @ \Empty
 	Content* $trip2g_admin_backgroundqueue_show

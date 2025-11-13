@@ -4,7 +4,7 @@ namespace $.$$ {
 			admin {
 				payload: startBackgroundQueue(input: $input) {
 					... on StartBackgroundQueuePayload {
-						queue {
+						queues {
 							id
 							stopped
 						}

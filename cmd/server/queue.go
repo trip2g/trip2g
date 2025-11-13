@@ -133,6 +133,14 @@ func (a *app) ListBackgroundQueues(ctx context.Context) []model.BackgroundQueue 
 }
 
 func (a *app) StopBackgroundQueue(ctx context.Context, name string) error {
+	// Handle special case: stop all queues
+	if name == "*" {
+		for _, q := range a.appQueues {
+			q.stop()
+		}
+		return nil
+	}
+
 	q, err := a.getBackgroundQueue(name)
 	if err != nil {
 		return err
@@ -143,6 +151,14 @@ func (a *app) StopBackgroundQueue(ctx context.Context, name string) error {
 }
 
 func (a *app) StartBackgroundQueue(ctx context.Context, name string) error {
+	// Handle special case: start all queues
+	if name == "*" {
+		for _, q := range a.appQueues {
+			q.start()
+		}
+		return nil
+	}
+
 	q, err := a.getBackgroundQueue(name)
 	if err != nil {
 		return err

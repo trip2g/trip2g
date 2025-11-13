@@ -2723,11 +2723,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-  *Queries
+	*Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-  return &WriteQueries{
-    Queries: New(db),
-  }
+	return &WriteQueries{
+		Queries: New(db),
+	}
 }
