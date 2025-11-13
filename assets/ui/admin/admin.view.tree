@@ -12,6 +12,11 @@ $trip2g_admin_app $trip2g_admin_catalog
 	plugins /
 		<= Theme $mol_theme_auto
 	menu_tools /
+		<= Languages $mol_locale_select
+			Filter null
+			dictionary *
+				ru \Русский
+				en \English
 		<= Lighter $mol_lights_toggle
 	menu_foot /
 		<= ProfileEmail $mol_view
