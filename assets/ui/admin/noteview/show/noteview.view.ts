@@ -7,10 +7,12 @@ namespace $.$$ {
 					path
 					title
 					permalink
+					content
 				}
 			}
 		}
 	`)
+
 	export class $trip2g_admin_noteview_show extends $.$trip2g_admin_noteview_show {
 		@$mol_mem
 		data() {
@@ -33,6 +35,10 @@ namespace $.$$ {
 
 		permalink() {
 			return this.data().permalink
+		}
+
+		override content() {
+			return this.data().content
 		}
 	}
 }

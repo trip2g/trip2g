@@ -13,3 +13,6 @@ $trip2g_admin_noteview_show $mol_page
 			title \Permalink
 			Content <= Permalink $trip2g_admin_cell
 				content <= permalink \
+		<= Text $mol_text
+			text <= content \
+
