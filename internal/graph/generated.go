@@ -545,6 +545,7 @@ type ComplexityRoot struct {
 		BoostyCredentials          func(childComplexity int, id int64) int
 		CronJob                    func(childComplexity int, id int64) int
 		HTMLInjection              func(childComplexity int, id int64) int
+		HealthChecks               func(childComplexity int) int
 		LatestConfig               func(childComplexity int) int
 		NoteAsset                  func(childComplexity int, id int64) int
 		NoteView                   func(childComplexity int, id string) int
@@ -870,6 +871,12 @@ type ComplexityRoot struct {
 	GenerateTgAttachCodePayload struct {
 		Code func(childComplexity int) int
 		URL  func(childComplexity int) int
+	}
+
+	HealchCheck struct {
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Status      func(childComplexity int) int
 	}
 
 	HideNotesPayload struct {
@@ -1469,6 +1476,7 @@ type AdminQueryResolver interface {
 	ActiveUserSubgraphs(ctx context.Context, obj *model1.AdminQuery, id int64) ([]string, error)
 	AllBackgroundQueues(ctx context.Context, obj *model1.AdminQuery) (*model.AdminBackgroundQueuesConnection, error)
 	BackgroundQueue(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.BackgroundQueue, error)
+	HealthChecks(ctx context.Context, obj *model1.AdminQuery) ([]model.HealchCheck, error)
 }
 type AdminRedirectResolver interface {
 	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
@@ -3638,6 +3646,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.HTMLInjection(childComplexity, args["id"].(int64)), true
+	case "AdminQuery.healthChecks":
+		if e.complexity.AdminQuery.HealthChecks == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.HealthChecks(childComplexity), true
 	case "AdminQuery.latestConfig":
 		if e.complexity.AdminQuery.LatestConfig == nil {
 			break
@@ -4723,6 +4737,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.GenerateTgAttachCodePayload.URL(childComplexity), true
+
+	case "HealchCheck.description":
+		if e.complexity.HealchCheck.Description == nil {
+			break
+		}
+
+		return e.complexity.HealchCheck.Description(childComplexity), true
+	case "HealchCheck.id":
+		if e.complexity.HealchCheck.ID == nil {
+			break
+		}
+
+		return e.complexity.HealchCheck.ID(childComplexity), true
+	case "HealchCheck.status":
+		if e.complexity.HealchCheck.Status == nil {
+			break
+		}
+
+		return e.complexity.HealchCheck.Status(childComplexity), true
 
 	case "HideNotesPayload.success":
 		if e.complexity.HideNotesPayload.Success == nil {
@@ -16954,6 +16987,43 @@ func (ec *executionContext) fieldContext_AdminQuery_backgroundQueue(ctx context.
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_healthChecks(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_healthChecks,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().HealthChecks(ctx, obj)
+		},
+		nil,
+		ec.marshalNHealchCheck2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐHealchCheckᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_healthChecks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_HealchCheck_id(ctx, field)
+			case "status":
+				return ec.fieldContext_HealchCheck_status(ctx, field)
+			case "description":
+				return ec.fieldContext_HealchCheck_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type HealchCheck", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminRedirect_id(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -21965,6 +22035,93 @@ func (ec *executionContext) fieldContext_GenerateTgAttachCodePayload_url(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _HealchCheck_id(ctx context.Context, field graphql.CollectedField, obj *model.HealchCheck) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HealchCheck_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HealchCheck_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HealchCheck",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HealchCheck_status(ctx context.Context, field graphql.CollectedField, obj *model.HealchCheck) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HealchCheck_status,
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		ec.marshalNHealthCheckStatus2trip2gᚋinternalᚋgraphᚋmodelᚐHealthCheckStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HealchCheck_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HealchCheck",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type HealthCheckStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _HealchCheck_description(ctx context.Context, field graphql.CollectedField, obj *model.HealchCheck) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_HealchCheck_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_HealchCheck_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "HealchCheck",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _HideNotesPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.HideNotesPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24123,6 +24280,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allBackgroundQueues(ctx, field)
 			case "backgroundQueue":
 				return ec.fieldContext_AdminQuery_backgroundQueue(ctx, field)
+			case "healthChecks":
+				return ec.fieldContext_AdminQuery_healthChecks(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -41461,6 +41620,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "healthChecks":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_healthChecks(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -45713,6 +45908,55 @@ func (ec *executionContext) _GenerateTgAttachCodePayload(ctx context.Context, se
 			}
 		case "url":
 			out.Values[i] = ec._GenerateTgAttachCodePayload_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var healchCheckImplementors = []string{"HealchCheck"}
+
+func (ec *executionContext) _HealchCheck(ctx context.Context, sel ast.SelectionSet, obj *model.HealchCheck) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, healchCheckImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HealchCheck")
+		case "id":
+			out.Values[i] = ec._HealchCheck_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._HealchCheck_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._HealchCheck_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -53094,6 +53338,64 @@ func (ec *executionContext) marshalNGenerateTgAttachCodeOrErrorPayload2trip2gᚋ
 		return graphql.Null
 	}
 	return ec._GenerateTgAttachCodeOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNHealchCheck2trip2gᚋinternalᚋgraphᚋmodelᚐHealchCheck(ctx context.Context, sel ast.SelectionSet, v model.HealchCheck) graphql.Marshaler {
+	return ec._HealchCheck(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNHealchCheck2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐHealchCheckᚄ(ctx context.Context, sel ast.SelectionSet, v []model.HealchCheck) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNHealchCheck2trip2gᚋinternalᚋgraphᚋmodelᚐHealchCheck(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalNHealthCheckStatus2trip2gᚋinternalᚋgraphᚋmodelᚐHealthCheckStatus(ctx context.Context, v any) (model.HealthCheckStatus, error) {
+	var res model.HealthCheckStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNHealthCheckStatus2trip2gᚋinternalᚋgraphᚋmodelᚐHealthCheckStatus(ctx context.Context, sel ast.SelectionSet, v model.HealthCheckStatus) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNHideNotesInput2trip2gᚋinternalᚋgraphᚋmodelᚐHideNotesInput(ctx context.Context, v any) (model.HideNotesInput, error) {

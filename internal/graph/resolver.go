@@ -7,6 +7,7 @@ import (
 
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
+	"trip2g/internal/case/admin/checkhealth"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createconfigversion"
@@ -174,6 +175,7 @@ type Env interface {
 	checkapikey.Env
 
 	banuser.Env
+	checkhealth.Env
 	updatesubgraph.Env
 	updateusersubgraphaccess.Env
 	unbanuser.Env

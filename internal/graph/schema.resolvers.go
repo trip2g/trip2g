@@ -17,6 +17,7 @@ import (
 	"time"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
+	"trip2g/internal/case/admin/checkhealth"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createconfigversion"
@@ -1296,6 +1297,11 @@ func (r *adminQueryResolver) BackgroundQueue(ctx context.Context, obj *appmodel.
 	}
 
 	return q, nil
+}
+
+// HealthChecks is the resolver for the healthChecks field.
+func (r *adminQueryResolver) HealthChecks(ctx context.Context, obj *appmodel.AdminQuery) ([]model.HealchCheck, error) {
+	return checkhealth.Resolve(ctx, r.env(ctx))
 }
 
 // CreatedBy is the resolver for the createdBy field.

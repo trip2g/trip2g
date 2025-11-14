@@ -732,6 +732,20 @@ type AdminQuery {
 
   allBackgroundQueues: AdminBackgroundQueuesConnection!
   backgroundQueue(id: String!): AdminBackgroundQueue
+
+  healthChecks: [HealchCheck!]!
+}
+
+enum HealthCheckStatus {
+  OK
+  WARNING
+  CRITICAL
+}
+
+type HealchCheck {
+  id: String!
+  status: HealthCheckStatus!
+  description: String!
 }
 
 enum Role {

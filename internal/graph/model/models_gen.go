@@ -881,6 +881,12 @@ type GenerateTgAttachCodePayload struct {
 
 func (GenerateTgAttachCodePayload) IsGenerateTgAttachCodeOrErrorPayload() {}
 
+type HealchCheck struct {
+	ID          string            `json:"id"`
+	Status      HealthCheckStatus `json:"status"`
+	Description string            `json:"description"`
+}
+
 type HideNotesInput struct {
 	Paths  []string  `json:"paths"`
 	ApiKey db.ApiKey `json:"-"`
@@ -1563,6 +1569,63 @@ func (e *CronJobExecutionStatus) UnmarshalJSON(b []byte) error {
 }
 
 func (e CronJobExecutionStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type HealthCheckStatus string
+
+const (
+	HealthCheckStatusOk       HealthCheckStatus = "OK"
+	HealthCheckStatusWarning  HealthCheckStatus = "WARNING"
+	HealthCheckStatusCritical HealthCheckStatus = "CRITICAL"
+)
+
+var AllHealthCheckStatus = []HealthCheckStatus{
+	HealthCheckStatusOk,
+	HealthCheckStatusWarning,
+	HealthCheckStatusCritical,
+}
+
+func (e HealthCheckStatus) IsValid() bool {
+	switch e {
+	case HealthCheckStatusOk, HealthCheckStatusWarning, HealthCheckStatusCritical:
+		return true
+	}
+	return false
+}
+
+func (e HealthCheckStatus) String() string {
+	return string(e)
+}
+
+func (e *HealthCheckStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = HealthCheckStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid HealthCheckStatus", str)
+	}
+	return nil
+}
+
+func (e HealthCheckStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *HealthCheckStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e HealthCheckStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
