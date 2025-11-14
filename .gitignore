@@ -15,3 +15,9 @@ run.sh
 examples.json
 infra/hosts
 demo/.obsidian
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+.test-api-key

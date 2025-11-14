@@ -1,0 +1,82 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: trip2g-test-minio
+    ports:
+      - "20000:9000"  # API
+      - "20001:9001"  # Console
+    environment:
+      MINIO_ROOT_USER: testuser
+      MINIO_ROOT_PASSWORD: testpassword
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # На ARM Linux: нативно arm64
+      # На CI x64: нативно amd64
+      # Docker автоматически выбирает правильную архитектуру
+    container_name: trip2g-test-app
+    depends_on:
+      minio:
+        condition: service_healthy
+    ports:
+      - "20080:8081"      # Main HTTP
+      - "20082:8082"      # Internal/health
+    environment:
+      # Server
+      - LISTEN_ADDR=:8081
+      - INTERNAL_LISTEN_ADDR=:8082
+      - DB_FILE=/data/test.sqlite3
+      - DEV=true # sign in code 000000
+      - LOG_LEVEL=debug
+      - OWNER_EMAIL=hello@example.com
+      - SHUTDOWN_GRACE_PERIOD=1ms
+      - SHUTDOWN_TIMEOUT=1ms
+
+      # MinIO
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY_ID=testuser
+      - MINIO_SECRET_KEY=testpassword
+      - MINIO_BUCKET=test-bucket
+      - MINIO_USE_SSL=false
+
+      # Public URL
+      - PUBLIC_URL=http://localhost:20080
+
+      # JWT (test secret - НЕ использовать в продакшене!)
+      - JWT_SECRET=test-secret-key-for-testing-only-do-not-use-in-production
+
+      # Git API (using test vault)
+      - GIT_API_REPO_PATH=/app/testdata/vault
+      - GIT_API_BASE_PATH=/git
+
+      # Email (mock for tests)
+      - RESEND_API_KEY=test-key
+      - MAIL_FROM=test@example.com
+    volumes:
+      - test-data:/data
+      - ./testdata/vault:/app/testdata/vault:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - test-network
+
+volumes:
+  test-data:
+
+networks:
+  test-network:
+    driver: bridge

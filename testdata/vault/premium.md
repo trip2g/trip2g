@@ -3,8 +3,6 @@ subgraphs: premium
 title: Premium Course Home
 ---
 
-# Welcome to Premium Course
-
 This is the home page for the premium subgraph.
 
 Available lessons:

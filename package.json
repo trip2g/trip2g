@@ -5,7 +5,10 @@
     "dev": "vite",
     "graphqlgen": "graphql-codegen --config graphqlgen.js",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "./scripts/test-e2e.sh",
+    "test:e2e:ui": "./scripts/test-e2e.sh --ui",
+    "test:e2e:headed": "./scripts/test-e2e.sh --headed"
   },
   "dependencies": {
     "graphology": "^0.26.0",
@@ -17,6 +20,7 @@
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.5",
+    "@playwright/test": "^1.49.0",
     "@tailwindcss/cli": "^4.1.12",
     "@tailwindcss/typography": "^0.5.16",
     "daisyui": "^5.0.35",

@@ -5,8 +5,6 @@ description: Comprehensive test vault for Obsidian publishing features
 sidebar: true
 ---
 
-# Test Vault
-
 Welcome to the comprehensive test vault for Obsidian publishing!
 
 ## Link Resolution Tests

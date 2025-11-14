@@ -1,2 +1,1 @@
-# Guide A
-Path: /projectA/guide.md
+Guide A file located at /projectA/guide.md

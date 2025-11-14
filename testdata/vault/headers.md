@@ -1,4 +1,4 @@
-# Headers Test
+This page demonstrates header links and block references in Obsidian-style links.
 
 ## Section One
 Content here.

@@ -8,9 +8,7 @@ title: Complex Content Example
 description: Advanced content with various markdown features
 ---
 
-# Complex Content
-
-This is a comprehensive example.
+This is a comprehensive example demonstrating all markdown features including lists, blockquotes, tables, links, emphasis, task lists, and horizontal rules.
 
 ## Lists
 

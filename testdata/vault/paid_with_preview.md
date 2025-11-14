@@ -5,8 +5,6 @@ title: Premium Content with Preview
 description: Paid content with 2 free preview paragraphs
 ---
 
-# Premium Content
-
 This is the first paragraph that everyone can read.
 
 This is the second free paragraph with more information.

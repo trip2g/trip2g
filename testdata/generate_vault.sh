@@ -18,12 +18,10 @@ mkdir -p "$VAULT"/_layouts/custom
 # ============================================================================
 
 cat > "$VAULT/unique.md" << 'EOF'
-# Unique File
 Link: [[deep]] - should find /folder/deep.md
 EOF
 
 cat > "$VAULT/folder/deep.md" << 'EOF'
-# Deep File
 Found me! Path: /folder/deep.md
 EOF
 
@@ -32,17 +30,14 @@ EOF
 # ============================================================================
 
 cat > "$VAULT/dup.md" << 'EOF'
-# Duplicate in ROOT
 I'm at /dup.md
 EOF
 
 cat > "$VAULT/folder/dup.md" << 'EOF'
-# Duplicate in FOLDER
 I'm at /folder/dup.md
 EOF
 
 cat > "$VAULT/folder/source.md" << 'EOF'
-# Source File (in /folder/)
 Test: [[dup]] - goes to ROOT, not local! ⚠️
 Local: [[./dup]] - this one stays local ✅
 Explicit: [[folder/dup]] - also local ✅
@@ -53,33 +48,31 @@ EOF
 # ============================================================================
 
 cat > "$VAULT/projectA/README.md" << 'EOF'
-# Project A
+Testing link resolution with ambiguous filenames.
+
 Link: [[guide]] - ambiguous!
 Explicit: [[projectA/guide]] - clear
 EOF
 
 cat > "$VAULT/projectA/guide.md" << 'EOF'
-# Guide A
-Path: /projectA/guide.md
+Guide A file located at /projectA/guide.md
 EOF
 
 cat > "$VAULT/projectA/_index.md" << 'EOF'
-# Project A Index
 This is the index page for Project A
 EOF
 
 cat > "$VAULT/projectB/README.md" << 'EOF'
-# Project B
+Project B testing duplicate README files.
+
 Link: [[_index]] - to vault home
 EOF
 
 cat > "$VAULT/projectB/guide.md" << 'EOF'
-# Guide B
-Path: /projectB/guide.md
+Guide B file located at /projectB/guide.md
 EOF
 
 cat > "$VAULT/projectB/_index.md" << 'EOF'
-# Project B Index
 This is the index page for Project B
 EOF
 
@@ -90,8 +83,7 @@ title: Public Content Page
 description: This is a public page available to everyone
 ---
 
-# Public Content
-This is publicly accessible content without paywall.
+This is publicly accessible content without paywall. Anyone can read this page without authentication or subscription.
 EOF
 
 cat > "$VAULT/telegram_post.md" << 'EOF'
@@ -101,8 +93,7 @@ telegram_publish_tags:
   - my_group
 ---
 
-# Telegram Post
-This content will be published to Telegram.
+This content will be published to Telegram at the scheduled time. It demonstrates the telegram_publish_at and telegram_publish_tags frontmatter fields for automated posting to Telegram groups.
 EOF
 
 cat > "$VAULT/paid_with_preview.md" << 'EOF'
@@ -112,8 +103,6 @@ subgraphs: premium
 title: Premium Content with Preview
 description: Paid content with 2 free preview paragraphs
 ---
-
-# Premium Content
 
 This is the first paragraph that everyone can read.
 
@@ -129,8 +118,6 @@ cat > "$VAULT/paid_with_cut.md" << 'EOF'
 free_cut: true
 subgraphs: premium
 ---
-
-# Content with Free Cut
 
 This is the free preview section.
 
@@ -149,8 +136,6 @@ layout: custom/page
 title: Custom Layout Page
 ---
 
-# Custom Layout Test
-
 This page uses a custom layout from _layouts/custom/page.html.
 
 The layout includes:
@@ -166,7 +151,7 @@ complexity: medium
 reading_time: 5
 ---
 
-# TOC Test Page
+This page demonstrates the table of contents feature with the 'toc: show' frontmatter field. It shows automatic navigation generation from heading structure.
 
 ## Section 1
 Content for section 1
@@ -187,23 +172,17 @@ title: Проверка кириллицы
 description: Тест русских символов в URL
 ---
 
-# Кириллица
-
-Страница с [[Моя страница|кириллическими ссылками]].
+Страница с [[Моя страница|кириллическими ссылками]] для проверки работы с русскими символами в URL и названиях файлов.
 EOF
 
 cat > "$VAULT/Моя страница.md" << 'EOF'
-# Моя страница
-
-Контент с русским названием файла.
+Контент с русским названием файла для проверки работы с кириллицей в именах файлов.
 EOF
 
 cat > "$VAULT/File with spaces.md" << 'EOF'
 ---
 title: File Name With Spaces
 ---
-
-# Testing Spaces
 
 This file has spaces in its name to test URL normalization.
 
@@ -216,7 +195,7 @@ free: true
 title: Code and Media Test
 ---
 
-# Code and Media Examples
+This page demonstrates various code blocks and media embeds including YouTube videos, external images, and local image references.
 
 ## Code Block
 
@@ -249,8 +228,6 @@ redirect: /public
 title: This page redirects
 ---
 
-# Redirect Test
-
 You should not see this page. It redirects to [[public]].
 EOF
 
@@ -265,9 +242,7 @@ title: Complex Content Example
 description: Advanced content with various markdown features
 ---
 
-# Complex Content
-
-This is a comprehensive example.
+This is a comprehensive example demonstrating all markdown features including lists, blockquotes, tables, links, emphasis, task lists, and horizontal rules.
 
 ## Lists
 
@@ -328,7 +303,8 @@ EOF
 # ============================================================================
 
 cat > "$VAULT/img-test.md" << 'EOF'
-# Image Test
+This page tests image resolution with duplicate filenames.
+
 Global: ![[test.png]] - which one?
 Explicit: ![[assets/test.png]] - clear
 EOF
@@ -348,7 +324,7 @@ curl -s "https://placehold.co/600x200?text=/folder/test.png" -o "$VAULT/folder/t
 # ============================================================================
 
 cat > "$VAULT/headers.md" << 'EOF'
-# Headers Test
+This page demonstrates header links and block references in Obsidian-style links.
 
 ## Section One
 Content here.
@@ -368,7 +344,6 @@ cat > "$VAULT/_banner.md" << 'EOF'
 ---
 banner: true
 ---
-# ROOT Banner
 I'm the banner at /_banner.md
 EOF
 
@@ -376,7 +351,6 @@ cat > "$VAULT/projectA/_banner.md" << 'EOF'
 ---
 banner: true
 ---
-# Project A Banner
 I'm the banner at /projectA/_banner.md
 EOF
 
@@ -384,12 +358,11 @@ cat > "$VAULT/projectB/_banner.md" << 'EOF'
 ---
 banner: true
 ---
-# Project B Banner
 I'm the banner at /projectB/_banner.md
 EOF
 
 cat > "$VAULT/embedding.md" << 'EOF'
-# Embedding Test
+This page demonstrates markdown embeds with duplicate filenames. Global embed should resolve to ROOT, while explicit paths are clear.
 
 Global embed: ![[_banner]] - should resolve to ROOT
 Explicit: ![[projectA/_banner]] - clear
@@ -472,8 +445,6 @@ subgraphs: premium
 title: Premium Course Home
 ---
 
-# Welcome to Premium Course
-
 This is the home page for the premium subgraph.
 
 Available lessons:
@@ -488,8 +459,6 @@ title: Test Vault Home
 description: Comprehensive test vault for Obsidian publishing features
 sidebar: true
 ---
-
-# Test Vault
 
 Welcome to the comprehensive test vault for Obsidian publishing!
 

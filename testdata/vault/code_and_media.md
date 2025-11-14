@@ -3,7 +3,7 @@ free: true
 title: Code and Media Test
 ---
 
-# Code and Media Examples
+This page demonstrates various code blocks and media embeds including YouTube videos, external images, and local image references.
 
 ## Code Block
 
