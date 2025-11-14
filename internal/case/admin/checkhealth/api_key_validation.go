@@ -1,13 +1,8 @@
 package checkhealth
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"strings"
 
 	"trip2g/internal/graph/model"
 )
@@ -18,27 +13,9 @@ func (c *APIKeyValidationChecker) ID() string {
 	return "api_key_validation"
 }
 
-type graphqlResponse struct {
-	Errors []struct {
-		Message string `json:"message"`
-	} `json:"errors"`
-	Data interface{} `json:"data"`
-}
-
 func (c *APIKeyValidationChecker) checkMissingAPIKey(ctx context.Context, graphqlURL, apiQuery string) *model.HealchCheck {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, graphqlURL, bytes.NewBufferString(apiQuery))
-	if err != nil {
-		return &model.HealchCheck{
-			ID:          c.ID(),
-			Status:      model.HealthCheckStatusCritical,
-			Description: fmt.Sprintf("Failed to create request: %v", err),
-		}
-	}
-	req.Header.Set("Content-Type", "application/json")
 	// Intentionally NOT setting X-API-Key header
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := makeGraphQLRequest(ctx, graphqlURL, apiQuery, nil)
 	if err != nil {
 		return &model.HealchCheck{
 			ID:          c.ID(),
@@ -46,54 +23,20 @@ func (c *APIKeyValidationChecker) checkMissingAPIKey(ctx context.Context, graphq
 			Description: fmt.Sprintf("Failed to make request without API key: %v", err),
 		}
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return &model.HealchCheck{
-			ID:          c.ID(),
-			Status:      model.HealthCheckStatusCritical,
-			Description: fmt.Sprintf("Failed to read response: %v", err),
-		}
-	}
-
-	var graphqlResp graphqlResponse
-	err = json.Unmarshal(body, &graphqlResp)
-	if err != nil {
-		return &model.HealchCheck{
-			ID:          c.ID(),
-			Status:      model.HealthCheckStatusCritical,
-			Description: fmt.Sprintf("Failed to parse response: %v", err),
-		}
-	}
 
 	// Check for "missing X-API-Key" error
-	foundMissingKeyError := false
-	if len(graphqlResp.Errors) > 0 {
-		for _, e := range graphqlResp.Errors {
-			if strings.Contains(e.Message, "missing X-API-Key in request header") {
-				foundMissingKeyError = true
-				break
-			}
-		}
-	}
-
-	if !foundMissingKeyError {
-		if graphqlResp.Data != nil {
+	if !hasErrorContaining(resp, "missing X-API-Key in request header") {
+		if resp.Data != nil {
 			return &model.HealchCheck{
 				ID:          c.ID(),
 				Status:      model.HealthCheckStatusCritical,
 				Description: "API key validation is NOT enforced - requests without X-API-Key can access data!",
 			}
 		}
-		errorMsg := "no error"
-		if len(graphqlResp.Errors) > 0 {
-			errorMsg = graphqlResp.Errors[0].Message
-		}
 		return &model.HealchCheck{
 			ID:          c.ID(),
 			Status:      model.HealthCheckStatusWarning,
-			Description: fmt.Sprintf("Expected 'missing X-API-Key' error, got: %s", errorMsg),
+			Description: fmt.Sprintf("Expected 'missing X-API-Key' error, got: %s", getFirstErrorMessage(resp)),
 		}
 	}
 
@@ -101,20 +44,12 @@ func (c *APIKeyValidationChecker) checkMissingAPIKey(ctx context.Context, graphq
 }
 
 func (c *APIKeyValidationChecker) checkInvalidAPIKey(ctx context.Context, graphqlURL, apiQuery string) *model.HealchCheck {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, graphqlURL, bytes.NewBufferString(apiQuery))
-	if err != nil {
-		return &model.HealchCheck{
-			ID:          c.ID(),
-			Status:      model.HealthCheckStatusCritical,
-			Description: fmt.Sprintf("Failed to create second request: %v", err),
-		}
+	// Set invalid API key
+	headers := map[string]string{
+		"X-API-Key": "test",
 	}
-	req.Header.Set("Content-Type", "application/json")
-	//nolint:canonicalheader // X-API-Key is the custom header name used by the API
-	req.Header.Set("X-API-Key", "test")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := makeGraphQLRequest(ctx, graphqlURL, apiQuery, headers)
 	if err != nil {
 		return &model.HealchCheck{
 			ID:          c.ID(),
@@ -122,54 +57,20 @@ func (c *APIKeyValidationChecker) checkInvalidAPIKey(ctx context.Context, graphq
 			Description: fmt.Sprintf("Failed to make request with invalid API key: %v", err),
 		}
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return &model.HealchCheck{
-			ID:          c.ID(),
-			Status:      model.HealthCheckStatusCritical,
-			Description: fmt.Sprintf("Failed to read second response: %v", err),
-		}
-	}
-
-	var graphqlResp graphqlResponse
-	err = json.Unmarshal(body, &graphqlResp)
-	if err != nil {
-		return &model.HealchCheck{
-			ID:          c.ID(),
-			Status:      model.HealthCheckStatusCritical,
-			Description: fmt.Sprintf("Failed to parse second response: %v", err),
-		}
-	}
 
 	// Check for "invalid API key" error
-	foundInvalidKeyError := false
-	if len(graphqlResp.Errors) > 0 {
-		for _, e := range graphqlResp.Errors {
-			if strings.Contains(e.Message, "invalid API key") {
-				foundInvalidKeyError = true
-				break
-			}
-		}
-	}
-
-	if !foundInvalidKeyError {
-		if graphqlResp.Data != nil {
+	if !hasErrorContaining(resp, "invalid API key") {
+		if resp.Data != nil {
 			return &model.HealchCheck{
 				ID:          c.ID(),
 				Status:      model.HealthCheckStatusCritical,
 				Description: "Invalid API keys are accepted - requests with fake API keys can access data!",
 			}
 		}
-		errorMsg := "no error"
-		if len(graphqlResp.Errors) > 0 {
-			errorMsg = graphqlResp.Errors[0].Message
-		}
 		return &model.HealchCheck{
 			ID:          c.ID(),
 			Status:      model.HealthCheckStatusWarning,
-			Description: fmt.Sprintf("Expected 'invalid API key' error, got: %s", errorMsg),
+			Description: fmt.Sprintf("Expected 'invalid API key' error, got: %s", getFirstErrorMessage(resp)),
 		}
 	}
 
@@ -177,13 +78,19 @@ func (c *APIKeyValidationChecker) checkInvalidAPIKey(ctx context.Context, graphq
 }
 
 func (c *APIKeyValidationChecker) Check(ctx context.Context, env Env) model.HealchCheck {
-	publicURL := env.PublicURL()
+	publicURL := env.GetPublicURLForRequest(ctx)
+	if publicURL == "" {
+		return model.HealchCheck{
+			ID:          c.ID(),
+			Status:      model.HealthCheckStatusWarning,
+			Description: "Unable to determine public URL for request",
+		}
+	}
+
 	graphqlURL := publicURL + "/graphql"
 
 	// Query that requires API key
-	apiQuery := `{
-		"query": "query { notePaths { value } }"
-	}`
+	apiQuery := "query { notePaths { value } }"
 
 	// First check: request without X-API-Key header
 	if result := c.checkMissingAPIKey(ctx, graphqlURL, apiQuery); result != nil {

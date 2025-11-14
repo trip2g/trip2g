@@ -1,12 +1,8 @@
 package checkhealth
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 
 	"trip2g/internal/graph/model"
@@ -19,66 +15,33 @@ func (c *AdminAuthorizationChecker) ID() string {
 }
 
 func (c *AdminAuthorizationChecker) Check(ctx context.Context, env Env) model.HealchCheck {
-	publicURL := env.PublicURL()
+	publicURL := env.GetPublicURLForRequest(ctx)
+	if publicURL == "" {
+		return model.HealchCheck{
+			ID:          c.ID(),
+			Status:      model.HealthCheckStatusWarning,
+			Description: "Unable to determine public URL for request",
+		}
+	}
+
 	graphqlURL := publicURL + "/graphql"
 
 	// Query that requires admin authorization
-	adminQuery := `{
-		"query": "query { admin { latestConfig { timezone } } }"
-	}`
+	adminQuery := "query { admin { latestConfig { timezone } } }"
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, graphqlURL, bytes.NewBufferString(adminQuery))
-	if err != nil {
-		return model.HealchCheck{
-			ID:          c.ID(),
-			Status:      model.HealthCheckStatusCritical,
-			Description: fmt.Sprintf("Failed to create request: %v", err),
-		}
-	}
-
-	req.Header.Set("Content-Type", "application/json")
 	// Intentionally NOT setting authorization header
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := makeGraphQLRequest(ctx, graphqlURL, adminQuery, nil)
 	if err != nil {
 		return model.HealchCheck{
 			ID:          c.ID(),
 			Status:      model.HealthCheckStatusCritical,
-			Description: fmt.Sprintf("Failed to make request to %s: %v", graphqlURL, err),
-		}
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return model.HealchCheck{
-			ID:          c.ID(),
-			Status:      model.HealthCheckStatusCritical,
-			Description: fmt.Sprintf("Failed to read response: %v", err),
-		}
-	}
-
-	// Parse response
-	var graphqlResp struct {
-		Errors []struct {
-			Message string `json:"message"`
-		} `json:"errors"`
-		Data interface{} `json:"data"`
-	}
-
-	err = json.Unmarshal(body, &graphqlResp)
-	if err != nil {
-		return model.HealchCheck{
-			ID:          c.ID(),
-			Status:      model.HealthCheckStatusCritical,
-			Description: fmt.Sprintf("Failed to parse response: %v", err),
+			Description: fmt.Sprintf("Failed to make request: %v", err),
 		}
 	}
 
 	// Check that we got an "unauthorized" error
-	if len(graphqlResp.Errors) > 0 {
-		for _, e := range graphqlResp.Errors {
+	if len(resp.Errors) > 0 {
+		for _, e := range resp.Errors {
 			lowerMsg := strings.ToLower(e.Message)
 			if strings.Contains(lowerMsg, "unauthorized") {
 				return model.HealchCheck{
@@ -93,12 +56,12 @@ func (c *AdminAuthorizationChecker) Check(ctx context.Context, env Env) model.He
 		return model.HealchCheck{
 			ID:          c.ID(),
 			Status:      model.HealthCheckStatusWarning,
-			Description: fmt.Sprintf("Unexpected error response: %s", graphqlResp.Errors[0].Message),
+			Description: fmt.Sprintf("Unexpected error response: %s", getFirstErrorMessage(resp)),
 		}
 	}
 
 	// No errors means authorization was not enforced - this is bad!
-	if graphqlResp.Data != nil {
+	if resp.Data != nil {
 		return model.HealchCheck{
 			ID:          c.ID(),
 			Status:      model.HealthCheckStatusCritical,

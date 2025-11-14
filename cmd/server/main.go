@@ -1184,6 +1184,35 @@ func (a *app) PublicURL() string {
 	return a.config.PublicURL
 }
 
+func (a *app) GetPublicURLForRequest(ctx context.Context) string {
+	// If PublicURL is configured, use it
+	if publicURL := a.config.PublicURL; publicURL != "" {
+		return publicURL
+	}
+
+	// Otherwise, extract URL from the current request
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		// Fallback to empty string if no request context
+		return ""
+	}
+
+	if req.Req == nil {
+		return ""
+	}
+
+	// Get scheme (http or https)
+	scheme := "http"
+	if req.Req.IsTLS() {
+		scheme = "https"
+	}
+
+	// Get host from request
+	host := string(req.Req.Host())
+
+	return fmt.Sprintf("%s://%s", scheme, host)
+}
+
 func (a *app) TrustedDomains() []string {
 	domains := []string{}
 

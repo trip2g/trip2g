@@ -10,7 +10,7 @@ import (
 
 type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
-	PublicURL() string
+	GetPublicURLForRequest(ctx context.Context) string
 }
 
 // Checker interface for health check implementations.
