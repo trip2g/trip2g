@@ -3,7 +3,7 @@ namespace $ {
 
 	$mol_style_define( $trip2g_admin_labeler_name, {
 		flex: {
-			basis: rem( 10 ),
+			basis: rem( 12 ),
 		}
 	} )
 }
