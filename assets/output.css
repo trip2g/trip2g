@@ -3364,7 +3364,7 @@ html {
   font-size: var(--text-2xl);
   line-height: var(--tw-leading, var(--text-2xl--line-height));
 }
-.prose code {
+.prose code:not(pre code) {
   border-radius: 0.25rem;
   background-color: var(--color-gray-100);
   padding-inline: calc(var(--spacing) * 1);

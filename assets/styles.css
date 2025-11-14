@@ -341,6 +341,6 @@ html {
   @apply mt-8 mb-3 text-2xl;
 }
 
-.prose code {
+.prose code:not(pre code) {
   @apply bg-gray-100 dark:bg-gray-700 px-1 rounded;
 }
