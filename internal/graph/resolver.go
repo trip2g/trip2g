@@ -95,6 +95,8 @@ func (r *Resolver) env(ctx context.Context) Env {
 }
 
 type Env interface {
+	IsDevMode() bool
+
 	ListAllUsers(ctx context.Context) ([]db.User, error)
 	ListAllUserSubgraphAccesses(ctx context.Context) ([]db.UserSubgraphAccess, error)
 	ListAllSubgraphs(ctx context.Context) ([]db.Subgraph, error)

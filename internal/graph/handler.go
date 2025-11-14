@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"trip2g/internal/appreq"
 	"trip2g/internal/logger"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -76,18 +77,37 @@ func NewHandler(env Env) *handler.Server {
 	return srv
 }
 
+func disableIntrospection(ctx context.Context, opCtx *graphql.OperationContext, env Env) {
+	req, err := appreq.FromCtx(ctx)
+	if err != nil {
+		env.Logger().Warn("failed to get app request from context", "error", err)
+		return
+	}
+
+	userToken, err := req.UserToken()
+	if err != nil || userToken == nil {
+		opCtx.DisableIntrospection = true
+	}
+}
+
 func makeAroundOperations(
 	log logger.Logger,
 	skipTxMutations map[string]struct{},
 	env Env,
 	graphqlErr func(err error) graphql.ResponseHandler,
 ) graphql.OperationMiddleware {
+	devMode := env.IsDevMode()
+
 	return func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
 		operationContext := graphql.GetOperationContext(ctx)
 
 		op := operationContext.Operation
 
 		log.Debug("process", "operotion", op.Operation, "name", op.Name)
+
+		if !devMode {
+			disableIntrospection(ctx, operationContext, env)
+		}
 
 		if shouldSkipTx(op, skipTxMutations) {
 			return next(ctx)
