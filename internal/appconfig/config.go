@@ -162,11 +162,17 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 	ctx := context.Background()
 	cfg := DefaultConfig()
 
-	// Load .env file if it exists
-	err := loadDotEnv()
+	// Get env file path from ENV_FILE environment variable, default to .env
+	envFile := os.Getenv("ENV_FILE")
+	if envFile == "" {
+		envFile = ".env"
+	}
+
+	// Load .env file (or custom file if specified)
+	err := loadDotEnvFromPath(envFile)
 	if err != nil {
 		if log != nil {
-			log.Debug("failed to load .env file", "error", err)
+			log.Debug("failed to load env file", "file", envFile, "error", err)
 		}
 		// Don't fail if .env file doesn't exist or has issues
 	}
