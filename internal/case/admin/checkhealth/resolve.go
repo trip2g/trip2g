@@ -23,6 +23,8 @@ type Checker interface {
 func getCheckers() []Checker {
 	return []Checker{
 		&GraphQLIntrospectionChecker{},
+		&AdminAuthorizationChecker{},
+		&APIKeyValidationChecker{},
 	}
 }
 
