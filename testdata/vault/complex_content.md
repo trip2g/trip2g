@@ -40,8 +40,8 @@ This is a comprehensive example.
 
 ## Links
 
-- Internal: [[README]]
-- With alias: [[README|Home Page]]
+- Internal: [[_index]]
+- With alias: [[_index|Home Page]]
 - External: [Google](https://google.com)
 - Email: <test@example.com>
 

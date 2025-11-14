@@ -1,7 +1,3 @@
----
-hidden: true
----
-
 # Premium Course
 
 - [[premium|Home]]

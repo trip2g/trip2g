@@ -1,8 +1,4 @@
----
-hidden: true
----
-
-- [[README|Home]]
+- [[_index|Home]]
 - [[public]]
 - [[paid_with_preview]]
 - [[toc_test]]

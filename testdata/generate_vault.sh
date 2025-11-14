@@ -11,6 +11,7 @@ mkdir -p "$VAULT"/folder
 mkdir -p "$VAULT"/assets
 mkdir -p "$VAULT"/projectA
 mkdir -p "$VAULT"/projectB
+mkdir -p "$VAULT"/_layouts/custom
 
 # ============================================================================
 # Test 1: Unique filenames - simple case
@@ -69,7 +70,7 @@ EOF
 
 cat > "$VAULT/projectB/README.md" << 'EOF'
 # Project B
-Link: [[README]] - ambiguous!
+Link: [[_index]] - to vault home
 EOF
 
 cat > "$VAULT/projectB/guide.md" << 'EOF'
@@ -144,13 +145,18 @@ EOF
 
 cat > "$VAULT/with_layout.md" << 'EOF'
 ---
-layout: custom/landing
+layout: custom/page
 title: Custom Layout Page
 ---
 
-# Landing Page
+# Custom Layout Test
 
-This page uses a custom layout from _layouts/custom/landing.
+This page uses a custom layout from _layouts/custom/page.html.
+
+The layout includes:
+- Simple header with navigation
+- Content area with article wrapper
+- Footer with copyright
 EOF
 
 cat > "$VAULT/toc_test.md" << 'EOF'
@@ -201,7 +207,7 @@ title: File Name With Spaces
 
 This file has spaces in its name to test URL normalization.
 
-Link back: [[README]]
+Link back: [[_index]]
 EOF
 
 cat > "$VAULT/code_and_media.md" << 'EOF'
@@ -291,8 +297,8 @@ This is a comprehensive example.
 
 ## Links
 
-- Internal: [[README]]
-- With alias: [[README|Home Page]]
+- Internal: [[_index]]
+- With alias: [[_index|Home Page]]
 - External: [Google](https://google.com)
 - Email: <test@example.com>
 
@@ -391,25 +397,68 @@ Another: ![[projectB/_banner]] - also clear
 EOF
 
 # ============================================================================
-# README with all tests
+# Test 7: Custom layouts
+# ============================================================================
+
+cat > "$VAULT/_layouts/custom/blocks.html" << 'EOF'
+{{ block main_layout() }}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ note.Title }}</title>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+      </nav>
+    </header>
+
+    <main>
+      {{ yield content }}
+    </main>
+
+    <footer>
+      <p>&copy; 2025 Test Vault. All rights reserved.</p>
+    </footer>
+  </body>
+</html>
+
+{{ end }}
+EOF
+
+cat > "$VAULT/_layouts/custom/page.html" << 'EOF'
+{{ import "blocks" }}
+
+{{ yield main_layout() content }}
+
+<article>
+  <h1>{{ note.Title }}</h1>
+
+  <div>
+    {{ note.HTMLString() | unsafe }}
+  </div>
+</article>
+
+{{ end }}
+EOF
+
+# ============================================================================
+# Main page and sidebar
 # ============================================================================
 
 cat > "$VAULT/_sidebar.md" << 'EOF'
----
-hidden: true
----
-
-- [[README|Home]]
+- [[_index|Home]]
 - [[public]]
 - [[paid_with_preview]]
 - [[toc_test]]
 EOF
 
 cat > "$VAULT/_sidebar_premium.md" << 'EOF'
----
-hidden: true
----
-
 # Premium Course
 
 - [[premium|Home]]
@@ -432,7 +481,7 @@ Available lessons:
 - [[paid_with_cut]]
 EOF
 
-cat > "$VAULT/README.md" << 'EOF'
+cat > "$VAULT/_index.md" << 'EOF'
 ---
 free: true
 title: Test Vault Home
@@ -537,5 +586,5 @@ echo "   ✓ Redirects"
 echo "   ✓ Headers and block references"
 echo "   ✓ Complex markdown (tables, lists, quotes, tasks)"
 echo ""
-echo "📖 Open vault/README.md to see all available tests"
+echo "📖 Open vault/_index.md to see all available tests"
 echo ""

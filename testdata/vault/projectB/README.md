@@ -1,2 +1,2 @@
 # Project B
-Link: [[README]] - ambiguous!
+Link: [[_index]] - to vault home
