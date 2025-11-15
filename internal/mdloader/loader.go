@@ -21,6 +21,7 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
+	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 	"go.abhg.dev/goldmark/wikilink"
@@ -51,6 +52,7 @@ type loader struct {
 type Config struct {
 	AutoLowerWikilinks bool
 	FreeParagraphs     int // Default number of free paragraphs from config
+	SoftWraps          bool
 }
 
 type Options struct {
@@ -77,13 +79,19 @@ func Load(options Options) (*model.NoteViews, error) {
 	ldr.linkResolver.nvs = ldr.nvs
 	ldr.linkResolver.log = options.Log
 
+	renderOptions := []renderer.Option{
+		renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{
+			resolver: ldr.linkResolver,
+			nvs:      ldr.nvs,
+		}, 198)),
+	}
+
+	if !options.Config.SoftWraps {
+		renderOptions = append(renderOptions, html.WithHardWraps())
+	}
+
 	ldr.md = goldmark.New(
-		goldmark.WithRendererOptions(
-			renderer.WithNodeRenderers(util.Prioritized(&linkRenderer{
-				resolver: ldr.linkResolver,
-				nvs:      ldr.nvs,
-			}, 198)),
-		),
+		goldmark.WithRendererOptions(renderOptions...),
 		goldmark.WithExtensions(
 			highlight.Highlight,
 			&wikilink.Extender{

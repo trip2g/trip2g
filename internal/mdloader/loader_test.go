@@ -234,3 +234,74 @@ Links: [[existing]] [[nonexistent]] [[another_missing]]`),
 
 	cupaloy.SnapshotT(t, htmlSources)
 }
+
+// TestHardWraps tests that hard wraps are rendered correctly.
+// Obsidian by default uses hard wraps when you press Enter,
+// which means each line is a separate line in the markdown file,
+// but they should be rendered as <br> tags in HTML.
+func TestHardWraps(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "hard_wraps.md",
+		Content: []byte(`This is a paragraph with hard wraps.
+Obsidian by default uses hard wraps when you press Enter.
+This means each line is a separate line in the markdown file.
+But they should be rendered with <br> tags.
+
+This is a new paragraph after an empty line.`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Config: mdloader.Config{
+			SoftWraps: false, // Hard wraps (Obsidian default)
+		},
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/hard_wraps"].HTML)
+
+	// Should contain <br> tags for hard wraps
+	require.Contains(t, html, "<br>")
+
+	// Should have two separate paragraphs
+	require.Contains(t, html, "<p>This is a paragraph with hard wraps.")
+	require.Contains(t, html, "<p>This is a new paragraph after an empty line.</p>")
+}
+
+// TestSoftWraps tests that soft wraps are rendered correctly.
+// With soft wraps enabled, consecutive lines without empty lines
+// should be rendered as a single paragraph without <br> tags.
+func TestSoftWraps(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "soft_wraps.md",
+		Content: []byte(`This is a paragraph with soft wraps.
+These lines should be combined.
+Into a single paragraph.
+Without line breaks.
+
+This is a new paragraph after an empty line.`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Config: mdloader.Config{
+			SoftWraps: true, // Soft wraps
+		},
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/soft_wraps"].HTML)
+
+	// Should NOT contain <br> tags for soft wraps
+	require.NotContains(t, html, "<br>")
+
+	// Should have two separate paragraphs
+	require.Contains(t, html, "<p>This is a paragraph with soft wraps.")
+	require.Contains(t, html, "<p>This is a new paragraph after an empty line.</p>")
+}
