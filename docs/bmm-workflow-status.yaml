@@ -1,0 +1,44 @@
+# Workflow Status Template
+
+# This tracks progress through BMM methodology Analysis, Planning, and Solutioning phases.
+# Implementation phase is tracked separately in sprint-status.yaml
+
+# STATUS DEFINITIONS:
+# ==================
+# Initial Status (before completion):
+#   - required: Must be completed to progress
+#   - optional: Can be completed but not required
+#   - recommended: Strongly suggested but not required
+#   - conditional: Required only if certain conditions met (e.g., if_has_ui)
+#
+# Completion Status:
+#   - {file-path}: File created/found (e.g., "docs/product-brief.md")
+#   - skipped: Optional/conditional workflow that was skipped
+
+generated: "2025-11-15"
+project: "trip2g"
+project_type: "software"
+selected_track: "method"
+field_type: "brownfield"
+workflow_path: "method-brownfield.yaml"
+workflow_status:
+  # Prerequisite: Documentation
+  document-project: "docs/index.md"  # agent: analyst - COMPLETED
+
+  # Phase 0: Discovery (Optional)
+  brainstorm-project: optional  # agent: analyst
+  research: optional  # agent: analyst
+
+  # Phase 1: Planning
+  prd: required  # agent: pm
+  validate-prd: optional  # agent: pm
+  create-design: conditional  # agent: ux-designer
+
+  # Phase 2: Solutioning
+  create-architecture: recommended  # agent: architect
+  test-design: recommended  # agent: tea
+  validate-architecture: optional  # agent: architect
+  solutioning-gate-check: required  # agent: architect
+
+  # Phase 3: Implementation
+  sprint-planning: required  # agent: sm
