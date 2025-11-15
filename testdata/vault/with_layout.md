@@ -1,4 +1,5 @@
 ---
+free: true
 layout: custom/page
 title: Custom Layout Page
 ---

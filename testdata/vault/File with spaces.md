@@ -1,4 +1,5 @@
 ---
+free: true
 title: File Name With Spaces
 ---
 

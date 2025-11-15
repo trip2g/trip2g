@@ -1,4 +1,5 @@
 ---
+free: true
 toc: show
 complexity: medium
 reading_time: 5

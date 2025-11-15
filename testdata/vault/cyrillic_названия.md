@@ -1,4 +1,5 @@
 ---
+free: true
 title: Проверка кириллицы
 description: Тест русских символов в URL
 ---

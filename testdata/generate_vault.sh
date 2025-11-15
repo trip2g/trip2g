@@ -18,10 +18,16 @@ mkdir -p "$VAULT"/_layouts/custom
 # ============================================================================
 
 cat > "$VAULT/unique.md" << 'EOF'
+---
+free: true
+---
 Link: [[deep]] - should find /folder/deep.md
 EOF
 
 cat > "$VAULT/folder/deep.md" << 'EOF'
+---
+free: true
+---
 Found me! Path: /folder/deep.md
 EOF
 
@@ -30,14 +36,23 @@ EOF
 # ============================================================================
 
 cat > "$VAULT/dup.md" << 'EOF'
+---
+free: true
+---
 I'm at /dup.md
 EOF
 
 cat > "$VAULT/folder/dup.md" << 'EOF'
+---
+free: true
+---
 I'm at /folder/dup.md
 EOF
 
 cat > "$VAULT/folder/source.md" << 'EOF'
+---
+free: true
+---
 Test: [[dup]] - goes to ROOT, not local! ⚠️
 Local: [[./dup]] - this one stays local ✅
 Explicit: [[folder/dup]] - also local ✅
@@ -48,6 +63,9 @@ EOF
 # ============================================================================
 
 cat > "$VAULT/projectA/README.md" << 'EOF'
+---
+free: true
+---
 Testing link resolution with ambiguous filenames.
 
 Link: [[guide]] - ambiguous!
@@ -55,24 +73,39 @@ Explicit: [[projectA/guide]] - clear
 EOF
 
 cat > "$VAULT/projectA/guide.md" << 'EOF'
+---
+free: true
+---
 Guide A file located at /projectA/guide.md
 EOF
 
 cat > "$VAULT/projectA/_index.md" << 'EOF'
+---
+free: true
+---
 This is the index page for Project A
 EOF
 
 cat > "$VAULT/projectB/README.md" << 'EOF'
+---
+free: true
+---
 Project B testing duplicate README files.
 
 Link: [[_index]] - to vault home
 EOF
 
 cat > "$VAULT/projectB/guide.md" << 'EOF'
+---
+free: true
+---
 Guide B file located at /projectB/guide.md
 EOF
 
 cat > "$VAULT/projectB/_index.md" << 'EOF'
+---
+free: true
+---
 This is the index page for Project B
 EOF
 
@@ -132,6 +165,7 @@ EOF
 
 cat > "$VAULT/with_layout.md" << 'EOF'
 ---
+free: true
 layout: custom/page
 title: Custom Layout Page
 ---
@@ -146,6 +180,7 @@ EOF
 
 cat > "$VAULT/toc_test.md" << 'EOF'
 ---
+free: true
 toc: show
 complexity: medium
 reading_time: 5
@@ -168,6 +203,7 @@ EOF
 
 cat > "$VAULT/cyrillic_названия.md" << 'EOF'
 ---
+free: true
 title: Проверка кириллицы
 description: Тест русских символов в URL
 ---
@@ -176,11 +212,15 @@ description: Тест русских символов в URL
 EOF
 
 cat > "$VAULT/Моя страница.md" << 'EOF'
+---
+free: true
+---
 Контент с русским названием файла для проверки работы с кириллицей в именах файлов.
 EOF
 
 cat > "$VAULT/File with spaces.md" << 'EOF'
 ---
+free: true
 title: File Name With Spaces
 ---
 
@@ -303,6 +343,9 @@ EOF
 # ============================================================================
 
 cat > "$VAULT/img-test.md" << 'EOF'
+---
+free: true
+---
 This page tests image resolution with duplicate filenames.
 
 Global: ![[test.png]] - which one?
@@ -324,6 +367,9 @@ curl -s "https://placehold.co/600x200?text=/folder/test.png" -o "$VAULT/folder/t
 # ============================================================================
 
 cat > "$VAULT/headers.md" << 'EOF'
+---
+free: true
+---
 This page demonstrates header links and block references in Obsidian-style links.
 
 ## Section One
@@ -362,6 +408,9 @@ I'm the banner at /projectB/_banner.md
 EOF
 
 cat > "$VAULT/embedding.md" << 'EOF'
+---
+free: true
+---
 This page demonstrates markdown embeds with duplicate filenames. Global embed should resolve to ROOT, while explicit paths are clear.
 
 Global embed: ![[_banner]] - should resolve to ROOT

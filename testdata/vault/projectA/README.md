@@ -1,3 +1,6 @@
+---
+free: true
+---
 Testing link resolution with ambiguous filenames.
 
 Link: [[guide]] - ambiguous!
