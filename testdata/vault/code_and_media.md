@@ -27,4 +27,4 @@ This is \`inline code\` in text.
 
 ## Local Image
 
-![[test.png]]
+![[test_red.png]]

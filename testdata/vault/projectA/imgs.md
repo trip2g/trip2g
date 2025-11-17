@@ -1,10 +1,8 @@
 ---
 free: true
 ---
-# Image Test from projectA
+Should be format_purple.jpg:
+![[format_purple.jpg]]
 
-Should be format.jpg (purple):
-![[format.jpg]]
-
-Should be projectA/format.jpg (teal):
-![[projectA/format.jpg]]
+Should be projectA/format_teal.jpg:
+![[projectA/format_teal.jpg]]

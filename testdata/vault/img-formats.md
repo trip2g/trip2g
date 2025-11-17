@@ -1,19 +1,17 @@
 ---
 free: true
 ---
-# Image Format Tests
+Should be format_orange.png:
+![[format_orange.png]]
 
-Should be format.png (orange):
-![[format.png]]
+Should be format_purple.jpg:
+![[format_purple.jpg]]
 
-Should be format.jpg (purple):
-![[format.jpg]]
+Should be format_cyan.webp:
+![[format_cyan.webp]]
 
-Should be format.webp (cyan):
-![[format.webp]]
-
-Should be format.svg (gold):
-![[format.svg]]
+Should be format_FFD700.svg:
+![[format_FFD700.svg]]
 
 ---
 

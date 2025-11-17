@@ -10,11 +10,20 @@ VAULT="vault"
 download_placeholder() {
   local path="$1"
   local color="${2:-gray}"
-  local file="$VAULT/$path"
-  local ext="${path##*.}"
 
-  echo "Downloading $path..."
-  local url="https://placehold.co/400x300/${color}/white/${ext}?text=${path}"
+  # Insert color into filename before extension
+  local dir=$(dirname "$path")
+  local filename=$(basename "$path")
+  local name="${filename%.*}"
+  local ext="${filename##*.}"
+  local new_name="${name}_${color}.${ext}"
+  local new_path="$dir/$new_name"
+  [ "$dir" = "." ] && new_path="$new_name"
+
+  local file="$VAULT/$new_path"
+
+  echo "Downloading $new_path..."
+  local url="https://placehold.co/400x300/${color}/white/${ext}?text=${new_path}"
   curl -sL "$url" -o "$file"
 }
 
@@ -284,7 +293,7 @@ This is \`inline code\` in text.
 
 ## Local Image
 
-![[test.png]]
+![[test_red.png]]
 EOF
 
 cat > "$VAULT/redirect_test.md" << 'EOF'
@@ -371,16 +380,14 @@ cat > "$VAULT/img-test.md" << 'EOF'
 ---
 free: true
 ---
-# Image Resolution Test
+Should be test_red.png:
+![[test_red.png]]
 
-Should be test.png (red):
-![[test.png]]
+Should be assets/test_blue.png:
+![[assets/test_blue.png]]
 
-Should be assets/test.png (blue):
-![[assets/test.png]]
-
-Should be folder/test.png (green):
-![[folder/test.png]]
+Should be folder/test_green.png:
+![[folder/test_green.png]]
 
 ---
 
@@ -391,19 +398,17 @@ cat > "$VAULT/img-formats.md" << 'EOF'
 ---
 free: true
 ---
-# Image Format Tests
+Should be format_orange.png:
+![[format_orange.png]]
 
-Should be format.png (orange):
-![[format.png]]
+Should be format_purple.jpg:
+![[format_purple.jpg]]
 
-Should be format.jpg (purple):
-![[format.jpg]]
+Should be format_cyan.webp:
+![[format_cyan.webp]]
 
-Should be format.webp (cyan):
-![[format.webp]]
-
-Should be format.svg (gold):
-![[format.svg]]
+Should be format_FFD700.svg:
+![[format_FFD700.svg]]
 
 ---
 
@@ -414,25 +419,23 @@ cat > "$VAULT/folder/imgs.md" << 'EOF'
 ---
 free: true
 ---
-# Image Format Tests (from folder)
+Should be format_orange.png:
+![[format_orange.png]]
 
-Should be format.png (orange):
-![[format.png]]
+Should be format_purple.jpg:
+![[format_purple.jpg]]
 
-Should be format.jpg (purple):
-![[format.jpg]]
+Should be format_cyan.webp:
+![[format_cyan.webp]]
 
-Should be format.webp (cyan):
-![[format.webp]]
+Should be format_FFD700.svg:
+![[format_FFD700.svg]]
 
-Should be format.svg (gold):
-![[format.svg]]
+Should be folder/format_pink.png:
+![[folder/format_pink.png]]
 
-Should be folder/format.png (pink):
-![[folder/format.png]]
-
-Should be folder/format.jpg (lime):
-![[folder/format.jpg]]
+Should be folder/format_lime.jpg:
+![[folder/format_lime.jpg]]
 
 ---
 
@@ -443,13 +446,11 @@ cat > "$VAULT/projectA/imgs.md" << 'EOF'
 ---
 free: true
 ---
-# Image Test from projectA
+Should be format_purple.jpg:
+![[format_purple.jpg]]
 
-Should be format.jpg (purple):
-![[format.jpg]]
-
-Should be projectA/format.jpg (teal):
-![[projectA/format.jpg]]
+Should be projectA/format_teal.jpg:
+![[projectA/format_teal.jpg]]
 EOF
 
 # Create test images with placeholders
