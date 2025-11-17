@@ -5,6 +5,19 @@
 
 VAULT="vault"
 
+# Helper function to download placeholder image
+# Usage: download_placeholder "path/to/file.png" "color"
+download_placeholder() {
+  local path="$1"
+  local color="${2:-gray}"
+  local file="$VAULT/$path"
+  local ext="${path##*.}"
+
+  echo "Downloading $path..."
+  local url="https://placehold.co/400x300/${color}/white/${ext}?text=${path}"
+  curl -sL "$url" -o "$file"
+}
+
 echo "Creating test vault: $VAULT"
 rm -rf "$VAULT"
 mkdir -p "$VAULT"/folder
@@ -56,6 +69,18 @@ free: true
 Test: [[dup]] - goes to ROOT, not local! ⚠️
 Local: [[./dup]] - this one stays local ✅
 Explicit: [[folder/dup]] - also local ✅
+
+Should resolve to ROOT:
+
+![[_banner]]
+
+Should resolve to local folder:
+
+![[./_banner]]
+EOF
+
+cat > "$VAULT/folder/_banner.md" << 'EOF'
+A'm at folder/_banner.md
 EOF
 
 # ============================================================================
@@ -346,21 +371,109 @@ cat > "$VAULT/img-test.md" << 'EOF'
 ---
 free: true
 ---
-This page tests image resolution with duplicate filenames.
+# Image Resolution Test
 
-Global: ![[test.png]] - which one?
-Explicit: ![[assets/test.png]] - clear
+Should be test.png (red):
+![[test.png]]
+
+Should be assets/test.png (blue):
+![[assets/test.png]]
+
+Should be folder/test.png (green):
+![[folder/test.png]]
+
+---
+
+Links: [[img-formats]] [[folder/imgs]]
 EOF
 
-# Create test images (minimal 1x1 PNGs with different colors)
-# Alternative with network: curl -s "https://placehold.co/600x200?text=/test.png" -o "$VAULT/test.png"
+cat > "$VAULT/img-formats.md" << 'EOF'
+---
+free: true
+---
+# Image Format Tests
+
+Should be format.png (orange):
+![[format.png]]
+
+Should be format.jpg (purple):
+![[format.jpg]]
+
+Should be format.webp (cyan):
+![[format.webp]]
+
+Should be format.svg (gold):
+![[format.svg]]
+
+---
+
+Links: [[img-test]] [[folder/imgs]]
+EOF
+
+cat > "$VAULT/folder/imgs.md" << 'EOF'
+---
+free: true
+---
+# Image Format Tests (from folder)
+
+Should be format.png (orange):
+![[format.png]]
+
+Should be format.jpg (purple):
+![[format.jpg]]
+
+Should be format.webp (cyan):
+![[format.webp]]
+
+Should be format.svg (gold):
+![[format.svg]]
+
+Should be folder/format.png (pink):
+![[folder/format.png]]
+
+Should be folder/format.jpg (lime):
+![[folder/format.jpg]]
+
+---
+
+Links: [[img-test]] [[img-formats]]
+EOF
+
+cat > "$VAULT/projectA/imgs.md" << 'EOF'
+---
+free: true
+---
+# Image Test from projectA
+
+Should be format.jpg (purple):
+![[format.jpg]]
+
+Should be projectA/format.jpg (teal):
+![[projectA/format.jpg]]
+EOF
+
+# Create test images with placeholders
 echo "Creating test images..."
-# Red pixel (root image)
-curl -s "https://placehold.co/600x200?text=/test.png" -o "$VAULT/test.png"
-# Green pixel (assets image)
-curl -s "https://placehold.co/600x200?text=/assets/test.png" -o "$VAULT/assets/test.png"
-# Blue pixel (folder image)
-curl -s "https://placehold.co/600x200?text=/folder/test.png" -o "$VAULT/folder/test.png"
+
+# test.png files
+download_placeholder "test.png" "red"
+download_placeholder "assets/test.png" "blue"
+download_placeholder "folder/test.png" "green"
+
+# format.* files (root)
+download_placeholder "format.png" "orange"
+download_placeholder "format.jpg" "purple"
+download_placeholder "format.webp" "cyan"
+download_placeholder "format.svg" "FFD700"
+
+# format.* files (folder)
+download_placeholder "folder/format.png" "pink"
+download_placeholder "folder/format.jpg" "lime"
+download_placeholder "folder/format.webp" "navy"
+download_placeholder "folder/format.svg" "8B4513"
+
+# format.jpg (projectA)
+download_placeholder "projectA/format.jpg" "teal"
 
 # ============================================================================
 # Test 5: Headers and blocks
@@ -390,7 +503,7 @@ cat > "$VAULT/_banner.md" << 'EOF'
 ---
 banner: true
 ---
-I'm the banner at /_banner.md
+I'm the ROOT banner at /_banner.md
 EOF
 
 cat > "$VAULT/projectA/_banner.md" << 'EOF'
@@ -413,9 +526,17 @@ free: true
 ---
 This page demonstrates markdown embeds with duplicate filenames. Global embed should resolve to ROOT, while explicit paths are clear.
 
-Global embed: ![[_banner]] - should resolve to ROOT
-Explicit: ![[projectA/_banner]] - clear
-Another: ![[projectB/_banner]] - also clear
+Global embed. Should resolve to ROOT:
+
+![[_banner]]
+
+ProjectA banner:
+
+![[projectA/_banner]]
+
+ProductB banner:
+
+![[projectB/_banner]]
 EOF
 
 # ============================================================================

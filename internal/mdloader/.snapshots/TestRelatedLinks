@@ -1,5 +1,5 @@
 (map[string]string) (len=3) {
-  (string) (len=13) "/nested/first": (string) (len=63) "<p>nested <a data-pid=\"0\" href=\"/nested/second\">second</a></p>\n",
+  (string) (len=13) "/nested/first": (string) (len=56) "<p>nested <a data-pid=\"0\" href=\"/second\">second</a></p>\n",
   (string) (len=14) "/nested/second": (string) (len=21) "<p>nested second</p>\n",
   (string) (len=7) "/second": (string) (len=67) "<p>Hello <a data-pid=\"0\" href=\"/nested/first\">nested/first</a></p>\n"
 }

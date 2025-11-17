@@ -1,4 +1,4 @@
 ---
 banner: true
 ---
-I'm the banner at /_banner.md
+I'm the ROOT banner at /_banner.md

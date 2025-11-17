@@ -57,10 +57,10 @@ docker-compose -f docker-compose.test.yml down -v
 
 When running, the following services are available:
 
-- **App**: http://localhost:20080
+- **App**: http://localhost:20081
 - **App Health**: http://localhost:20082/health
-- **MinIO Console**: http://localhost:20001 (user: testuser, password: testpassword)
-- **MinIO API**: http://localhost:20000
+- **MinIO Console**: http://localhost:29001 (user: testuser, password: testpassword)
+- **MinIO API**: http://localhost:29000
 
 ## Architecture
 

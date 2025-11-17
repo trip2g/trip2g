@@ -6,6 +6,7 @@ import json
 import hashlib
 import base64
 import requests
+import time
 from collections import OrderedDict
 
 # get first arg or http://localhost:8081
@@ -102,6 +103,14 @@ def sha256_hash_file(file_path: str) -> str:
         content = f.read()
     return hashlib.sha256(content).hexdigest()
 
+def should_retry_multipart_error(error_obj, attempt: int, max_retries: int) -> bool:
+    """Check if error is a multipart order issue and we should retry"""
+    if attempt >= max_retries - 1:
+        return False
+
+    error_str = str(error_obj).lower()
+    return 'first part must be operations' in error_str
+
 def resolve_asset_path(relative_path: str, note_path: str, base_path: str) -> str:
     """Resolve relative asset path to absolute path"""
     if relative_path.startswith('/'):
@@ -139,8 +148,8 @@ def resolve_asset_path(relative_path: str, note_path: str, base_path: str) -> st
     
     return candidate_paths[0] if candidate_paths else os.path.join(base_path, relative_path)
 
-def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash: str) -> bool:
-    """Upload asset file to server"""
+def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash: str, max_retries: int = 3) -> bool:
+    """Upload asset file to server with retry logic"""
     if not os.path.exists(asset_path):
         print(f"⚠️ Asset file not found: {asset_path}")
         return False
@@ -175,49 +184,68 @@ def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash:
 
     files_map = json.dumps({"0": ["variables.input.file"]})
 
-    try:
-        with open(asset_path, 'rb') as f:
-            # Create multipart data with explicit ordering
-            # Using OrderedDict-like list to preserve order
-            files_ordered = [
-                ('operations', (None, operations, 'application/json')),
-                ('map', (None, files_map, 'application/json')),
-                ('0', (os.path.basename(asset_path), f.read(), 'application/octet-stream'))
-            ]
+    for attempt in range(max_retries):
+        try:
+            with open(asset_path, 'rb') as f:
+                # Create multipart data with explicit ordering
+                # Using OrderedDict-like list to preserve order
+                files_ordered = [
+                    ('operations', (None, operations, 'application/json')),
+                    ('map', (None, files_map, 'application/json')),
+                    ('0', (os.path.basename(asset_path), f.read(), 'application/octet-stream'))
+                ]
 
-            upload_headers = {
-                "X-API-Key": API_KEY,
-            }
+                upload_headers = {
+                    "X-API-Key": API_KEY,
+                }
 
-            response = requests.post(GRAPHQL_URL, headers=upload_headers, files=files_ordered)
-            response.raise_for_status()
+                response = requests.post(GRAPHQL_URL, headers=upload_headers, files=files_ordered)
+                response.raise_for_status()
 
-            result = response.json()
+                result = response.json()
 
-            if result.get('errors'):
-                print(f"❌ Asset upload error for {relative_path}: {result['errors']}")
-                return False
+                if result.get('errors'):
+                    if should_retry_multipart_error(result.get('errors'), attempt, max_retries):
+                        print(f"⚠️ Retry {attempt + 1}/{max_retries} for {relative_path}: multipart order issue")
+                        time.sleep(0.5 * (attempt + 1))  # Exponential backoff
+                        continue
 
-            payload = result.get('data', {}).get('uploadNoteAsset', {})
-            if payload.get('__typename') == 'ErrorPayload':
-                print(f"❌ Asset upload failed: {payload.get('message')}")
-                return False
-            elif payload.get('__typename') == 'UploadNoteAssetPayload' and not payload.get('uploadSkipped'):
-                print(f"✅ Asset uploaded: {relative_path}")
-                return True
+                    print(f"❌ Asset upload error for {relative_path}: {result['errors']}")
+                    return False
+
+                payload = result.get('data', {}).get('uploadNoteAsset', {})
+                if payload.get('__typename') == 'ErrorPayload':
+                    print(f"❌ Asset upload failed: {payload.get('message')}")
+                    return False
+                elif payload.get('__typename') == 'UploadNoteAssetPayload' and not payload.get('uploadSkipped'):
+                    if attempt > 0:
+                        print(f"✅ Asset uploaded: {relative_path} (after {attempt + 1} attempts)")
+                    else:
+                        print(f"✅ Asset uploaded: {relative_path}")
+                    return True
+                else:
+                    print(f"⏩ Asset upload skipped (already exists): {relative_path}")
+                    return True
+
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 422 and should_retry_multipart_error(e.response.text, attempt, max_retries):
+                print(f"⚠️ Retry {attempt + 1}/{max_retries} for {relative_path}: 422 multipart order issue")
+                time.sleep(0.5 * (attempt + 1))  # Exponential backoff
+                continue
+
+            # Log error and don't retry
+            if e.response.status_code == 422:
+                print(f"❌ 422 Unprocessable Entity for {relative_path}: {e.response.text}")
             else:
-                print(f"⏩ Asset upload skipped (already exists): {relative_path}")
-                return True
-                
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 422:
-            print(f"❌ 422 Unprocessable Entity for {relative_path}: {e.response.text}")
-        else:
-            print(f"❌ HTTP error uploading asset {relative_path}: {e}")
-        return False
-    except Exception as e:
-        print(f"❌ Failed to upload asset {relative_path}: {e}")
-        return False
+                print(f"❌ HTTP error uploading asset {relative_path}: {e}")
+            return False
+        except Exception as e:
+            print(f"❌ Failed to upload asset {relative_path}: {e}")
+            return False
+
+    # If we exhausted all retries
+    print(f"❌ Failed to upload {relative_path} after {max_retries} attempts")
+    return False
 
 def process_note_assets(notes, base_path):
     """Process assets for all notes after successful push"""

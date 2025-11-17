@@ -1,19 +1,75 @@
-infra
-.git
-.gitignore
+# Infrastructure and deployment
+infra/
+scripts/
+
+# Docker files
 Dockerfile
-node_modules
-tmp
+docker-compose*.yml
+.dockerignore
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+tmp/
 server
-data.sqlite3
-data.sqlite3-journal
-data.sqlite3-shm
-data.sqlite3-wal
 *.fasthttp.gz
-.vscode
 *easyjson-bootstrap*
-.aider*
+
+# Database files
+*.sqlite*
+
+# IDE and editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment and config
 .env
+.env.*
 run.sh
+
+# Development files
+.aider*
 examples.json
+.air.toml
+
+# Test files
+e2e/
+playwright-report/
+test-results/
+.test-api-key
+
+# Documentation
+docs/
+README.md
+CLAUDE.md
+
+# Demo and test data (use testdata/ instead)
+demo/
+demo2/
 demo/.obsidian
+
+# CI/CD
+.github/
+
+# BMad workflow files
+.bmad/
+.claude/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db

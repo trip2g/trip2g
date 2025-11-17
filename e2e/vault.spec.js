@@ -128,8 +128,10 @@ test.describe('Link Resolution', () => {
 
     // No title set, uses filename
     await expect(page.locator('h1').first()).toContainText('source');
-    // Check that there's mention of duplicates
-    await expect(page.getByText(/dup/)).toBeVisible();
+
+    // Check that link to 'dup' resolves to root /dup, not local /folder/dup
+    // This verifies Obsidian's global resolution with root priority
+    await expect(page.locator('a[href="/dup?version=latest"]')).toBeVisible();
   });
 
   test('headers and block references', async ({ page }) => {
@@ -156,6 +158,10 @@ test.describe('Special Features', () => {
 
     // No title set, uses filename
     await expect(page.locator('h1').first()).toContainText('embedding');
-    await expect(page.getByText('Global embed')).toBeVisible();
+
+    // Check that embedded banners appear exactly once
+    await expect(page.getByText("I'm the ROOT banner at /_banner.md")).toHaveCount(1);
+    await expect(page.getByText("I'm the banner at /projectA/_banner.md")).toHaveCount(1);
+    await expect(page.getByText("I'm the banner at /projectB/_banner.md")).toHaveCount(1);
   });
 });

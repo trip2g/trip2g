@@ -59,6 +59,12 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		}
 	}
 
+	if resp.Note != nil && resp.Note.Redirect != nil {
+		ctx.Response.Header.Set("Location", *resp.Note.Redirect)
+		ctx.SetStatusCode(http.StatusFound)
+		return nil, nil
+	}
+
 	if err != nil {
 		var paywallErr *PaywallError
 		if errors.As(err, &paywallErr) {
@@ -76,12 +82,6 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		}
 
 		return nil, err
-	}
-
-	if resp.Note.Redirect != nil {
-		ctx.Response.Header.Set("Location", *resp.Note.Redirect)
-		ctx.SetStatusCode(http.StatusFound)
-		return nil, nil
 	}
 
 	turbo := len(ctx.Request.Header.Peek("X-Turbo")) > 0

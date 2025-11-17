@@ -1,7 +1,17 @@
 ---
 free: true
 ---
-This page tests image resolution with duplicate filenames.
+# Image Resolution Test
 
-Global: ![[test.png]] - which one?
-Explicit: ![[assets/test.png]] - clear
+Should be test.png (red):
+![[test.png]]
+
+Should be assets/test.png (blue):
+![[assets/test.png]]
+
+Should be folder/test.png (green):
+![[folder/test.png]]
+
+---
+
+Links: [[img-formats]] [[folder/imgs]]

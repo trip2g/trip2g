@@ -272,32 +272,22 @@ func (ldr *loader) extractInLinks() error {
 
 			target := string(link.Target)
 
-			// Path: content
-			// second.md: [[nested/first]]
-			// nested/first.md: [[second]]
-
-			dir := filepath.Dir(p.Path)
-			if dir == "." {
-				dir = ""
-			}
-
-			dirParts := strings.Split(dir, "/")
-
-			for i := len(dirParts); i >= 0; i-- {
-				targetParts := append([]string{}, dirParts[:i]...)
-				targetParts = append(targetParts, target)
-
-				targetPermalink := strings.Join(targetParts, "/")
-
-				pp, found := ldr.nvs.PathMap[targetPermalink+".md"]
-				if !found {
-					pp, found = ldr.nvs.PathMap[targetPermalink]
+			// Handle explicit relative paths first (./file or ../file)
+			if strings.HasPrefix(target, "./") || strings.HasPrefix(target, "../") {
+				dir := filepath.Dir(p.Path)
+				if dir == "." {
+					dir = ""
 				}
 
-				// if p.Path == "эксперимент.md" {
-				// 	fmt.Println("targetPermalink", targetPermalink, "target", target)
-				// 	fmt.Println(ldr.nvs.PathMap)
-				// }
+				// Clean and join the relative path
+				resolvedPath := filepath.Join(dir, target)
+				resolvedPath = filepath.Clean(resolvedPath)
+
+				// Try with and without .md extension
+				pp, found := ldr.nvs.PathMap[resolvedPath+".md"]
+				if !found {
+					pp, found = ldr.nvs.PathMap[resolvedPath]
+				}
 
 				if found {
 					p.ResolvedLinks[string(link.Target)] = pp.Permalink
@@ -305,6 +295,107 @@ func (ldr *loader) extractInLinks() error {
 					link.Target = []byte(pp.Permalink)
 
 					return ast.WalkContinue, nil
+				}
+
+				// Not found, fall through to mark as broken
+				_, assetExists := p.AssetReplaces[target]
+				if !assetExists {
+					if resolveAsImage(link) {
+						p.AddWarning(model.NoteWarningInfo, "broken image link: %s", target)
+					} else {
+						p.AddWarning(model.NoteWarningInfo, "broken link: %s", target)
+					}
+				}
+
+				return ast.WalkContinue, nil
+			}
+
+			// Obsidian behavior: For simple filenames (no path separators),
+			// use GLOBAL resolution with shortest-path priority.
+			// For paths with '/', use relative path resolution.
+			isSimpleFilename := !strings.Contains(target, "/")
+
+			if isSimpleFilename {
+				// Global filename resolution (Obsidian behavior)
+				// Search for files whose basename matches the target
+				targetBasename := strings.ToLower(filepath.Base(target))
+				var candidates []*model.NoteView
+
+				for path, note := range ldr.nvs.PathMap {
+					// Get filename without extension
+					filename := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+					if strings.ToLower(filename) == targetBasename {
+						candidates = append(candidates, note)
+					}
+				}
+
+				// If we found exactly one match, use it
+				if len(candidates) == 1 {
+					pp := candidates[0]
+					p.ResolvedLinks[string(link.Target)] = pp.Permalink
+					pp.InLinks[p.Permalink] = struct{}{}
+					link.Target = []byte(pp.Permalink)
+
+					return ast.WalkContinue, nil
+				}
+
+				// If multiple matches, prioritize by shortest path from root
+				if len(candidates) > 1 {
+					shortest := candidates[0]
+					shortestDepth := strings.Count(shortest.Path, "/")
+
+					for _, candidate := range candidates[1:] {
+						depth := strings.Count(candidate.Path, "/")
+						if depth < shortestDepth {
+							shortest = candidate
+							shortestDepth = depth
+						}
+					}
+
+					p.ResolvedLinks[string(link.Target)] = shortest.Permalink
+					shortest.InLinks[p.Permalink] = struct{}{}
+					link.Target = []byte(shortest.Permalink)
+
+					return ast.WalkContinue, nil
+				}
+
+				// No matches found in global search, fall through to mark as broken
+			} else {
+				// Path contains '/', use relative path resolution (walking up the directory tree)
+				// Path: content
+				// second.md: [[nested/first]]
+				// nested/first.md: [[second]]
+
+				dir := filepath.Dir(p.Path)
+				if dir == "." {
+					dir = ""
+				}
+
+				dirParts := strings.Split(dir, "/")
+
+				for i := len(dirParts); i >= 0; i-- {
+					targetParts := append([]string{}, dirParts[:i]...)
+					targetParts = append(targetParts, target)
+
+					targetPermalink := strings.Join(targetParts, "/")
+
+					pp, found := ldr.nvs.PathMap[targetPermalink+".md"]
+					if !found {
+						pp, found = ldr.nvs.PathMap[targetPermalink]
+					}
+
+					// if p.Path == "эксперимент.md" {
+					// 	fmt.Println("targetPermalink", targetPermalink, "target", target)
+					// 	fmt.Println(ldr.nvs.PathMap)
+					// }
+
+					if found {
+						p.ResolvedLinks[string(link.Target)] = pp.Permalink
+						pp.InLinks[p.Permalink] = struct{}{}
+						link.Target = []byte(pp.Permalink)
+
+						return ast.WalkContinue, nil
+					}
 				}
 			}
 
