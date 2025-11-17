@@ -1,0 +1,3 @@
+[submodule "obsidian-sync"]
+	path = obsidian-sync
+	url = git@github.com:trip2g/obsidian-sync.git
