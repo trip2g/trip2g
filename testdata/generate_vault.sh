@@ -20,7 +20,7 @@ download_placeholder() {
 
 echo "Creating test vault: $VAULT"
 rm -rf "$VAULT"
-mkdir -p "$VAULT"/folder
+mkdir -p "$VAULT"/folder/folder
 mkdir -p "$VAULT"/assets
 mkdir -p "$VAULT"/projectA
 mkdir -p "$VAULT"/projectB
@@ -444,6 +444,20 @@ Should be projectA/format.jpg (teal):
 ![[projectA/format.jpg]]
 EOF
 
+cat > "$VAULT/folder/folder/imgs.md" << 'EOF'
+---
+free: true
+---
+Should be test.png (red - ROOT):
+![[test.png]]
+
+Should be folder/folder/test.png (yellow - LOCAL):
+![[./test.png]]
+
+Should be assets/asset0.png (violet):
+![[asset0.png]]
+EOF
+
 # Create test images with placeholders
 echo "Creating test images..."
 
@@ -451,6 +465,10 @@ echo "Creating test images..."
 download_placeholder "test.png" "red"
 download_placeholder "assets/test.png" "blue"
 download_placeholder "folder/test.png" "green"
+download_placeholder "folder/folder/test.png" "yellow"
+
+# asset0.png
+download_placeholder "assets/asset0.png" "violet"
 
 # format.* files (root)
 download_placeholder "format.png" "orange"

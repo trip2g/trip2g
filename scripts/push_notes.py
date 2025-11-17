@@ -111,41 +111,87 @@ def should_retry_multipart_error(error_obj, attempt: int, max_retries: int) -> b
     error_str = str(error_obj).lower()
     return 'first part must be operations' in error_str
 
-def resolve_asset_path(relative_path: str, note_path: str, base_path: str) -> str:
-    """Resolve relative asset path to absolute path"""
+def build_file_index(base_path: str) -> dict:
+    """Build index of all files in vault for global resolution"""
+    file_index = {}
+
+    for root, dirs, files in os.walk(base_path):
+        # Filter out directories that start with dot and node_modules
+        dirs[:] = [d for d in dirs if not d.startswith('.') and d != 'node_modules']
+
+        for fname in files:
+            # Skip files that start with dot
+            if fname.startswith('.'):
+                continue
+
+            full_path = os.path.join(root, fname)
+            rel_path = os.path.relpath(full_path, base_path)
+
+            # Index by filename (case-insensitive like Obsidian)
+            fname_lower = fname.lower()
+            if fname_lower not in file_index:
+                file_index[fname_lower] = []
+            file_index[fname_lower].append(rel_path)
+
+    # Sort by path depth (shortest first = root priority)
+    for fname in file_index:
+        file_index[fname].sort(key=lambda p: p.count('/'))
+
+    return file_index
+
+def resolve_asset_path(relative_path: str, note_path: str, base_path: str, file_index: dict = None) -> str:
+    """Resolve relative asset path to absolute path using Obsidian's algorithm"""
+    # Handle absolute paths from root
     if relative_path.startswith('/'):
         return os.path.join(base_path, relative_path[1:])
-    
+
+    # Handle explicit relative paths (./file or ../file)
     if relative_path.startswith('./'):
         note_dir = os.path.dirname(note_path)
         return os.path.join(base_path, note_dir, relative_path[2:]) if note_dir else os.path.join(base_path, relative_path[2:])
-    
+
     if relative_path.startswith('../'):
         note_path_parts = note_path.split('/')[:-1]  # Remove filename
         relative_path_parts = relative_path.split('/')
-        
+
         i = 0
         while i < len(relative_path_parts) and relative_path_parts[i] == '..':
             if note_path_parts:
                 note_path_parts.pop()
             i += 1
-        
+
         resolved_parts = note_path_parts + relative_path_parts[i:]
         return os.path.join(base_path, *resolved_parts) if resolved_parts else base_path
-    
-    # Try multiple candidate paths
+
+    # Handle explicit paths with slashes (folder/file.png)
+    if '/' in relative_path:
+        explicit_path = os.path.join(base_path, relative_path)
+        if os.path.exists(explicit_path):
+            return explicit_path
+        return explicit_path
+
+    # Global search using file index (Obsidian behavior)
+    if file_index:
+        fname_lower = relative_path.lower()
+        if fname_lower in file_index:
+            # Return first match (shortest path due to sorting)
+            return os.path.join(base_path, file_index[fname_lower][0])
+
+    # Fallback: try root first, then note directory
     note_dir = os.path.dirname(note_path)
     candidate_paths = []
-    
+
+    # 1. First check root (Obsidian global resolution priority)
+    candidate_paths.append(os.path.join(base_path, relative_path))
+
+    # 2. Then check relative to note directory
     if note_dir:
         candidate_paths.append(os.path.join(base_path, note_dir, relative_path))
-    
-    candidate_paths.append(os.path.join(base_path, relative_path))
-    
+
     for candidate_path in candidate_paths:
         if os.path.exists(candidate_path):
             return candidate_path
-    
+
     return candidate_paths[0] if candidate_paths else os.path.join(base_path, relative_path)
 
 def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash: str, max_retries: int = 3) -> bool:
@@ -258,7 +304,7 @@ def process_note_assets(notes, base_path):
             'assets_not_found': 0,
             'assets_failed': 0
         }
-    
+
     stats = {
         'total_notes_with_assets': 0,
         'total_assets': 0,
@@ -267,32 +313,35 @@ def process_note_assets(notes, base_path):
         'assets_not_found': 0,
         'assets_failed': 0
     }
-    
+
+    # Build file index once for global resolution
+    file_index = build_file_index(base_path)
+
     for note in notes:
         note_assets = note.get('assets', [])
         if not note_assets:
             continue
-            
+
         stats['total_notes_with_assets'] += 1
         note_id = note['id']
         note_path = note['path']
-        
+
         print(f"📎 Processing assets for {note_path}:")
-        
+
         for asset in note_assets:
             relative_path = asset['path']
             server_hash = asset.get('sha256Hash', '')
             stats['total_assets'] += 1
 
-            absolute_path = resolve_asset_path(relative_path, note_path, base_path)
-            
+            absolute_path = resolve_asset_path(relative_path, note_path, base_path, file_index)
+
             if not os.path.exists(absolute_path):
                 print(f"   ⚠️ Asset not found: {relative_path} -> {absolute_path}")
                 stats['assets_not_found'] += 1
                 continue
-            
+
             local_hash = sha256_hash_file(absolute_path)
-            
+
             if not server_hash or server_hash != local_hash:
                 print(f"   📤 Uploading: {relative_path}")
                 if upload_asset(note_id, absolute_path, relative_path, local_hash):
@@ -302,7 +351,7 @@ def process_note_assets(notes, base_path):
             else:
                 print(f"   ✅ Up to date: {relative_path}")
                 stats['assets_up_to_date'] += 1
-    
+
     return stats
 
 def hide_notes_graphql(paths):
