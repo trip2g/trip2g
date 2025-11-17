@@ -1,8 +1,8 @@
 ---
 free: true
 ---
-Should be format_purple.jpg:
-![[format_purple.jpg]]
+Should be format.jpg (purple - ROOT):
+![[format.jpg]]
 
-Should be projectA/format_teal.jpg:
-![[projectA/format_teal.jpg]]
+Should be projectA/format.jpg (teal):
+![[projectA/format.jpg]]
