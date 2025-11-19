@@ -113,46 +113,61 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	post.Content = res.Content
 	post.Warnings = res.Warnings
 
-	firstImageURL := getFirstImageURL(source.NoteView)
-	if firstImageURL != nil {
-		post.Images = append(post.Images, *firstImageURL)
-	}
+	mediaURLs := getAllMediaURLs(source.NoteView)
+	post.Media = mediaURLs
 
 	// Validate content length limits
 	// Telegram limits: 4096 chars for text-only messages, 1024 chars for photo captions
 	// Telegram counts visible length (without HTML tags)
 	maxLength := 4096
-	if len(post.Images) > 0 {
+	if len(post.Media) > 0 {
 		maxLength = 1024
 	}
 
 	contentLength := telegram.GetVisibleTelegramLength(post.Content)
 	if contentLength > maxLength {
 		msgType := "text message"
-		if len(post.Images) > 0 {
+		if len(post.Media) > 0 {
 			msgType = "photo caption"
 		}
 		post.Warnings = append(post.Warnings, fmt.Sprintf("telegram %s content exceeds limit: %d characters (max %d)", msgType, contentLength, maxLength))
 	}
 
+	// Telegram media group limit is 10
+	if len(post.Media) > 10 {
+		warning := fmt.Sprintf(
+			"telegram media group limit exceeded: %d files (max 10, only first 10 will be used)",
+			len(post.Media),
+		)
+		post.Warnings = append(post.Warnings, warning)
+		post.Media = post.Media[:10]
+	}
+
 	return &post, nil
 }
 
-func getFirstImageURL(noteView *model.NoteView) *string {
+func getAllMediaURLs(noteView *model.NoteView) []string {
+	var mediaURLs []string
+
 	for path := range noteView.Assets {
-		if !image.IsRightExtension(path) {
+		if !image.IsMediaExtension(path) {
 			continue
 		}
 
-		_, ok := noteView.AssetReplaces[path]
+		assetReplace, ok := noteView.AssetReplaces[path]
 		if !ok {
 			continue
 		}
 
-		return &noteView.AssetReplaces[path].URL
+		mediaURLs = append(mediaURLs, assetReplace.URL)
+
+		// Telegram allows max 10 media files in a group
+		if len(mediaURLs) >= 10 {
+			break
+		}
 	}
 
-	return nil
+	return mediaURLs
 }
 
 /*

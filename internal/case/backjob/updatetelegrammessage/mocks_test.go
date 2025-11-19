@@ -25,6 +25,9 @@ var _ updatetelegrammessage.Env = &EnvMock{}
 //			GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
 //				panic("mock out the GetTelegramPublishSentMessageContentHash method")
 //			},
+//			GetTelegramPublishSentMessagePostTypeFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error) {
+//				panic("mock out the GetTelegramPublishSentMessagePostType method")
+//			},
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
@@ -44,6 +47,9 @@ type EnvMock struct {
 	// GetTelegramPublishSentMessageContentHashFunc mocks the GetTelegramPublishSentMessageContentHash method.
 	GetTelegramPublishSentMessageContentHashFunc func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error)
 
+	// GetTelegramPublishSentMessagePostTypeFunc mocks the GetTelegramPublishSentMessagePostType method.
+	GetTelegramPublishSentMessagePostTypeFunc func(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error)
+
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
 
@@ -61,6 +67,13 @@ type EnvMock struct {
 			Ctx context.Context
 			// Arg is the arg argument value.
 			Arg db.GetTelegramPublishSentMessageContentHashParams
+		}
+		// GetTelegramPublishSentMessagePostType holds details about calls to the GetTelegramPublishSentMessagePostType method.
+		GetTelegramPublishSentMessagePostType []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetTelegramPublishSentMessagePostTypeParams
 		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
@@ -83,6 +96,7 @@ type EnvMock struct {
 		}
 	}
 	lockGetTelegramPublishSentMessageContentHash sync.RWMutex
+	lockGetTelegramPublishSentMessagePostType    sync.RWMutex
 	lockLogger                                   sync.RWMutex
 	lockSendTelegramRequest                      sync.RWMutex
 	lockUpdateTelegramPublishSentMessageContent  sync.RWMutex
@@ -121,6 +135,42 @@ func (mock *EnvMock) GetTelegramPublishSentMessageContentHashCalls() []struct {
 	mock.lockGetTelegramPublishSentMessageContentHash.RLock()
 	calls = mock.calls.GetTelegramPublishSentMessageContentHash
 	mock.lockGetTelegramPublishSentMessageContentHash.RUnlock()
+	return calls
+}
+
+// GetTelegramPublishSentMessagePostType calls GetTelegramPublishSentMessagePostTypeFunc.
+func (mock *EnvMock) GetTelegramPublishSentMessagePostType(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error) {
+	if mock.GetTelegramPublishSentMessagePostTypeFunc == nil {
+		panic("EnvMock.GetTelegramPublishSentMessagePostTypeFunc: method is nil but Env.GetTelegramPublishSentMessagePostType was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetTelegramPublishSentMessagePostTypeParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetTelegramPublishSentMessagePostType.Lock()
+	mock.calls.GetTelegramPublishSentMessagePostType = append(mock.calls.GetTelegramPublishSentMessagePostType, callInfo)
+	mock.lockGetTelegramPublishSentMessagePostType.Unlock()
+	return mock.GetTelegramPublishSentMessagePostTypeFunc(ctx, arg)
+}
+
+// GetTelegramPublishSentMessagePostTypeCalls gets all the calls that were made to GetTelegramPublishSentMessagePostType.
+// Check the length with:
+//
+//	len(mockedEnv.GetTelegramPublishSentMessagePostTypeCalls())
+func (mock *EnvMock) GetTelegramPublishSentMessagePostTypeCalls() []struct {
+	Ctx context.Context
+	Arg db.GetTelegramPublishSentMessagePostTypeParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetTelegramPublishSentMessagePostTypeParams
+	}
+	mock.lockGetTelegramPublishSentMessagePostType.RLock()
+	calls = mock.calls.GetTelegramPublishSentMessagePostType
+	mock.lockGetTelegramPublishSentMessagePostType.RUnlock()
 	return calls
 }
 

@@ -26,6 +26,9 @@ var _ sendtelegrammessage.Env = &EnvMock{}
 //			CheckTelegramPublishSentMessageExistsFunc: func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error) {
 //				panic("mock out the CheckTelegramPublishSentMessageExists method")
 //			},
+//			ClearTelegramPublishNoteLastErrorFunc: func(ctx context.Context, notePathID int64) error {
+//				panic("mock out the ClearTelegramPublishNoteLastError method")
+//			},
 //			InsertTelegramPublishSentMessageFunc: func(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error {
 //				panic("mock out the InsertTelegramPublishSentMessage method")
 //			},
@@ -37,6 +40,9 @@ var _ sendtelegrammessage.Env = &EnvMock{}
 //			},
 //			SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 //				panic("mock out the SendTelegramMessage method")
+//			},
+//			SetTelegramPublishNoteLastErrorFunc: func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error {
+//				panic("mock out the SetTelegramPublishNoteLastError method")
 //			},
 //			UpdateTelegramPublishPostFunc: func(ctx context.Context, notePathID int64) error {
 //				panic("mock out the UpdateTelegramPublishPost method")
@@ -51,6 +57,9 @@ type EnvMock struct {
 	// CheckTelegramPublishSentMessageExistsFunc mocks the CheckTelegramPublishSentMessageExists method.
 	CheckTelegramPublishSentMessageExistsFunc func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error)
 
+	// ClearTelegramPublishNoteLastErrorFunc mocks the ClearTelegramPublishNoteLastError method.
+	ClearTelegramPublishNoteLastErrorFunc func(ctx context.Context, notePathID int64) error
+
 	// InsertTelegramPublishSentMessageFunc mocks the InsertTelegramPublishSentMessage method.
 	InsertTelegramPublishSentMessageFunc func(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error
 
@@ -63,6 +72,9 @@ type EnvMock struct {
 	// SendTelegramMessageFunc mocks the SendTelegramMessage method.
 	SendTelegramMessageFunc func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error)
 
+	// SetTelegramPublishNoteLastErrorFunc mocks the SetTelegramPublishNoteLastError method.
+	SetTelegramPublishNoteLastErrorFunc func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error
+
 	// UpdateTelegramPublishPostFunc mocks the UpdateTelegramPublishPost method.
 	UpdateTelegramPublishPostFunc func(ctx context.Context, notePathID int64) error
 
@@ -74,6 +86,13 @@ type EnvMock struct {
 			Ctx context.Context
 			// Arg is the arg argument value.
 			Arg db.CheckTelegramPublishSentMessageExistsParams
+		}
+		// ClearTelegramPublishNoteLastError holds details about calls to the ClearTelegramPublishNoteLastError method.
+		ClearTelegramPublishNoteLastError []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// NotePathID is the notePathID argument value.
+			NotePathID int64
 		}
 		// InsertTelegramPublishSentMessage holds details about calls to the InsertTelegramPublishSentMessage method.
 		InsertTelegramPublishSentMessage []struct {
@@ -97,6 +116,13 @@ type EnvMock struct {
 			// Msg is the msg argument value.
 			Msg tgbotapi.Chattable
 		}
+		// SetTelegramPublishNoteLastError holds details about calls to the SetTelegramPublishNoteLastError method.
+		SetTelegramPublishNoteLastError []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.SetTelegramPublishNoteLastErrorParams
+		}
 		// UpdateTelegramPublishPost holds details about calls to the UpdateTelegramPublishPost method.
 		UpdateTelegramPublishPost []struct {
 			// Ctx is the ctx argument value.
@@ -106,10 +132,12 @@ type EnvMock struct {
 		}
 	}
 	lockCheckTelegramPublishSentMessageExists sync.RWMutex
+	lockClearTelegramPublishNoteLastError     sync.RWMutex
 	lockInsertTelegramPublishSentMessage      sync.RWMutex
 	lockLatestNoteViews                       sync.RWMutex
 	lockLogger                                sync.RWMutex
 	lockSendTelegramMessage                   sync.RWMutex
+	lockSetTelegramPublishNoteLastError       sync.RWMutex
 	lockUpdateTelegramPublishPost             sync.RWMutex
 }
 
@@ -146,6 +174,42 @@ func (mock *EnvMock) CheckTelegramPublishSentMessageExistsCalls() []struct {
 	mock.lockCheckTelegramPublishSentMessageExists.RLock()
 	calls = mock.calls.CheckTelegramPublishSentMessageExists
 	mock.lockCheckTelegramPublishSentMessageExists.RUnlock()
+	return calls
+}
+
+// ClearTelegramPublishNoteLastError calls ClearTelegramPublishNoteLastErrorFunc.
+func (mock *EnvMock) ClearTelegramPublishNoteLastError(ctx context.Context, notePathID int64) error {
+	if mock.ClearTelegramPublishNoteLastErrorFunc == nil {
+		panic("EnvMock.ClearTelegramPublishNoteLastErrorFunc: method is nil but Env.ClearTelegramPublishNoteLastError was just called")
+	}
+	callInfo := struct {
+		Ctx        context.Context
+		NotePathID int64
+	}{
+		Ctx:        ctx,
+		NotePathID: notePathID,
+	}
+	mock.lockClearTelegramPublishNoteLastError.Lock()
+	mock.calls.ClearTelegramPublishNoteLastError = append(mock.calls.ClearTelegramPublishNoteLastError, callInfo)
+	mock.lockClearTelegramPublishNoteLastError.Unlock()
+	return mock.ClearTelegramPublishNoteLastErrorFunc(ctx, notePathID)
+}
+
+// ClearTelegramPublishNoteLastErrorCalls gets all the calls that were made to ClearTelegramPublishNoteLastError.
+// Check the length with:
+//
+//	len(mockedEnv.ClearTelegramPublishNoteLastErrorCalls())
+func (mock *EnvMock) ClearTelegramPublishNoteLastErrorCalls() []struct {
+	Ctx        context.Context
+	NotePathID int64
+} {
+	var calls []struct {
+		Ctx        context.Context
+		NotePathID int64
+	}
+	mock.lockClearTelegramPublishNoteLastError.RLock()
+	calls = mock.calls.ClearTelegramPublishNoteLastError
+	mock.lockClearTelegramPublishNoteLastError.RUnlock()
 	return calls
 }
 
@@ -276,6 +340,42 @@ func (mock *EnvMock) SendTelegramMessageCalls() []struct {
 	mock.lockSendTelegramMessage.RLock()
 	calls = mock.calls.SendTelegramMessage
 	mock.lockSendTelegramMessage.RUnlock()
+	return calls
+}
+
+// SetTelegramPublishNoteLastError calls SetTelegramPublishNoteLastErrorFunc.
+func (mock *EnvMock) SetTelegramPublishNoteLastError(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error {
+	if mock.SetTelegramPublishNoteLastErrorFunc == nil {
+		panic("EnvMock.SetTelegramPublishNoteLastErrorFunc: method is nil but Env.SetTelegramPublishNoteLastError was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.SetTelegramPublishNoteLastErrorParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockSetTelegramPublishNoteLastError.Lock()
+	mock.calls.SetTelegramPublishNoteLastError = append(mock.calls.SetTelegramPublishNoteLastError, callInfo)
+	mock.lockSetTelegramPublishNoteLastError.Unlock()
+	return mock.SetTelegramPublishNoteLastErrorFunc(ctx, arg)
+}
+
+// SetTelegramPublishNoteLastErrorCalls gets all the calls that were made to SetTelegramPublishNoteLastError.
+// Check the length with:
+//
+//	len(mockedEnv.SetTelegramPublishNoteLastErrorCalls())
+func (mock *EnvMock) SetTelegramPublishNoteLastErrorCalls() []struct {
+	Ctx context.Context
+	Arg db.SetTelegramPublishNoteLastErrorParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.SetTelegramPublishNoteLastErrorParams
+	}
+	mock.lockSetTelegramPublishNoteLastError.RLock()
+	calls = mock.calls.SetTelegramPublishNoteLastError
+	mock.lockSetTelegramPublishNoteLastError.RUnlock()
 	return calls
 }
 

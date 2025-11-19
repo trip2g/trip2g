@@ -87,7 +87,7 @@ func TestResolve(t *testing.T) {
 					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
-							Images:   []string{},
+							Media:    []string{},
 							Warnings: []string{},
 						}, nil
 					},
@@ -125,7 +125,7 @@ func TestResolve(t *testing.T) {
 					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
-							Images:   []string{},
+							Media:    []string{},
 							Warnings: []string{},
 						}, nil
 					},
@@ -235,7 +235,7 @@ func TestResolve(t *testing.T) {
 					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
-							Images:   []string{},
+							Media:    []string{},
 							Warnings: []string{},
 						}, nil
 					},
@@ -263,7 +263,7 @@ func TestResolve(t *testing.T) {
 					ConvertNoteViewToTelegramPostFunc: func(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error) {
 						return &model.TelegramPost{
 							Content:  "Test note content",
-							Images:   []string{},
+							Media:    []string{},
 							Warnings: []string{},
 						}, nil
 					},

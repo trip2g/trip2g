@@ -46,7 +46,8 @@ services:
       - MINIO_USE_SSL=false
 
       # Public URL
-      - PUBLIC_URL=http://localhost:20081
+      # - PUBLIC_URL=http://localhost:20081
+      - PUBLIC_URL=https://trip2g.com # for telegram links
 
       # JWT (test secret - НЕ использовать в продакшене!)
       - JWT_SECRET=test-secret-key-for-testing-only-do-not-use-in-production

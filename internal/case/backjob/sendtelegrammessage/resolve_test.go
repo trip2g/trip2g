@@ -32,7 +32,7 @@ func TestResolve_Success_TextOnly(t *testing.T) {
 		TelegramChatID: 789,
 		Post: model.TelegramPost{
 			Content: "Test message",
-			Images:  []string{},
+			Media:   []string{},
 		},
 		Instant: false,
 	}
@@ -68,6 +68,12 @@ func TestResolve_Success_TextOnly(t *testing.T) {
 			}
 			return nil
 		},
+		ClearTelegramPublishNoteLastErrorFunc: func(ctx context.Context, notePathID int64) error {
+			return nil
+		},
+		SetTelegramPublishNoteLastErrorFunc: func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error {
+			return nil
+		},
 	}
 
 	err := sendtelegrammessage.Resolve(ctx, env, params)
@@ -93,7 +99,7 @@ func TestResolve_Success_Instant(t *testing.T) {
 		TelegramChatID: 789,
 		Post: model.TelegramPost{
 			Content: "Instant message",
-			Images:  []string{},
+			Media:   []string{},
 		},
 		Instant: true,
 	}
@@ -109,6 +115,12 @@ func TestResolve_Success_Instant(t *testing.T) {
 			if !arg.Instant {
 				t.Error("expected Instant true, got false")
 			}
+			return nil
+		},
+		ClearTelegramPublishNoteLastErrorFunc: func(ctx context.Context, notePathID int64) error {
+			return nil
+		},
+		SetTelegramPublishNoteLastErrorFunc: func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error {
 			return nil
 		},
 	}
@@ -128,7 +140,7 @@ func TestResolve_Success_WithImages(t *testing.T) {
 		TelegramChatID: 789,
 		Post: model.TelegramPost{
 			Content: "Message with image",
-			Images:  []string{"https://example.com/image.jpg"},
+			Media:   []string{"https://example.com/image.jpg"},
 		},
 		Instant: false,
 	}
@@ -145,6 +157,12 @@ func TestResolve_Success_WithImages(t *testing.T) {
 			if arg.MessageID != 333 {
 				t.Errorf("expected MessageID 333, got %d", arg.MessageID)
 			}
+			return nil
+		},
+		ClearTelegramPublishNoteLastErrorFunc: func(ctx context.Context, notePathID int64) error {
+			return nil
+		},
+		SetTelegramPublishNoteLastErrorFunc: func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error {
 			return nil
 		},
 	}
@@ -164,7 +182,7 @@ func TestResolve_Error_SendMessage(t *testing.T) {
 		TelegramChatID: 789,
 		Post: model.TelegramPost{
 			Content: "Test message",
-			Images:  []string{},
+			Media:   []string{},
 		},
 		Instant: false,
 	}
@@ -180,6 +198,12 @@ func TestResolve_Error_SendMessage(t *testing.T) {
 		},
 		InsertTelegramPublishSentMessageFunc: func(ctx context.Context, arg db.InsertTelegramPublishSentMessageParams) error {
 			t.Error("should not insert sent message when send fails")
+			return nil
+		},
+		ClearTelegramPublishNoteLastErrorFunc: func(ctx context.Context, notePathID int64) error {
+			return nil
+		},
+		SetTelegramPublishNoteLastErrorFunc: func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error {
 			return nil
 		},
 	}
@@ -207,7 +231,7 @@ func TestResolve_Error_InsertSentMessage(t *testing.T) {
 		TelegramChatID: 789,
 		Post: model.TelegramPost{
 			Content: "Test message",
-			Images:  []string{},
+			Media:   []string{},
 		},
 		Instant: false,
 	}
@@ -245,7 +269,7 @@ func TestResolve_ContentHash_Consistency(t *testing.T) {
 		TelegramChatID: 789,
 		Post: model.TelegramPost{
 			Content: "Consistent content",
-			Images:  []string{},
+			Media:   []string{},
 		},
 		Instant: false,
 	}
@@ -263,6 +287,12 @@ func TestResolve_ContentHash_Consistency(t *testing.T) {
 			if firstHash == "" {
 				firstHash = arg.ContentHash
 			}
+			return nil
+		},
+		ClearTelegramPublishNoteLastErrorFunc: func(ctx context.Context, notePathID int64) error {
+			return nil
+		},
+		SetTelegramPublishNoteLastErrorFunc: func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error {
 			return nil
 		},
 	}
@@ -301,7 +331,7 @@ func TestResolve_EmptyContent(t *testing.T) {
 		TelegramChatID: 789,
 		Post: model.TelegramPost{
 			Content: "",
-			Images:  []string{},
+			Media:   []string{},
 		},
 		Instant: false,
 	}
@@ -320,6 +350,12 @@ func TestResolve_EmptyContent(t *testing.T) {
 			if arg.ContentHash == "" {
 				t.Error("expected ContentHash not empty even for empty content")
 			}
+			return nil
+		},
+		ClearTelegramPublishNoteLastErrorFunc: func(ctx context.Context, notePathID int64) error {
+			return nil
+		},
+		SetTelegramPublishNoteLastErrorFunc: func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error {
 			return nil
 		},
 	}

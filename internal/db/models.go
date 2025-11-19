@@ -399,12 +399,13 @@ type TelegramPublishInstantChat struct {
 }
 
 type TelegramPublishNote struct {
-	NotePathID         int64         `json:"note_path_id"`
-	CreatedAt          time.Time     `json:"created_at"`
-	PublishAt          time.Time     `json:"publish_at"`
-	PublishedVersionID sql.NullInt64 `json:"published_version_id"`
-	PublishedAt        sql.NullTime  `json:"published_at"`
-	ErrorCount         int64         `json:"error_count"`
+	NotePathID         int64          `json:"note_path_id"`
+	CreatedAt          time.Time      `json:"created_at"`
+	PublishAt          time.Time      `json:"publish_at"`
+	PublishedVersionID sql.NullInt64  `json:"published_version_id"`
+	PublishedAt        sql.NullTime   `json:"published_at"`
+	ErrorCount         int64          `json:"error_count"`
+	LastError          sql.NullString `json:"last_error"`
 }
 
 type TelegramPublishNoteTag struct {
@@ -420,6 +421,7 @@ type TelegramPublishSentMessage struct {
 	Instant     bool      `json:"instant"`
 	ContentHash string    `json:"content_hash"`
 	Content     string    `json:"content"`
+	PostType    string    `json:"post_type"`
 }
 
 type TelegramPublishTag struct {

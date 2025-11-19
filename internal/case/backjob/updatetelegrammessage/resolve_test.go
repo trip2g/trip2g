@@ -23,7 +23,7 @@ func TestResolve_Success_TextMessage(t *testing.T) {
 			TelegramChatID: 789,
 			Post: model.TelegramPost{
 				Content: "Updated message",
-				Images:  []string{},
+				Media:   []string{},
 			},
 			Instant:           false,
 			UpdateLinkedPosts: false,
@@ -34,6 +34,9 @@ func TestResolve_Success_TextMessage(t *testing.T) {
 	env := &EnvMock{
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessagePostTypeFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error) {
+			return "text", nil
 		},
 		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
 			// Return different hash to trigger update
@@ -112,7 +115,7 @@ func TestResolve_Success_PhotoMessage(t *testing.T) {
 			TelegramChatID: 789,
 			Post: model.TelegramPost{
 				Content: "Updated caption",
-				Images:  []string{"https://example.com/image.jpg"},
+				Media:   []string{"https://example.com/image.jpg"},
 			},
 			Instant:           false,
 			UpdateLinkedPosts: false,
@@ -123,6 +126,9 @@ func TestResolve_Success_PhotoMessage(t *testing.T) {
 	env := &EnvMock{
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessagePostTypeFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error) {
+			return "photo", nil
 		},
 		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
 			return "old_hash", nil
@@ -168,7 +174,7 @@ func TestResolve_Error_SendTelegramRequest(t *testing.T) {
 			TelegramChatID: 789,
 			Post: model.TelegramPost{
 				Content: "Updated message",
-				Images:  []string{},
+				Media:   []string{},
 			},
 		},
 		MessageID: 111,
@@ -179,6 +185,9 @@ func TestResolve_Error_SendTelegramRequest(t *testing.T) {
 	env := &EnvMock{
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessagePostTypeFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error) {
+			return "text", nil
 		},
 		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
 			return "old_hash", nil
@@ -216,7 +225,7 @@ func TestResolve_Success_ContentSameError(t *testing.T) {
 			TelegramChatID: 789,
 			Post: model.TelegramPost{
 				Content: "Same message",
-				Images:  []string{},
+				Media:   []string{},
 			},
 		},
 		MessageID: 111,
@@ -225,6 +234,9 @@ func TestResolve_Success_ContentSameError(t *testing.T) {
 	env := &EnvMock{
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessagePostTypeFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error) {
+			return "text", nil
 		},
 		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
 			return "old_hash", nil
@@ -264,7 +276,7 @@ func TestResolve_Error_UpdateDB(t *testing.T) {
 			TelegramChatID: 789,
 			Post: model.TelegramPost{
 				Content: "Updated message",
-				Images:  []string{},
+				Media:   []string{},
 			},
 		},
 		MessageID: 111,
@@ -275,6 +287,9 @@ func TestResolve_Error_UpdateDB(t *testing.T) {
 	env := &EnvMock{
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessagePostTypeFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error) {
+			return "text", nil
 		},
 		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
 			return "old_hash", nil
@@ -307,7 +322,7 @@ func TestResolve_SkipUpdate_SameContentHash(t *testing.T) {
 			TelegramChatID: 789,
 			Post: model.TelegramPost{
 				Content: "Same message",
-				Images:  []string{},
+				Media:   []string{},
 			},
 		},
 		MessageID: 111,
@@ -320,6 +335,9 @@ func TestResolve_SkipUpdate_SameContentHash(t *testing.T) {
 	env := &EnvMock{
 		LoggerFunc: func() logger.Logger {
 			return &logger.DummyLogger{}
+		},
+		GetTelegramPublishSentMessagePostTypeFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error) {
+			return "text", nil
 		},
 		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
 			// Return same hash as new content

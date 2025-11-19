@@ -7,7 +7,7 @@ type TelegramPost struct {
 	DBChatID       int64 `json:"chat_id"`
 	TelegramChatID int64 `json:"telegram_chat_id"`
 
-	Images  []string `json:"images"`
+	Media   []string `json:"media"`
 	Content string   `json:"content"`
 
 	Warnings []string `json:"warnings"`

@@ -144,14 +144,108 @@ description: This is a public page available to everyone
 This is publicly accessible content without paywall. Anyone can read this page without authentication or subscription.
 EOF
 
-cat > "$VAULT/telegram_post.md" << 'EOF'
+cat > "$VAULT/telegram_text.md" << 'EOF'
 ---
-telegram_publish_at: 2025-10-28T10:01:00
+telegram_publish_at: 2025-11-18T09:36:00
 telegram_publish_tags:
-  - my_group
+  - test_channel
+free: true
+title: Text-only Telegram Post
 ---
 
-This content will be published to Telegram at the scheduled time. It demonstrates the telegram_publish_at and telegram_publish_tags frontmatter fields for automated posting to Telegram groups.
+This is a **text-only** Telegram post with no media attachments. It will be sent using `sendMessage` API method.
+
+**Text formatting examples:**
+
+**Bold text**, *italic text*, and ***bold italic*** formatting.
+
+~~Strikethrough~~ is also supported.
+
+`Inline code` and <u>underlined text</u>.
+
+Code block with syntax highlighting:
+
+```python
+def hello():
+    print("Hello, world!")
+```
+
+**Links to other posts:**
+
+Check out these posts:
+- [[telegram_media_group|Cool media group]] with photos and video
+- [[telegram_one_photo]] single photo example
+- [[_index|Главная]] link to website (not published to Telegram)
+
+**Lists:**
+
+Unordered list:
+- First item
+- Second item
+- Third item
+
+Numbered list:
+1. First step
+2. Second step
+3. Third step
+
+**Blockquote:**
+
+> This is a blockquote
+> Multiple lines supported
+
+**Emoji support:** 🚀 🎉 ✅ 📱 💻
+
+This tests comprehensive Telegram text formatting with all supported markdown features.
+EOF
+
+cat > "$VAULT/telegram_one_photo.md" << 'EOF'
+---
+telegram_publish_at: 2025-11-18T09:37:00
+telegram_publish_tags:
+  - test_channel
+free: true
+title: Single Photo Telegram Post
+---
+
+This post contains **one photo** and will be sent using `sendPhoto` API method.
+
+The post type is: **photo**
+
+![[telegram_photo.png]]
+
+Caption features:
+- Maximum 1024 characters
+- HTML formatting
+- Can be edited later with `editMessageCaption`
+
+This tests single media attachment with caption.
+EOF
+
+cat > "$VAULT/telegram_media_group.md" << 'EOF'
+---
+telegram_publish_at: 2025-11-18T09:38:00
+telegram_publish_tags:
+  - test_channel
+free: true
+title: Media Group Telegram Post
+---
+
+This post contains **multiple media files** (2-10) and will be sent using `sendMediaGroup` API method.
+
+The post type is: **media_group**
+
+![[telegram_photo.png]]
+![[telegram_photo2.jpg]]
+![[telegram_video.mp4]]
+
+Features:
+- Multiple photos and videos (up to 10)
+- Only first media gets the caption
+- Caption can be edited with `editMessageCaption`
+- Media files cannot be changed after sending
+
+This tests media group functionality with mixed photo and video content.
 EOF
 
 cat > "$VAULT/paid_with_preview.md" << 'EOF'
@@ -485,6 +579,29 @@ download_placeholder "folder/format.svg" "8B4513"
 # format.jpg (projectA)
 download_placeholder "projectA/format.jpg" "teal"
 
+# Telegram post media files
+download_placeholder "telegram_photo.png" "3498db"
+download_placeholder "telegram_photo2.jpg" "e74c3c"
+
+# Generate test video for media group (requires ffmpeg)
+echo "Creating telegram_video.mp4..."
+if ! command -v ffmpeg &> /dev/null; then
+  echo "⚠️  ffmpeg not found. Install it with: sudo apt install ffmpeg"
+  echo "Skipping video generation."
+else
+  ffmpeg -f lavfi -i color=c=2ecc71:s=640x480:d=2 -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+    -c:v libx264 -preset ultrafast -crf 28 -t 2 -pix_fmt yuv420p \
+    -c:a aac -b:a 64k -shortest \
+    -y "$VAULT/telegram_video.mp4" 2>/dev/null
+
+  if [ -f "$VAULT/telegram_video.mp4" ]; then
+    file_size=$(du -h "$VAULT/telegram_video.mp4" | cut -f1)
+    echo "✓ Created telegram_video.mp4 ($file_size)"
+  else
+    echo "⚠️  Failed to create telegram_video.mp4"
+  fi
+fi
+
 # ============================================================================
 # Test 5: Headers and blocks
 # ============================================================================
@@ -656,16 +773,18 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 9. [[paid_with_cut]] - paid content with `---` cut marker
 10. [[with_layout]] - custom layout test
 11. [[toc_test]] - table of contents (auto/show/hide)
-12. [[telegram_post]] - Telegram publishing integration
-13. [[cyrillic_названия]] - Cyrillic in URLs and links
-14. [[File with spaces]] - spaces in filenames
-15. [[code_and_media]] - code blocks and media embeds
-16. [[complex_content]] - comprehensive markdown features
-17. [[redirect_test]] - page redirect functionality
+12. [[telegram_text]] - Telegram text post (no media, type: text)
+13. [[telegram_one_photo]] - Telegram single photo post (type: photo)
+14. [[telegram_media_group]] - Telegram media group (2+ media, type: media_group)
+15. [[cyrillic_названия]] - Cyrillic in URLs and links
+16. [[File with spaces]] - spaces in filenames
+17. [[code_and_media]] - code blocks and media embeds
+18. [[complex_content]] - comprehensive markdown features
+19. [[redirect_test]] - page redirect functionality
 
 ## Subgraph (Premium Course) Tests
-18. [[premium]] - premium subgraph home page
-19. Check sidebar: should show premium sidebar for premium pages
+20. [[premium]] - premium subgraph home page
+21. Check sidebar: should show premium sidebar for premium pages
 
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])
@@ -728,7 +847,7 @@ echo "   ✓ Free content (free, free_paragraphs, free_cut)"
 echo "   ✓ Subgraphs and premium content"
 echo "   ✓ Custom layouts and sidebars"
 echo "   ✓ Table of contents (auto/show/hide)"
-echo "   ✓ Telegram publishing"
+echo "   ✓ Telegram publishing (text, photo, media_group)"
 echo "   ✓ Cyrillic and special characters in filenames"
 echo "   ✓ Code blocks and media embeds"
 echo "   ✓ Redirects"

@@ -491,7 +491,7 @@ CREATE TABLE telegram_publish_notes (
   publish_at datetime not null,
   published_version_id integer references note_versions(id) on delete restrict,
   published_at datetime
-, error_count integer not null default 0);
+, error_count integer not null default 0, last_error text);
 CREATE TABLE telegram_publish_note_tags (
   note_path_id integer not null references telegram_publish_notes(note_path_id) on delete cascade,
   tag_id integer not null references telegram_publish_tags(id) on delete cascade,
@@ -511,7 +511,7 @@ CREATE TABLE IF NOT EXISTS "telegram_publish_sent_messages" (
   instant integer not null default 0 check (instant in (0, 1)),
   content_hash text not null default '',
   content text not null default ''
-);
+, post_type text not null default 'text');
 CREATE UNIQUE INDEX idx_telegram_publish_sent_messages_unique_scheduled
 on telegram_publish_sent_messages(chat_id, note_path_id)
 where instant = 0;
@@ -603,4 +603,6 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251030152642'),
   ('20251031015532'),
   ('20251103094933'),
-  ('20251105114403');
+  ('20251105114403'),
+  ('20251118053250'),
+  ('20251119013128');

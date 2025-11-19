@@ -679,8 +679,8 @@ update telegram_publish_notes
  where note_path_id = ?;
 
 -- name: InsertTelegramPublishSentMessage :exec
-insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id, instant, content_hash, content)
-values (?, ?, ?, ?, ?, ?);
+insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id, instant, content_hash, content, post_type)
+values (?, ?, ?, ?, ?, ?, ?);
 
 -- name: ResetTelegramPublishNote :exec
 update telegram_publish_notes
@@ -707,3 +707,13 @@ delete from goqite where queue = ?;
 
 -- name: DeleteNoteAsset :exec
 delete from note_assets where id = ?;
+
+-- name: SetTelegramPublishNoteLastError :exec
+update telegram_publish_notes
+   set last_error = ?
+ where note_path_id = ?;
+
+-- name: ClearTelegramPublishNoteLastError :exec
+update telegram_publish_notes
+   set last_error = null
+ where note_path_id = ?;

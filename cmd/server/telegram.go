@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 	"trip2g/internal/case/handletgupdate"
@@ -68,6 +70,32 @@ func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotap
 		return 0, fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
 	}
 
+	// Check if this is a media group (which returns array of messages)
+	if _, isMediaGroup := msg.(tgbotapi.MediaGroupConfig); isMediaGroup {
+		apiResp, err := handlerIO.Request(msg)
+		if err != nil {
+			return 0, fmt.Errorf("failed to send Telegram message: %w", err)
+		}
+
+		if !apiResp.Ok {
+			return 0, fmt.Errorf("telegram API error: %s", apiResp.Description)
+		}
+
+		// MediaGroup returns array of messages, we need the first one's ID
+		var messages []tgbotapi.Message
+		err = json.Unmarshal(apiResp.Result, &messages)
+		if err != nil {
+			return 0, fmt.Errorf("failed to unmarshal media group response: %w", err)
+		}
+
+		if len(messages) == 0 {
+			return 0, errors.New("no messages returned from media group")
+		}
+
+		return int64(messages[0].MessageID), nil
+	}
+
+	// For non-media-group messages, use regular Send
 	res, err := handlerIO.Send(msg)
 	if err != nil {
 		return 0, fmt.Errorf("failed to send Telegram message: %w", err)

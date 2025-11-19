@@ -770,9 +770,9 @@ select n.*
   from telegram_publish_notes n
   join note_paths p on n.note_path_id = p.id
  where p.hidden_by is null
-   and ((coalesce(sqlc.arg(show_scheduled), true) = true and published_at is null and publish_at > n.created_at)
+   and ((coalesce(sqlc.arg(show_scheduled), true) = true and published_at is null)
        or (coalesce(sqlc.arg(show_sent), false) = true and published_at is not null)
-       or (coalesce(sqlc.arg(show_outdated), false) = true and publish_at <= n.created_at))
+       or (coalesce(sqlc.arg(show_outdated), false) = true and published_at is null and error_count > 0))
  order by n.publish_at;
 
 -- name: ListTelegramPublishTagsByNoteID :many
@@ -792,7 +792,7 @@ select n.note_path_id
   where p.hidden_by is null
    and publish_at <= datetime('now')
    and published_at is null
-   and error_count = 0;
+   and last_error is null;
 
 -- name: ListTgBotChatsByTelegramPublishNotePathID :many
 select c.*
@@ -837,6 +837,13 @@ select *
 
 -- name: GetTelegramPublishSentMessageContentHash :one
 select content_hash
+  from telegram_publish_sent_messages
+ where note_path_id = ?
+   and chat_id = ?
+   and message_id = ?;
+
+-- name: GetTelegramPublishSentMessagePostType :one
+select post_type
   from telegram_publish_sent_messages
  where note_path_id = ?
    and chat_id = ?

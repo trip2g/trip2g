@@ -50,6 +50,17 @@ func (q *WriteQueries) ClearPatreonCredentialsWebhookSecret(ctx context.Context,
 	return err
 }
 
+const clearTelegramPublishNoteLastError = `-- name: ClearTelegramPublishNoteLastError :exec
+update telegram_publish_notes
+   set last_error = null
+ where note_path_id = ?
+`
+
+func (q *WriteQueries) ClearTelegramPublishNoteLastError(ctx context.Context, notePathID int64) error {
+	_, err := q.db.ExecContext(ctx, clearTelegramPublishNoteLastError, notePathID)
+	return err
+}
+
 const clearTgUserIDByTgUserID = `-- name: ClearTgUserIDByTgUserID :exec
 update users set tg_user_id = null where tg_user_id = ?
 `
@@ -1175,8 +1186,8 @@ func (q *WriteQueries) InsertTelegramPublishInstantChat(ctx context.Context, arg
 }
 
 const insertTelegramPublishSentMessage = `-- name: InsertTelegramPublishSentMessage :exec
-insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id, instant, content_hash, content)
-values (?, ?, ?, ?, ?, ?)
+insert into telegram_publish_sent_messages (note_path_id, chat_id, message_id, instant, content_hash, content, post_type)
+values (?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertTelegramPublishSentMessageParams struct {
@@ -1186,6 +1197,7 @@ type InsertTelegramPublishSentMessageParams struct {
 	Instant     bool   `json:"instant"`
 	ContentHash string `json:"content_hash"`
 	Content     string `json:"content"`
+	PostType    string `json:"post_type"`
 }
 
 func (q *WriteQueries) InsertTelegramPublishSentMessage(ctx context.Context, arg InsertTelegramPublishSentMessageParams) error {
@@ -1196,6 +1208,7 @@ func (q *WriteQueries) InsertTelegramPublishSentMessage(ctx context.Context, arg
 		arg.Instant,
 		arg.ContentHash,
 		arg.Content,
+		arg.PostType,
 	)
 	return err
 }
@@ -1676,6 +1689,22 @@ type SetPatreonMemberCurrentTierParams struct {
 
 func (q *WriteQueries) SetPatreonMemberCurrentTier(ctx context.Context, arg SetPatreonMemberCurrentTierParams) error {
 	_, err := q.db.ExecContext(ctx, setPatreonMemberCurrentTier, arg.CurrentTierID, arg.ID)
+	return err
+}
+
+const setTelegramPublishNoteLastError = `-- name: SetTelegramPublishNoteLastError :exec
+update telegram_publish_notes
+   set last_error = ?
+ where note_path_id = ?
+`
+
+type SetTelegramPublishNoteLastErrorParams struct {
+	LastError  sql.NullString `json:"last_error"`
+	NotePathID int64          `json:"note_path_id"`
+}
+
+func (q *WriteQueries) SetTelegramPublishNoteLastError(ctx context.Context, arg SetTelegramPublishNoteLastErrorParams) error {
+	_, err := q.db.ExecContext(ctx, setTelegramPublishNoteLastError, arg.LastError, arg.NotePathID)
 	return err
 }
 
@@ -2723,11 +2752,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-	*Queries
+  *Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-	return &WriteQueries{
-		Queries: New(db),
-	}
+  return &WriteQueries{
+    Queries: New(db),
+  }
 }

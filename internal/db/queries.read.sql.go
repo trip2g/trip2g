@@ -1571,7 +1571,7 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 }
 
 const getTelegramPublishNoteByNotePathID = `-- name: GetTelegramPublishNoteByNotePathID :one
-select note_path_id, created_at, publish_at, published_version_id, published_at, error_count
+select note_path_id, created_at, publish_at, published_version_id, published_at, error_count, last_error
   from telegram_publish_notes
  where note_path_id = ?
 `
@@ -1586,6 +1586,7 @@ func (q *Queries) GetTelegramPublishNoteByNotePathID(ctx context.Context, notePa
 		&i.PublishedVersionID,
 		&i.PublishedAt,
 		&i.ErrorCount,
+		&i.LastError,
 	)
 	return i, err
 }
@@ -1609,6 +1610,27 @@ func (q *Queries) GetTelegramPublishSentMessageContentHash(ctx context.Context, 
 	var content_hash string
 	err := row.Scan(&content_hash)
 	return content_hash, err
+}
+
+const getTelegramPublishSentMessagePostType = `-- name: GetTelegramPublishSentMessagePostType :one
+select post_type
+  from telegram_publish_sent_messages
+ where note_path_id = ?
+   and chat_id = ?
+   and message_id = ?
+`
+
+type GetTelegramPublishSentMessagePostTypeParams struct {
+	NotePathID int64 `json:"note_path_id"`
+	ChatID     int64 `json:"chat_id"`
+	MessageID  int64 `json:"message_id"`
+}
+
+func (q *Queries) GetTelegramPublishSentMessagePostType(ctx context.Context, arg GetTelegramPublishSentMessagePostTypeParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, getTelegramPublishSentMessagePostType, arg.NotePathID, arg.ChatID, arg.MessageID)
+	var post_type string
+	err := row.Scan(&post_type)
+	return post_type, err
 }
 
 const gitTokenByValueSHA256 = `-- name: GitTokenByValueSHA256 :one
@@ -2643,13 +2665,13 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 }
 
 const listAllTelegramPublishNotes = `-- name: ListAllTelegramPublishNotes :many
-select n.note_path_id, n.created_at, n.publish_at, n.published_version_id, n.published_at, n.error_count
+select n.note_path_id, n.created_at, n.publish_at, n.published_version_id, n.published_at, n.error_count, n.last_error
   from telegram_publish_notes n
   join note_paths p on n.note_path_id = p.id
  where p.hidden_by is null
-   and ((coalesce(?1, true) = true and published_at is null and publish_at > n.created_at)
+   and ((coalesce(?1, true) = true and published_at is null)
        or (coalesce(?2, false) = true and published_at is not null)
-       or (coalesce(?3, false) = true and publish_at <= n.created_at))
+       or (coalesce(?3, false) = true and published_at is null and error_count > 0))
  order by n.publish_at
 `
 
@@ -2675,6 +2697,7 @@ func (q *Queries) ListAllTelegramPublishNotes(ctx context.Context, arg ListAllTe
 			&i.PublishedVersionID,
 			&i.PublishedAt,
 			&i.ErrorCount,
+			&i.LastError,
 		); err != nil {
 			return nil, err
 		}
@@ -3166,7 +3189,7 @@ select n.note_path_id
   where p.hidden_by is null
    and publish_at <= datetime('now')
    and published_at is null
-   and error_count = 0
+   and last_error is null
 `
 
 func (q *Queries) ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int64, error) {

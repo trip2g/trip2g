@@ -20,6 +20,7 @@ import (
 type Env interface {
 	Logger() logger.Logger
 	GetTelegramPublishSentMessageContentHash(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error)
+	GetTelegramPublishSentMessagePostType(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error)
 	SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
 	UpdateTelegramPublishSentMessageContent(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error
 }
@@ -54,8 +55,51 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParam
 	logger := logger.WithPrefix(env.Logger(), "backjob/updatetelegrammessage:")
 	post := params.Post
 
+	// Get current post type from database
+	currentPostType, err := env.GetTelegramPublishSentMessagePostType(ctx, db.GetTelegramPublishSentMessagePostTypeParams{
+		NotePathID: params.NotePathID,
+		ChatID:     params.DBChatID,
+		MessageID:  params.MessageID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get current post type: %w", err)
+	}
+
+	// Determine new post type based on current media
+	mediaCount := len(post.Media)
+	var newPostType string
+	switch {
+	case mediaCount == 0:
+		newPostType = "text"
+	case mediaCount == 1:
+		newPostType = "photo"
+	default:
+		newPostType = "media_group"
+	}
+
+	// Check if post type changed - if so, add warning and use original type
+	postTypeChanged := currentPostType != newPostType
+	if postTypeChanged {
+		warning := fmt.Sprintf(
+			"Cannot change post type from '%s' to '%s' after publishing. "+
+				"To update media, reset the post in admin panel and republish.",
+			currentPostType,
+			newPostType,
+		)
+		post.Warnings = append(post.Warnings, warning)
+		logger.Info(
+			"post type change detected, ignoring media changes",
+			"current_type", currentPostType,
+			"new_type", newPostType,
+			"note_path_id", params.NotePathID,
+		)
+	}
+
+	// Use current post type for determining content length limit
+	hasMedia := currentPostType == "photo" || currentPostType == "media_group"
+
 	// Truncate content to telegram limits (minus 3 for '...')
-	content := telegram.TruncateContent(post.Content, len(post.Images) > 0)
+	content := telegram.TruncateContent(post.Content, hasMedia)
 
 	// Calculate content hash for new content
 	hash := sha256.Sum256([]byte(content))
@@ -77,16 +121,16 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParam
 		return nil
 	}
 
-	// Edit the message in Telegram
+	// Edit the message in Telegram based on current (saved) post type
 	var editErr error
-	if len(post.Images) > 0 {
-		// Edit caption for photo message
-		editMsg := tgbotapi.NewEditMessageCaption(params.TelegramChatID, int(params.MessageID), content)
+	if currentPostType == "text" {
+		// Edit text for text message
+		editMsg := tgbotapi.NewEditMessageText(params.TelegramChatID, int(params.MessageID), content)
 		editMsg.ParseMode = "HTML"
 		editErr = env.SendTelegramRequest(ctx, params.DBChatID, editMsg)
 	} else {
-		// Edit text for text message
-		editMsg := tgbotapi.NewEditMessageText(params.TelegramChatID, int(params.MessageID), content)
+		// Edit caption for photo or media_group
+		editMsg := tgbotapi.NewEditMessageCaption(params.TelegramChatID, int(params.MessageID), content)
 		editMsg.ParseMode = "HTML"
 		editErr = env.SendTelegramRequest(ctx, params.DBChatID, editMsg)
 	}

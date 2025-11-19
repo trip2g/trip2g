@@ -21,16 +21,18 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 9. [[paid_with_cut]] - paid content with `---` cut marker
 10. [[with_layout]] - custom layout test
 11. [[toc_test]] - table of contents (auto/show/hide)
-12. [[telegram_post]] - Telegram publishing integration
-13. [[cyrillic_названия]] - Cyrillic in URLs and links
-14. [[File with spaces]] - spaces in filenames
-15. [[code_and_media]] - code blocks and media embeds
-16. [[complex_content]] - comprehensive markdown features
-17. [[redirect_test]] - page redirect functionality
+12. [[telegram_text]] - Telegram text post (no media, type: text)
+13. [[telegram_one_photo]] - Telegram single photo post (type: photo)
+14. [[telegram_media_group]] - Telegram media group (2+ media, type: media_group)
+15. [[cyrillic_названия]] - Cyrillic in URLs and links
+16. [[File with spaces]] - spaces in filenames
+17. [[code_and_media]] - code blocks and media embeds
+18. [[complex_content]] - comprehensive markdown features
+19. [[redirect_test]] - page redirect functionality
 
 ## Subgraph (Premium Course) Tests
-18. [[premium]] - premium subgraph home page
-19. Check sidebar: should show premium sidebar for premium pages
+20. [[premium]] - premium subgraph home page
+21. Check sidebar: should show premium sidebar for premium pages
 
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])
