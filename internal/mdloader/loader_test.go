@@ -276,7 +276,7 @@ This is a new paragraph after an empty line.`),
 
 // TestUniqueFilenameResolution tests that unique filenames resolve correctly
 // even when they are in subdirectories.
-// Bug: currently [[deep]] resolves to /deep instead of /folder/deep
+// Bug: currently [[deep]] resolves to /deep instead of /folder/deep.
 func TestUniqueFilenameResolution(t *testing.T) {
 	log := logger.TestLogger{}
 
@@ -536,4 +536,84 @@ This is a new paragraph after an empty line.`),
 	// Should have two separate paragraphs
 	require.Contains(t, html, "<p>This is a paragraph with soft wraps.")
 	require.Contains(t, html, "<p>This is a new paragraph after an empty line.</p>")
+}
+
+// TestVideoAssets tests that video files (.mp4, .webm, etc.) are correctly detected as assets.
+func TestVideoAssets(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path:    "media_group.md",
+		Content: []byte(`Media content: ![[video.mp4]] and ![[photo.png]] and ![[clip.webm]]`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	// All media files should be detected as assets
+	require.Equal(t, map[string]struct{}{
+		"video.mp4": struct{}{},
+		"photo.png": struct{}{},
+		"clip.webm": struct{}{},
+	}, pages.Map["/media_group"].Assets)
+}
+
+// TestExternalURLsNotAssets tests that external URLs (http://, https://) are NOT marked as assets.
+func TestExternalURLsNotAssets(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "links.md",
+		Content: []byte(`Links: [Google](https://google.com) and [Local PDF](file.pdf) and [External](http://example.com/doc.pdf)
+
+Image: ![alt](local.png) and remote ![remote](https://example.com/image.png)`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	// Only local files should be assets, NOT external URLs
+	require.Equal(t, map[string]struct{}{
+		"file.pdf":  struct{}{},
+		"local.png": struct{}{},
+	}, pages.Map["/links"].Assets)
+}
+
+// TestVideoRendering tests that video files are rendered as <video> tags, not <img>.
+func TestVideoRendering(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "media.md",
+		Content: []byte(`Image: ![[photo.png]]
+
+Video: ![[clip.mp4]]
+
+Another video: ![[movie.webm]]`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/media"].HTML)
+
+	// Images should use <img> tag
+	require.Contains(t, html, `<img src="photo.png">`)
+
+	// Videos should use <video> tag with controls
+	require.Contains(t, html, `<video controls src="clip.mp4">`)
+	require.Contains(t, html, `<video controls src="movie.webm">`)
+
+	// Videos should NOT use <img> tag
+	require.NotContains(t, html, `<img src="clip.mp4"`)
+	require.NotContains(t, html, `<img src="movie.webm"`)
 }

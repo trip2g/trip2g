@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"path/filepath"
 	"sync"
+	"trip2g/internal/image"
 	"trip2g/internal/model"
 
 	"github.com/yuin/goldmark/ast"
@@ -134,8 +134,20 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 		return ast.WalkContinue, nil
 	}
 
-	// TODO: maybe need to remove this feature.
+	// Check if it's a video file
+	isVideo := image.IsVideoExtension(string(n.Target))
 
+	if isVideo {
+		// Render as <video> tag
+		_, _ = w.WriteString(`<video controls src="`)
+		_, _ = w.Write(util.URLEscape(dest, true /* resolve references */))
+		_, _ = w.WriteString(`">`)
+		_, _ = w.WriteString(`Your browser does not support the video tag.`)
+		_, _ = w.WriteString(`</video>`)
+		return ast.WalkSkipChildren, nil
+	}
+
+	// Render as <img> tag for images
 	_, _ = w.WriteString(`<img src="`)
 	_, _ = w.Write(util.URLEscape(dest, true /* resolve references */))
 	// The label portion of the link becomes the alt text
@@ -206,35 +218,13 @@ func (r *linkRenderer) exit(w util.BufWriter, n *wikilink.Node) {
 	}
 }
 
-func getImageExtensions() map[string]struct{} {
-	return map[string]struct{}{
-		".apng":  {},
-		".avif":  {},
-		".gif":   {},
-		".jpg":   {},
-		".jpeg":  {},
-		".jfif":  {},
-		".pjpeg": {},
-		".pjp":   {},
-		".png":   {},
-		".svg":   {},
-		".webp":  {},
-	}
-}
-
-func isImageExtension(target string) bool {
-	ext := filepath.Ext(target)
-	_, ok := getImageExtensions()[ext]
-	return ok
-}
-
 // returns true if the wikilink should be resolved to an image node.
 func resolveAsImage(n *wikilink.Node) bool {
 	if !n.Embed {
 		return false
 	}
 
-	return isImageExtension(string(n.Target))
+	return image.IsMediaExtension(string(n.Target))
 }
 
 func nodeText(src []byte, n ast.Node) []byte {

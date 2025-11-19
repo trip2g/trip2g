@@ -22,3 +22,8 @@ demo/.obsidian
 /playwright-report/
 /playwright/.cache/
 .test-api-key
+
+# Telegram session
+session.json
+
+testdata/client

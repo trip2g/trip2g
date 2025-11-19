@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/enclavefix"
+	"trip2g/internal/image"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader/highlight"
 	"trip2g/internal/model"
@@ -142,7 +143,7 @@ func (ldr *loader) markAsset(p *model.NoteView, dest []byte) {
 
 	p.Assets[d] = struct{}{}
 
-	if p.FirstImage == nil && isImageExtension(d) {
+	if p.FirstImage == nil && image.IsMediaExtension(d) {
 		p.FirstImage = &d
 	}
 }
@@ -157,7 +158,7 @@ func (ldr *loader) findAssets() error {
 			switch n.Kind() {
 			case wikilink.Kind:
 				wl, ok := n.(*wikilink.Node)
-				if ok && wl.Embed && isImageExtension(string(wl.Target)) {
+				if ok && wl.Embed && image.IsMediaExtension(string(wl.Target)) {
 					ldr.markAsset(p, wl.Target)
 				}
 
@@ -166,10 +167,18 @@ func (ldr *loader) findAssets() error {
 				if ok && l.Destination != nil {
 					url := string(l.Destination)
 
-					// not sure if this is the right way to check for a file link
-					if !strings.HasSuffix(url, ".md") {
-						ldr.markAsset(p, l.Destination)
+					// Skip external URLs (http://, https://, //)
+					if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "//") {
+						break
 					}
+
+					// Skip markdown links
+					if strings.HasSuffix(url, ".md") {
+						break
+					}
+
+					// Mark as asset (local file)
+					ldr.markAsset(p, l.Destination)
 				}
 
 			// envclare replace KindImage by their own KindEnclave node
@@ -178,8 +187,13 @@ func (ldr *loader) findAssets() error {
 				if ok {
 					target := string(e.Image.Destination)
 
+					// Skip external URLs
+					if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") || strings.HasPrefix(target, "//") {
+						break
+					}
+
 					// ignore youtube and other embeded links
-					if isImageExtension(target) {
+					if image.IsMediaExtension(target) {
 						ldr.markAsset(p, e.Image.Destination)
 					}
 				}
@@ -187,6 +201,13 @@ func (ldr *loader) findAssets() error {
 			case ast.KindImage:
 				i, ok := n.(*ast.Image)
 				if ok && i.Destination != nil {
+					dest := string(i.Destination)
+
+					// Skip external URLs (http://, https://, //)
+					if strings.HasPrefix(dest, "http://") || strings.HasPrefix(dest, "https://") || strings.HasPrefix(dest, "//") {
+						break
+					}
+
 					ldr.markAsset(p, i.Destination)
 				}
 			}
