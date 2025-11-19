@@ -372,7 +372,15 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 		lines = append(lines, "\n\n📬 Подпишитесь, чтобы не пропустить")
 	}
 
-	res.Content = strings.Join(lines, "")
+	content := strings.Join(lines, "")
+
+	// Remove excessive blank lines (more than 2 newlines in a row)
+	// This happens when media files are removed from paragraphs
+	for strings.Contains(content, "\n\n\n") {
+		content = strings.ReplaceAll(content, "\n\n\n", "\n\n")
+	}
+
+	res.Content = content
 
 	return res
 }

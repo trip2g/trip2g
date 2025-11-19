@@ -397,3 +397,49 @@ title: "Test"
 		})
 	}
 }
+
+// TestHTMLMediaFilesBlankLines tests that excessive blank lines are removed
+// when media files (embedded wikilinks) are in the middle of content.
+func TestHTMLMediaFilesBlankLines(t *testing.T) {
+	markdown := `This post contains multiple media files.
+
+The post type is: **media_group**
+
+![[telegram_photo.png]]
+![[telegram_photo2.jpg]]
+![[telegram_video.mp4]]
+
+Features:
+- Multiple photos and videos (up to 10)
+- Caption can be edited`
+
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Content: []byte(`---
+free: true
+title: "Media Test"
+---
+` + markdown),
+		}},
+		Log: &logger.TestLogger{},
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	convertor := markdownv2.HTMLConverter{}
+	res := convertor.Process(nvs.List[0])
+
+	// Should not have more than 2 newlines in a row (no triple \n\n\n)
+	require.NotContains(t, res.Content, "\n\n\n", "Should not have excessive blank lines")
+
+	// Should have proper spacing between paragraphs (exactly 2 newlines)
+	expected := `This post contains multiple media files.
+
+The post type is: <b>media_group</b>
+
+Features:- Multiple photos and videos (up to 10)
+- Caption can be edited`
+
+	require.Equal(t, expected, res.Content)
+}
