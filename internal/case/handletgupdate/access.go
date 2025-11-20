@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
 
@@ -105,6 +106,10 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 		// Check if bot can invite users (only for administrators)
 		canInvite := false
 		if newStatus == statusAdministrator {
+			// TODO: replace sleep with proper retry mechanism with exponential backoff
+			// Telegram API needs time to propagate bot membership before we can check permissions
+			time.Sleep(1 * time.Second)
+
 			var checkErr error
 			canInvite, checkErr = req.env.GetBotCanInvite(ctx, chat.ID)
 			if checkErr != nil {
@@ -134,6 +139,10 @@ func (req *request) handleMyChatMember(ctx context.Context) error {
 		// Check if bot can invite users (only for administrators)
 		canInvite := false
 		if newStatus == statusAdministrator {
+			// TODO: replace sleep with proper retry mechanism with exponential backoff
+			// Telegram API needs time to propagate bot permission changes
+			time.Sleep(1 * time.Second)
+
 			var checkErr error
 			canInvite, checkErr = req.env.GetBotCanInvite(ctx, chat.ID)
 			if checkErr != nil {
