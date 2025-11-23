@@ -78,8 +78,6 @@ func (p *processor) process(note *model.NoteView) error {
 	// telegram_publish_tags: string[]
 	tags, tagsOk := note.ExtractTelegramPublishTags()
 
-	fmt.Printf("Processing telegram publish metadata for note %q: atOk=%v, tagsOk=%v\n", note.Path, atOk, tagsOk)
-
 	if !atOk && !tagsOk {
 		return nil
 	}
