@@ -1784,6 +1784,33 @@ func (a *app) startACMEServer(s *fasthttp.Server) {
 		},
 	}
 
+	// Start HTTP server on port 80 for ACME challenges and HTTPS redirect
+	httpServer := &http.Server{
+		Addr:         ":80",
+		Handler:      certManager.HTTPHandler(nil),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+	}
+
+	go func() {
+		<-a.shutdownCtx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), a.config.ShutdownTimeout)
+		defer cancel()
+
+		err := httpServer.Shutdown(shutdownCtx)
+		if err != nil {
+			a.log.Error("failed to shutdown HTTP redirect server", "error", err)
+		}
+	}()
+
+	go func() {
+		a.log.Info("starting HTTP redirect server on port 80")
+		err := httpServer.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			a.log.Error("HTTP redirect server failed", "error", err)
+		}
+	}()
+
 	tlsConfig := &tls.Config{
 		GetCertificate: certManager.GetCertificate,
 		NextProtos:     []string{"http/1.1", acme.ALPNProto},
@@ -1797,6 +1824,7 @@ func (a *app) startACMEServer(s *fasthttp.Server) {
 
 	lnTLS := tls.NewListener(ln, tlsConfig)
 
+	a.log.Info("starting HTTPS server on port 443")
 	err = fasthttp.Serve(lnTLS, s.Handler)
 	if err != nil {
 		panic(err)
