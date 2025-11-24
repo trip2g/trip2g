@@ -69,6 +69,7 @@ import (
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/redirectmanager"
 	"trip2g/internal/router"
+	"trip2g/internal/simplebackup"
 	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/tgbots"
 	"trip2g/internal/userbans"
@@ -175,6 +176,8 @@ type app struct {
 	gitAPI *gitapi.API
 
 	appQueues map[string]*appQueue
+
+	simpleBackup *simplebackup.Manager
 }
 
 func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB) {
@@ -208,6 +211,34 @@ func main() {
 	}
 
 	log := zerologger.New(config.LogLevel, config.DevMode)
+
+	// RESTORE PHASE (Pre-DB Init) - if simple backup enabled
+	if config.SimpleBackup.Enabled {
+		log.Info("simple backup enabled, checking for restore")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+
+		// Create temporary storage client for restore
+		restoreStorage, err := miniostorage.New(ctx, config.Storage)
+		if err != nil {
+			log.Error("FATAL: failed to init storage for restore", "error", err)
+			panic(fmt.Errorf("failed to init storage for restore: %w", err))
+		}
+
+		// Create restore environment adapter
+		restoreEnv := &restoreEnvAdapter{
+			FileStorage: restoreStorage,
+			log:         log,
+		}
+
+		restoreMgr := simplebackup.New(restoreEnv, config.DatabaseFile)
+
+		if err := restoreMgr.RestoreOnStartup(ctx); err != nil {
+			log.Error("FATAL: failed to restore database", "error", err)
+			panic(fmt.Errorf("failed to restore database: %w", err))
+		}
+	}
 
 	conn, writeConn := initDBs(config, log)
 
@@ -325,6 +356,12 @@ func main() {
 	}
 
 	a.notionClientManager = notion.NewClientManager(a, a.config.Notion)
+
+	// Initialize simple backup manager if enabled
+	if config.SimpleBackup.Enabled {
+		a.simpleBackup = simplebackup.New(a, config.DatabaseFile)
+		log.Info("simple backup manager initialized")
+	}
 
 	err = a.createOwnerIfNotExists(ctx)
 	if err != nil {
@@ -1707,6 +1744,19 @@ func (a *app) waitForShutdown(s *fasthttp.Server) {
 
 	time.Sleep(a.config.ShutdownGracePeriod)
 
+	// Perform shutdown backup if simple backup enabled
+	if a.simpleBackup != nil {
+		a.log.Info("performing shutdown backup...")
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := a.simpleBackup.PerformBackup(ctx); err != nil {
+			a.log.Error("shutdown backup failed", "error", err)
+		} else {
+			a.log.Info("shutdown backup completed")
+		}
+	}
+
 	a.log.Info("shutting down server", "timeout", a.config.ShutdownTimeout)
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), a.config.ShutdownTimeout)
@@ -1856,4 +1906,23 @@ func getEnvOrDefault[T any](ctx context.Context, defaultEnv *app) (T, error) {
 	}
 
 	return zero, fmt.Errorf("request env does not implement required type: %T", zero)
+}
+
+// restoreEnvAdapter adapts dependencies for the restore phase (before DB init)
+type restoreEnvAdapter struct {
+	*miniostorage.FileStorage
+	log logger.Logger
+}
+
+func (r *restoreEnvAdapter) Logger() logger.Logger {
+	return r.log
+}
+
+func (r *restoreEnvAdapter) DB() *sql.DB {
+	return nil // Not needed for restore
+}
+
+// BackupManager returns the backup manager for cronjob env interface
+func (a *app) BackupManager() *simplebackup.Manager {
+	return a.simpleBackup
 }

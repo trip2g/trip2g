@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"trip2g/internal/db"
+	"trip2g/internal/model"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -307,4 +308,58 @@ func (a *FileStorage) GetPrivateObject(ctx context.Context, objectID string) (io
 	}
 
 	return object, nil
+}
+
+// ListOptions specifies filtering options for listing private objects.
+type ListOptions struct {
+	Prefix string // Filter objects by prefix (relative to configured storage prefix)
+}
+
+// ListPrivateObjects lists private objects matching the given options.
+// Returns objects with keys relative to the configured storage prefix (prefix stripped).
+// Results are NOT sorted - caller should sort as needed.
+func (a *FileStorage) ListPrivateObjects(ctx context.Context, opts ListOptions) ([]model.PrivateObject, error) {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
+	fullPrefix := a.config.Prefix + opts.Prefix
+
+	listOpts := minio.ListObjectsOptions{
+		Prefix:    fullPrefix,
+		Recursive: false,
+	}
+
+	var objects []model.PrivateObject
+
+	for object := range a.minioClient.ListObjects(safeCtx, a.config.Bucket, listOpts) {
+		if object.Err != nil {
+			return nil, fmt.Errorf("failed to list objects: %w", object.Err)
+		}
+
+		relativeKey := strings.TrimPrefix(object.Key, a.config.Prefix)
+
+		objects = append(objects, model.PrivateObject{
+			Key:          relativeKey,
+			Size:         object.Size,
+			LastModified: object.LastModified,
+			ETag:         object.ETag,
+		})
+	}
+
+	return objects, nil
+}
+
+// DeletePrivateObject deletes a private object by its relative key.
+func (a *FileStorage) DeletePrivateObject(ctx context.Context, objectID string) error {
+	safeCtx, cancel := a.ctx(ctx)
+	defer cancel()
+
+	objectID = a.config.Prefix + objectID
+
+	err := a.minioClient.RemoveObject(safeCtx, a.config.Bucket, objectID, minio.RemoveObjectOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to remove private object: %w", err)
+	}
+
+	return nil
 }

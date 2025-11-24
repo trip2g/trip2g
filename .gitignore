@@ -1,4 +1,5 @@
 node_modules
+repomix-output.xml
 testdata/vault/.obsidian
 tmp
 /server

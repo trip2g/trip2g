@@ -102,6 +102,13 @@ type Config struct {
 	GitAPI gitapi.Config
 
 	Notion notion.Config
+
+	SimpleBackup SimpleBackupConfig
+}
+
+// SimpleBackupConfig holds simple backup system configuration.
+type SimpleBackupConfig struct {
+	Enabled bool
 }
 
 // Default values for configuration.
@@ -358,6 +365,7 @@ func (c *Config) defineServerFlags() {
 	flag.DurationVar(&c.ShutdownGracePeriod, "shutdown-grace-period", 50*time.Millisecond, "Shutdown grace period")
 	flag.DurationVar(&c.ShutdownTimeout, "shutdown-timeout", 1*time.Second, "Shutdown timeout")
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
+	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
 }
 
 func (c *Config) defineMinioFlags() {
