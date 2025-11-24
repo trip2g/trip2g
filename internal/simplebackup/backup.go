@@ -3,6 +3,7 @@ package simplebackup
 import (
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -19,10 +20,10 @@ const (
 	backupPrefix   = "db-backup-"
 )
 
-// PerformBackup executes: VACUUM INTO -> gzip -> Upload -> Retention Cleanup
+// PerformBackup executes: VACUUM INTO -> gzip -> Upload -> Retention Cleanup.
 func (m *Manager) PerformBackup(ctx context.Context) error {
 	if !m.mu.TryLock() {
-		return fmt.Errorf("backup already in progress")
+		return errors.New("backup already in progress")
 	}
 	defer m.mu.Unlock()
 
@@ -36,7 +37,7 @@ func (m *Manager) PerformBackup(ctx context.Context) error {
 
 	// DB() might be nil during restore phase, but PerformBackup is only called when app is running
 	if m.env.DB() == nil {
-		return fmt.Errorf("database connection is nil")
+		return errors.New("database connection is nil")
 	}
 
 	_, err := m.env.DB().ExecContext(ctx, fmt.Sprintf("VACUUM INTO '%s'", tempBackupPath))
@@ -55,7 +56,10 @@ func (m *Manager) PerformBackup(ctx context.Context) error {
 	go func() {
 		gw := gzip.NewWriter(pw)
 		_, copyErr := io.Copy(gw, f)
-		gw.Close()
+		closeErr := gw.Close()
+		if closeErr != nil && copyErr == nil {
+			copyErr = closeErr
+		}
 		pw.CloseWithError(copyErr)
 	}()
 
@@ -67,8 +71,9 @@ func (m *Manager) PerformBackup(ctx context.Context) error {
 	}
 
 	// 3. Enforce Retention
-	if err := m.enforceRetention(ctx); err != nil {
-		log.Warn("failed to enforce retention policy", "error", err)
+	retentionErr := m.enforceRetention(ctx)
+	if retentionErr != nil {
+		log.Warn("failed to enforce retention policy", "error", retentionErr)
 	}
 
 	log.Info("backup completed", "duration", time.Since(startTime))
@@ -96,8 +101,8 @@ func (m *Manager) enforceRetention(ctx context.Context) error {
 		// Extract timestamps from filenames for comparison
 		// Format: db-backup-{timestamp}.db.gz
 		var ti, tj int64
-		fmt.Sscanf(filepath.Base(backups[i]), backupPrefix+"%d.db.gz", &ti)
-		fmt.Sscanf(filepath.Base(backups[j]), backupPrefix+"%d.db.gz", &tj)
+		_, _ = fmt.Sscanf(filepath.Base(backups[i]), backupPrefix+"%d.db.gz", &ti)
+		_, _ = fmt.Sscanf(filepath.Base(backups[j]), backupPrefix+"%d.db.gz", &tj)
 		return ti > tj // Descending (newest first)
 	})
 
@@ -106,9 +111,10 @@ func (m *Manager) enforceRetention(ctx context.Context) error {
 		toDelete := backups[retentionCount:]
 		for _, key := range toDelete {
 			m.env.Logger().Info("deleting old backup", "key", key)
-			if err := m.env.DeletePrivateObject(ctx, key); err != nil {
+			deleteErr := m.env.DeletePrivateObject(ctx, key)
+			if deleteErr != nil {
 				// Log but continue
-				m.env.Logger().Error("failed to delete old backup", "key", key, "error", err)
+				m.env.Logger().Error("failed to delete old backup", "key", key, "error", deleteErr)
 			}
 		}
 	}

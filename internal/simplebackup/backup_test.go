@@ -71,14 +71,14 @@ func TestRestoreSkipsWhenDBExists(t *testing.T) {
 	t.Skip("Integration test - requires file system mocking")
 }
 
-// mockLogger implements logger.Logger for testing
+// mockLogger implements logger.Logger for testing.
 type mockLogger struct{}
 
-func (m *mockLogger) Debug(msg string, keysAndValues ...interface{})                       {}
-func (m *mockLogger) Info(msg string, keysAndValues ...interface{})                        {}
-func (m *mockLogger) Warn(msg string, keysAndValues ...interface{})                        {}
-func (m *mockLogger) Error(msg string, keysAndValues ...interface{})                       {}
-func (m *mockLogger) With(keysAndValues ...interface{}) logger.Logger                      { return m }
+func (m *mockLogger) Debug(msg string, keysAndValues ...interface{})  {}
+func (m *mockLogger) Info(msg string, keysAndValues ...interface{})   {}
+func (m *mockLogger) Warn(msg string, keysAndValues ...interface{})   {}
+func (m *mockLogger) Error(msg string, keysAndValues ...interface{})  {}
+func (m *mockLogger) With(keysAndValues ...interface{}) logger.Logger { return m }
 func (m *mockLogger) WithContext(ctx context.Context, keysAndValues ...interface{}) logger.Logger {
 	return m
 }

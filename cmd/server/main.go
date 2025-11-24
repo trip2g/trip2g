@@ -15,7 +15,7 @@ import (
 	"math/big"
 	"net"
 	"net/http"
-	_ "net/http/pprof" //nolint:gosec // exposed by internal server only
+	"net/http/pprof"
 	"net/url"
 	"os"
 	"os/signal"
@@ -220,10 +220,10 @@ func main() {
 		defer cancel()
 
 		// Create temporary storage client for restore
-		restoreStorage, err := miniostorage.New(ctx, config.Storage)
-		if err != nil {
-			log.Error("FATAL: failed to init storage for restore", "error", err)
-			panic(fmt.Errorf("failed to init storage for restore: %w", err))
+		restoreStorage, restoreErr := miniostorage.New(ctx, config.Storage)
+		if restoreErr != nil {
+			log.Error("FATAL: failed to init storage for restore", "error", restoreErr)
+			panic(fmt.Errorf("failed to init storage for restore: %w", restoreErr))
 		}
 
 		// Create restore environment adapter
@@ -234,9 +234,10 @@ func main() {
 
 		restoreMgr := simplebackup.New(restoreEnv, config.DatabaseFile)
 
-		if err := restoreMgr.RestoreOnStartup(ctx); err != nil {
-			log.Error("FATAL: failed to restore database", "error", err)
-			panic(fmt.Errorf("failed to restore database: %w", err))
+		startupErr := restoreMgr.RestoreOnStartup(ctx)
+		if startupErr != nil {
+			log.Error("FATAL: failed to restore database", "error", startupErr)
+			panic(fmt.Errorf("failed to restore database: %w", startupErr))
 		}
 	}
 
@@ -1785,8 +1786,18 @@ func (a *app) startInternalServer() {
 		_, _ = w.Write([]byte("ok"))
 	})
 
-	// pprof endpoints are automatically registered by importing net/http/pprof
-	// Available at: /debug/pprof/, /debug/pprof/profile, /debug/pprof/trace, etc.
+	// Register pprof endpoints
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+	mux.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+	mux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+	mux.Handle("/debug/pprof/block", pprof.Handler("block"))
+	mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
+	mux.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
 
 	server := &http.Server{
 		Addr:    a.config.InternalListenAddr,
@@ -1908,7 +1919,7 @@ func getEnvOrDefault[T any](ctx context.Context, defaultEnv *app) (T, error) {
 	return zero, fmt.Errorf("request env does not implement required type: %T", zero)
 }
 
-// restoreEnvAdapter adapts dependencies for the restore phase (before DB init)
+// restoreEnvAdapter adapts dependencies for the restore phase (before DB init).
 type restoreEnvAdapter struct {
 	*miniostorage.FileStorage
 	log logger.Logger
@@ -1922,7 +1933,7 @@ func (r *restoreEnvAdapter) DB() *sql.DB {
 	return nil // Not needed for restore
 }
 
-// BackupManager returns the backup manager for cronjob env interface
+// BackupManager returns the backup manager for cronjob env interface.
 func (a *app) BackupManager() *simplebackup.Manager {
 	return a.simpleBackup
 }

@@ -16,6 +16,7 @@ import (
 )
 
 // RestoreOnStartup restores the DB from S3 storage if local file is missing.
+// #nosec G110 - Decompression bomb risk is acceptable for trusted backup source.
 func (m *Manager) RestoreOnStartup(ctx context.Context) error {
 	log := m.env.Logger()
 
@@ -69,28 +70,35 @@ func (m *Manager) RestoreOnStartup(ctx context.Context) error {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
 	defer func() {
-		outFile.Close()
-		os.Remove(tempRestorePath) // Clean up temp file
+		_ = outFile.Close()
+		_ = os.Remove(tempRestorePath) // Clean up temp file
 	}()
 
-	if _, err := io.Copy(outFile, gzReader); err != nil {
-		return fmt.Errorf("failed to write restore file: %w", err)
+	_, copyErr := io.Copy(outFile, gzReader)
+	if copyErr != nil {
+		return fmt.Errorf("failed to write restore file: %w", copyErr)
 	}
 
-	outFile.Close() // Close before integrity check
+	closeErr := outFile.Close() // Close before integrity check
+	if closeErr != nil {
+		return fmt.Errorf("failed to close temp file: %w", closeErr)
+	}
 
 	// 4. Integrity Check
-	if err := verifyIntegrity(tempRestorePath); err != nil {
-		return fmt.Errorf("integrity check failed: %w", err)
+	integrityErr := verifyIntegrity(tempRestorePath)
+	if integrityErr != nil {
+		return fmt.Errorf("integrity check failed: %w", integrityErr)
 	}
 
 	// 5. Atomic Move
-	if err := os.MkdirAll(filepath.Dir(m.databasePath), 0755); err != nil {
-		return fmt.Errorf("failed to create db dir: %w", err)
+	mkdirErr := os.MkdirAll(filepath.Dir(m.databasePath), 0750)
+	if mkdirErr != nil {
+		return fmt.Errorf("failed to create db dir: %w", mkdirErr)
 	}
 
-	if err := os.Rename(tempRestorePath, m.databasePath); err != nil {
-		return fmt.Errorf("failed to move restored file: %w", err)
+	renameErr := os.Rename(tempRestorePath, m.databasePath)
+	if renameErr != nil {
+		return fmt.Errorf("failed to move restored file: %w", renameErr)
 	}
 
 	log.Info("restore successful")

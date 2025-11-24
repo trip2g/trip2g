@@ -19,7 +19,7 @@ func (j *Job) ExecuteAfterStart() bool {
 	return false
 }
 
-// Env interface that allows accessing the backup manager
+// Env interface that allows accessing the backup manager.
 type Env interface {
 	BackupManager() *simplebackup.Manager
 }
