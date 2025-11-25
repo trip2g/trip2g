@@ -915,6 +915,12 @@ func (MakeReleaseLivePayload) IsMakeReleaseLiveOrErrorPayload() {}
 type Mutation struct {
 }
 
+type NoteAssetReplaceT struct {
+	ID   string `json:"id"`
+	URL  string `json:"url"`
+	Hash string `json:"hash"`
+}
+
 type NoteInput struct {
 	Path    *string `json:"path,omitempty"`
 	PathID  *int64  `json:"pathId,omitempty"`

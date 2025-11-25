@@ -534,6 +534,56 @@ Past content`),
 	require.NotContains(t, post.Content, "13:00")
 }
 
+func TestMissingAssets(t *testing.T) {
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path: "test.md",
+			Content: []byte(`---
+free: true
+title: "Note with Image"
+---
+hello
+
+![image](test.jpg)`),
+		}},
+		Log:     &logger.TestLogger{},
+		Version: "latest",
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+	require.Len(t, nvs.List, 1)
+
+	// Add asset reference without AssetReplace (simulating asset not yet uploaded)
+	note := nvs.List[0]
+	note.Assets = map[string]struct{}{
+		"test.jpg": {},
+	}
+	note.AssetReplaces = map[string]*model.NoteAssetReplace{} // Empty - no uploaded assets
+
+	env := &testEnv{
+		nvs:       nvs,
+		logger:    &logger.TestLogger{},
+		sentMsgs:  []db.ListTelegramPublishSentMessagesByChatIDRow{},
+		publicURL: "https://example.com",
+	}
+
+	source := model.TelegramPostSource{
+		NoteView: note,
+		ChatID:   123,
+		Instant:  false,
+	}
+
+	post, err := convertnoteviewtotgpost.Resolve(context.Background(), env, source)
+	require.Error(t, err)
+	require.Nil(t, post)
+
+	// Verify it's the correct error type
+	var assetsErr *convertnoteviewtotgpost.ErrAssetsNotReadyError
+	require.ErrorAs(t, err, &assetsErr)
+	require.Contains(t, assetsErr.MissingAssets, "test.jpg")
+}
+
 type testEnvWithTracking struct {
 	testEnv
 	onListCalled func()

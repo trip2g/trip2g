@@ -77,11 +77,7 @@ func prepare(t *testing.T, nvs *model.NoteViews) *EnvMock {
 			}, nil
 		},
 
-		SendTelegramPublishPostFunc: func(ctx context.Context, params model.SendTelegramPublishPostParams) error {
-			return nil
-		},
-
-		UpdateTelegramPublishPostFunc: func(ctx context.Context, pathID int64) error {
+		EnqueueSendTelegramPostFunc: func(ctx context.Context, params model.SendTelegramPublishPostParams) error {
 			return nil
 		},
 	}
@@ -158,9 +154,9 @@ func TestMetaExtractrs(t *testing.T) {
 	require.Equal(t, time.Date(2024, 7, 2, 16, 2, 0, 0, time.UTC), env.calls.UpsertTelegramPublishNote[0].Params.PublishAt)
 	require.Equal(t, time.Date(2024, 7, 2, 20, 2, 0, 0, time.UTC), env.calls.UpsertTelegramPublishNote[1].Params.PublishAt)
 
-	require.Len(t, env.calls.SendTelegramPublishPost, 2)
-	require.Equal(t, int64(7), env.calls.SendTelegramPublishPost[0].Params.NotePathID)
-	require.Equal(t, int64(9), env.calls.SendTelegramPublishPost[1].Params.NotePathID)
-	require.True(t, env.calls.SendTelegramPublishPost[0].Params.Instant)
-	require.True(t, env.calls.SendTelegramPublishPost[1].Params.Instant)
+	require.Len(t, env.calls.EnqueueSendTelegramPost, 2)
+	require.Equal(t, int64(7), env.calls.EnqueueSendTelegramPost[0].Params.NotePathID)
+	require.Equal(t, int64(9), env.calls.EnqueueSendTelegramPost[1].Params.NotePathID)
+	require.True(t, env.calls.EnqueueSendTelegramPost[0].Params.Instant)
+	require.True(t, env.calls.EnqueueSendTelegramPost[1].Params.Instant)
 }

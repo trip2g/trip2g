@@ -49,6 +49,34 @@ from ranked_assets
 join note_assets on ranked_assets.asset_id = note_assets.id
 where rn = 1;
 
+-- name: NoteAssetsByVersionID :many
+with target_version as (
+  select v.id as version_id, p.id as path_id, v.version
+  from note_versions v
+  join note_paths p on v.path_id = p.id
+  where v.id = ?
+),
+ranked_assets as (
+  select
+    tv.version_id,
+    na.id as asset_id,
+    a.path,
+    tv.path_id,
+    row_number() over (
+      partition by tv.path_id, a.path
+      order by v.version desc, a.created_at desc
+    ) as rn
+  from target_version tv
+  join note_paths p on tv.path_id = p.id
+  join note_versions v on p.id = v.path_id and v.version <= tv.version
+  join note_version_assets a on v.id = a.version_id
+  join note_assets na on a.asset_id = na.id
+)
+select version_id, path, sqlc.embed(note_assets)
+from ranked_assets
+join note_assets on ranked_assets.asset_id = note_assets.id
+where rn = 1;
+
 -- name: UserByEmail :one
 select * from users where email = lower(?);
 

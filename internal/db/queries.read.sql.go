@@ -3807,6 +3807,73 @@ func (q *Queries) NoteAssetByPathAndHash(ctx context.Context, arg NoteAssetByPat
 	return i, err
 }
 
+const noteAssetsByVersionID = `-- name: NoteAssetsByVersionID :many
+with target_version as (
+  select v.id as version_id, p.id as path_id, v.version
+  from note_versions v
+  join note_paths p on v.path_id = p.id
+  where v.id = ?
+),
+ranked_assets as (
+  select
+    tv.version_id,
+    na.id as asset_id,
+    a.path,
+    tv.path_id,
+    row_number() over (
+      partition by tv.path_id, a.path
+      order by v.version desc, a.created_at desc
+    ) as rn
+  from target_version tv
+  join note_paths p on tv.path_id = p.id
+  join note_versions v on p.id = v.path_id and v.version <= tv.version
+  join note_version_assets a on v.id = a.version_id
+  join note_assets na on a.asset_id = na.id
+)
+select version_id, path, note_assets.id, note_assets.absolute_path, note_assets.file_name, note_assets.sha256_hash, note_assets.created_at, note_assets.size
+from ranked_assets
+join note_assets on ranked_assets.asset_id = note_assets.id
+where rn = 1
+`
+
+type NoteAssetsByVersionIDRow struct {
+	VersionID int64     `json:"version_id"`
+	Path      string    `json:"path"`
+	NoteAsset NoteAsset `json:"note_asset"`
+}
+
+func (q *Queries) NoteAssetsByVersionID(ctx context.Context, id int64) ([]NoteAssetsByVersionIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, noteAssetsByVersionID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteAssetsByVersionIDRow
+	for rows.Next() {
+		var i NoteAssetsByVersionIDRow
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.Path,
+			&i.NoteAsset.ID,
+			&i.NoteAsset.AbsolutePath,
+			&i.NoteAsset.FileName,
+			&i.NoteAsset.Sha256Hash,
+			&i.NoteAsset.CreatedAt,
+			&i.NoteAsset.Size,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const noteGraphPositionByPathID = `-- name: NoteGraphPositionByPathID :one
 select graph_position_x as x, graph_position_y as y
   from note_paths

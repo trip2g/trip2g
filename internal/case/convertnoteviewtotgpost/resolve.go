@@ -14,6 +14,15 @@ import (
 	"trip2g/internal/telegram"
 )
 
+// ErrAssetsNotReadyError indicates that media assets are not yet uploaded.
+type ErrAssetsNotReadyError struct {
+	MissingAssets []string
+}
+
+func (e *ErrAssetsNotReadyError) Error() string {
+	return fmt.Sprintf("media assets not yet uploaded: %v", e.MissingAssets)
+}
+
 type SentMessage = db.ListTelegramPublishSentMessagesByChatIDRow
 
 type Env interface {
@@ -113,7 +122,10 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	post.Content = res.Content
 	post.Warnings = res.Warnings
 
-	mediaURLs := getAllMediaURLs(source.NoteView)
+	mediaURLs, err := getAllMediaURLs(source.NoteView)
+	if err != nil {
+		return nil, err
+	}
 	post.Media = mediaURLs
 
 	// Validate content length limits
@@ -146,8 +158,9 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	return &post, nil
 }
 
-func getAllMediaURLs(noteView *model.NoteView) []string {
+func getAllMediaURLs(noteView *model.NoteView) ([]string, error) {
 	var mediaURLs []string
+	var missingAssets []string
 
 	for path := range noteView.Assets {
 		if !image.IsMediaExtension(path) {
@@ -156,6 +169,7 @@ func getAllMediaURLs(noteView *model.NoteView) []string {
 
 		assetReplace, ok := noteView.AssetReplaces[path]
 		if !ok {
+			missingAssets = append(missingAssets, path)
 			continue
 		}
 
@@ -167,7 +181,11 @@ func getAllMediaURLs(noteView *model.NoteView) []string {
 		}
 	}
 
-	return mediaURLs
+	if len(missingAssets) > 0 {
+		return nil, &ErrAssetsNotReadyError{MissingAssets: missingAssets}
+	}
+
+	return mediaURLs, nil
 }
 
 /*

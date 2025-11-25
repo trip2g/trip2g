@@ -901,6 +901,12 @@ type ComplexityRoot struct {
 		UploadNoteAsset            func(childComplexity int, input model.UploadNoteAssetInput) int
 	}
 
+	NoteAssetReplaceT struct {
+		Hash func(childComplexity int) int
+		ID   func(childComplexity int) int
+		URL  func(childComplexity int) int
+	}
+
 	NotePath struct {
 		LatestContentHash func(childComplexity int) int
 		LatestNoteView    func(childComplexity int) int
@@ -914,6 +920,7 @@ type ComplexityRoot struct {
 	}
 
 	NoteView struct {
+		AssetReplaces func(childComplexity int) int
 		Content       func(childComplexity int) int
 		Description   func(childComplexity int) int
 		Free          func(childComplexity int) int
@@ -1627,6 +1634,7 @@ type NoteViewResolver interface {
 
 	Meta(ctx context.Context, obj *model1.NoteView) ([]model.NoteViewMeta, error)
 	Toc(ctx context.Context, obj *model1.NoteView) ([]model.NoteTocItem, error)
+	AssetReplaces(ctx context.Context, obj *model1.NoteView) ([]model.NoteAssetReplaceT, error)
 }
 type NoteWarningResolver interface {
 	Level(ctx context.Context, obj *model1.NoteWarning) (model.NoteWarningLevelEnum, error)
@@ -4883,6 +4891,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UploadNoteAsset(childComplexity, args["input"].(model.UploadNoteAssetInput)), true
 
+	case "NoteAssetReplaceT.hash":
+		if e.complexity.NoteAssetReplaceT.Hash == nil {
+			break
+		}
+
+		return e.complexity.NoteAssetReplaceT.Hash(childComplexity), true
+	case "NoteAssetReplaceT.id":
+		if e.complexity.NoteAssetReplaceT.ID == nil {
+			break
+		}
+
+		return e.complexity.NoteAssetReplaceT.ID(childComplexity), true
+	case "NoteAssetReplaceT.url":
+		if e.complexity.NoteAssetReplaceT.URL == nil {
+			break
+		}
+
+		return e.complexity.NoteAssetReplaceT.URL(childComplexity), true
+
 	case "NotePath.latestContentHash":
 		if e.complexity.NotePath.LatestContentHash == nil {
 			break
@@ -4921,6 +4948,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.NoteTocItem.Title(childComplexity), true
 
+	case "NoteView.assetReplaces":
+		if e.complexity.NoteView.AssetReplaces == nil {
+			break
+		}
+
+		return e.complexity.NoteView.AssetReplaces(childComplexity), true
 	case "NoteView.content":
 		if e.complexity.NoteView.Content == nil {
 			break
@@ -10461,6 +10494,8 @@ func (ec *executionContext) fieldContext_AdminLatestNoteViewsConnection_nodes(_ 
 				return ec.fieldContext_NoteView_meta(ctx, field)
 			case "toc":
 				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -16262,6 +16297,8 @@ func (ec *executionContext) fieldContext_AdminQuery_noteView(ctx context.Context
 				return ec.fieldContext_NoteView_meta(ctx, field)
 			case "toc":
 				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -17495,6 +17532,8 @@ func (ec *executionContext) fieldContext_AdminRelease_homeNote(_ context.Context
 				return ec.fieldContext_NoteView_meta(ctx, field)
 			case "toc":
 				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -18052,6 +18091,8 @@ func (ec *executionContext) fieldContext_AdminTelegramPublishNote_noteView(_ con
 				return ec.fieldContext_NoteView_meta(ctx, field)
 			case "toc":
 				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -22740,6 +22781,93 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _NoteAssetReplaceT_id(ctx context.Context, field graphql.CollectedField, obj *model.NoteAssetReplaceT) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteAssetReplaceT_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteAssetReplaceT_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteAssetReplaceT",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteAssetReplaceT_url(ctx context.Context, field graphql.CollectedField, obj *model.NoteAssetReplaceT) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteAssetReplaceT_url,
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteAssetReplaceT_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteAssetReplaceT",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteAssetReplaceT_hash(ctx context.Context, field graphql.CollectedField, obj *model.NoteAssetReplaceT) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteAssetReplaceT_hash,
+		func(ctx context.Context) (any, error) {
+			return obj.Hash, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteAssetReplaceT_hash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteAssetReplaceT",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NotePath_value(ctx context.Context, field graphql.CollectedField, obj *db.NotePath) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -22856,6 +22984,8 @@ func (ec *executionContext) fieldContext_NotePath_latestNoteView(_ context.Conte
 				return ec.fieldContext_NoteView_meta(ctx, field)
 			case "toc":
 				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -23333,6 +23463,8 @@ func (ec *executionContext) fieldContext_NoteView_inLinks(_ context.Context, fie
 				return ec.fieldContext_NoteView_meta(ctx, field)
 			case "toc":
 				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -23500,6 +23632,43 @@ func (ec *executionContext) fieldContext_NoteView_toc(_ context.Context, field g
 				return ec.fieldContext_NoteTocItem_level(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteTocItem", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NoteView_assetReplaces(ctx context.Context, field graphql.CollectedField, obj *model1.NoteView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteView_assetReplaces,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NoteView().AssetReplaces(ctx, obj)
+		},
+		nil,
+		ec.marshalNNoteAssetReplaceT2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteAssetReplaceTᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteView_assetReplaces(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteView",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteAssetReplaceT_id(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteAssetReplaceT_url(ctx, field)
+			case "hash":
+				return ec.fieldContext_NoteAssetReplaceT_hash(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteAssetReplaceT", field.Name)
 		},
 	}
 	return fc, nil
@@ -26684,6 +26853,8 @@ func (ec *executionContext) fieldContext_UpdateNoteGraphPositionsPayload_updated
 				return ec.fieldContext_NoteView_meta(ctx, field)
 			case "toc":
 				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
 		},
@@ -46180,6 +46351,55 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var noteAssetReplaceTImplementors = []string{"NoteAssetReplaceT"}
+
+func (ec *executionContext) _NoteAssetReplaceT(ctx context.Context, sel ast.SelectionSet, obj *model.NoteAssetReplaceT) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, noteAssetReplaceTImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("NoteAssetReplaceT")
+		case "id":
+			out.Values[i] = ec._NoteAssetReplaceT_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "url":
+			out.Values[i] = ec._NoteAssetReplaceT_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hash":
+			out.Values[i] = ec._NoteAssetReplaceT_hash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var notePathImplementors = []string{"NotePath"}
 
 func (ec *executionContext) _NotePath(ctx context.Context, sel ast.SelectionSet, obj *db.NotePath) graphql.Marshaler {
@@ -46590,6 +46810,42 @@ func (ec *executionContext) _NoteView(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._NoteView_toc(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "assetReplaces":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NoteView_assetReplaces(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -53509,6 +53765,54 @@ func (ec *executionContext) marshalNMakeReleaseLiveOrErrorPayload2trip2gᚋinter
 		return graphql.Null
 	}
 	return ec._MakeReleaseLiveOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNNoteAssetReplaceT2trip2gᚋinternalᚋgraphᚋmodelᚐNoteAssetReplaceT(ctx context.Context, sel ast.SelectionSet, v model.NoteAssetReplaceT) graphql.Marshaler {
+	return ec._NoteAssetReplaceT(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNoteAssetReplaceT2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteAssetReplaceTᚄ(ctx context.Context, sel ast.SelectionSet, v []model.NoteAssetReplaceT) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNoteAssetReplaceT2trip2gᚋinternalᚋgraphᚋmodelᚐNoteAssetReplaceT(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNNoteInput2trip2gᚋinternalᚋgraphᚋmodelᚐNoteInput(ctx context.Context, v any) (model.NoteInput, error) {

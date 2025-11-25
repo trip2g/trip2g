@@ -162,7 +162,25 @@ func (e *singleNoteLoaderEnv) RawNotes(ctx context.Context) ([]noteloader.RawNot
 }
 
 func (e *singleNoteLoaderEnv) RawAssets(ctx context.Context) ([]noteloader.RawAsset, error) {
-	return []noteloader.RawAsset{}, nil
+	assets, err := e.env(ctx).NoteAssetsByVersionID(ctx, e.versionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get note assets by version ID %d: %w", e.versionID, err)
+	}
+
+	res := make([]noteloader.RawAsset, len(assets))
+	for i, asset := range assets {
+		res[i] = noteloader.RawAsset{
+			VersionID: asset.VersionID,
+			Path:      asset.Path,
+			NoteAsset: asset.NoteAsset,
+		}
+
+		if asset.NoteAsset.FileName != "hardreset_loop.png" {
+			continue
+		}
+	}
+
+	return res, nil
 }
 
 func makeSingleNoteLoaderWrapper(a *app, versionID int64) *singleNoteLoaderEnv {

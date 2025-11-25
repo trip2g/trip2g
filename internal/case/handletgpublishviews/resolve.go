@@ -22,8 +22,7 @@ type Env interface {
 	TimeLocation() *time.Location
 	LatestNoteViews() *model.NoteViews
 
-	SendTelegramPublishPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
-	UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error
+	EnqueueSendTelegramPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
 
 	ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
 }
@@ -151,21 +150,15 @@ func (p *processor) process(note *model.NoteView) error {
 		}
 	}
 
-	// send a  preview immediately
+	// enqueue preview to be sent (will retry if assets are not ready)
 	params := model.SendTelegramPublishPostParams{
 		NotePathID:        note.PathID,
 		Instant:           true,
 		UpdateLinkedPosts: false,
 	}
-	err = p.env.SendTelegramPublishPost(p.ctx, params)
+	err = p.env.EnqueueSendTelegramPost(p.ctx, params)
 	if err != nil {
-		return fmt.Errorf("failed to SendTelegramPublishPost: %w", err)
-	}
-
-	// update existing post if it was already published
-	err = p.env.UpdateTelegramPublishPost(p.ctx, note.PathID)
-	if err != nil {
-		return fmt.Errorf("failed to UpdateTelegramPublishPost: %w", err)
+		return fmt.Errorf("failed to EnqueueSendTelegramPost: %w", err)
 	}
 
 	return nil

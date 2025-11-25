@@ -1881,6 +1881,21 @@ func (r *noteViewResolver) Toc(ctx context.Context, obj *appmodel.NoteView) ([]m
 	return model.ConvertNoteToPublic(obj).Toc, nil
 }
 
+// AssetReplaces is the resolver for the assetReplaces field.
+func (r *noteViewResolver) AssetReplaces(ctx context.Context, obj *appmodel.NoteView) ([]model.NoteAssetReplaceT, error) {
+	res := []model.NoteAssetReplaceT{}
+
+	for id, replace := range obj.AssetReplaces {
+		res = append(res, model.NoteAssetReplaceT{
+			ID:   id,
+			URL:  replace.URL,
+			Hash: replace.Hash,
+		})
+	}
+
+	return res, nil
+}
+
 // Level is the resolver for the level field.
 func (r *noteWarningResolver) Level(ctx context.Context, obj *appmodel.NoteWarning) (model.NoteWarningLevelEnum, error) {
 	mapping := map[appmodel.NoteWarningLevel]model.NoteWarningLevelEnum{
