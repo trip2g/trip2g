@@ -34,7 +34,8 @@
       "Read(//mnt/hgfs/projects/trip2g_context/**)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(test:*)",
-      "Bash(go doc:*)"
+      "Bash(go doc:*)",
+      "Bash(go vet:*)"
     ],
     "deny": []
   },
