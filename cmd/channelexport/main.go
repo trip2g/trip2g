@@ -37,7 +37,7 @@ func main() {
 	flag.StringVar(&outputPath, "output-path", "", "Output directory path for markdown files")
 	flag.StringVar(&inputPath, "input-path", "", "Input directory path (for step1+)")
 	flag.IntVar(&limit, "limit", 10, "Maximum number of messages to export")
-	flag.IntVar(&step, "step", 0, "Pipeline step: 0=export, 1=titles")
+	flag.IntVar(&step, "step", 0, "Pipeline step: 0=export, 1=titles, 2=wikilinks")
 	flag.Parse()
 
 	// Step 1: Transform titles (no Telegram needed)
@@ -48,6 +48,18 @@ func main() {
 		err := runStep1(inputPath, outputPath)
 		if err != nil {
 			log.Fatalf("Step 1 failed: %v", err)
+		}
+		return
+	}
+
+	// Step 2: Replace telegram links with wikilinks
+	if step == 2 {
+		if inputPath == "" || outputPath == "" {
+			log.Fatal("--input-path and --output-path are required for step 2")
+		}
+		err := runStep2(inputPath, outputPath)
+		if err != nil {
+			log.Fatalf("Step 2 failed: %v", err)
 		}
 		return
 	}
