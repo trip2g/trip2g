@@ -1153,6 +1153,22 @@ func (q *WriteQueries) InsertSubgraph(ctx context.Context, name string) error {
 	return err
 }
 
+const insertTelegramCustomEmoji = `-- name: InsertTelegramCustomEmoji :exec
+insert into telegram_custom_emojies (id, base64_data)
+values (?, ?)
+on conflict(id) do update set base64_data = excluded.base64_data
+`
+
+type InsertTelegramCustomEmojiParams struct {
+	ID         string `json:"id"`
+	Base64Data string `json:"base64_data"`
+}
+
+func (q *WriteQueries) InsertTelegramCustomEmoji(ctx context.Context, arg InsertTelegramCustomEmojiParams) error {
+	_, err := q.db.ExecContext(ctx, insertTelegramCustomEmoji, arg.ID, arg.Base64Data)
+	return err
+}
+
 const insertTelegramPublishChat = `-- name: InsertTelegramPublishChat :exec
 insert into telegram_publish_chats (chat_id, tag_id, created_by)
 values (?, ?, ?)
@@ -2752,11 +2768,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-  *Queries
+	*Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-  return &WriteQueries{
-    Queries: New(db),
-  }
+	return &WriteQueries{
+		Queries: New(db),
+	}
 }

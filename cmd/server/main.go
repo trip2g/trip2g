@@ -43,6 +43,7 @@ import (
 	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
+	"trip2g/internal/case/gettelegramcustomemojies"
 	"trip2g/internal/case/handletgpublishviews"
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/case/listactiveusersubgraphs"
@@ -1020,6 +1021,10 @@ func (a *app) Logger() logger.Logger {
 
 func (a *app) AuditLogger() logger.Logger {
 	return a.auditLogger
+}
+
+func (a *app) GetTgBots() gettelegramcustomemojies.TgBotsInterface {
+	return a.TgBots
 }
 
 func (a *app) DB() *sql.DB {

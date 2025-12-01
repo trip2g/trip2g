@@ -70,6 +70,7 @@ import (
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/generatetgattachcode"
+	"trip2g/internal/case/gettelegramcustomemojies"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/pushnotes"
@@ -1150,6 +1151,11 @@ func (r *adminQueryResolver) AllTelegramPublishNotes(ctx context.Context, obj *a
 	return &model.AdminTelegramPublishNotesConnection{Filter: filter}, nil
 }
 
+// AllTelegramCustomEmojies is the resolver for the allTelegramCustomEmojies field.
+func (r *adminQueryResolver) AllTelegramCustomEmojies(ctx context.Context, obj *appmodel.AdminQuery) ([]model.AdminTelegramCustomEmojiConnection, error) {
+	return []model.AdminTelegramCustomEmojiConnection{{}}, nil
+}
+
 // AllWaitListEmailRequests is the resolver for the allWaitListEmailRequests field.
 func (r *adminQueryResolver) AllWaitListEmailRequests(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error) {
 	return &model.AdminWaitListEmailRequestsConnection{}, nil
@@ -1346,6 +1352,24 @@ func (r *adminSubgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*s
 // Nodes is the resolver for the nodes field.
 func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error) {
 	return r.env(ctx).ListAllSubgraphs(ctx)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminTelegramCustomEmojiConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTelegramCustomEmojiConnection) ([]model.TelegramCustomEmoji, error) {
+	emojies, err := r.env(ctx).ListAllTelegramCustomEmojies(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]model.TelegramCustomEmoji, len(emojies))
+	for i, emoji := range emojies {
+		result[i] = model.TelegramCustomEmoji{
+			ID:        emoji.ID,
+			Base64Uri: emoji.Base64Data,
+		}
+	}
+
+	return result, nil
 }
 
 // ID is the resolver for the id field.
@@ -2043,6 +2067,16 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 	return r.env(ctx).AllVisibleNotePaths(ctx)
 }
 
+// TelegramCustomEmojies is the resolver for the telegramCustomEmojies field.
+func (r *queryResolver) TelegramCustomEmojies(ctx context.Context, filter model.TelegramCustomEmojiesFilter) ([]model.TelegramCustomEmoji, error) {
+	_, err := checkapikey.Resolve(ctx, r.env(ctx), "get_telegram_custom_emojies")
+	if err != nil {
+		return nil, err
+	}
+
+	return gettelegramcustomemojies.Resolve(ctx, r.env(ctx), filter)
+}
+
 // Credentials is the resolver for the credentials field.
 func (r *refreshBoostyDataPayloadResolver) Credentials(ctx context.Context, obj *model.RefreshBoostyDataPayload) (*db.BoostyCredential, error) {
 	return resolveOne[db.BoostyCredential](ctx, obj.CredentialsID, r.env(ctx).BoostyCredentials)
@@ -2550,6 +2584,11 @@ func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
 	return &adminSubgraphsConnectionResolver{r}
 }
 
+// AdminTelegramCustomEmojiConnection returns AdminTelegramCustomEmojiConnectionResolver implementation.
+func (r *Resolver) AdminTelegramCustomEmojiConnection() AdminTelegramCustomEmojiConnectionResolver {
+	return &adminTelegramCustomEmojiConnectionResolver{r}
+}
+
 // AdminTelegramPublishNote returns AdminTelegramPublishNoteResolver implementation.
 func (r *Resolver) AdminTelegramPublishNote() AdminTelegramPublishNoteResolver {
 	return &adminTelegramPublishNoteResolver{r}
@@ -2796,6 +2835,7 @@ type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }
 type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
+type adminTelegramCustomEmojiConnectionResolver struct{ *Resolver }
 type adminTelegramPublishNoteResolver struct{ *Resolver }
 type adminTelegramPublishNotesConnectionResolver struct{ *Resolver }
 type adminTelegramPublishTagsConnectionResolver struct{ *Resolver }

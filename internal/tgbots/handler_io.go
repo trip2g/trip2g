@@ -2,8 +2,11 @@ package tgbots
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"trip2g/internal/logger"
 
@@ -254,4 +257,74 @@ func (io *HandlerIO) UnbanChatMember(ctx context.Context, chatID, userID int64) 
 	}
 
 	return nil
+}
+
+type CustomEmojiSticker struct {
+	ID         string
+	Base64Data string
+}
+
+func (hio *HandlerIO) GetCustomEmojiStickers(ctx context.Context, emojiIDs []string) ([]CustomEmojiSticker, error) {
+	if len(emojiIDs) == 0 {
+		return []CustomEmojiSticker{}, nil
+	}
+
+	// type getCustomEmojiStickersRequest struct {
+	// 	CustomEmojiIds []string `json:"custom_emoji_ids"`
+	// }
+
+	// req := getCustomEmojiStickersRequest{
+	// 	CustomEmojiIds: emojiIDs,
+	// }
+
+	reqBytes, err := json.Marshal(emojiIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	resp, err := hio.bot.MakeRequest("getCustomEmojiStickers", tgbotapi.Params{
+		"custom_emoji_ids": string(reqBytes),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to make getCustomEmojiStickers request: %w", err)
+	}
+
+	if !resp.Ok {
+		return nil, fmt.Errorf("telegram API error: %s", resp.Description)
+	}
+
+	var stickers []tgbotapi.Sticker
+	err = json.Unmarshal(resp.Result, &stickers)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal stickers: %w", err)
+	}
+
+	result := make([]CustomEmojiSticker, 0, len(stickers))
+	for _, sticker := range stickers {
+		fileURL, err := hio.bot.GetFileDirectURL(sticker.FileID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get file URL for sticker %s: %w", sticker.CustomEmojiID, err)
+		}
+
+		httpResp, err := http.Get(fileURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to download file for sticker %s: %w", sticker.CustomEmojiID, err)
+		}
+		defer httpResp.Body.Close()
+
+		fileData, err := io.ReadAll(httpResp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read file data for sticker %s: %w", sticker.CustomEmojiID, err)
+		}
+
+		base64Data := base64.StdEncoding.EncodeToString(fileData)
+		base64URI := fmt.Sprintf("data:image/webp;base64,%s", base64Data)
+
+		result = append(result, CustomEmojiSticker{
+			ID:         sticker.CustomEmojiID,
+			Base64Data: base64URI,
+		})
+	}
+
+	return result, nil
 }

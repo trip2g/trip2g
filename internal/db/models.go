@@ -384,6 +384,12 @@ type Subgraph struct {
 	ShowUnsubgraphNotesForPaidUsers sql.NullBool   `json:"show_unsubgraph_notes_for_paid_users"`
 }
 
+type TelegramCustomEmojy struct {
+	ID         string    `json:"id"`
+	Base64Data string    `json:"base64_data"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 type TelegramPublishChat struct {
 	ChatID    int64     `json:"chat_id"`
 	TagID     int64     `json:"tag_id"`

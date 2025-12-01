@@ -97,8 +97,8 @@ Content`,
 			expected: "456",
 		},
 		{
-			name: "no frontmatter",
-			content: `Just content without frontmatter`,
+			name:     "no frontmatter",
+			content:  `Just content without frontmatter`,
 			expected: "",
 		},
 		{

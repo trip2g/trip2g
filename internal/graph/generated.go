@@ -91,6 +91,7 @@ type ResolverRoot interface {
 	AdminReleasesConnection() AdminReleasesConnectionResolver
 	AdminSubgraph() AdminSubgraphResolver
 	AdminSubgraphsConnection() AdminSubgraphsConnectionResolver
+	AdminTelegramCustomEmojiConnection() AdminTelegramCustomEmojiConnectionResolver
 	AdminTelegramPublishNote() AdminTelegramPublishNoteResolver
 	AdminTelegramPublishNotesConnection() AdminTelegramPublishNotesConnectionResolver
 	AdminTelegramPublishTagsConnection() AdminTelegramPublishTagsConnectionResolver
@@ -532,6 +533,7 @@ type ComplexityRoot struct {
 		AllRedirects               func(childComplexity int) int
 		AllReleases                func(childComplexity int) int
 		AllSubgraphs               func(childComplexity int) int
+		AllTelegramCustomEmojies   func(childComplexity int) int
 		AllTelegramPublishNotes    func(childComplexity int, filter *model.AdminTelegramPublishNotesFilter) int
 		AllTelegramPublishTags     func(childComplexity int) int
 		AllTgBots                  func(childComplexity int) int
@@ -600,6 +602,10 @@ type ComplexityRoot struct {
 	}
 
 	AdminSubgraphsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminTelegramCustomEmojiConnection struct {
 		Nodes func(childComplexity int) int
 	}
 
@@ -985,11 +991,12 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Admin     func(childComplexity int) int
-		Note      func(childComplexity int, input model.NoteInput) int
-		NotePaths func(childComplexity int, filter *model.NotePathsFilter) int
-		Search    func(childComplexity int, input model.SearchInput) int
-		Viewer    func(childComplexity int) int
+		Admin                 func(childComplexity int) int
+		Note                  func(childComplexity int, input model.NoteInput) int
+		NotePaths             func(childComplexity int, filter *model.NotePathsFilter) int
+		Search                func(childComplexity int, input model.SearchInput) int
+		TelegramCustomEmojies func(childComplexity int, filter model.TelegramCustomEmojiesFilter) int
+		Viewer                func(childComplexity int) int
 	}
 
 	RefreshBoostyDataPayload struct {
@@ -1105,6 +1112,11 @@ type ComplexityRoot struct {
 	SubgraphWaitList struct {
 		EmailAllowed func(childComplexity int) int
 		TgBotURL     func(childComplexity int) int
+	}
+
+	TelegramCustomEmoji struct {
+		Base64Uri func(childComplexity int) int
+		ID        func(childComplexity int) int
 	}
 
 	TelegramPost struct {
@@ -1455,6 +1467,7 @@ type AdminQueryResolver interface {
 	AllConfigVersions(ctx context.Context, obj *model1.AdminQuery) (*model.AdminConfigVersionsConnection, error)
 	AllTelegramPublishTags(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTelegramPublishTagsConnection, error)
 	AllTelegramPublishNotes(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminTelegramPublishNotesFilter) (*model.AdminTelegramPublishNotesConnection, error)
+	AllTelegramCustomEmojies(ctx context.Context, obj *model1.AdminQuery) ([]model.AdminTelegramCustomEmojiConnection, error)
 	AllWaitListEmailRequests(ctx context.Context, obj *model1.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error)
 	AllWaitListTgBotRequests(ctx context.Context, obj *model1.AdminQuery) (*model.AdminWaitListTgBotRequestsConnection, error)
 	AllTgBots(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTgBotsConnection, error)
@@ -1505,6 +1518,9 @@ type AdminSubgraphResolver interface {
 }
 type AdminSubgraphsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error)
+}
+type AdminTelegramCustomEmojiConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminTelegramCustomEmojiConnection) ([]model.TelegramCustomEmoji, error)
 }
 type AdminTelegramPublishNoteResolver interface {
 	ID(ctx context.Context, obj *db.TelegramPublishNote) (int64, error)
@@ -1653,6 +1669,7 @@ type QueryResolver interface {
 	Note(ctx context.Context, input model.NoteInput) (*model.PublicNote, error)
 	Search(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error)
 	NotePaths(ctx context.Context, filter *model.NotePathsFilter) ([]db.NotePath, error)
+	TelegramCustomEmojies(ctx context.Context, filter model.TelegramCustomEmojiesFilter) ([]model.TelegramCustomEmoji, error)
 }
 type RefreshBoostyDataPayloadResolver interface {
 	Credentials(ctx context.Context, obj *model.RefreshBoostyDataPayload) (*db.BoostyCredential, error)
@@ -3546,6 +3563,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AllSubgraphs(childComplexity), true
+	case "AdminQuery.allTelegramCustomEmojies":
+		if e.complexity.AdminQuery.AllTelegramCustomEmojies == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllTelegramCustomEmojies(childComplexity), true
 	case "AdminQuery.allTelegramPublishNotes":
 		if e.complexity.AdminQuery.AllTelegramPublishNotes == nil {
 			break
@@ -3958,6 +3981,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminSubgraphsConnection.Nodes(childComplexity), true
+
+	case "AdminTelegramCustomEmojiConnection.nodes":
+		if e.complexity.AdminTelegramCustomEmojiConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramCustomEmojiConnection.Nodes(childComplexity), true
 
 	case "AdminTelegramPublishNote.chats":
 		if e.complexity.AdminTelegramPublishNote.Chats == nil {
@@ -5224,6 +5254,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Search(childComplexity, args["input"].(model.SearchInput)), true
+	case "Query.telegramCustomEmojies":
+		if e.complexity.Query.TelegramCustomEmojies == nil {
+			break
+		}
+
+		args, err := ec.field_Query_telegramCustomEmojies_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.TelegramCustomEmojies(childComplexity, args["filter"].(model.TelegramCustomEmojiesFilter)), true
 	case "Query.viewer":
 		if e.complexity.Query.Viewer == nil {
 			break
@@ -5512,6 +5553,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SubgraphWaitList.TgBotURL(childComplexity), true
+
+	case "TelegramCustomEmoji.base64Uri":
+		if e.complexity.TelegramCustomEmoji.Base64Uri == nil {
+			break
+		}
+
+		return e.complexity.TelegramCustomEmoji.Base64Uri(childComplexity), true
+	case "TelegramCustomEmoji.id":
+		if e.complexity.TelegramCustomEmoji.ID == nil {
+			break
+		}
+
+		return e.complexity.TelegramCustomEmoji.ID(childComplexity), true
 
 	case "TelegramPost.content":
 		if e.complexity.TelegramPost.Content == nil {
@@ -5865,6 +5919,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSignInByEmailInput,
 		ec.unmarshalInputStartBackgroundQueueInput,
 		ec.unmarshalInputStopBackgroundQueueInput,
+		ec.unmarshalInputTelegramCustomEmojiesFilter,
 		ec.unmarshalInputToggleFavoriteNoteInput,
 		ec.unmarshalInputUnbanUserInput,
 		ec.unmarshalInputUpdateBoostyCredentialsInput,
@@ -6973,6 +7028,17 @@ func (ec *executionContext) field_Query_search_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_telegramCustomEmojies_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalNTelegramCustomEmojiesFilter2trip2gᚋinternalᚋgraphᚋmodelᚐTelegramCustomEmojiesFilter)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
 	return args, nil
 }
 
@@ -15600,6 +15666,39 @@ func (ec *executionContext) fieldContext_AdminQuery_allTelegramPublishNotes(ctx 
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_allTelegramCustomEmojies(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_allTelegramCustomEmojies,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().AllTelegramCustomEmojies(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminTelegramCustomEmojiConnection2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramCustomEmojiConnectionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allTelegramCustomEmojies(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminTelegramCustomEmojiConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramCustomEmojiConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_allWaitListEmailRequests(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -17796,6 +17895,41 @@ func (ec *executionContext) fieldContext_AdminSubgraphsConnection_nodes(_ contex
 				return ec.fieldContext_AdminSubgraph_createdAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminSubgraph", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramCustomEmojiConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminTelegramCustomEmojiConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminTelegramCustomEmojiConnection_nodes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminTelegramCustomEmojiConnection().Nodes(ctx, obj)
+		},
+		nil,
+		ec.marshalNTelegramCustomEmoji2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐTelegramCustomEmojiᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramCustomEmojiConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramCustomEmojiConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TelegramCustomEmoji_id(ctx, field)
+			case "base64Uri":
+				return ec.fieldContext_TelegramCustomEmoji_base64Uri(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TelegramCustomEmoji", field.Name)
 		},
 	}
 	return fc, nil
@@ -24393,6 +24527,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allTelegramPublishTags(ctx, field)
 			case "allTelegramPublishNotes":
 				return ec.fieldContext_AdminQuery_allTelegramPublishNotes(ctx, field)
+			case "allTelegramCustomEmojies":
+				return ec.fieldContext_AdminQuery_allTelegramCustomEmojies(ctx, field)
 			case "allWaitListEmailRequests":
 				return ec.fieldContext_AdminQuery_allWaitListEmailRequests(ctx, field)
 			case "allWaitListTgBotRequests":
@@ -24599,6 +24735,53 @@ func (ec *executionContext) fieldContext_Query_notePaths(ctx context.Context, fi
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_notePaths_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_telegramCustomEmojies(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_telegramCustomEmojies,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().TelegramCustomEmojies(ctx, fc.Args["filter"].(model.TelegramCustomEmojiesFilter))
+		},
+		nil,
+		ec.marshalNTelegramCustomEmoji2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐTelegramCustomEmojiᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_telegramCustomEmojies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TelegramCustomEmoji_id(ctx, field)
+			case "base64Uri":
+				return ec.fieldContext_TelegramCustomEmoji_base64Uri(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TelegramCustomEmoji", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_telegramCustomEmojies_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -26329,6 +26512,64 @@ func (ec *executionContext) fieldContext_SubgraphWaitList_emailAllowed(_ context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TelegramCustomEmoji_id(ctx context.Context, field graphql.CollectedField, obj *model.TelegramCustomEmoji) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TelegramCustomEmoji_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TelegramCustomEmoji_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TelegramCustomEmoji",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TelegramCustomEmoji_base64Uri(ctx context.Context, field graphql.CollectedField, obj *model.TelegramCustomEmoji) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TelegramCustomEmoji_base64Uri,
+		func(ctx context.Context) (any, error) {
+			return obj.Base64Uri, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TelegramCustomEmoji_base64Uri(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TelegramCustomEmoji",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -31252,6 +31493,40 @@ func (ec *executionContext) unmarshalInputStopBackgroundQueueInput(ctx context.C
 				return it, err
 			}
 			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTelegramCustomEmojiesFilter(ctx context.Context, obj any) (model.TelegramCustomEmojiesFilter, error) {
+	var it model.TelegramCustomEmojiesFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"botId", "ids"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "botId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("botId"))
+			data, err := ec.unmarshalOInt642ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BotID = data
+		case "ids":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Ids = data
 		}
 	}
 
@@ -40828,6 +41103,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allTelegramCustomEmojies":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allTelegramCustomEmojies(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "allWaitListEmailRequests":
 			field := field
 
@@ -42354,6 +42665,76 @@ func (ec *executionContext) _AdminSubgraphsConnection(ctx context.Context, sel a
 					}
 				}()
 				res = ec._AdminSubgraphsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminTelegramCustomEmojiConnectionImplementors = []string{"AdminTelegramCustomEmojiConnection"}
+
+func (ec *executionContext) _AdminTelegramCustomEmojiConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminTelegramCustomEmojiConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminTelegramCustomEmojiConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminTelegramCustomEmojiConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramCustomEmojiConnection_nodes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -47545,6 +47926,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "telegramCustomEmojies":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_telegramCustomEmojies(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -48851,6 +49254,50 @@ func (ec *executionContext) _SubgraphWaitList(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._SubgraphWaitList_tgBotUrl(ctx, field, obj)
 		case "emailAllowed":
 			out.Values[i] = ec._SubgraphWaitList_emailAllowed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var telegramCustomEmojiImplementors = []string{"TelegramCustomEmoji"}
+
+func (ec *executionContext) _TelegramCustomEmoji(ctx context.Context, sel ast.SelectionSet, obj *model.TelegramCustomEmoji) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, telegramCustomEmojiImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TelegramCustomEmoji")
+		case "id":
+			out.Values[i] = ec._TelegramCustomEmoji_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "base64Uri":
+			out.Values[i] = ec._TelegramCustomEmoji_base64Uri(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -52384,6 +52831,54 @@ func (ec *executionContext) marshalNAdminSubgraphsConnection2ᚖtrip2gᚋinterna
 	return ec._AdminSubgraphsConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminTelegramCustomEmojiConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramCustomEmojiConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminTelegramCustomEmojiConnection) graphql.Marshaler {
+	return ec._AdminTelegramCustomEmojiConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminTelegramCustomEmojiConnection2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramCustomEmojiConnectionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminTelegramCustomEmojiConnection) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminTelegramCustomEmojiConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramCustomEmojiConnection(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNAdminTelegramPublishNote2trip2gᚋinternalᚋdbᚐTelegramPublishNote(ctx context.Context, sel ast.SelectionSet, v db.TelegramPublishNote) graphql.Marshaler {
 	return ec._AdminTelegramPublishNote(ctx, sel, &v)
 }
@@ -54849,6 +55344,59 @@ func (ec *executionContext) marshalNSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSubgrap
 		return graphql.Null
 	}
 	return ec._Subgraph(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTelegramCustomEmoji2trip2gᚋinternalᚋgraphᚋmodelᚐTelegramCustomEmoji(ctx context.Context, sel ast.SelectionSet, v model.TelegramCustomEmoji) graphql.Marshaler {
+	return ec._TelegramCustomEmoji(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTelegramCustomEmoji2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐTelegramCustomEmojiᚄ(ctx context.Context, sel ast.SelectionSet, v []model.TelegramCustomEmoji) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTelegramCustomEmoji2trip2gᚋinternalᚋgraphᚋmodelᚐTelegramCustomEmoji(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalNTelegramCustomEmojiesFilter2trip2gᚋinternalᚋgraphᚋmodelᚐTelegramCustomEmojiesFilter(ctx context.Context, v any) (model.TelegramCustomEmojiesFilter, error) {
+	res, err := ec.unmarshalInputTelegramCustomEmojiesFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNTelegramPost2trip2gᚋinternalᚋmodelᚐTelegramPost(ctx context.Context, sel ast.SelectionSet, v model1.TelegramPost) graphql.Marshaler {

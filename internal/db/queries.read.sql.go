@@ -2664,6 +2664,34 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 	return items, nil
 }
 
+const listAllTelegramCustomEmojies = `-- name: ListAllTelegramCustomEmojies :many
+select id, base64_data, created_at from telegram_custom_emojies
+order by created_at desc
+`
+
+func (q *Queries) ListAllTelegramCustomEmojies(ctx context.Context) ([]TelegramCustomEmojy, error) {
+	rows, err := q.db.QueryContext(ctx, listAllTelegramCustomEmojies)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TelegramCustomEmojy
+	for rows.Next() {
+		var i TelegramCustomEmojy
+		if err := rows.Scan(&i.ID, &i.Base64Data, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllTelegramPublishNotes = `-- name: ListAllTelegramPublishNotes :many
 select n.note_path_id, n.created_at, n.publish_at, n.published_version_id, n.published_at, n.error_count, n.last_error
   from telegram_publish_notes n
@@ -3270,6 +3298,44 @@ func (q *Queries) ListSubgraphsByOfferID(ctx context.Context, offerID int64) ([]
 			&i.Hidden,
 			&i.ShowUnsubgraphNotesForPaidUsers,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTelegramCustomEmojies = `-- name: ListTelegramCustomEmojies :many
+select id, base64_data, created_at from telegram_custom_emojies
+where id in (/*SLICE:ids*/?)
+`
+
+func (q *Queries) ListTelegramCustomEmojies(ctx context.Context, ids []string) ([]TelegramCustomEmojy, error) {
+	query := listTelegramCustomEmojies
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TelegramCustomEmojy
+	for rows.Next() {
+		var i TelegramCustomEmojy
+		if err := rows.Scan(&i.ID, &i.Base64Data, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

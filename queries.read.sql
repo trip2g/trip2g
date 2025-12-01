@@ -919,3 +919,11 @@ select id
  where queue = ?
  order by priority desc, created desc
  limit ?;
+
+-- name: ListTelegramCustomEmojies :many
+select * from telegram_custom_emojies
+where id in (sqlc.slice('ids'));
+
+-- name: ListAllTelegramCustomEmojies :many
+select * from telegram_custom_emojies
+order by created_at desc;
