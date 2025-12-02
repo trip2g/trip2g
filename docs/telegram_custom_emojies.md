@@ -1,5 +1,13 @@
 # Telegram Custom Emoji в Obsidian
 
+## Использование
+
+Бот [@trip2g_emoji_bot](https://t.me/trip2g_emoji_bot) — отправь ему сообщение с custom emoji и получи готовый markdown для вставки в Obsidian:
+
+```markdown
+![emoji](https://ce.trip2g.com/5373112999076699207.webp)
+```
+
 ## Проблема
 
 Telegram custom emoji (`tg://emoji?id=...`) не поддерживаются в Obsidian и других markdown редакторах. Нужно было найти способ отображать их в заметках.
