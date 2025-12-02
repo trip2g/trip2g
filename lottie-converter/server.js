@@ -1,0 +1,180 @@
+import express from 'express';
+import { Telegraf } from 'telegraf';
+import { ThumbnailCache } from './cache.js';
+import { tgsToGif, webmToGif, webpToGif } from './thumbnail.js';
+import fetch from 'node-fetch';
+
+const app = express();
+const cache = new ThumbnailCache();
+
+// Telegram Bot
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
+
+if (!TELEGRAM_BOT_TOKEN) {
+  console.error('TELEGRAM_BOT_TOKEN environment variable not set');
+  process.exit(1);
+}
+
+const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
+
+/**
+ * Fetch custom emoji sticker data from Telegram
+ */
+async function getCustomEmojiSticker(customEmojiId) {
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getCustomEmojiStickers`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ custom_emoji_ids: [customEmojiId] })
+  });
+
+  const data = await response.json();
+  if (!data.ok || !data.result || data.result.length === 0) {
+    throw new Error('Custom emoji not found');
+  }
+
+  return data.result[0];
+}
+
+/**
+ * Download file from Telegram
+ */
+async function downloadFile(fileId) {
+  const fileUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`;
+  const fileResponse = await fetch(fileUrl);
+  const fileData = await fileResponse.json();
+
+  if (!fileData.ok) {
+    throw new Error('Failed to get file path');
+  }
+
+  const downloadUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${fileData.result.file_path}`;
+  const downloadResponse = await fetch(downloadUrl);
+  const buffer = await downloadResponse.buffer();
+
+  return buffer.toString('base64');
+}
+
+/**
+ * Convert sticker to GIF based on type
+ */
+async function convertStickerToGif(sticker) {
+  const fileId = sticker.file_id;
+  const base64Data = await downloadFile(fileId);
+
+  // Determine type by checking sticker properties
+  if (sticker.is_animated) {
+    // TGS format (Lottie)
+    return await tgsToGif(base64Data);
+  } else if (sticker.is_video) {
+    // WEBM format
+    return await webmToGif(base64Data);
+  } else {
+    // WEBP format (static)
+    return await webpToGif(base64Data);
+  }
+}
+
+/**
+ * Process custom emoji and generate GIF
+ */
+async function processCustomEmoji(customEmojiId) {
+  // Check cache first
+  const cached = cache.get(customEmojiId);
+  if (cached) {
+    console.log(`Cache hit for ${customEmojiId}`);
+    return cached.gif_data;
+  }
+
+  console.log(`Cache miss for ${customEmojiId}, generating...`);
+
+  // Fetch sticker data
+  const sticker = await getCustomEmojiSticker(customEmojiId);
+
+  // Convert to GIF
+  const gifBuffer = await convertStickerToGif(sticker);
+
+  // Cache the result
+  cache.set(customEmojiId, gifBuffer, 'image/gif');
+
+  return gifBuffer;
+}
+
+// Telegram bot message handler
+bot.on('message', async (ctx) => {
+  const entities = ctx.message.entities || [];
+
+  // Find all custom emoji entities
+  const customEmojiIds = entities
+    .filter(e => e.type === 'custom_emoji' && e.custom_emoji_id)
+    .map(e => e.custom_emoji_id);
+
+  if (customEmojiIds.length === 0) {
+    return ctx.reply('Send me custom emoji to get markdown codes!');
+  }
+
+  try {
+    // Generate GIFs for all custom emojis (in background)
+    const promises = customEmojiIds.map(id => processCustomEmoji(id).catch(err => {
+      console.error(`Failed to process ${id}:`, err);
+      return null;
+    }));
+
+    await Promise.all(promises);
+
+    // Generate markdown codes
+    const markdownCodes = customEmojiIds.map(id => `![emoji](${SERVER_URL}/${id}.gif)`);
+
+    const response = `Obsidian markdown:\n\n${markdownCodes.join('\n')}\n\nTemplater snippet:\n\`\`\`\n${markdownCodes.join('\n')}\n\`\`\``;
+
+    await ctx.reply(response);
+  } catch (error) {
+    console.error('Error processing custom emoji:', error);
+    await ctx.reply('Error processing custom emoji. Please try again.');
+  }
+});
+
+// Express server
+app.get('/:id.gif', async (req, res) => {
+  const emojiId = req.params.id;
+
+  try {
+    // Check cache
+    let cached = cache.get(emojiId);
+
+    if (!cached) {
+      // Generate on-demand
+      console.log(`On-demand generation for ${emojiId}`);
+      const gifBuffer = await processCustomEmoji(emojiId);
+      cached = { gif_data: gifBuffer, mime_type: 'image/gif' };
+    }
+
+    res.setHeader('Content-Type', cached.mime_type);
+    res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
+    res.send(cached.gif_data);
+  } catch (error) {
+    console.error(`Error serving ${emojiId}:`, error);
+    res.status(404).json({ error: 'Emoji not found' });
+  }
+});
+
+app.get('/health', (req, res) => {
+  const stats = cache.stats();
+  res.json({ ok: true, cache: stats });
+});
+
+// Start services
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Express server running on :${PORT}`);
+});
+
+bot.launch().then(() => {
+  console.log('Telegram bot started');
+});
+
+// Enable graceful stop
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));

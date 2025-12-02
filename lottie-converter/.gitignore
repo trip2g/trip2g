@@ -1,0 +1,8 @@
+node_modules/
+cache/
+data/
+*.tgs
+*.gif
+test*.js
+test*.sh
+anim.json
