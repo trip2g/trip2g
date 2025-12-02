@@ -15,7 +15,7 @@ export class ThumbnailCache {
    * Get path for emoji cache file
    */
   _getPath(emojiId) {
-    return path.join(this.cacheDir, `${emojiId}.gif`);
+    return path.join(this.cacheDir, `${emojiId}.webp`);
   }
 
   /**
@@ -29,10 +29,10 @@ export class ThumbnailCache {
     }
 
     try {
-      const gif_data = fs.readFileSync(filePath);
+      const webp_data = fs.readFileSync(filePath);
       return {
-        gif_data,
-        mime_type: 'image/gif'
+        webp_data,
+        mime_type: 'image/webp'
       };
     } catch (err) {
       console.error(`Error reading cache file ${filePath}:`, err);
@@ -43,11 +43,11 @@ export class ThumbnailCache {
   /**
    * Store thumbnail in cache
    */
-  set(emojiId, gifData, mimeType = 'image/gif') {
+  set(emojiId, webpData, mimeType = 'image/webp') {
     const filePath = this._getPath(emojiId);
 
     try {
-      fs.writeFileSync(filePath, gifData);
+      fs.writeFileSync(filePath, webpData);
     } catch (err) {
       console.error(`Error writing cache file ${filePath}:`, err);
       throw err;
@@ -73,7 +73,7 @@ export class ThumbnailCache {
       const files = fs.readdirSync(this.cacheDir);
 
       for (const file of files) {
-        if (!file.endsWith('.gif')) continue;
+        if (!file.endsWith('.webp')) continue;
 
         const filePath = path.join(this.cacheDir, file);
         const stats = fs.statSync(filePath);
@@ -101,7 +101,7 @@ export class ThumbnailCache {
       const files = fs.readdirSync(this.cacheDir);
 
       for (const file of files) {
-        if (!file.endsWith('.gif')) continue;
+        if (!file.endsWith('.webp')) continue;
 
         const filePath = path.join(this.cacheDir, file);
         const stats = fs.statSync(filePath);

@@ -1,7 +1,7 @@
 import express from 'express';
 import { Telegraf } from 'telegraf';
 import { ThumbnailCache } from './cache.js';
-import { tgsToGif, webmToGif, webpToGif } from './thumbnail.js';
+import { tgsToWebp, webmToWebp, webpToWebp } from './thumbnail.js';
 import fetch from 'node-fetch';
 
 const app = express();
@@ -57,34 +57,34 @@ async function downloadFile(fileId) {
 }
 
 /**
- * Convert sticker to GIF based on type
+ * Convert sticker to WEBP based on type
  */
-async function convertStickerToGif(sticker) {
+async function convertStickerToWebp(sticker) {
   const fileId = sticker.file_id;
   const base64Data = await downloadFile(fileId);
 
   // Determine type by checking sticker properties
   if (sticker.is_animated) {
     // TGS format (Lottie)
-    return await tgsToGif(base64Data);
+    return await tgsToWebp(base64Data);
   } else if (sticker.is_video) {
     // WEBM format
-    return await webmToGif(base64Data);
+    return await webmToWebp(base64Data);
   } else {
-    // WEBP format (static)
-    return await webpToGif(base64Data);
+    // WEBP format (static or animated)
+    return await webpToWebp(base64Data);
   }
 }
 
 /**
- * Process custom emoji and generate GIF
+ * Process custom emoji and generate WEBP
  */
 async function processCustomEmoji(customEmojiId) {
   // Check cache first
   const cached = cache.get(customEmojiId);
   if (cached) {
     console.log(`Cache hit for ${customEmojiId}`);
-    return cached.gif_data;
+    return cached.webp_data;
   }
 
   console.log(`Cache miss for ${customEmojiId}, generating...`);
@@ -92,13 +92,13 @@ async function processCustomEmoji(customEmojiId) {
   // Fetch sticker data
   const sticker = await getCustomEmojiSticker(customEmojiId);
 
-  // Convert to GIF
-  const gifBuffer = await convertStickerToGif(sticker);
+  // Convert to WEBP
+  const webpBuffer = await convertStickerToWebp(sticker);
 
   // Cache the result
-  cache.set(customEmojiId, gifBuffer, 'image/gif');
+  cache.set(customEmojiId, webpBuffer, 'image/webp');
 
-  return gifBuffer;
+  return webpBuffer;
 }
 
 // Telegram bot message handler
@@ -115,7 +115,7 @@ bot.on('message', async (ctx) => {
   }
 
   try {
-    // Generate GIFs for all custom emojis (in background)
+    // Generate WEBPs for all custom emojis (in background)
     const promises = customEmojiIds.map(id => processCustomEmoji(id).catch(err => {
       console.error(`Failed to process ${id}:`, err);
       return null;
@@ -124,7 +124,7 @@ bot.on('message', async (ctx) => {
     await Promise.all(promises);
 
     // Generate markdown codes
-    const markdownCodes = customEmojiIds.map(id => `![emoji](${SERVER_URL}/${id}.gif)`);
+    const markdownCodes = customEmojiIds.map(id => `![emoji](${SERVER_URL}/${id}.webp)`);
 
     const response = `Obsidian markdown:\n\n${markdownCodes.join('\n')}\n\nTemplater snippet:\n\`\`\`\n${markdownCodes.join('\n')}\n\`\`\``;
 
@@ -138,7 +138,7 @@ bot.on('message', async (ctx) => {
 // Express server
 app.use(express.json());
 
-app.get('/:id.gif', async (req, res) => {
+app.get('/:id.webp', async (req, res) => {
   const emojiId = req.params.id;
 
   try {
@@ -148,13 +148,13 @@ app.get('/:id.gif', async (req, res) => {
     if (!cached) {
       // Generate on-demand
       console.log(`On-demand generation for ${emojiId}`);
-      const gifBuffer = await processCustomEmoji(emojiId);
-      cached = { gif_data: gifBuffer, mime_type: 'image/gif' };
+      const webpBuffer = await processCustomEmoji(emojiId);
+      cached = { webp_data: webpBuffer, mime_type: 'image/webp' };
     }
 
     res.setHeader('Content-Type', cached.mime_type);
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
-    res.send(cached.gif_data);
+    res.send(cached.webp_data);
   } catch (error) {
     console.error(`Error serving ${emojiId}:`, error);
     res.status(404).json({ error: 'Emoji not found' });

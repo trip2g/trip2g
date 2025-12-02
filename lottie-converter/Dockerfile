@@ -18,8 +18,6 @@ RUN npm ci --only=production && npm cache clean --force
 
 COPY server.js thumbnail.js cache.js ./
 
-RUN mkdir -p /app/cache && chmod 777 /app/cache
-
 EXPOSE 3000
 
 ENV NODE_ENV=production
