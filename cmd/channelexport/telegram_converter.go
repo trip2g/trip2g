@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -28,32 +29,192 @@ func ConvertToMarkdown(msg *tg.Message, channelID int64) (string, map[string]int
 }
 
 // applyEntities applies Telegram entities to text and converts to Markdown
+// Uses event-based approach: open/close markers at entity boundaries
 func applyEntities(text string, entities []tg.MessageEntityClass) string {
 	if len(entities) == 0 {
 		return text
 	}
 
 	// Collect entity information
-	sortedEntities := make([]entityInfo, 0, len(entities))
+	infos := make([]entityInfo, 0, len(entities))
 	for _, e := range entities {
 		info := extractEntityInfo(e)
 		if info != nil {
-			sortedEntities = append(sortedEntities, *info)
+			infos = append(infos, *info)
 		}
 	}
 
-	// Sort by offset descending (process from end to beginning)
-	sort.Slice(sortedEntities, func(i, j int) bool {
-		return sortedEntities[i].offset > sortedEntities[j].offset
-	})
-
-	// Apply entities in reverse order
-	result := text
-	for _, info := range sortedEntities {
-		result = applySingleEntity(result, info)
+	if len(infos) == 0 {
+		return text
 	}
 
-	return result
+	// Convert UTF-16 offsets to UTF-8
+	for i := range infos {
+		startUTF8 := utf16ToUTF8Offset(text, infos[i].offset)
+		endUTF8 := utf16ToUTF8Offset(text, infos[i].offset+infos[i].length)
+		infos[i].offset = startUTF8
+		infos[i].length = endUTF8 // reuse as end position
+	}
+
+	// Create events for entity starts and ends
+	type event struct {
+		pos      int
+		isEnd    bool
+		idx      int
+		startAt  int // entity start position
+		endAt    int // entity end position
+		priority int // lower = outer (opens first, closes last)
+	}
+	events := make([]event, 0, len(infos)*2)
+
+	for i, info := range infos {
+		priority := entityPriority(info.entityType)
+		events = append(events,
+			event{pos: info.offset, isEnd: false, idx: i, startAt: info.offset, endAt: info.length, priority: priority},
+			event{pos: info.length, isEnd: true, idx: i, startAt: info.offset, endAt: info.length, priority: priority},
+		)
+	}
+
+	// Sort events: by position, ends before starts at same pos, proper nesting order
+	sort.Slice(events, func(i, j int) bool {
+		if events[i].pos != events[j].pos {
+			return events[i].pos < events[j].pos
+		}
+		// At same position: ends before starts
+		if events[i].isEnd != events[j].isEnd {
+			return events[i].isEnd
+		}
+		// Both ends at same position
+		if events[i].isEnd {
+			// Later started closes first (LIFO)
+			if events[i].startAt != events[j].startAt {
+				return events[i].startAt > events[j].startAt
+			}
+			// Same start - higher priority (inner) closes first
+			if events[i].priority != events[j].priority {
+				return events[i].priority > events[j].priority
+			}
+			return events[i].idx > events[j].idx
+		}
+		// Both starts at same position: longer entity opens first (outer before inner)
+		if events[i].endAt != events[j].endAt {
+			return events[i].endAt > events[j].endAt
+		}
+		// Same length - lower priority (outer) opens first
+		if events[i].priority != events[j].priority {
+			return events[i].priority < events[j].priority
+		}
+		return events[i].idx < events[j].idx
+	})
+
+	// Build result with open/close markers
+	var result strings.Builder
+	prevPos := 0
+
+	for _, ev := range events {
+		// Output text before this event
+		if ev.pos > prevPos && ev.pos <= len(text) {
+			result.WriteString(text[prevPos:ev.pos])
+			prevPos = ev.pos
+		}
+
+		info := &infos[ev.idx]
+		if ev.isEnd {
+			result.WriteString(closeMarker(info))
+		} else {
+			result.WriteString(openMarker(info))
+		}
+	}
+
+	// Output remaining text
+	if prevPos < len(text) {
+		result.WriteString(text[prevPos:])
+	}
+
+	return result.String()
+}
+
+func openMarker(info *entityInfo) string {
+	switch info.entityType {
+	case "bold":
+		return "**"
+	case "italic":
+		return "*"
+	case "code":
+		return "`"
+	case "pre":
+		if info.language != "" {
+			return "```" + info.language + "\n"
+		}
+		return "```\n"
+	case "text_link":
+		return "["
+	case "url":
+		return "["
+	case "strikethrough":
+		return "~~"
+	case "underline":
+		return "<u>"
+	case "spoiler":
+		return "||"
+	case "custom_emoji":
+		return "!["
+	default:
+		return ""
+	}
+}
+
+// entityPriority returns priority for nesting order (lower = outer wrapper)
+func entityPriority(entityType string) int {
+	switch entityType {
+	case "text_link", "url":
+		return 0 // links are outermost
+	case "custom_emoji":
+		return 1 // emoji wraps text but is inside links
+	case "pre":
+		return 2 // code blocks
+	case "code":
+		return 3 // inline code
+	case "spoiler":
+		return 4
+	case "underline":
+		return 5
+	case "strikethrough":
+		return 6
+	case "bold":
+		return 7
+	case "italic":
+		return 8 // italic is innermost
+	default:
+		return 10
+	}
+}
+
+func closeMarker(info *entityInfo) string {
+	switch info.entityType {
+	case "bold":
+		return "**"
+	case "italic":
+		return "*"
+	case "code":
+		return "`"
+	case "pre":
+		return "\n```"
+	case "text_link":
+		return "](" + info.url + ")"
+	case "url":
+		return "](" + info.url + ")"
+	case "strikethrough":
+		return "~~"
+	case "underline":
+		return "</u>"
+	case "spoiler":
+		return "||"
+	case "custom_emoji":
+		return fmt.Sprintf("](https://ce.trip2g.com/%d.webp)", info.documentID)
+	default:
+		return ""
+	}
 }
 
 type entityInfo struct {
@@ -94,64 +255,6 @@ func extractEntityInfo(e tg.MessageEntityClass) *entityInfo {
 	default:
 		return nil
 	}
-}
-
-func applySingleEntity(text string, entity entityInfo) string {
-	// Extract the portion of text this entity applies to
-	start := utf16ToUTF8Offset(text, entity.offset)
-	end := utf16ToUTF8Offset(text, entity.offset+entity.length)
-
-	if start < 0 || end > len(text) || start >= end {
-		return text
-	}
-
-	before := text[:start]
-	content := text[start:end]
-	after := text[end:]
-
-	var wrapped string
-	switch entity.entityType {
-	case "bold":
-		wrapped = fmt.Sprintf("**%s**", content)
-	case "italic":
-		wrapped = fmt.Sprintf("*%s*", content)
-	case "code":
-		wrapped = fmt.Sprintf("`%s`", content)
-	case "pre":
-		// Code block
-		language := ""
-		if entity.language != "" {
-			language = entity.language
-		}
-		wrapped = fmt.Sprintf("```%s\n%s\n```", language, content)
-	case "text_link":
-		wrapped = fmt.Sprintf("[%s](%s)", content, entity.url)
-	case "url":
-		// Already a URL, wrap in markdown link format
-		wrapped = fmt.Sprintf("[%s](%s)", content, content)
-	case "mention":
-		// @username - keep as is
-		wrapped = content
-	case "hashtag":
-		// #hashtag - keep as is
-		wrapped = content
-	case "strikethrough":
-		wrapped = fmt.Sprintf("~~%s~~", content)
-	case "underline":
-		// Markdown doesn't have native underline, use HTML
-		wrapped = fmt.Sprintf("<u>%s</u>", content)
-	case "spoiler":
-		// Use spoiler syntax (some markdown flavors support ||text||)
-		wrapped = fmt.Sprintf("||%s||", content)
-	case "custom_emoji":
-		// Custom emoji as markdown image with tg:// URL
-		wrapped = fmt.Sprintf("![%s](tg://emoji?id=%d)", content, entity.documentID)
-	default:
-		// Unknown entity type, keep as is
-		wrapped = content
-	}
-
-	return before + wrapped + after
 }
 
 // utf16ToUTF8Offset converts UTF-16 offset to UTF-8 offset

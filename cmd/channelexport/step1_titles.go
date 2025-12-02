@@ -10,10 +10,12 @@ import (
 )
 
 var (
-	// Custom emoji in markdown: ![emoji](tg://emoji?id=123)
-	customEmojiRegex = regexp.MustCompile(`!\[[^\]]*\]\(tg://emoji\?id=\d+\)`)
+	// Custom emoji in markdown: ![emoji](tg://emoji?id=123) or ![emoji](https://ce.trip2g.com/123.webp)
+	customEmojiRegex = regexp.MustCompile(`!\[[^\]]*\]\((tg://emoji\?id=\d+|https://ce\.trip2g\.com/\d+\.webp)\)`)
 	// Malformed custom emoji with extra chars: ![<u](tg://emoji?id=123)>➡️</u>
 	malformedEmojiRegex = regexp.MustCompile(`!\[[^\]]*\]\(tg://emoji\?id=\d+\)>[^<]*</u>`)
+	// Numbered list prefix with emoji: ![1️⃣](url). or ![1️⃣](url) followed by dot/space
+	numberedEmojiPrefixRegex = regexp.MustCompile(`^!\[[^\]]*\]\([^)]+\)[\.\s]*`)
 	// Markdown links: [text](url) -> text
 	markdownLinkRegex = regexp.MustCompile(`\[([^\]]*)\]\([^)]+\)`)
 	// HTML tags like <u>, </u>, <b>, </b>
@@ -126,6 +128,9 @@ func extractTitle(content string) string {
 		}
 	}
 	firstParagraph := firstLine
+
+	// Remove numbered emoji prefix: ![1️⃣](url). at the start
+	firstParagraph = numberedEmojiPrefixRegex.ReplaceAllString(firstParagraph, "")
 
 	// Strip leading junk repeatedly until stable
 	for {

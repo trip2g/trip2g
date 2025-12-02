@@ -12,6 +12,8 @@ import (
 var (
 	// Telegram channel link: [text](https://t.me/ryspaisensei/123)
 	tgLinkRegex = regexp.MustCompile(`\[([^\]]*)\]\(https?://t\.me/ryspaisensei/(\d+)\)`)
+	// Custom emoji with capture groups: ![emoji](tg://emoji?id=123456)
+	customEmojiReplaceRegex = regexp.MustCompile(`!\[([^\]]*)\]\(tg://emoji\?id=(\d+)\)`)
 )
 
 // PostInfo holds info about a post
@@ -152,6 +154,18 @@ func replaceTelegramLinks(content string, postMap map[string]PostInfo) (string, 
 		// Not found in map - keep original link but log
 		log.Printf("  Link not found in map: ID=%s, text=%q", postID, linkText)
 		return match
+	})
+
+	// Replace custom emoji tg://emoji?id=... with https://ce.trip2g.com/{id}.webp
+	result = customEmojiReplaceRegex.ReplaceAllStringFunc(result, func(match string) string {
+		submatches := customEmojiReplaceRegex.FindStringSubmatch(match)
+		if len(submatches) < 3 {
+			return match
+		}
+		altText := submatches[1]
+		emojiID := submatches[2]
+		replaced++
+		return fmt.Sprintf("![%s](https://ce.trip2g.com/%s.webp)", altText, emojiID)
 	})
 
 	return result, replaced

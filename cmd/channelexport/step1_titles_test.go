@@ -137,6 +137,17 @@ telegram_publish_message_id: 1563
 00:40 - каким я вижу мой закрытый канал`,
 			expected: "о закрытом канале",
 		},
+		{
+			name: "numbered emoji prefix",
+			content: `---
+telegram_publish_message_id: 1234
+---
+
+![1️⃣](https://ce.trip2g.com/5461128548397884758.webp). **Нейротипология
+
+**Начал смотреть курс по Нейротипологии Ивана #Лимарев.`,
+			expected: "Нейротипология",
+		},
 	}
 
 	for _, tt := range tests {
