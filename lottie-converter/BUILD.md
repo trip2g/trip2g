@@ -1,11 +1,20 @@
 # Build and Publish Docker Image
 
-## Build image
+## Build image for AMD64 (production servers)
 
 ```bash
 cd lottie-converter
-docker build -t alexes/lottie:v0.1 -t alexes/lottie:latest .
+docker buildx build --platform linux/amd64 -t alexes/lottie:v0.1 -t alexes/lottie:latest --load .
 ```
+
+## Build multi-platform image (AMD64 + ARM64)
+
+```bash
+cd lottie-converter
+docker buildx build --platform linux/amd64,linux/arm64 -t alexes/lottie:v0.1 -t alexes/lottie:latest --push .
+```
+
+Note: `--push` is required for multi-platform builds
 
 ## Login to Docker Hub
 
