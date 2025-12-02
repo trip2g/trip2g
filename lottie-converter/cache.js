@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 export class ThumbnailCache {
-  constructor(cacheDir = './cache') {
+  constructor(cacheDir = '/tmp/lottiecache') {
     this.cacheDir = path.resolve(cacheDir);
 
     // Ensure cache directory exists

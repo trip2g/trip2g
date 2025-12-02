@@ -42,7 +42,7 @@
           - "127.0.0.1:{{ lottie_port }}:3000"
         env_file: /etc/lottie.env
         volumes:
-          - "{{ lottie_cache_dir }}:/app/cache"
+          - "{{ lottie_cache_dir }}:/tmp/lottiecache"
         recreate: yes
 
     - name: Deploy traefik/dynamic.yml config with lottie-converter
