@@ -401,6 +401,11 @@ func processMessage(ctx context.Context, msg *tg.Message, channelID int64, outpu
 
 	log.Printf("Processing message %d (length: %d chars)", msg.ID, len(msg.Message))
 
+	// Save raw JSON for debugging
+	jsonPath := filepath.Join(outputPath, fmt.Sprintf("%d.json", msg.ID))
+	jsonData, _ := json.MarshalIndent(msg, "", "  ")
+	os.WriteFile(jsonPath, jsonData, 0644)
+
 	// Convert message to markdown
 	markdown, frontmatter := ConvertToMarkdown(msg, channelID)
 

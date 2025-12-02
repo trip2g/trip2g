@@ -110,19 +110,29 @@ func applyEntities(text string, entities []tg.MessageEntityClass) string {
 	// Build result with open/close markers
 	var result strings.Builder
 	prevPos := 0
+	activeStack := make([]int, 0) // stack of active entity indices (for reopening after \n\n)
 
 	for _, ev := range events {
-		// Output text before this event
+		// Output text before this event, handling paragraph breaks
 		if ev.pos > prevPos && ev.pos <= len(text) {
-			result.WriteString(text[prevPos:ev.pos])
+			segment := text[prevPos:ev.pos]
+			writeSegmentWithParagraphBreaks(&result, segment, infos, activeStack)
 			prevPos = ev.pos
 		}
 
 		info := &infos[ev.idx]
 		if ev.isEnd {
 			result.WriteString(closeMarker(info))
+			// Remove from active stack
+			for i := len(activeStack) - 1; i >= 0; i-- {
+				if activeStack[i] == ev.idx {
+					activeStack = append(activeStack[:i], activeStack[i+1:]...)
+					break
+				}
+			}
 		} else {
 			result.WriteString(openMarker(info))
+			activeStack = append(activeStack, ev.idx)
 		}
 	}
 
@@ -132,6 +142,39 @@ func applyEntities(text string, entities []tg.MessageEntityClass) string {
 	}
 
 	return result.String()
+}
+
+// writeSegmentWithParagraphBreaks writes text, closing/reopening formatting at \n\n boundaries
+func writeSegmentWithParagraphBreaks(result *strings.Builder, text string, infos []entityInfo, active []int) {
+	if len(active) == 0 {
+		result.WriteString(text)
+		return
+	}
+
+	parts := strings.Split(text, "\n\n")
+	for i, part := range parts {
+		result.WriteString(part)
+		if i < len(parts)-1 {
+			// Close all active formatting before paragraph break
+			for j := len(active) - 1; j >= 0; j-- {
+				result.WriteString(closeMarker(&infos[active[j]]))
+			}
+			result.WriteString("\n\n")
+			// Only reopen if there's actual content remaining
+			hasContent := false
+			for k := i + 1; k < len(parts); k++ {
+				if strings.TrimSpace(parts[k]) != "" {
+					hasContent = true
+					break
+				}
+			}
+			if hasContent {
+				for j := 0; j < len(active); j++ {
+					result.WriteString(openMarker(&infos[active[j]]))
+				}
+			}
+		}
+	}
 }
 
 func openMarker(info *entityInfo) string {
@@ -169,24 +212,24 @@ func entityPriority(entityType string) int {
 	switch entityType {
 	case "text_link", "url":
 		return 0 // links are outermost
-	case "custom_emoji":
-		return 1 // emoji wraps text but is inside links
 	case "pre":
-		return 2 // code blocks
+		return 1 // code blocks
 	case "code":
-		return 3 // inline code
+		return 2 // inline code
 	case "spoiler":
-		return 4
+		return 3
 	case "underline":
-		return 5
+		return 4
 	case "strikethrough":
-		return 6
+		return 5
 	case "bold":
-		return 7
+		return 6
 	case "italic":
-		return 8 // italic is innermost
+		return 7
+	case "custom_emoji":
+		return 10 // emoji is innermost - bold/italic should wrap it
 	default:
-		return 10
+		return 20
 	}
 }
 
@@ -228,6 +271,9 @@ type entityInfo struct {
 
 func extractEntityInfo(e tg.MessageEntityClass) *entityInfo {
 	switch entity := e.(type) {
+	case *tg.MessageEntityBlockquote:
+		// Blockquote - skip for now, markdown doesn't have good equivalent
+		return nil
 	case *tg.MessageEntityBold:
 		return &entityInfo{entityType: "bold", offset: entity.Offset, length: entity.Length}
 	case *tg.MessageEntityItalic:

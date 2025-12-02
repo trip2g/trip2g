@@ -92,6 +92,34 @@ func TestApplyEntities(t *testing.T) {
 			},
 			expected: "[**Click here**](https://example.com)",
 		},
+		{
+			name: "bold wrapping custom emoji",
+			text: "⚡️ Фрагменты",
+			entities: []tg.MessageEntityClass{
+				&tg.MessageEntityBold{Offset: 0, Length: 2},
+				&tg.MessageEntityCustomEmoji{Offset: 0, Length: 2, DocumentID: 5463038705038007921},
+			},
+			// Bold should wrap the emoji image, not be inside alt text
+			expected: "**![⚡️](https://ce.trip2g.com/5463038705038007921.webp)** Фрагменты",
+		},
+		{
+			name: "italic with bold inside ending same position",
+			text: "Диалог. Человек один.\n\nСложный фильм.",
+			entities: []tg.MessageEntityClass{
+				&tg.MessageEntityItalic{Offset: 0, Length: 23}, // includes \n\n
+				&tg.MessageEntityBold{Offset: 8, Length: 15},   // "Человек один.\n\n"
+			},
+			// Formatting closes before \n\n and reopens after
+			expected: "*Диалог. **Человек один.***\n\n***Сложный фильм.",
+		},
+		{
+			name: "formatting across paragraph - closes and reopens",
+			text: "First para.\n\nSecond para.",
+			entities: []tg.MessageEntityClass{
+				&tg.MessageEntityItalic{Offset: 0, Length: 25}, // entire text
+			},
+			expected: "*First para.*\n\n*Second para.*",
+		},
 	}
 
 	for _, tt := range tests {
