@@ -707,7 +707,7 @@ type AdminQuery {
   allConfigVersions: AdminConfigVersionsConnection!
   allTelegramPublishTags: AdminTelegramPublishTagsConnection!
   allTelegramPublishNotes(filter: AdminTelegramPublishNotesFilter): AdminTelegramPublishNotesConnection!
-  allTelegramCustomEmojies: [AdminTelegramCustomEmojiConnection!]!
+  allTelegramCustomEmojies: AdminTelegramCustomEmojiConnection!
 
   allWaitListEmailRequests: AdminWaitListEmailRequestsConnection!
   allWaitListTgBotRequests: AdminWaitListTgBotRequestsConnection!

@@ -1,24 +1,19 @@
 package gettelegramcustomemojies
 
-//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg gettelegramcustomemojies_test . Env TgBotsInterface
+//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg gettelegramcustomemojies_test . Env
 
 import (
 	"context"
 	"fmt"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
-	"trip2g/internal/tgbots"
+	appmodel "trip2g/internal/model"
 )
-
-type TgBotsInterface interface {
-	GetBotIDs() []int64
-	GetHandlerIO(botID int64) *tgbots.HandlerIO
-}
 
 type Env interface {
 	ListTelegramCustomEmojies(ctx context.Context, ids []string) ([]db.TelegramCustomEmojy, error)
 	InsertTelegramCustomEmoji(ctx context.Context, arg db.InsertTelegramCustomEmojiParams) error
-	GetTgBots() TgBotsInterface
+	GetTelegramCustomEmojiStickers(ctx context.Context, emojiIDs []string) ([]appmodel.CustomEmojiSticker, error)
 }
 
 func Resolve(ctx context.Context, env Env, filter model.TelegramCustomEmojiesFilter) ([]model.TelegramCustomEmoji, error) {
@@ -44,41 +39,9 @@ func Resolve(ctx context.Context, env Env, filter model.TelegramCustomEmojiesFil
 	}
 
 	if len(missingIDs) > 0 {
-		var botID int64
-		if filter.BotID != nil {
-			botID = *filter.BotID
-		} else {
-			botIDs := env.GetTgBots().GetBotIDs()
-			if len(botIDs) == 0 {
-				return nil, fmt.Errorf("no telegram bots available")
-			}
-			botID = botIDs[0]
-		}
-
-		handlerIO := env.GetTgBots().GetHandlerIO(botID)
-		if handlerIO == nil {
-			return nil, fmt.Errorf("telegram bot %d not found or not running", botID)
-		}
-
-		stickers, err := handlerIO.GetCustomEmojiStickers(ctx, missingIDs)
+		err = fetchAndCacheMissingEmojies(ctx, env, missingIDs, cachedMap)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get custom emoji stickers from telegram: %w", err)
-		}
-
-		for _, sticker := range stickers {
-			params := db.InsertTelegramCustomEmojiParams{
-				ID:         sticker.ID,
-				Base64Data: sticker.Base64Data,
-			}
-			err = env.InsertTelegramCustomEmoji(ctx, params)
-			if err != nil {
-				return nil, fmt.Errorf("failed to insert telegram custom emoji: %w", err)
-			}
-
-			cachedMap[sticker.ID] = db.TelegramCustomEmojy{
-				ID:         sticker.ID,
-				Base64Data: sticker.Base64Data,
-			}
+			return nil, err
 		}
 	}
 
@@ -93,4 +56,30 @@ func Resolve(ctx context.Context, env Env, filter model.TelegramCustomEmojiesFil
 	}
 
 	return result, nil
+}
+
+func fetchAndCacheMissingEmojies(ctx context.Context, env Env, missingIDs []string, cachedMap map[string]db.TelegramCustomEmojy) error {
+	stickers, err := env.GetTelegramCustomEmojiStickers(ctx, missingIDs)
+	if err != nil {
+		return fmt.Errorf("failed to get custom emoji stickers from telegram: %w", err)
+	}
+
+	for _, sticker := range stickers {
+		params := db.InsertTelegramCustomEmojiParams{
+			ID:         sticker.ID,
+			Base64Data: sticker.Base64Data,
+		}
+
+		insertErr := env.InsertTelegramCustomEmoji(ctx, params)
+		if insertErr != nil {
+			return fmt.Errorf("failed to insert telegram custom emoji: %w", insertErr)
+		}
+
+		cachedMap[sticker.ID] = db.TelegramCustomEmojy{
+			ID:         sticker.ID,
+			Base64Data: sticker.Base64Data,
+		}
+	}
+
+	return nil
 }

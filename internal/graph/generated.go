@@ -143,6 +143,7 @@ type ResolverRoot interface {
 
 type DirectiveRoot struct {
 	SkipTx func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
+	WithTx func(ctx context.Context, obj any, next graphql.Resolver) (res any, err error)
 }
 
 type ComplexityRoot struct {
@@ -1467,7 +1468,7 @@ type AdminQueryResolver interface {
 	AllConfigVersions(ctx context.Context, obj *model1.AdminQuery) (*model.AdminConfigVersionsConnection, error)
 	AllTelegramPublishTags(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTelegramPublishTagsConnection, error)
 	AllTelegramPublishNotes(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminTelegramPublishNotesFilter) (*model.AdminTelegramPublishNotesConnection, error)
-	AllTelegramCustomEmojies(ctx context.Context, obj *model1.AdminQuery) ([]model.AdminTelegramCustomEmojiConnection, error)
+	AllTelegramCustomEmojies(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTelegramCustomEmojiConnection, error)
 	AllWaitListEmailRequests(ctx context.Context, obj *model1.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error)
 	AllWaitListTgBotRequests(ctx context.Context, obj *model1.AdminQuery) (*model.AdminWaitListTgBotRequestsConnection, error)
 	AllTgBots(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTgBotsConnection, error)
@@ -15676,7 +15677,7 @@ func (ec *executionContext) _AdminQuery_allTelegramCustomEmojies(ctx context.Con
 			return ec.resolvers.AdminQuery().AllTelegramCustomEmojies(ctx, obj)
 		},
 		nil,
-		ec.marshalNAdminTelegramCustomEmojiConnection2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramCustomEmojiConnectionᚄ,
+		ec.marshalNAdminTelegramCustomEmojiConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramCustomEmojiConnection,
 		true,
 		true,
 	)
@@ -52835,48 +52836,14 @@ func (ec *executionContext) marshalNAdminTelegramCustomEmojiConnection2trip2gᚋ
 	return ec._AdminTelegramCustomEmojiConnection(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAdminTelegramCustomEmojiConnection2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramCustomEmojiConnectionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.AdminTelegramCustomEmojiConnection) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
+func (ec *executionContext) marshalNAdminTelegramCustomEmojiConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramCustomEmojiConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminTelegramCustomEmojiConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
 	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNAdminTelegramCustomEmojiConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramCustomEmojiConnection(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
+	return ec._AdminTelegramCustomEmojiConnection(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNAdminTelegramPublishNote2trip2gᚋinternalᚋdbᚐTelegramPublishNote(ctx context.Context, sel ast.SelectionSet, v db.TelegramPublishNote) graphql.Marshaler {

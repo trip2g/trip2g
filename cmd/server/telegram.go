@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 	"trip2g/internal/case/handletgupdate"
+	"trip2g/internal/model"
 	"trip2g/internal/tgbots"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -195,4 +196,13 @@ func (a *app) BotStartLink(botID int64, param string) (string, error) {
 		return "", fmt.Errorf("bot with ID %d not found or not active", botID)
 	}
 	return handlerIO.BotStartLink(param), nil
+}
+
+func (a *app) GetTelegramCustomEmojiStickers(ctx context.Context, emojiIDs []string) ([]model.CustomEmojiSticker, error) {
+	ids := a.TgBots.GetBotIDs()
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	return a.TgBots.GetHandlerIO(ids[0]).GetCustomEmojiStickers(ctx, emojiIDs)
 }

@@ -7,10 +7,8 @@ import (
 	"trip2g/internal/case/gettelegramcustomemojies"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
-	"trip2g/internal/tgbots"
+	appmodel "trip2g/internal/model"
 )
-
-//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg gettelegramcustomemojies_test . Env TgBotsInterface
 
 func TestResolve(t *testing.T) {
 	ctx := context.Background()
@@ -18,7 +16,7 @@ func TestResolve(t *testing.T) {
 	tests := []struct {
 		name    string
 		filter  model.TelegramCustomEmojiesFilter
-		setup   func(*EnvMock, *TgBotsInterfaceMock)
+		setup   func(*EnvMock)
 		want    []model.TelegramCustomEmoji
 		wantErr bool
 	}{
@@ -27,7 +25,7 @@ func TestResolve(t *testing.T) {
 			filter: model.TelegramCustomEmojiesFilter{
 				Ids: []string{},
 			},
-			setup:   func(env *EnvMock, tgBots *TgBotsInterfaceMock) {},
+			setup:   func(env *EnvMock) {},
 			want:    []model.TelegramCustomEmoji{},
 			wantErr: false,
 		},
@@ -36,7 +34,7 @@ func TestResolve(t *testing.T) {
 			filter: model.TelegramCustomEmojiesFilter{
 				Ids: []string{"emoji1", "emoji2"},
 			},
-			setup: func(env *EnvMock, tgBots *TgBotsInterfaceMock) {
+			setup: func(env *EnvMock) {
 				env.ListTelegramCustomEmojiesFunc = func(ctx context.Context, ids []string) ([]db.TelegramCustomEmojy, error) {
 					return []db.TelegramCustomEmojy{
 						{ID: "emoji1", Base64Data: "data:image/webp;base64,abc123"},
@@ -55,28 +53,24 @@ func TestResolve(t *testing.T) {
 			filter: model.TelegramCustomEmojiesFilter{
 				Ids: []string{"emoji1", "emoji2"},
 			},
-			setup: func(env *EnvMock, tgBots *TgBotsInterfaceMock) {
+			setup: func(env *EnvMock) {
 				env.ListTelegramCustomEmojiesFunc = func(ctx context.Context, ids []string) ([]db.TelegramCustomEmojy, error) {
 					return []db.TelegramCustomEmojy{
 						{ID: "emoji1", Base64Data: "data:image/webp;base64,abc123"},
 					}, nil
 				}
-				env.GetTgBotsFunc = func() gettelegramcustomemojies.TgBotsInterface {
-					return tgBots
+				env.GetTelegramCustomEmojiStickersFunc = func(ctx context.Context, emojiIDs []string) ([]appmodel.CustomEmojiSticker, error) {
+					return []appmodel.CustomEmojiSticker{
+						{ID: "emoji2", Base64Data: "data:video/webm;base64,xyz789"},
+					}, nil
 				}
 				env.InsertTelegramCustomEmojiFunc = func(ctx context.Context, arg db.InsertTelegramCustomEmojiParams) error {
 					return nil
 				}
-
-				tgBots.GetBotIDsFunc = func() []int64 {
-					return []int64{1}
-				}
-				tgBots.GetHandlerIOFunc = func(botID int64) *tgbots.HandlerIO {
-					return &tgbots.HandlerIO{}
-				}
 			},
 			want: []model.TelegramCustomEmoji{
 				{ID: "emoji1", Base64Uri: "data:image/webp;base64,abc123"},
+				{ID: "emoji2", Base64Uri: "data:video/webm;base64,xyz789"},
 			},
 			wantErr: false,
 		},
@@ -85,10 +79,9 @@ func TestResolve(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			env := &EnvMock{}
-			tgBots := &TgBotsInterfaceMock{}
 
 			if tt.setup != nil {
-				tt.setup(env, tgBots)
+				tt.setup(env)
 			}
 
 			got, err := gettelegramcustomemojies.Resolve(ctx, env, tt.filter)

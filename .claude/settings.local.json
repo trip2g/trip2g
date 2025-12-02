@@ -35,7 +35,9 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(test:*)",
       "Bash(go doc:*)",
-      "Bash(go vet:*)"
+      "Bash(go vet:*)",
+      "Bash(chmod:*)",
+      "Bash(docker-compose up:*)"
     ],
     "deny": []
   },

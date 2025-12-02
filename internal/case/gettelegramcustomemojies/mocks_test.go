@@ -8,7 +8,7 @@ import (
 	"sync"
 	"trip2g/internal/case/gettelegramcustomemojies"
 	"trip2g/internal/db"
-	"trip2g/internal/tgbots"
+	appmodel "trip2g/internal/model"
 )
 
 // Ensure, that EnvMock does implement gettelegramcustomemojies.Env.
@@ -21,8 +21,8 @@ var _ gettelegramcustomemojies.Env = &EnvMock{}
 //
 //		// make and configure a mocked gettelegramcustomemojies.Env
 //		mockedEnv := &EnvMock{
-//			GetTgBotsFunc: func() gettelegramcustomemojies.TgBotsInterface {
-//				panic("mock out the GetTgBots method")
+//			GetTelegramCustomEmojiStickersFunc: func(ctx context.Context, emojiIDs []string) ([]appmodel.CustomEmojiSticker, error) {
+//				panic("mock out the GetTelegramCustomEmojiStickers method")
 //			},
 //			InsertTelegramCustomEmojiFunc: func(ctx context.Context, arg db.InsertTelegramCustomEmojiParams) error {
 //				panic("mock out the InsertTelegramCustomEmoji method")
@@ -37,8 +37,8 @@ var _ gettelegramcustomemojies.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
-	// GetTgBotsFunc mocks the GetTgBots method.
-	GetTgBotsFunc func() gettelegramcustomemojies.TgBotsInterface
+	// GetTelegramCustomEmojiStickersFunc mocks the GetTelegramCustomEmojiStickers method.
+	GetTelegramCustomEmojiStickersFunc func(ctx context.Context, emojiIDs []string) ([]appmodel.CustomEmojiSticker, error)
 
 	// InsertTelegramCustomEmojiFunc mocks the InsertTelegramCustomEmoji method.
 	InsertTelegramCustomEmojiFunc func(ctx context.Context, arg db.InsertTelegramCustomEmojiParams) error
@@ -48,8 +48,12 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// GetTgBots holds details about calls to the GetTgBots method.
-		GetTgBots []struct {
+		// GetTelegramCustomEmojiStickers holds details about calls to the GetTelegramCustomEmojiStickers method.
+		GetTelegramCustomEmojiStickers []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// EmojiIDs is the emojiIDs argument value.
+			EmojiIDs []string
 		}
 		// InsertTelegramCustomEmoji holds details about calls to the InsertTelegramCustomEmoji method.
 		InsertTelegramCustomEmoji []struct {
@@ -66,35 +70,44 @@ type EnvMock struct {
 			Ids []string
 		}
 	}
-	lockGetTgBots                 sync.RWMutex
-	lockInsertTelegramCustomEmoji sync.RWMutex
-	lockListTelegramCustomEmojies sync.RWMutex
+	lockGetTelegramCustomEmojiStickers sync.RWMutex
+	lockInsertTelegramCustomEmoji      sync.RWMutex
+	lockListTelegramCustomEmojies      sync.RWMutex
 }
 
-// GetTgBots calls GetTgBotsFunc.
-func (mock *EnvMock) GetTgBots() gettelegramcustomemojies.TgBotsInterface {
-	if mock.GetTgBotsFunc == nil {
-		panic("EnvMock.GetTgBotsFunc: method is nil but Env.GetTgBots was just called")
+// GetTelegramCustomEmojiStickers calls GetTelegramCustomEmojiStickersFunc.
+func (mock *EnvMock) GetTelegramCustomEmojiStickers(ctx context.Context, emojiIDs []string) ([]appmodel.CustomEmojiSticker, error) {
+	if mock.GetTelegramCustomEmojiStickersFunc == nil {
+		panic("EnvMock.GetTelegramCustomEmojiStickersFunc: method is nil but Env.GetTelegramCustomEmojiStickers was just called")
 	}
 	callInfo := struct {
-	}{}
-	mock.lockGetTgBots.Lock()
-	mock.calls.GetTgBots = append(mock.calls.GetTgBots, callInfo)
-	mock.lockGetTgBots.Unlock()
-	return mock.GetTgBotsFunc()
+		Ctx      context.Context
+		EmojiIDs []string
+	}{
+		Ctx:      ctx,
+		EmojiIDs: emojiIDs,
+	}
+	mock.lockGetTelegramCustomEmojiStickers.Lock()
+	mock.calls.GetTelegramCustomEmojiStickers = append(mock.calls.GetTelegramCustomEmojiStickers, callInfo)
+	mock.lockGetTelegramCustomEmojiStickers.Unlock()
+	return mock.GetTelegramCustomEmojiStickersFunc(ctx, emojiIDs)
 }
 
-// GetTgBotsCalls gets all the calls that were made to GetTgBots.
+// GetTelegramCustomEmojiStickersCalls gets all the calls that were made to GetTelegramCustomEmojiStickers.
 // Check the length with:
 //
-//	len(mockedEnv.GetTgBotsCalls())
-func (mock *EnvMock) GetTgBotsCalls() []struct {
+//	len(mockedEnv.GetTelegramCustomEmojiStickersCalls())
+func (mock *EnvMock) GetTelegramCustomEmojiStickersCalls() []struct {
+	Ctx      context.Context
+	EmojiIDs []string
 } {
 	var calls []struct {
+		Ctx      context.Context
+		EmojiIDs []string
 	}
-	mock.lockGetTgBots.RLock()
-	calls = mock.calls.GetTgBots
-	mock.lockGetTgBots.RUnlock()
+	mock.lockGetTelegramCustomEmojiStickers.RLock()
+	calls = mock.calls.GetTelegramCustomEmojiStickers
+	mock.lockGetTelegramCustomEmojiStickers.RUnlock()
 	return calls
 }
 
@@ -167,108 +180,5 @@ func (mock *EnvMock) ListTelegramCustomEmojiesCalls() []struct {
 	mock.lockListTelegramCustomEmojies.RLock()
 	calls = mock.calls.ListTelegramCustomEmojies
 	mock.lockListTelegramCustomEmojies.RUnlock()
-	return calls
-}
-
-// Ensure, that TgBotsInterfaceMock does implement gettelegramcustomemojies.TgBotsInterface.
-// If this is not the case, regenerate this file with moq.
-var _ gettelegramcustomemojies.TgBotsInterface = &TgBotsInterfaceMock{}
-
-// TgBotsInterfaceMock is a mock implementation of gettelegramcustomemojies.TgBotsInterface.
-//
-//	func TestSomethingThatUsesTgBotsInterface(t *testing.T) {
-//
-//		// make and configure a mocked gettelegramcustomemojies.TgBotsInterface
-//		mockedTgBotsInterface := &TgBotsInterfaceMock{
-//			GetBotIDsFunc: func() []int64 {
-//				panic("mock out the GetBotIDs method")
-//			},
-//			GetHandlerIOFunc: func(botID int64) *tgbots.HandlerIO {
-//				panic("mock out the GetHandlerIO method")
-//			},
-//		}
-//
-//		// use mockedTgBotsInterface in code that requires gettelegramcustomemojies.TgBotsInterface
-//		// and then make assertions.
-//
-//	}
-type TgBotsInterfaceMock struct {
-	// GetBotIDsFunc mocks the GetBotIDs method.
-	GetBotIDsFunc func() []int64
-
-	// GetHandlerIOFunc mocks the GetHandlerIO method.
-	GetHandlerIOFunc func(botID int64) *tgbots.HandlerIO
-
-	// calls tracks calls to the methods.
-	calls struct {
-		// GetBotIDs holds details about calls to the GetBotIDs method.
-		GetBotIDs []struct {
-		}
-		// GetHandlerIO holds details about calls to the GetHandlerIO method.
-		GetHandlerIO []struct {
-			// BotID is the botID argument value.
-			BotID int64
-		}
-	}
-	lockGetBotIDs    sync.RWMutex
-	lockGetHandlerIO sync.RWMutex
-}
-
-// GetBotIDs calls GetBotIDsFunc.
-func (mock *TgBotsInterfaceMock) GetBotIDs() []int64 {
-	if mock.GetBotIDsFunc == nil {
-		panic("TgBotsInterfaceMock.GetBotIDsFunc: method is nil but TgBotsInterface.GetBotIDs was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockGetBotIDs.Lock()
-	mock.calls.GetBotIDs = append(mock.calls.GetBotIDs, callInfo)
-	mock.lockGetBotIDs.Unlock()
-	return mock.GetBotIDsFunc()
-}
-
-// GetBotIDsCalls gets all the calls that were made to GetBotIDs.
-// Check the length with:
-//
-//	len(mockedTgBotsInterface.GetBotIDsCalls())
-func (mock *TgBotsInterfaceMock) GetBotIDsCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockGetBotIDs.RLock()
-	calls = mock.calls.GetBotIDs
-	mock.lockGetBotIDs.RUnlock()
-	return calls
-}
-
-// GetHandlerIO calls GetHandlerIOFunc.
-func (mock *TgBotsInterfaceMock) GetHandlerIO(botID int64) *tgbots.HandlerIO {
-	if mock.GetHandlerIOFunc == nil {
-		panic("TgBotsInterfaceMock.GetHandlerIOFunc: method is nil but TgBotsInterface.GetHandlerIO was just called")
-	}
-	callInfo := struct {
-		BotID int64
-	}{
-		BotID: botID,
-	}
-	mock.lockGetHandlerIO.Lock()
-	mock.calls.GetHandlerIO = append(mock.calls.GetHandlerIO, callInfo)
-	mock.lockGetHandlerIO.Unlock()
-	return mock.GetHandlerIOFunc(botID)
-}
-
-// GetHandlerIOCalls gets all the calls that were made to GetHandlerIO.
-// Check the length with:
-//
-//	len(mockedTgBotsInterface.GetHandlerIOCalls())
-func (mock *TgBotsInterfaceMock) GetHandlerIOCalls() []struct {
-	BotID int64
-} {
-	var calls []struct {
-		BotID int64
-	}
-	mock.lockGetHandlerIO.RLock()
-	calls = mock.calls.GetHandlerIO
-	mock.lockGetHandlerIO.RUnlock()
 	return calls
 }

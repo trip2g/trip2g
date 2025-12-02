@@ -1152,8 +1152,8 @@ func (r *adminQueryResolver) AllTelegramPublishNotes(ctx context.Context, obj *a
 }
 
 // AllTelegramCustomEmojies is the resolver for the allTelegramCustomEmojies field.
-func (r *adminQueryResolver) AllTelegramCustomEmojies(ctx context.Context, obj *appmodel.AdminQuery) ([]model.AdminTelegramCustomEmojiConnection, error) {
-	return []model.AdminTelegramCustomEmojiConnection{{}}, nil
+func (r *adminQueryResolver) AllTelegramCustomEmojies(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminTelegramCustomEmojiConnection, error) {
+	return &model.AdminTelegramCustomEmojiConnection{}, nil
 }
 
 // AllWaitListEmailRequests is the resolver for the allWaitListEmailRequests field.

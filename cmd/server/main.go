@@ -43,7 +43,6 @@ import (
 	"trip2g/internal/case/canreadnote"
 	"trip2g/internal/case/getboostyuser"
 	"trip2g/internal/case/getpatreonuser"
-	"trip2g/internal/case/gettelegramcustomemojies"
 	"trip2g/internal/case/handletgpublishviews"
 	"trip2g/internal/case/insertnote"
 	"trip2g/internal/case/listactiveusersubgraphs"
@@ -837,6 +836,18 @@ func (a *app) LoadNoteViewByVersionID(ctx context.Context, id int64) (*model.Not
 	return loader.NoteViews().List[0], nil
 }
 
+func (a *app) InsertTelegramCustomEmoji(ctx context.Context, arg db.InsertTelegramCustomEmojiParams) error {
+	return a.WriteQueries.InsertTelegramCustomEmoji(ctx, arg)
+}
+
+func (a *app) UpsertAPIKeyLogAction(ctx context.Context, name string) error {
+	return a.WriteQueries.UpsertAPIKeyLogAction(ctx, name)
+}
+
+func (a *app) UpsertAPIKeyLogIP(ctx context.Context, ip string) error {
+	return a.WriteQueries.UpsertAPIKeyLogIP(ctx, ip)
+}
+
 func (a *app) NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error) {
 	wrapper := makeSingleNoteLoaderWrapper(a, id)
 	loader := noteloader.New("single", wrapper, a.config.MDLoaderConfig)
@@ -1021,10 +1032,6 @@ func (a *app) Logger() logger.Logger {
 
 func (a *app) AuditLogger() logger.Logger {
 	return a.auditLogger
-}
-
-func (a *app) GetTgBots() gettelegramcustomemojies.TgBotsInterface {
-	return a.TgBots
 }
 
 func (a *app) DB() *sql.DB {

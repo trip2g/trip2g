@@ -48,3 +48,8 @@ type SendTelegramPublishPostParams struct {
 	Instant           bool  `json:"instant"`
 	UpdateLinkedPosts bool  `json:"update_linked_posts"`
 }
+
+type CustomEmojiSticker struct {
+	ID         string
+	Base64Data string
+}

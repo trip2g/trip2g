@@ -152,7 +152,7 @@ func makeAroundOperations(
 
 func shouldSkipTx(op *ast.OperationDefinition, skipTxMutations map[string]struct{}) bool {
 	if op.Operation != ast.Mutation {
-		return false
+		return true
 	}
 
 	for _, selection := range op.SelectionSet {
