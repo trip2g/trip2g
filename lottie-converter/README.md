@@ -1,8 +1,27 @@
-# Lottie to WebM Converter
+# Lottie Converter
 
-Микросервис для конвертации Lottie анимаций в WebM видео с поддержкой прозрачности.
+Микросервис для конвертации Telegram custom emoji (TGS/WEBM/WEBP) в оптимизированный анимированный WEBP для использования в Obsidian и других markdown редакторах.
+
+## Возможности
+
+- ✅ Конвертация TGS (Lottie) → WEBP
+- ✅ Конвертация WEBM → WEBP
+- ✅ Оптимизация WEBP → WEBP
+- ✅ Telegram бот для получения markdown кодов
+- ✅ HTTP API для прямого доступа к изображениям
+- ✅ Файловый кеш для быстрого доступа
+- ✅ Webhook поддержка
+
+## Преимущества WEBP
+
+- Лучшее качество при меньшем размере файла
+- Полная поддержка прозрачности (alpha channel)
+- Поддержка анимации
+- Нативная поддержка в Obsidian и современных браузерах
 
 ## Запуск
+
+### Docker Compose (локальная разработка)
 
 ```bash
 # Из корня проекта
@@ -12,37 +31,57 @@ docker-compose up -d lottie-converter
 curl http://localhost:3000/health
 ```
 
-## Использование
+### Docker (production)
 
 ```bash
-# Тест с anim.json
-curl -X POST http://localhost:3000/convert \
-  -H "Content-Type: application/json" \
-  -d @anim.json \
-  --output test.webm
-
-# Или с inline JSON
-curl -X POST http://localhost:3000/convert \
-  -H "Content-Type: application/json" \
-  -d '{"animation": {...}, "width": 512, "height": 512, "fps": 30}' \
-  --output output.webm
+docker run -d \
+  --name lottie-converter \
+  -p 3000:3000 \
+  -v /var/lib/lottie-converter/cache:/tmp/lottiecache \
+  --env-file /etc/lottie.env \
+  alexes/lottie:v0.1
 ```
 
-## API
+Файл `/etc/lottie.env`:
+```
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+SERVER_URL=https://your-domain.com
+NODE_ENV=production
+```
 
-**POST /convert**
-- Body:
-  - `animation` (required) - Lottie JSON объект
-  - `width` (optional, default: 800) - ширина видео
-  - `height` (optional, default: 600) - высота видео
-  - `fps` (optional, default: 30) - FPS
-- Response: video/webm файл
+## Использование
+
+### Telegram Bot
+
+1. Отправьте боту сообщение с custom emoji
+2. Получите markdown коды для Obsidian:
+
+```markdown
+![emoji](https://your-domain.com/5373112999076699207.webp)
+```
+
+### HTTP API
+
+**GET /:id.webp**
+- Возвращает анимированный WEBP для custom emoji
+- Автоматически конвертирует и кеширует при первом запросе
+- Cache-Control: 1 год
 
 **GET /health**
-- Response: `{"ok": true}`
+- Response: `{"ok": true, "cache": {"count": 42, "sizeBytes": 1234567}}`
+
+**POST /:bot_token** (webhook)
+- Telegram webhook endpoint
 
 ## Технологии
+
 - Node.js + Express
-- Puppeteer для рендеринга Lottie
-- FFmpeg для конвертации в WebM с VP9
-- Поддержка прозрачности (alpha channel)
+- @lottiefiles/dotlottie-web для рендеринга TGS
+- @napi-rs/canvas для рендеринга кадров
+- FFmpeg (libwebp) для конвертации в WEBP
+- Telegraf для Telegram бота
+- Файловый кеш в `/tmp/lottiecache`
+
+## Deployment
+
+См. [`infra/lottie.yml`](../infra/lottie.yml) для Ansible playbook
