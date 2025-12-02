@@ -4,11 +4,9 @@
   vars:
     lottie_domain: ce.trip2g.com
     lottie_port: 3000
-    lottie_image: alexes/lottie:v0.1
+    lottie_image: alexes/lottie:v0.2
     lottie_cache_dir: /var/lib/lottie-converter/cache
     docker_install_compose: false
-    docker_users:
-      - root
 
   roles:
     - geerlingguy.docker
@@ -26,14 +24,8 @@
         state: directory
         mode: '0755'
 
-    - name: Pull lottie-converter image
-      community.docker.docker_image:
-        name: "{{ lottie_image }}"
-        source: pull
-        force_source: yes
-
     - name: Run lottie-converter container
-      community.docker.docker_container:
+      docker_container:
         name: lottie-converter
         image: "{{ lottie_image }}"
         state: started
@@ -44,18 +36,3 @@
         volumes:
           - "{{ lottie_cache_dir }}:/tmp/lottiecache"
         recreate: yes
-
-    - name: Deploy traefik/dynamic.yml config with lottie-converter
-      template:
-        src: traefik_dynamic.yml.j2
-        dest: /etc/traefik/dynamic.yml
-        owner: traefik
-        group: traefik
-        mode: '0644'
-      notify: Restart traefik
-
-  handlers:
-    - name: Restart traefik
-      systemd:
-        name: traefik
-        state: restarted
