@@ -10,7 +10,7 @@ http:
         certResolver: letsencrypt
 {% endfor %}
     lottie-converter:
-      rule: "Host(`{{ lottie_domain | default('lottie.trip2g.com') }}`)"
+      rule: "Host(`{{ lottie_domain | default('ce.trip2g.com') }}`)"
       entryPoints:
         - websecure
       service: lottie-converter

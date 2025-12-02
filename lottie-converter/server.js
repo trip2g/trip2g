@@ -136,6 +136,8 @@ bot.on('message', async (ctx) => {
 });
 
 // Express server
+app.use(express.json());
+
 app.get('/:id.gif', async (req, res) => {
   const emojiId = req.params.id;
 
@@ -164,15 +166,27 @@ app.get('/health', (req, res) => {
   res.json({ ok: true, cache: stats });
 });
 
+// Telegram webhook endpoint
+const WEBHOOK_PATH = `/${TELEGRAM_BOT_TOKEN}`;
+app.post(WEBHOOK_PATH, (req, res) => {
+  bot.handleUpdate(req.body, res);
+});
+
 // Start services
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Express server running on :${PORT}`);
-});
 
-bot.launch().then(() => {
-  console.log('Telegram bot started');
+  // Set webhook
+  const webhookUrl = `${SERVER_URL}${WEBHOOK_PATH}`;
+  try {
+    await bot.telegram.setWebhook(webhookUrl);
+    console.log(`Webhook set to: ${webhookUrl}`);
+  } catch (error) {
+    console.error('Failed to set webhook:', error);
+    process.exit(1);
+  }
 });
 
 // Enable graceful stop
