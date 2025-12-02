@@ -1,0 +1,77 @@
+- name: Setup Lottie Converter
+  hosts: all
+  become: yes
+  vars:
+    lottie_domain: lottie.trip2g.com
+    lottie_port: 3000
+    lottie_dir: /opt/lottie-converter
+    lottie_cache_dir: /var/lib/lottie-converter/cache
+    docker_install_compose: true
+    docker_users:
+      - root
+
+  roles:
+    - geerlingguy.docker
+
+  tasks:
+    - name: Create lottie-converter directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "{{ lottie_dir }}"
+        - "{{ lottie_cache_dir }}"
+
+    - name: Copy lottie-converter files
+      copy:
+        src: "../lottie-converter/{{ item }}"
+        dest: "{{ lottie_dir }}/{{ item }}"
+        mode: '0644'
+      loop:
+        - Dockerfile
+        - package.json
+        - package-lock.json
+        - server.js
+        - thumbnail.js
+        - cache.js
+        - .dockerignore
+
+    - name: Generate docker-compose.yml
+      copy:
+        dest: "{{ lottie_dir }}/docker-compose.yml"
+        content: |
+          services:
+            lottie-converter:
+              build: .
+              container_name: lottie-converter
+              restart: unless-stopped
+              ports:
+                - "127.0.0.1:{{ lottie_port }}:3000"
+              environment:
+                - TELEGRAM_BOT_TOKEN={{ lookup('env', 'TELEGRAM_BOT_TOKEN') }}
+                - SERVER_URL=https://{{ lottie_domain }}
+              volumes:
+                - {{ lottie_cache_dir }}:/app/cache
+        mode: '0644'
+
+    - name: Build and start lottie-converter container
+      community.docker.docker_compose_v2:
+        project_src: "{{ lottie_dir }}"
+        build: always
+        state: present
+
+    - name: Deploy traefik/dynamic.yml config with lottie-converter
+      template:
+        src: traefik_dynamic.yml.j2
+        dest: /etc/traefik/dynamic.yml
+        owner: traefik
+        group: traefik
+        mode: '0644'
+      notify: Restart traefik
+
+  handlers:
+    - name: Restart traefik
+      systemd:
+        name: traefik
+        state: restarted

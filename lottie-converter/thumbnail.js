@@ -145,13 +145,12 @@ export async function webmToGif(base64Data) {
     const buffer = Buffer.from(base64Data, 'base64');
     fs.writeFileSync(inputPath, buffer);
 
-    // Extract first frame and convert to GIF
+    // Convert WEBM to animated GIF with optimized palette and transparency
+    const paletteFilter = 'fps=30,scale=100:100:force_original_aspect_ratio=decrease:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=255:reserve_transparent=on:transparency_color=ffffff:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle:alpha_threshold=128';
+
     await new Promise((resolve, reject) => {
       ffmpeg(inputPath)
-        .outputOptions([
-          '-vframes 1',
-          '-vf scale=100:100:force_original_aspect_ratio=decrease,pad=100:100:(ow-iw)/2:(oh-ih)/2',
-        ])
+        .complexFilter(paletteFilter)
         .output(outputPath)
         .on('end', resolve)
         .on('error', reject)
@@ -184,12 +183,12 @@ export async function webpToGif(base64Data) {
     const buffer = Buffer.from(base64Data, 'base64');
     fs.writeFileSync(inputPath, buffer);
 
-    // Convert WEBP to GIF
+    // Convert WEBP to GIF with optimized palette and transparency
+    const paletteFilter = 'scale=100:100:force_original_aspect_ratio=decrease:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=255:reserve_transparent=on:transparency_color=ffffff:stats_mode=single[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle:alpha_threshold=128';
+
     await new Promise((resolve, reject) => {
       ffmpeg(inputPath)
-        .outputOptions([
-          '-vf scale=100:100:force_original_aspect_ratio=decrease,pad=100:100:(ow-iw)/2:(oh-ih)/2',
-        ])
+        .complexFilter(paletteFilter)
         .output(outputPath)
         .on('end', resolve)
         .on('error', reject)

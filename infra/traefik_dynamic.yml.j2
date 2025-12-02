@@ -9,6 +9,13 @@ http:
       tls:
         certResolver: letsencrypt
 {% endfor %}
+    lottie-converter:
+      rule: "Host(`{{ lottie_domain | default('lottie.trip2g.com') }}`)"
+      entryPoints:
+        - websecure
+      service: lottie-converter
+      tls:
+        certResolver: letsencrypt
 
   services:
 {% for svc in trip2g_services %}
@@ -17,3 +24,7 @@ http:
         servers:
           - url: "http://{{ svc.listen_addr }}"
 {% endfor %}
+    lottie-converter:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:{{ lottie_port | default('3000') }}"
