@@ -2,12 +2,13 @@ package tgtd
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/gotd/td/tg"
 )
 
-// Format tracks formatting state for a character
+// Format tracks formatting state for a character.
 type Format struct {
 	Bold          bool
 	Italic        bool
@@ -24,7 +25,7 @@ func (f Format) Equal(other Format) bool {
 		f.Spoiler == other.Spoiler
 }
 
-// Convert converts a Telegram message to Markdown format
+// Convert converts a Telegram message to Markdown format.
 func Convert(msg *tg.Message) string {
 	source := []rune(msg.Message)
 	if len(source) == 0 {
@@ -84,7 +85,7 @@ func Convert(msg *tg.Message) string {
 			continue
 		case *tg.MessageEntityMentionName:
 			// Mention with user ID - convert to link
-			replText = "[" + text + "](tg://user?id=" + fmt.Sprint(entity.UserID) + ")"
+			replText = "[" + text + "](tg://user?id=" + strconv.FormatInt(entity.UserID, 10) + ")"
 		case *tg.MessageEntityCustomEmoji:
 			replText = fmt.Sprintf("![](https://ce.trip2g.com/%d.webp)", entity.DocumentID)
 		default:
@@ -307,7 +308,7 @@ func writeCloseFormats(b *strings.Builder, fmt Format) {
 	}
 }
 
-// utf16OffsetToRune converts UTF-16 offset to rune index
+// utf16OffsetToRune converts UTF-16 offset to rune index.
 func utf16OffsetToRune(s string, utf16Offset int) int {
 	runeIdx := 0
 	utf16Idx := 0
@@ -321,7 +322,7 @@ func utf16OffsetToRune(s string, utf16Offset int) int {
 	return runeIdx
 }
 
-// utf16LengthToRune converts UTF-16 length to rune count
+// utf16LengthToRune converts UTF-16 length to rune count.
 func utf16LengthToRune(s string, utf16Offset, utf16Length int) int {
 	runeCount := 0
 	utf16Idx := 0
@@ -337,7 +338,7 @@ func utf16LengthToRune(s string, utf16Offset, utf16Length int) int {
 	return runeCount
 }
 
-// utf16RuneLen returns the size of a rune in UTF-16 code units
+// utf16RuneLen returns the size of a rune in UTF-16 code units.
 func utf16RuneLen(r rune) int {
 	if r >= 0x10000 {
 		return 2 // surrogate pair

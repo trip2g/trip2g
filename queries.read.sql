@@ -919,3 +919,88 @@ select id
  where queue = ?
  order by priority desc, created desc
  limit ?;
+
+-- ============================================
+-- Telegram Accounts
+-- ============================================
+
+-- name: ListAllTelegramAccounts :many
+select * from telegram_accounts
+ order by created_at desc;
+
+-- name: GetTelegramAccountByID :one
+select * from telegram_accounts
+ where id = ?;
+
+-- name: GetTelegramAccountByPhone :one
+select * from telegram_accounts
+ where phone = ?;
+
+-- name: ListTelegramPublishTagsByAccountChatID :many
+select t.*
+  from telegram_publish_tags t
+  join telegram_publish_account_chats c on t.id = c.tag_id
+ where c.account_id = ?
+   and c.telegram_chat_id = ?;
+
+-- name: ListTelegramPublishInstantTagsByAccountChatID :many
+select t.*
+  from telegram_publish_tags t
+  join telegram_publish_account_instant_chats c on t.id = c.tag_id
+ where c.account_id = ?
+   and c.telegram_chat_id = ?;
+
+-- name: ListTelegramPublishAccountChatsByAccountID :many
+select * from telegram_publish_account_chats
+ where account_id = ?;
+
+-- name: ListTelegramPublishAccountInstantChatsByAccountID :many
+select * from telegram_publish_account_instant_chats
+ where account_id = ?;
+
+-- name: ListTelegramAccountChatsByNotePathID :many
+select distinct ac.account_id, ac.telegram_chat_id, a.session_data
+  from telegram_publish_account_chats ac
+  join telegram_accounts a on ac.account_id = a.id
+  join telegram_publish_note_tags nt on ac.tag_id = nt.tag_id
+ where nt.note_path_id = ?
+   and a.enabled = 1;
+
+-- name: ListTelegramAccountInstantChatsByNotePathID :many
+select distinct ac.account_id, ac.telegram_chat_id, a.session_data
+  from telegram_publish_account_instant_chats ac
+  join telegram_accounts a on ac.account_id = a.id
+  join telegram_publish_note_tags nt on ac.tag_id = nt.tag_id
+ where nt.note_path_id = ?
+   and a.enabled = 1;
+
+-- name: ListTelegramPublishSentAccountMessagesByNotePathID :many
+select account_id, telegram_chat_id, message_id, content_hash, content
+  from telegram_publish_sent_account_messages
+ where note_path_id = ?
+   and instant = 0;
+
+-- name: CheckTelegramPublishSentAccountMessageExists :one
+select exists(
+  select 1
+    from telegram_publish_sent_account_messages
+   where note_path_id = ?
+     and account_id = ?
+     and telegram_chat_id = ?
+) as message_exists;
+
+-- name: GetTelegramPublishSentAccountMessageContentHash :one
+select content_hash
+  from telegram_publish_sent_account_messages
+ where note_path_id = ?
+   and account_id = ?
+   and telegram_chat_id = ?
+   and message_id = ?;
+
+-- name: GetTelegramPublishSentAccountMessagePostType :one
+select post_type
+  from telegram_publish_sent_account_messages
+ where note_path_id = ?
+   and account_id = ?
+   and telegram_chat_id = ?
+   and message_id = ?;

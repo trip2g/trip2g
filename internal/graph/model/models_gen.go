@@ -14,6 +14,34 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+type AdminCancelTelegramAccountAuthOrErrorPayload interface {
+	IsAdminCancelTelegramAccountAuthOrErrorPayload()
+}
+
+type AdminCompleteTelegramAccountAuthOrErrorPayload interface {
+	IsAdminCompleteTelegramAccountAuthOrErrorPayload()
+}
+
+type AdminDeleteTelegramAccountOrErrorPayload interface {
+	IsAdminDeleteTelegramAccountOrErrorPayload()
+}
+
+type AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload interface {
+	IsAdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload()
+}
+
+type AdminSetTelegramAccountChatPublishTagsOrErrorPayload interface {
+	IsAdminSetTelegramAccountChatPublishTagsOrErrorPayload()
+}
+
+type AdminStartTelegramAccountAuthOrErrorPayload interface {
+	IsAdminStartTelegramAccountAuthOrErrorPayload()
+}
+
+type AdminUpdateTelegramAccountOrErrorPayload interface {
+	IsAdminUpdateTelegramAccountOrErrorPayload()
+}
+
 type BanUserOrErrorPayload interface {
 	IsBanUserOrErrorPayload()
 }
@@ -330,6 +358,28 @@ type AdminBoostyTiersConnection struct {
 	Nodes []db.BoostyTier `json:"nodes"`
 }
 
+type AdminCancelTelegramAccountAuthInput struct {
+	Phone string `json:"phone"`
+}
+
+type AdminCancelTelegramAccountAuthPayload struct {
+	Success bool `json:"success"`
+}
+
+func (AdminCancelTelegramAccountAuthPayload) IsAdminCancelTelegramAccountAuthOrErrorPayload() {}
+
+type AdminCompleteTelegramAccountAuthInput struct {
+	Phone    string  `json:"phone"`
+	Code     string  `json:"code"`
+	Password *string `json:"password,omitempty"`
+}
+
+type AdminCompleteTelegramAccountAuthPayload struct {
+	Account *db.TelegramAccount `json:"account"`
+}
+
+func (AdminCompleteTelegramAccountAuthPayload) IsAdminCompleteTelegramAccountAuthOrErrorPayload() {}
+
 type AdminConfigVersionsConnection struct {
 	Nodes []db.ConfigVersion `json:"nodes"`
 }
@@ -337,6 +387,16 @@ type AdminConfigVersionsConnection struct {
 type AdminCronJobsConnection struct {
 	Nodes []db.CronJob `json:"nodes"`
 }
+
+type AdminDeleteTelegramAccountInput struct {
+	ID int64 `json:"id"`
+}
+
+type AdminDeleteTelegramAccountPayload struct {
+	Success bool `json:"success"`
+}
+
+func (AdminDeleteTelegramAccountPayload) IsAdminDeleteTelegramAccountOrErrorPayload() {}
 
 type AdminGitTokensConnection struct {
 	Nodes []db.GitToken `json:"nodes"`
@@ -400,8 +460,79 @@ type AdminReleasesConnection struct {
 	Nodes []db.Release `json:"nodes"`
 }
 
+type AdminSetTelegramAccountChatPublishInstantTagsInput struct {
+	AccountID      int64   `json:"accountId"`
+	TelegramChatID string  `json:"telegramChatId"`
+	TagIds         []int64 `json:"tagIds"`
+}
+
+type AdminSetTelegramAccountChatPublishInstantTagsPayload struct {
+	Chat           *AdminTelegramAccountChat `json:"chat"`
+	Success        bool                      `json:"success"`
+	AccountID      int64                     `json:"-"`
+	TelegramChatID int64                     `json:"-"`
+}
+
+func (AdminSetTelegramAccountChatPublishInstantTagsPayload) IsAdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload() {
+}
+
+type AdminSetTelegramAccountChatPublishTagsInput struct {
+	AccountID      int64   `json:"accountId"`
+	TelegramChatID string  `json:"telegramChatId"`
+	TagIds         []int64 `json:"tagIds"`
+}
+
+type AdminSetTelegramAccountChatPublishTagsPayload struct {
+	Chat           *AdminTelegramAccountChat `json:"chat"`
+	Success        bool                      `json:"success"`
+	AccountID      int64                     `json:"-"`
+	TelegramChatID int64                     `json:"-"`
+}
+
+func (AdminSetTelegramAccountChatPublishTagsPayload) IsAdminSetTelegramAccountChatPublishTagsOrErrorPayload() {
+}
+
+type AdminStartTelegramAccountAuthInput struct {
+	Phone   string `json:"phone"`
+	APIID   int32  `json:"apiId"`
+	APIHash string `json:"apiHash"`
+}
+
+type AdminStartTelegramAccountAuthPayload struct {
+	AuthState *AdminTelegramAccountAuthState `json:"authState"`
+}
+
+func (AdminStartTelegramAccountAuthPayload) IsAdminStartTelegramAccountAuthOrErrorPayload() {}
+
 type AdminSubgraphsConnection struct {
 	Nodes []db.Subgraph `json:"nodes"`
+}
+
+type AdminTelegramAccountAuthState struct {
+	Phone        string                            `json:"phone"`
+	State        AdminTelegramAccountAuthStateEnum `json:"state"`
+	PasswordHint *string                           `json:"passwordHint,omitempty"`
+}
+
+type AdminTelegramAccountChat struct {
+	TelegramChatID     string                  `json:"telegramChatId"`
+	ChatTitle          string                  `json:"chatTitle"`
+	ChatType           string                  `json:"chatType"`
+	PublishTags        []db.TelegramPublishTag `json:"publishTags"`
+	PublishInstantTags []db.TelegramPublishTag `json:"publishInstantTags"`
+}
+
+type AdminTelegramAccountChatsConnection struct {
+	Nodes  []AdminTelegramAccountChat           `json:"nodes"`
+	Filter AdminTelegramAccountChatsFilterInput `json:"-"`
+}
+
+type AdminTelegramAccountChatsFilterInput struct {
+	AccountID int64 `json:"accountId"`
+}
+
+type AdminTelegramAccountsConnection struct {
+	Nodes []db.TelegramAccount `json:"nodes"`
 }
 
 type AdminTelegramPublishNotesConnection struct {
@@ -450,6 +581,18 @@ type AdminTgChatSubgraphAccessesFilterInput struct {
 	ChatID     *int64 `json:"chatId,omitempty"`
 	SubgraphID *int64 `json:"subgraphId,omitempty"`
 }
+
+type AdminUpdateTelegramAccountInput struct {
+	ID          int64   `json:"id"`
+	DisplayName *string `json:"displayName,omitempty"`
+	Enabled     *bool   `json:"enabled,omitempty"`
+}
+
+type AdminUpdateTelegramAccountPayload struct {
+	Account *db.TelegramAccount `json:"account"`
+}
+
+func (AdminUpdateTelegramAccountPayload) IsAdminUpdateTelegramAccountOrErrorPayload() {}
 
 type AdminUserBansConnection struct {
 	Nodes []db.UserBan `json:"nodes"`
@@ -742,6 +885,20 @@ type ErrorPayload struct {
 	Message  string         `json:"message"`
 	ByFields []FieldMessage `json:"byFields"`
 }
+
+func (ErrorPayload) IsAdminStartTelegramAccountAuthOrErrorPayload() {}
+
+func (ErrorPayload) IsAdminCompleteTelegramAccountAuthOrErrorPayload() {}
+
+func (ErrorPayload) IsAdminCancelTelegramAccountAuthOrErrorPayload() {}
+
+func (ErrorPayload) IsAdminUpdateTelegramAccountOrErrorPayload() {}
+
+func (ErrorPayload) IsAdminDeleteTelegramAccountOrErrorPayload() {}
+
+func (ErrorPayload) IsAdminSetTelegramAccountChatPublishTagsOrErrorPayload() {}
+
+func (ErrorPayload) IsAdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload() {}
 
 func (ErrorPayload) IsRequestEmailSignInCodeOrErrorPayload() {}
 
@@ -1403,6 +1560,65 @@ type Vector2 struct {
 
 type ViewerOffersFilter struct {
 	PageID *int64 `json:"pageId,omitempty"`
+}
+
+type AdminTelegramAccountAuthStateEnum string
+
+const (
+	AdminTelegramAccountAuthStateEnumWaitingForCode     AdminTelegramAccountAuthStateEnum = "WAITING_FOR_CODE"
+	AdminTelegramAccountAuthStateEnumWaitingForPassword AdminTelegramAccountAuthStateEnum = "WAITING_FOR_PASSWORD"
+	AdminTelegramAccountAuthStateEnumAuthorized         AdminTelegramAccountAuthStateEnum = "AUTHORIZED"
+	AdminTelegramAccountAuthStateEnumError              AdminTelegramAccountAuthStateEnum = "ERROR"
+)
+
+var AllAdminTelegramAccountAuthStateEnum = []AdminTelegramAccountAuthStateEnum{
+	AdminTelegramAccountAuthStateEnumWaitingForCode,
+	AdminTelegramAccountAuthStateEnumWaitingForPassword,
+	AdminTelegramAccountAuthStateEnumAuthorized,
+	AdminTelegramAccountAuthStateEnumError,
+}
+
+func (e AdminTelegramAccountAuthStateEnum) IsValid() bool {
+	switch e {
+	case AdminTelegramAccountAuthStateEnumWaitingForCode, AdminTelegramAccountAuthStateEnumWaitingForPassword, AdminTelegramAccountAuthStateEnumAuthorized, AdminTelegramAccountAuthStateEnumError:
+		return true
+	}
+	return false
+}
+
+func (e AdminTelegramAccountAuthStateEnum) String() string {
+	return string(e)
+}
+
+func (e *AdminTelegramAccountAuthStateEnum) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AdminTelegramAccountAuthStateEnum(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AdminTelegramAccountAuthStateEnum", str)
+	}
+	return nil
+}
+
+func (e AdminTelegramAccountAuthStateEnum) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *AdminTelegramAccountAuthStateEnum) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e AdminTelegramAccountAuthStateEnum) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type AuditLogLevelEnum string

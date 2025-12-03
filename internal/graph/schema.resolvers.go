@@ -13,11 +13,14 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
+	"trip2g/internal/case/admin/canceltelegramaccountauth"
 	"trip2g/internal/case/admin/checkhealth"
+	"trip2g/internal/case/admin/completetelegramaccountauth"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createconfigversion"
@@ -35,6 +38,7 @@ import (
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
+	"trip2g/internal/case/admin/deletetelegramaccount"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/makereleaselive"
@@ -46,11 +50,14 @@ import (
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
+	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
+	"trip2g/internal/case/admin/settelegramaccountchatpublishtags"
 	"trip2g/internal/case/admin/settgchatpublishinstanttags"
 	"trip2g/internal/case/admin/settgchatpublishtags"
 	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
 	"trip2g/internal/case/admin/startbackgroundqueue"
+	"trip2g/internal/case/admin/starttelegramaccountauth"
 	"trip2g/internal/case/admin/stopbackgroundqueue"
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
@@ -61,6 +68,7 @@ import (
 	"trip2g/internal/case/admin/updateoffer"
 	"trip2g/internal/case/admin/updateredirect"
 	"trip2g/internal/case/admin/updatesubgraph"
+	"trip2g/internal/case/admin/updatetelegramaccount"
 	"trip2g/internal/case/admin/updatetgbot"
 	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
@@ -684,6 +692,41 @@ func (r *adminMutationResolver) SendTelegramPublishNoteNow(ctx context.Context, 
 	return sendtelegrampublishnotenow.Resolve(ctx, r.env(ctx), input)
 }
 
+// StartTelegramAccountAuth is the resolver for the startTelegramAccountAuth field.
+func (r *adminMutationResolver) StartTelegramAccountAuth(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminStartTelegramAccountAuthInput) (model.AdminStartTelegramAccountAuthOrErrorPayload, error) {
+	return starttelegramaccountauth.Resolve(ctx, r.env(ctx), input)
+}
+
+// CompleteTelegramAccountAuth is the resolver for the completeTelegramAccountAuth field.
+func (r *adminMutationResolver) CompleteTelegramAccountAuth(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminCompleteTelegramAccountAuthInput) (model.AdminCompleteTelegramAccountAuthOrErrorPayload, error) {
+	return completetelegramaccountauth.Resolve(ctx, r.env(ctx), input)
+}
+
+// CancelTelegramAccountAuth is the resolver for the cancelTelegramAccountAuth field.
+func (r *adminMutationResolver) CancelTelegramAccountAuth(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminCancelTelegramAccountAuthInput) (model.AdminCancelTelegramAccountAuthOrErrorPayload, error) {
+	return canceltelegramaccountauth.Resolve(ctx, r.env(ctx), input)
+}
+
+// UpdateTelegramAccount is the resolver for the updateTelegramAccount field.
+func (r *adminMutationResolver) UpdateTelegramAccount(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminUpdateTelegramAccountInput) (model.AdminUpdateTelegramAccountOrErrorPayload, error) {
+	return updatetelegramaccount.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteTelegramAccount is the resolver for the deleteTelegramAccount field.
+func (r *adminMutationResolver) DeleteTelegramAccount(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminDeleteTelegramAccountInput) (model.AdminDeleteTelegramAccountOrErrorPayload, error) {
+	return deletetelegramaccount.Resolve(ctx, r.env(ctx), input)
+}
+
+// SetTelegramAccountChatPublishTags is the resolver for the setTelegramAccountChatPublishTags field.
+func (r *adminMutationResolver) SetTelegramAccountChatPublishTags(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminSetTelegramAccountChatPublishTagsInput) (model.AdminSetTelegramAccountChatPublishTagsOrErrorPayload, error) {
+	return settelegramaccountchatpublishtags.Resolve(ctx, r.env(ctx), input)
+}
+
+// SetTelegramAccountChatPublishInstantTags is the resolver for the setTelegramAccountChatPublishInstantTags field.
+func (r *adminMutationResolver) SetTelegramAccountChatPublishInstantTags(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminSetTelegramAccountChatPublishInstantTagsInput) (model.AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload, error) {
+	return settelegramaccountchatpublishinstanttags.Resolve(ctx, r.env(ctx), input)
+}
+
 // CreatePatreonCredentials is the resolver for the createPatreonCredentials field.
 func (r *adminMutationResolver) CreatePatreonCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.CreatePatreonCredentialsInput) (model.CreatePatreonCredentialsOrErrorPayload, error) {
 	return createpatreoncredentials.Resolve(ctx, r.env(ctx), input)
@@ -1150,6 +1193,16 @@ func (r *adminQueryResolver) AllTelegramPublishNotes(ctx context.Context, obj *a
 	return &model.AdminTelegramPublishNotesConnection{Filter: filter}, nil
 }
 
+// AllTelegramAccounts is the resolver for the allTelegramAccounts field.
+func (r *adminQueryResolver) AllTelegramAccounts(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminTelegramAccountsConnection, error) {
+	return &model.AdminTelegramAccountsConnection{}, nil
+}
+
+// TelegramAccountChats is the resolver for the telegramAccountChats field.
+func (r *adminQueryResolver) TelegramAccountChats(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminTelegramAccountChatsFilterInput) (*model.AdminTelegramAccountChatsConnection, error) {
+	return &model.AdminTelegramAccountChatsConnection{Filter: filter}, nil
+}
+
 // AllWaitListEmailRequests is the resolver for the allWaitListEmailRequests field.
 func (r *adminQueryResolver) AllWaitListEmailRequests(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error) {
 	return &model.AdminWaitListEmailRequestsConnection{}, nil
@@ -1338,6 +1391,24 @@ func (r *adminReleasesConnectionResolver) Nodes(ctx context.Context, obj *model.
 	return r.env(ctx).ListAllReleases(ctx)
 }
 
+// Chat is the resolver for the chat field.
+func (r *adminSetTelegramAccountChatPublishInstantTagsPayloadResolver) Chat(ctx context.Context, obj *model.AdminSetTelegramAccountChatPublishInstantTagsPayload) (*model.AdminTelegramAccountChat, error) {
+	// Return a minimal chat object with the IDs we have
+	// Full chat data (title, type, tags) can be fetched by the client via telegramAccountChats query
+	return &model.AdminTelegramAccountChat{
+		TelegramChatID: strconv.FormatInt(obj.TelegramChatID, 10),
+	}, nil
+}
+
+// Chat is the resolver for the chat field.
+func (r *adminSetTelegramAccountChatPublishTagsPayloadResolver) Chat(ctx context.Context, obj *model.AdminSetTelegramAccountChatPublishTagsPayload) (*model.AdminTelegramAccountChat, error) {
+	// Return a minimal chat object with the IDs we have
+	// Full chat data (title, type, tags) can be fetched by the client via telegramAccountChats query
+	return &model.AdminTelegramAccountChat{
+		TelegramChatID: strconv.FormatInt(obj.TelegramChatID, 10),
+	}, nil
+}
+
 // Color is the resolver for the color field.
 func (r *adminSubgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*string, error) {
 	return db.ToStringPtr(obj.Color), nil
@@ -1346,6 +1417,26 @@ func (r *adminSubgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*s
 // Nodes is the resolver for the nodes field.
 func (r *adminSubgraphsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error) {
 	return r.env(ctx).ListAllSubgraphs(ctx)
+}
+
+// IsPremium is the resolver for the isPremium field.
+func (r *adminTelegramAccountResolver) IsPremium(ctx context.Context, obj *db.TelegramAccount) (bool, error) {
+	return obj.IsPremium == 1, nil
+}
+
+// Enabled is the resolver for the enabled field.
+func (r *adminTelegramAccountResolver) Enabled(ctx context.Context, obj *db.TelegramAccount) (bool, error) {
+	return obj.Enabled == 1, nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminTelegramAccountChatsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTelegramAccountChatsConnection) ([]model.AdminTelegramAccountChat, error) {
+	return r.env(ctx).TelegramAccountChats(ctx, obj.Filter.AccountID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminTelegramAccountsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTelegramAccountsConnection) ([]db.TelegramAccount, error) {
+	return r.env(ctx).ListAllTelegramAccounts(ctx)
 }
 
 // ID is the resolver for the id field.
@@ -2542,12 +2633,37 @@ func (r *Resolver) AdminReleasesConnection() AdminReleasesConnectionResolver {
 	return &adminReleasesConnectionResolver{r}
 }
 
+// AdminSetTelegramAccountChatPublishInstantTagsPayload returns AdminSetTelegramAccountChatPublishInstantTagsPayloadResolver implementation.
+func (r *Resolver) AdminSetTelegramAccountChatPublishInstantTagsPayload() AdminSetTelegramAccountChatPublishInstantTagsPayloadResolver {
+	return &adminSetTelegramAccountChatPublishInstantTagsPayloadResolver{r}
+}
+
+// AdminSetTelegramAccountChatPublishTagsPayload returns AdminSetTelegramAccountChatPublishTagsPayloadResolver implementation.
+func (r *Resolver) AdminSetTelegramAccountChatPublishTagsPayload() AdminSetTelegramAccountChatPublishTagsPayloadResolver {
+	return &adminSetTelegramAccountChatPublishTagsPayloadResolver{r}
+}
+
 // AdminSubgraph returns AdminSubgraphResolver implementation.
 func (r *Resolver) AdminSubgraph() AdminSubgraphResolver { return &adminSubgraphResolver{r} }
 
 // AdminSubgraphsConnection returns AdminSubgraphsConnectionResolver implementation.
 func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
 	return &adminSubgraphsConnectionResolver{r}
+}
+
+// AdminTelegramAccount returns AdminTelegramAccountResolver implementation.
+func (r *Resolver) AdminTelegramAccount() AdminTelegramAccountResolver {
+	return &adminTelegramAccountResolver{r}
+}
+
+// AdminTelegramAccountChatsConnection returns AdminTelegramAccountChatsConnectionResolver implementation.
+func (r *Resolver) AdminTelegramAccountChatsConnection() AdminTelegramAccountChatsConnectionResolver {
+	return &adminTelegramAccountChatsConnectionResolver{r}
+}
+
+// AdminTelegramAccountsConnection returns AdminTelegramAccountsConnectionResolver implementation.
+func (r *Resolver) AdminTelegramAccountsConnection() AdminTelegramAccountsConnectionResolver {
+	return &adminTelegramAccountsConnectionResolver{r}
 }
 
 // AdminTelegramPublishNote returns AdminTelegramPublishNoteResolver implementation.
@@ -2794,8 +2910,13 @@ type adminRedirectResolver struct{ *Resolver }
 type adminRedirectsConnectionResolver struct{ *Resolver }
 type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }
+type adminSetTelegramAccountChatPublishInstantTagsPayloadResolver struct{ *Resolver }
+type adminSetTelegramAccountChatPublishTagsPayloadResolver struct{ *Resolver }
 type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
+type adminTelegramAccountResolver struct{ *Resolver }
+type adminTelegramAccountChatsConnectionResolver struct{ *Resolver }
+type adminTelegramAccountsConnectionResolver struct{ *Resolver }
 type adminTelegramPublishNoteResolver struct{ *Resolver }
 type adminTelegramPublishNotesConnectionResolver struct{ *Resolver }
 type adminTelegramPublishTagsConnectionResolver struct{ *Resolver }

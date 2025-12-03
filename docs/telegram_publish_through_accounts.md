@@ -349,6 +349,200 @@ func (m *AuthManager) cleanupLoop() {
 }
 ```
 
+## Frontend API
+
+### Queries
+
+#### Список аккаунтов
+
+```graphql
+query {
+  admin {
+    allTelegramAccounts {
+      nodes {
+        id
+        phone
+        displayName
+        isPremium
+        enabled
+        createdAt
+      }
+    }
+  }
+}
+```
+
+#### Список чатов аккаунта
+
+```graphql
+query GetAccountChats($accountId: Int64!) {
+  admin {
+    telegramAccountChats(accountId: $accountId) {
+      nodes {
+        telegramChatId
+        chatTitle
+        chatType
+        publishTags { id, name }
+        publishInstantTags { id, name }
+      }
+    }
+  }
+}
+```
+
+### Mutations
+
+#### 1. Начать авторизацию
+
+Отправляет код на телефон.
+
+```graphql
+mutation {
+  admin {
+    startTelegramAccountAuth(input: {
+      phone: "+79991234567"
+      apiId: 12345678
+      apiHash: "abcdef0123456789abcdef0123456789"
+    }) {
+      ... on AdminStartTelegramAccountAuthPayload {
+        authState { phone, state, passwordHint }
+      }
+      ... on ErrorPayload { message }
+    }
+  }
+}
+```
+
+#### 2. Завершить авторизацию
+
+Без 2FA:
+```graphql
+mutation {
+  admin {
+    completeTelegramAccountAuth(input: {
+      phone: "+79991234567"
+      code: "12345"
+    }) {
+      ... on AdminCompleteTelegramAccountAuthPayload {
+        account { id, phone, displayName, isPremium }
+      }
+      ... on ErrorPayload { message }
+    }
+  }
+}
+```
+
+С 2FA (если вернулся error "2FA password required"):
+```graphql
+mutation {
+  admin {
+    completeTelegramAccountAuth(input: {
+      phone: "+79991234567"
+      code: "12345"
+      password: "mypassword"
+    }) {
+      ... on AdminCompleteTelegramAccountAuthPayload {
+        account { id, phone, displayName, isPremium }
+      }
+      ... on ErrorPayload { message }
+    }
+  }
+}
+```
+
+#### 3. Отменить авторизацию
+
+Вызывать при закрытии модалки авторизации.
+
+```graphql
+mutation {
+  admin {
+    cancelTelegramAccountAuth(input: { phone: "+79991234567" }) {
+      ... on AdminCancelTelegramAccountAuthPayload { success }
+      ... on ErrorPayload { message }
+    }
+  }
+}
+```
+
+#### 4. Обновить аккаунт
+
+```graphql
+mutation {
+  admin {
+    updateTelegramAccount(input: {
+      id: 1
+      displayName: "New Name"
+      enabled: true
+    }) {
+      ... on AdminUpdateTelegramAccountPayload {
+        account { id, displayName, enabled }
+      }
+      ... on ErrorPayload { message }
+    }
+  }
+}
+```
+
+#### 5. Удалить аккаунт
+
+```graphql
+mutation {
+  admin {
+    deleteTelegramAccount(input: { id: 1 }) {
+      ... on AdminDeleteTelegramAccountPayload { success }
+      ... on ErrorPayload { message }
+    }
+  }
+}
+```
+
+#### 6. Установить publish теги для чата
+
+```graphql
+mutation {
+  admin {
+    setTelegramAccountChatPublishTags(input: {
+      accountId: 1
+      telegramChatId: "-1001234567890"
+      tagIds: [1, 2, 3]
+    }) {
+      ... on AdminSetTelegramAccountChatPublishTagsPayload { success }
+      ... on ErrorPayload { message }
+    }
+  }
+}
+```
+
+Передать `tagIds: []` чтобы удалить все теги.
+
+#### 7. Установить instant теги для чата
+
+```graphql
+mutation {
+  admin {
+    setTelegramAccountChatPublishInstantTags(input: {
+      accountId: 1
+      telegramChatId: "-1001234567890"
+      tagIds: [4]
+    }) {
+      ... on AdminSetTelegramAccountChatPublishInstantTagsPayload { success }
+      ... on ErrorPayload { message }
+    }
+  }
+}
+```
+
+### Обработка ошибок
+
+| Error Message | Действие |
+|---------------|----------|
+| `"2FA password required"` | Показать форму ввода пароля, повторить completeTelegramAccountAuth с password |
+| `"No pending authentication for phone"` | Сессия истекла (10 мин), начать заново |
+| `"Invalid password"` | Неверный пароль 2FA |
+| `"Invalid code"` | Неверный код |
+| `"sign up required"` | Аккаунт не зарегистрирован в Telegram |
+
 ## Implementation Plan
 
 ### PR 1: Database + Admin API

@@ -384,10 +384,33 @@ type Subgraph struct {
 	ShowUnsubgraphNotesForPaidUsers sql.NullBool   `json:"show_unsubgraph_notes_for_paid_users"`
 }
 
-type TelegramCustomEmojy struct {
-	ID         string    `json:"id"`
-	Base64Data string    `json:"base64_data"`
-	CreatedAt  time.Time `json:"created_at"`
+type TelegramAccount struct {
+	ID          int64     `json:"id"`
+	Phone       string    `json:"phone"`
+	SessionData []byte    `json:"session_data"`
+	DisplayName string    `json:"display_name"`
+	IsPremium   int64     `json:"is_premium"`
+	Enabled     int64     `json:"enabled"`
+	CreatedAt   time.Time `json:"created_at"`
+	CreatedBy   int64     `json:"created_by"`
+	ApiID       int64     `json:"api_id"`
+	ApiHash     string    `json:"api_hash"`
+}
+
+type TelegramPublishAccountChat struct {
+	AccountID      int64     `json:"account_id"`
+	TelegramChatID int64     `json:"telegram_chat_id"`
+	TagID          int64     `json:"tag_id"`
+	CreatedAt      time.Time `json:"created_at"`
+	CreatedBy      int64     `json:"created_by"`
+}
+
+type TelegramPublishAccountInstantChat struct {
+	AccountID      int64     `json:"account_id"`
+	TelegramChatID int64     `json:"telegram_chat_id"`
+	TagID          int64     `json:"tag_id"`
+	CreatedAt      time.Time `json:"created_at"`
+	CreatedBy      int64     `json:"created_by"`
 }
 
 type TelegramPublishChat struct {
@@ -417,6 +440,18 @@ type TelegramPublishNote struct {
 type TelegramPublishNoteTag struct {
 	NotePathID int64 `json:"note_path_id"`
 	TagID      int64 `json:"tag_id"`
+}
+
+type TelegramPublishSentAccountMessage struct {
+	NotePathID     int64     `json:"note_path_id"`
+	AccountID      int64     `json:"account_id"`
+	TelegramChatID int64     `json:"telegram_chat_id"`
+	CreatedAt      time.Time `json:"created_at"`
+	MessageID      int64     `json:"message_id"`
+	Instant        int64     `json:"instant"`
+	ContentHash    string    `json:"content_hash"`
+	Content        string    `json:"content"`
+	PostType       string    `json:"post_type"`
 }
 
 type TelegramPublishSentMessage struct {

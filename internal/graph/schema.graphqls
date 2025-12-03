@@ -519,6 +519,10 @@ input AdminTgBotChatsFilterInput {
   includeRemoved: Boolean # defaults to false
 }
 
+input AdminTelegramAccountChatsFilterInput {
+  accountId: Int64!
+}
+
 input AdminTgChatMembersFilterInput {
   chatId: Int64!
 }
@@ -682,6 +686,162 @@ type AdminBackgroundQueuesConnection {
   nodes: [AdminBackgroundQueue!]! @goField(forceResolver: true)
 }
 
+# ============================================
+# Telegram Accounts
+# ============================================
+
+type AdminTelegramAccount @goModel(model: "trip2g/internal/db.TelegramAccount") {
+  id: Int64!
+  phone: String!
+  displayName: String!
+  isPremium: Boolean!
+  enabled: Boolean!
+  createdAt: Time!
+}
+
+type AdminTelegramAccountsConnection {
+  nodes: [AdminTelegramAccount!]! @goField(forceResolver: true)
+}
+
+type AdminTelegramAccountChat {
+  telegramChatId: String!
+  chatTitle: String!
+  chatType: String!
+  publishTags: [AdminTelegramPublishTag!]!
+  publishInstantTags: [AdminTelegramPublishTag!]!
+}
+
+type AdminTelegramAccountChatsConnection @goExtraField(name: "Filter", type: "trip2g/internal/graph/model.AdminTelegramAccountChatsFilterInput") {
+  nodes: [AdminTelegramAccountChat!]! @goField(forceResolver: true)
+}
+
+type AdminTelegramAccountAuthState {
+  phone: String!
+  state: AdminTelegramAccountAuthStateEnum!
+  passwordHint: String
+}
+
+enum AdminTelegramAccountAuthStateEnum {
+  WAITING_FOR_CODE
+  WAITING_FOR_PASSWORD
+  AUTHORIZED
+  ERROR
+}
+
+#
+# startTelegramAccountAuth
+#
+
+input AdminStartTelegramAccountAuthInput {
+  phone: String!
+  apiId: Int!
+  apiHash: String!
+}
+
+type AdminStartTelegramAccountAuthPayload {
+  authState: AdminTelegramAccountAuthState!
+}
+
+union AdminStartTelegramAccountAuthOrErrorPayload = AdminStartTelegramAccountAuthPayload | ErrorPayload
+
+#
+# completeTelegramAccountAuth
+#
+
+input AdminCompleteTelegramAccountAuthInput {
+  phone: String!
+  code: String!
+  password: String
+}
+
+type AdminCompleteTelegramAccountAuthPayload {
+  account: AdminTelegramAccount!
+}
+
+union AdminCompleteTelegramAccountAuthOrErrorPayload = AdminCompleteTelegramAccountAuthPayload | ErrorPayload
+
+#
+# cancelTelegramAccountAuth
+#
+
+input AdminCancelTelegramAccountAuthInput {
+  phone: String!
+}
+
+type AdminCancelTelegramAccountAuthPayload {
+  success: Boolean!
+}
+
+union AdminCancelTelegramAccountAuthOrErrorPayload = AdminCancelTelegramAccountAuthPayload | ErrorPayload
+
+#
+# updateTelegramAccount
+#
+
+input AdminUpdateTelegramAccountInput {
+  id: Int64!
+  displayName: String
+  enabled: Boolean
+}
+
+type AdminUpdateTelegramAccountPayload {
+  account: AdminTelegramAccount!
+}
+
+union AdminUpdateTelegramAccountOrErrorPayload = AdminUpdateTelegramAccountPayload | ErrorPayload
+
+#
+# deleteTelegramAccount
+#
+
+input AdminDeleteTelegramAccountInput {
+  id: Int64!
+}
+
+type AdminDeleteTelegramAccountPayload {
+  success: Boolean!
+}
+
+union AdminDeleteTelegramAccountOrErrorPayload = AdminDeleteTelegramAccountPayload | ErrorPayload
+
+#
+# setTelegramAccountChatPublishTags
+#
+
+input AdminSetTelegramAccountChatPublishTagsInput {
+  accountId: Int64!
+  telegramChatId: String!
+  tagIds: [Int64!]!
+}
+
+type AdminSetTelegramAccountChatPublishTagsPayload
+  @goExtraField(name: "AccountID", type: "int64")
+  @goExtraField(name: "TelegramChatID", type: "int64") {
+  chat: AdminTelegramAccountChat! @goField(forceResolver: true)
+  success: Boolean!
+}
+
+union AdminSetTelegramAccountChatPublishTagsOrErrorPayload = AdminSetTelegramAccountChatPublishTagsPayload | ErrorPayload
+
+#
+# setTelegramAccountChatPublishInstantTags
+#
+
+input AdminSetTelegramAccountChatPublishInstantTagsInput {
+  accountId: Int64!
+  telegramChatId: String!
+  tagIds: [Int64!]!
+}
+
+type AdminSetTelegramAccountChatPublishInstantTagsPayload
+  @goExtraField(name: "AccountID", type: "int64")
+  @goExtraField(name: "TelegramChatID", type: "int64") {
+  chat: AdminTelegramAccountChat! @goField(forceResolver: true)
+  success: Boolean!
+}
+
+union AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload = AdminSetTelegramAccountChatPublishInstantTagsPayload | ErrorPayload
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -703,6 +863,9 @@ type AdminQuery {
   allConfigVersions: AdminConfigVersionsConnection!
   allTelegramPublishTags: AdminTelegramPublishTagsConnection!
   allTelegramPublishNotes(filter: AdminTelegramPublishNotesFilter): AdminTelegramPublishNotesConnection!
+
+  allTelegramAccounts: AdminTelegramAccountsConnection!
+  telegramAccountChats(filter: AdminTelegramAccountChatsFilterInput!): AdminTelegramAccountChatsConnection!
 
   allWaitListEmailRequests: AdminWaitListEmailRequestsConnection!
   allWaitListTgBotRequests: AdminWaitListTgBotRequestsConnection!
@@ -1942,6 +2105,15 @@ type AdminMutation {
   setTgChatPublishInstantTags(input: SetTgChatPublishInstantTagsInput!): SetTgChatPublishInstantTagsOrErrorPayload!
   resetTelegramPublishNote(input: ResetTelegramPublishNoteInput!): ResetTelegramPublishNoteOrErrorPayload!
   sendTelegramPublishNoteNow(input: SendTelegramPublishNoteNowInput!): SendTelegramPublishNoteNowOrErrorPayload!
+
+  # Telegram account mutations
+  startTelegramAccountAuth(input: AdminStartTelegramAccountAuthInput!): AdminStartTelegramAccountAuthOrErrorPayload!
+  completeTelegramAccountAuth(input: AdminCompleteTelegramAccountAuthInput!): AdminCompleteTelegramAccountAuthOrErrorPayload!
+  cancelTelegramAccountAuth(input: AdminCancelTelegramAccountAuthInput!): AdminCancelTelegramAccountAuthOrErrorPayload!
+  updateTelegramAccount(input: AdminUpdateTelegramAccountInput!): AdminUpdateTelegramAccountOrErrorPayload!
+  deleteTelegramAccount(input: AdminDeleteTelegramAccountInput!): AdminDeleteTelegramAccountOrErrorPayload!
+  setTelegramAccountChatPublishTags(input: AdminSetTelegramAccountChatPublishTagsInput!): AdminSetTelegramAccountChatPublishTagsOrErrorPayload!
+  setTelegramAccountChatPublishInstantTags(input: AdminSetTelegramAccountChatPublishInstantTagsInput!): AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload!
 
   # Patreon credentials mutations
   createPatreonCredentials(input: CreatePatreonCredentialsInput!): CreatePatreonCredentialsOrErrorPayload!

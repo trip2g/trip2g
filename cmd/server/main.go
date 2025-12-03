@@ -72,6 +72,7 @@ import (
 	"trip2g/internal/simplebackup"
 	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/tgbots"
+	"trip2g/internal/tgtd"
 	"trip2g/internal/userbans"
 	"trip2g/internal/usertoken"
 	"trip2g/internal/zerologger"
@@ -178,6 +179,8 @@ type app struct {
 	appQueues map[string]*appQueue
 
 	simpleBackup *simplebackup.Manager
+
+	telegramAuthManager *tgtd.AuthManager
 }
 
 func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB) {

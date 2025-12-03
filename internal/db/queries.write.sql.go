@@ -256,6 +256,47 @@ func (q *WriteQueries) DeleteSignInCodesByUserID(ctx context.Context, userID int
 	return err
 }
 
+const deleteTelegramAccount = `-- name: DeleteTelegramAccount :exec
+delete from telegram_accounts where id = ?
+`
+
+func (q *WriteQueries) DeleteTelegramAccount(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTelegramAccount, id)
+	return err
+}
+
+const deleteTelegramPublishAccountChatsByAccountAndChatID = `-- name: DeleteTelegramPublishAccountChatsByAccountAndChatID :exec
+delete from telegram_publish_account_chats
+ where account_id = ?
+   and telegram_chat_id = ?
+`
+
+type DeleteTelegramPublishAccountChatsByAccountAndChatIDParams struct {
+	AccountID      int64 `json:"account_id"`
+	TelegramChatID int64 `json:"telegram_chat_id"`
+}
+
+func (q *WriteQueries) DeleteTelegramPublishAccountChatsByAccountAndChatID(ctx context.Context, arg DeleteTelegramPublishAccountChatsByAccountAndChatIDParams) error {
+	_, err := q.db.ExecContext(ctx, deleteTelegramPublishAccountChatsByAccountAndChatID, arg.AccountID, arg.TelegramChatID)
+	return err
+}
+
+const deleteTelegramPublishAccountInstantChatsByAccountAndChatID = `-- name: DeleteTelegramPublishAccountInstantChatsByAccountAndChatID :exec
+delete from telegram_publish_account_instant_chats
+ where account_id = ?
+   and telegram_chat_id = ?
+`
+
+type DeleteTelegramPublishAccountInstantChatsByAccountAndChatIDParams struct {
+	AccountID      int64 `json:"account_id"`
+	TelegramChatID int64 `json:"telegram_chat_id"`
+}
+
+func (q *WriteQueries) DeleteTelegramPublishAccountInstantChatsByAccountAndChatID(ctx context.Context, arg DeleteTelegramPublishAccountInstantChatsByAccountAndChatIDParams) error {
+	_, err := q.db.ExecContext(ctx, deleteTelegramPublishAccountInstantChatsByAccountAndChatID, arg.AccountID, arg.TelegramChatID)
+	return err
+}
+
 const deleteTelegramPublishChatsByChatID = `-- name: DeleteTelegramPublishChatsByChatID :exec
 delete from telegram_publish_chats where chat_id = ?
 `
@@ -280,6 +321,15 @@ delete from telegram_publish_note_tags where note_path_id = ?
 
 func (q *WriteQueries) DeleteTelegramPublishNoteTagsByPathID(ctx context.Context, notePathID int64) error {
 	_, err := q.db.ExecContext(ctx, deleteTelegramPublishNoteTagsByPathID, notePathID)
+	return err
+}
+
+const deleteTelegramPublishSentAccountMessagesByNotePathID = `-- name: DeleteTelegramPublishSentAccountMessagesByNotePathID :exec
+delete from telegram_publish_sent_account_messages where note_path_id = ?
+`
+
+func (q *WriteQueries) DeleteTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteTelegramPublishSentAccountMessagesByNotePathID, notePathID)
 	return err
 }
 
@@ -1153,6 +1203,96 @@ func (q *WriteQueries) InsertSubgraph(ctx context.Context, name string) error {
 	return err
 }
 
+const insertTelegramAccount = `-- name: InsertTelegramAccount :one
+
+insert into telegram_accounts (phone, session_data, display_name, is_premium, api_id, api_hash, created_by)
+values (?, ?, ?, ?, ?, ?, ?)
+returning id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash
+`
+
+type InsertTelegramAccountParams struct {
+	Phone       string `json:"phone"`
+	SessionData []byte `json:"session_data"`
+	DisplayName string `json:"display_name"`
+	IsPremium   int64  `json:"is_premium"`
+	ApiID       int64  `json:"api_id"`
+	ApiHash     string `json:"api_hash"`
+	CreatedBy   int64  `json:"created_by"`
+}
+
+// ============================================
+// Telegram Accounts
+// ============================================
+func (q *WriteQueries) InsertTelegramAccount(ctx context.Context, arg InsertTelegramAccountParams) (TelegramAccount, error) {
+	row := q.db.QueryRowContext(ctx, insertTelegramAccount,
+		arg.Phone,
+		arg.SessionData,
+		arg.DisplayName,
+		arg.IsPremium,
+		arg.ApiID,
+		arg.ApiHash,
+		arg.CreatedBy,
+	)
+	var i TelegramAccount
+	err := row.Scan(
+		&i.ID,
+		&i.Phone,
+		&i.SessionData,
+		&i.DisplayName,
+		&i.IsPremium,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.ApiID,
+		&i.ApiHash,
+	)
+	return i, err
+}
+
+const insertTelegramPublishAccountChat = `-- name: InsertTelegramPublishAccountChat :exec
+insert into telegram_publish_account_chats (account_id, telegram_chat_id, tag_id, created_by)
+values (?, ?, ?, ?)
+`
+
+type InsertTelegramPublishAccountChatParams struct {
+	AccountID      int64 `json:"account_id"`
+	TelegramChatID int64 `json:"telegram_chat_id"`
+	TagID          int64 `json:"tag_id"`
+	CreatedBy      int64 `json:"created_by"`
+}
+
+func (q *WriteQueries) InsertTelegramPublishAccountChat(ctx context.Context, arg InsertTelegramPublishAccountChatParams) error {
+	_, err := q.db.ExecContext(ctx, insertTelegramPublishAccountChat,
+		arg.AccountID,
+		arg.TelegramChatID,
+		arg.TagID,
+		arg.CreatedBy,
+	)
+	return err
+}
+
+const insertTelegramPublishAccountInstantChat = `-- name: InsertTelegramPublishAccountInstantChat :exec
+insert into telegram_publish_account_instant_chats (account_id, telegram_chat_id, tag_id, created_by)
+values (?, ?, ?, ?)
+`
+
+type InsertTelegramPublishAccountInstantChatParams struct {
+	AccountID      int64 `json:"account_id"`
+	TelegramChatID int64 `json:"telegram_chat_id"`
+	TagID          int64 `json:"tag_id"`
+	CreatedBy      int64 `json:"created_by"`
+}
+
+func (q *WriteQueries) InsertTelegramPublishAccountInstantChat(ctx context.Context, arg InsertTelegramPublishAccountInstantChatParams) error {
+	_, err := q.db.ExecContext(ctx, insertTelegramPublishAccountInstantChat,
+		arg.AccountID,
+		arg.TelegramChatID,
+		arg.TagID,
+		arg.CreatedBy,
+	)
+	return err
+}
+
 const insertTelegramPublishChat = `-- name: InsertTelegramPublishChat :exec
 insert into telegram_publish_chats (chat_id, tag_id, created_by)
 values (?, ?, ?)
@@ -1182,6 +1322,37 @@ type InsertTelegramPublishInstantChatParams struct {
 
 func (q *WriteQueries) InsertTelegramPublishInstantChat(ctx context.Context, arg InsertTelegramPublishInstantChatParams) error {
 	_, err := q.db.ExecContext(ctx, insertTelegramPublishInstantChat, arg.ChatID, arg.TagID, arg.CreatedBy)
+	return err
+}
+
+const insertTelegramPublishSentAccountMessage = `-- name: InsertTelegramPublishSentAccountMessage :exec
+insert into telegram_publish_sent_account_messages
+       (note_path_id, account_id, telegram_chat_id, message_id, instant, content_hash, content, post_type)
+values (?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type InsertTelegramPublishSentAccountMessageParams struct {
+	NotePathID     int64  `json:"note_path_id"`
+	AccountID      int64  `json:"account_id"`
+	TelegramChatID int64  `json:"telegram_chat_id"`
+	MessageID      int64  `json:"message_id"`
+	Instant        int64  `json:"instant"`
+	ContentHash    string `json:"content_hash"`
+	Content        string `json:"content"`
+	PostType       string `json:"post_type"`
+}
+
+func (q *WriteQueries) InsertTelegramPublishSentAccountMessage(ctx context.Context, arg InsertTelegramPublishSentAccountMessageParams) error {
+	_, err := q.db.ExecContext(ctx, insertTelegramPublishSentAccountMessage,
+		arg.NotePathID,
+		arg.AccountID,
+		arg.TelegramChatID,
+		arg.MessageID,
+		arg.Instant,
+		arg.ContentHash,
+		arg.Content,
+		arg.PostType,
+	)
 	return err
 }
 
@@ -2250,6 +2421,40 @@ func (q *WriteQueries) UpdateRunningCronJobExecutions(ctx context.Context, arg U
 	return err
 }
 
+const updateTelegramAccount = `-- name: UpdateTelegramAccount :exec
+update telegram_accounts
+   set display_name = coalesce(?2, display_name)
+     , enabled = coalesce(?3, enabled)
+     , is_premium = coalesce(?4, is_premium)
+     , session_data = coalesce(?5, session_data)
+     , api_id = coalesce(?6, api_id)
+     , api_hash = coalesce(?7, api_hash)
+ where id = ?
+`
+
+type UpdateTelegramAccountParams struct {
+	DisplayName sql.NullString `json:"display_name"`
+	Enabled     sql.NullInt64  `json:"enabled"`
+	IsPremium   sql.NullInt64  `json:"is_premium"`
+	SessionData []byte         `json:"session_data"`
+	ApiID       sql.NullInt64  `json:"api_id"`
+	ApiHash     sql.NullString `json:"api_hash"`
+	ID          int64          `json:"id"`
+}
+
+func (q *WriteQueries) UpdateTelegramAccount(ctx context.Context, arg UpdateTelegramAccountParams) error {
+	_, err := q.db.ExecContext(ctx, updateTelegramAccount,
+		arg.DisplayName,
+		arg.Enabled,
+		arg.IsPremium,
+		arg.SessionData,
+		arg.ApiID,
+		arg.ApiHash,
+		arg.ID,
+	)
+	return err
+}
+
 const updateTelegramPublishNoteAsPublished = `-- name: UpdateTelegramPublishNoteAsPublished :exec
 update telegram_publish_notes
    set published_at = datetime('now')
@@ -2264,6 +2469,37 @@ type UpdateTelegramPublishNoteAsPublishedParams struct {
 
 func (q *WriteQueries) UpdateTelegramPublishNoteAsPublished(ctx context.Context, arg UpdateTelegramPublishNoteAsPublishedParams) error {
 	_, err := q.db.ExecContext(ctx, updateTelegramPublishNoteAsPublished, arg.PublishedVersionID, arg.NotePathID)
+	return err
+}
+
+const updateTelegramPublishSentAccountMessageContent = `-- name: UpdateTelegramPublishSentAccountMessageContent :exec
+update telegram_publish_sent_account_messages
+   set content_hash = ?
+     , content = ?
+ where note_path_id = ?
+   and account_id = ?
+   and telegram_chat_id = ?
+   and message_id = ?
+`
+
+type UpdateTelegramPublishSentAccountMessageContentParams struct {
+	ContentHash    string `json:"content_hash"`
+	Content        string `json:"content"`
+	NotePathID     int64  `json:"note_path_id"`
+	AccountID      int64  `json:"account_id"`
+	TelegramChatID int64  `json:"telegram_chat_id"`
+	MessageID      int64  `json:"message_id"`
+}
+
+func (q *WriteQueries) UpdateTelegramPublishSentAccountMessageContent(ctx context.Context, arg UpdateTelegramPublishSentAccountMessageContentParams) error {
+	_, err := q.db.ExecContext(ctx, updateTelegramPublishSentAccountMessageContent,
+		arg.ContentHash,
+		arg.Content,
+		arg.NotePathID,
+		arg.AccountID,
+		arg.TelegramChatID,
+		arg.MessageID,
+	)
 	return err
 }
 

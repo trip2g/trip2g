@@ -717,3 +717,60 @@ update telegram_publish_notes
 update telegram_publish_notes
    set last_error = null
  where note_path_id = ?;
+
+-- ============================================
+-- Telegram Accounts
+-- ============================================
+
+-- name: InsertTelegramAccount :one
+insert into telegram_accounts (phone, session_data, display_name, is_premium, api_id, api_hash, created_by)
+values (?, ?, ?, ?, ?, ?, ?)
+returning *;
+
+-- name: UpdateTelegramAccount :exec
+update telegram_accounts
+   set display_name = coalesce(sqlc.narg(display_name), display_name)
+     , enabled = coalesce(sqlc.narg(enabled), enabled)
+     , is_premium = coalesce(sqlc.narg(is_premium), is_premium)
+     , session_data = coalesce(sqlc.narg(session_data), session_data)
+     , api_id = coalesce(sqlc.narg(api_id), api_id)
+     , api_hash = coalesce(sqlc.narg(api_hash), api_hash)
+ where id = ?;
+
+-- name: DeleteTelegramAccount :exec
+delete from telegram_accounts where id = ?;
+
+-- name: DeleteTelegramPublishAccountChatsByAccountAndChatID :exec
+delete from telegram_publish_account_chats
+ where account_id = ?
+   and telegram_chat_id = ?;
+
+-- name: InsertTelegramPublishAccountChat :exec
+insert into telegram_publish_account_chats (account_id, telegram_chat_id, tag_id, created_by)
+values (?, ?, ?, ?);
+
+-- name: DeleteTelegramPublishAccountInstantChatsByAccountAndChatID :exec
+delete from telegram_publish_account_instant_chats
+ where account_id = ?
+   and telegram_chat_id = ?;
+
+-- name: InsertTelegramPublishAccountInstantChat :exec
+insert into telegram_publish_account_instant_chats (account_id, telegram_chat_id, tag_id, created_by)
+values (?, ?, ?, ?);
+
+-- name: InsertTelegramPublishSentAccountMessage :exec
+insert into telegram_publish_sent_account_messages
+       (note_path_id, account_id, telegram_chat_id, message_id, instant, content_hash, content, post_type)
+values (?, ?, ?, ?, ?, ?, ?, ?);
+
+-- name: UpdateTelegramPublishSentAccountMessageContent :exec
+update telegram_publish_sent_account_messages
+   set content_hash = ?
+     , content = ?
+ where note_path_id = ?
+   and account_id = ?
+   and telegram_chat_id = ?
+   and message_id = ?;
+
+-- name: DeleteTelegramPublishSentAccountMessagesByNotePathID :exec
+delete from telegram_publish_sent_account_messages where note_path_id = ?;

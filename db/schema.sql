@@ -517,6 +517,50 @@ CREATE INDEX idx_telegram_publish_sent_messages_note_path_id on telegram_publish
 CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
   update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
 end;
+CREATE TABLE telegram_accounts (
+  id integer primary key autoincrement,
+  phone text not null unique,
+  session_data blob not null,
+  display_name text not null default '',
+  is_premium integer not null default 0 check (is_premium in (0, 1)),
+  enabled integer not null default 1 check (enabled in (0, 1)),
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict
+, api_id integer not null default 0, api_hash text not null default '');
+CREATE TABLE telegram_publish_account_chats (
+  account_id integer not null references telegram_accounts(id) on delete cascade,
+  telegram_chat_id integer not null,
+  tag_id integer not null references telegram_publish_tags(id) on delete cascade,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  primary key (account_id, telegram_chat_id, tag_id)
+);
+CREATE TABLE telegram_publish_account_instant_chats (
+  account_id integer not null references telegram_accounts(id) on delete cascade,
+  telegram_chat_id integer not null,
+  tag_id integer not null references telegram_publish_tags(id) on delete cascade,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  primary key (account_id, telegram_chat_id, tag_id)
+);
+CREATE TABLE telegram_publish_sent_account_messages (
+  note_path_id integer not null references note_paths(id) on delete restrict,
+  account_id integer not null references telegram_accounts(id) on delete restrict,
+  telegram_chat_id integer not null,
+  created_at datetime not null default current_timestamp,
+  message_id integer not null,
+  instant integer not null default 0 check (instant in (0, 1)),
+  content_hash text not null default '',
+  content text not null default '',
+  post_type text not null default 'text'
+);
+CREATE UNIQUE INDEX idx_telegram_publish_sent_account_messages_unique
+  on telegram_publish_sent_account_messages(note_path_id, account_id, telegram_chat_id)
+  where instant = 0;
+CREATE INDEX idx_telegram_publish_sent_account_messages_account_id
+  on telegram_publish_sent_account_messages(account_id);
+CREATE INDEX idx_telegram_publish_sent_account_messages_note_path_id
+  on telegram_publish_sent_account_messages(note_path_id);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -607,4 +651,9 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251118053250'),
   ('20251119013128'),
   ('20251201041923'),
-  ('20251203034400');
+  ('20251203034400'),
+  ('20251203061607'),
+  ('20251203061630'),
+  ('20251203061640'),
+  ('20251203061651'),
+  ('20251203062401');
