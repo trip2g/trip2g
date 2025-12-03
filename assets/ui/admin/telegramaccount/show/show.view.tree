@@ -1,0 +1,11 @@
+$trip2g_admin_telegramaccount_show $mol_page
+	account_id? 0
+	title \Telegram Account
+	tools /
+		<= EditLink $mol_link
+			arg * action \update
+			title \Edit
+	UpdateForm $trip2g_admin_telegramaccount_update
+		account_id <= account_id
+	body /
+		\TODO

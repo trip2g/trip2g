@@ -7,14 +7,15 @@ import (
 
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
-	"trip2g/internal/tgtd"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/usertoken"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type Env interface {
-	TelegramAuthManager() *tgtd.AuthManager
+	TelegramAccountCompleteAuth(ctx context.Context, phone, code, password string) (*appmodel.TelegramCompleteAuthResult, error)
+	TelegramAccountGetPasswordHint(phone string) string
 	InsertTelegramAccount(ctx context.Context, arg db.InsertTelegramAccountParams) (db.TelegramAccount, error)
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
@@ -37,34 +38,21 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}
 
-	authManager := env.TelegramAuthManager()
-
-	// Get API credentials from pending auth
-	apiID, apiHash, ok := authManager.GetPendingAuthAPICredentials(input.Phone)
-	if !ok {
-		return &model.ErrorPayload{Message: "No pending authentication found for this phone"}, nil
-	}
-
-	// Complete auth
+	phone := strings.TrimSpace(input.Phone)
+	code := strings.TrimSpace(input.Code)
 	password := ""
 	if input.Password != nil {
-		password = *input.Password
+		password = strings.TrimSpace(*input.Password)
 	}
 
-	result, err := authManager.CompleteAuth(ctx, input.Phone, input.Code, password)
+	result, err := env.TelegramAccountCompleteAuth(ctx, phone, code, password)
 	if err != nil {
 		// Check if 2FA password is required
 		if strings.Contains(err.Error(), "2FA password required") {
-			pending := authManager.GetPendingAuth(input.Phone)
-			if pending != nil {
-				var passwordHint *string
-				if pending.PasswordHint != "" {
-					passwordHint = &pending.PasswordHint
-				}
-				return &model.ErrorPayload{
-					Message: fmt.Sprintf("2FA password required. Hint: %s", pointerOrEmpty(passwordHint)),
-				}, nil
-			}
+			hint := env.TelegramAccountGetPasswordHint(phone)
+			return &model.ErrorPayload{
+				Message: fmt.Sprintf("2FA password required. Hint: %s", hint),
+			}, nil
 		}
 		return &model.ErrorPayload{Message: fmt.Sprintf("Authentication failed: %s", err.Error())}, nil
 	}
@@ -76,12 +64,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	account, err := env.InsertTelegramAccount(ctx, db.InsertTelegramAccountParams{
-		Phone:       input.Phone,
+		Phone:       phone,
 		SessionData: result.SessionData,
 		DisplayName: result.DisplayName,
 		IsPremium:   isPremium,
-		ApiID:       int64(apiID),
-		ApiHash:     apiHash,
+		ApiID:       int64(result.APIID),
+		ApiHash:     result.APIHash,
 		CreatedBy:   int64(token.ID),
 	})
 	if err != nil {
@@ -93,11 +81,4 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	return &payload, nil
-}
-
-func pointerOrEmpty(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

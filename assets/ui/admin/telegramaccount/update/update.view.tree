@@ -1,0 +1,27 @@
+$trip2g_admin_telegramaccount_update $mol_view
+	account_id 0
+	sub /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Phone_labeler $mol_labeler
+					title \Phone
+					Content <= Phone $trip2g_admin_cell
+						content <= account_phone \
+				<= DisplayName_field $mol_form_field
+					name \Display Name
+					bid <= display_name_bid \
+					Content <= display_name_control $mol_string
+						value? <=> display_name? \
+				<= Enabled_field $mol_form_field
+					name \Enabled
+					bid <= enabled_bid \
+					Content <= enabled_control $mol_check_box
+						checked? <=> enabled? false
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

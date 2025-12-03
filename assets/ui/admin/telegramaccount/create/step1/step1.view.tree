@@ -1,0 +1,28 @@
+$trip2g_admin_telegramaccount_create_step1 $mol_view
+	account? null
+	sub /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Phone_labeler $mol_labeler
+					title \Phone
+					Content <= Phone $trip2g_admin_cell
+						content <= phone \
+				<= Code_field $mol_form_field
+					name \Code
+					bid <= code_bid \
+					Content <= code_control $mol_string
+						value? <=> code? \
+				<= Password_field $mol_form_field
+					name \Password (2FA)
+					bid <= password_bid \
+					Content <= password_control $mol_string
+						value? <=> password? \
+						hint \Optional, if 2FA enabled
+			buttons /
+				<= Submit $mol_button_major
+					title \Complete Auth
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

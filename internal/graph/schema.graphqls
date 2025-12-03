@@ -697,6 +697,7 @@ type AdminTelegramAccount @goModel(model: "trip2g/internal/db.TelegramAccount") 
   isPremium: Boolean!
   enabled: Boolean!
   createdAt: Time!
+  createdBy: User @goField(forceResolver: true)
 }
 
 type AdminTelegramAccountsConnection {
@@ -865,6 +866,7 @@ type AdminQuery {
   allTelegramPublishNotes(filter: AdminTelegramPublishNotesFilter): AdminTelegramPublishNotesConnection!
 
   allTelegramAccounts: AdminTelegramAccountsConnection!
+  telegramAccount(id: Int64!): AdminTelegramAccount
   telegramAccountChats(filter: AdminTelegramAccountChatsFilterInput!): AdminTelegramAccountChatsConnection!
 
   allWaitListEmailRequests: AdminWaitListEmailRequestsConnection!

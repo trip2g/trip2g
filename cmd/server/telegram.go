@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/case/handletgupdate"
 	"trip2g/internal/db"
 	graphmodel "trip2g/internal/graph/model"
+	appmodel "trip2g/internal/model"
 	"trip2g/internal/tgbots"
 	"trip2g/internal/tgtd"
 
@@ -41,9 +42,68 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 	return a.initTelegramBots(ctx)
 }
 
-// TelegramAuthManager returns the auth manager for telegram user accounts
-func (a *app) TelegramAuthManager() *tgtd.AuthManager {
-	return a.telegramAuthManager
+// TelegramAccountStartAuth starts authentication for a phone number
+func (a *app) TelegramAccountStartAuth(ctx context.Context, phone string, apiID int, apiHash string) (*appmodel.TelegramStartAuthResult, error) {
+	pending, err := a.telegramAuthManager.StartAuth(ctx, phone, apiID, apiHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &appmodel.TelegramStartAuthResult{
+		Phone:        pending.Phone,
+		State:        mapAuthState(pending.State),
+		PasswordHint: pending.PasswordHint,
+	}, nil
+}
+
+// TelegramAccountCompleteAuth completes authentication with code and optional password
+func (a *app) TelegramAccountCompleteAuth(ctx context.Context, phone, code, password string) (*appmodel.TelegramCompleteAuthResult, error) {
+	// Get API credentials from pending auth
+	apiID, apiHash, exists := a.telegramAuthManager.GetPendingAuthAPICredentials(phone)
+	if !exists {
+		return nil, fmt.Errorf("no pending authentication for phone %s", phone)
+	}
+
+	result, err := a.telegramAuthManager.CompleteAuth(ctx, phone, code, password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &appmodel.TelegramCompleteAuthResult{
+		SessionData: result.SessionData,
+		DisplayName: result.DisplayName,
+		IsPremium:   result.IsPremium,
+		APIID:       apiID,
+		APIHash:     apiHash,
+	}, nil
+}
+
+// TelegramAccountCancelAuth cancels a pending authentication
+func (a *app) TelegramAccountCancelAuth(phone string) error {
+	return a.telegramAuthManager.CancelAuth(phone)
+}
+
+// TelegramAccountGetPasswordHint returns the password hint for a pending authentication
+func (a *app) TelegramAccountGetPasswordHint(phone string) string {
+	pending := a.telegramAuthManager.GetPendingAuth(phone)
+	if pending == nil {
+		return ""
+	}
+	return pending.PasswordHint
+}
+
+func mapAuthState(state tgtd.AuthState) appmodel.TelegramAuthState {
+	switch state {
+	case tgtd.AuthStateWaitingForCode:
+		return appmodel.TelegramAuthStateWaitingForCode
+	case tgtd.AuthStateWaitingForPassword:
+		return appmodel.TelegramAuthStateWaitingForPassword
+	case tgtd.AuthStateAuthorized:
+		return appmodel.TelegramAuthStateAuthorized
+	case tgtd.AuthStateError:
+		return appmodel.TelegramAuthStateError
+	}
+	return appmodel.TelegramAuthStateError
 }
 
 func (a *app) initTelegramBots(ctx context.Context) error {

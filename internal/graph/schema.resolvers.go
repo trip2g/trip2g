@@ -1198,6 +1198,11 @@ func (r *adminQueryResolver) AllTelegramAccounts(ctx context.Context, obj *appmo
 	return &model.AdminTelegramAccountsConnection{}, nil
 }
 
+// TelegramAccount is the resolver for the telegramAccount field.
+func (r *adminQueryResolver) TelegramAccount(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.TelegramAccount, error) {
+	return resolveOne[db.TelegramAccount](ctx, id, r.env(ctx).GetTelegramAccountByID)
+}
+
 // TelegramAccountChats is the resolver for the telegramAccountChats field.
 func (r *adminQueryResolver) TelegramAccountChats(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminTelegramAccountChatsFilterInput) (*model.AdminTelegramAccountChatsConnection, error) {
 	return &model.AdminTelegramAccountChatsConnection{Filter: filter}, nil
@@ -1427,6 +1432,11 @@ func (r *adminTelegramAccountResolver) IsPremium(ctx context.Context, obj *db.Te
 // Enabled is the resolver for the enabled field.
 func (r *adminTelegramAccountResolver) Enabled(ctx context.Context, obj *db.TelegramAccount) (bool, error) {
 	return obj.Enabled == 1, nil
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminTelegramAccountResolver) CreatedBy(ctx context.Context, obj *db.TelegramAccount) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
 }
 
 // Nodes is the resolver for the nodes field.

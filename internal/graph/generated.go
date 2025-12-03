@@ -579,6 +579,7 @@ type ComplexityRoot struct {
 		Purchase                   func(childComplexity int, id string) int
 		Redirect                   func(childComplexity int, id int64) int
 		Subgraph                   func(childComplexity int, id int64) int
+		TelegramAccount            func(childComplexity int, id int64) int
 		TelegramAccountChats       func(childComplexity int, filter model.AdminTelegramAccountChatsFilterInput) int
 		TelegramPublishNote        func(childComplexity int, id int64) int
 		TgBot                      func(childComplexity int, id int64) int
@@ -645,6 +646,7 @@ type ComplexityRoot struct {
 
 	AdminTelegramAccount struct {
 		CreatedAt   func(childComplexity int) int
+		CreatedBy   func(childComplexity int) int
 		DisplayName func(childComplexity int) int
 		Enabled     func(childComplexity int) int
 		ID          func(childComplexity int) int
@@ -1538,6 +1540,7 @@ type AdminQueryResolver interface {
 	AllTelegramPublishTags(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTelegramPublishTagsConnection, error)
 	AllTelegramPublishNotes(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminTelegramPublishNotesFilter) (*model.AdminTelegramPublishNotesConnection, error)
 	AllTelegramAccounts(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTelegramAccountsConnection, error)
+	TelegramAccount(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.TelegramAccount, error)
 	TelegramAccountChats(ctx context.Context, obj *model1.AdminQuery, filter model.AdminTelegramAccountChatsFilterInput) (*model.AdminTelegramAccountChatsConnection, error)
 	AllWaitListEmailRequests(ctx context.Context, obj *model1.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error)
 	AllWaitListTgBotRequests(ctx context.Context, obj *model1.AdminQuery) (*model.AdminWaitListTgBotRequestsConnection, error)
@@ -1599,6 +1602,8 @@ type AdminSubgraphsConnectionResolver interface {
 type AdminTelegramAccountResolver interface {
 	IsPremium(ctx context.Context, obj *db.TelegramAccount) (bool, error)
 	Enabled(ctx context.Context, obj *db.TelegramAccount) (bool, error)
+
+	CreatedBy(ctx context.Context, obj *db.TelegramAccount) (*db.User, error)
 }
 type AdminTelegramAccountChatsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminTelegramAccountChatsConnection) ([]model.AdminTelegramAccountChat, error)
@@ -3947,6 +3952,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.Subgraph(childComplexity, args["id"].(int64)), true
+	case "AdminQuery.telegramAccount":
+		if e.complexity.AdminQuery.TelegramAccount == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_telegramAccount_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.TelegramAccount(childComplexity, args["id"].(int64)), true
 	case "AdminQuery.telegramAccountChats":
 		if e.complexity.AdminQuery.TelegramAccountChats == nil {
 			break
@@ -4213,6 +4229,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminTelegramAccount.CreatedAt(childComplexity), true
+	case "AdminTelegramAccount.createdBy":
+		if e.complexity.AdminTelegramAccount.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramAccount.CreatedBy(childComplexity), true
 	case "AdminTelegramAccount.displayName":
 		if e.complexity.AdminTelegramAccount.DisplayName == nil {
 			break
@@ -7208,6 +7230,17 @@ func (ec *executionContext) field_AdminQuery_telegramAccountChats_args(ctx conte
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminQuery_telegramAccount_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNInt642int64)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminQuery_telegramPublishNote_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -9593,6 +9626,8 @@ func (ec *executionContext) fieldContext_AdminCompleteTelegramAccountAuthPayload
 				return ec.fieldContext_AdminTelegramAccount_enabled(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminTelegramAccount_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminTelegramAccount_createdBy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramAccount", field.Name)
 		},
@@ -16473,6 +16508,63 @@ func (ec *executionContext) fieldContext_AdminQuery_allTelegramAccounts(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_telegramAccount(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_telegramAccount,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().TelegramAccount(ctx, obj, fc.Args["id"].(int64))
+		},
+		nil,
+		ec.marshalOAdminTelegramAccount2ᚖtrip2gᚋinternalᚋdbᚐTelegramAccount,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_telegramAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminTelegramAccount_id(ctx, field)
+			case "phone":
+				return ec.fieldContext_AdminTelegramAccount_phone(ctx, field)
+			case "displayName":
+				return ec.fieldContext_AdminTelegramAccount_displayName(ctx, field)
+			case "isPremium":
+				return ec.fieldContext_AdminTelegramAccount_isPremium(ctx, field)
+			case "enabled":
+				return ec.fieldContext_AdminTelegramAccount_enabled(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminTelegramAccount_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminTelegramAccount_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramAccount", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_telegramAccount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_telegramAccountChats(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19070,6 +19162,43 @@ func (ec *executionContext) fieldContext_AdminTelegramAccount_createdAt(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminTelegramAccount_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.TelegramAccount) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminTelegramAccount_createdBy,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminTelegramAccount().CreatedBy(ctx, obj)
+		},
+		nil,
+		ec.marshalOUser2ᚖtrip2gᚋinternalᚋdbᚐUser,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramAccount_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramAccount",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "subgraphAccesses":
+				return ec.fieldContext_User_subgraphAccesses(ctx, field)
+			case "favoriteNotes":
+				return ec.fieldContext_User_favoriteNotes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminTelegramAccountAuthState_phone(ctx context.Context, field graphql.CollectedField, obj *model.AdminTelegramAccountAuthState) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19395,6 +19524,8 @@ func (ec *executionContext) fieldContext_AdminTelegramAccountsConnection_nodes(_
 				return ec.fieldContext_AdminTelegramAccount_enabled(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminTelegramAccount_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminTelegramAccount_createdBy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramAccount", field.Name)
 		},
@@ -21550,6 +21681,8 @@ func (ec *executionContext) fieldContext_AdminUpdateTelegramAccountPayload_accou
 				return ec.fieldContext_AdminTelegramAccount_enabled(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_AdminTelegramAccount_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminTelegramAccount_createdBy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramAccount", field.Name)
 		},
@@ -26053,6 +26186,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allTelegramPublishNotes(ctx, field)
 			case "allTelegramAccounts":
 				return ec.fieldContext_AdminQuery_allTelegramAccounts(ctx, field)
+			case "telegramAccount":
+				return ec.fieldContext_AdminQuery_telegramAccount(ctx, field)
 			case "telegramAccountChats":
 				return ec.fieldContext_AdminQuery_telegramAccountChats(ctx, field)
 			case "allWaitListEmailRequests":
@@ -43342,6 +43477,39 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "telegramAccount":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_telegramAccount(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "telegramAccountChats":
 			field := field
 
@@ -45245,6 +45413,39 @@ func (ec *executionContext) _AdminTelegramAccount(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramAccount_createdBy(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -59097,6 +59298,13 @@ func (ec *executionContext) marshalOAdminSubgraph2ᚖtrip2gᚋinternalᚋdbᚐSu
 		return graphql.Null
 	}
 	return ec._AdminSubgraph(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminTelegramAccount2ᚖtrip2gᚋinternalᚋdbᚐTelegramAccount(ctx context.Context, sel ast.SelectionSet, v *db.TelegramAccount) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminTelegramAccount(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminTelegramPublishNote2ᚖtrip2gᚋinternalᚋdbᚐTelegramPublishNote(ctx context.Context, sel ast.SelectionSet, v *db.TelegramPublishNote) graphql.Marshaler {

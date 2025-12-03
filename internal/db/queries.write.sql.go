@@ -2429,28 +2429,28 @@ update telegram_accounts
      , session_data = coalesce(?5, session_data)
      , api_id = coalesce(?6, api_id)
      , api_hash = coalesce(?7, api_hash)
- where id = ?
+ where id = ?1
 `
 
 type UpdateTelegramAccountParams struct {
+	ID          int64          `json:"id"`
 	DisplayName sql.NullString `json:"display_name"`
 	Enabled     sql.NullInt64  `json:"enabled"`
 	IsPremium   sql.NullInt64  `json:"is_premium"`
 	SessionData []byte         `json:"session_data"`
 	ApiID       sql.NullInt64  `json:"api_id"`
 	ApiHash     sql.NullString `json:"api_hash"`
-	ID          int64          `json:"id"`
 }
 
 func (q *WriteQueries) UpdateTelegramAccount(ctx context.Context, arg UpdateTelegramAccountParams) error {
 	_, err := q.db.ExecContext(ctx, updateTelegramAccount,
+		arg.ID,
 		arg.DisplayName,
 		arg.Enabled,
 		arg.IsPremium,
 		arg.SessionData,
 		arg.ApiID,
 		arg.ApiHash,
-		arg.ID,
 	)
 	return err
 }
@@ -2988,11 +2988,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-  *Queries
+	*Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-  return &WriteQueries{
-    Queries: New(db),
-  }
+	return &WriteQueries{
+		Queries: New(db),
+	}
 }

@@ -2,16 +2,21 @@ package starttelegramaccountauth
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
+	"strings"
 
+	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
-	"trip2g/internal/tgtd"
+	appmodel "trip2g/internal/model"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type Env interface {
-	TelegramAuthManager() *tgtd.AuthManager
+	TelegramAccountStartAuth(ctx context.Context, phone string, apiID int, apiHash string) (*appmodel.TelegramStartAuthResult, error)
+	GetTelegramAccountByPhone(ctx context.Context, phone string) (db.TelegramAccount, error)
 }
 
 type Input = model.AdminStartTelegramAccountAuthInput
@@ -27,22 +32,32 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return model.NewOzzoError(err), nil
 	}
 
-	authManager := env.TelegramAuthManager()
+	phone := strings.TrimSpace(input.Phone)
+	apiHash := strings.TrimSpace(input.APIHash)
 
-	pendingAuth, err := authManager.StartAuth(ctx, input.Phone, int(input.APIID), input.APIHash)
+	// Check if account with this phone already exists
+	_, err = env.GetTelegramAccountByPhone(ctx, phone)
+	if err == nil {
+		return &model.ErrorPayload{Message: "Account with this phone already exists"}, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("failed to check existing account: %w", err)
+	}
+
+	result, err := env.TelegramAccountStartAuth(ctx, phone, int(input.APIID), apiHash)
 	if err != nil {
 		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to start auth: %s", err.Error())}, nil
 	}
 
-	state := mapAuthState(pendingAuth.State)
+	state := mapAuthState(result.State)
 	var passwordHint *string
-	if pendingAuth.PasswordHint != "" {
-		passwordHint = &pendingAuth.PasswordHint
+	if result.PasswordHint != "" {
+		passwordHint = &result.PasswordHint
 	}
 
 	payload := model.AdminStartTelegramAccountAuthPayload{
 		AuthState: &model.AdminTelegramAccountAuthState{
-			Phone:        pendingAuth.Phone,
+			Phone:        result.Phone,
 			State:        state,
 			PasswordHint: passwordHint,
 		},
@@ -51,15 +66,15 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	return &payload, nil
 }
 
-func mapAuthState(state tgtd.AuthState) model.AdminTelegramAccountAuthStateEnum {
+func mapAuthState(state appmodel.TelegramAuthState) model.AdminTelegramAccountAuthStateEnum {
 	switch state {
-	case tgtd.AuthStateWaitingForCode:
+	case appmodel.TelegramAuthStateWaitingForCode:
 		return model.AdminTelegramAccountAuthStateEnumWaitingForCode
-	case tgtd.AuthStateWaitingForPassword:
+	case appmodel.TelegramAuthStateWaitingForPassword:
 		return model.AdminTelegramAccountAuthStateEnumWaitingForPassword
-	case tgtd.AuthStateAuthorized:
+	case appmodel.TelegramAuthStateAuthorized:
 		return model.AdminTelegramAccountAuthStateEnumAuthorized
-	case tgtd.AuthStateError:
+	case appmodel.TelegramAuthStateError:
 		return model.AdminTelegramAccountAuthStateEnumError
 	}
 	return model.AdminTelegramAccountAuthStateEnumError

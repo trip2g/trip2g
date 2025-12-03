@@ -30,6 +30,8 @@ $trip2g_admin_app $trip2g_admin_catalog
 			close_icon <= Spread_close
 		tgbots <= ListTgBots $trip2g_admin_tgbot_catalog
 			close_icon <= Spread_close
+		telegramaccounts <= ListTelegramAccounts $trip2g_admin_telegramaccount_catalog
+			close_icon <= Spread_close
 		cronjobs <= ListCronJobs $trip2g_admin_cronjob_catalog
 			close_icon <= Spread_close
 		backgroundqueues <= BackgroundQueues $trip2g_admin_backgroundqueue_catalog

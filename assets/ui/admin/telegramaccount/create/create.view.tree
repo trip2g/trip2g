@@ -1,0 +1,11 @@
+$trip2g_admin_telegramaccount_create $mol_page
+	title \Create Telegram Account
+	step? \step0
+	phone? \+996 509 559597
+	Step0 $trip2g_admin_telegramaccount_create_step0
+		phone? <=> phone?
+		on_success? <= to_step_1? null
+	Step1 $trip2g_admin_telegramaccount_create_step1
+		phone? <=> phone?
+	body /
+		\Invalid step

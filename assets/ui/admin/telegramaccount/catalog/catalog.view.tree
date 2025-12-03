@@ -1,0 +1,39 @@
+$trip2g_admin_telegramaccount_catalog $trip2g_admin_catalog
+	menu_title @ \Telegram Accounts
+	param \id
+	Empty $mol_status
+	actions /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+	ShowPage* $trip2g_admin_telegramaccount_show
+		account_id <= row_id* 0
+	CreateForm $trip2g_admin_telegramaccount_create
+	menu_link_content* / <= AccountItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 600
+				sub <= row_content* /
+					<= Id* $trip2g_admin_labeler_id
+						value <= row_id_string* \id
+					<= Phone* $trip2g_admin_labeler_name
+						title \Phone
+						value <= row_phone* \phone
+					<= DisplayName* $trip2g_admin_labeler_description
+						title \Display Name
+						value <= row_display_name* \display_name
+					<= Row_enabled_labeler* $mol_labeler
+						title \Enabled
+						Content <= Row_enabled* $trip2g_admin_cell
+							content <= row_enabled_status* \enabled
+					<= Row_premium_labeler* $mol_labeler
+						title \Premium
+						Content <= Row_premium* $trip2g_admin_cell
+							content <= row_premium_status* \premium
+					<= CreatedAt* $trip2g_admin_labeler_moment
+						title @ \Created At
+						value <= row_created_at* \created_at
+					<= CreatedBy* $trip2g_admin_labeler_email
+						title @ \Created By
+						value <= row_created_by* \created_by

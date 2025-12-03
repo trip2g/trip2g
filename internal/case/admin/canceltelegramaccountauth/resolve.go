@@ -3,15 +3,15 @@ package canceltelegramaccountauth
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"trip2g/internal/graph/model"
-	"trip2g/internal/tgtd"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type Env interface {
-	TelegramAuthManager() *tgtd.AuthManager
+	TelegramAccountCancelAuth(phone string) error
 }
 
 type Input = model.AdminCancelTelegramAccountAuthInput
@@ -25,9 +25,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return model.NewOzzoError(err), nil
 	}
 
-	authManager := env.TelegramAuthManager()
+	phone := strings.TrimSpace(input.Phone)
 
-	err = authManager.CancelAuth(input.Phone)
+	err = env.TelegramAccountCancelAuth(phone)
 	if err != nil {
 		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to cancel auth: %s", err.Error())}, nil
 	}

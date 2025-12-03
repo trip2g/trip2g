@@ -81,8 +81,8 @@ func removeRedundantMarkers(text string) string {
 	// Only replace adjacent close+open of same type
 	// Order matters - replace longer patterns first
 	replacements := []struct{ old, new string }{
-		{"****", ""},      // close bold + open bold -> nothing
-		{"** **", " **"},  // close bold + space + open bold -> space + bold
+		{"****", ""},     // close bold + open bold -> nothing
+		{"** **", " **"}, // close bold + space + open bold -> space + bold
 	}
 
 	for _, r := range replacements {

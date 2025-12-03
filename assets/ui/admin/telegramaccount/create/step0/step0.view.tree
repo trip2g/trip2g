@@ -1,0 +1,28 @@
+$trip2g_admin_telegramaccount_create_step0 $mol_view
+	on_success? null
+	sub /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Phone_field $mol_form_field
+					name \Phone
+					bid <= phone_bid \
+					Content <= phone_control $mol_string
+						value? <=> phone? \
+				<= ApiId_field $mol_form_field
+					name \API ID
+					bid <= api_id_bid \
+					Content <= api_id_control $mol_string
+						value? <=> api_id? \35561633
+				<= ApiHash_field $mol_form_field
+					name \API Hash
+					bid <= api_hash_bid \
+					Content <= api_hash_control $mol_string
+						value? <=> api_hash? \28d5910127c3a4ac45ec4e0d884fe593
+			buttons /
+				<= Submit $mol_button_major
+					title \Start Auth
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \
