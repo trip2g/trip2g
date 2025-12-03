@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
 	"strconv"
-	"strings"
+	"trip2g/internal/tgtd"
 
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
@@ -88,139 +87,48 @@ func main() {
 }
 
 func processMessage(msg *tg.Message) {
-	fmt.Println(Convert(msg))
-}
+	// Debug: print message text as Go string
+	fmt.Printf("Message: %q\n\n", msg.Message)
 
-func Convert(msg *tg.Message) string {
-	source := []rune(msg.Message)
-
-	// Collect replacements
-	type replacement struct {
-		offset int
-		length int
-		text   string
-	}
-	var replacements []replacement
-
+	// Debug: print entities as Go code for tests
+	fmt.Println("Entities: []tg.MessageEntityClass{")
 	for _, e := range msg.Entities {
-		offset, length := e.GetOffset(), e.GetLength()
-		runeOffset := utf16OffsetToRune(msg.Message, offset)
-		runeLength := utf16LengthToRune(msg.Message, offset, length)
-		text := string(source[runeOffset : runeOffset+runeLength])
-
-		var replText string
 		switch entity := e.(type) {
-		// case *tg.MessageEntityBold:
-		// 	replText = wrapFormat(text, "**", "**")
+		case *tg.MessageEntityBold:
+			fmt.Printf("\t&tg.MessageEntityBold{Offset: %d, Length: %d},\n", entity.Offset, entity.Length)
 		case *tg.MessageEntityItalic:
-			replText = wrapFormat(text, "*", "*")
-		// case *tg.MessageEntityUnderline:
-		// 	replText = wrapFormat(text, "<u>", "</u>")
-		// case *tg.MessageEntityStrike:
-		// 	replText = wrapFormat(text, "~~", "~~")
-		// case *tg.MessageEntityCode:
-		// 	replText = "`" + text + "`"
-		// case *tg.MessageEntityPre:
-		// 	lang := entity.Language
-		// 	replText = "```" + lang + "\n" + text + "\n```"
+			fmt.Printf("\t&tg.MessageEntityItalic{Offset: %d, Length: %d},\n", entity.Offset, entity.Length)
+		case *tg.MessageEntityStrike:
+			fmt.Printf("\t&tg.MessageEntityStrike{Offset: %d, Length: %d},\n", entity.Offset, entity.Length)
+		case *tg.MessageEntityUnderline:
+			fmt.Printf("\t&tg.MessageEntityUnderline{Offset: %d, Length: %d},\n", entity.Offset, entity.Length)
+		case *tg.MessageEntitySpoiler:
+			fmt.Printf("\t&tg.MessageEntitySpoiler{Offset: %d, Length: %d},\n", entity.Offset, entity.Length)
+		case *tg.MessageEntityCode:
+			fmt.Printf("\t&tg.MessageEntityCode{Offset: %d, Length: %d},\n", entity.Offset, entity.Length)
+		case *tg.MessageEntityPre:
+			fmt.Printf("\t&tg.MessageEntityPre{Offset: %d, Length: %d, Language: %q},\n", entity.Offset, entity.Length, entity.Language)
 		case *tg.MessageEntityTextURL:
-			// Trim trailing newlines from link text, but preserve them after
-			linkText := strings.TrimRight(text, "\n")
-			trailingNewlines := text[len(linkText):]
-			replText = "[" + linkText + "](" + entity.URL + ")" + trailingNewlines
+			fmt.Printf("\t&tg.MessageEntityTextURL{Offset: %d, Length: %d, URL: %q},\n", entity.Offset, entity.Length, entity.URL)
+		case *tg.MessageEntityURL:
+			fmt.Printf("\t&tg.MessageEntityURL{Offset: %d, Length: %d},\n", entity.Offset, entity.Length)
+		case *tg.MessageEntityMention:
+			fmt.Printf("\t&tg.MessageEntityMention{Offset: %d, Length: %d},\n", entity.Offset, entity.Length)
+		case *tg.MessageEntityMentionName:
+			fmt.Printf("\t&tg.MessageEntityMentionName{Offset: %d, Length: %d, UserID: %d},\n", entity.Offset, entity.Length, entity.UserID)
 		case *tg.MessageEntityCustomEmoji:
-			replText = fmt.Sprintf("![](https://ce.trip2g.com/%d.webp)", entity.DocumentID)
+			fmt.Printf("\t&tg.MessageEntityCustomEmoji{Offset: %d, Length: %d, DocumentID: %d},\n", entity.Offset, entity.Length, entity.DocumentID)
+		case *tg.MessageEntityHashtag:
+			fmt.Printf("\t&tg.MessageEntityHashtag{Offset: %d, Length: %d},\n", entity.Offset, entity.Length)
 		default:
-			continue
+			fmt.Printf("\t// unknown entity: %T\n", e)
 		}
-
-		replacements = append(replacements, replacement{
-			offset: runeOffset,
-			length: runeLength,
-			text:   replText,
-		})
 	}
+	fmt.Println("}")
 
-	// Sort by offset in reverse order
-	sort.Slice(replacements, func(i, j int) bool {
-		return replacements[i].offset > replacements[j].offset
-	})
-
-	// Apply replacements from the end
-	for _, r := range replacements {
-		source = append(source[:r.offset], append([]rune(r.text), source[r.offset+r.length:]...)...)
-	}
-
-	return string(source)
+	fmt.Println("\n--- Result ---")
+	fmt.Println(tgtd.Convert(msg))
 }
-
-// wrapFormat wraps text in formatting, handling multiline lists
-func wrapFormat(text, prefix, suffix string) string {
-	if !strings.Contains(text, "\n") {
-		return prefix + text + suffix
-	}
-
-	// Multiline - wrap each line separately
-	lines := strings.Split(text, "\n")
-	var result []string
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
-			result = append(result, line)
-			continue
-		}
-
-		// Keep list marker outside formatting
-		if strings.HasPrefix(line, "- ") {
-			result = append(result, "- "+prefix+trimmed[2:]+suffix)
-		} else {
-			result = append(result, prefix+line+suffix)
-		}
-	}
-	return strings.Join(result, "\n")
-}
-
-// utf16OffsetToRune converts UTF-16 offset to rune index
-func utf16OffsetToRune(s string, utf16Offset int) int {
-	runeIdx := 0
-	utf16Idx := 0
-	for _, r := range s {
-		if utf16Idx >= utf16Offset {
-			break
-		}
-		utf16Idx += utf16RuneLen(r)
-		runeIdx++
-	}
-	return runeIdx
-}
-
-// utf16LengthToRune converts UTF-16 length to rune count
-func utf16LengthToRune(s string, utf16Offset, utf16Length int) int {
-	runeCount := 0
-	utf16Idx := 0
-	for _, r := range s {
-		if utf16Idx >= utf16Offset+utf16Length {
-			break
-		}
-		if utf16Idx >= utf16Offset {
-			runeCount++
-		}
-		utf16Idx += utf16RuneLen(r)
-	}
-	return runeCount
-}
-
-// utf16RuneLen returns the size of a rune in UTF-16 code units
-func utf16RuneLen(r rune) int {
-	if r >= 0x10000 {
-		return 2 // surrogate pair
-	}
-	return 1
-}
-
-// func processMessage(msg *tg.Message) {
-// 	fmt.Print(ConvertToMarkdownV2(msg))
-// }
 
 type terminalAuth struct {
 	phone string

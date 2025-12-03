@@ -517,11 +517,6 @@ CREATE INDEX idx_telegram_publish_sent_messages_note_path_id on telegram_publish
 CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
   update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
 end;
-CREATE TABLE telegram_custom_emojies (
-  id text not null primary key,
-  base64_data text not null,
-  created_at datetime not null default current_timestamp
-);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -611,4 +606,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251105114403'),
   ('20251118053250'),
   ('20251119013128'),
-  ('20251201041923');
+  ('20251201041923'),
+  ('20251203034400');
