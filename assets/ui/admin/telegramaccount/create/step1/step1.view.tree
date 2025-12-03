@@ -1,5 +1,5 @@
 $trip2g_admin_telegramaccount_create_step1 $mol_view
-	account? null
+	on_success? 0
 	sub /
 		<= Form $mol_form
 			submit_allowed => submit_allowed

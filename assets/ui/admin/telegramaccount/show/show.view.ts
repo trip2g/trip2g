@@ -9,6 +9,10 @@ namespace $.$$ {
 				return [ this.UpdateForm() ]
 			}
 
+			if( this.action() === 'delete' ) {
+				return [ this.DeleteForm() ]
+			}
+
 			return super.body()
 		}
 	}

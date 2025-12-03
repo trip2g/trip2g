@@ -50,7 +50,7 @@ namespace $.$$ {
 			}
 
 			if (res.admin.payload.__typename === 'AdminCompleteTelegramAccountAuthPayload') {
-				this.account(res.admin.payload.account)
+				this.on_success(res.admin.payload.account.id)
 				this.result('Account created successfully!')
 				return
 			}

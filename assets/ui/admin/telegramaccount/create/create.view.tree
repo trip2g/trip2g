@@ -7,5 +7,6 @@ $trip2g_admin_telegramaccount_create $mol_page
 		on_success? <= to_step_1? null
 	Step1 $trip2g_admin_telegramaccount_create_step1
 		phone? <=> phone?
+		on_success? <= to_show? 0
 	body /
 		\Invalid step

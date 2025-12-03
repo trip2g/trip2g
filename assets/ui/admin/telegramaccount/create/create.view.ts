@@ -14,5 +14,10 @@ namespace $.$$ {
 		override to_step_1() {
 			this.step('step1')
 		}
+
+		override to_show(id?: number) {
+			this.$.$mol_state_arg.value('id', id?.toString() || '')
+			return id || 0
+		}
 	}
 }

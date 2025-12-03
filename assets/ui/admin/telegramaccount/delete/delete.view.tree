@@ -1,0 +1,10 @@
+$trip2g_admin_telegramaccount_delete $mol_view
+	account_id 0
+	style *
+		flexDirection \column
+	sub /
+		<= Confirm_text $mol_paragraph
+			title \Are you sure you want to delete this Telegram account?
+		<= Delete_button $mol_button_major
+			title \Yes, delete
+			click? <=> delete? null
