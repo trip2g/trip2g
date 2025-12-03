@@ -1,0 +1,454 @@
+# Telegram Publish Through User Accounts
+
+## Overview
+
+Параллельный пайплайн публикации заметок через Telegram user accounts (MTProto) вместо ботов (Bot API). Позволяет использовать Premium-аккаунты для публикации длинных постов.
+
+## Architecture
+
+### Current Bot Pipeline
+```
+Note → telegram_publish_tags → telegram_publish_chats → tg_bot_chats → Bot API
+                                                                ↓
+                                            telegram_publish_sent_messages
+```
+
+### New Account Pipeline (parallel)
+```
+Note → telegram_publish_tags → telegram_publish_account_chats → telegram_accounts → MTProto
+                                                                        ↓
+                                              telegram_publish_sent_account_messages
+```
+
+**Important**: Один тег может быть привязан и к bot-чату, и к account-чату. Если пользователь так настроит — это его решение.
+
+## Database Schema
+
+### New Tables
+
+#### telegram_accounts
+```sql
+create table telegram_accounts (
+  id integer primary key autoincrement,
+  phone text not null unique,
+  session_data blob not null,          -- encrypted MTProto session
+  display_name text not null default '', -- default: [first_name, last_name, username].join(" ")
+  is_premium integer not null default 0 check (is_premium in (0, 1)),
+  enabled integer not null default 1 check (enabled in (0, 1)),
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict
+);
+```
+
+#### telegram_publish_account_chats
+```sql
+create table telegram_publish_account_chats (
+  account_id integer not null references telegram_accounts(id) on delete cascade,
+  telegram_chat_id integer not null,   -- telegram's chat_id (not our internal id)
+  tag_id integer not null references telegram_publish_tags(id) on delete cascade,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  primary key (account_id, telegram_chat_id, tag_id)
+);
+```
+
+#### telegram_publish_account_instant_chats
+```sql
+create table telegram_publish_account_instant_chats (
+  account_id integer not null references telegram_accounts(id) on delete cascade,
+  telegram_chat_id integer not null,
+  tag_id integer not null references telegram_publish_tags(id) on delete cascade,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  primary key (account_id, telegram_chat_id, tag_id)
+);
+```
+
+#### telegram_publish_sent_account_messages
+```sql
+create table telegram_publish_sent_account_messages (
+  note_path_id integer not null references note_paths(id) on delete restrict,
+  account_id integer not null references telegram_accounts(id) on delete restrict,
+  telegram_chat_id integer not null,
+  created_at datetime not null default current_timestamp,
+  message_id integer not null,
+  instant integer not null default 0 check (instant in (0, 1)),
+  content_hash text not null default '',
+  content text not null default '',
+  post_type text not null default 'text'
+);
+
+create unique index idx_telegram_publish_sent_account_messages_unique
+  on telegram_publish_sent_account_messages(note_path_id, account_id, telegram_chat_id)
+  where instant = 0;
+
+create index idx_telegram_publish_sent_account_messages_account_id
+  on telegram_publish_sent_account_messages(account_id);
+
+create index idx_telegram_publish_sent_account_messages_note_path_id
+  on telegram_publish_sent_account_messages(note_path_id);
+```
+
+## Files to Create
+
+### MTProto Client (internal/tgtd)
+
+Весь код связанный с gotd/td находится в `internal/tgtd/`. Пример использования см. `cmd/channelexport/main.go`.
+
+```
+internal/tgtd/
+├── client.go      -- MTProto client wrapper
+├── auth.go        -- Auth manager for 2FA flow
+└── session.go     -- Session storage/encryption
+```
+
+### Case Files (duplicate bot logic)
+
+| Bot File | Account File |
+|----------|--------------|
+| `internal/case/sendtelegrampublishpost/` | `internal/case/sendtelegramaccountpublishpost/` |
+| `internal/case/updatetelegrampublishpost/` | `internal/case/updatetelegramaccountpublishpost/` |
+| `internal/case/backjob/sendtelegrammessage/` | `internal/case/backjob/sendtelegramaccountmessage/` |
+| `internal/case/backjob/sendtelegrampost/` | `internal/case/backjob/sendtelegramaccountpost/` |
+| `internal/case/backjob/updatetelegrammessage/` | `internal/case/backjob/updatetelegramaccountmessage/` |
+| `internal/case/backjob/updatetelegrampost/` | `internal/case/backjob/updatetelegramaccountpost/` |
+
+### Cronjob Extension
+
+Модифицировать `internal/case/cronjob/sendscheduledtelegrampublishposts/resolve.go`:
+
+```go
+// Текущая логика:
+// 1. Получить список заметок на публикацию
+// 2. Для каждой заметки: EnqueueSendTelegramPost()
+
+// Новая логика:
+// 1. Получить список заметок на публикацию
+// 2. Для каждой заметки:
+//    a. EnqueueSendTelegramPost()       -- bot pipeline (existing)
+//    b. EnqueueSendTelegramAccountPost() -- account pipeline (new)
+// 3. Аналогично для update:
+//    a. EnqueueUpdateTelegramPost()
+//    b. EnqueueUpdateTelegramAccountPost()
+```
+
+Каждый pipeline сам определяет, есть ли у заметки чаты для публикации (по тегам).
+
+## Admin API
+
+### GraphQL Schema
+
+```graphql
+# Types
+type AdminTelegramAccount @goModel(model: "trip2g/internal/db.TelegramAccount") {
+  id: Int64!
+  phone: String!
+  displayName: String!
+  isPremium: Boolean!
+  enabled: Boolean!
+  createdAt: Time!
+}
+
+type AdminTelegramAccountsConnection {
+  nodes: [AdminTelegramAccount!]! @goField(forceResolver: true)
+}
+
+# Live chat info from Telegram API (not stored in DB)
+type AdminTelegramAccountChat {
+  telegramChatId: String!
+  chatTitle: String!
+  chatType: String!
+}
+
+type AdminTelegramAccountChatsConnection {
+  nodes: [AdminTelegramAccountChat!]! @goField(forceResolver: true)
+}
+
+type AdminTelegramAccountAuthState {
+  phone: String!
+  state: AdminTelegramAccountAuthStateEnum!
+  passwordHint: String  # hint for 2FA password if needed
+}
+
+enum AdminTelegramAccountAuthStateEnum {
+  WAITING_FOR_CODE
+  WAITING_FOR_PASSWORD
+  AUTHORIZED
+  ERROR
+}
+
+# Queries (under AdminQuery)
+extend type AdminQuery {
+  telegramAccounts: AdminTelegramAccountsConnection!
+  telegramAccountChats(accountId: Int64!): AdminTelegramAccountChatsConnection!
+}
+
+# Mutations (under AdminMutation)
+extend type AdminMutation {
+  # Step 1: Start auth, sends code to phone
+  startTelegramAccountAuth(input: AdminStartTelegramAccountAuthInput!): AdminStartTelegramAccountAuthOrErrorPayload!
+
+  # Step 2: Complete auth with code (and optional 2FA password)
+  completeTelegramAccountAuth(input: AdminCompleteTelegramAccountAuthInput!): AdminCompleteTelegramAccountAuthOrErrorPayload!
+
+  # Cancel pending auth
+  cancelTelegramAccountAuth(input: AdminCancelTelegramAccountAuthInput!): AdminCancelTelegramAccountAuthOrErrorPayload!
+
+  # Manage existing accounts
+  updateTelegramAccount(input: AdminUpdateTelegramAccountInput!): AdminUpdateTelegramAccountOrErrorPayload!
+  deleteTelegramAccount(input: AdminDeleteTelegramAccountInput!): AdminDeleteTelegramAccountOrErrorPayload!
+
+  # Set tags for account chat (replaces all existing tags)
+  setTelegramAccountChatPublishTags(input: AdminSetTelegramAccountChatPublishTagsInput!): AdminSetTelegramAccountChatPublishTagsOrErrorPayload!
+  setTelegramAccountChatPublishInstantTags(input: AdminSetTelegramAccountChatPublishInstantTagsInput!): AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload!
+}
+
+# Inputs
+input AdminStartTelegramAccountAuthInput {
+  phone: String!
+}
+
+input AdminCompleteTelegramAccountAuthInput {
+  phone: String!
+  code: String!
+  password: String  # optional, for 2FA
+}
+
+input AdminCancelTelegramAccountAuthInput {
+  phone: String!
+}
+
+input AdminUpdateTelegramAccountInput {
+  id: Int64!
+  displayName: String
+  enabled: Boolean
+}
+
+input AdminDeleteTelegramAccountInput {
+  id: Int64!
+}
+
+input AdminSetTelegramAccountChatPublishTagsInput {
+  accountId: Int64!
+  telegramChatId: String!
+  tagIds: [Int64!]!  # empty array = remove all tags
+}
+
+input AdminSetTelegramAccountChatPublishInstantTagsInput {
+  accountId: Int64!
+  telegramChatId: String!
+  tagIds: [Int64!]!  # empty array = remove all tags
+}
+
+# Payloads
+type AdminStartTelegramAccountAuthPayload {
+  authState: AdminTelegramAccountAuthState!
+}
+union AdminStartTelegramAccountAuthOrErrorPayload = AdminStartTelegramAccountAuthPayload | ErrorPayload
+
+type AdminCompleteTelegramAccountAuthPayload {
+  account: AdminTelegramAccount!
+}
+union AdminCompleteTelegramAccountAuthOrErrorPayload = AdminCompleteTelegramAccountAuthPayload | ErrorPayload
+
+type AdminCancelTelegramAccountAuthPayload {
+  success: Boolean!
+}
+union AdminCancelTelegramAccountAuthOrErrorPayload = AdminCancelTelegramAccountAuthPayload | ErrorPayload
+
+type AdminUpdateTelegramAccountPayload {
+  account: AdminTelegramAccount!
+}
+union AdminUpdateTelegramAccountOrErrorPayload = AdminUpdateTelegramAccountPayload | ErrorPayload
+
+type AdminDeleteTelegramAccountPayload {
+  success: Boolean!
+}
+union AdminDeleteTelegramAccountOrErrorPayload = AdminDeleteTelegramAccountPayload | ErrorPayload
+
+type AdminSetTelegramAccountChatPublishTagsPayload {
+  success: Boolean!
+}
+union AdminSetTelegramAccountChatPublishTagsOrErrorPayload = AdminSetTelegramAccountChatPublishTagsPayload | ErrorPayload
+
+type AdminSetTelegramAccountChatPublishInstantTagsPayload {
+  success: Boolean!
+}
+union AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload = AdminSetTelegramAccountChatPublishInstantTagsPayload | ErrorPayload
+```
+
+### Auth Flow Implementation
+
+#### In-memory Auth Manager (single instance by design)
+
+```go
+// internal/tgtd/auth.go
+
+type PendingAuth struct {
+    Phone        string
+    Client       *telegram.Client  // gotd client
+    State        AuthState
+    PasswordHint string
+    ExpiresAt    time.Time
+}
+
+type AuthManager struct {
+    mu      sync.Mutex
+    pending map[string]*PendingAuth  // phone -> pending auth
+    apiID   int
+    apiHash string
+}
+
+func NewAuthManager(apiID int, apiHash string) *AuthManager {
+    m := &AuthManager{
+        pending: make(map[string]*PendingAuth),
+        apiID:   apiID,
+        apiHash: apiHash,
+    }
+    go m.cleanupLoop()
+    return m
+}
+
+func (m *AuthManager) StartAuth(ctx context.Context, phone string) (*PendingAuth, error) {
+    // 1. Create new gotd client with in-memory session
+    // 2. Run client.Run() in goroutine
+    // 3. Send code request via client.Auth().SendCode()
+    // 4. Store in pending map with 10min expiry
+    // 5. Return state (WAITING_FOR_CODE)
+}
+
+func (m *AuthManager) CompleteAuth(ctx context.Context, phone, code, password string) ([]byte, *tg.User, error) {
+    // 1. Get pending auth
+    // 2. Submit code via client.Auth().SignIn()
+    // 3. If 2FA required (ErrPasswordAuthNeeded), submit password
+    // 4. Export session data
+    // 5. Get user info for display_name: [FirstName, LastName, Username].join(" ")
+    // 6. Remove from pending map
+    // 7. Return session bytes and user info
+}
+
+func (m *AuthManager) CancelAuth(phone string) error {
+    // 1. Get pending auth
+    // 2. Close client
+    // 3. Remove from pending map
+}
+
+func (m *AuthManager) cleanupLoop() {
+    ticker := time.NewTicker(time.Minute)
+    for range ticker.C {
+        m.mu.Lock()
+        now := time.Now()
+        for phone, auth := range m.pending {
+            if now.After(auth.ExpiresAt) {
+                auth.Client.Stop()
+                delete(m.pending, phone)
+            }
+        }
+        m.mu.Unlock()
+    }
+}
+```
+
+## Implementation Plan
+
+### PR 1: Database + Admin API
+
+**Scope**: Всё для управления аккаунтами через админку.
+
+#### Phase 1: Database & MTProto Client
+1. [ ] Create migration for `telegram_accounts`
+2. [ ] Create migration for `telegram_publish_account_chats`
+3. [ ] Create migration for `telegram_publish_account_instant_chats`
+4. [ ] Create migration for `telegram_publish_sent_account_messages`
+5. [ ] Run `make sqlc` to generate DB methods
+6. [ ] Create `internal/tgtd/client.go` - MTProto client wrapper
+7. [ ] Create `internal/tgtd/auth.go` - auth manager
+8. [ ] Create `internal/tgtd/session.go` - session encryption/storage
+
+#### Phase 2: Admin API - Account Management
+9. [ ] Add GraphQL schema types and mutations
+10. [ ] Run `make gqlgen`
+11. [ ] Implement `startTelegramAccountAuth` mutation
+12. [ ] Implement `completeTelegramAccountAuth` mutation
+13. [ ] Implement `cancelTelegramAccountAuth` mutation
+14. [ ] Implement `telegramAccounts` query
+15. [ ] Implement `telegramAccountChats` query (fetches from Telegram API)
+16. [ ] Implement `updateTelegramAccount` mutation
+17. [ ] Implement `deleteTelegramAccount` mutation
+
+#### Phase 3: Admin API - Chat-Tag Linking
+18. [ ] Implement `setTelegramAccountChatPublishTags` mutation
+19. [ ] Implement `setTelegramAccountChatPublishInstantTags` mutation
+
+#### Testing PR 1
+20. [ ] Manual test: start auth → receive code on phone
+21. [ ] Manual test: complete auth with code (and 2FA if enabled)
+22. [ ] Manual test: list account's chats
+23. [ ] Manual test: set publish tags for a chat
+
+---
+
+### PR 2: Publishing Pipeline
+
+**Scope**: Публикация заметок через аккаунты.
+
+**Depends on**: PR 1 merged
+
+#### Phase 4: Publishing Cases
+1. [ ] Create `internal/case/sendtelegramaccountpublishpost/`
+2. [ ] Create `internal/case/updatetelegramaccountpublishpost/`
+3. [ ] Create `internal/case/backjob/sendtelegramaccountmessage/`
+4. [ ] Create `internal/case/backjob/sendtelegramaccountpost/`
+5. [ ] Create `internal/case/backjob/updatetelegramaccountmessage/`
+6. [ ] Create `internal/case/backjob/updatetelegramaccountpost/`
+
+#### Phase 5: Cronjob Integration
+7. [ ] Add SQL queries: `ListTelegramAccountChatsByNotePathID`, `ListTelegramAccountInstantChatsByNotePathID`
+8. [ ] Add `EnqueueSendTelegramAccountPost` to job queue
+9. [ ] Add `EnqueueUpdateTelegramAccountPost` to job queue
+10. [ ] Modify `sendscheduledtelegrampublishposts` cronjob:
+    - After enqueueing bot posts, also enqueue account posts
+    - Same for update posts
+
+#### Testing PR 2
+11. [ ] Manual test: create note with `telegram_publish_tags`
+12. [ ] Manual test: verify note is published via account
+13. [ ] Manual test: update note, verify edit works
+14. [ ] Manual test: verify message appears in Telegram channel
+
+## Technical Notes
+
+### Job Queue
+
+Используем общую очередь для bot и account сообщений (на данном этапе). Можно разделить позже если понадобится изоляция rate limits.
+
+### Session Storage
+
+Session data хранится в БД как blob. Шифрование опционально на первом этапе, можно добавить позже.
+
+### Display Name
+
+При создании аккаунта `display_name` формируется автоматически из данных Telegram:
+```go
+parts := []string{}
+if user.FirstName != "" {
+    parts = append(parts, user.FirstName)
+}
+if user.LastName != "" {
+    parts = append(parts, user.LastName)
+}
+if user.Username != "" {
+    parts = append(parts, "@"+user.Username)
+}
+displayName := strings.Join(parts, " ")
+```
+
+### Rate Limits
+
+MTProto flood wait обрабатывается аналогично Bot API - sleep и retry. См. `internal/telegram/ratelimit.go` для паттерна.
+
+## Reference
+
+- gotd/td documentation: https://github.com/gotd/td
+- Existing usage: `cmd/channelexport/main.go`
+- Bot publish flow: `internal/case/sendtelegrampublishpost/`
