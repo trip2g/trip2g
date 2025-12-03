@@ -404,10 +404,6 @@ type AdminSubgraphsConnection struct {
 	Nodes []db.Subgraph `json:"nodes"`
 }
 
-type AdminTelegramCustomEmojiConnection struct {
-	Nodes []TelegramCustomEmoji `json:"nodes"`
-}
-
 type AdminTelegramPublishNotesConnection struct {
 	Nodes  []db.TelegramPublishNote         `json:"nodes"`
 	Count  int64                            `json:"count"`
@@ -1226,16 +1222,6 @@ type SubgraphWaitList struct {
 }
 
 func (SubgraphWaitList) IsViewerOffers() {}
-
-type TelegramCustomEmoji struct {
-	ID        string `json:"id"`
-	Base64Uri string `json:"base64Uri"`
-}
-
-type TelegramCustomEmojiesFilter struct {
-	BotID *int64   `json:"botId,omitempty"`
-	Ids   []string `json:"ids"`
-}
 
 type ToggleFavoriteNoteInput struct {
 	PathID int64 `json:"pathId"`

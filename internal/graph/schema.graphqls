@@ -682,10 +682,6 @@ type AdminBackgroundQueuesConnection {
   nodes: [AdminBackgroundQueue!]! @goField(forceResolver: true)
 }
 
-type AdminTelegramCustomEmojiConnection {
-  nodes: [TelegramCustomEmoji!]! @goField(forceResolver: true)
-}
-
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -707,7 +703,6 @@ type AdminQuery {
   allConfigVersions: AdminConfigVersionsConnection!
   allTelegramPublishTags: AdminTelegramPublishTagsConnection!
   allTelegramPublishNotes(filter: AdminTelegramPublishNotesFilter): AdminTelegramPublishNotesConnection!
-  allTelegramCustomEmojies: AdminTelegramCustomEmojiConnection!
 
   allWaitListEmailRequests: AdminWaitListEmailRequestsConnection!
   allWaitListTgBotRequests: AdminWaitListTgBotRequestsConnection!
@@ -885,16 +880,6 @@ input NotePathsFilter {
   search: String
 }
 
-input TelegramCustomEmojiesFilter {
-  botId: Int64
-  ids: [String!]!
-}
-
-type TelegramCustomEmoji {
-  id: String!
-  base64Uri: String!
-}
-
 type Query {
   viewer: Viewer!
   admin: AdminQuery!
@@ -905,11 +890,6 @@ type Query {
   X-Api-Key header must be set.
   """
   notePaths(filter: NotePathsFilter): [NotePath!]!
-
-  """
-  X-Api-Key header must be set.
-  """
-  telegramCustomEmojies(filter: TelegramCustomEmojiesFilter!): [TelegramCustomEmoji!]!
 }
 
 type FieldMessage {

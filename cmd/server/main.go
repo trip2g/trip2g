@@ -836,10 +836,6 @@ func (a *app) LoadNoteViewByVersionID(ctx context.Context, id int64) (*model.Not
 	return loader.NoteViews().List[0], nil
 }
 
-func (a *app) InsertTelegramCustomEmoji(ctx context.Context, arg db.InsertTelegramCustomEmojiParams) error {
-	return a.WriteQueries.InsertTelegramCustomEmoji(ctx, arg)
-}
-
 func (a *app) UpsertAPIKeyLogAction(ctx context.Context, name string) error {
 	return a.WriteQueries.UpsertAPIKeyLogAction(ctx, name)
 }

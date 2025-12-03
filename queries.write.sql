@@ -717,8 +717,3 @@ update telegram_publish_notes
 update telegram_publish_notes
    set last_error = null
  where note_path_id = ?;
-
--- name: InsertTelegramCustomEmoji :exec
-insert into telegram_custom_emojies (id, base64_data)
-values (?, ?)
-on conflict(id) do update set base64_data = excluded.base64_data;
