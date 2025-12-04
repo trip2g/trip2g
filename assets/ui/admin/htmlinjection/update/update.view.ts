@@ -23,6 +23,7 @@ namespace $.$$ {
 			mutation AdminUpdateHtmlInjection($input: UpdateHtmlInjectionInput!) {
 				admin {
 					data: updateHtmlInjection(input: $input) {
+						__typename
 						... on UpdateHtmlInjectionPayload {
 							htmlInjection {
 								id

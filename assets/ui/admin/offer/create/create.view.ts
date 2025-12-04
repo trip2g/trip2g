@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminCreateOfferMutation($input: CreateOfferInput!) {
 			admin {
 				payload: createOffer(input: $input) {
+					__typename
 					... on CreateOfferPayload {
 						offer {
 							id

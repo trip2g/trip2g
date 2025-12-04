@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminCreateUser($input: CreateUserInput!) {
 			admin {
 				createUser(input: $input) {
+					__typename
 					... on CreateUserPayload {
 						user {
 							id

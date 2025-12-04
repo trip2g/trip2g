@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation CompleteTelegramAccountAuth($input: AdminCompleteTelegramAccountAuthInput!) {
 			admin {
 				payload: completeTelegramAccountAuth(input: $input) {
+					__typename
 					... on AdminCompleteTelegramAccountAuthPayload {
 						account {
 							id

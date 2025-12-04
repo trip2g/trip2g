@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminResetTelegramPublishNote($input: ResetTelegramPublishNoteInput!) {
 			admin {
 				payload: resetTelegramPublishNote(input: $input) {
+					__typename
 					... on ResetTelegramPublishNotePayload {
 						publishNote {
 							id

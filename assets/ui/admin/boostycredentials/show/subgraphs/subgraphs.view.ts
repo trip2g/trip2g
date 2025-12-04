@@ -16,6 +16,7 @@ namespace $.$$ {
 		mutation AdminBoostycredentialsShowSubgraphsSave($input: SetBoostyTierSubgraphsInput!) {
 			admin {
 				data: setBoostyTierSubgraphs(input: $input) {
+					__typename
 					... on SetBoostyTierSubgraphsPayload {
 						success
 					}

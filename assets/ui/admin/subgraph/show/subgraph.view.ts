@@ -16,16 +16,14 @@ namespace $.$$ {
 		mutation UpdateSubgraph($input: UpdateSubgraphInput!) {
 			admin {
 				payload: updateSubgraph(input: $input) {
+					__typename
 					... on UpdateSubgraphPayload {
-						__typename
 						subgraph {
-							__typename
 							id
 							color
 						}
 					}
 					... on ErrorPayload {
-						__typename
 						message
 					}
 				}

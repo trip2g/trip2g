@@ -16,6 +16,7 @@ namespace $.$$ {
 		mutation AdminTelegramAccountShowDialogsTagsSave($input: AdminSetTelegramAccountChatPublishTagsInput!) {
 			admin {
 				payload: setTelegramAccountChatPublishTags(input: $input) {
+					__typename
 					... on AdminSetTelegramAccountChatPublishTagsPayload {
 						success
 					}

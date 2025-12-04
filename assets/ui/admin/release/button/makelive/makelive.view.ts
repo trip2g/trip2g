@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminMakeReleaseLive($input: MakeReleaseLiveInput!) {
 			admin {
 				payload: makeReleaseLive(input:$input) {
+					__typename
 					... on ErrorPayload {
 						message
 					}

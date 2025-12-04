@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation DisableGitToken($input: DisableGitTokenInput!) {
 			admin {
 				data: disableGitToken(input: $input) {
+					__typename
 					... on ErrorPayload {
 						message
 					}

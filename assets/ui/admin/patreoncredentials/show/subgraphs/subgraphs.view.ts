@@ -16,6 +16,7 @@ namespace $.$$ {
 		mutation AdminPatreoncredentialsShowSubgraphsSave($input: SetPatreonTierSubgraphsInput!) {
 			admin {
 				data: setPatreonTierSubgraphs(input: $input) {
+					__typename
 					... on SetPatreonTierSubgraphsPayload {
 						success
 					}

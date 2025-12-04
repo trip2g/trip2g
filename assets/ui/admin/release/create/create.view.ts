@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminCreateRelease($input: CreateReleaseInput!) {
 			admin {
 				payload: createRelease(input: $input) {
+					__typename
 					... on CreateReleasePayload {
 						release {
 							id

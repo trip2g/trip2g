@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminStartBackgroundQueue($input: StartBackgroundQueueInput!) {
 			admin {
 				payload: startBackgroundQueue(input: $input) {
+					__typename
 					... on StartBackgroundQueuePayload {
 						queues {
 							id

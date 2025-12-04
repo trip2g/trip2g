@@ -17,6 +17,7 @@ namespace $.$$ {
 		mutation AdminUpdateCronJob($input: UpdateCronJobInput!) {
 			admin {
 				updateCronJob(input: $input) {
+					__typename
 					... on UpdateCronJobPayload {
 						cronJob {
 							id

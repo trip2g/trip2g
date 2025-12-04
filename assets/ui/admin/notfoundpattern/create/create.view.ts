@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminCreateNotFoundIgnoredPatternMutation($input: CreateNotFoundIgnoredPatternInput!) {
 			admin {
 				payload: createNotFoundIgnoredPattern(input: $input) {
+					__typename
 					... on CreateNotFoundIgnoredPatternPayload {
 						notFoundIgnoredPattern {
 							id

@@ -4,11 +4,10 @@ namespace $.$$ {
 			mutation AdminDeleteHtmlInjection($input: DeleteHtmlInjectionInput!) {
 				admin {
 					data: deleteHtmlInjection(input: $input) {
+						__typename
 						... on DeleteHtmlInjectionPayload {
 							deletedId
-							__typename
 						}
-
 						... on ErrorPayload {
 							message
 						}

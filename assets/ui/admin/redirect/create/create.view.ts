@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminCreateRedirectMutation($input: CreateRedirectInput!) {
 			admin {
 				payload: createRedirect(input: $input) {
+					__typename
 					... on CreateRedirectPayload {
 						redirect {
 							id

@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation StartTelegramAccountAuth($input: AdminStartTelegramAccountAuthInput!) {
 			admin {
 				payload: startTelegramAccountAuth(input: $input) {
+					__typename
 					... on AdminStartTelegramAccountAuthPayload {
 						authState {
 							phone

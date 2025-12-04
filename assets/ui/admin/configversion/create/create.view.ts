@@ -18,6 +18,7 @@ namespace $.$$ {
 			mutation AdminCreateConfigVersion($input: CreateConfigVersionInput!) {
 				admin {
 					data: createConfigVersion(input: $input) {
+						__typename
 						... on ErrorPayload {
 							message
 						}

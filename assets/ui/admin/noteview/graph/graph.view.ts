@@ -35,6 +35,7 @@ namespace $.$$ {
 		mutation UpdateNoteGraphPositions($input: UpdateNoteGraphPositionsInput!) {
 			admin {
 				payload: updateNoteGraphPositions(input: $input) {
+					__typename
 					... on UpdateNoteGraphPositionsPayload {
 						success
 					}

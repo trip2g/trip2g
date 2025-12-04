@@ -3,13 +3,12 @@ namespace $.$$ {
 		mutation AdminResetNotFoundPath($input: ResetNotFoundPathInput!) {
 			admin {
 				data: resetNotFoundPath(input: $input) {
+					__typename
 					... on ResetNotFoundPathPayload {
 						notFoundPath {
 							id
-							__typename
 						}
 					}
-
 					... on ErrorPayload {
 						message
 					}

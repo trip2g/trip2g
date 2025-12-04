@@ -14,6 +14,7 @@ namespace $.$$ {
 	const toggle_mutate = $trip2g_graphql_request(/* GraphQL */ `
 		mutation ToggleFavoriteNote($input: ToggleFavoriteNoteInput!) {
 			payload: toggleFavoriteNote(input: $input) {
+				__typename
 				... on ToggleFavoriteNotePayload {
 					favoriteNotes {
 						pathId

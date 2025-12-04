@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminCreateApiKey($input: CreateApiKeyInput!) {
 			admin {
 				data: createApiKey(input: $input) {
+					__typename
 					... on ErrorPayload {
 						message
 					}

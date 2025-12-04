@@ -20,6 +20,7 @@ namespace $.$$ {
 		mutation AdminUpdateTgBotMutation($input: UpdateTgBotInput!) {
 			admin {
 				payload: updateTgBot(input: $input) {
+					__typename
 					... on UpdateTgBotPayload {
 						tgBot {
 							id

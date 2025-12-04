@@ -3,6 +3,7 @@ namespace $.$$ {
 		query PaywallQuery($filter: ViewerOffersFilter!) {
 			viewer {
 				offers(filter: $filter) {
+					__typename
 					... on ActiveOffers {
 						nodes {
 							id
@@ -24,6 +25,7 @@ namespace $.$$ {
 	const payment_mutate = $trip2g_graphql_request(/* GraphQL */ `
 		mutation CreatePaymentLink($input: CreatePaymentLinkInput!) {
 			data: createPaymentLink(input: $input) {
+				__typename
 				... on CreatePaymentLinkPayload {
 					redirectUrl
 				}

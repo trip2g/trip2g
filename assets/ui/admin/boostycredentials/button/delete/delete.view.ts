@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminDeleteBoostyCredentials($input: DeleteBoostyCredentialsInput!) {
 			admin {
 				payload: deleteBoostyCredentials(input: $input) {
+					__typename
 					... on ErrorPayload{
 						message
 					}

@@ -16,6 +16,7 @@ namespace $.$$ {
 		mutation AdminTgbotsShowchatsSubgraphsSave($input: SetTgChatSubgraphsInput!) {
 			admin {
 				payload: setTgChatSubgraphs(input: $input) {
+					__typename
 					... on SetTgChatSubgraphsPayload {
 						success
 					}

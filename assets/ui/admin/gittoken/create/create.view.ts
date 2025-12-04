@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminCreateGitToken($input: CreateGitTokenInput!) {
 			admin {
 				data: createGitToken(input: $input) {
+					__typename
 					... on ErrorPayload {
 						message
 					}

@@ -18,6 +18,7 @@ namespace $.$$ {
 			mutation AdminUpdateUser($input: UpdateUserInput!) {
 				admin {
 					updateUser(input: $input) {
+						__typename
 						... on UpdateUserPayload {
 							user {
 								id

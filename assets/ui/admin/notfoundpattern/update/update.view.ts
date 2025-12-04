@@ -21,6 +21,7 @@ namespace $.$$ {
 		mutation AdminUpdateNotFoundIgnoredPatternMutation($input: UpdateNotFoundIgnoredPatternInput!) {
 			admin {
 				data: updateNotFoundIgnoredPattern(input: $input) {
+					__typename
 					... on UpdateNotFoundIgnoredPatternPayload {
 						notFoundIgnoredPattern {
 							id

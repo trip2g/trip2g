@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation RefreshBoostyData($input: RefreshBoostyDataInput!) {
 			admin {
 				payload: refreshBoostyData(input: $input) {
+					__typename
 					... on ErrorPayload {
 						message
 					}

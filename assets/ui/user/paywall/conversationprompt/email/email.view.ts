@@ -2,6 +2,7 @@ namespace $.$$ {
 	const mutate = $trip2g_graphql_request(/* GraphQL */ `
 		mutation CreateEmailWaitListRequestMutation ($input: CreateEmailWaitListRequestInput!) {
 			createEmailWaitListRequest(input: $input) {
+				__typename
 				... on ErrorPayload {
 					message
 				}

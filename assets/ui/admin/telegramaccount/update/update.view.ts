@@ -17,6 +17,7 @@ namespace $.$$ {
 		mutation AdminUpdateTelegramAccountMutation($input: AdminUpdateTelegramAccountInput!) {
 			admin {
 				payload: updateTelegramAccount(input: $input) {
+					__typename
 					... on AdminUpdateTelegramAccountPayload {
 						account {
 							id

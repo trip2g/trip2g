@@ -4,6 +4,7 @@ namespace $.$$ {
 			mutation AdminCreateHtmlInjectionMutation($input: CreateHtmlInjectionInput!) {
 				admin {
 					data: createHtmlInjection(input: $input) {
+						__typename
 						... on CreateHtmlInjectionPayload {
 							htmlInjection {
 								id

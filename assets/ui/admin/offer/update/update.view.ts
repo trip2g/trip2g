@@ -24,6 +24,7 @@ namespace $.$$ {
 		mutation AdminUpdateOfferMutation($input: UpdateOfferInput!) {
 			admin {
 				payload: updateOffer(input: $input) {
+					__typename
 					... on UpdateOfferPayload {
 						offer {
 							id

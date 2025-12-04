@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation DisableApiKey($input: DisableApiKeyInput!) {
 			admin {
 				data: disableApiKey(input: $input) {
+					__typename
 					... on ErrorPayload {
 						message
 					}

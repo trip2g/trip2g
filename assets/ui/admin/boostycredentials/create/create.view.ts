@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminCreateBoostyCreds($input: CreateBoostyCredentialsInput!) {
 			admin {
 				payload: createBoostyCredentials(input: $input) {
+					__typename
 					... on ErrorPayload {
 						message
 					}

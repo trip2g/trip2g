@@ -3,6 +3,7 @@ namespace $.$$ {
 		mutation AdminRunCronJob($input: RunCronJobInput!) {
 			admin {
 				runCronJob(input: $input) {
+					__typename
 					... on RunCronJobPayload {
 						execution {
 							id

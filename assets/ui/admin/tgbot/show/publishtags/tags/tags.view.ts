@@ -16,6 +16,7 @@ namespace $.$$ {
 		mutation AdminTgbotShowPublishTagsSave($input: SetTgChatPublishTagsInput!) {
 			admin {
 				payload: setTgChatPublishTags(input: $input) {
+					__typename
 					... on SetTgChatPublishTagsPayload {
 						success
 					}

@@ -22,6 +22,7 @@ namespace $.$$ {
 		mutation AdminDeleteRedirectMutation($input: DeleteRedirectInput!) {
 			admin {
 				payload: deleteRedirect(input: $input) {
+					__typename
 					... on DeleteRedirectPayload {
 						id
 					}

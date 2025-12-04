@@ -3,11 +3,10 @@ namespace $.$$ {
 		mutation AdminDeleteNotFoundIgnoredPattern($input: DeleteNotFoundIgnoredPatternInput!) {
 			admin {
 				payload: deleteNotFoundIgnoredPattern(input: $input) {
+					__typename
 					... on DeleteNotFoundIgnoredPatternPayload {
 						deletedId
-						__typename
 					}
-
 					... on ErrorPayload {
 						message
 					}

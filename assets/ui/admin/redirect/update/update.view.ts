@@ -22,6 +22,7 @@ namespace $.$$ {
 		mutation AdminUpdateRedirectMutation($input: UpdateRedirectInput!) {
 			admin {
 				payload: updateRedirect(input: $input) {
+					__typename
 					... on UpdateRedirectPayload {
 						redirect {
 							id

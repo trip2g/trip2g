@@ -3,11 +3,11 @@ namespace $.$$ {
 		mutation AdminSendTelegramPublishNoteNow($input: SendTelegramPublishNoteNowInput!) {
 			admin {
 				payload: sendTelegramPublishNoteNow(input: $input) {
+					__typename
 					... on SendTelegramPublishNoteNowPayload {
 						publishNote {
 							id
 						}
-
 					}
 					... on ErrorPayload {
 						message
