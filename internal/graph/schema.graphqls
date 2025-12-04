@@ -519,10 +519,6 @@ input AdminTgBotChatsFilterInput {
   includeRemoved: Boolean # defaults to false
 }
 
-input AdminTelegramAccountChatsFilterInput {
-  accountId: Int64!
-}
-
 input AdminTgChatMembersFilterInput {
   chatId: Int64!
 }
@@ -698,22 +694,19 @@ type AdminTelegramAccount @goModel(model: "trip2g/internal/db.TelegramAccount") 
   enabled: Boolean!
   createdAt: Time!
   createdBy: User @goField(forceResolver: true)
+  dialogs: [AdminTelegramAccountDialog!]! @goField(forceResolver: true)
+}
+
+type AdminTelegramAccountDialog @goModel(model: "trip2g/internal/model.TelegramAccountDialog") {
+  id: Int64!
+  username: String!
+  title: String!
+  publishTags: [AdminTelegramPublishTag!]! @goField(forceResolver: true)
+  publishInstantTags: [AdminTelegramPublishTag!]! @goField(forceResolver: true)
 }
 
 type AdminTelegramAccountsConnection {
   nodes: [AdminTelegramAccount!]! @goField(forceResolver: true)
-}
-
-type AdminTelegramAccountChat {
-  telegramChatId: String!
-  chatTitle: String!
-  chatType: String!
-  publishTags: [AdminTelegramPublishTag!]!
-  publishInstantTags: [AdminTelegramPublishTag!]!
-}
-
-type AdminTelegramAccountChatsConnection @goExtraField(name: "Filter", type: "trip2g/internal/graph/model.AdminTelegramAccountChatsFilterInput") {
-  nodes: [AdminTelegramAccountChat!]! @goField(forceResolver: true)
 }
 
 type AdminTelegramAccountAuthState {
@@ -815,10 +808,7 @@ input AdminSetTelegramAccountChatPublishTagsInput {
   tagIds: [Int64!]!
 }
 
-type AdminSetTelegramAccountChatPublishTagsPayload
-  @goExtraField(name: "AccountID", type: "int64")
-  @goExtraField(name: "TelegramChatID", type: "int64") {
-  chat: AdminTelegramAccountChat! @goField(forceResolver: true)
+type AdminSetTelegramAccountChatPublishTagsPayload {
   success: Boolean!
 }
 
@@ -834,10 +824,7 @@ input AdminSetTelegramAccountChatPublishInstantTagsInput {
   tagIds: [Int64!]!
 }
 
-type AdminSetTelegramAccountChatPublishInstantTagsPayload
-  @goExtraField(name: "AccountID", type: "int64")
-  @goExtraField(name: "TelegramChatID", type: "int64") {
-  chat: AdminTelegramAccountChat! @goField(forceResolver: true)
+type AdminSetTelegramAccountChatPublishInstantTagsPayload {
   success: Boolean!
 }
 
@@ -867,7 +854,6 @@ type AdminQuery {
 
   allTelegramAccounts: AdminTelegramAccountsConnection!
   telegramAccount(id: Int64!): AdminTelegramAccount
-  telegramAccountChats(filter: AdminTelegramAccountChatsFilterInput!): AdminTelegramAccountChatsConnection!
 
   allWaitListEmailRequests: AdminWaitListEmailRequestsConnection!
   allWaitListTgBotRequests: AdminWaitListTgBotRequestsConnection!

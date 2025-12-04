@@ -80,7 +80,6 @@ import (
 	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/db"
-	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 )
@@ -320,5 +319,7 @@ type Env interface {
 
 	// Telegram account queries
 	ListAllTelegramAccounts(ctx context.Context) ([]db.TelegramAccount, error)
-	TelegramAccountChats(ctx context.Context, accountID int64) ([]graphmodel.AdminTelegramAccountChat, error)
+	ListTelegramAccountDialogs(ctx context.Context, accountID int64) ([]model.TelegramAccountDialog, error)
+	GetTelegramAccountDialogPublishTags(ctx context.Context, accountID, telegramChatID int64) ([]db.TelegramPublishTag, error)
+	GetTelegramAccountDialogPublishInstantTags(ctx context.Context, accountID, telegramChatID int64) ([]db.TelegramPublishTag, error)
 }

@@ -297,6 +297,13 @@ func (c *Config) defineFlags() {
 		"jwt secret for user tokens",
 	)
 
+	flag.BoolVar(
+		&c.UserToken.Insecure,
+		"user-token-insecure",
+		userTokenDefaults.Insecure,
+		"user token insecure flag (development or http only)",
+	)
+
 	flag.DurationVar(
 		&c.UserToken.ExpiresIn,
 		"user-token-expires-in",

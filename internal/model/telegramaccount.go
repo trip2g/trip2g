@@ -25,3 +25,12 @@ type TelegramCompleteAuthResult struct {
 	APIID       int
 	APIHash     string
 }
+
+// TelegramAccountDialog represents a dialog (user, channel, or group) in Telegram.
+// PublishTags and PublishInstantTags are resolved via GraphQL forceResolver.
+type TelegramAccountDialog struct {
+	AccountID int64
+	ID        int64
+	Username  string
+	Title     string
+}

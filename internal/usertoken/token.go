@@ -46,6 +46,7 @@ type Config struct {
 	CookieName string
 	Secret     string
 	ExpiresIn  time.Duration
+	Insecure   bool
 }
 
 // Manager handles signing and parsing user tokens.
@@ -76,8 +77,9 @@ func DefaultConfig() Config {
 // NewManager creates a new Manager instance.
 func NewManager(config Config) *Manager {
 	return &Manager{
-		config: config,
-		secret: []byte(config.Secret),
+		config:   config,
+		secret:   []byte(config.Secret),
+		insecure: config.Insecure,
 	}
 }
 

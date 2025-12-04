@@ -13,4 +13,8 @@ $trip2g_admin_telegramaccount_show $mol_page
 	DeleteForm $trip2g_admin_telegramaccount_delete
 		account_id <= account_id
 	body /
-		\TODO
+		<= DialogsSection $mol_section
+			title \Dialogs (Publish Tags)
+			content /
+				<= Dialogs $trip2g_admin_telegramaccount_show_dialogs
+					account_id <= account_id

@@ -72,9 +72,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	payload := model.AdminSetTelegramAccountChatPublishTagsPayload{
-		AccountID:      input.AccountID,
-		TelegramChatID: telegramChatID,
-		Success:        true,
+		Success: true,
 	}
 
 	return &payload, nil

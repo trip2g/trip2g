@@ -247,7 +247,8 @@ func main() {
 	conn, writeConn := initDBs(config, log)
 
 	tokenManager := usertoken.NewManager(config.UserToken)
-	tokenManager.SetInsecure(config.DevMode) // for k6
+	// use USER_TOKEN_INSECURE instead
+	// tokenManager.SetInsecure(config.DevMode) // for k6
 
 	queries := db.New(db.WithLogger(conn, logger.WithPrefix(log, "read: no tx:")))
 	writeQueries := db.NewWriteQueries(db.WithLogger(writeConn, logger.WithPrefix(log, "write: no tx:")))

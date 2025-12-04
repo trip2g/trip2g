@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
@@ -1203,11 +1202,6 @@ func (r *adminQueryResolver) TelegramAccount(ctx context.Context, obj *appmodel.
 	return resolveOne[db.TelegramAccount](ctx, id, r.env(ctx).GetTelegramAccountByID)
 }
 
-// TelegramAccountChats is the resolver for the telegramAccountChats field.
-func (r *adminQueryResolver) TelegramAccountChats(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminTelegramAccountChatsFilterInput) (*model.AdminTelegramAccountChatsConnection, error) {
-	return &model.AdminTelegramAccountChatsConnection{Filter: filter}, nil
-}
-
 // AllWaitListEmailRequests is the resolver for the allWaitListEmailRequests field.
 func (r *adminQueryResolver) AllWaitListEmailRequests(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminWaitListEmailRequestsConnection, error) {
 	return &model.AdminWaitListEmailRequestsConnection{}, nil
@@ -1396,24 +1390,6 @@ func (r *adminReleasesConnectionResolver) Nodes(ctx context.Context, obj *model.
 	return r.env(ctx).ListAllReleases(ctx)
 }
 
-// Chat is the resolver for the chat field.
-func (r *adminSetTelegramAccountChatPublishInstantTagsPayloadResolver) Chat(ctx context.Context, obj *model.AdminSetTelegramAccountChatPublishInstantTagsPayload) (*model.AdminTelegramAccountChat, error) {
-	// Return a minimal chat object with the IDs we have
-	// Full chat data (title, type, tags) can be fetched by the client via telegramAccountChats query
-	return &model.AdminTelegramAccountChat{
-		TelegramChatID: strconv.FormatInt(obj.TelegramChatID, 10),
-	}, nil
-}
-
-// Chat is the resolver for the chat field.
-func (r *adminSetTelegramAccountChatPublishTagsPayloadResolver) Chat(ctx context.Context, obj *model.AdminSetTelegramAccountChatPublishTagsPayload) (*model.AdminTelegramAccountChat, error) {
-	// Return a minimal chat object with the IDs we have
-	// Full chat data (title, type, tags) can be fetched by the client via telegramAccountChats query
-	return &model.AdminTelegramAccountChat{
-		TelegramChatID: strconv.FormatInt(obj.TelegramChatID, 10),
-	}, nil
-}
-
 // Color is the resolver for the color field.
 func (r *adminSubgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*string, error) {
 	return db.ToStringPtr(obj.Color), nil
@@ -1439,9 +1415,19 @@ func (r *adminTelegramAccountResolver) CreatedBy(ctx context.Context, obj *db.Te
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
 }
 
-// Nodes is the resolver for the nodes field.
-func (r *adminTelegramAccountChatsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminTelegramAccountChatsConnection) ([]model.AdminTelegramAccountChat, error) {
-	return r.env(ctx).TelegramAccountChats(ctx, obj.Filter.AccountID)
+// Dialogs is the resolver for the dialogs field.
+func (r *adminTelegramAccountResolver) Dialogs(ctx context.Context, obj *db.TelegramAccount) ([]appmodel.TelegramAccountDialog, error) {
+	return r.env(ctx).ListTelegramAccountDialogs(ctx, obj.ID)
+}
+
+// PublishTags is the resolver for the publishTags field.
+func (r *adminTelegramAccountDialogResolver) PublishTags(ctx context.Context, obj *appmodel.TelegramAccountDialog) ([]db.TelegramPublishTag, error) {
+	return r.env(ctx).GetTelegramAccountDialogPublishTags(ctx, obj.AccountID, obj.ID)
+}
+
+// PublishInstantTags is the resolver for the publishInstantTags field.
+func (r *adminTelegramAccountDialogResolver) PublishInstantTags(ctx context.Context, obj *appmodel.TelegramAccountDialog) ([]db.TelegramPublishTag, error) {
+	return r.env(ctx).GetTelegramAccountDialogPublishInstantTags(ctx, obj.AccountID, obj.ID)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -2643,16 +2629,6 @@ func (r *Resolver) AdminReleasesConnection() AdminReleasesConnectionResolver {
 	return &adminReleasesConnectionResolver{r}
 }
 
-// AdminSetTelegramAccountChatPublishInstantTagsPayload returns AdminSetTelegramAccountChatPublishInstantTagsPayloadResolver implementation.
-func (r *Resolver) AdminSetTelegramAccountChatPublishInstantTagsPayload() AdminSetTelegramAccountChatPublishInstantTagsPayloadResolver {
-	return &adminSetTelegramAccountChatPublishInstantTagsPayloadResolver{r}
-}
-
-// AdminSetTelegramAccountChatPublishTagsPayload returns AdminSetTelegramAccountChatPublishTagsPayloadResolver implementation.
-func (r *Resolver) AdminSetTelegramAccountChatPublishTagsPayload() AdminSetTelegramAccountChatPublishTagsPayloadResolver {
-	return &adminSetTelegramAccountChatPublishTagsPayloadResolver{r}
-}
-
 // AdminSubgraph returns AdminSubgraphResolver implementation.
 func (r *Resolver) AdminSubgraph() AdminSubgraphResolver { return &adminSubgraphResolver{r} }
 
@@ -2666,9 +2642,9 @@ func (r *Resolver) AdminTelegramAccount() AdminTelegramAccountResolver {
 	return &adminTelegramAccountResolver{r}
 }
 
-// AdminTelegramAccountChatsConnection returns AdminTelegramAccountChatsConnectionResolver implementation.
-func (r *Resolver) AdminTelegramAccountChatsConnection() AdminTelegramAccountChatsConnectionResolver {
-	return &adminTelegramAccountChatsConnectionResolver{r}
+// AdminTelegramAccountDialog returns AdminTelegramAccountDialogResolver implementation.
+func (r *Resolver) AdminTelegramAccountDialog() AdminTelegramAccountDialogResolver {
+	return &adminTelegramAccountDialogResolver{r}
 }
 
 // AdminTelegramAccountsConnection returns AdminTelegramAccountsConnectionResolver implementation.
@@ -2920,12 +2896,10 @@ type adminRedirectResolver struct{ *Resolver }
 type adminRedirectsConnectionResolver struct{ *Resolver }
 type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }
-type adminSetTelegramAccountChatPublishInstantTagsPayloadResolver struct{ *Resolver }
-type adminSetTelegramAccountChatPublishTagsPayloadResolver struct{ *Resolver }
 type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminTelegramAccountResolver struct{ *Resolver }
-type adminTelegramAccountChatsConnectionResolver struct{ *Resolver }
+type adminTelegramAccountDialogResolver struct{ *Resolver }
 type adminTelegramAccountsConnectionResolver struct{ *Resolver }
 type adminTelegramPublishNoteResolver struct{ *Resolver }
 type adminTelegramPublishNotesConnectionResolver struct{ *Resolver }

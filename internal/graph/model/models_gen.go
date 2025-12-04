@@ -467,10 +467,7 @@ type AdminSetTelegramAccountChatPublishInstantTagsInput struct {
 }
 
 type AdminSetTelegramAccountChatPublishInstantTagsPayload struct {
-	Chat           *AdminTelegramAccountChat `json:"chat"`
-	Success        bool                      `json:"success"`
-	AccountID      int64                     `json:"-"`
-	TelegramChatID int64                     `json:"-"`
+	Success bool `json:"success"`
 }
 
 func (AdminSetTelegramAccountChatPublishInstantTagsPayload) IsAdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload() {
@@ -483,10 +480,7 @@ type AdminSetTelegramAccountChatPublishTagsInput struct {
 }
 
 type AdminSetTelegramAccountChatPublishTagsPayload struct {
-	Chat           *AdminTelegramAccountChat `json:"chat"`
-	Success        bool                      `json:"success"`
-	AccountID      int64                     `json:"-"`
-	TelegramChatID int64                     `json:"-"`
+	Success bool `json:"success"`
 }
 
 func (AdminSetTelegramAccountChatPublishTagsPayload) IsAdminSetTelegramAccountChatPublishTagsOrErrorPayload() {
@@ -512,23 +506,6 @@ type AdminTelegramAccountAuthState struct {
 	Phone        string                            `json:"phone"`
 	State        AdminTelegramAccountAuthStateEnum `json:"state"`
 	PasswordHint *string                           `json:"passwordHint,omitempty"`
-}
-
-type AdminTelegramAccountChat struct {
-	TelegramChatID     string                  `json:"telegramChatId"`
-	ChatTitle          string                  `json:"chatTitle"`
-	ChatType           string                  `json:"chatType"`
-	PublishTags        []db.TelegramPublishTag `json:"publishTags"`
-	PublishInstantTags []db.TelegramPublishTag `json:"publishInstantTags"`
-}
-
-type AdminTelegramAccountChatsConnection struct {
-	Nodes  []AdminTelegramAccountChat           `json:"nodes"`
-	Filter AdminTelegramAccountChatsFilterInput `json:"-"`
-}
-
-type AdminTelegramAccountChatsFilterInput struct {
-	AccountID int64 `json:"accountId"`
 }
 
 type AdminTelegramAccountsConnection struct {

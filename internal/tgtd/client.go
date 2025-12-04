@@ -32,6 +32,13 @@ type ChatInfo struct {
 	ChatType string // "channel", "group", "supergroup", "private"
 }
 
+// DialogInfo contains information about a Telegram dialog (user, channel, or group).
+type DialogInfo struct {
+	ID       int64
+	Username string
+	Title    string
+}
+
 // ListChats returns all chats/channels the account has access to.
 func (c *Client) ListChats(ctx context.Context, sessionData []byte) ([]ChatInfo, error) {
 	storage := &session.StorageMemory{}
@@ -95,6 +102,89 @@ func (c *Client) ListChats(ctx context.Context, sessionData []byte) ([]ChatInfo,
 	}
 
 	return chats, nil
+}
+
+// ListDialogs returns all dialogs (users, channels, groups) the account has.
+func (c *Client) ListDialogs(ctx context.Context, sessionData []byte) ([]DialogInfo, error) {
+	storage := &session.StorageMemory{}
+	err := storage.StoreSession(ctx, sessionData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load session: %w", err)
+	}
+
+	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
+		SessionStorage: storage,
+	})
+
+	var dialogs []DialogInfo
+
+	err = client.Run(ctx, func(ctx context.Context) error {
+		api := client.API()
+
+		// Get dialogs
+		dialogsResp, getDialogsErr := api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
+			OffsetPeer: &tg.InputPeerEmpty{},
+			Limit:      100,
+		})
+		if getDialogsErr != nil {
+			return fmt.Errorf("failed to get dialogs: %w", getDialogsErr)
+		}
+
+		var chatList []tg.ChatClass
+		var userList []tg.UserClass
+		switch d := dialogsResp.(type) {
+		case *tg.MessagesDialogs:
+			chatList = d.Chats
+			userList = d.Users
+		case *tg.MessagesDialogsSlice:
+			chatList = d.Chats
+			userList = d.Users
+		}
+
+		// Add users
+		for _, user := range userList {
+			if u, ok := user.(*tg.User); ok {
+				if u.Bot || u.Self {
+					continue
+				}
+				title := u.FirstName
+				if u.LastName != "" {
+					title += " " + u.LastName
+				}
+				dialogs = append(dialogs, DialogInfo{
+					ID:       u.ID,
+					Username: u.Username,
+					Title:    title,
+				})
+			}
+		}
+
+		// Add channels and groups
+		for _, chat := range chatList {
+			switch ch := chat.(type) {
+			case *tg.Channel:
+				dialogs = append(dialogs, DialogInfo{
+					ID:       ch.ID,
+					Username: ch.Username,
+					Title:    ch.Title,
+				})
+			case *tg.Chat:
+				dialogs = append(dialogs, DialogInfo{
+					ID:       ch.ID,
+					Username: "",
+					Title:    ch.Title,
+				})
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return dialogs, nil
 }
 
 // SendMessageParams contains parameters for sending a message.

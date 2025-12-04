@@ -1,0 +1,8 @@
+$trip2g_admin_telegramaccount_show_dialogs_instanttags $mol_view
+	account_id 0
+	chat_id \
+	current_ids /number
+	sub /
+		<= List $mol_select_list
+			value? <=> value? /string
+			dictionary <= values *string

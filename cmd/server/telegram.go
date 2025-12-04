@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"trip2g/internal/case/handletgupdate"
 	"trip2g/internal/db"
-	graphmodel "trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/tgbots"
 	"trip2g/internal/tgtd"
@@ -270,8 +268,8 @@ func (a *app) BotStartLink(botID int64, param string) (string, error) {
 	return handlerIO.BotStartLink(param), nil
 }
 
-// TelegramAccountChats fetches chats for a telegram account and enriches them with publish tag info
-func (a *app) TelegramAccountChats(ctx context.Context, accountID int64) ([]graphmodel.AdminTelegramAccountChat, error) {
+// ListTelegramAccountDialogs fetches dialogs (users, channels, groups) for a telegram account
+func (a *app) ListTelegramAccountDialogs(ctx context.Context, accountID int64) ([]appmodel.TelegramAccountDialog, error) {
 	// Get the account to retrieve api credentials and session data
 	account, err := a.GetTelegramAccountByID(ctx, accountID)
 	if err != nil {
@@ -281,70 +279,38 @@ func (a *app) TelegramAccountChats(ctx context.Context, accountID int64) ([]grap
 	// Create tgtd client
 	client := tgtd.NewClient(int(account.ApiID), account.ApiHash)
 
-	// List chats from Telegram
-	chats, err := client.ListChats(ctx, account.SessionData)
+	// List dialogs from Telegram
+	dialogs, err := client.ListDialogs(ctx, account.SessionData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list chats: %w", err)
+		return nil, fmt.Errorf("failed to list dialogs: %w", err)
 	}
 
-	// Get all publish tags and instant tags for this account's chats
-	publishChats, err := a.ListTelegramPublishAccountChatsByAccountID(ctx, accountID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list publish chats: %w", err)
-	}
-
-	instantChats, err := a.ListTelegramPublishAccountInstantChatsByAccountID(ctx, accountID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list instant chats: %w", err)
-	}
-
-	// Build map of chat_id -> tags
-	publishTagsByChat := make(map[int64][]int64)
-	for _, pc := range publishChats {
-		publishTagsByChat[pc.TelegramChatID] = append(publishTagsByChat[pc.TelegramChatID], pc.TagID)
-	}
-
-	instantTagsByChat := make(map[int64][]int64)
-	for _, ic := range instantChats {
-		instantTagsByChat[ic.TelegramChatID] = append(instantTagsByChat[ic.TelegramChatID], ic.TagID)
-	}
-
-	// Get all tags for lookup
-	allTags, err := a.ListAllTelegramPublishTags(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list publish tags: %w", err)
-	}
-
-	tagsByID := make(map[int64]db.TelegramPublishTag)
-	for _, tag := range allTags {
-		tagsByID[tag.ID] = tag
-	}
-
-	// Build result
-	result := make([]graphmodel.AdminTelegramAccountChat, 0, len(chats))
-	for _, chat := range chats {
-		publishTags := make([]db.TelegramPublishTag, 0)
-		for _, tagID := range publishTagsByChat[chat.ID] {
-			if tag, ok := tagsByID[tagID]; ok {
-				publishTags = append(publishTags, tag)
-			}
-		}
-
-		instantTags := make([]db.TelegramPublishTag, 0)
-		for _, tagID := range instantTagsByChat[chat.ID] {
-			if tag, ok := tagsByID[tagID]; ok {
-				instantTags = append(instantTags, tag)
-			}
-		}
-
-		result = append(result, graphmodel.AdminTelegramAccountChat{
-			TelegramChatID:     strconv.FormatInt(chat.ID, 10),
-			ChatTitle:          chat.Title,
-			ChatType:           chat.ChatType,
-			PublishTags:        publishTags,
-			PublishInstantTags: instantTags,
+	// Convert to model
+	result := make([]appmodel.TelegramAccountDialog, 0, len(dialogs))
+	for _, d := range dialogs {
+		result = append(result, appmodel.TelegramAccountDialog{
+			AccountID: accountID,
+			ID:        d.ID,
+			Username:  d.Username,
+			Title:     d.Title,
 		})
 	}
 
 	return result, nil
+}
+
+// GetTelegramAccountDialogPublishTags returns publish tags for a specific dialog
+func (a *app) GetTelegramAccountDialogPublishTags(ctx context.Context, accountID, telegramChatID int64) ([]db.TelegramPublishTag, error) {
+	return a.ListTelegramPublishTagsByAccountChatID(ctx, db.ListTelegramPublishTagsByAccountChatIDParams{
+		AccountID:      accountID,
+		TelegramChatID: telegramChatID,
+	})
+}
+
+// GetTelegramAccountDialogPublishInstantTags returns instant publish tags for a specific dialog
+func (a *app) GetTelegramAccountDialogPublishInstantTags(ctx context.Context, accountID, telegramChatID int64) ([]db.TelegramPublishTag, error) {
+	return a.ListTelegramPublishInstantTagsByAccountChatID(ctx, db.ListTelegramPublishInstantTagsByAccountChatIDParams{
+		AccountID:      accountID,
+		TelegramChatID: telegramChatID,
+	})
 }

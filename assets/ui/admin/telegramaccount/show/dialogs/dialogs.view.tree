@@ -1,0 +1,40 @@
+$trip2g_admin_telegramaccount_show_dialogs $mol_view
+	account_id 0
+	Tags* $trip2g_admin_telegramaccount_show_dialogs_tags
+		account_id <= account_id
+		chat_id <= row_id* \
+		current_ids <= row_publish_tag_ids* /number
+	InstantTags* $trip2g_admin_telegramaccount_show_dialogs_instanttags
+		account_id <= account_id
+		chat_id <= row_id* \
+		current_ids <= row_publish_instant_tag_ids* /number
+	style *
+		flexDirection \column
+		minWidth \800px
+	sub /
+		<= Search_labeler $mol_labeler
+			title \Search
+			Content <= Search $mol_string
+				value? <=> search? \
+		<= Rows $mol_list
+			rows <= data_rows /$mol_view
+				<= Row*0 $mol_row
+					sub <= row_content* /
+						<= Id_labeler* $mol_labeler
+							title \ID
+							Content <= Id* $trip2g_admin_cell
+								content <= row_id*? \
+						<= Username_labeler* $mol_labeler
+							title \Username
+							Content <= Username* $trip2g_admin_cell
+								content <= row_username*? \
+						<= Title_labeler* $mol_labeler
+							title \Title
+							Content <= Title* $trip2g_admin_cell
+								content <= row_title*? \
+						<= Tags_labeler* $mol_labeler
+							title \Tags
+							Content <= tags* $mol_view
+						<= InstantTags_labeler* $mol_labeler
+							title \Instant Tags
+							Content <= instant_tags* $mol_view
