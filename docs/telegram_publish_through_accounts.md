@@ -545,40 +545,40 @@ mutation {
 
 ## Implementation Plan
 
-### PR 1: Database + Admin API
+### PR 1: Database + Admin API ✅
 
 **Scope**: Всё для управления аккаунтами через админку.
 
 #### Phase 1: Database & MTProto Client
-1. [ ] Create migration for `telegram_accounts`
-2. [ ] Create migration for `telegram_publish_account_chats`
-3. [ ] Create migration for `telegram_publish_account_instant_chats`
-4. [ ] Create migration for `telegram_publish_sent_account_messages`
-5. [ ] Run `make sqlc` to generate DB methods
-6. [ ] Create `internal/tgtd/client.go` - MTProto client wrapper
-7. [ ] Create `internal/tgtd/auth.go` - auth manager
-8. [ ] Create `internal/tgtd/session.go` - session encryption/storage
+1. [x] Create migration for `telegram_accounts`
+2. [x] Create migration for `telegram_publish_account_chats`
+3. [x] Create migration for `telegram_publish_account_instant_chats`
+4. [x] Create migration for `telegram_publish_sent_account_messages`
+5. [x] Run `make sqlc` to generate DB methods
+6. [x] Create `internal/tgtd/client.go` - MTProto client wrapper
+7. [x] Create `internal/tgtd/auth.go` - auth manager
+8. [x] Create `internal/tgtd/session.go` - session encryption/storage
 
 #### Phase 2: Admin API - Account Management
-9. [ ] Add GraphQL schema types and mutations
-10. [ ] Run `make gqlgen`
-11. [ ] Implement `startTelegramAccountAuth` mutation
-12. [ ] Implement `completeTelegramAccountAuth` mutation
-13. [ ] Implement `cancelTelegramAccountAuth` mutation
-14. [ ] Implement `telegramAccounts` query
-15. [ ] Implement `telegramAccountChats` query (fetches from Telegram API)
-16. [ ] Implement `updateTelegramAccount` mutation
-17. [ ] Implement `deleteTelegramAccount` mutation
+9. [x] Add GraphQL schema types and mutations
+10. [x] Run `make gqlgen`
+11. [x] Implement `startTelegramAccountAuth` mutation
+12. [x] Implement `completeTelegramAccountAuth` mutation
+13. [x] Implement `cancelTelegramAccountAuth` mutation
+14. [x] Implement `telegramAccounts` query
+15. [x] Implement `telegramAccount.dialogs` field (replaced `telegramAccountChats` query)
+16. [x] Implement `updateTelegramAccount` mutation
+17. [x] Implement `deleteTelegramAccount` mutation
 
 #### Phase 3: Admin API - Chat-Tag Linking
-18. [ ] Implement `setTelegramAccountChatPublishTags` mutation
-19. [ ] Implement `setTelegramAccountChatPublishInstantTags` mutation
+18. [x] Implement `setTelegramAccountChatPublishTags` mutation
+19. [x] Implement `setTelegramAccountChatPublishInstantTags` mutation
 
 #### Testing PR 1
-20. [ ] Manual test: start auth → receive code on phone
-21. [ ] Manual test: complete auth with code (and 2FA if enabled)
-22. [ ] Manual test: list account's chats
-23. [ ] Manual test: set publish tags for a chat
+20. [x] Manual test: start auth → receive code on phone
+21. [x] Manual test: complete auth with code (and 2FA if enabled)
+22. [x] Manual test: list account's chats
+23. [x] Manual test: set publish tags for a chat
 
 ---
 
