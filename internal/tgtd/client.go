@@ -414,25 +414,48 @@ func uploadMediaFiles(ctx context.Context, up *uploader.Uploader, mediaURLs []st
 
 		// Only first media item gets caption
 		includeCaption := i == 0 && caption != ""
-		mediaOpt := createMediaOption(uploaded, mediaURL, caption, includeCaption)
+		mediaOpt := createMultiMediaOption(uploaded, mediaURL, caption, includeCaption)
 
-		mediaInputs = append(mediaInputs, message.ForceMulti(mediaOpt))
+		mediaInputs = append(mediaInputs, mediaOpt)
 	}
 
 	return mediaInputs, nil
 }
 
-// createMediaOption creates a MediaOption for photo or video based on URL extension.
-func createMediaOption(uploaded tg.InputFileClass, mediaURL, caption string, includeCaption bool) message.MediaOption {
+// createMultiMediaOption creates a MultiMediaOption for photo or video based on URL extension.
+func createMultiMediaOption(uploaded tg.InputFileClass, mediaURL, caption string, includeCaption bool) message.MultiMediaOption {
 	fileName := filenameFromURL(mediaURL)
 	ext := strings.ToLower(filepath.Ext(fileName))
 	isVideo := isVideoExtension(ext)
 
 	if isVideo {
-		if includeCaption {
-			return message.Video(uploaded, html.String(nil, caption))
+		mimeType := videoMIMEType(ext)
+		videoAttr := &tg.DocumentAttributeVideo{
+			SupportsStreaming: true,
+			W:                 1280,
+			H:                 720,
+			Duration:          1,
 		}
-		return message.Video(uploaded)
+		videoAttr.SetFlags()
+
+		if includeCaption {
+			return message.UploadedDocument(uploaded, html.String(nil, caption)).
+				MIME(mimeType).
+				Attributes(
+					videoAttr,
+					&tg.DocumentAttributeFilename{
+						FileName: fileName,
+					},
+				)
+		}
+		return message.UploadedDocument(uploaded).
+			MIME(mimeType).
+			Attributes(
+				videoAttr,
+				&tg.DocumentAttributeFilename{
+					FileName: fileName,
+				},
+			)
 	}
 
 	if includeCaption {
@@ -442,8 +465,8 @@ func createMediaOption(uploaded tg.InputFileClass, mediaURL, caption string, inc
 }
 
 // downloadMedia downloads media from URL and returns the bytes.
-func downloadMedia(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+func downloadMedia(ctx context.Context, mediaURL string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, mediaURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -473,6 +496,24 @@ func isVideoExtension(ext string) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+// videoMIMEType returns the MIME type for a video extension.
+func videoMIMEType(ext string) string {
+	switch ext {
+	case ".mp4", ".m4v":
+		return "video/mp4"
+	case ".avi":
+		return "video/x-msvideo"
+	case ".mov":
+		return "video/quicktime"
+	case ".mkv":
+		return "video/x-matroska"
+	case ".webm":
+		return "video/webm"
+	default:
+		return "video/mp4"
 	}
 }
 
