@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -270,6 +271,7 @@ func (c *Client) SendMessage(ctx context.Context, sessionData []byte, params Sen
 			Message:   messageText,
 			Entities:  entities,
 			NoWebpage: params.NoWebpage,
+			RandomID:  rand.Int64(),
 		}
 
 		// Send message using raw API
