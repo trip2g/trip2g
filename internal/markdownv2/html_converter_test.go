@@ -142,6 +142,16 @@ func TestHTMLRegularLinks(t *testing.T) {
 			markdown: "[First](https://one.com) and [Second](https://two.com)",
 			expected: `<a href="https://one.com">First</a> and <a href="https://two.com">Second</a>`,
 		},
+		{
+			name:     "autolink (bare URL)",
+			markdown: "Watch https://www.youtube.com/watch?v=0S8DY7k_7Yw here",
+			expected: `Watch <a href="https://www.youtube.com/watch?v=0S8DY7k_7Yw">https://www.youtube.com/watch?v=0S8DY7k_7Yw</a> here`,
+		},
+		{
+			name:     "autolink youtube",
+			markdown: "https://www.youtube.com/watch?v=abc123",
+			expected: `<a href="https://www.youtube.com/watch?v=abc123">https://www.youtube.com/watch?v=abc123</a>`,
+		},
 	}
 
 	for _, tt := range tests {

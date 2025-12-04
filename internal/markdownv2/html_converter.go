@@ -200,6 +200,12 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 				c.Write("</a>")
 			}
 
+		case *ast.AutoLink:
+			if entering {
+				url := string(node.URL(src))
+				c.Write(fmt.Sprintf(`<a href="%s">%s</a>`, html.EscapeString(url), html.EscapeString(url)))
+			}
+
 		case *enclavecore.Enclave:
 			dest := string(node.Destination)
 			var emojiID string
