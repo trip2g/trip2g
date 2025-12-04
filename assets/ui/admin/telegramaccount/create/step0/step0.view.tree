@@ -19,6 +19,10 @@ $trip2g_admin_telegramaccount_create_step0 $mol_view
 					bid <= api_hash_bid \
 					Content <= api_hash_control $mol_string
 						value? <=> api_hash? \28d5910127c3a4ac45ec4e0d884fe593
+				<= CreateAppLink $mol_link
+					external true
+					title \Manage Apps
+					uri \https://my.telegram.org/auth?to=apps
 			buttons /
 				<= Submit $mol_button_major
 					title \Start Auth

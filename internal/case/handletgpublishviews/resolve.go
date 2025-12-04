@@ -25,6 +25,9 @@ type Env interface {
 	EnqueueSendTelegramPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
 	EnqueueSendTelegramAccountPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
 
+	UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error
+	UpdateTelegramAccountPublishPost(ctx context.Context, notePathID int64) error
+
 	ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
 }
 
@@ -168,6 +171,18 @@ func (p *processor) process(note *model.NoteView) error {
 	err = p.env.EnqueueSendTelegramAccountPost(p.ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed to EnqueueSendTelegramAccountPost: %w", err)
+	}
+
+	// Update existing posts if they were already published (bot)
+	err = p.env.UpdateTelegramPublishPost(p.ctx, note.PathID)
+	if err != nil {
+		return fmt.Errorf("failed to UpdateTelegramPublishPost: %w", err)
+	}
+
+	// Update existing posts if they were already published (account)
+	err = p.env.UpdateTelegramAccountPublishPost(p.ctx, note.PathID)
+	if err != nil {
+		return fmt.Errorf("failed to UpdateTelegramAccountPublishPost: %w", err)
 	}
 
 	return nil

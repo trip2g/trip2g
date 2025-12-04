@@ -2467,6 +2467,7 @@ const updateTelegramPublishSentAccountMessageContent = `-- name: UpdateTelegramP
 update telegram_publish_sent_account_messages
    set content_hash = ?
      , content = ?
+     , post_type = ?
  where note_path_id = ?
    and account_id = ?
    and telegram_chat_id = ?
@@ -2476,6 +2477,7 @@ update telegram_publish_sent_account_messages
 type UpdateTelegramPublishSentAccountMessageContentParams struct {
 	ContentHash    string `json:"content_hash"`
 	Content        string `json:"content"`
+	PostType       string `json:"post_type"`
 	NotePathID     int64  `json:"note_path_id"`
 	AccountID      int64  `json:"account_id"`
 	TelegramChatID int64  `json:"telegram_chat_id"`
@@ -2486,6 +2488,7 @@ func (q *WriteQueries) UpdateTelegramPublishSentAccountMessageContent(ctx contex
 	_, err := q.db.ExecContext(ctx, updateTelegramPublishSentAccountMessageContent,
 		arg.ContentHash,
 		arg.Content,
+		arg.PostType,
 		arg.NotePathID,
 		arg.AccountID,
 		arg.TelegramChatID,

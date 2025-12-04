@@ -65,17 +65,40 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 		return fmt.Errorf("failed to get current post type: %w", err)
 	}
 
-	// For now, only support text messages
-	if currentPostType != "text" {
-		logger.Warn("only text messages can be updated via account",
+	// Determine new post type
+	mediaCount := len(post.Media)
+	var newPostType string
+	switch mediaCount {
+	case 0:
+		newPostType = "text"
+	case 1:
+		newPostType = "photo"
+	default:
+		newPostType = "media_group"
+	}
+
+	// Check if we can update this post type
+	if currentPostType != "text" && currentPostType != "photo" {
+		logger.Warn("only text and photo messages can be updated via account",
 			"current_type", currentPostType,
 			"note_path_id", params.NotePathID,
 		)
 		return nil
 	}
 
-	// Truncate content to telegram limits
-	content := telegram.TruncateContent(post.Content, false)
+	// Can't convert to media_group (need to delete and resend)
+	if newPostType == "media_group" {
+		logger.Warn("cannot convert to media_group, would need delete and resend",
+			"current_type", currentPostType,
+			"new_type", newPostType,
+			"note_path_id", params.NotePathID,
+		)
+		return nil
+	}
+
+	// Truncate content to telegram limits (media posts have lower limit)
+	hasMedia := mediaCount > 0
+	content := telegram.TruncateContent(post.Content, hasMedia)
 
 	// Calculate content hash for new content
 	hash := sha256.Sum256([]byte(content))
@@ -109,14 +132,38 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 		return fmt.Errorf("failed to get telegram account: %w", err)
 	}
 
-	// Create tgtd client and edit message
+	// Create tgtd client
 	client := tgtd.NewClient(int(account.ApiID), account.ApiHash)
 
-	editErr := client.EditMessage(ctx, account.SessionData, tgtd.EditMessageParams{
-		ChatID:    params.TelegramChatID,
-		MessageID: params.MessageID,
-		Message:   content,
-	})
+	logger.Info("updating message",
+		"note_path_id", params.NotePathID,
+		"account_id", params.AccountID,
+		"telegram_chat_id", params.TelegramChatID,
+		"message_id", params.MessageID,
+		"current_type", currentPostType,
+		"new_type", newPostType,
+		"content_preview", content[:min(100, len(content))],
+	)
+
+	var editErr error
+
+	// Determine which edit method to use based on post types
+	if currentPostType == "text" && newPostType == "photo" {
+		// Add photo to existing text message
+		editErr = client.EditMessageWithPhoto(ctx, account.SessionData, tgtd.EditMessageWithPhotoParams{
+			ChatID:    params.TelegramChatID,
+			MessageID: params.MessageID,
+			PhotoURL:  post.Media[0],
+			Caption:   content,
+		})
+	} else {
+		// Regular text edit
+		editErr = client.EditMessage(ctx, account.SessionData, tgtd.EditMessageParams{
+			ChatID:    params.TelegramChatID,
+			MessageID: params.MessageID,
+			Message:   content,
+		})
+	}
 
 	if editErr != nil {
 		logger.Debug("edit error",
@@ -144,13 +191,16 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 			"account_id", params.AccountID,
 			"telegram_chat_id", params.TelegramChatID,
 			"message_id", params.MessageID,
+			"from_type", currentPostType,
+			"to_type", newPostType,
 		)
 	}
 
-	// Update the database with new content hash
+	// Update the database with new content hash and post type
 	updateParams := db.UpdateTelegramPublishSentAccountMessageContentParams{
 		ContentHash:    newContentHash,
 		Content:        content,
+		PostType:       newPostType,
 		NotePathID:     params.NotePathID,
 		AccountID:      params.AccountID,
 		TelegramChatID: params.TelegramChatID,

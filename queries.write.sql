@@ -764,6 +764,7 @@ values (?, ?, ?, ?, ?, ?, ?, ?);
 update telegram_publish_sent_account_messages
    set content_hash = ?
      , content = ?
+     , post_type = ?
  where note_path_id = ?
    and account_id = ?
    and telegram_chat_id = ?

@@ -595,6 +595,74 @@ func (c *Client) EditMessage(ctx context.Context, sessionData []byte, params Edi
 	})
 }
 
+// EditMessageWithPhotoParams contains parameters for editing a message to add a photo.
+type EditMessageWithPhotoParams struct {
+	ChatID    int64
+	MessageID int64
+	PhotoURL  string
+	Caption   string
+}
+
+// EditMessageWithPhoto edits an existing message to add a photo with HTML formatted caption.
+func (c *Client) EditMessageWithPhoto(ctx context.Context, sessionData []byte, params EditMessageWithPhotoParams) error {
+	storage := &session.StorageMemory{}
+	err := storage.StoreSession(ctx, sessionData)
+	if err != nil {
+		return fmt.Errorf("failed to load session: %w", err)
+	}
+
+	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
+		SessionStorage: storage,
+	})
+
+	return client.Run(ctx, func(ctx context.Context) error {
+		api := client.API()
+
+		// Get peer for the chat
+		peer, peerErr := c.resolvePeer(ctx, api, params.ChatID)
+		if peerErr != nil {
+			return fmt.Errorf("failed to resolve peer: %w", peerErr)
+		}
+
+		// Download photo from URL
+		photoData, downloadErr := downloadMedia(ctx, params.PhotoURL)
+		if downloadErr != nil {
+			return fmt.Errorf("failed to download photo: %w", downloadErr)
+		}
+
+		// Upload photo using uploader
+		up := uploader.NewUploader(api)
+		fileName := filenameFromURL(params.PhotoURL)
+		uploaded, uploadErr := up.FromBytes(ctx, fileName, photoData)
+		if uploadErr != nil {
+			return fmt.Errorf("failed to upload photo: %w", uploadErr)
+		}
+
+		// Parse caption with HTML
+		eb := entity.Builder{}
+		if parseErr := html.HTML(strings.NewReader(params.Caption), &eb, html.Options{}); parseErr != nil {
+			return fmt.Errorf("failed to parse caption HTML: %w", parseErr)
+		}
+		captionText, entities := eb.Complete()
+
+		// Edit message with photo
+		_, editErr := api.MessagesEditMessage(ctx, &tg.MessagesEditMessageRequest{
+			Peer:     peer,
+			ID:       int(params.MessageID),
+			Message:  captionText,
+			Entities: entities,
+			Media: &tg.InputMediaUploadedPhoto{
+				File: uploaded,
+			},
+		})
+		if editErr != nil {
+			return fmt.Errorf("failed to edit message with photo: %w", editErr)
+		}
+
+		return nil
+	})
+}
+
 // DeleteMessageParams contains parameters for deleting a message.
 type DeleteMessageParams struct {
 	ChatID    int64
