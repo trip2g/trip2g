@@ -204,6 +204,49 @@ func TestHTMLList(t *testing.T) {
 2. second item
 3. third item`,
 		},
+		{
+			name: "paragraph followed by unordered list",
+			markdown: `Unordered list:
+- First item
+- Second item
+- Third item`,
+			expected: `Unordered list:
+- First item
+- Second item
+- Third item`,
+		},
+		{
+			name: "paragraph followed by ordered list",
+			markdown: `Numbered list:
+1. First step
+2. Second step
+3. Third step`,
+			expected: `Numbered list:
+1. First step
+2. Second step
+3. Third step`,
+		},
+		{
+			name: "multiple paragraphs with lists",
+			markdown: `Unordered list:
+- First item
+- Second item
+- Third item
+
+Numbered list:
+1. First step
+2. Second step
+3. Third step`,
+			expected: `Unordered list:
+- First item
+- Second item
+- Third item
+
+Numbered list:
+1. First step
+2. Second step
+3. Third step`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -537,7 +580,8 @@ title: "Media Test"
 
 The post type is: <b>media_group</b>
 
-Features:- Multiple photos and videos (up to 10)
+Features:
+- Multiple photos and videos (up to 10)
 - Caption can be edited`
 
 	require.Equal(t, expected, res.Content)

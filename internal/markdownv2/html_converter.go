@@ -350,6 +350,20 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 				// Get the parent list
 				parent := node.Parent()
 				if list, ok := parent.(*ast.List); ok {
+					// Add newline before first list item if previous content exists
+					// This handles the case when list follows a paragraph without blank line
+					if node.PreviousSibling() == nil {
+						// Flush buffer if not empty
+						if len(c.bufStack) == 1 && c.bufStack[0].Len() > 0 {
+							lines = append(lines, c.bufStack[0].String())
+							c.bufStack[0].Reset()
+						}
+						// Add newline if lines exist and last element is not already a newline
+						if len(lines) > 0 && lines[len(lines)-1] != "\n" && lines[len(lines)-1] != "\n\n" {
+							lines = append(lines, "\n")
+						}
+					}
+
 					if list.IsOrdered() {
 						// For ordered lists, calculate item number based on child index
 						itemNum := 1
