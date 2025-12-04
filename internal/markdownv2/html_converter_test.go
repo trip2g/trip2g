@@ -398,6 +398,89 @@ title: "Test"
 	}
 }
 
+func TestHTMLCustomEmoji(t *testing.T) {
+	tests := []struct {
+		name     string
+		markdown string
+		expected string
+		warnings int
+	}{
+		{
+			name:     "tg://emoji format",
+			markdown: "Hello ![👋](tg://emoji?id=5368324170671202286) world",
+			expected: `Hello <tg-emoji emoji-id="5368324170671202286">👋</tg-emoji> world`,
+			warnings: 0,
+		},
+		{
+			name:     "ce.trip2g.com format",
+			markdown: "Hello ![](https://ce.trip2g.com/5460736117236048513.webp) world",
+			expected: `Hello <tg-emoji emoji-id="5460736117236048513"></tg-emoji> world`,
+			warnings: 0,
+		},
+		{
+			name:     "ce.trip2g.com with alt text",
+			markdown: "Hello ![emoji](https://ce.trip2g.com/5460736117236048513.webp) world",
+			expected: `Hello <tg-emoji emoji-id="5460736117236048513">emoji</tg-emoji> world`,
+			warnings: 0,
+		},
+		{
+			name:     "multiple ce.trip2g.com emojis",
+			markdown: "![](https://ce.trip2g.com/111.webp)![](https://ce.trip2g.com/222.webp)",
+			expected: `<tg-emoji emoji-id="111"></tg-emoji><tg-emoji emoji-id="222"></tg-emoji>`,
+			warnings: 0,
+		},
+		{
+			name:     "mixed emoji formats",
+			markdown: "![👋](tg://emoji?id=123) and ![](https://ce.trip2g.com/456.webp)",
+			expected: `<tg-emoji emoji-id="123">👋</tg-emoji> and <tg-emoji emoji-id="456"></tg-emoji>`,
+			warnings: 0,
+		},
+		{
+			name:     "unsupported image source",
+			markdown: "![](https://example.com/image.png)",
+			expected: ``,
+			warnings: 2, // Both Enclave and Image nodes are created
+		},
+		{
+			name:     "ce.trip2g.com wrong extension",
+			markdown: "![](https://ce.trip2g.com/123.png)",
+			expected: ``,
+			warnings: 2, // Both Enclave and Image nodes are created
+		},
+		{
+			name:     "ce.trip2g.com non-numeric id",
+			markdown: "![](https://ce.trip2g.com/abc.webp)",
+			expected: ``,
+			warnings: 2, // Both Enclave and Image nodes are created
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mdOptions := mdloader.Options{
+				Sources: []mdloader.SourceFile{{
+					Content: []byte(`---
+free: true
+title: "Test"
+---
+` + tt.markdown),
+				}},
+				Log:     &logger.TestLogger{},
+				Version: "latest",
+			}
+
+			nvs, err := mdloader.Load(mdOptions)
+			require.NoError(t, err)
+
+			convertor := markdownv2.HTMLConverter{}
+			res := convertor.Process(nvs.List[0])
+
+			require.Len(t, res.Warnings, tt.warnings)
+			require.Equal(t, tt.expected, res.Content)
+		})
+	}
+}
+
 // TestHTMLMediaFilesBlankLines tests that excessive blank lines are removed
 // when media files (embedded wikilinks) are in the middle of content.
 func TestHTMLMediaFilesBlankLines(t *testing.T) {

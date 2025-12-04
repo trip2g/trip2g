@@ -2,6 +2,7 @@ package completetelegramaccountauth_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"strings"
 	"testing"
@@ -111,7 +112,7 @@ func TestResolve(t *testing.T) {
 			errContains: "2FA password required. Hint: your pet name",
 		},
 		{
-			name: "successful auth",
+			name: "successful auth - new account",
 			env: &EnvMock{
 				CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 					return &usertoken.Data{ID: 1}, nil
@@ -125,6 +126,9 @@ func TestResolve(t *testing.T) {
 						APIHash:     "abc123",
 					}, nil
 				},
+				GetTelegramAccountByPhoneFunc: func(ctx context.Context, phone string) (db.TelegramAccount, error) {
+					return db.TelegramAccount{}, sql.ErrNoRows
+				},
 				InsertTelegramAccountFunc: func(ctx context.Context, arg db.InsertTelegramAccountParams) (db.TelegramAccount, error) {
 					return db.TelegramAccount{
 						ID:          1,
@@ -132,6 +136,43 @@ func TestResolve(t *testing.T) {
 						DisplayName: arg.DisplayName,
 						IsPremium:   arg.IsPremium,
 					}, nil
+				},
+			},
+			input: model.AdminCompleteTelegramAccountAuthInput{
+				Phone: "+1234567890",
+				Code:  "12345",
+			},
+			wantErr:     false,
+			wantPayload: true,
+		},
+		{
+			name: "successful auth - existing account (re-auth)",
+			env: &EnvMock{
+				CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
+					return &usertoken.Data{ID: 1}, nil
+				},
+				TelegramAccountCompleteAuthFunc: func(ctx context.Context, phone, code, password string) (*appmodel.TelegramCompleteAuthResult, error) {
+					return &appmodel.TelegramCompleteAuthResult{
+						SessionData: []byte("new_session"),
+						DisplayName: "Test User",
+						IsPremium:   true,
+						APIID:       12345,
+						APIHash:     "abc123",
+					}, nil
+				},
+				GetTelegramAccountByPhoneFunc: func(ctx context.Context, phone string) (db.TelegramAccount, error) {
+					return db.TelegramAccount{
+						ID:          5,
+						Phone:       phone,
+						DisplayName: "Old User",
+						Enabled:     0,
+					}, nil
+				},
+				UpdateTelegramAccountFunc: func(ctx context.Context, arg db.UpdateTelegramAccountParams) error {
+					require.Equal(t, int64(5), arg.ID)
+					require.Equal(t, []byte("new_session"), arg.SessionData)
+					require.Equal(t, int64(1), arg.Enabled.Int64)
+					return nil
 				},
 			},
 			input: model.AdminCompleteTelegramAccountAuthInput{

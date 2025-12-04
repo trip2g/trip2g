@@ -5,12 +5,26 @@ $trip2g_admin_noteview_catalog $trip2g_admin_catalog
 	Empty $mol_status
 	Content* $trip2g_admin_noteview_show
 		noteview_id <= row_id* \
+	Permalink* $mol_view
+		dom_name \a
+		attr *
+			href <= row_permalink* \path
+			target \_blank
+		sub /
+			<= row_permalink* \path
+			<= Icon* $mol_icon_open_in_new
+	NoPermalink* $mol_view
+		sub / \-
 	menu_link_content* / <= NoteItem* $mol_view
 		sub /
 			<= Rows* $mol_row
 				minimal_height 24
 				minimal_width 600
 				sub <= row_content* /
+					<= Row_permalink_labeler* $mol_labeler
+						title \Permalink
+						Content <= Row_permalink* $trip2g_admin_cell
+							sub / <= row_permalink_el* null $mol_view
 					<= Row_path_labeler* $mol_labeler
 						title \Path
 						Content <= Row_path* $trip2g_admin_cell

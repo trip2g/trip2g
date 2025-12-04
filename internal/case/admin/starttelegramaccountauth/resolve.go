@@ -2,12 +2,9 @@ package starttelegramaccountauth
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 
-	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 
@@ -16,7 +13,6 @@ import (
 
 type Env interface {
 	TelegramAccountStartAuth(ctx context.Context, phone string, apiID int, apiHash string) (*appmodel.TelegramStartAuthResult, error)
-	GetTelegramAccountByPhone(ctx context.Context, phone string) (db.TelegramAccount, error)
 }
 
 type Input = model.AdminStartTelegramAccountAuthInput
@@ -35,15 +31,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	phone := strings.TrimSpace(input.Phone)
 	apiHash := strings.TrimSpace(input.APIHash)
 
-	// Check if account with this phone already exists
-	_, err = env.GetTelegramAccountByPhone(ctx, phone)
-	if err == nil {
-		return &model.ErrorPayload{Message: "Account with this phone already exists"}, nil
-	}
-	if !errors.Is(err, sql.ErrNoRows) {
-		return nil, fmt.Errorf("failed to check existing account: %w", err)
-	}
-
+	// Start auth - if phone already exists, completeTelegramAccountAuth will update the existing account
 	result, err := env.TelegramAccountStartAuth(ctx, phone, int(input.APIID), apiHash)
 	if err != nil {
 		return &model.ErrorPayload{Message: fmt.Sprintf("Failed to start auth: %s", err.Error())}, nil

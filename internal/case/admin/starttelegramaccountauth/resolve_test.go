@@ -2,13 +2,11 @@ package starttelegramaccountauth_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"strings"
 	"testing"
 
 	"trip2g/internal/case/admin/starttelegramaccountauth"
-	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 
@@ -29,28 +27,8 @@ func TestResolve(t *testing.T) {
 		errContains string
 	}{
 		{
-			name: "phone already exists",
-			env: &EnvMock{
-				GetTelegramAccountByPhoneFunc: func(ctx context.Context, phone string) (db.TelegramAccount, error) {
-					return db.TelegramAccount{Phone: phone}, nil
-				},
-			},
-			input: model.AdminStartTelegramAccountAuthInput{
-				Phone:   "+1234567890",
-				APIID:   12345,
-				APIHash: "abc123",
-			},
-			wantErr:     false,
-			wantPayload: false,
-			errContains: "Account with this phone already exists",
-		},
-		{
 			name: "trims whitespace from phone",
 			env: &EnvMock{
-				GetTelegramAccountByPhoneFunc: func(ctx context.Context, phone string) (db.TelegramAccount, error) {
-					require.Equal(t, "+1234567890", phone, "phone should be trimmed")
-					return db.TelegramAccount{}, sql.ErrNoRows
-				},
 				TelegramAccountStartAuthFunc: func(ctx context.Context, phone string, apiID int, apiHash string) (*appmodel.TelegramStartAuthResult, error) {
 					require.Equal(t, "+1234567890", phone, "phone should be trimmed")
 					require.Equal(t, "abc123", apiHash, "apiHash should be trimmed")
@@ -69,9 +47,6 @@ func TestResolve(t *testing.T) {
 		{
 			name: "successful auth start",
 			env: &EnvMock{
-				GetTelegramAccountByPhoneFunc: func(ctx context.Context, phone string) (db.TelegramAccount, error) {
-					return db.TelegramAccount{}, sql.ErrNoRows
-				},
 				TelegramAccountStartAuthFunc: func(ctx context.Context, phone string, apiID int, apiHash string) (*appmodel.TelegramStartAuthResult, error) {
 					return &appmodel.TelegramStartAuthResult{
 						Phone: phone,

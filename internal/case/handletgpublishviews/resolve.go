@@ -23,6 +23,7 @@ type Env interface {
 	LatestNoteViews() *model.NoteViews
 
 	EnqueueSendTelegramPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
+	EnqueueSendTelegramAccountPost(ctx context.Context, params model.SendTelegramPublishPostParams) error
 
 	ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
 }
@@ -156,9 +157,17 @@ func (p *processor) process(note *model.NoteView) error {
 		Instant:           true,
 		UpdateLinkedPosts: false,
 	}
+
+	// Send via bot
 	err = p.env.EnqueueSendTelegramPost(p.ctx, params)
 	if err != nil {
 		return fmt.Errorf("failed to EnqueueSendTelegramPost: %w", err)
+	}
+
+	// Send via account
+	err = p.env.EnqueueSendTelegramAccountPost(p.ctx, params)
+	if err != nil {
+		return fmt.Errorf("failed to EnqueueSendTelegramAccountPost: %w", err)
 	}
 
 	return nil

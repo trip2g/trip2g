@@ -48,3 +48,22 @@ type SendTelegramPublishPostParams struct {
 	Instant           bool  `json:"instant"`
 	UpdateLinkedPosts bool  `json:"update_linked_posts"`
 }
+
+// TelegramAccountSendPostParams contains parameters for sending a post via user account (MTProto).
+type TelegramAccountSendPostParams struct {
+	NotePathID     int64  `json:"note_path_id"`
+	AccountID      int64  `json:"account_id"`
+	TelegramChatID int64  `json:"telegram_chat_id"`
+	SessionData    []byte `json:"session_data"`
+
+	Post              TelegramPost `json:"post"`
+	Instant           bool         `json:"instant"`
+	UpdateLinkedPosts bool         `json:"update_linked_posts"`
+}
+
+// TelegramAccountUpdatePostParams contains parameters for updating a post via user account.
+type TelegramAccountUpdatePostParams struct {
+	TelegramAccountSendPostParams
+
+	MessageID int64 `json:"message_id"`
+}

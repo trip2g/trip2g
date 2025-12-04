@@ -7,7 +7,6 @@ import (
 	"context"
 	"sync"
 	"trip2g/internal/case/admin/starttelegramaccountauth"
-	"trip2g/internal/db"
 	appmodel "trip2g/internal/model"
 )
 
@@ -21,9 +20,6 @@ var _ starttelegramaccountauth.Env = &EnvMock{}
 //
 //		// make and configure a mocked starttelegramaccountauth.Env
 //		mockedEnv := &EnvMock{
-//			GetTelegramAccountByPhoneFunc: func(ctx context.Context, phone string) (db.TelegramAccount, error) {
-//				panic("mock out the GetTelegramAccountByPhone method")
-//			},
 //			TelegramAccountStartAuthFunc: func(ctx context.Context, phone string, apiID int, apiHash string) (*appmodel.TelegramStartAuthResult, error) {
 //				panic("mock out the TelegramAccountStartAuth method")
 //			},
@@ -34,21 +30,11 @@ var _ starttelegramaccountauth.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
-	// GetTelegramAccountByPhoneFunc mocks the GetTelegramAccountByPhone method.
-	GetTelegramAccountByPhoneFunc func(ctx context.Context, phone string) (db.TelegramAccount, error)
-
 	// TelegramAccountStartAuthFunc mocks the TelegramAccountStartAuth method.
 	TelegramAccountStartAuthFunc func(ctx context.Context, phone string, apiID int, apiHash string) (*appmodel.TelegramStartAuthResult, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// GetTelegramAccountByPhone holds details about calls to the GetTelegramAccountByPhone method.
-		GetTelegramAccountByPhone []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// Phone is the phone argument value.
-			Phone string
-		}
 		// TelegramAccountStartAuth holds details about calls to the TelegramAccountStartAuth method.
 		TelegramAccountStartAuth []struct {
 			// Ctx is the ctx argument value.
@@ -61,44 +47,7 @@ type EnvMock struct {
 			ApiHash string
 		}
 	}
-	lockGetTelegramAccountByPhone sync.RWMutex
-	lockTelegramAccountStartAuth  sync.RWMutex
-}
-
-// GetTelegramAccountByPhone calls GetTelegramAccountByPhoneFunc.
-func (mock *EnvMock) GetTelegramAccountByPhone(ctx context.Context, phone string) (db.TelegramAccount, error) {
-	if mock.GetTelegramAccountByPhoneFunc == nil {
-		panic("EnvMock.GetTelegramAccountByPhoneFunc: method is nil but Env.GetTelegramAccountByPhone was just called")
-	}
-	callInfo := struct {
-		Ctx   context.Context
-		Phone string
-	}{
-		Ctx:   ctx,
-		Phone: phone,
-	}
-	mock.lockGetTelegramAccountByPhone.Lock()
-	mock.calls.GetTelegramAccountByPhone = append(mock.calls.GetTelegramAccountByPhone, callInfo)
-	mock.lockGetTelegramAccountByPhone.Unlock()
-	return mock.GetTelegramAccountByPhoneFunc(ctx, phone)
-}
-
-// GetTelegramAccountByPhoneCalls gets all the calls that were made to GetTelegramAccountByPhone.
-// Check the length with:
-//
-//	len(mockedEnv.GetTelegramAccountByPhoneCalls())
-func (mock *EnvMock) GetTelegramAccountByPhoneCalls() []struct {
-	Ctx   context.Context
-	Phone string
-} {
-	var calls []struct {
-		Ctx   context.Context
-		Phone string
-	}
-	mock.lockGetTelegramAccountByPhone.RLock()
-	calls = mock.calls.GetTelegramAccountByPhone
-	mock.lockGetTelegramAccountByPhone.RUnlock()
-	return calls
+	lockTelegramAccountStartAuth sync.RWMutex
 }
 
 // TelegramAccountStartAuth calls TelegramAccountStartAuthFunc.

@@ -42,7 +42,7 @@ lint:
 	go tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint run
 
 docker-deps:
-	docker-compose up -d
+	docker-compose up -d minio
 
 air: docker-deps
 	go tool github.com/air-verse/air

@@ -80,6 +80,10 @@ func prepare(t *testing.T, nvs *model.NoteViews) *EnvMock {
 		EnqueueSendTelegramPostFunc: func(ctx context.Context, params model.SendTelegramPublishPostParams) error {
 			return nil
 		},
+
+		EnqueueSendTelegramAccountPostFunc: func(ctx context.Context, params model.SendTelegramPublishPostParams) error {
+			return nil
+		},
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -159,4 +163,10 @@ func TestMetaExtractrs(t *testing.T) {
 	require.Equal(t, int64(9), env.calls.EnqueueSendTelegramPost[1].Params.NotePathID)
 	require.True(t, env.calls.EnqueueSendTelegramPost[0].Params.Instant)
 	require.True(t, env.calls.EnqueueSendTelegramPost[1].Params.Instant)
+
+	require.Len(t, env.calls.EnqueueSendTelegramAccountPost, 2)
+	require.Equal(t, int64(7), env.calls.EnqueueSendTelegramAccountPost[0].Params.NotePathID)
+	require.Equal(t, int64(9), env.calls.EnqueueSendTelegramAccountPost[1].Params.NotePathID)
+	require.True(t, env.calls.EnqueueSendTelegramAccountPost[0].Params.Instant)
+	require.True(t, env.calls.EnqueueSendTelegramAccountPost[1].Params.Instant)
 }

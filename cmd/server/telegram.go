@@ -314,3 +314,12 @@ func (a *app) GetTelegramAccountDialogPublishInstantTags(ctx context.Context, ac
 		TelegramChatID: telegramChatID,
 	})
 }
+
+// DeleteTelegramAccountMessage deletes a message via user account (MTProto)
+func (a *app) DeleteTelegramAccountMessage(ctx context.Context, account db.TelegramAccount, chatID, messageID int64) error {
+	client := tgtd.NewClient(int(account.ApiID), account.ApiHash)
+	return client.DeleteMessage(ctx, account.SessionData, tgtd.DeleteMessageParams{
+		ChatID:    chatID,
+		MessageID: messageID,
+	})
+}

@@ -737,9 +737,6 @@ update telegram_accounts
      , api_hash = coalesce(sqlc.narg(api_hash), api_hash)
  where id = ?1;
 
--- name: DeleteTelegramAccount :exec
-delete from telegram_accounts where id = ?;
-
 -- name: DeleteTelegramPublishAccountChatsByAccountAndChatID :exec
 delete from telegram_publish_account_chats
  where account_id = ?

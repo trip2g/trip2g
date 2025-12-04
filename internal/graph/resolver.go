@@ -27,7 +27,6 @@ import (
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
-	"trip2g/internal/case/admin/deletetelegramaccount"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/makereleaselive"
@@ -45,6 +44,7 @@ import (
 	"trip2g/internal/case/admin/settgchatpublishtags"
 	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
+	"trip2g/internal/case/admin/signouttelegramaccount"
 	"trip2g/internal/case/admin/startbackgroundqueue"
 	"trip2g/internal/case/admin/starttelegramaccountauth"
 	"trip2g/internal/case/admin/stopbackgroundqueue"
@@ -245,7 +245,7 @@ type Env interface {
 	completetelegramaccountauth.Env
 	canceltelegramaccountauth.Env
 	updatetelegramaccount.Env
-	deletetelegramaccount.Env
+	signouttelegramaccount.Env
 	settelegramaccountchatpublishtags.Env
 	settelegramaccountchatpublishinstanttags.Env
 

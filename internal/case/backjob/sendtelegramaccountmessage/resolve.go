@@ -1,0 +1,196 @@
+package sendtelegramaccountmessage
+
+import (
+	"context"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
+	"fmt"
+	"time"
+	"trip2g/internal/db"
+	"trip2g/internal/logger"
+	"trip2g/internal/model"
+	"trip2g/internal/telegram"
+	"trip2g/internal/tgtd"
+)
+
+//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg sendtelegramaccountmessage_test . Env
+
+type Env interface {
+	InsertTelegramPublishSentAccountMessage(ctx context.Context, arg db.InsertTelegramPublishSentAccountMessageParams) error
+	CheckTelegramPublishSentAccountMessageExists(ctx context.Context, arg db.CheckTelegramPublishSentAccountMessageExistsParams) (int64, error)
+	LatestNoteViews() *model.NoteViews
+	UpdateTelegramAccountPublishPost(ctx context.Context, notePathID int64) error
+	SetTelegramPublishNoteLastError(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error
+	ClearTelegramPublishNoteLastError(ctx context.Context, notePathID int64) error
+	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)
+	Logger() logger.Logger
+}
+
+func Resolve(ctx context.Context, env Env, params model.TelegramAccountSendPostParams) error {
+	jobTimeout := time.Minute
+
+	jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
+	defer cancel()
+
+	err := resolve1(jobCtx, env, params)
+	if err != nil {
+		shouldRetry, delay := telegram.HandleRateLimit(err)
+		if shouldRetry {
+			env.Logger().Info("telegram rate limit hit, retrying after delay",
+				"delay", delay,
+				"job", JobID,
+			)
+			time.Sleep(delay)
+			err = Resolve(ctx, env, params)
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func resolve1(ctx context.Context, env Env, params model.TelegramAccountSendPostParams) error {
+	// Check if message already exists before sending to avoid duplicate messages
+	exists, err := env.CheckTelegramPublishSentAccountMessageExists(ctx, db.CheckTelegramPublishSentAccountMessageExistsParams{
+		NotePathID:     params.NotePathID,
+		AccountID:      params.AccountID,
+		TelegramChatID: params.TelegramChatID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to check if message exists: %w", err)
+	}
+
+	// If message already exists, skip sending (this can happen with job retries)
+	if exists != 0 {
+		env.Logger().Info("telegram account message already sent, skipping",
+			"note_path_id", params.NotePathID,
+			"account_id", params.AccountID,
+			"telegram_chat_id", params.TelegramChatID,
+		)
+		return nil
+	}
+
+	// Get account for API credentials
+	account, err := env.GetTelegramAccountByID(ctx, params.AccountID)
+	if err != nil {
+		return fmt.Errorf("failed to get telegram account: %w", err)
+	}
+
+	post := params.Post
+
+	// Determine post type based on media count
+	mediaCount := len(post.Media)
+	var postType string
+	switch mediaCount {
+	case 0:
+		postType = "text"
+	case 1:
+		postType = "photo"
+	default:
+		postType = "media_group"
+	}
+
+	// Truncate content to telegram limits (media posts have lower limit)
+	content := telegram.TruncateContent(post.Content, mediaCount > 0)
+
+	// Create tgtd client and send message
+	client := tgtd.NewClient(int(account.ApiID), account.ApiHash)
+
+	var result *tgtd.SendMessageResult
+	var sendErr error
+
+	switch mediaCount {
+	case 0:
+		// Send as text message
+		result, sendErr = client.SendMessage(ctx, account.SessionData, tgtd.SendMessageParams{
+			ChatID:  params.TelegramChatID,
+			Message: content,
+		})
+	case 1:
+		// Send as single photo
+		result, sendErr = client.SendPhoto(ctx, account.SessionData, tgtd.SendPhotoParams{
+			ChatID:   params.TelegramChatID,
+			PhotoURL: post.Media[0],
+			Caption:  content,
+		})
+	default:
+		// Send as media group (2-10 media files)
+		result, sendErr = client.SendMediaGroup(ctx, account.SessionData, tgtd.SendMediaGroupParams{
+			ChatID:    params.TelegramChatID,
+			MediaURLs: post.Media,
+			Caption:   content,
+		})
+	}
+
+	if sendErr != nil {
+		// Store error message
+		errMsg := sendErr.Error()
+		setErr := env.SetTelegramPublishNoteLastError(ctx, db.SetTelegramPublishNoteLastErrorParams{
+			LastError: sql.NullString{
+				String: errMsg,
+				Valid:  true,
+			},
+			NotePathID: params.NotePathID,
+		})
+		if setErr != nil {
+			env.Logger().Error("failed to set last_error", "error", setErr)
+		}
+		return fmt.Errorf("failed to send via account: %w", sendErr)
+	}
+
+	// Calculate content hash
+	hash := sha256.Sum256([]byte(content))
+	contentHash := hex.EncodeToString(hash[:])
+
+	var instant int64
+	if params.Instant {
+		instant = 1
+	}
+
+	sentParams := db.InsertTelegramPublishSentAccountMessageParams{
+		NotePathID:     params.NotePathID,
+		AccountID:      params.AccountID,
+		TelegramChatID: params.TelegramChatID,
+		MessageID:      result.MessageID,
+		Instant:        instant,
+		ContentHash:    contentHash,
+		Content:        content,
+		PostType:       postType,
+	}
+
+	err = env.InsertTelegramPublishSentAccountMessage(ctx, sentParams)
+	if err != nil {
+		return fmt.Errorf("failed to InsertTelegramPublishSentAccountMessage: %w", err)
+	}
+
+	// Clear last_error on successful send
+	err = env.ClearTelegramPublishNoteLastError(ctx, params.NotePathID)
+	if err != nil {
+		env.Logger().Error("failed to clear last_error", "error", err)
+	}
+
+	// If requested, enqueue updates for linked posts
+	if params.UpdateLinkedPosts {
+		nvs := env.LatestNoteViews()
+		noteView := nvs.GetByPathID(params.NotePathID)
+		if noteView == nil {
+			return nil
+		}
+
+		for inLink := range noteView.InLinks {
+			inNote, ok := nvs.Map[inLink]
+			if ok && inNote.IsTelegramPublishPost() {
+				updateErr := env.UpdateTelegramAccountPublishPost(ctx, inNote.PathID)
+				if updateErr != nil {
+					return fmt.Errorf("failed to update linked post %d: %w", inNote.PathID, updateErr)
+				}
+			}
+		}
+	}
+
+	return nil
+}

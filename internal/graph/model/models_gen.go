@@ -22,16 +22,16 @@ type AdminCompleteTelegramAccountAuthOrErrorPayload interface {
 	IsAdminCompleteTelegramAccountAuthOrErrorPayload()
 }
 
-type AdminDeleteTelegramAccountOrErrorPayload interface {
-	IsAdminDeleteTelegramAccountOrErrorPayload()
-}
-
 type AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload interface {
 	IsAdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload()
 }
 
 type AdminSetTelegramAccountChatPublishTagsOrErrorPayload interface {
 	IsAdminSetTelegramAccountChatPublishTagsOrErrorPayload()
+}
+
+type AdminSignOutTelegramAccountOrErrorPayload interface {
+	IsAdminSignOutTelegramAccountOrErrorPayload()
 }
 
 type AdminStartTelegramAccountAuthOrErrorPayload interface {
@@ -388,16 +388,6 @@ type AdminCronJobsConnection struct {
 	Nodes []db.CronJob `json:"nodes"`
 }
 
-type AdminDeleteTelegramAccountInput struct {
-	ID int64 `json:"id"`
-}
-
-type AdminDeleteTelegramAccountPayload struct {
-	Success bool `json:"success"`
-}
-
-func (AdminDeleteTelegramAccountPayload) IsAdminDeleteTelegramAccountOrErrorPayload() {}
-
 type AdminGitTokensConnection struct {
 	Nodes []db.GitToken `json:"nodes"`
 }
@@ -485,6 +475,16 @@ type AdminSetTelegramAccountChatPublishTagsPayload struct {
 
 func (AdminSetTelegramAccountChatPublishTagsPayload) IsAdminSetTelegramAccountChatPublishTagsOrErrorPayload() {
 }
+
+type AdminSignOutTelegramAccountInput struct {
+	ID int64 `json:"id"`
+}
+
+type AdminSignOutTelegramAccountPayload struct {
+	Success bool `json:"success"`
+}
+
+func (AdminSignOutTelegramAccountPayload) IsAdminSignOutTelegramAccountOrErrorPayload() {}
 
 type AdminStartTelegramAccountAuthInput struct {
 	Phone   string `json:"phone"`
@@ -871,7 +871,7 @@ func (ErrorPayload) IsAdminCancelTelegramAccountAuthOrErrorPayload() {}
 
 func (ErrorPayload) IsAdminUpdateTelegramAccountOrErrorPayload() {}
 
-func (ErrorPayload) IsAdminDeleteTelegramAccountOrErrorPayload() {}
+func (ErrorPayload) IsAdminSignOutTelegramAccountOrErrorPayload() {}
 
 func (ErrorPayload) IsAdminSetTelegramAccountChatPublishTagsOrErrorPayload() {}
 

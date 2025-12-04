@@ -28,6 +28,9 @@ var _ sendtelegrampublishnotenow.Env = &EnvMock{}
 //			GetTelegramPublishNoteByNotePathIDFunc: func(ctx context.Context, notePathID int64) (db.TelegramPublishNote, error) {
 //				panic("mock out the GetTelegramPublishNoteByNotePathID method")
 //			},
+//			SendTelegramAccountPublishPostFunc: func(ctx context.Context, params appmodel.SendTelegramPublishPostParams) error {
+//				panic("mock out the SendTelegramAccountPublishPost method")
+//			},
 //			SendTelegramPublishPostFunc: func(ctx context.Context, params appmodel.SendTelegramPublishPostParams) error {
 //				panic("mock out the SendTelegramPublishPost method")
 //			},
@@ -43,6 +46,9 @@ type EnvMock struct {
 
 	// GetTelegramPublishNoteByNotePathIDFunc mocks the GetTelegramPublishNoteByNotePathID method.
 	GetTelegramPublishNoteByNotePathIDFunc func(ctx context.Context, notePathID int64) (db.TelegramPublishNote, error)
+
+	// SendTelegramAccountPublishPostFunc mocks the SendTelegramAccountPublishPost method.
+	SendTelegramAccountPublishPostFunc func(ctx context.Context, params appmodel.SendTelegramPublishPostParams) error
 
 	// SendTelegramPublishPostFunc mocks the SendTelegramPublishPost method.
 	SendTelegramPublishPostFunc func(ctx context.Context, params appmodel.SendTelegramPublishPostParams) error
@@ -61,6 +67,13 @@ type EnvMock struct {
 			// NotePathID is the notePathID argument value.
 			NotePathID int64
 		}
+		// SendTelegramAccountPublishPost holds details about calls to the SendTelegramAccountPublishPost method.
+		SendTelegramAccountPublishPost []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Params is the params argument value.
+			Params appmodel.SendTelegramPublishPostParams
+		}
 		// SendTelegramPublishPost holds details about calls to the SendTelegramPublishPost method.
 		SendTelegramPublishPost []struct {
 			// Ctx is the ctx argument value.
@@ -71,6 +84,7 @@ type EnvMock struct {
 	}
 	lockCurrentAdminUserToken              sync.RWMutex
 	lockGetTelegramPublishNoteByNotePathID sync.RWMutex
+	lockSendTelegramAccountPublishPost     sync.RWMutex
 	lockSendTelegramPublishPost            sync.RWMutex
 }
 
@@ -139,6 +153,42 @@ func (mock *EnvMock) GetTelegramPublishNoteByNotePathIDCalls() []struct {
 	mock.lockGetTelegramPublishNoteByNotePathID.RLock()
 	calls = mock.calls.GetTelegramPublishNoteByNotePathID
 	mock.lockGetTelegramPublishNoteByNotePathID.RUnlock()
+	return calls
+}
+
+// SendTelegramAccountPublishPost calls SendTelegramAccountPublishPostFunc.
+func (mock *EnvMock) SendTelegramAccountPublishPost(ctx context.Context, params appmodel.SendTelegramPublishPostParams) error {
+	if mock.SendTelegramAccountPublishPostFunc == nil {
+		panic("EnvMock.SendTelegramAccountPublishPostFunc: method is nil but Env.SendTelegramAccountPublishPost was just called")
+	}
+	callInfo := struct {
+		Ctx    context.Context
+		Params appmodel.SendTelegramPublishPostParams
+	}{
+		Ctx:    ctx,
+		Params: params,
+	}
+	mock.lockSendTelegramAccountPublishPost.Lock()
+	mock.calls.SendTelegramAccountPublishPost = append(mock.calls.SendTelegramAccountPublishPost, callInfo)
+	mock.lockSendTelegramAccountPublishPost.Unlock()
+	return mock.SendTelegramAccountPublishPostFunc(ctx, params)
+}
+
+// SendTelegramAccountPublishPostCalls gets all the calls that were made to SendTelegramAccountPublishPost.
+// Check the length with:
+//
+//	len(mockedEnv.SendTelegramAccountPublishPostCalls())
+func (mock *EnvMock) SendTelegramAccountPublishPostCalls() []struct {
+	Ctx    context.Context
+	Params appmodel.SendTelegramPublishPostParams
+} {
+	var calls []struct {
+		Ctx    context.Context
+		Params appmodel.SendTelegramPublishPostParams
+	}
+	mock.lockSendTelegramAccountPublishPost.RLock()
+	calls = mock.calls.SendTelegramAccountPublishPost
+	mock.lockSendTelegramAccountPublishPost.RUnlock()
 	return calls
 }
 

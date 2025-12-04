@@ -20,10 +20,19 @@ type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	Logger() logger.Logger
 
+	// Bot messages
 	ListTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error)
-	ResetTelegramPublishNote(ctx context.Context, notePathID int64) error
 	DeleteTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) error
 	SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
+
+	// Account messages
+	ListTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error)
+	DeleteTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) error
+	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)
+	DeleteTelegramAccountMessage(ctx context.Context, account db.TelegramAccount, chatID, messageID int64) error
+
+	// Common
+	ResetTelegramPublishNote(ctx context.Context, notePathID int64) error
 	GetTelegramPublishNoteByNotePathID(ctx context.Context, notePathID int64) (db.TelegramPublishNote, error)
 }
 
@@ -45,7 +54,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return errPayload, nil
 	}
 
-	logger := logger.WithPrefix(env.Logger(), "resettelegrampublishnote")
+	log := logger.WithPrefix(env.Logger(), "resettelegrampublishnote:")
 
 	publishNote, err := env.GetTelegramPublishNoteByNotePathID(ctx, input.ID)
 	if err != nil {
@@ -55,10 +64,16 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get telegram publish note: %w", err)
 	}
 
-	// Get all sent messages for this note before deleting them
-	sentMessages, err := env.ListTelegramPublishSentMessagesByNotePathID(ctx, publishNote.NotePathID)
+	// Get all bot sent messages for this note before deleting them
+	botSentMessages, err := env.ListTelegramPublishSentMessagesByNotePathID(ctx, publishNote.NotePathID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list sent messages: %w", err)
+		return nil, fmt.Errorf("failed to list bot sent messages: %w", err)
+	}
+
+	// Get all account sent messages for this note before deleting them
+	accountSentMessages, err := env.ListTelegramPublishSentAccountMessagesByNotePathID(ctx, publishNote.NotePathID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list account sent messages: %w", err)
 	}
 
 	// Reset the publish note in database
@@ -67,10 +82,16 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to reset telegram publish note: %w", err)
 	}
 
-	// Delete sent message records
+	// Delete bot sent message records
 	err = env.DeleteTelegramPublishSentMessagesByNotePathID(ctx, publishNote.NotePathID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to delete sent message records: %w", err)
+		return nil, fmt.Errorf("failed to delete bot sent message records: %w", err)
+	}
+
+	// Delete account sent message records
+	err = env.DeleteTelegramPublishSentAccountMessagesByNotePathID(ctx, publishNote.NotePathID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete account sent message records: %w", err)
 	}
 
 	// Get the updated publish note to return
@@ -79,12 +100,26 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get updated telegram publish note: %w", err)
 	}
 
-	// Delete messages from Telegram after all database operations are successful
-	for _, sentMsg := range sentMessages {
+	// Delete bot messages from Telegram
+	for _, sentMsg := range botSentMessages {
 		deleteMsg := tgbotapi.NewDeleteMessage(sentMsg.TelegramID, int(sentMsg.MessageID))
-		err = env.SendTelegramRequest(ctx, sentMsg.ChatID, deleteMsg)
-		if err != nil {
-			logger.Error("failed to delete message", "chat_id", sentMsg.ChatID, "message_id", sentMsg.MessageID, "error", err)
+		deleteErr := env.SendTelegramRequest(ctx, sentMsg.ChatID, deleteMsg)
+		if deleteErr != nil {
+			log.Error("failed to delete bot message", "chat_id", sentMsg.ChatID, "message_id", sentMsg.MessageID, "error", deleteErr)
+		}
+	}
+
+	// Delete account messages from Telegram
+	for _, sentMsg := range accountSentMessages {
+		account, accountErr := env.GetTelegramAccountByID(ctx, sentMsg.AccountID)
+		if accountErr != nil {
+			log.Error("failed to get account for message deletion", "account_id", sentMsg.AccountID, "error", accountErr)
+			continue
+		}
+
+		deleteErr := env.DeleteTelegramAccountMessage(ctx, account, sentMsg.TelegramChatID, sentMsg.MessageID)
+		if deleteErr != nil {
+			log.Error("failed to delete account message", "account_id", sentMsg.AccountID, "chat_id", sentMsg.TelegramChatID, "message_id", sentMsg.MessageID, "error", deleteErr)
 		}
 	}
 

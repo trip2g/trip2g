@@ -14,12 +14,17 @@ namespace $.$$ {
 		},
 		Row_title_labeler: {
 			flex: {
-				basis: rem(10),
+				basis: rem(20),
 			},
 		},
 		Row_free_labeler: {
 			flex: {
 				basis: rem(3),
+			},
+		},
+		Row_permalink_labeler: {
+			flex: {
+				basis: rem(15),
 			},
 		},
 	})

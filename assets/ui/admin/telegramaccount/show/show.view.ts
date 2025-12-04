@@ -9,8 +9,8 @@ namespace $.$$ {
 				return [ this.UpdateForm() ]
 			}
 
-			if( this.action() === 'delete' ) {
-				return [ this.DeleteForm() ]
+			if( this.action() === 'signout' ) {
+				return [ this.SignoutForm() ]
 			}
 
 			return super.body()

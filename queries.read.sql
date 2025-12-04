@@ -814,13 +814,27 @@ select t.*
 select n.note_path_id
   from telegram_publish_notes n
   join note_paths p on n.note_path_id = p.id
-  -- the note must be tagged with at least one chat
+  -- the note must be tagged with at least one bot chat
   join telegram_publish_note_tags nt on n.note_path_id = nt.note_path_id
   join telegram_publish_chats pc on nt.tag_id = pc.tag_id
   where p.hidden_by is null
    and publish_at <= datetime('now')
    and published_at is null
    and last_error is null;
+
+-- name: ListSheduledTelegarmAccountPublishNoteIDs :many
+select distinct n.note_path_id
+  from telegram_publish_notes n
+  join note_paths p on n.note_path_id = p.id
+  -- the note must be tagged with at least one account chat
+  join telegram_publish_note_tags nt on n.note_path_id = nt.note_path_id
+  join telegram_publish_account_chats ac on nt.tag_id = ac.tag_id
+  join telegram_accounts a on ac.account_id = a.id
+  where p.hidden_by is null
+   and publish_at <= datetime('now')
+   and published_at is null
+   and last_error is null
+   and a.enabled = 1;
 
 -- name: ListTgBotChatsByTelegramPublishNotePathID :many
 select c.*

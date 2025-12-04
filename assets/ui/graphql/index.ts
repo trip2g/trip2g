@@ -18,6 +18,13 @@ namespace $ {
 		}
 	}
 
+	class reset_query_marker extends $mol_object2 {
+		@$mol_mem
+		query_marker(val?: number) {
+			return val || 0
+		}
+	}
+
 	class cache extends $mol_object2 {
 		@$mol_mem_key
 		typename(key: string, val?: number) {
@@ -46,94 +53,15 @@ namespace $ {
 		}
 	}
 
-	const cacheInstance = new cache()
-
-	function inject_typenames(source: string) {
-		let out = ''
-		let i = 0
-		const n = source.length
-
-		let state: 'default' | 'string' | 'blockString' | 'comment' = 'default'
-		let quoteChar: '"' | "'" | null = null // для string / blockString
-		let blockQuoteLen = 0 // 1 или 3 кавычки
-
-		while (i < n) {
-			const c = source[i]
-			const next2 = source.slice(i, i + 2)
-			const next3 = source.slice(i, i + 3)
-
-			/* ---------- переходы состояний ---------- */
-			if (state === 'default') {
-				if (c === '#') {
-					// начало комментария
-					state = 'comment'
-					out += c
-					i++
-					continue
-				}
-				if (next3 === '"""' || next3 === "'''") {
-					// начало блок-строки
-					state = 'blockString'
-					quoteChar = c as '"' | "'"
-					blockQuoteLen = 3
-					out += next3
-					i += 3
-					continue
-				}
-				if (c === '"' || c === "'") {
-					// начало обычной строки
-					state = 'string'
-					quoteChar = c as '"' | "'"
-					blockQuoteLen = 1
-					out += c
-					i++
-					continue
-				}
-				if (c === '{') {
-					// наша целевая точка
-					out += c
-					i++
-
-					// пропускаем пробелы/переводы строк/запятые
-					let j = i
-					while (j < n && /[\s,\r\n]/.test(source[j])) j++
-
-					const hasTypename = source.startsWith('__typename', j)
-					if (!hasTypename) out += ' __typename'
-					continue
-				}
-			} else if (state === 'comment') {
-				out += c
-				i++
-				if (c === '\n') state = 'default'
-				continue
-			} else if (state === 'string') {
-				out += c
-				i++
-				if (c === quoteChar && source[i - 2] !== '\\') state = 'default'
-				continue
-			} else if (state === 'blockString') {
-				out += c
-				i++
-				if (source.slice(i - blockQuoteLen, i) === quoteChar!.repeat(blockQuoteLen)) state = 'default'
-				continue
-			}
-
-			/* default path */
-			out += c
-			i++
-		}
-		return out
-	}
-
 	type RequestOptions = {
 		resetCache?: boolean // true by default
 	}
 
+	const reset_marker = new reset_query_marker()
+
 	export function $trip2g_graphql_raw_request(query: string) {
 		// replace @exportType directives
 		query = query.replace(/@exportType\s*(\([^)]*\))?\s*/g, '')
-		query = inject_typenames(query)
 
 		return (variables?: any, opts?: RequestOptions): any => {
 			const res = $.$mol_fetch.json('/graphql', {
@@ -150,7 +78,11 @@ namespace $ {
 			const isMutation = !!query.match(/^\s+mutation/)
 
 			if (opts?.resetCache !== false) {
-				cacheInstance.markTypenames(res.data, isMutation)
+				if (isMutation) {
+					reset_marker.query_marker(reset_marker.query_marker() + 1)
+				} else {
+					reset_marker.query_marker()
+				}
 			}
 
 			return res.data

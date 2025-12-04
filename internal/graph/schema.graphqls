@@ -785,18 +785,18 @@ type AdminUpdateTelegramAccountPayload {
 union AdminUpdateTelegramAccountOrErrorPayload = AdminUpdateTelegramAccountPayload | ErrorPayload
 
 #
-# deleteTelegramAccount
+# signOutTelegramAccount
 #
 
-input AdminDeleteTelegramAccountInput {
+input AdminSignOutTelegramAccountInput {
   id: Int64!
 }
 
-type AdminDeleteTelegramAccountPayload {
+type AdminSignOutTelegramAccountPayload {
   success: Boolean!
 }
 
-union AdminDeleteTelegramAccountOrErrorPayload = AdminDeleteTelegramAccountPayload | ErrorPayload
+union AdminSignOutTelegramAccountOrErrorPayload = AdminSignOutTelegramAccountPayload | ErrorPayload
 
 #
 # setTelegramAccountChatPublishTags
@@ -2099,7 +2099,7 @@ type AdminMutation {
   completeTelegramAccountAuth(input: AdminCompleteTelegramAccountAuthInput!): AdminCompleteTelegramAccountAuthOrErrorPayload!
   cancelTelegramAccountAuth(input: AdminCancelTelegramAccountAuthInput!): AdminCancelTelegramAccountAuthOrErrorPayload!
   updateTelegramAccount(input: AdminUpdateTelegramAccountInput!): AdminUpdateTelegramAccountOrErrorPayload!
-  deleteTelegramAccount(input: AdminDeleteTelegramAccountInput!): AdminDeleteTelegramAccountOrErrorPayload!
+  signOutTelegramAccount(input: AdminSignOutTelegramAccountInput!): AdminSignOutTelegramAccountOrErrorPayload!
   setTelegramAccountChatPublishTags(input: AdminSetTelegramAccountChatPublishTagsInput!): AdminSetTelegramAccountChatPublishTagsOrErrorPayload!
   setTelegramAccountChatPublishInstantTags(input: AdminSetTelegramAccountChatPublishInstantTagsInput!): AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload!
 

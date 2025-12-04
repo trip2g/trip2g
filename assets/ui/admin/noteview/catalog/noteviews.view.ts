@@ -8,6 +8,7 @@ namespace $.$$ {
 						path
 						title
 						free
+						permalink
 					}
 				}
 			}
@@ -31,20 +32,32 @@ namespace $.$$ {
 			return this.data().get(id);
 		}
 
-		row_id( id: any ): string {
+		override row_id( id: any ): string {
 			return this.row(id).id;
 		}
 
-		row_path( id: any ): string {
+		override row_path( id: any ): string {
 			return this.row(id).path;
 		}
 
-		row_title( id: any ): string {
+		override row_title( id: any ): string {
 			return this.row(id).title;
 		}
 
-		row_free( id: any ): string {
+		override row_free( id: any ): string {
 			return this.row(id).free ? 'Yes' : 'No';
+		}
+
+		override row_permalink_el( id: any ) {
+			const l = this.row(id).permalink;
+			if (l.includes('/_')) {
+				return this.NoPermalink(id)
+			}
+			return this.Permalink(id)
+		}
+
+		override row_permalink( id: any ): string {
+			return this.row(id).permalink;
 		}
 	}
 }

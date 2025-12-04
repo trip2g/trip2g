@@ -2,6 +2,8 @@ package completetelegramaccountauth
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -16,7 +18,9 @@ import (
 type Env interface {
 	TelegramAccountCompleteAuth(ctx context.Context, phone, code, password string) (*appmodel.TelegramCompleteAuthResult, error)
 	TelegramAccountGetPasswordHint(phone string) string
+	GetTelegramAccountByPhone(ctx context.Context, phone string) (db.TelegramAccount, error)
 	InsertTelegramAccount(ctx context.Context, arg db.InsertTelegramAccountParams) (db.TelegramAccount, error)
+	UpdateTelegramAccount(ctx context.Context, arg db.UpdateTelegramAccountParams) error
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
 
@@ -57,23 +61,54 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return &model.ErrorPayload{Message: fmt.Sprintf("Authentication failed: %s", err.Error())}, nil
 	}
 
-	// Insert the account into database
 	isPremium := int64(0)
 	if result.IsPremium {
 		isPremium = 1
 	}
 
-	account, err := env.InsertTelegramAccount(ctx, db.InsertTelegramAccountParams{
-		Phone:       phone,
-		SessionData: result.SessionData,
-		DisplayName: result.DisplayName,
-		IsPremium:   isPremium,
-		ApiID:       int64(result.APIID),
-		ApiHash:     result.APIHash,
-		CreatedBy:   int64(token.ID),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to insert telegram account: %w", err)
+	// Check if account with this phone already exists
+	existingAccount, err := env.GetTelegramAccountByPhone(ctx, phone)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("failed to check existing account: %w", err)
+	}
+
+	var account db.TelegramAccount
+
+	if err == nil {
+		// Account exists - update session and enable it
+		enabled := int64(1)
+		err = env.UpdateTelegramAccount(ctx, db.UpdateTelegramAccountParams{
+			ID:          existingAccount.ID,
+			SessionData: result.SessionData,
+			DisplayName: sql.NullString{String: result.DisplayName, Valid: true},
+			IsPremium:   sql.NullInt64{Int64: isPremium, Valid: true},
+			ApiID:       sql.NullInt64{Int64: int64(result.APIID), Valid: true},
+			ApiHash:     sql.NullString{String: result.APIHash, Valid: true},
+			Enabled:     sql.NullInt64{Int64: enabled, Valid: true},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to update telegram account: %w", err)
+		}
+
+		// Fetch updated account
+		account, err = env.GetTelegramAccountByPhone(ctx, phone)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get updated telegram account: %w", err)
+		}
+	} else {
+		// Account doesn't exist - insert new
+		account, err = env.InsertTelegramAccount(ctx, db.InsertTelegramAccountParams{
+			Phone:       phone,
+			SessionData: result.SessionData,
+			DisplayName: result.DisplayName,
+			IsPremium:   isPremium,
+			ApiID:       int64(result.APIID),
+			ApiHash:     result.APIHash,
+			CreatedBy:   int64(token.ID),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert telegram account: %w", err)
+		}
 	}
 
 	payload := model.AdminCompleteTelegramAccountAuthPayload{

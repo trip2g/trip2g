@@ -89,6 +89,23 @@ func TestResolve(t *testing.T) {
 		{ChatID: 2, MessageID: 200, TelegramID: 1002},
 	}
 
+	// Helper to add default account message mocks
+	addAccountMocks := func(env *EnvMock) *EnvMock {
+		env.ListTelegramPublishSentAccountMessagesByNotePathIDFunc = func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error) {
+			return nil, nil
+		}
+		env.DeleteTelegramPublishSentAccountMessagesByNotePathIDFunc = func(ctx context.Context, notePathID int64) error {
+			return nil
+		}
+		env.GetTelegramAccountByIDFunc = func(ctx context.Context, id int64) (db.TelegramAccount, error) {
+			return db.TelegramAccount{}, nil
+		}
+		env.DeleteTelegramAccountMessageFunc = func(ctx context.Context, account db.TelegramAccount, chatID, messageID int64) error {
+			return nil
+		}
+		return env
+	}
+
 	tests := []struct {
 		name    string
 		input   model.ResetTelegramPublishNoteInput
@@ -101,7 +118,7 @@ func TestResolve(t *testing.T) {
 			input: model.ResetTelegramPublishNoteInput{ID: 123},
 			env: func() *EnvMock {
 				callCount := 0
-				return &EnvMock{
+				return addAccountMocks(&EnvMock{
 					CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 						return validToken, nil
 					},
@@ -127,7 +144,7 @@ func TestResolve(t *testing.T) {
 					DeleteTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) error {
 						return nil
 					},
-				}
+				})
 			},
 			want: &model.ResetTelegramPublishNotePayload{
 				PublishNote: &resetPublishNote,
@@ -214,7 +231,7 @@ func TestResolve(t *testing.T) {
 			input: model.ResetTelegramPublishNoteInput{ID: 123},
 			env: func() *EnvMock {
 				callCount := 0
-				return &EnvMock{
+				return addAccountMocks(&EnvMock{
 					CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 						return validToken, nil
 					},
@@ -241,7 +258,7 @@ func TestResolve(t *testing.T) {
 					DeleteTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) error {
 						return nil
 					},
-				}
+				})
 			},
 			want: &model.ResetTelegramPublishNotePayload{
 				PublishNote: &resetPublishNote,
@@ -252,7 +269,7 @@ func TestResolve(t *testing.T) {
 			name:  "error resetting publish note",
 			input: model.ResetTelegramPublishNoteInput{ID: 123},
 			env: func() *EnvMock {
-				return &EnvMock{
+				return addAccountMocks(&EnvMock{
 					CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 						return validToken, nil
 					},
@@ -271,7 +288,7 @@ func TestResolve(t *testing.T) {
 					ResetTelegramPublishNoteFunc: func(ctx context.Context, notePathID int64) error {
 						return errors.New("database error")
 					},
-				}
+				})
 			},
 			want:    nil,
 			wantErr: true,
@@ -280,7 +297,7 @@ func TestResolve(t *testing.T) {
 			name:  "error deleting sent message records",
 			input: model.ResetTelegramPublishNoteInput{ID: 123},
 			env: func() *EnvMock {
-				return &EnvMock{
+				return addAccountMocks(&EnvMock{
 					CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 						return validToken, nil
 					},
@@ -302,7 +319,7 @@ func TestResolve(t *testing.T) {
 					DeleteTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) error {
 						return errors.New("database error")
 					},
-				}
+				})
 			},
 			want:    nil,
 			wantErr: true,

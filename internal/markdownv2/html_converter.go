@@ -3,6 +3,7 @@ package markdownv2
 import (
 	"fmt"
 	"html"
+	"regexp"
 	"strings"
 	"time"
 	"trip2g/internal/mdloader/highlight"
@@ -13,6 +14,19 @@ import (
 	extast "github.com/yuin/goldmark/extension/ast"
 	"go.abhg.dev/goldmark/wikilink"
 )
+
+// ceEmojiURLPattern matches URLs like https://ce.trip2g.com/5460736117236048513.webp
+var ceEmojiURLPattern = regexp.MustCompile(`^https://ce\.trip2g\.com/(\d+)\.webp$`)
+
+// extractCustomEmojiID extracts emoji ID from ce.trip2g.com URL
+// Returns empty string if URL doesn't match the pattern
+func extractCustomEmojiID(url string) string {
+	matches := ceEmojiURLPattern.FindStringSubmatch(url)
+	if len(matches) == 2 {
+		return matches[1]
+	}
+	return ""
+}
 
 type LinkResolverResult struct {
 	URL       string
@@ -188,8 +202,15 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 		case *enclavecore.Enclave:
 			dest := string(node.Destination)
+			var emojiID string
+
 			if strings.HasPrefix(dest, "tg://emoji?id=") {
-				emojiID := strings.TrimPrefix(dest, "tg://emoji?id=")
+				emojiID = strings.TrimPrefix(dest, "tg://emoji?id=")
+			} else if id := extractCustomEmojiID(dest); id != "" {
+				emojiID = id
+			}
+
+			if emojiID != "" {
 				if entering {
 					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">%s</tg-emoji>`,
 						html.EscapeString(emojiID), html.EscapeString(node.Alt)))
@@ -203,8 +224,15 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 		case *ast.Image:
 			dest := string(node.Destination)
+			var emojiID string
+
 			if strings.HasPrefix(dest, "tg://emoji?id=") {
-				emojiID := strings.TrimPrefix(dest, "tg://emoji?id=")
+				emojiID = strings.TrimPrefix(dest, "tg://emoji?id=")
+			} else if id := extractCustomEmojiID(dest); id != "" {
+				emojiID = id
+			}
+
+			if emojiID != "" {
 				if entering {
 					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">`, html.EscapeString(emojiID)))
 				} else {

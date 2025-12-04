@@ -37,7 +37,6 @@ import (
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
-	"trip2g/internal/case/admin/deletetelegramaccount"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/makereleaselive"
@@ -55,6 +54,7 @@ import (
 	"trip2g/internal/case/admin/settgchatpublishtags"
 	"trip2g/internal/case/admin/settgchatsubgraphinvites"
 	"trip2g/internal/case/admin/settgchatsubgraphs"
+	"trip2g/internal/case/admin/signouttelegramaccount"
 	"trip2g/internal/case/admin/startbackgroundqueue"
 	"trip2g/internal/case/admin/starttelegramaccountauth"
 	"trip2g/internal/case/admin/stopbackgroundqueue"
@@ -711,9 +711,9 @@ func (r *adminMutationResolver) UpdateTelegramAccount(ctx context.Context, obj *
 	return updatetelegramaccount.Resolve(ctx, r.env(ctx), input)
 }
 
-// DeleteTelegramAccount is the resolver for the deleteTelegramAccount field.
-func (r *adminMutationResolver) DeleteTelegramAccount(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminDeleteTelegramAccountInput) (model.AdminDeleteTelegramAccountOrErrorPayload, error) {
-	return deletetelegramaccount.Resolve(ctx, r.env(ctx), input)
+// SignOutTelegramAccount is the resolver for the signOutTelegramAccount field.
+func (r *adminMutationResolver) SignOutTelegramAccount(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminSignOutTelegramAccountInput) (model.AdminSignOutTelegramAccountOrErrorPayload, error) {
+	return signouttelegramaccount.Resolve(ctx, r.env(ctx), input)
 }
 
 // SetTelegramAccountChatPublishTags is the resolver for the setTelegramAccountChatPublishTags field.

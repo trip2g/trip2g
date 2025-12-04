@@ -26,11 +26,23 @@ var _ resettelegrampublishnote.Env = &EnvMock{}
 //			CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentAdminUserToken method")
 //			},
+//			DeleteTelegramAccountMessageFunc: func(ctx context.Context, account db.TelegramAccount, chatID int64, messageID int64) error {
+//				panic("mock out the DeleteTelegramAccountMessage method")
+//			},
+//			DeleteTelegramPublishSentAccountMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) error {
+//				panic("mock out the DeleteTelegramPublishSentAccountMessagesByNotePathID method")
+//			},
 //			DeleteTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) error {
 //				panic("mock out the DeleteTelegramPublishSentMessagesByNotePathID method")
 //			},
+//			GetTelegramAccountByIDFunc: func(ctx context.Context, id int64) (db.TelegramAccount, error) {
+//				panic("mock out the GetTelegramAccountByID method")
+//			},
 //			GetTelegramPublishNoteByNotePathIDFunc: func(ctx context.Context, notePathID int64) (db.TelegramPublishNote, error) {
 //				panic("mock out the GetTelegramPublishNoteByNotePathID method")
+//			},
+//			ListTelegramPublishSentAccountMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error) {
+//				panic("mock out the ListTelegramPublishSentAccountMessagesByNotePathID method")
 //			},
 //			ListTelegramPublishSentMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error) {
 //				panic("mock out the ListTelegramPublishSentMessagesByNotePathID method")
@@ -54,11 +66,23 @@ type EnvMock struct {
 	// CurrentAdminUserTokenFunc mocks the CurrentAdminUserToken method.
 	CurrentAdminUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
 
+	// DeleteTelegramAccountMessageFunc mocks the DeleteTelegramAccountMessage method.
+	DeleteTelegramAccountMessageFunc func(ctx context.Context, account db.TelegramAccount, chatID int64, messageID int64) error
+
+	// DeleteTelegramPublishSentAccountMessagesByNotePathIDFunc mocks the DeleteTelegramPublishSentAccountMessagesByNotePathID method.
+	DeleteTelegramPublishSentAccountMessagesByNotePathIDFunc func(ctx context.Context, notePathID int64) error
+
 	// DeleteTelegramPublishSentMessagesByNotePathIDFunc mocks the DeleteTelegramPublishSentMessagesByNotePathID method.
 	DeleteTelegramPublishSentMessagesByNotePathIDFunc func(ctx context.Context, notePathID int64) error
 
+	// GetTelegramAccountByIDFunc mocks the GetTelegramAccountByID method.
+	GetTelegramAccountByIDFunc func(ctx context.Context, id int64) (db.TelegramAccount, error)
+
 	// GetTelegramPublishNoteByNotePathIDFunc mocks the GetTelegramPublishNoteByNotePathID method.
 	GetTelegramPublishNoteByNotePathIDFunc func(ctx context.Context, notePathID int64) (db.TelegramPublishNote, error)
+
+	// ListTelegramPublishSentAccountMessagesByNotePathIDFunc mocks the ListTelegramPublishSentAccountMessagesByNotePathID method.
+	ListTelegramPublishSentAccountMessagesByNotePathIDFunc func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error)
 
 	// ListTelegramPublishSentMessagesByNotePathIDFunc mocks the ListTelegramPublishSentMessagesByNotePathID method.
 	ListTelegramPublishSentMessagesByNotePathIDFunc func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error)
@@ -79,6 +103,24 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 		}
+		// DeleteTelegramAccountMessage holds details about calls to the DeleteTelegramAccountMessage method.
+		DeleteTelegramAccountMessage []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Account is the account argument value.
+			Account db.TelegramAccount
+			// ChatID is the chatID argument value.
+			ChatID int64
+			// MessageID is the messageID argument value.
+			MessageID int64
+		}
+		// DeleteTelegramPublishSentAccountMessagesByNotePathID holds details about calls to the DeleteTelegramPublishSentAccountMessagesByNotePathID method.
+		DeleteTelegramPublishSentAccountMessagesByNotePathID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// NotePathID is the notePathID argument value.
+			NotePathID int64
+		}
 		// DeleteTelegramPublishSentMessagesByNotePathID holds details about calls to the DeleteTelegramPublishSentMessagesByNotePathID method.
 		DeleteTelegramPublishSentMessagesByNotePathID []struct {
 			// Ctx is the ctx argument value.
@@ -86,8 +128,22 @@ type EnvMock struct {
 			// NotePathID is the notePathID argument value.
 			NotePathID int64
 		}
+		// GetTelegramAccountByID holds details about calls to the GetTelegramAccountByID method.
+		GetTelegramAccountByID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID int64
+		}
 		// GetTelegramPublishNoteByNotePathID holds details about calls to the GetTelegramPublishNoteByNotePathID method.
 		GetTelegramPublishNoteByNotePathID []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// NotePathID is the notePathID argument value.
+			NotePathID int64
+		}
+		// ListTelegramPublishSentAccountMessagesByNotePathID holds details about calls to the ListTelegramPublishSentAccountMessagesByNotePathID method.
+		ListTelegramPublishSentAccountMessagesByNotePathID []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// NotePathID is the notePathID argument value.
@@ -120,13 +176,17 @@ type EnvMock struct {
 			Msg tgbotapi.Chattable
 		}
 	}
-	lockCurrentAdminUserToken                         sync.RWMutex
-	lockDeleteTelegramPublishSentMessagesByNotePathID sync.RWMutex
-	lockGetTelegramPublishNoteByNotePathID            sync.RWMutex
-	lockListTelegramPublishSentMessagesByNotePathID   sync.RWMutex
-	lockLogger                                        sync.RWMutex
-	lockResetTelegramPublishNote                      sync.RWMutex
-	lockSendTelegramRequest                           sync.RWMutex
+	lockCurrentAdminUserToken                                sync.RWMutex
+	lockDeleteTelegramAccountMessage                         sync.RWMutex
+	lockDeleteTelegramPublishSentAccountMessagesByNotePathID sync.RWMutex
+	lockDeleteTelegramPublishSentMessagesByNotePathID        sync.RWMutex
+	lockGetTelegramAccountByID                               sync.RWMutex
+	lockGetTelegramPublishNoteByNotePathID                   sync.RWMutex
+	lockListTelegramPublishSentAccountMessagesByNotePathID   sync.RWMutex
+	lockListTelegramPublishSentMessagesByNotePathID          sync.RWMutex
+	lockLogger                                               sync.RWMutex
+	lockResetTelegramPublishNote                             sync.RWMutex
+	lockSendTelegramRequest                                  sync.RWMutex
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -158,6 +218,86 @@ func (mock *EnvMock) CurrentAdminUserTokenCalls() []struct {
 	mock.lockCurrentAdminUserToken.RLock()
 	calls = mock.calls.CurrentAdminUserToken
 	mock.lockCurrentAdminUserToken.RUnlock()
+	return calls
+}
+
+// DeleteTelegramAccountMessage calls DeleteTelegramAccountMessageFunc.
+func (mock *EnvMock) DeleteTelegramAccountMessage(ctx context.Context, account db.TelegramAccount, chatID int64, messageID int64) error {
+	if mock.DeleteTelegramAccountMessageFunc == nil {
+		panic("EnvMock.DeleteTelegramAccountMessageFunc: method is nil but Env.DeleteTelegramAccountMessage was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		Account   db.TelegramAccount
+		ChatID    int64
+		MessageID int64
+	}{
+		Ctx:       ctx,
+		Account:   account,
+		ChatID:    chatID,
+		MessageID: messageID,
+	}
+	mock.lockDeleteTelegramAccountMessage.Lock()
+	mock.calls.DeleteTelegramAccountMessage = append(mock.calls.DeleteTelegramAccountMessage, callInfo)
+	mock.lockDeleteTelegramAccountMessage.Unlock()
+	return mock.DeleteTelegramAccountMessageFunc(ctx, account, chatID, messageID)
+}
+
+// DeleteTelegramAccountMessageCalls gets all the calls that were made to DeleteTelegramAccountMessage.
+// Check the length with:
+//
+//	len(mockedEnv.DeleteTelegramAccountMessageCalls())
+func (mock *EnvMock) DeleteTelegramAccountMessageCalls() []struct {
+	Ctx       context.Context
+	Account   db.TelegramAccount
+	ChatID    int64
+	MessageID int64
+} {
+	var calls []struct {
+		Ctx       context.Context
+		Account   db.TelegramAccount
+		ChatID    int64
+		MessageID int64
+	}
+	mock.lockDeleteTelegramAccountMessage.RLock()
+	calls = mock.calls.DeleteTelegramAccountMessage
+	mock.lockDeleteTelegramAccountMessage.RUnlock()
+	return calls
+}
+
+// DeleteTelegramPublishSentAccountMessagesByNotePathID calls DeleteTelegramPublishSentAccountMessagesByNotePathIDFunc.
+func (mock *EnvMock) DeleteTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) error {
+	if mock.DeleteTelegramPublishSentAccountMessagesByNotePathIDFunc == nil {
+		panic("EnvMock.DeleteTelegramPublishSentAccountMessagesByNotePathIDFunc: method is nil but Env.DeleteTelegramPublishSentAccountMessagesByNotePathID was just called")
+	}
+	callInfo := struct {
+		Ctx        context.Context
+		NotePathID int64
+	}{
+		Ctx:        ctx,
+		NotePathID: notePathID,
+	}
+	mock.lockDeleteTelegramPublishSentAccountMessagesByNotePathID.Lock()
+	mock.calls.DeleteTelegramPublishSentAccountMessagesByNotePathID = append(mock.calls.DeleteTelegramPublishSentAccountMessagesByNotePathID, callInfo)
+	mock.lockDeleteTelegramPublishSentAccountMessagesByNotePathID.Unlock()
+	return mock.DeleteTelegramPublishSentAccountMessagesByNotePathIDFunc(ctx, notePathID)
+}
+
+// DeleteTelegramPublishSentAccountMessagesByNotePathIDCalls gets all the calls that were made to DeleteTelegramPublishSentAccountMessagesByNotePathID.
+// Check the length with:
+//
+//	len(mockedEnv.DeleteTelegramPublishSentAccountMessagesByNotePathIDCalls())
+func (mock *EnvMock) DeleteTelegramPublishSentAccountMessagesByNotePathIDCalls() []struct {
+	Ctx        context.Context
+	NotePathID int64
+} {
+	var calls []struct {
+		Ctx        context.Context
+		NotePathID int64
+	}
+	mock.lockDeleteTelegramPublishSentAccountMessagesByNotePathID.RLock()
+	calls = mock.calls.DeleteTelegramPublishSentAccountMessagesByNotePathID
+	mock.lockDeleteTelegramPublishSentAccountMessagesByNotePathID.RUnlock()
 	return calls
 }
 
@@ -197,6 +337,42 @@ func (mock *EnvMock) DeleteTelegramPublishSentMessagesByNotePathIDCalls() []stru
 	return calls
 }
 
+// GetTelegramAccountByID calls GetTelegramAccountByIDFunc.
+func (mock *EnvMock) GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error) {
+	if mock.GetTelegramAccountByIDFunc == nil {
+		panic("EnvMock.GetTelegramAccountByIDFunc: method is nil but Env.GetTelegramAccountByID was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  int64
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockGetTelegramAccountByID.Lock()
+	mock.calls.GetTelegramAccountByID = append(mock.calls.GetTelegramAccountByID, callInfo)
+	mock.lockGetTelegramAccountByID.Unlock()
+	return mock.GetTelegramAccountByIDFunc(ctx, id)
+}
+
+// GetTelegramAccountByIDCalls gets all the calls that were made to GetTelegramAccountByID.
+// Check the length with:
+//
+//	len(mockedEnv.GetTelegramAccountByIDCalls())
+func (mock *EnvMock) GetTelegramAccountByIDCalls() []struct {
+	Ctx context.Context
+	ID  int64
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  int64
+	}
+	mock.lockGetTelegramAccountByID.RLock()
+	calls = mock.calls.GetTelegramAccountByID
+	mock.lockGetTelegramAccountByID.RUnlock()
+	return calls
+}
+
 // GetTelegramPublishNoteByNotePathID calls GetTelegramPublishNoteByNotePathIDFunc.
 func (mock *EnvMock) GetTelegramPublishNoteByNotePathID(ctx context.Context, notePathID int64) (db.TelegramPublishNote, error) {
 	if mock.GetTelegramPublishNoteByNotePathIDFunc == nil {
@@ -230,6 +406,42 @@ func (mock *EnvMock) GetTelegramPublishNoteByNotePathIDCalls() []struct {
 	mock.lockGetTelegramPublishNoteByNotePathID.RLock()
 	calls = mock.calls.GetTelegramPublishNoteByNotePathID
 	mock.lockGetTelegramPublishNoteByNotePathID.RUnlock()
+	return calls
+}
+
+// ListTelegramPublishSentAccountMessagesByNotePathID calls ListTelegramPublishSentAccountMessagesByNotePathIDFunc.
+func (mock *EnvMock) ListTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error) {
+	if mock.ListTelegramPublishSentAccountMessagesByNotePathIDFunc == nil {
+		panic("EnvMock.ListTelegramPublishSentAccountMessagesByNotePathIDFunc: method is nil but Env.ListTelegramPublishSentAccountMessagesByNotePathID was just called")
+	}
+	callInfo := struct {
+		Ctx        context.Context
+		NotePathID int64
+	}{
+		Ctx:        ctx,
+		NotePathID: notePathID,
+	}
+	mock.lockListTelegramPublishSentAccountMessagesByNotePathID.Lock()
+	mock.calls.ListTelegramPublishSentAccountMessagesByNotePathID = append(mock.calls.ListTelegramPublishSentAccountMessagesByNotePathID, callInfo)
+	mock.lockListTelegramPublishSentAccountMessagesByNotePathID.Unlock()
+	return mock.ListTelegramPublishSentAccountMessagesByNotePathIDFunc(ctx, notePathID)
+}
+
+// ListTelegramPublishSentAccountMessagesByNotePathIDCalls gets all the calls that were made to ListTelegramPublishSentAccountMessagesByNotePathID.
+// Check the length with:
+//
+//	len(mockedEnv.ListTelegramPublishSentAccountMessagesByNotePathIDCalls())
+func (mock *EnvMock) ListTelegramPublishSentAccountMessagesByNotePathIDCalls() []struct {
+	Ctx        context.Context
+	NotePathID int64
+} {
+	var calls []struct {
+		Ctx        context.Context
+		NotePathID int64
+	}
+	mock.lockListTelegramPublishSentAccountMessagesByNotePathID.RLock()
+	calls = mock.calls.ListTelegramPublishSentAccountMessagesByNotePathID
+	mock.lockListTelegramPublishSentAccountMessagesByNotePathID.RUnlock()
 	return calls
 }
 

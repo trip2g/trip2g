@@ -57,6 +57,11 @@ func TestResolve(t *testing.T) {
 					require.False(t, params.Instant)
 					return nil
 				}
+				mock.SendTelegramAccountPublishPostFunc = func(ctx context.Context, params appmodel.SendTelegramPublishPostParams) error {
+					require.Equal(t, int64(1), params.NotePathID)
+					require.False(t, params.Instant)
+					return nil
+				}
 				return mock
 			},
 			want: &model.SendTelegramPublishNoteNowPayload{

@@ -37,7 +37,8 @@
       "Bash(go doc:*)",
       "Bash(go vet:*)",
       "Bash(chmod:*)",
-      "Bash(docker-compose up:*)"
+      "Bash(docker-compose up:*)",
+      "Bash(cat:*)"
     ],
     "deny": []
   },

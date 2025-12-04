@@ -256,15 +256,6 @@ func (q *WriteQueries) DeleteSignInCodesByUserID(ctx context.Context, userID int
 	return err
 }
 
-const deleteTelegramAccount = `-- name: DeleteTelegramAccount :exec
-delete from telegram_accounts where id = ?
-`
-
-func (q *WriteQueries) DeleteTelegramAccount(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteTelegramAccount, id)
-	return err
-}
-
 const deleteTelegramPublishAccountChatsByAccountAndChatID = `-- name: DeleteTelegramPublishAccountChatsByAccountAndChatID :exec
 delete from telegram_publish_account_chats
  where account_id = ?
@@ -2988,11 +2979,11 @@ func (q *WriteQueries) UpsertUserNoteDailyView(ctx context.Context, arg UpsertUs
 }
 
 type WriteQueries struct {
-	*Queries
+  *Queries
 }
 
 func NewWriteQueries(db DBTX) *WriteQueries {
-	return &WriteQueries{
-		Queries: New(db),
-	}
+  return &WriteQueries{
+    Queries: New(db),
+  }
 }

@@ -5,12 +5,12 @@ $trip2g_admin_telegramaccount_show $mol_page
 		<= EditLink $mol_link
 			arg * action \update
 			title \Edit
-		<= DeleteLink $mol_link
-			arg * action \delete
-			title \Delete
+		<= SignoutLink $mol_link
+			arg * action \signout
+			title \Sign Out
 	UpdateForm $trip2g_admin_telegramaccount_update
 		account_id <= account_id
-	DeleteForm $trip2g_admin_telegramaccount_delete
+	SignoutForm $trip2g_admin_telegramaccount_signout
 		account_id <= account_id
 	body /
 		<= DialogsSection $mol_section

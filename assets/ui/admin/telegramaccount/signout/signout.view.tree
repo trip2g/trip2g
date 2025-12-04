@@ -1,0 +1,10 @@
+$trip2g_admin_telegramaccount_signout $mol_view
+	account_id 0
+	style *
+		flexDirection \column
+	sub /
+		<= Confirm_text $mol_paragraph
+			title \Are you sure you want to sign out this Telegram account?
+		<= Signout_button $mol_button_major
+			title \Yes, sign out
+			click? <=> signout? null

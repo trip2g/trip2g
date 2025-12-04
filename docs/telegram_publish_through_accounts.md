@@ -582,33 +582,39 @@ mutation {
 
 ---
 
-### PR 2: Publishing Pipeline
+### PR 2: Publishing Pipeline ✅
 
 **Scope**: Публикация заметок через аккаунты.
 
 **Depends on**: PR 1 merged
 
 #### Phase 4: Publishing Cases
-1. [ ] Create `internal/case/sendtelegramaccountpublishpost/`
-2. [ ] Create `internal/case/updatetelegramaccountpublishpost/`
-3. [ ] Create `internal/case/backjob/sendtelegramaccountmessage/`
-4. [ ] Create `internal/case/backjob/sendtelegramaccountpost/`
-5. [ ] Create `internal/case/backjob/updatetelegramaccountmessage/`
-6. [ ] Create `internal/case/backjob/updatetelegramaccountpost/`
+1. [x] Create `internal/case/sendtelegramaccountpublishpost/`
+2. [x] Create `internal/case/updatetelegramaccountpublishpost/`
+3. [x] Create `internal/case/backjob/sendtelegramaccountmessage/`
+4. [x] Create `internal/case/backjob/sendtelegramaccountpost/`
+5. [x] Create `internal/case/backjob/updatetelegramaccountmessage/`
+6. [x] Create `internal/case/backjob/updatetelegramaccountpost/`
 
 #### Phase 5: Cronjob Integration
-7. [ ] Add SQL queries: `ListTelegramAccountChatsByNotePathID`, `ListTelegramAccountInstantChatsByNotePathID`
-8. [ ] Add `EnqueueSendTelegramAccountPost` to job queue
-9. [ ] Add `EnqueueUpdateTelegramAccountPost` to job queue
-10. [ ] Modify `sendscheduledtelegrampublishposts` cronjob:
+7. [x] Add SQL queries: `ListSheduledTelegarmAccountPublishNoteIDs`
+8. [x] Add `EnqueueSendTelegramAccountPost` to job queue
+9. [x] Add `EnqueueUpdateTelegramAccountPost` to job queue
+10. [x] Modify `sendscheduledtelegrampublishposts` cronjob:
     - After enqueueing bot posts, also enqueue account posts
     - Same for update posts
 
+#### Additional Changes
+11. [x] Extend `resetTelegramPublishNote` to delete account messages
+12. [x] Extend `sendTelegramPublishNoteNow` to send via account
+13. [x] Add `DeleteMessage` to `tgtd.Client`
+14. [x] Fix HTML formatting for MTProto (use `html.String()`)
+
 #### Testing PR 2
-11. [ ] Manual test: create note with `telegram_publish_tags`
-12. [ ] Manual test: verify note is published via account
-13. [ ] Manual test: update note, verify edit works
-14. [ ] Manual test: verify message appears in Telegram channel
+15. [x] Manual test: create note with `telegram_publish_tags`
+16. [x] Manual test: verify note is published via account
+17. [x] Manual test: update note, verify edit works
+18. [x] Manual test: verify message appears in Telegram channel
 
 ## Technical Notes
 
@@ -646,3 +652,201 @@ MTProto flood wait обрабатывается аналогично Bot API - s
 - gotd/td documentation: https://github.com/gotd/td
 - Existing usage: `cmd/channelexport/main.go`
 - Bot publish flow: `internal/case/sendtelegrampublishpost/`
+
+---
+
+## PR 2: Implementation Notes
+
+### What Was Implemented
+
+#### Phase 4: Publishing Cases ✅
+
+1. **`internal/case/sendtelegramaccountpublishpost/`** - отправка поста через аккаунт
+   - Получает чаты по тегам заметки из `telegram_publish_account_chats`
+   - Для каждого чата ставит в очередь `sendtelegramaccountpost` job
+
+2. **`internal/case/updatetelegramaccountpublishpost/`** - обновление существующих постов
+   - Находит ранее отправленные сообщения в `telegram_publish_sent_account_messages`
+   - Для каждого ставит в очередь `updatetelegramaccountpost` job
+
+3. **`internal/case/backjob/sendtelegramaccountmessage/`** - низкоуровневая отправка
+   - Использует `tgtd.Client.SendMessage()` для отправки через MTProto
+   - Сохраняет результат в `telegram_publish_sent_account_messages`
+
+4. **`internal/case/backjob/sendtelegramaccountpost/`** - job wrapper для отправки
+   - Рендерит markdown в HTML
+   - Вызывает `sendtelegramaccountmessage`
+
+5. **`internal/case/backjob/updatetelegramaccountmessage/`** - низкоуровневое редактирование
+   - Использует `tgtd.Client.EditMessage()` для редактирования через MTProto
+
+6. **`internal/case/backjob/updatetelegramaccountpost/`** - job wrapper для обновления
+   - Рендерит markdown в HTML
+   - Вызывает `updatetelegramaccountmessage`
+
+#### Phase 5: Cronjob Integration ✅
+
+7. **Отдельные SQL запросы для bot и account пайплайнов:**
+   - `ListSheduledTelegarmPublishNoteIDs` - только заметки с bot-чатами
+   - `ListSheduledTelegarmAccountPublishNoteIDs` - только заметки с account-чатами
+
+8. **Рефакторинг cronjob `sendscheduledtelegrampublishposts`:**
+   ```go
+   func Resolve(ctx context.Context, env Env) (any, error) {
+       res := Result{}
+
+       botPosts, err := enqueueBotJobs(ctx, env)
+       // ...
+
+       accountPosts, err := enqueueAccountJobs(ctx, env)
+       // ...
+
+       return res, nil
+   }
+   ```
+
+#### Additional Changes ✅
+
+9. **`resetTelegramPublishNote` мутация** - расширена для удаления account-сообщений:
+   - Добавлен `tgtd.Client.DeleteMessage()` для удаления через MTProto
+   - Удаляет записи из `telegram_publish_sent_account_messages`
+   - Удаляет сообщения из Telegram через account API
+
+10. **`sendTelegramPublishNoteNow` мутация** - расширена для отправки через account:
+    - Вызывает `SendTelegramPublishPost()` для bot
+    - Вызывает `SendTelegramAccountPublishPost()` для account
+
+11. **`handletgpublishviews`** - instant preview при изменении заметки:
+    - Вызывает `EnqueueSendTelegramPost()` для bot
+    - Вызывает `EnqueueSendTelegramAccountPost()` для account
+
+### Nuances & Lessons Learned
+
+#### 1. HTML Formatting in MTProto
+
+**Проблема:** Посты отправлялись как plain text, HTML-теги отображались буквально.
+
+**Причина:** Bot API использует `parse_mode: "HTML"`, а MTProto работает иначе - нужно парсить HTML и конвертировать в Telegram entities.
+
+**Решение:** Использовать `gotd/td/telegram/message/html` пакет:
+```go
+import (
+    "github.com/gotd/td/telegram/message"
+    "github.com/gotd/td/telegram/message/html"
+)
+
+sender := message.NewSender(api)
+updates, err := sender.To(peer).StyledText(ctx, html.String(nil, params.Message))
+```
+
+Это автоматически парсит HTML и создаёт правильные entities для форматирования.
+
+#### 2. Separate SQL Queries for Bot and Account
+
+**Проблема:** Исходный `ListSheduledTelegarmPublishNoteIDs` выбирал только заметки с bot-чатами.
+
+**Решение:** Создать отдельный `ListSheduledTelegarmAccountPublishNoteIDs`:
+```sql
+-- name: ListSheduledTelegarmAccountPublishNoteIDs :many
+select distinct n.note_path_id
+  from telegram_publish_notes n
+  join note_paths p on n.note_path_id = p.id
+  join telegram_publish_note_tags nt on n.note_path_id = nt.note_path_id
+  join telegram_publish_account_chats ac on nt.tag_id = ac.tag_id
+  join telegram_accounts a on ac.account_id = a.id
+  where p.hidden_by is null
+   and publish_at <= datetime('now')
+   and published_at is null
+   and last_error is null
+   and a.enabled = 1;
+```
+
+#### 3. DeleteMessage via MTProto
+
+**Нюанс:** Для удаления сообщений через MTProto нужно использовать разные методы в зависимости от типа чата:
+- Для каналов: `api.ChannelsDeleteMessages()`
+- Для остальных: `api.MessagesDeleteMessages()`
+
+```go
+switch p := peer.(type) {
+case *tg.InputPeerChannel:
+    _, err := api.ChannelsDeleteMessages(ctx, &tg.ChannelsDeleteMessagesRequest{
+        Channel: &tg.InputChannel{
+            ChannelID:  p.ChannelID,
+            AccessHash: p.AccessHash,
+        },
+        ID: []int{int(params.MessageID)},
+    })
+default:
+    _, err := api.MessagesDeleteMessages(ctx, &tg.MessagesDeleteMessagesRequest{
+        ID: []int{int(params.MessageID)},
+    })
+}
+```
+
+#### 4. No Need for Account Caching
+
+**Первоначальный подход:** Кэшировать account при удалении нескольких сообщений.
+
+**Реальность:** SQLite отлично справляется с N+1 запросами. Кэширование добавляет сложность без заметного выигрыша.
+
+#### 5. bool to int64 Conversion for `instant` Field
+
+**Проблема:** `params.Instant` имеет тип `bool`, а в базе поле `instant` имеет тип `integer`.
+
+**Решение:** Явное преобразование перед вставкой:
+```go
+var instantInt int64
+if params.Instant {
+    instantInt = 1
+}
+
+insertParams := db.InsertTelegramPublishSentAccountMessageParams{
+    // ...
+    Instant: instantInt,
+}
+```
+
+#### 6. Test Mocks for Extended Interfaces
+
+**Проблема:** При расширении `Env` интерфейсов (добавление account-методов) тесты падали с `method is nil`.
+
+**Решение:** Создать helper функцию для добавления дефолтных моков:
+```go
+addAccountMocks := func(env *EnvMock) *EnvMock {
+    env.ListTelegramPublishSentAccountMessagesByNotePathIDFunc = func(...) ([]..., error) {
+        return nil, nil
+    }
+    env.DeleteTelegramPublishSentAccountMessagesByNotePathIDFunc = func(...) error {
+        return nil
+    }
+    // ...
+    return env
+}
+
+// Usage:
+return addAccountMocks(&EnvMock{
+    // existing mocks...
+})
+```
+
+### Files Created/Modified
+
+#### New Files
+- `internal/case/sendtelegramaccountpublishpost/resolve.go`
+- `internal/case/updatetelegramaccountpublishpost/resolve.go`
+- `internal/case/backjob/sendtelegramaccountmessage/resolve.go`
+- `internal/case/backjob/sendtelegramaccountpost/resolve.go`
+- `internal/case/backjob/updatetelegramaccountmessage/resolve.go`
+- `internal/case/backjob/updatetelegramaccountpost/resolve.go`
+
+#### Modified Files
+- `internal/tgtd/client.go` - добавлены `SendMessage`, `EditMessage`, `DeleteMessage` с HTML support
+- `internal/case/cronjob/sendscheduledtelegrampublishposts/resolve.go` - разделение на `enqueueBotJobs()` и `enqueueAccountJobs()`
+- `internal/case/admin/resettelegrampublishnote/resolve.go` - удаление account-сообщений
+- `internal/case/admin/sendtelegrampublishnotenow/resolve.go` - отправка через account
+- `internal/case/handletgpublishviews/resolve.go` - instant preview через account
+- `cmd/server/telegram.go` - добавлен `DeleteTelegramAccountMessage()`
+- `cmd/server/case_methods.go` - добавлены методы для account publishing
+- `cmd/server/jobs.go` - регистрация новых job handlers
+- `queries.read.sql` - добавлен `ListSheduledTelegarmAccountPublishNoteIDs`
