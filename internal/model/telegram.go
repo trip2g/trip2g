@@ -15,6 +15,8 @@ type TelegramPost struct {
 	LinkCount           int64 `json:"link_count"`
 	UnresolvedLinkCount int64 `json:"unresolved_link_count"`
 	ExternalLinkCount   int64 `json:"external_link_count"`
+
+	DisableWebPagePreview bool `json:"disable_web_page_preview"`
 }
 
 type TelegramPostSource struct {

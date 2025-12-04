@@ -105,6 +105,7 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramSendPostParams)
 		msg := tgbotapi.NewMessage(params.TelegramChatID, content)
 		msg.ParseMode = parseMode
 		msg.DisableNotification = params.DisableNotification
+		msg.DisableWebPagePreview = post.DisableWebPagePreview
 
 		messageID, err = env.SendTelegramMessage(ctx, params.DBChatID, msg)
 	case mediaCount == 1:

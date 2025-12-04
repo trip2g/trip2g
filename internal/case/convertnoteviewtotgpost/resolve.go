@@ -121,6 +121,7 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 
 	post.Content = res.Content
 	post.Warnings = res.Warnings
+	post.DisableWebPagePreview = source.NoteView.ExtractTelegramPublishDisableWebPagePreview()
 
 	mediaURLs, err := getAllMediaURLs(source.NoteView)
 	if err != nil {

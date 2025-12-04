@@ -50,6 +50,12 @@ var _ handletgpublishviews.Env = &EnvMock{}
 //			TimeLocationFunc: func() *time.Location {
 //				panic("mock out the TimeLocation method")
 //			},
+//			UpdateTelegramAccountPublishPostFunc: func(ctx context.Context, notePathID int64) error {
+//				panic("mock out the UpdateTelegramAccountPublishPost method")
+//			},
+//			UpdateTelegramPublishPostFunc: func(ctx context.Context, notePathID int64) error {
+//				panic("mock out the UpdateTelegramPublishPost method")
+//			},
 //			UpsertTelegramPublishNoteFunc: func(ctx context.Context, params db.UpsertTelegramPublishNoteParams) error {
 //				panic("mock out the UpsertTelegramPublishNote method")
 //			},
@@ -89,6 +95,12 @@ type EnvMock struct {
 
 	// TimeLocationFunc mocks the TimeLocation method.
 	TimeLocationFunc func() *time.Location
+
+	// UpdateTelegramAccountPublishPostFunc mocks the UpdateTelegramAccountPublishPost method.
+	UpdateTelegramAccountPublishPostFunc func(ctx context.Context, notePathID int64) error
+
+	// UpdateTelegramPublishPostFunc mocks the UpdateTelegramPublishPost method.
+	UpdateTelegramPublishPostFunc func(ctx context.Context, notePathID int64) error
 
 	// UpsertTelegramPublishNoteFunc mocks the UpsertTelegramPublishNote method.
 	UpsertTelegramPublishNoteFunc func(ctx context.Context, params db.UpsertTelegramPublishNoteParams) error
@@ -149,6 +161,20 @@ type EnvMock struct {
 		// TimeLocation holds details about calls to the TimeLocation method.
 		TimeLocation []struct {
 		}
+		// UpdateTelegramAccountPublishPost holds details about calls to the UpdateTelegramAccountPublishPost method.
+		UpdateTelegramAccountPublishPost []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// NotePathID is the notePathID argument value.
+			NotePathID int64
+		}
+		// UpdateTelegramPublishPost holds details about calls to the UpdateTelegramPublishPost method.
+		UpdateTelegramPublishPost []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// NotePathID is the notePathID argument value.
+			NotePathID int64
+		}
 		// UpsertTelegramPublishNote holds details about calls to the UpsertTelegramPublishNote method.
 		UpsertTelegramPublishNote []struct {
 			// Ctx is the ctx argument value.
@@ -173,6 +199,8 @@ type EnvMock struct {
 	lockLogger                                sync.RWMutex
 	lockTelegramPublishTagByLabel             sync.RWMutex
 	lockTimeLocation                          sync.RWMutex
+	lockUpdateTelegramAccountPublishPost      sync.RWMutex
+	lockUpdateTelegramPublishPost             sync.RWMutex
 	lockUpsertTelegramPublishNote             sync.RWMutex
 	lockUpsertTelegramPublishNoteTag          sync.RWMutex
 }
@@ -471,6 +499,78 @@ func (mock *EnvMock) TimeLocationCalls() []struct {
 	mock.lockTimeLocation.RLock()
 	calls = mock.calls.TimeLocation
 	mock.lockTimeLocation.RUnlock()
+	return calls
+}
+
+// UpdateTelegramAccountPublishPost calls UpdateTelegramAccountPublishPostFunc.
+func (mock *EnvMock) UpdateTelegramAccountPublishPost(ctx context.Context, notePathID int64) error {
+	if mock.UpdateTelegramAccountPublishPostFunc == nil {
+		panic("EnvMock.UpdateTelegramAccountPublishPostFunc: method is nil but Env.UpdateTelegramAccountPublishPost was just called")
+	}
+	callInfo := struct {
+		Ctx        context.Context
+		NotePathID int64
+	}{
+		Ctx:        ctx,
+		NotePathID: notePathID,
+	}
+	mock.lockUpdateTelegramAccountPublishPost.Lock()
+	mock.calls.UpdateTelegramAccountPublishPost = append(mock.calls.UpdateTelegramAccountPublishPost, callInfo)
+	mock.lockUpdateTelegramAccountPublishPost.Unlock()
+	return mock.UpdateTelegramAccountPublishPostFunc(ctx, notePathID)
+}
+
+// UpdateTelegramAccountPublishPostCalls gets all the calls that were made to UpdateTelegramAccountPublishPost.
+// Check the length with:
+//
+//	len(mockedEnv.UpdateTelegramAccountPublishPostCalls())
+func (mock *EnvMock) UpdateTelegramAccountPublishPostCalls() []struct {
+	Ctx        context.Context
+	NotePathID int64
+} {
+	var calls []struct {
+		Ctx        context.Context
+		NotePathID int64
+	}
+	mock.lockUpdateTelegramAccountPublishPost.RLock()
+	calls = mock.calls.UpdateTelegramAccountPublishPost
+	mock.lockUpdateTelegramAccountPublishPost.RUnlock()
+	return calls
+}
+
+// UpdateTelegramPublishPost calls UpdateTelegramPublishPostFunc.
+func (mock *EnvMock) UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error {
+	if mock.UpdateTelegramPublishPostFunc == nil {
+		panic("EnvMock.UpdateTelegramPublishPostFunc: method is nil but Env.UpdateTelegramPublishPost was just called")
+	}
+	callInfo := struct {
+		Ctx        context.Context
+		NotePathID int64
+	}{
+		Ctx:        ctx,
+		NotePathID: notePathID,
+	}
+	mock.lockUpdateTelegramPublishPost.Lock()
+	mock.calls.UpdateTelegramPublishPost = append(mock.calls.UpdateTelegramPublishPost, callInfo)
+	mock.lockUpdateTelegramPublishPost.Unlock()
+	return mock.UpdateTelegramPublishPostFunc(ctx, notePathID)
+}
+
+// UpdateTelegramPublishPostCalls gets all the calls that were made to UpdateTelegramPublishPost.
+// Check the length with:
+//
+//	len(mockedEnv.UpdateTelegramPublishPostCalls())
+func (mock *EnvMock) UpdateTelegramPublishPostCalls() []struct {
+	Ctx        context.Context
+	NotePathID int64
+} {
+	var calls []struct {
+		Ctx        context.Context
+		NotePathID int64
+	}
+	mock.lockUpdateTelegramPublishPost.RLock()
+	calls = mock.calls.UpdateTelegramPublishPost
+	mock.lockUpdateTelegramPublishPost.RUnlock()
 	return calls
 }
 

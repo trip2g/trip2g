@@ -199,8 +199,9 @@ func (c *Client) ListDialogs(ctx context.Context, sessionData []byte) ([]DialogI
 
 // SendMessageParams contains parameters for sending a message.
 type SendMessageParams struct {
-	ChatID  int64
-	Message string
+	ChatID    int64
+	Message   string
+	NoWebpage bool
 }
 
 // SendPhotoParams contains parameters for sending a photo.
@@ -245,26 +246,34 @@ func (c *Client) SendMessage(ctx context.Context, sessionData []byte, params Sen
 			return fmt.Errorf("failed to resolve peer: %w", peerErr)
 		}
 
-		// Use message sender with HTML formatting
-		sender := message.NewSender(api)
-
-		// Parse HTML to debug custom emoji entities
+		// Parse HTML to get text and entities
 		eb := entity.Builder{}
-		if parseErr := html.HTML(strings.NewReader(params.Message), &eb, html.Options{}); parseErr == nil {
-			_, entities := eb.Complete()
-			for _, ent := range entities {
-				if ce, ok := ent.(*tg.MessageEntityCustomEmoji); ok {
-					slog.Info("SendMessage: CustomEmoji entity",
-						"offset", ce.Offset,
-						"length", ce.Length,
-						"document_id", ce.DocumentID,
-					)
-				}
+		if parseErr := html.HTML(strings.NewReader(params.Message), &eb, html.Options{}); parseErr != nil {
+			return fmt.Errorf("failed to parse HTML: %w", parseErr)
+		}
+		messageText, entities := eb.Complete()
+
+		// Debug custom emoji entities
+		for _, ent := range entities {
+			if ce, ok := ent.(*tg.MessageEntityCustomEmoji); ok {
+				slog.Info("SendMessage: CustomEmoji entity",
+					"offset", ce.Offset,
+					"length", ce.Length,
+					"document_id", ce.DocumentID,
+				)
 			}
 		}
 
-		// Parse HTML and send message
-		updates, sendErr := sender.To(peer).StyledText(ctx, html.String(nil, params.Message))
+		// Build request with optional NoWebpage flag
+		req := &tg.MessagesSendMessageRequest{
+			Peer:      peer,
+			Message:   messageText,
+			Entities:  entities,
+			NoWebpage: params.NoWebpage,
+		}
+
+		// Send message using raw API
+		updates, sendErr := api.MessagesSendMessage(ctx, req)
 		if sendErr != nil {
 			return fmt.Errorf("failed to send message: %w", sendErr)
 		}

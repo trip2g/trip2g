@@ -137,6 +137,12 @@ func TestResolve(t *testing.T) {
 						IsPremium:   arg.IsPremium,
 					}, nil
 				},
+				TelegramAccountGetAppConfigFunc: func(ctx context.Context, accountID int64) (string, error) {
+					return `{"caption_length_limit_default": 1024}`, nil
+				},
+				UpdateTelegramAccountAppConfigFunc: func(ctx context.Context, arg db.UpdateTelegramAccountAppConfigParams) error {
+					return nil
+				},
 			},
 			input: model.AdminCompleteTelegramAccountAuthInput{
 				Phone: "+1234567890",
@@ -172,6 +178,12 @@ func TestResolve(t *testing.T) {
 					require.Equal(t, int64(5), arg.ID)
 					require.Equal(t, []byte("new_session"), arg.SessionData)
 					require.Equal(t, int64(1), arg.Enabled.Int64)
+					return nil
+				},
+				TelegramAccountGetAppConfigFunc: func(ctx context.Context, accountID int64) (string, error) {
+					return `{"caption_length_limit_default": 1024}`, nil
+				},
+				UpdateTelegramAccountAppConfigFunc: func(ctx context.Context, arg db.UpdateTelegramAccountAppConfigParams) error {
 					return nil
 				},
 			},

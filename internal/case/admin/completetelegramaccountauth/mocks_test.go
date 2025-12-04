@@ -34,11 +34,17 @@ var _ completetelegramaccountauth.Env = &EnvMock{}
 //			TelegramAccountCompleteAuthFunc: func(ctx context.Context, phone string, code string, password string) (*appmodel.TelegramCompleteAuthResult, error) {
 //				panic("mock out the TelegramAccountCompleteAuth method")
 //			},
+//			TelegramAccountGetAppConfigFunc: func(ctx context.Context, accountID int64) (string, error) {
+//				panic("mock out the TelegramAccountGetAppConfig method")
+//			},
 //			TelegramAccountGetPasswordHintFunc: func(phone string) string {
 //				panic("mock out the TelegramAccountGetPasswordHint method")
 //			},
 //			UpdateTelegramAccountFunc: func(ctx context.Context, arg db.UpdateTelegramAccountParams) error {
 //				panic("mock out the UpdateTelegramAccount method")
+//			},
+//			UpdateTelegramAccountAppConfigFunc: func(ctx context.Context, arg db.UpdateTelegramAccountAppConfigParams) error {
+//				panic("mock out the UpdateTelegramAccountAppConfig method")
 //			},
 //		}
 //
@@ -59,11 +65,17 @@ type EnvMock struct {
 	// TelegramAccountCompleteAuthFunc mocks the TelegramAccountCompleteAuth method.
 	TelegramAccountCompleteAuthFunc func(ctx context.Context, phone string, code string, password string) (*appmodel.TelegramCompleteAuthResult, error)
 
+	// TelegramAccountGetAppConfigFunc mocks the TelegramAccountGetAppConfig method.
+	TelegramAccountGetAppConfigFunc func(ctx context.Context, accountID int64) (string, error)
+
 	// TelegramAccountGetPasswordHintFunc mocks the TelegramAccountGetPasswordHint method.
 	TelegramAccountGetPasswordHintFunc func(phone string) string
 
 	// UpdateTelegramAccountFunc mocks the UpdateTelegramAccount method.
 	UpdateTelegramAccountFunc func(ctx context.Context, arg db.UpdateTelegramAccountParams) error
+
+	// UpdateTelegramAccountAppConfigFunc mocks the UpdateTelegramAccountAppConfig method.
+	UpdateTelegramAccountAppConfigFunc func(ctx context.Context, arg db.UpdateTelegramAccountAppConfigParams) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -97,6 +109,13 @@ type EnvMock struct {
 			// Password is the password argument value.
 			Password string
 		}
+		// TelegramAccountGetAppConfig holds details about calls to the TelegramAccountGetAppConfig method.
+		TelegramAccountGetAppConfig []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// AccountID is the accountID argument value.
+			AccountID int64
+		}
 		// TelegramAccountGetPasswordHint holds details about calls to the TelegramAccountGetPasswordHint method.
 		TelegramAccountGetPasswordHint []struct {
 			// Phone is the phone argument value.
@@ -109,13 +128,22 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.UpdateTelegramAccountParams
 		}
+		// UpdateTelegramAccountAppConfig holds details about calls to the UpdateTelegramAccountAppConfig method.
+		UpdateTelegramAccountAppConfig []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpdateTelegramAccountAppConfigParams
+		}
 	}
 	lockCurrentAdminUserToken          sync.RWMutex
 	lockGetTelegramAccountByPhone      sync.RWMutex
 	lockInsertTelegramAccount          sync.RWMutex
 	lockTelegramAccountCompleteAuth    sync.RWMutex
+	lockTelegramAccountGetAppConfig    sync.RWMutex
 	lockTelegramAccountGetPasswordHint sync.RWMutex
 	lockUpdateTelegramAccount          sync.RWMutex
+	lockUpdateTelegramAccountAppConfig sync.RWMutex
 }
 
 // CurrentAdminUserToken calls CurrentAdminUserTokenFunc.
@@ -266,6 +294,42 @@ func (mock *EnvMock) TelegramAccountCompleteAuthCalls() []struct {
 	return calls
 }
 
+// TelegramAccountGetAppConfig calls TelegramAccountGetAppConfigFunc.
+func (mock *EnvMock) TelegramAccountGetAppConfig(ctx context.Context, accountID int64) (string, error) {
+	if mock.TelegramAccountGetAppConfigFunc == nil {
+		panic("EnvMock.TelegramAccountGetAppConfigFunc: method is nil but Env.TelegramAccountGetAppConfig was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		AccountID int64
+	}{
+		Ctx:       ctx,
+		AccountID: accountID,
+	}
+	mock.lockTelegramAccountGetAppConfig.Lock()
+	mock.calls.TelegramAccountGetAppConfig = append(mock.calls.TelegramAccountGetAppConfig, callInfo)
+	mock.lockTelegramAccountGetAppConfig.Unlock()
+	return mock.TelegramAccountGetAppConfigFunc(ctx, accountID)
+}
+
+// TelegramAccountGetAppConfigCalls gets all the calls that were made to TelegramAccountGetAppConfig.
+// Check the length with:
+//
+//	len(mockedEnv.TelegramAccountGetAppConfigCalls())
+func (mock *EnvMock) TelegramAccountGetAppConfigCalls() []struct {
+	Ctx       context.Context
+	AccountID int64
+} {
+	var calls []struct {
+		Ctx       context.Context
+		AccountID int64
+	}
+	mock.lockTelegramAccountGetAppConfig.RLock()
+	calls = mock.calls.TelegramAccountGetAppConfig
+	mock.lockTelegramAccountGetAppConfig.RUnlock()
+	return calls
+}
+
 // TelegramAccountGetPasswordHint calls TelegramAccountGetPasswordHintFunc.
 func (mock *EnvMock) TelegramAccountGetPasswordHint(phone string) string {
 	if mock.TelegramAccountGetPasswordHintFunc == nil {
@@ -331,5 +395,41 @@ func (mock *EnvMock) UpdateTelegramAccountCalls() []struct {
 	mock.lockUpdateTelegramAccount.RLock()
 	calls = mock.calls.UpdateTelegramAccount
 	mock.lockUpdateTelegramAccount.RUnlock()
+	return calls
+}
+
+// UpdateTelegramAccountAppConfig calls UpdateTelegramAccountAppConfigFunc.
+func (mock *EnvMock) UpdateTelegramAccountAppConfig(ctx context.Context, arg db.UpdateTelegramAccountAppConfigParams) error {
+	if mock.UpdateTelegramAccountAppConfigFunc == nil {
+		panic("EnvMock.UpdateTelegramAccountAppConfigFunc: method is nil but Env.UpdateTelegramAccountAppConfig was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpdateTelegramAccountAppConfigParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpdateTelegramAccountAppConfig.Lock()
+	mock.calls.UpdateTelegramAccountAppConfig = append(mock.calls.UpdateTelegramAccountAppConfig, callInfo)
+	mock.lockUpdateTelegramAccountAppConfig.Unlock()
+	return mock.UpdateTelegramAccountAppConfigFunc(ctx, arg)
+}
+
+// UpdateTelegramAccountAppConfigCalls gets all the calls that were made to UpdateTelegramAccountAppConfig.
+// Check the length with:
+//
+//	len(mockedEnv.UpdateTelegramAccountAppConfigCalls())
+func (mock *EnvMock) UpdateTelegramAccountAppConfigCalls() []struct {
+	Ctx context.Context
+	Arg db.UpdateTelegramAccountAppConfigParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpdateTelegramAccountAppConfigParams
+	}
+	mock.lockUpdateTelegramAccountAppConfig.RLock()
+	calls = mock.calls.UpdateTelegramAccountAppConfig
+	mock.lockUpdateTelegramAccountAppConfig.RUnlock()
 	return calls
 }

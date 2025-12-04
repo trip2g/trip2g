@@ -64,3 +64,19 @@ func (note *NoteView) ExtractTelegramPublishTags() ([]string, bool) {
 
 	return tags, true
 }
+
+func (note *NoteView) ExtractTelegramPublishDisableWebPagePreview() bool {
+	val, ok := note.RawMeta["telegram_publish_disable_web_page_preview"]
+	if !ok {
+		return false
+	}
+
+	switch v := val.(type) {
+	case bool:
+		return v
+	case string:
+		return v == "true"
+	}
+
+	return false
+}

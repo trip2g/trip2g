@@ -107,8 +107,9 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountSendPost
 	case 0:
 		// Send as text message
 		result, sendErr = client.SendMessage(ctx, account.SessionData, tgtd.SendMessageParams{
-			ChatID:  params.TelegramChatID,
-			Message: content,
+			ChatID:    params.TelegramChatID,
+			Message:   content,
+			NoWebpage: post.DisableWebPagePreview,
 		})
 	case 1:
 		// Send as single photo
