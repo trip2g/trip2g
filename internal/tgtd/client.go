@@ -889,3 +889,42 @@ func jsonValueToInterface(value tg.JSONValueClass) (interface{}, error) {
 		return nil, fmt.Errorf("unknown JSON value type: %T", value)
 	}
 }
+
+// UserInfo contains information about the authenticated user.
+type UserInfo struct {
+	IsPremium bool
+}
+
+// GetUserInfo fetches information about the authenticated user.
+func (c *Client) GetUserInfo(ctx context.Context, sessionData []byte) (*UserInfo, error) {
+	storage := &session.StorageMemory{}
+	err := storage.StoreSession(ctx, sessionData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load session: %w", err)
+	}
+
+	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
+		SessionStorage: storage,
+	})
+
+	var result *UserInfo
+
+	err = client.Run(ctx, func(ctx context.Context) error {
+		self, selfErr := client.Self(ctx)
+		if selfErr != nil {
+			return fmt.Errorf("failed to get self: %w", selfErr)
+		}
+
+		result = &UserInfo{
+			IsPremium: self.Premium,
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}

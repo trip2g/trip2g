@@ -105,6 +105,58 @@ func (a *app) TelegramAccountGetAppConfig(ctx context.Context, accountID int64) 
 	return config.JSON, nil
 }
 
+// TelegramAccountGetUserInfo fetches user info (premium status) from Telegram API
+func (a *app) TelegramAccountGetUserInfo(ctx context.Context, accountID int64) (*tgtd.UserInfo, error) {
+	account, err := a.GetTelegramAccountByID(ctx, accountID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get account: %w", err)
+	}
+
+	client := tgtd.NewClient(int(account.ApiID), account.ApiHash)
+	return client.GetUserInfo(ctx, account.SessionData)
+}
+
+// TelegramCaptionLengthLimit returns the caption length limit based on account premium status.
+// If accountID is nil, uses any first account's config. Returns 1024 if no accounts found.
+func (a *app) TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int {
+	const defaultLimit = 1024
+
+	var account db.TelegramAccount
+	var err error
+
+	if accountID != nil {
+		account, err = a.GetTelegramAccountByID(ctx, *accountID)
+	} else {
+		accounts, listErr := a.ListAllTelegramAccounts(ctx)
+		if listErr != nil || len(accounts) == 0 {
+			return defaultLimit
+		}
+		account = accounts[0]
+	}
+
+	if err != nil {
+		return defaultLimit
+	}
+
+	// Parse app_config JSON
+	var config map[string]interface{}
+	if jsonErr := json.Unmarshal([]byte(account.AppConfig), &config); jsonErr != nil {
+		return defaultLimit
+	}
+
+	// Get limit based on premium status
+	limitKey := "caption_length_limit_default"
+	if account.IsPremium == 1 {
+		limitKey = "caption_length_limit_premium"
+	}
+
+	if limit, ok := config[limitKey].(float64); ok {
+		return int(limit)
+	}
+
+	return defaultLimit
+}
+
 func mapAuthState(state tgtd.AuthState) appmodel.TelegramAuthState {
 	switch state {
 	case tgtd.AuthStateWaitingForCode:

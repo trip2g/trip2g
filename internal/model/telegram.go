@@ -18,9 +18,10 @@ type TelegramPost struct {
 }
 
 type TelegramPostSource struct {
-	NoteView *NoteView
-	ChatID   int64
-	Instant  bool
+	NoteView           *NoteView
+	ChatID             int64
+	Instant            bool
+	CaptionLengthLimit int
 }
 
 // TelegramSendPostParams contains parameters for sending a telegram post.

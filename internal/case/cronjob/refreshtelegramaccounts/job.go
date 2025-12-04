@@ -1,4 +1,4 @@
-package refreshtelegramappconfig
+package refreshtelegramaccounts
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 type Job struct{}
 
 func (j *Job) Name() string {
-	return "refresh_telegram_app_config"
+	return "refresh_telegram_accounts"
 }
 
 func (j *Job) Schedule() string {

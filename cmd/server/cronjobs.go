@@ -3,7 +3,7 @@ package main
 import (
 	"trip2g/internal/case/cronjob/applygitchanges"
 	"trip2g/internal/case/cronjob/clearcronjobexecutionhistory"
-	"trip2g/internal/case/cronjob/refreshtelegramappconfig"
+	"trip2g/internal/case/cronjob/refreshtelegramaccounts"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/cronjob/sendscheduledtelegrampublishposts"
 	"trip2g/internal/case/cronjob/simplebackup"
@@ -24,7 +24,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 
 		_ sendscheduledtelegrampublishposts.Env = app
 		_ updatetelegrampublishposts.Env        = app
-		_ refreshtelegramappconfig.Env          = app
+		_ refreshtelegramaccounts.Env           = app
 	)
 
 	jobs := []cronjobs.Job{
@@ -33,7 +33,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		&clearcronjobexecutionhistory.Job{},
 		&sendscheduledtelegrampublishposts.Job{},
 		&updatetelegrampublishposts.Job{},
-		&refreshtelegramappconfig.Job{},
+		&refreshtelegramaccounts.Job{},
 		&vacuumdatabase.Job{},
 	}
 
