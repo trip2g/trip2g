@@ -90,6 +90,21 @@ func (a *app) TelegramAccountGetPasswordHint(phone string) string {
 	return pending.PasswordHint
 }
 
+// TelegramAccountGetAppConfig fetches app config from Telegram API
+func (a *app) TelegramAccountGetAppConfig(ctx context.Context, accountID int64) (string, error) {
+	account, err := a.GetTelegramAccountByID(ctx, accountID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get account: %w", err)
+	}
+
+	client := tgtd.NewClient(int(account.ApiID), account.ApiHash)
+	config, err := client.GetAppConfig(ctx, account.SessionData)
+	if err != nil {
+		return "", err
+	}
+	return config.JSON, nil
+}
+
 func mapAuthState(state tgtd.AuthState) appmodel.TelegramAuthState {
 	switch state {
 	case tgtd.AuthStateWaitingForCode:

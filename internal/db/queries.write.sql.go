@@ -1198,7 +1198,7 @@ const insertTelegramAccount = `-- name: InsertTelegramAccount :one
 
 insert into telegram_accounts (phone, session_data, display_name, is_premium, api_id, api_hash, created_by)
 values (?, ?, ?, ?, ?, ?, ?)
-returning id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash
+returning id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config_hash, app_config
 `
 
 type InsertTelegramAccountParams struct {
@@ -1236,6 +1236,8 @@ func (q *WriteQueries) InsertTelegramAccount(ctx context.Context, arg InsertTele
 		&i.CreatedBy,
 		&i.ApiID,
 		&i.ApiHash,
+		&i.AppConfigHash,
+		&i.AppConfig,
 	)
 	return i, err
 }
@@ -2446,6 +2448,22 @@ func (q *WriteQueries) UpdateTelegramAccount(ctx context.Context, arg UpdateTele
 	return err
 }
 
+const updateTelegramAccountAppConfig = `-- name: UpdateTelegramAccountAppConfig :exec
+update telegram_accounts
+   set app_config = ?
+ where id = ?
+`
+
+type UpdateTelegramAccountAppConfigParams struct {
+	AppConfig string `json:"app_config"`
+	ID        int64  `json:"id"`
+}
+
+func (q *WriteQueries) UpdateTelegramAccountAppConfig(ctx context.Context, arg UpdateTelegramAccountAppConfigParams) error {
+	_, err := q.db.ExecContext(ctx, updateTelegramAccountAppConfig, arg.AppConfig, arg.ID)
+	return err
+}
+
 const updateTelegramPublishNoteAsPublished = `-- name: UpdateTelegramPublishNoteAsPublished :exec
 update telegram_publish_notes
    set published_at = datetime('now')
@@ -2737,8 +2755,8 @@ func (q *WriteQueries) UpsertBoostyTier(ctx context.Context, arg UpsertBoostyTie
 
 const upsertCronJob = `-- name: UpsertCronJob :exec
 insert into cron_jobs (name, expression)
-values (?, ?)
-on conflict(name) do nothing
+select ?, ?
+ where not exists (select 1 from cron_jobs where name = ?1)
 `
 
 type UpsertCronJobParams struct {

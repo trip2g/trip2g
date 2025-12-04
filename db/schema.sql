@@ -526,7 +526,7 @@ CREATE TABLE telegram_accounts (
   enabled integer not null default 1 check (enabled in (0, 1)),
   created_at datetime not null default current_timestamp,
   created_by integer not null references admins(user_id) on delete restrict
-, api_id integer not null default 0, api_hash text not null default '');
+, api_id integer not null default 0, api_hash text not null default '', app_config_hash integer not null default 0, app_config text not null default '{}');
 CREATE TABLE telegram_publish_account_chats (
   account_id integer not null references telegram_accounts(id) on delete cascade,
   telegram_chat_id integer not null,
@@ -656,4 +656,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251203061630'),
   ('20251203061640'),
   ('20251203061651'),
-  ('20251203062401');
+  ('20251203062401'),
+  ('20251204121052');

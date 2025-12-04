@@ -18,9 +18,11 @@ import (
 type Env interface {
 	TelegramAccountCompleteAuth(ctx context.Context, phone, code, password string) (*appmodel.TelegramCompleteAuthResult, error)
 	TelegramAccountGetPasswordHint(phone string) string
+	TelegramAccountGetAppConfig(ctx context.Context, accountID int64) (string, error)
 	GetTelegramAccountByPhone(ctx context.Context, phone string) (db.TelegramAccount, error)
 	InsertTelegramAccount(ctx context.Context, arg db.InsertTelegramAccountParams) (db.TelegramAccount, error)
 	UpdateTelegramAccount(ctx context.Context, arg db.UpdateTelegramAccountParams) error
+	UpdateTelegramAccountAppConfig(ctx context.Context, arg db.UpdateTelegramAccountAppConfigParams) error
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 }
 
@@ -109,6 +111,15 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert telegram account: %w", err)
 		}
+	}
+
+	// Fetch and save app config
+	appConfig, configErr := env.TelegramAccountGetAppConfig(ctx, account.ID)
+	if configErr == nil && appConfig != "" {
+		env.UpdateTelegramAccountAppConfig(ctx, db.UpdateTelegramAccountAppConfigParams{
+			AppConfig: appConfig,
+			ID:        account.ID,
+		})
 	}
 
 	payload := model.AdminCompleteTelegramAccountAuthPayload{

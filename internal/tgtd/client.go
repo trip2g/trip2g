@@ -2,6 +2,7 @@ package tgtd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -781,4 +782,110 @@ func extractMessageID(updates tg.UpdatesClass) (int64, error) {
 	}
 
 	return 0, errors.New("could not extract message ID from updates")
+}
+
+// AppConfig contains the result of help.getAppConfig.
+type AppConfig struct {
+	JSON string
+}
+
+// GetAppConfig fetches the app configuration from Telegram.
+func (c *Client) GetAppConfig(ctx context.Context, sessionData []byte) (*AppConfig, error) {
+	storage := &session.StorageMemory{}
+	err := storage.StoreSession(ctx, sessionData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load session: %w", err)
+	}
+
+	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
+		SessionStorage: storage,
+	})
+
+	var result *AppConfig
+
+	err = client.Run(ctx, func(ctx context.Context) error {
+		api := client.API()
+
+		// Call help.getAppConfig with hash=0 to get full config
+		appConfig, configErr := api.HelpGetAppConfig(ctx, 0)
+		if configErr != nil {
+			return fmt.Errorf("failed to get app config: %w", configErr)
+		}
+
+		switch cfg := appConfig.(type) {
+		case *tg.HelpAppConfig:
+			// Convert JSONValue to JSON string
+			jsonStr, jsonErr := jsonValueToString(cfg.Config)
+			if jsonErr != nil {
+				return fmt.Errorf("failed to convert config to JSON: %w", jsonErr)
+			}
+			result = &AppConfig{
+				JSON: jsonStr,
+			}
+		case *tg.HelpAppConfigNotModified:
+			// This shouldn't happen with hash=0, but handle it
+			result = &AppConfig{
+				JSON: "{}",
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// jsonValueToString converts a tg.JSONValueClass to a JSON string.
+func jsonValueToString(value tg.JSONValueClass) (string, error) {
+	result, err := jsonValueToInterface(value)
+	if err != nil {
+		return "", err
+	}
+
+	jsonBytes, err := json.Marshal(result)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+
+	return string(jsonBytes), nil
+}
+
+// jsonValueToInterface converts a tg.JSONValueClass to a Go interface{}.
+func jsonValueToInterface(value tg.JSONValueClass) (interface{}, error) {
+	switch v := value.(type) {
+	case *tg.JSONNull:
+		return nil, nil
+	case *tg.JSONBool:
+		return v.Value, nil
+	case *tg.JSONNumber:
+		return v.Value, nil
+	case *tg.JSONString:
+		return v.Value, nil
+	case *tg.JSONArray:
+		arr := make([]interface{}, len(v.Value))
+		for i, item := range v.Value {
+			converted, err := jsonValueToInterface(item)
+			if err != nil {
+				return nil, err
+			}
+			arr[i] = converted
+		}
+		return arr, nil
+	case *tg.JSONObject:
+		obj := make(map[string]interface{})
+		for _, item := range v.Value {
+			converted, err := jsonValueToInterface(item.Value)
+			if err != nil {
+				return nil, err
+			}
+			obj[item.Key] = converted
+		}
+		return obj, nil
+	default:
+		return nil, fmt.Errorf("unknown JSON value type: %T", value)
+	}
 }

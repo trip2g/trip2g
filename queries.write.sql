@@ -590,8 +590,8 @@ where id = ?;
 
 -- name: UpsertCronJob :exec
 insert into cron_jobs (name, expression)
-values (?, ?)
-on conflict(name) do nothing;
+select ?, ?
+ where not exists (select 1 from cron_jobs where name = ?1);
 
 -- name: InsertCronJobExecution :one
 insert into cron_job_executions (job_id, status)
@@ -736,6 +736,11 @@ update telegram_accounts
      , api_id = coalesce(sqlc.narg(api_id), api_id)
      , api_hash = coalesce(sqlc.narg(api_hash), api_hash)
  where id = ?1;
+
+-- name: UpdateTelegramAccountAppConfig :exec
+update telegram_accounts
+   set app_config = ?
+ where id = ?;
 
 -- name: DeleteTelegramPublishAccountChatsByAccountAndChatID :exec
 delete from telegram_publish_account_chats

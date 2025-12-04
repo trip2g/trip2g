@@ -12,14 +12,19 @@ namespace $.$$ {
 				basis: rem(5),
 			},
 		},
+		Row_name_labeler: {
+			flex: {
+				basis: rem(25),
+			},
+		},
 		Row_expression_labeler: {
 			flex: {
-				basis: rem(15),
+				basis: rem(8),
 			},
 		},
 		Row_last_exec_at_labeler: {
 			flex: {
-				basis: rem(8),
+				basis: rem(12),
 			},
 		},
 	})

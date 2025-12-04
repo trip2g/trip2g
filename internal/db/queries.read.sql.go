@@ -1594,7 +1594,7 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 }
 
 const getTelegramAccountByID = `-- name: GetTelegramAccountByID :one
-select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash from telegram_accounts
+select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config_hash, app_config from telegram_accounts
  where id = ?
 `
 
@@ -1612,12 +1612,14 @@ func (q *Queries) GetTelegramAccountByID(ctx context.Context, id int64) (Telegra
 		&i.CreatedBy,
 		&i.ApiID,
 		&i.ApiHash,
+		&i.AppConfigHash,
+		&i.AppConfig,
 	)
 	return i, err
 }
 
 const getTelegramAccountByPhone = `-- name: GetTelegramAccountByPhone :one
-select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash from telegram_accounts
+select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config_hash, app_config from telegram_accounts
  where phone = ?
 `
 
@@ -1635,6 +1637,8 @@ func (q *Queries) GetTelegramAccountByPhone(ctx context.Context, phone string) (
 		&i.CreatedBy,
 		&i.ApiID,
 		&i.ApiHash,
+		&i.AppConfigHash,
+		&i.AppConfig,
 	)
 	return i, err
 }
@@ -2791,7 +2795,7 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 
 const listAllTelegramAccounts = `-- name: ListAllTelegramAccounts :many
 
-select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash from telegram_accounts
+select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config_hash, app_config from telegram_accounts
  order by created_at desc
 `
 
@@ -2818,6 +2822,8 @@ func (q *Queries) ListAllTelegramAccounts(ctx context.Context) ([]TelegramAccoun
 			&i.CreatedBy,
 			&i.ApiID,
 			&i.ApiHash,
+			&i.AppConfigHash,
+			&i.AppConfig,
 		); err != nil {
 			return nil, err
 		}

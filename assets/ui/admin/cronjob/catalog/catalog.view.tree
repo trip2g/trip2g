@@ -12,8 +12,10 @@ $trip2g_admin_cronjob_catalog $trip2g_admin_catalog
 				sub <= row_content* /
 					<= Id* $trip2g_admin_labeler_id
 						value <= row_id_string* \id
-					<= Name* $trip2g_admin_labeler_name
-						value <= row_name* \name
+					<= Row_name_labeler* $mol_labeler
+						title \Name
+						Content <= Row_name* $trip2g_admin_cell
+							content <= row_name* \name
 					<= Row_enabled_labeler* $mol_labeler
 						title \Enabled
 						Content <= Row_enabled* $trip2g_admin_cell

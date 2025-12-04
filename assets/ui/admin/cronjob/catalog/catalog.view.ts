@@ -62,7 +62,7 @@ namespace $.$$ {
 			const lastExecAt = this.row( id ).lastExecAt
 			if (!lastExecAt) return 'Never'
 			const m = new $mol_time_moment( lastExecAt )
-			return m.toString( 'YYYY-MM-DD HH:mm' )
+			return m.toString( 'YYYY-MM-DD hh:mm' )
 		}
 	}
 }
