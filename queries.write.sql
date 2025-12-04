@@ -593,6 +593,9 @@ insert into cron_jobs (name, expression)
 select ?, ?
  where not exists (select 1 from cron_jobs where name = ?1);
 
+-- name: DeleteCronJobByName :exec
+delete from cron_jobs where name = ?;
+
 -- name: InsertCronJobExecution :one
 insert into cron_job_executions (job_id, status)
 values (?, ?)

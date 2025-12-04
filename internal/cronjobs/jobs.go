@@ -34,6 +34,8 @@ type Env interface {
 	UpdateCronJobLastExec(ctx context.Context, id int64) error
 	UpdateRunningCronJobExecutions(ctx context.Context, params db.UpdateRunningCronJobExecutionsParams) error
 	CronJobByName(ctx context.Context, name string) (db.CronJob, error)
+	ListAllCronJobs(ctx context.Context) ([]db.CronJob, error)
+	DeleteCronJobByName(ctx context.Context, name string) error
 	Logger() logger.Logger
 
 	EnqueueJob(ctx context.Context, job model.BackgroundTask) error
@@ -76,6 +78,28 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 		runningJobs: make(map[int64]db.CronJobExecution),
 	}
 
+	// Build set of job names from code
+	codeJobNames := make(map[string]struct{})
+	for _, job := range jobConfigs {
+		codeJobNames[job.Name()] = struct{}{}
+	}
+
+	// Remove jobs from DB that are no longer in code
+	dbJobs, err := env.ListAllCronJobs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list all cron jobs: %w", err)
+	}
+
+	for _, dbJob := range dbJobs {
+		if _, exists := codeJobNames[dbJob.Name]; !exists {
+			cj.log.Info("removing obsolete cron job from database", "name", dbJob.Name)
+			err = env.DeleteCronJobByName(ctx, dbJob.Name)
+			if err != nil {
+				return nil, fmt.Errorf("failed to delete obsolete cron job %s: %w", dbJob.Name, err)
+			}
+		}
+	}
+
 	// Register all jobs
 	for _, job := range jobConfigs {
 		name := job.Name()
@@ -85,7 +109,7 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 			Expression: job.Schedule(),
 		}
 
-		err := env.UpsertCronJob(ctx, upsertParams)
+		err = env.UpsertCronJob(ctx, upsertParams)
 		if err != nil {
 			return nil, fmt.Errorf("failed to upsert cron job %s: %w", name, err)
 		}

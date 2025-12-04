@@ -147,6 +147,15 @@ func (q *WriteQueries) DeleteBoostyTierSubgraphsByTierID(ctx context.Context, ti
 	return err
 }
 
+const deleteCronJobByName = `-- name: DeleteCronJobByName :exec
+delete from cron_jobs where name = ?
+`
+
+func (q *WriteQueries) DeleteCronJobByName(ctx context.Context, name string) error {
+	_, err := q.db.ExecContext(ctx, deleteCronJobByName, name)
+	return err
+}
+
 const deleteGoqiteJobsByQueue = `-- name: DeleteGoqiteJobsByQueue :execresult
 delete from goqite where queue = ?
 `
