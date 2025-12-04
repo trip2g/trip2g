@@ -49,6 +49,8 @@ Numbered list:
 
 Custom emoji:
 
-![emoji](tg://emoji?id=5395478998320946882)
+![emoji](https://ce.trip2g.com/5307907239380528763.webp)
 
-![emoji](https://ce.trip2g.com/5393102008800517795.gif)
+![2️⃣](https://ce.trip2g.com/5307907239380528763.webp)
+
+End of the text-only Telegram post example.

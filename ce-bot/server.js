@@ -104,31 +104,33 @@ async function processCustomEmoji(customEmojiId) {
 // Telegram bot message handler
 bot.on('message', async (ctx) => {
   const entities = ctx.message.entities || [];
+  const text = ctx.message.text || '';
 
-  // Find all custom emoji entities
-  const customEmojiIds = entities
+  // Find all custom emoji entities with their alt text
+  const customEmojis = entities
     .filter(e => e.type === 'custom_emoji' && e.custom_emoji_id)
-    .map(e => e.custom_emoji_id);
+    .map(e => ({
+      id: e.custom_emoji_id,
+      alt: text.substring(e.offset, e.offset + e.length)
+    }));
 
-  if (customEmojiIds.length === 0) {
+  if (customEmojis.length === 0) {
     return ctx.reply('Send me custom emoji to get markdown codes!');
   }
 
   try {
     // Generate WEBPs for all custom emojis (in background)
-    const promises = customEmojiIds.map(id => processCustomEmoji(id).catch(err => {
-      console.error(`Failed to process ${id}:`, err);
+    const promises = customEmojis.map(emoji => processCustomEmoji(emoji.id).catch(err => {
+      console.error(`Failed to process ${emoji.id}:`, err);
       return null;
     }));
 
     await Promise.all(promises);
 
-    // Generate markdown codes
-    const markdownCodes = customEmojiIds.map(id => `![emoji](${SERVER_URL}/${id}.webp)`);
+    // Generate markdown codes with correct alt text
+    const markdownCodes = customEmojis.map(emoji => `![${emoji.alt}](${SERVER_URL}/${emoji.id}.webp)`);
 
-    const response = `Obsidian markdown:\n\n${markdownCodes.join('\n')}\n\nTemplater snippet:\n\`\`\`\n${markdownCodes.join('\n')}\n\`\`\``;
-
-    await ctx.reply(response);
+    await ctx.reply(`<code>${markdownCodes.join('\n')}</code>`, { parse_mode: 'HTML' });
   } catch (error) {
     console.error('Error processing custom emoji:', error);
     await ctx.reply('Error processing custom emoji. Please try again.');

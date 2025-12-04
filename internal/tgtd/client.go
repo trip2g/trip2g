@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/message"
+	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/html"
 	"github.com/gotd/td/telegram/uploader"
 	"github.com/gotd/td/tg"
@@ -244,6 +246,21 @@ func (c *Client) SendMessage(ctx context.Context, sessionData []byte, params Sen
 
 		// Use message sender with HTML formatting
 		sender := message.NewSender(api)
+
+		// Parse HTML to debug custom emoji entities
+		eb := entity.Builder{}
+		if parseErr := html.HTML(strings.NewReader(params.Message), &eb, html.Options{}); parseErr == nil {
+			_, entities := eb.Complete()
+			for _, ent := range entities {
+				if ce, ok := ent.(*tg.MessageEntityCustomEmoji); ok {
+					slog.Info("SendMessage: CustomEmoji entity",
+						"offset", ce.Offset,
+						"length", ce.Length,
+						"document_id", ce.DocumentID,
+					)
+				}
+			}
+		}
 
 		// Parse HTML and send message
 		updates, sendErr := sender.To(peer).StyledText(ctx, html.String(nil, params.Message))

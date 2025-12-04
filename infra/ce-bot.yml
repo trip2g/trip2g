@@ -1,0 +1,38 @@
+- name: Setup CE Bot
+  hosts: all
+  become: yes
+  vars:
+    ce_domain: ce.trip2g.com
+    ce_port: 3000
+    ce_image: alexes/lottie:v0.3
+    ce_cache_dir: /var/lib/ce-bot/cache
+    docker_install_compose: false
+
+  roles:
+    - geerlingguy.docker
+
+  tasks:
+    - name: Ensure /etc/ce-bot.env exists
+      stat:
+        path: /etc/ce-bot.env
+      register: ce_env_file
+      failed_when: not ce_env_file.stat.exists
+
+    - name: Create ce-bot cache directory
+      file:
+        path: "{{ ce_cache_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Run ce-bot container
+      docker_container:
+        name: ce-bot
+        image: "{{ ce_image }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "127.0.0.1:{{ ce_port }}:3000"
+        env_file: /etc/ce-bot.env
+        volumes:
+          - "{{ ce_cache_dir }}:/tmp/lottiecache"
+        recreate: yes

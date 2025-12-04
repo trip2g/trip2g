@@ -9,13 +9,13 @@ services:
       MINIO_ROOT_PASSWORD: password
     command: server /data --console-address ":9001"
 
-  lottie-converter:
-    build: ./lottie-converter
-    ports:
-      - "3000:3000"
-    environment:
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - SERVER_URL=${SERVER_URL:-http://localhost:3000}
-    volumes:
-      - ./lottie-converter/cache:/app/cache
-    restart: unless-stopped
+  # lottie-converter:
+  #   build: ./lottie-converter
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+  #     - SERVER_URL=${SERVER_URL:-http://localhost:3000}
+  #   volumes:
+  #     - ./lottie-converter/cache:/app/cache
+  #   restart: unless-stopped

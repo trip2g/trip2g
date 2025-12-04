@@ -412,6 +412,12 @@ func TestHTMLCustomEmoji(t *testing.T) {
 			warnings: 0,
 		},
 		{
+			name:     "tg://emoji format with text alt",
+			markdown: "![emoji](tg://emoji?id=5395478998320946882)",
+			expected: `<tg-emoji emoji-id="5395478998320946882">emoji</tg-emoji>`,
+			warnings: 0,
+		},
+		{
 			name:     "ce.trip2g.com format",
 			markdown: "Hello ![](https://ce.trip2g.com/5460736117236048513.webp) world",
 			expected: `Hello <tg-emoji emoji-id="5460736117236048513"></tg-emoji> world`,
