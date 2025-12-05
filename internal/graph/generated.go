@@ -577,6 +577,7 @@ type ComplexityRoot struct {
 		Offer                      func(childComplexity int, id int64) int
 		PatreonCredentials         func(childComplexity int, id int64) int
 		Purchase                   func(childComplexity int, id string) int
+		RecentlyModifiedNoteViews  func(childComplexity int) int
 		Redirect                   func(childComplexity int, id int64) int
 		Subgraph                   func(childComplexity int, id int64) int
 		TelegramAccount            func(childComplexity int, id int64) int
@@ -1523,6 +1524,7 @@ type AdminQueryResolver interface {
 	AllSubgraphs(ctx context.Context, obj *model1.AdminQuery) (*model.AdminSubgraphsConnection, error)
 	AllUserSubgraphAccesses(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUserSubgraphAccessesConnection, error)
 	AllLatestNoteViews(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminLatestNoteViewsFilter) (*model.AdminLatestNoteViewsConnection, error)
+	RecentlyModifiedNoteViews(ctx context.Context, obj *model1.AdminQuery) ([]model1.NoteView, error)
 	AllUserUserBans(ctx context.Context, obj *model1.AdminQuery) (*model.AdminUserBansConnection, error)
 	AllAPIKeys(ctx context.Context, obj *model1.AdminQuery) (*model.AdminAPIKeysConnection, error)
 	AllGitTokens(ctx context.Context, obj *model1.AdminQuery) (*model.AdminGitTokensConnection, error)
@@ -3944,6 +3946,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.Purchase(childComplexity, args["id"].(string)), true
+	case "AdminQuery.recentlyModifiedNoteViews":
+		if e.complexity.AdminQuery.RecentlyModifiedNoteViews == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.RecentlyModifiedNoteViews(childComplexity), true
 	case "AdminQuery.redirect":
 		if e.complexity.AdminQuery.Redirect == nil {
 			break
@@ -15979,6 +15987,73 @@ func (ec *executionContext) fieldContext_AdminQuery_allLatestNoteViews(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_recentlyModifiedNoteViews(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_recentlyModifiedNoteViews,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().RecentlyModifiedNoteViews(ctx, obj)
+		},
+		nil,
+		ec.marshalNNoteView2ᚕtrip2gᚋinternalᚋmodelᚐNoteViewᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_recentlyModifiedNoteViews(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteView_id(ctx, field)
+			case "path":
+				return ec.fieldContext_NoteView_path(ctx, field)
+			case "title":
+				return ec.fieldContext_NoteView_title(ctx, field)
+			case "content":
+				return ec.fieldContext_NoteView_content(ctx, field)
+			case "html":
+				return ec.fieldContext_NoteView_html(ctx, field)
+			case "permalink":
+				return ec.fieldContext_NoteView_permalink(ctx, field)
+			case "free":
+				return ec.fieldContext_NoteView_free(ctx, field)
+			case "pathId":
+				return ec.fieldContext_NoteView_pathId(ctx, field)
+			case "versionId":
+				return ec.fieldContext_NoteView_versionId(ctx, field)
+			case "subgraphNames":
+				return ec.fieldContext_NoteView_subgraphNames(ctx, field)
+			case "warnings":
+				return ec.fieldContext_NoteView_warnings(ctx, field)
+			case "inLinks":
+				return ec.fieldContext_NoteView_inLinks(ctx, field)
+			case "graphPosition":
+				return ec.fieldContext_NoteView_graphPosition(ctx, field)
+			case "isHomePage":
+				return ec.fieldContext_NoteView_isHomePage(ctx, field)
+			case "description":
+				return ec.fieldContext_NoteView_description(ctx, field)
+			case "meta":
+				return ec.fieldContext_NoteView_meta(ctx, field)
+			case "toc":
+				return ec.fieldContext_NoteView_toc(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NoteView_assetReplaces(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteView", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminQuery_allUserUserBans(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -26168,6 +26243,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allUserSubgraphAccesses(ctx, field)
 			case "allLatestNoteViews":
 				return ec.fieldContext_AdminQuery_allLatestNoteViews(ctx, field)
+			case "recentlyModifiedNoteViews":
+				return ec.fieldContext_AdminQuery_recentlyModifiedNoteViews(ctx, field)
 			case "allUserUserBans":
 				return ec.fieldContext_AdminQuery_allUserUserBans(ctx, field)
 			case "allApiKeys":
@@ -42928,6 +43005,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_allLatestNoteViews(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "recentlyModifiedNoteViews":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_recentlyModifiedNoteViews(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

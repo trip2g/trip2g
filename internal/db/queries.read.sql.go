@@ -4531,6 +4531,33 @@ func (q *Queries) PurchaseByID(ctx context.Context, id string) (Purchase, error)
 	return i, err
 }
 
+const recentlyModifiedNoteVersionIDs = `-- name: RecentlyModifiedNoteVersionIDs :many
+select id from note_versions order by created_at desc limit 20
+`
+
+func (q *Queries) RecentlyModifiedNoteVersionIDs(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, recentlyModifiedNoteVersionIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const redirectByID = `-- name: RedirectByID :one
 select id, created_at, created_by, pattern, ignore_case, is_regex, target from redirects where id = ?
 `

@@ -1018,3 +1018,6 @@ select post_type
    and account_id = ?
    and telegram_chat_id = ?
    and message_id = ?;
+
+-- name: RecentlyModifiedNoteVersionIDs :many
+select id from note_versions order by created_at desc limit 20;

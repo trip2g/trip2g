@@ -2,4 +2,5 @@ $trip2g_admin_dashboard $mol_page
 	title \Dashboard
 	body /
 		<= BuildInfo $trip2g_admin_dashboard_buildinfo
+		<= RecentlyModifiedNotes $trip2g_admin_dashboard_recentlymodifiednotes
 		<= NoteWarnings $trip2g_admin_noteview_warnings

@@ -24,6 +24,7 @@ $trip2g_admin_app $trip2g_admin_catalog
 			title @ \Sign out
 	Spread_default $trip2g_admin_dashboard
 	spreads *
+		dashboard <= Dashboard $trip2g_admin_dashboard
 		users <= ListUsers $trip2g_admin_user_catalog
 			close_icon <= Spread_close
 		telegrampublishnotes <= TelegramPublishNotes $trip2g_admin_telegrampublishnote_catalog

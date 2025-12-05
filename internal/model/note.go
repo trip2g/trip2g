@@ -879,6 +879,16 @@ func (nv NoteViews) GetByPathID(id int64) *NoteView {
 	return nil
 }
 
+func (nv NoteViews) GetByVersionID(id int64) *NoteView {
+	for _, note := range nv.Map {
+		if note.VersionID == id {
+			return note
+		}
+	}
+
+	return nil
+}
+
 func (nv NoteViews) GetByPath(v string) *NoteView {
 	note, ok := nv.Map[v]
 	if !ok {

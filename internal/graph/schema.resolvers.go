@@ -1118,6 +1118,26 @@ func (r *adminQueryResolver) AllLatestNoteViews(ctx context.Context, obj *appmod
 	}, nil
 }
 
+// RecentlyModifiedNoteViews is the resolver for the recentlyModifiedNoteViews field.
+func (r *adminQueryResolver) RecentlyModifiedNoteViews(ctx context.Context, obj *appmodel.AdminQuery) ([]appmodel.NoteView, error) {
+	versionIDs, err := r.env(ctx).RecentlyModifiedNoteVersionIDs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recently modified note version IDs: %w", err)
+	}
+
+	notes := r.env(ctx).LatestNoteViews()
+	res := make([]appmodel.NoteView, 0, len(versionIDs))
+
+	for _, versionID := range versionIDs {
+		note := notes.GetByVersionID(versionID)
+		if note != nil {
+			res = append(res, *note)
+		}
+	}
+
+	return res, nil
+}
+
 // AllUserUserBans is the resolver for the allUserUserBans field.
 func (r *adminQueryResolver) AllUserUserBans(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminUserBansConnection, error) {
 	return &model.AdminUserBansConnection{}, nil

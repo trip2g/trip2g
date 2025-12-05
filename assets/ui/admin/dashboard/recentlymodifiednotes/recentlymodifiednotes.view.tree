@@ -1,0 +1,24 @@
+$trip2g_admin_dashboard_recentlymodifiednotes $mol_view
+	Permalink* $mol_view
+		dom_name \a
+		attr *
+			href <= row_permalink* \path
+			target \_blank
+		sub /
+			<= row_permalink* \path
+			<= Icon* $mol_icon_open_in_new
+	NoPermalink* $mol_view
+		sub / \-
+	sub /
+		<= List $mol_list
+			rows <= rows /$mol_view
+				<= Row*0 $mol_row
+					sub /
+						<= Title_labeler* $mol_labeler
+							title \Title
+							Content <= Row_Title* $trip2g_admin_cell
+								content <= row_title* \
+						<= Permalink_labeler* $mol_labeler
+							title \Permalink
+							Content <= Row_Permalink* $trip2g_admin_cell
+								sub / <= row_permalink_el* null $mol_view

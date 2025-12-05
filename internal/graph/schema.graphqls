@@ -858,6 +858,7 @@ type AdminQuery {
   allSubgraphs: AdminSubgraphsConnection!
   allUserSubgraphAccesses: AdminUserSubgraphAccessesConnection!
   allLatestNoteViews(filter: AdminLatestNoteViewsFilter): AdminLatestNoteViewsConnection!
+  recentlyModifiedNoteViews: [NoteView!]!
   allUserUserBans: AdminUserBansConnection!
   allApiKeys: AdminApiKeysConnection!
   allGitTokens: AdminGitTokensConnection!
