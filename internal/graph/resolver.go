@@ -29,6 +29,7 @@ import (
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
+	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/resettelegrampublishnote"
@@ -103,6 +104,7 @@ func (r *Resolver) env(ctx context.Context) Env {
 }
 
 type Env interface {
+	GitCommit() string
 	IsDevMode() bool
 
 	ListAllUsers(ctx context.Context) ([]db.User, error)
@@ -248,6 +250,7 @@ type Env interface {
 	signouttelegramaccount.Env
 	settelegramaccountchatpublishtags.Env
 	settelegramaccountchatpublishinstanttags.Env
+	importtelegramaccountchannel.Env
 
 	ListUserFavoriteNotes(ctx context.Context, userID int64) ([]db.ListUserFavoriteNotesRow, error)
 

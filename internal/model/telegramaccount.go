@@ -26,6 +26,15 @@ type TelegramCompleteAuthResult struct {
 	APIHash     string
 }
 
+// TelegramAccountDialogType represents the type of a Telegram dialog.
+type TelegramAccountDialogType string
+
+const (
+	TelegramAccountDialogTypeUser    TelegramAccountDialogType = "user"
+	TelegramAccountDialogTypeChannel TelegramAccountDialogType = "channel"
+	TelegramAccountDialogTypeChat    TelegramAccountDialogType = "chat"
+)
+
 // TelegramAccountDialog represents a dialog (user, channel, or group) in Telegram.
 // PublishTags and PublishInstantTags are resolved via GraphQL forceResolver.
 type TelegramAccountDialog struct {
@@ -33,4 +42,5 @@ type TelegramAccountDialog struct {
 	ID        int64
 	Username  string
 	Title     string
+	Type      TelegramAccountDialogType
 }

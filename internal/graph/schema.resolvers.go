@@ -39,6 +39,7 @@ import (
 	"trip2g/internal/case/admin/deleteredirect"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
+	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/makereleaselive"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/resettelegrampublishnote"
@@ -726,6 +727,11 @@ func (r *adminMutationResolver) SetTelegramAccountChatPublishInstantTags(ctx con
 	return settelegramaccountchatpublishinstanttags.Resolve(ctx, r.env(ctx), input)
 }
 
+// ImportTelegramAccountChannel is the resolver for the importTelegramAccountChannel field.
+func (r *adminMutationResolver) ImportTelegramAccountChannel(ctx context.Context, obj *appmodel.AdminMutation, input model.AdminImportTelegramAccountChannelInput) (model.AdminImportTelegramAccountChannelOrErrorPayload, error) {
+	return importtelegramaccountchannel.Resolve(ctx, r.env(ctx), input)
+}
+
 // CreatePatreonCredentials is the resolver for the createPatreonCredentials field.
 func (r *adminMutationResolver) CreatePatreonCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.CreatePatreonCredentialsInput) (model.CreatePatreonCredentialsOrErrorPayload, error) {
 	return createpatreoncredentials.Resolve(ctx, r.env(ctx), input)
@@ -1356,6 +1362,11 @@ func (r *adminQueryResolver) HealthChecks(ctx context.Context, obj *appmodel.Adm
 	return checkhealth.Resolve(ctx, r.env(ctx))
 }
 
+// BuildGitCommit is the resolver for the buildGitCommit field.
+func (r *adminQueryResolver) BuildGitCommit(ctx context.Context, obj *appmodel.AdminQuery) (string, error) {
+	return r.env(ctx).GitCommit(), nil
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminRedirectResolver) CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -1418,6 +1429,11 @@ func (r *adminTelegramAccountResolver) CreatedBy(ctx context.Context, obj *db.Te
 // Dialogs is the resolver for the dialogs field.
 func (r *adminTelegramAccountResolver) Dialogs(ctx context.Context, obj *db.TelegramAccount) ([]appmodel.TelegramAccountDialog, error) {
 	return r.env(ctx).ListTelegramAccountDialogs(ctx, obj.ID)
+}
+
+// Type is the resolver for the type field.
+func (r *adminTelegramAccountDialogResolver) Type(ctx context.Context, obj *appmodel.TelegramAccountDialog) (model.AdminTelegramAccountDialogType, error) {
+	return model.AdminTelegramAccountDialogType(obj.Type), nil
 }
 
 // PublishTags is the resolver for the publishTags field.

@@ -70,3 +70,10 @@ type TelegramAccountUpdatePostParams struct {
 
 	MessageID int64 `json:"message_id"`
 }
+
+// ImportTelegramChannelParams contains parameters for import background job.
+type ImportTelegramChannelParams struct {
+	AccountID int64  `json:"account_id"`
+	ChannelID int64  `json:"channel_id"`
+	BasePath  string `json:"base_path"`
+}

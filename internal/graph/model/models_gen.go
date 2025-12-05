@@ -22,6 +22,10 @@ type AdminCompleteTelegramAccountAuthOrErrorPayload interface {
 	IsAdminCompleteTelegramAccountAuthOrErrorPayload()
 }
 
+type AdminImportTelegramAccountChannelOrErrorPayload interface {
+	IsAdminImportTelegramAccountChannelOrErrorPayload()
+}
+
 type AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload interface {
 	IsAdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload()
 }
@@ -395,6 +399,18 @@ type AdminGitTokensConnection struct {
 type AdminHTMLInjectionsConnection struct {
 	Nodes []db.HtmlInjection `json:"nodes"`
 }
+
+type AdminImportTelegramAccountChannelInput struct {
+	AccountID int64  `json:"accountId"`
+	ChannelID int64  `json:"channelId"`
+	BasePath  string `json:"basePath"`
+}
+
+type AdminImportTelegramAccountChannelPayload struct {
+	Success bool `json:"success"`
+}
+
+func (AdminImportTelegramAccountChannelPayload) IsAdminImportTelegramAccountChannelOrErrorPayload() {}
 
 type AdminLatestNoteAssetsConnection struct {
 	Nodes []db.NoteAsset `json:"nodes"`
@@ -876,6 +892,8 @@ func (ErrorPayload) IsAdminSignOutTelegramAccountOrErrorPayload() {}
 func (ErrorPayload) IsAdminSetTelegramAccountChatPublishTagsOrErrorPayload() {}
 
 func (ErrorPayload) IsAdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload() {}
+
+func (ErrorPayload) IsAdminImportTelegramAccountChannelOrErrorPayload() {}
 
 func (ErrorPayload) IsRequestEmailSignInCodeOrErrorPayload() {}
 
@@ -1593,6 +1611,63 @@ func (e *AdminTelegramAccountAuthStateEnum) UnmarshalJSON(b []byte) error {
 }
 
 func (e AdminTelegramAccountAuthStateEnum) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type AdminTelegramAccountDialogType string
+
+const (
+	AdminTelegramAccountDialogTypeUser    AdminTelegramAccountDialogType = "user"
+	AdminTelegramAccountDialogTypeChannel AdminTelegramAccountDialogType = "channel"
+	AdminTelegramAccountDialogTypeChat    AdminTelegramAccountDialogType = "chat"
+)
+
+var AllAdminTelegramAccountDialogType = []AdminTelegramAccountDialogType{
+	AdminTelegramAccountDialogTypeUser,
+	AdminTelegramAccountDialogTypeChannel,
+	AdminTelegramAccountDialogTypeChat,
+}
+
+func (e AdminTelegramAccountDialogType) IsValid() bool {
+	switch e {
+	case AdminTelegramAccountDialogTypeUser, AdminTelegramAccountDialogTypeChannel, AdminTelegramAccountDialogTypeChat:
+		return true
+	}
+	return false
+}
+
+func (e AdminTelegramAccountDialogType) String() string {
+	return string(e)
+}
+
+func (e *AdminTelegramAccountDialogType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AdminTelegramAccountDialogType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AdminTelegramAccountDialogType", str)
+	}
+	return nil
+}
+
+func (e AdminTelegramAccountDialogType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *AdminTelegramAccountDialogType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e AdminTelegramAccountDialogType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

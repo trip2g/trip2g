@@ -34,6 +34,7 @@ import (
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/case/backjob/extractnotionpages"
+	"trip2g/internal/case/backjob/importtelegramchannel"
 	"trip2g/internal/case/backjob/sendsignincode"
 	"trip2g/internal/case/backjob/sendtelegramaccountmessage"
 	"trip2g/internal/case/backjob/sendtelegramaccountpost"
@@ -95,6 +96,8 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+var GitCommit = "dev"
+
 type txEnvKeyType struct{}
 
 //nolint:gochecknoglobals // Context key for transactional env
@@ -123,6 +126,7 @@ type app struct {
 	*updatetelegramaccountmessage.UpdateTelegramAccountMessageJob
 	*sendtelegramaccountpost.SendTelegramAccountPostJob
 	*updatetelegramaccountpost.UpdateTelegramAccountPostJob
+	*importtelegramchannel.ImportTelegramChannelJob
 	*extractnotionpages.ExtractNotionPagesJob
 	*updateallchattelegrampublishposts.UpdateAllChatTelegramPublishPostsJob
 
@@ -342,6 +346,7 @@ func main() {
 	a.UpdateTelegramAccountMessageJob = updatetelegramaccountmessage.New(a)
 	a.SendTelegramAccountPostJob = sendtelegramaccountpost.New(a)
 	a.UpdateTelegramAccountPostJob = updatetelegramaccountpost.New(a)
+	a.ImportTelegramChannelJob = importtelegramchannel.New(a)
 
 	a.CronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
 	if err != nil {
@@ -469,6 +474,10 @@ func (a *app) LatestConfig() db.ConfigVersion {
 	}
 
 	return cfg
+}
+
+func (a *app) GitCommit() string {
+	return GitCommit
 }
 
 func (a *app) InsertConfigVersion(ctx context.Context, params db.InsertConfigVersionParams) (db.ConfigVersion, error) {

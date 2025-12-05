@@ -360,6 +360,7 @@ func (a *app) ListTelegramAccountDialogs(ctx context.Context, accountID int64) (
 			ID:        d.ID,
 			Username:  d.Username,
 			Title:     d.Title,
+			Type:      appmodel.TelegramAccountDialogType(d.Type),
 		})
 	}
 
@@ -389,4 +390,17 @@ func (a *app) DeleteTelegramAccountMessage(ctx context.Context, account db.Teleg
 		ChatID:    chatID,
 		MessageID: messageID,
 	})
+}
+
+// TelegramClient creates a new tgtd.Client for the given account.
+// Used by background jobs that need to perform multiple operations.
+func (a *app) TelegramClient() *tgtd.Client {
+	// Return a client with placeholder credentials - actual credentials
+	// come from the account when RunWithAPI is called
+	return &tgtd.Client{}
+}
+
+// TelegramClientForAccount creates a tgtd.Client for a specific account.
+func (a *app) TelegramClientForAccount(account db.TelegramAccount) *tgtd.Client {
+	return tgtd.NewClient(int(account.ApiID), account.ApiHash)
 }

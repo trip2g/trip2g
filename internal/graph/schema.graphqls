@@ -701,8 +701,15 @@ type AdminTelegramAccountDialog @goModel(model: "trip2g/internal/model.TelegramA
   id: Int64!
   username: String!
   title: String!
+  type: AdminTelegramAccountDialogType!
   publishTags: [AdminTelegramPublishTag!]! @goField(forceResolver: true)
   publishInstantTags: [AdminTelegramPublishTag!]! @goField(forceResolver: true)
+}
+
+enum AdminTelegramAccountDialogType {
+  user
+  channel
+  chat
 }
 
 type AdminTelegramAccountsConnection {
@@ -830,6 +837,22 @@ type AdminSetTelegramAccountChatPublishInstantTagsPayload {
 
 union AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload = AdminSetTelegramAccountChatPublishInstantTagsPayload | ErrorPayload
 
+#
+# importTelegramAccountChannel
+#
+
+input AdminImportTelegramAccountChannelInput {
+  accountId: Int64!
+  channelId: Int64!
+  basePath: String!
+}
+
+type AdminImportTelegramAccountChannelPayload {
+  success: Boolean!
+}
+
+union AdminImportTelegramAccountChannelOrErrorPayload = AdminImportTelegramAccountChannelPayload | ErrorPayload
+
 type AdminQuery {
   allUsers: AdminUsersConnection!
   allSubgraphs: AdminSubgraphsConnection!
@@ -893,6 +916,7 @@ type AdminQuery {
   backgroundQueue(id: String!): AdminBackgroundQueue
 
   healthChecks: [HealchCheck!]!
+  buildGitCommit: String!
 }
 
 enum HealthCheckStatus {
@@ -2102,6 +2126,7 @@ type AdminMutation {
   signOutTelegramAccount(input: AdminSignOutTelegramAccountInput!): AdminSignOutTelegramAccountOrErrorPayload!
   setTelegramAccountChatPublishTags(input: AdminSetTelegramAccountChatPublishTagsInput!): AdminSetTelegramAccountChatPublishTagsOrErrorPayload!
   setTelegramAccountChatPublishInstantTags(input: AdminSetTelegramAccountChatPublishInstantTagsInput!): AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload!
+  importTelegramAccountChannel(input: AdminImportTelegramAccountChannelInput!): AdminImportTelegramAccountChannelOrErrorPayload!
 
   # Patreon credentials mutations
   createPatreonCredentials(input: CreatePatreonCredentialsInput!): CreatePatreonCredentialsOrErrorPayload!

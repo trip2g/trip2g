@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 func (note *NoteView) IsTelegramPublishPost() bool {
 	_, withPublishAt := note.ExtractTelegramPublishAt(time.UTC)
@@ -79,4 +82,74 @@ func (note *NoteView) ExtractTelegramPublishDisableWebPagePreview() bool {
 	}
 
 	return false
+}
+
+// ExtractTelegramPublishChannelID returns the channel ID if present in metadata.
+func (note *NoteView) ExtractTelegramPublishChannelID() (int64, bool) {
+	rawChannelID, ok := note.RawMeta["telegram_publish_channel_id"]
+	if !ok {
+		return 0, false
+	}
+	switch v := rawChannelID.(type) {
+	case string:
+		id, err := parseInt64(v)
+		if err != nil {
+			return 0, false
+		}
+		return id, true
+	case int64:
+		return v, true
+	case float64:
+		return int64(v), true
+	case int:
+		return int64(v), true
+	}
+	return 0, false
+}
+
+// ExtractTelegramPublishMessageID returns the message ID if present in metadata.
+func (note *NoteView) ExtractTelegramPublishMessageID() (int, bool) {
+	rawMessageID, ok := note.RawMeta["telegram_publish_message_id"]
+	if !ok {
+		return 0, false
+	}
+	switch v := rawMessageID.(type) {
+	case int:
+		return v, true
+	case int64:
+		return int(v), true
+	case float64:
+		return int(v), true
+	}
+	return 0, false
+}
+
+// BuildImportedNotesMap builds a map of imported notes keyed by "channelID:messageID".
+func BuildImportedNotesMap(nvs *NoteViews) map[string]*NoteView {
+	result := make(map[string]*NoteView)
+	for _, note := range nvs.List {
+		channelID, hasChannel := note.ExtractTelegramPublishChannelID()
+		messageID, hasMessage := note.ExtractTelegramPublishMessageID()
+		if hasChannel && hasMessage {
+			key := formatImportKey(channelID, messageID)
+			result[key] = note
+		}
+	}
+	return result
+}
+
+// FormatImportKey creates a key for imported notes map.
+func formatImportKey(channelID int64, messageID int) string {
+	return fmt.Sprintf("%d:%d", channelID, messageID)
+}
+
+// FormatImportKey creates a key for imported notes map (exported version).
+func FormatImportKey(channelID int64, messageID int) string {
+	return formatImportKey(channelID, messageID)
+}
+
+func parseInt64(s string) (int64, error) {
+	var result int64
+	_, err := fmt.Sscanf(s, "%d", &result)
+	return result, err
 }

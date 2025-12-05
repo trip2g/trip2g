@@ -8,6 +8,7 @@ namespace $.$$ {
 							id
 							username
 							title
+							type
 							publishTags {
 								id
 							}
@@ -81,6 +82,19 @@ namespace $.$$ {
 
 		override instant_tags(id: any) {
 			return this.InstantTags(id)
+		}
+
+		override import(id: any) {
+			if (this.row(id).type === 'channel') {
+				return this.Import(id)
+			}
+
+			return this.Empty()
+		}
+
+		override row_default_import_base_path(id: any): string {
+			const r = this.row(id)
+			return r.username || r.title || String(r.id)
 		}
 	}
 }

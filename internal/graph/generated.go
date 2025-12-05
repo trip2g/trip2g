@@ -340,6 +340,10 @@ type ComplexityRoot struct {
 		Nodes func(childComplexity int) int
 	}
 
+	AdminImportTelegramAccountChannelPayload struct {
+		Success func(childComplexity int) int
+	}
+
 	AdminLatestNoteAssetsConnection struct {
 		Nodes func(childComplexity int) int
 	}
@@ -372,6 +376,7 @@ type ComplexityRoot struct {
 		DeleteRedirect                           func(childComplexity int, input model.DeleteRedirectInput) int
 		DisableAPIKey                            func(childComplexity int, input model.DisableAPIKeyInput) int
 		DisableGitToken                          func(childComplexity int, input model.DisableGitTokenInput) int
+		ImportTelegramAccountChannel             func(childComplexity int, input model.AdminImportTelegramAccountChannelInput) int
 		MakeReleaseLive                          func(childComplexity int, input model.MakeReleaseLiveInput) int
 		RefreshBoostyData                        func(childComplexity int, input model.RefreshBoostyDataInput) int
 		RefreshPatreonData                       func(childComplexity int, input model.RefreshPatreonDataInput) int
@@ -562,6 +567,7 @@ type ComplexityRoot struct {
 		AuditLogs                  func(childComplexity int, filter model.AdminAuditLogsFilterInput) int
 		BackgroundQueue            func(childComplexity int, id string) int
 		BoostyCredentials          func(childComplexity int, id int64) int
+		BuildGitCommit             func(childComplexity int) int
 		CronJob                    func(childComplexity int, id int64) int
 		HTMLInjection              func(childComplexity int, id int64) int
 		HealthChecks               func(childComplexity int) int
@@ -661,6 +667,7 @@ type ComplexityRoot struct {
 		PublishInstantTags func(childComplexity int) int
 		PublishTags        func(childComplexity int) int
 		Title              func(childComplexity int) int
+		Type               func(childComplexity int) int
 		Username           func(childComplexity int) int
 	}
 
@@ -1430,6 +1437,7 @@ type AdminMutationResolver interface {
 	SignOutTelegramAccount(ctx context.Context, obj *model1.AdminMutation, input model.AdminSignOutTelegramAccountInput) (model.AdminSignOutTelegramAccountOrErrorPayload, error)
 	SetTelegramAccountChatPublishTags(ctx context.Context, obj *model1.AdminMutation, input model.AdminSetTelegramAccountChatPublishTagsInput) (model.AdminSetTelegramAccountChatPublishTagsOrErrorPayload, error)
 	SetTelegramAccountChatPublishInstantTags(ctx context.Context, obj *model1.AdminMutation, input model.AdminSetTelegramAccountChatPublishInstantTagsInput) (model.AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload, error)
+	ImportTelegramAccountChannel(ctx context.Context, obj *model1.AdminMutation, input model.AdminImportTelegramAccountChannelInput) (model.AdminImportTelegramAccountChannelOrErrorPayload, error)
 	CreatePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreatePatreonCredentialsInput) (model.CreatePatreonCredentialsOrErrorPayload, error)
 	DeletePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeletePatreonCredentialsInput) (model.DeletePatreonCredentialsOrErrorPayload, error)
 	RestorePatreonCredentials(ctx context.Context, obj *model1.AdminMutation, input model.RestorePatreonCredentialsInput) (model.RestorePatreonCredentialsOrErrorPayload, error)
@@ -1562,6 +1570,7 @@ type AdminQueryResolver interface {
 	AllBackgroundQueues(ctx context.Context, obj *model1.AdminQuery) (*model.AdminBackgroundQueuesConnection, error)
 	BackgroundQueue(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.BackgroundQueue, error)
 	HealthChecks(ctx context.Context, obj *model1.AdminQuery) ([]model.HealchCheck, error)
+	BuildGitCommit(ctx context.Context, obj *model1.AdminQuery) (string, error)
 }
 type AdminRedirectResolver interface {
 	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
@@ -1592,6 +1601,7 @@ type AdminTelegramAccountResolver interface {
 	Dialogs(ctx context.Context, obj *db.TelegramAccount) ([]model1.TelegramAccountDialog, error)
 }
 type AdminTelegramAccountDialogResolver interface {
+	Type(ctx context.Context, obj *model1.TelegramAccountDialog) (model.AdminTelegramAccountDialogType, error)
 	PublishTags(ctx context.Context, obj *model1.TelegramAccountDialog) ([]db.TelegramPublishTag, error)
 	PublishInstantTags(ctx context.Context, obj *model1.TelegramAccountDialog) ([]db.TelegramPublishTag, error)
 }
@@ -2483,6 +2493,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminHtmlInjectionsConnection.Nodes(childComplexity), true
 
+	case "AdminImportTelegramAccountChannelPayload.success":
+		if e.complexity.AdminImportTelegramAccountChannelPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.AdminImportTelegramAccountChannelPayload.Success(childComplexity), true
+
 	case "AdminLatestNoteAssetsConnection.nodes":
 		if e.complexity.AdminLatestNoteAssetsConnection.Nodes == nil {
 			break
@@ -2750,6 +2767,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.DisableGitToken(childComplexity, args["input"].(model.DisableGitTokenInput)), true
+	case "AdminMutation.importTelegramAccountChannel":
+		if e.complexity.AdminMutation.ImportTelegramAccountChannel == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_importTelegramAccountChannel_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.ImportTelegramAccountChannel(childComplexity, args["input"].(model.AdminImportTelegramAccountChannelInput)), true
 	case "AdminMutation.makeReleaseLive":
 		if e.complexity.AdminMutation.MakeReleaseLive == nil {
 			break
@@ -3821,6 +3849,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.BoostyCredentials(childComplexity, args["id"].(int64)), true
+	case "AdminQuery.buildGitCommit":
+		if e.complexity.AdminQuery.BuildGitCommit == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.BuildGitCommit(childComplexity), true
 	case "AdminQuery.cronJob":
 		if e.complexity.AdminQuery.CronJob == nil {
 			break
@@ -4279,6 +4313,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminTelegramAccountDialog.Title(childComplexity), true
+	case "AdminTelegramAccountDialog.type":
+		if e.complexity.AdminTelegramAccountDialog.Type == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramAccountDialog.Type(childComplexity), true
 	case "AdminTelegramAccountDialog.username":
 		if e.complexity.AdminTelegramAccountDialog.Username == nil {
 			break
@@ -6150,6 +6190,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAdminBoostyCredentialsFilterInput,
 		ec.unmarshalInputAdminCancelTelegramAccountAuthInput,
 		ec.unmarshalInputAdminCompleteTelegramAccountAuthInput,
+		ec.unmarshalInputAdminImportTelegramAccountChannelInput,
 		ec.unmarshalInputAdminLatestNoteViewsFilter,
 		ec.unmarshalInputAdminPatreonCredentialsFilterInput,
 		ec.unmarshalInputAdminSetTelegramAccountChatPublishInstantTagsInput,
@@ -6591,6 +6632,17 @@ func (ec *executionContext) field_AdminMutation_disableGitToken_args(ctx context
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDisableGitTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐDisableGitTokenInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_importTelegramAccountChannel_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAdminImportTelegramAccountChannelInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminImportTelegramAccountChannelInput)
 	if err != nil {
 		return nil, err
 	}
@@ -10905,6 +10957,35 @@ func (ec *executionContext) fieldContext_AdminHtmlInjectionsConnection_nodes(_ c
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminImportTelegramAccountChannelPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.AdminImportTelegramAccountChannelPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminImportTelegramAccountChannelPayload_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminImportTelegramAccountChannelPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminImportTelegramAccountChannelPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminLatestNoteAssetsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminLatestNoteAssetsConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12567,6 +12648,47 @@ func (ec *executionContext) fieldContext_AdminMutation_setTelegramAccountChatPub
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminMutation_setTelegramAccountChatPublishInstantTags_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_importTelegramAccountChannel(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_importTelegramAccountChannel,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().ImportTelegramAccountChannel(ctx, obj, fc.Args["input"].(model.AdminImportTelegramAccountChannelInput))
+		},
+		nil,
+		ec.marshalNAdminImportTelegramAccountChannelOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐAdminImportTelegramAccountChannelOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_importTelegramAccountChannel(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type AdminImportTelegramAccountChannelOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_importTelegramAccountChannel_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -17952,6 +18074,35 @@ func (ec *executionContext) fieldContext_AdminQuery_healthChecks(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_buildGitCommit(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_buildGitCommit,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().BuildGitCommit(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_buildGitCommit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminRedirect_id(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19057,6 +19208,8 @@ func (ec *executionContext) fieldContext_AdminTelegramAccount_dialogs(_ context.
 				return ec.fieldContext_AdminTelegramAccountDialog_username(ctx, field)
 			case "title":
 				return ec.fieldContext_AdminTelegramAccountDialog_title(ctx, field)
+			case "type":
+				return ec.fieldContext_AdminTelegramAccountDialog_type(ctx, field)
 			case "publishTags":
 				return ec.fieldContext_AdminTelegramAccountDialog_publishTags(ctx, field)
 			case "publishInstantTags":
@@ -19237,6 +19390,35 @@ func (ec *executionContext) fieldContext_AdminTelegramAccountDialog_title(_ cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminTelegramAccountDialog_type(ctx context.Context, field graphql.CollectedField, obj *model1.TelegramAccountDialog) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminTelegramAccountDialog_type,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminTelegramAccountDialog().Type(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminTelegramAccountDialogType2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramAccountDialogType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramAccountDialog_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramAccountDialog",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type AdminTelegramAccountDialogType does not have child fields")
 		},
 	}
 	return fc, nil
@@ -24357,6 +24539,8 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_setTelegramAccountChatPublishTags(ctx, field)
 			case "setTelegramAccountChatPublishInstantTags":
 				return ec.fieldContext_AdminMutation_setTelegramAccountChatPublishInstantTags(ctx, field)
+			case "importTelegramAccountChannel":
+				return ec.fieldContext_AdminMutation_importTelegramAccountChannel(ctx, field)
 			case "createPatreonCredentials":
 				return ec.fieldContext_AdminMutation_createPatreonCredentials(ctx, field)
 			case "deletePatreonCredentials":
@@ -26078,6 +26262,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_backgroundQueue(ctx, field)
 			case "healthChecks":
 				return ec.fieldContext_AdminQuery_healthChecks(ctx, field)
+			case "buildGitCommit":
+				return ec.fieldContext_AdminQuery_buildGitCommit(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -31093,6 +31279,47 @@ func (ec *executionContext) unmarshalInputAdminCompleteTelegramAccountAuthInput(
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAdminImportTelegramAccountChannelInput(ctx context.Context, obj any) (model.AdminImportTelegramAccountChannelInput, error) {
+	var it model.AdminImportTelegramAccountChannelInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"accountId", "channelId", "basePath"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "accountId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccountID = data
+		case "channelId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("channelId"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ChannelID = data
+		case "basePath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("basePath"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BasePath = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAdminLatestNoteViewsFilter(ctx context.Context, obj any) (model.AdminLatestNoteViewsFilter, error) {
 	var it model.AdminLatestNoteViewsFilter
 	asMap := map[string]any{}
@@ -33866,6 +34093,29 @@ func (ec *executionContext) _AdminCompleteTelegramAccountAuthOrErrorPayload(ctx 
 			return graphql.Null
 		}
 		return ec._AdminCompleteTelegramAccountAuthPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _AdminImportTelegramAccountChannelOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.AdminImportTelegramAccountChannelOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.AdminImportTelegramAccountChannelPayload:
+		return ec._AdminImportTelegramAccountChannelPayload(ctx, sel, &obj)
+	case *model.AdminImportTelegramAccountChannelPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AdminImportTelegramAccountChannelPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -38414,6 +38664,45 @@ func (ec *executionContext) _AdminHtmlInjectionsConnection(ctx context.Context, 
 	return out
 }
 
+var adminImportTelegramAccountChannelPayloadImplementors = []string{"AdminImportTelegramAccountChannelPayload", "AdminImportTelegramAccountChannelOrErrorPayload"}
+
+func (ec *executionContext) _AdminImportTelegramAccountChannelPayload(ctx context.Context, sel ast.SelectionSet, obj *model.AdminImportTelegramAccountChannelPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminImportTelegramAccountChannelPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminImportTelegramAccountChannelPayload")
+		case "success":
+			out.Values[i] = ec._AdminImportTelegramAccountChannelPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminLatestNoteAssetsConnectionImplementors = []string{"AdminLatestNoteAssetsConnection"}
 
 func (ec *executionContext) _AdminLatestNoteAssetsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminLatestNoteAssetsConnection) graphql.Marshaler {
@@ -39907,6 +40196,42 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_setTelegramAccountChatPublishInstantTags(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "importTelegramAccountChannel":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_importTelegramAccountChannel(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -44273,6 +44598,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "buildGitCommit":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_buildGitCommit(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -45272,6 +45633,42 @@ func (ec *executionContext) _AdminTelegramAccountDialog(ctx context.Context, sel
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "type":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramAccountDialog_type(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "publishTags":
 			field := field
 
@@ -49015,7 +49412,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -54683,6 +55080,21 @@ func (ec *executionContext) marshalNAdminHtmlInjectionsConnection2ᚖtrip2gᚋin
 	return ec._AdminHtmlInjectionsConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNAdminImportTelegramAccountChannelInput2trip2gᚋinternalᚋgraphᚋmodelᚐAdminImportTelegramAccountChannelInput(ctx context.Context, v any) (model.AdminImportTelegramAccountChannelInput, error) {
+	res, err := ec.unmarshalInputAdminImportTelegramAccountChannelInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAdminImportTelegramAccountChannelOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐAdminImportTelegramAccountChannelOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.AdminImportTelegramAccountChannelOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminImportTelegramAccountChannelOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminLatestNoteAssetsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminLatestNoteAssetsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminLatestNoteAssetsConnection) graphql.Marshaler {
 	return ec._AdminLatestNoteAssetsConnection(ctx, sel, &v)
 }
@@ -55671,6 +56083,16 @@ func (ec *executionContext) marshalNAdminTelegramAccountDialog2ᚕtrip2gᚋinter
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNAdminTelegramAccountDialogType2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramAccountDialogType(ctx context.Context, v any) (model.AdminTelegramAccountDialogType, error) {
+	var res model.AdminTelegramAccountDialogType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAdminTelegramAccountDialogType2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramAccountDialogType(ctx context.Context, sel ast.SelectionSet, v model.AdminTelegramAccountDialogType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNAdminTelegramAccountsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminTelegramAccountsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminTelegramAccountsConnection) graphql.Marshaler {

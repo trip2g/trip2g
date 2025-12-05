@@ -1,11 +1,14 @@
+GIT_COMMIT := $(shell git rev-parse --short HEAD)
+LDFLAGS := -s -w -X main.GitCommit=$(GIT_COMMIT)
+
 test:
 	go test ./...
 
 build-amd64: test
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./tmp/amd64 -ldflags="-s -w" ./cmd/server
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./tmp/amd64 -ldflags="$(LDFLAGS)" ./cmd/server
 
 build:
-	CGO_ENABLED=0 go build -o ./tmp/server -ldflags="-s -w" ./cmd/server
+	CGO_ENABLED=0 go build -o ./tmp/server -ldflags="$(LDFLAGS)" ./cmd/server
 
 build-docker:
 	docker build -t trip2g .

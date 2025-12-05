@@ -2,6 +2,8 @@ package tgtd
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,17 +12,46 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
+	"github.com/gotd/td/telegram/downloader"
 	"github.com/gotd/td/telegram/message"
 	"github.com/gotd/td/telegram/message/entity"
 	"github.com/gotd/td/telegram/message/html"
 	"github.com/gotd/td/telegram/uploader"
 	"github.com/gotd/td/tg"
+	"github.com/gotd/td/tgerr"
 )
+
+const maxFloodWaitRetries = 3
+
+// retryOnFloodWait executes fn and retries on FLOOD_WAIT errors.
+func retryOnFloodWait[T any](ctx context.Context, fn func() (T, error)) (T, error) {
+	var zero T
+	for i := 0; i < maxFloodWaitRetries; i++ {
+		result, err := fn()
+		if err == nil {
+			return result, nil
+		}
+
+		waited, waitErr := tgerr.FloodWait(ctx, err)
+		if !waited {
+			// Not a flood wait error or context cancelled
+			return zero, waitErr
+		}
+
+		// Log and retry
+		if d, ok := tgerr.AsFloodWait(err); ok {
+			slog.Info("FLOOD_WAIT: retrying after delay", "delay", d, "attempt", i+1)
+		}
+	}
+
+	return zero, fmt.Errorf("max retries exceeded for FLOOD_WAIT")
+}
 
 // Client wraps the gotd/td Telegram client for user account operations.
 type Client struct {
@@ -44,10 +75,20 @@ type ChatInfo struct {
 }
 
 // DialogInfo contains information about a Telegram dialog (user, channel, or group).
+// DialogType represents the type of a Telegram dialog.
+type DialogType string
+
+const (
+	DialogTypeUser    DialogType = "user"
+	DialogTypeChannel DialogType = "channel"
+	DialogTypeChat    DialogType = "chat"
+)
+
 type DialogInfo struct {
 	ID       int64
 	Username string
 	Title    string
+	Type     DialogType
 }
 
 // ListChats returns all chats/channels the account has access to.
@@ -166,6 +207,7 @@ func (c *Client) ListDialogs(ctx context.Context, sessionData []byte) ([]DialogI
 					ID:       u.ID,
 					Username: u.Username,
 					Title:    title,
+					Type:     DialogTypeUser,
 				})
 			}
 		}
@@ -178,12 +220,14 @@ func (c *Client) ListDialogs(ctx context.Context, sessionData []byte) ([]DialogI
 					ID:       ch.ID,
 					Username: ch.Username,
 					Title:    ch.Title,
+					Type:     DialogTypeChannel,
 				})
 			case *tg.Chat:
 				dialogs = append(dialogs, DialogInfo{
 					ID:       ch.ID,
 					Username: "",
 					Title:    ch.Title,
+					Type:     DialogTypeChat,
 				})
 			}
 		}
@@ -938,4 +982,357 @@ func (c *Client) GetUserInfo(ctx context.Context, sessionData []byte) (*UserInfo
 	}
 
 	return result, nil
+}
+
+// APIFunc is a function that receives the Telegram API client.
+type APIFunc func(ctx context.Context, api *tg.Client) error
+
+// RunWithAPI runs a function with an active Telegram API connection.
+// Use this to perform multiple operations within a single session.
+// This avoids creating new connections for each operation, preventing FloodWait.
+func (c *Client) RunWithAPI(ctx context.Context, sessionData []byte, f APIFunc) error {
+	storage := &session.StorageMemory{}
+	err := storage.StoreSession(ctx, sessionData)
+	if err != nil {
+		return fmt.Errorf("failed to load session: %w", err)
+	}
+
+	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
+		SessionStorage: storage,
+	})
+
+	return client.Run(ctx, func(ctx context.Context) error {
+		return f(ctx, client.API())
+	})
+}
+
+// GetChannelMessagesParams contains parameters for fetching channel messages.
+type GetChannelMessagesParams struct {
+	ChannelID int64
+	Limit     int // Max messages to fetch per batch (max 100)
+	OffsetID  int // Message ID to start from (for pagination, 0 = from latest)
+}
+
+// GetChannelMessagesResult contains the result of fetching channel messages.
+type GetChannelMessagesResult struct {
+	Messages []*tg.Message
+	HasMore  bool
+}
+
+// GetChannelMessagesWithAPI fetches messages using an existing API connection.
+// IMPORTANT: Use this within RunWithAPI callback, not standalone!
+func (c *Client) GetChannelMessagesWithAPI(ctx context.Context, api *tg.Client, params GetChannelMessagesParams) (*GetChannelMessagesResult, error) {
+	// Resolve channel peer
+	peer, err := c.resolvePeerWithAPI(ctx, api, params.ChannelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve peer: %w", err)
+	}
+
+	channelPeer, ok := peer.(*tg.InputPeerChannel)
+	if !ok {
+		return nil, fmt.Errorf("expected channel peer, got %T", peer)
+	}
+
+	limit := params.Limit
+	if limit <= 0 || limit > 100 {
+		limit = 100
+	}
+
+	// Get history with retry on FLOOD_WAIT
+	messages, err := retryOnFloodWait(ctx, func() (tg.MessagesMessagesClass, error) {
+		return api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
+			Peer:     channelPeer,
+			Limit:    limit,
+			OffsetID: params.OffsetID,
+		})
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get history: %w", err)
+	}
+
+	var msgList []*tg.Message
+	var rawCount int
+
+	switch m := messages.(type) {
+	case *tg.MessagesChannelMessages:
+		rawCount = len(m.Messages)
+		for _, msg := range m.Messages {
+			if message, msgOk := msg.(*tg.Message); msgOk {
+				// Include messages with text OR media
+				if message.Message != "" || message.Media != nil {
+					msgList = append(msgList, message)
+				}
+			}
+		}
+	case *tg.MessagesMessages:
+		rawCount = len(m.Messages)
+		for _, msg := range m.Messages {
+			if message, msgOk := msg.(*tg.Message); msgOk {
+				if message.Message != "" || message.Media != nil {
+					msgList = append(msgList, message)
+				}
+			}
+		}
+	case *tg.MessagesMessagesSlice:
+		rawCount = len(m.Messages)
+		for _, msg := range m.Messages {
+			if message, msgOk := msg.(*tg.Message); msgOk {
+				if message.Message != "" || message.Media != nil {
+					msgList = append(msgList, message)
+				}
+			}
+		}
+	}
+
+	return &GetChannelMessagesResult{
+		Messages: msgList,
+		HasMore:  rawCount >= limit, // Use rawCount, not filtered len!
+	}, nil
+}
+
+func (c *Client) resolvePeerWithAPI(ctx context.Context, api *tg.Client, chatID int64) (tg.InputPeerClass, error) {
+	// Try to get channel/chat from dialogs with retry on FLOOD_WAIT
+	dialogs, err := retryOnFloodWait(ctx, func() (tg.MessagesDialogsClass, error) {
+		return api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
+			OffsetPeer: &tg.InputPeerEmpty{},
+			Limit:      100,
+		})
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dialogs: %w", err)
+	}
+
+	var chatList []tg.ChatClass
+	switch d := dialogs.(type) {
+	case *tg.MessagesDialogs:
+		chatList = d.Chats
+	case *tg.MessagesDialogsSlice:
+		chatList = d.Chats
+	}
+
+	for _, chat := range chatList {
+		switch ch := chat.(type) {
+		case *tg.Channel:
+			if ch.ID == chatID {
+				return &tg.InputPeerChannel{
+					ChannelID:  ch.ID,
+					AccessHash: ch.AccessHash,
+				}, nil
+			}
+		case *tg.Chat:
+			if ch.ID == chatID {
+				return &tg.InputPeerChat{
+					ChatID: ch.ID,
+				}, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("chat with ID %d not found in dialogs", chatID)
+}
+
+// DownloadedMedia represents downloaded media stored in temp file.
+// Caller MUST call Cleanup() when done to remove temp file.
+type DownloadedMedia struct {
+	Filename   string
+	MimeType   string
+	Sha256Hash string
+	Size       int64
+	TempPath   string // path to temp file
+	IsImage    bool
+	IsVideo    bool
+}
+
+// Open returns the downloaded media file.
+// Caller must close the file when done.
+func (m *DownloadedMedia) Open() (*os.File, error) {
+	return os.Open(m.TempPath)
+}
+
+// Cleanup removes the temp file.
+func (m *DownloadedMedia) Cleanup() {
+	if m.TempPath != "" {
+		os.Remove(m.TempPath)
+	}
+}
+
+// DownloadMessageMedia downloads media from a message to temp files.
+// Returns nil if message has no media or media type is not supported.
+// IMPORTANT: Use this within RunWithAPI callback, not standalone!
+// Caller MUST call Cleanup() on each returned media when done.
+func DownloadMessageMedia(ctx context.Context, api *tg.Client, msg *tg.Message) ([]DownloadedMedia, error) {
+	if msg.Media == nil {
+		return nil, nil
+	}
+
+	d := downloader.NewDownloader()
+	var result []DownloadedMedia
+
+	switch media := msg.Media.(type) {
+	case *tg.MessageMediaPhoto:
+		if media.Photo == nil {
+			return nil, nil
+		}
+		photo, ok := media.Photo.(*tg.Photo)
+		if !ok {
+			return nil, nil
+		}
+
+		// Get largest photo size
+		var bestSize tg.PhotoSizeClass
+		var bestWidth int
+		for _, size := range photo.Sizes {
+			switch s := size.(type) {
+			case *tg.PhotoSize:
+				if s.W > bestWidth {
+					bestWidth = s.W
+					bestSize = s
+				}
+			case *tg.PhotoSizeProgressive:
+				if s.W > bestWidth {
+					bestWidth = s.W
+					bestSize = s
+				}
+			}
+		}
+
+		if bestSize == nil {
+			return nil, nil
+		}
+
+		// Build input location
+		var thumbSize string
+		switch s := bestSize.(type) {
+		case *tg.PhotoSize:
+			thumbSize = s.Type
+		case *tg.PhotoSizeProgressive:
+			thumbSize = s.Type
+		}
+
+		location := &tg.InputPhotoFileLocation{
+			ID:            photo.ID,
+			AccessHash:    photo.AccessHash,
+			FileReference: photo.FileReference,
+			ThumbSize:     thumbSize,
+		}
+
+		filename := fmt.Sprintf("%d.jpg", photo.ID)
+		downloaded, err := downloadToTempFile(ctx, d, api, location, filename)
+		if err != nil {
+			return nil, fmt.Errorf("failed to download photo: %w", err)
+		}
+		downloaded.MimeType = "image/jpeg"
+		downloaded.IsImage = true
+		result = append(result, *downloaded)
+
+	case *tg.MessageMediaDocument:
+		if media.Document == nil {
+			return nil, nil
+		}
+		doc, ok := media.Document.(*tg.Document)
+		if !ok {
+			return nil, nil
+		}
+
+		// Check if it's a photo/video
+		isImage := false
+		isVideo := false
+		var filename string
+
+		for _, attr := range doc.Attributes {
+			switch a := attr.(type) {
+			case *tg.DocumentAttributeFilename:
+				filename = a.FileName
+			case *tg.DocumentAttributeVideo:
+				isVideo = true
+			case *tg.DocumentAttributeImageSize:
+				isImage = true
+			}
+		}
+
+		// Determine type from MIME if not set
+		if strings.HasPrefix(doc.MimeType, "image/") {
+			isImage = true
+		}
+		if strings.HasPrefix(doc.MimeType, "video/") {
+			isVideo = true
+		}
+
+		if !isImage && !isVideo {
+			return nil, nil // Skip non-media documents
+		}
+
+		if filename == "" {
+			ext := ".bin"
+			if isImage {
+				ext = ".jpg"
+			} else if isVideo {
+				ext = ".mp4"
+			}
+			filename = fmt.Sprintf("%d%s", doc.ID, ext)
+		}
+
+		// Build input location
+		location := &tg.InputDocumentFileLocation{
+			ID:            doc.ID,
+			AccessHash:    doc.AccessHash,
+			FileReference: doc.FileReference,
+		}
+
+		downloaded, err := downloadToTempFile(ctx, d, api, location, filename)
+		if err != nil {
+			return nil, fmt.Errorf("failed to download document: %w", err)
+		}
+		downloaded.MimeType = doc.MimeType
+		downloaded.IsImage = isImage
+		downloaded.IsVideo = isVideo
+		result = append(result, *downloaded)
+	}
+
+	return result, nil
+}
+
+// downloadToTempFile streams from Telegram to temp file, calculating hash.
+func downloadToTempFile(
+	ctx context.Context,
+	d *downloader.Downloader,
+	api *tg.Client,
+	location tg.InputFileLocationClass,
+	filename string,
+) (*DownloadedMedia, error) {
+	// Create temp file
+	tmpFile, err := os.CreateTemp("", "tg-media-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+
+	// Use TeeReader to calculate hash while downloading
+	hasher := sha256.New()
+	writer := io.MultiWriter(tmpFile, hasher)
+
+	// Download
+	_, err = d.Download(api, location).Stream(ctx, writer)
+	tmpFile.Close()
+
+	if err != nil {
+		os.Remove(tmpPath)
+		return nil, fmt.Errorf("failed to download: %w", err)
+	}
+
+	// Get file size
+	stat, err := os.Stat(tmpPath)
+	if err != nil {
+		os.Remove(tmpPath)
+		return nil, fmt.Errorf("failed to stat temp file: %w", err)
+	}
+
+	hash := hex.EncodeToString(hasher.Sum(nil))
+
+	return &DownloadedMedia{
+		Filename:   filename,
+		Sha256Hash: hash,
+		Size:       stat.Size(),
+		TempPath:   tmpPath,
+	}, nil
 }

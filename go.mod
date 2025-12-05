@@ -19,9 +19,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/mailru/easyjson v0.9.0
 	github.com/minio/minio-go/v7 v7.0.91
-	github.com/oklog/ulid/v2 v2.1.0
 	github.com/quailyquaily/goldmark-enclave v0.2.1
-	github.com/resend/resend-go/v2 v2.20.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.33.0
 	github.com/simukti/sqldb-logger v0.0.0-20230108155151-646c1a075551
@@ -29,7 +27,6 @@ require (
 	github.com/tidwall/gjson v1.14.2
 	github.com/valyala/fasthttp v1.66.0
 	github.com/valyala/quicktemplate v1.8.0
-	github.com/vektah/gqlparser v1.3.1
 	github.com/vektah/gqlparser/v2 v2.5.30
 	github.com/yuin/goldmark v1.7.12
 	github.com/yuin/goldmark-meta v1.1.0
