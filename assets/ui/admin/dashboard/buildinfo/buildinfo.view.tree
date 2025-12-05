@@ -1,0 +1,12 @@
+$trip2g_admin_dashboard_buildinfo $mol_view
+	style *
+		flexDirection \column
+	sub /
+		<= Version $mol_view
+			style *
+				padding \.5rem .75rem
+			sub / <= build_git_commit @ \Software Version
+		<= OnboardingLink $mol_link
+			uri \https://trip2g.com/docs/onbording
+			external true
+			title @ \Onboarding Documentation
