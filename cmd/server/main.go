@@ -96,8 +96,6 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var GitCommit = "dev"
-
 type txEnvKeyType struct{}
 
 //nolint:gochecknoglobals // Context key for transactional env
