@@ -2,5 +2,13 @@ $trip2g_admin_dashboard $mol_page
 	title \Dashboard
 	body /
 		<= BuildInfo $trip2g_admin_dashboard_buildinfo
-		<= RecentlyModifiedNotes $trip2g_admin_dashboard_recentlymodifiednotes
-		<= NoteWarnings $trip2g_admin_noteview_warnings
+		<= Desk $mol_deck
+			items /
+				<= NoteWarningsItem $mol_view
+					title <= NoteWarnings_title @ \Note Warnings
+					sub /
+						<= NoteWarnings $trip2g_admin_noteview_warnings
+				<= RecentlyModifiedNotesItem $mol_view
+					title <= RecentlyModifiedNotes_title @ \Recently Modified Notes
+					sub /
+						<= RecentlyModifiedNotes $trip2g_admin_dashboard_recentlymodifiednotes

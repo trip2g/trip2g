@@ -15,10 +15,10 @@ $trip2g_admin_dashboard_recentlymodifiednotes $mol_view
 				<= Row*0 $mol_row
 					sub /
 						<= Title_labeler* $mol_labeler
-							title \Title
+							title @ \Title
 							Content <= Row_Title* $trip2g_admin_cell
 								content <= row_title* \
 						<= Permalink_labeler* $mol_labeler
-							title \Permalink
+							title @ \Permalink
 							Content <= Row_Permalink* $trip2g_admin_cell
 								sub / <= row_permalink_el* null $mol_view
