@@ -25,6 +25,7 @@ type Env interface {
 	Logger() logger.Logger
 	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)
 	TelegramClientForAccount(account db.TelegramAccount) *tgtd.Client
+	LatestNoteViews() *model.NoteViews
 	// PushNotes saves notes to the database.
 	PushNotes(ctx context.Context, input graphmodel.PushNotesInput) (graphmodel.PushNotesOrErrorPayload, error)
 	// UploadNoteAsset uploads an asset for a note.
@@ -121,6 +122,11 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 
 	tgClient := env.TelegramClientForAccount(account)
 
+	// Build map of existing imported notes
+	nvs := env.LatestNoteViews()
+	importedNotes := model.BuildImportedNotesMap(nvs)
+	log.Info("loaded existing notes", "count", len(importedNotes))
+
 	// PHASE 1: Fetch ALL messages (metadata only, no media download)
 	var allMessages []*tg.Message
 
@@ -163,18 +169,28 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 	groups := groupMessagesByMediaGroup(allMessages)
 	log.Info("grouped messages", "totalMessages", len(allMessages), "groups", len(groups))
 
-	// Sort groups by primary message ID (descending, newest first - will reverse later)
+	// Sort groups by primary message ID (descending, newest first)
 	sortGroupsByID(groups)
 
-	// PHASE 2: Build complete postMap (process oldest first for correct order)
+	// Partition: not-imported first, then already-imported (both newest to oldest)
+	var notImported, alreadyImported []*messageGroup
+	for _, g := range groups {
+		key := model.FormatImportKey(params.ChannelID, g.primaryMsg.ID)
+		if _, exists := importedNotes[key]; exists {
+			alreadyImported = append(alreadyImported, g)
+		} else {
+			notImported = append(notImported, g)
+		}
+	}
+	groups = append(notImported, alreadyImported...)
+	log.Info("partitioned groups", "notImported", len(notImported), "alreadyImported", len(alreadyImported))
+
+	// PHASE 2: Build complete postMap and messageInfos (newest first, not-imported before already-imported)
 	usedFilenames := make(map[string]bool)
 	postMap := make(map[string]string) // messageID -> title
 	messageInfos := make([]messageInfo, len(groups))
 
-	// Process in reverse order (oldest first)
-	for i := len(groups) - 1; i >= 0; i-- {
-		group := groups[i]
-		idx := len(groups) - 1 - i
+	for i, group := range groups {
 		msg := group.primaryMsg
 
 		// Convert and extract title from primary message
@@ -194,7 +210,7 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			postMap[strconv.Itoa(m.ID)] = titleWithoutExt
 		}
 
-		messageInfos[idx] = messageInfo{
+		messageInfos[i] = messageInfo{
 			group:    group,
 			title:    titleWithoutExt,
 			filename: filename,
@@ -202,7 +218,7 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		}
 	}
 
-	log.Info("pass 1 complete", "postMapSize", len(postMap), "toImport", len(groups))
+	log.Info("phase 2 complete", "postMapSize", len(postMap), "toProcess", len(groups))
 
 	// PHASE 3: Create notes with full postMap (wikilinks resolved) and upload assets
 	assetsDir := fmt.Sprintf("%s/assets", params.BasePath)
@@ -451,11 +467,13 @@ func buildUsedFilenamesFromNotes(nvs *model.NoteViews, basePath string) map[stri
 
 func generateFrontmatter(channelID int64, msg *tg.Message) string {
 	publishAt := time.Unix(int64(msg.Date), 0).Format(time.RFC3339)
+	messageLink := fmt.Sprintf("https://t.me/c/%d/%d", channelID, msg.ID)
 
 	var sb strings.Builder
 	sb.WriteString("---\n")
 	sb.WriteString(fmt.Sprintf("telegram_publish_channel_id: \"%d\"\n", channelID))
 	sb.WriteString(fmt.Sprintf("telegram_publish_message_id: %d\n", msg.ID))
+	sb.WriteString(fmt.Sprintf("telegram_publish_message_link: %s\n", messageLink))
 	sb.WriteString(fmt.Sprintf("telegram_publish_at: %s\n", publishAt))
 	sb.WriteString("---\n\n")
 	return sb.String()
