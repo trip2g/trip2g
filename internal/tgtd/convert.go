@@ -27,6 +27,62 @@ func (f Format) Equal(other Format) bool {
 
 // Convert converts a Telegram message to Markdown format.
 func Convert(msg *tg.Message) string {
+	var result string
+
+	// Convert text content
+	if len(msg.Message) > 0 {
+		result = convertText(msg)
+	}
+
+	// Convert poll if present
+	if poll, ok := msg.Media.(*tg.MessageMediaPoll); ok {
+		pollMarkdown := convertPoll(poll)
+		if result != "" {
+			result += "\n\n" + pollMarkdown
+		} else {
+			result = pollMarkdown
+		}
+	}
+
+	return result
+}
+
+// convertPoll converts a Telegram poll to Markdown checkbox list.
+func convertPoll(media *tg.MessageMediaPoll) string {
+	poll := media.Poll
+	results := media.Results
+
+	// Build option -> correct map
+	correctOptions := make(map[string]bool)
+	for _, r := range results.Results {
+		if r.Correct {
+			correctOptions[string(r.Option)] = true
+		}
+	}
+
+	var sb strings.Builder
+	sb.WriteString("**")
+	sb.WriteString(poll.Question.Text)
+	sb.WriteString("**\n\n")
+
+	for _, answer := range poll.Answers {
+		optionKey := string(answer.Option)
+		if correctOptions[optionKey] {
+			sb.WriteString("- [x] ")
+		} else {
+			sb.WriteString("- [ ] ")
+		}
+		sb.WriteString(answer.Text.Text)
+		sb.WriteString("\n")
+	}
+
+	// Remove trailing newline
+	result := sb.String()
+	return strings.TrimSuffix(result, "\n")
+}
+
+// convertText converts message text with entities to Markdown.
+func convertText(msg *tg.Message) string {
 	source := []rune(msg.Message)
 	if len(source) == 0 {
 		return ""
@@ -88,6 +144,15 @@ func Convert(msg *tg.Message) string {
 			replText = "[" + text + "](tg://user?id=" + strconv.FormatInt(entity.UserID, 10) + ")"
 		case *tg.MessageEntityCustomEmoji:
 			replText = fmt.Sprintf("![](https://ce.trip2g.com/%d.webp)", entity.DocumentID)
+		case *tg.MessageEntityCode:
+			replText = "`" + text + "`"
+		case *tg.MessageEntityPre:
+			// Code block with optional language
+			if entity.Language != "" {
+				replText = "```" + entity.Language + "\n" + text + "\n```"
+			} else {
+				replText = "```\n" + text + "\n```"
+			}
 		default:
 			continue
 		}

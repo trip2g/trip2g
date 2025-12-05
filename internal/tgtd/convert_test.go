@@ -223,3 +223,122 @@ func TestConvert_CustomEmojiBold(t *testing.T) {
 
 	require.Equal(t, expected, res)
 }
+
+func TestConvert_Poll(t *testing.T) {
+	msg := &tg.Message{
+		Message:  "",
+		Entities: nil,
+		Media: &tg.MessageMediaPoll{
+			Poll: tg.Poll{
+				ID:   123,
+				Quiz: true,
+				Question: tg.TextWithEntities{
+					Text: "What is the capital of France?",
+				},
+				Answers: []tg.PollAnswer{
+					{Text: tg.TextWithEntities{Text: "London"}, Option: []byte("0")},
+					{Text: tg.TextWithEntities{Text: "Paris"}, Option: []byte("1")},
+					{Text: tg.TextWithEntities{Text: "Berlin"}, Option: []byte("2")},
+				},
+			},
+			Results: tg.PollResults{
+				Results: []tg.PollAnswerVoters{
+					{Option: []byte("0"), Correct: false, Voters: 10},
+					{Option: []byte("1"), Correct: true, Voters: 50},
+					{Option: []byte("2"), Correct: false, Voters: 5},
+				},
+			},
+		},
+	}
+
+	res := Convert(msg)
+	expected := `**What is the capital of France?**
+
+- [ ] London
+- [x] Paris
+- [ ] Berlin`
+
+	require.Equal(t, expected, res)
+}
+
+func TestConvert_InlineCode(t *testing.T) {
+	msg := &tg.Message{
+		Message: "Use docker-compose.yml file and run compose command",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityCode{Offset: 4, Length: 18},
+			&tg.MessageEntityCode{Offset: 36, Length: 7},
+		},
+	}
+
+	res := Convert(msg)
+	expected := "Use `docker-compose.yml` file and run `compose` command"
+
+	require.Equal(t, expected, res)
+}
+
+func TestConvert_CodeBlock(t *testing.T) {
+	msg := &tg.Message{
+		Message: "Run this command:\n# Comment\ndocker compose config",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityPre{Offset: 18, Length: 32, Language: "bash"},
+		},
+	}
+
+	res := Convert(msg)
+	expected := "Run this command:\n```bash\n# Comment\ndocker compose config\n```"
+
+	require.Equal(t, expected, res)
+}
+
+func TestConvert_CodeBlockNoLanguage(t *testing.T) {
+	msg := &tg.Message{
+		Message: "Example:\nsome code here",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityPre{Offset: 9, Length: 14, Language: ""},
+		},
+	}
+
+	res := Convert(msg)
+	expected := "Example:\n```\nsome code here\n```"
+
+	require.Equal(t, expected, res)
+}
+
+func TestConvert_PollWithText(t *testing.T) {
+	msg := &tg.Message{
+		Message:  "Check out this quiz:",
+		Entities: nil,
+		Media: &tg.MessageMediaPoll{
+			Poll: tg.Poll{
+				ID:   456,
+				Quiz: true,
+				Question: tg.TextWithEntities{
+					Text: "2 + 2 = ?",
+				},
+				Answers: []tg.PollAnswer{
+					{Text: tg.TextWithEntities{Text: "3"}, Option: []byte("a")},
+					{Text: tg.TextWithEntities{Text: "4"}, Option: []byte("b")},
+					{Text: tg.TextWithEntities{Text: "5"}, Option: []byte("c")},
+				},
+			},
+			Results: tg.PollResults{
+				Results: []tg.PollAnswerVoters{
+					{Option: []byte("a"), Correct: false},
+					{Option: []byte("b"), Correct: true},
+					{Option: []byte("c"), Correct: false},
+				},
+			},
+		},
+	}
+
+	res := Convert(msg)
+	expected := `Check out this quiz:
+
+**2 + 2 = ?**
+
+- [ ] 3
+- [x] 4
+- [ ] 5`
+
+	require.Equal(t, expected, res)
+}
