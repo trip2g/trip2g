@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +20,6 @@ import (
 )
 
 const fetchBatchSize = 100
-const testLimit = 10 // TODO: remove after testing
 
 type Env interface {
 	Logger() logger.Logger
@@ -37,13 +37,73 @@ type Result struct {
 	Errors        []string
 }
 
+// messageGroup represents a single post (may contain multiple messages if it's a media group)
+type messageGroup struct {
+	primaryMsg *tg.Message   // First message in group (has text/caption)
+	allMsgs    []*tg.Message // All messages in the group
+}
+
 // messageInfo stores pre-computed info for two-pass processing
 type messageInfo struct {
-	msg      *tg.Message
+	group    *messageGroup
 	title    string
 	filename string
 	skip     bool
-	media    []tgtd.DownloadedMedia // downloaded media files
+}
+
+// groupMessagesByMediaGroup groups messages by GroupedID into logical posts
+func groupMessagesByMediaGroup(messages []*tg.Message) []*messageGroup {
+	// Map groupedID -> messages
+	groupMap := make(map[int64][]*tg.Message)
+	var ungrouped []*tg.Message
+
+	for _, msg := range messages {
+		groupedID, ok := msg.GetGroupedID()
+		if ok && groupedID != 0 {
+			groupMap[groupedID] = append(groupMap[groupedID], msg)
+		} else {
+			ungrouped = append(ungrouped, msg)
+		}
+	}
+
+	var result []*messageGroup
+
+	// Add grouped messages
+	for _, msgs := range groupMap {
+		// Find primary message (one with text, or first one)
+		var primary *tg.Message
+		for _, m := range msgs {
+			if m.Message != "" {
+				primary = m
+				break
+			}
+		}
+		if primary == nil {
+			primary = msgs[0]
+		}
+
+		result = append(result, &messageGroup{
+			primaryMsg: primary,
+			allMsgs:    msgs,
+		})
+	}
+
+	// Add ungrouped messages
+	for _, msg := range ungrouped {
+		result = append(result, &messageGroup{
+			primaryMsg: msg,
+			allMsgs:    []*tg.Message{msg},
+		})
+	}
+
+	return result
+}
+
+// sortGroupsByID sorts groups by primary message ID (descending - newest first)
+func sortGroupsByID(groups []*messageGroup) {
+	sort.Slice(groups, func(i, j int) bool {
+		return groups[i].primaryMsg.ID > groups[j].primaryMsg.ID
+	})
 }
 
 func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelParams) error {
@@ -61,9 +121,8 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 
 	tgClient := env.TelegramClientForAccount(account)
 
-	// PHASE 1: Fetch ALL messages and download media
+	// PHASE 1: Fetch ALL messages (metadata only, no media download)
 	var allMessages []*tg.Message
-	downloadedMedia := make(map[int][]tgtd.DownloadedMedia) // messageID -> media
 
 	err = tgClient.RunWithAPI(ctx, account.SessionData, func(ctx context.Context, api *tg.Client) error {
 		offsetID := 0
@@ -93,57 +152,32 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		}
 
 		log.Info("total messages fetched", "count", len(allMessages))
-
-		// Limit for testing
-		if len(allMessages) > testLimit {
-			allMessages = allMessages[:testLimit]
-			log.Info("limited to first N messages for testing", "limit", testLimit)
-		}
-
-		// Download media for all messages
-		for _, msg := range allMessages {
-			if msg.Media == nil {
-				continue
-			}
-
-			media, downloadErr := tgtd.DownloadMessageMedia(ctx, api, msg)
-			if downloadErr != nil {
-				log.Warn("failed to download media", "msgID", msg.ID, "error", downloadErr)
-				continue
-			}
-
-			if len(media) > 0 {
-				downloadedMedia[msg.ID] = media
-				log.Info("downloaded media", "msgID", msg.ID, "count", len(media))
-			}
-		}
-
 		return nil
 	})
 
 	if err != nil {
-		// Cleanup any downloaded media on error
-		for _, mediaList := range downloadedMedia {
-			for i := range mediaList {
-				mediaList[i].Cleanup()
-			}
-		}
 		return fmt.Errorf("telegram API error: %w", err)
 	}
 
-	log.Info("media download complete", "messagesWithMedia", len(downloadedMedia))
+	// Group messages by media group
+	groups := groupMessagesByMediaGroup(allMessages)
+	log.Info("grouped messages", "totalMessages", len(allMessages), "groups", len(groups))
+
+	// Sort groups by primary message ID (descending, newest first - will reverse later)
+	sortGroupsByID(groups)
 
 	// PHASE 2: Build complete postMap (process oldest first for correct order)
 	usedFilenames := make(map[string]bool)
 	postMap := make(map[string]string) // messageID -> title
-	messageInfos := make([]messageInfo, len(allMessages))
+	messageInfos := make([]messageInfo, len(groups))
 
 	// Process in reverse order (oldest first)
-	for i := len(allMessages) - 1; i >= 0; i-- {
-		msg := allMessages[i]
-		idx := len(allMessages) - 1 - i
+	for i := len(groups) - 1; i >= 0; i-- {
+		group := groups[i]
+		idx := len(groups) - 1 - i
+		msg := group.primaryMsg
 
-		// Convert and extract title
+		// Convert and extract title from primary message
 		markdown := tgtd.Convert(msg)
 		title := extractTitle(markdown)
 		if title == "" {
@@ -154,20 +188,21 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		filename := generateFilename(title, msg.ID, usedFilenames)
 		usedFilenames[filename] = true
 
-		// Store in postMap for wikilink resolution
+		// Store in postMap for wikilink resolution (all message IDs in group point to same note)
 		titleWithoutExt := strings.TrimSuffix(filename, ".md")
-		postMap[strconv.Itoa(msg.ID)] = titleWithoutExt
+		for _, m := range group.allMsgs {
+			postMap[strconv.Itoa(m.ID)] = titleWithoutExt
+		}
 
 		messageInfos[idx] = messageInfo{
-			msg:      msg,
+			group:    group,
 			title:    titleWithoutExt,
 			filename: filename,
 			skip:     false,
-			media:    downloadedMedia[msg.ID],
 		}
 	}
 
-	log.Info("pass 1 complete", "postMapSize", len(postMap), "toImport", len(postMap))
+	log.Info("pass 1 complete", "postMapSize", len(postMap), "toImport", len(groups))
 
 	// PHASE 3: Create notes with full postMap (wikilinks resolved) and upload assets
 	assetsDir := fmt.Sprintf("%s/assets", params.BasePath)
@@ -177,8 +212,40 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			continue
 		}
 
+		msg := info.group.primaryMsg
+
+		// Download media for this group only
+		var groupMedia []tgtd.DownloadedMedia
+		hasMedia := false
+		for _, m := range info.group.allMsgs {
+			if m.Media != nil {
+				hasMedia = true
+				break
+			}
+		}
+
+		if hasMedia {
+			downloadErr := tgClient.RunWithAPI(ctx, account.SessionData, func(ctx context.Context, api *tg.Client) error {
+				for _, m := range info.group.allMsgs {
+					if m.Media == nil {
+						continue
+					}
+					media, err := tgtd.DownloadMessageMedia(ctx, api, m)
+					if err != nil {
+						log.Warn("failed to download media", "msgID", m.ID, "error", err)
+						continue
+					}
+					groupMedia = append(groupMedia, media...)
+				}
+				return nil
+			})
+			if downloadErr != nil {
+				log.Warn("failed to download media for group", "msgID", msg.ID, "error", downloadErr)
+			}
+		}
+
 		// Convert message to markdown
-		markdown := tgtd.Convert(info.msg)
+		markdown := tgtd.Convert(msg)
 
 		// Replace telegram links with wikilinks (using COMPLETE postMap)
 		markdown = replaceTelegramLinks(markdown, postMap)
@@ -187,15 +254,15 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		var assetLinks []string
 		var assetInfos []assetInfo
 
-		for idx, media := range info.media {
+		for idx, media := range groupMedia {
 			ext := filepath.Ext(media.Filename)
-			assetFilename := fmt.Sprintf("%d_%d%s", info.msg.ID, idx, ext)
+			assetFilename := fmt.Sprintf("%d_%d%s", msg.ID, idx, ext)
 			// Relative path with ./ prefix (used for both markdown and upload)
 			relativePath := fmt.Sprintf("./assets/%s", assetFilename)
 			absolutePath := fmt.Sprintf("/%s/%s", assetsDir, assetFilename)
 
 			assetInfos = append(assetInfos, assetInfo{
-				media:        &info.media[idx],
+				media:        &groupMedia[idx],
 				relativePath: relativePath,
 				absolutePath: absolutePath,
 				filename:     assetFilename,
@@ -212,7 +279,7 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		}
 
 		// Generate frontmatter
-		frontmatter := generateFrontmatter(params.ChannelID, info.msg)
+		frontmatter := generateFrontmatter(params.ChannelID, msg)
 
 		// Full note content
 		content := frontmatter + markdown
@@ -236,8 +303,8 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			result.Errors = append(result.Errors, errMsg)
 			log.Warn(errMsg)
 			// Cleanup media for this message
-			for i := range info.media {
-				info.media[i].Cleanup()
+			for i := range groupMedia {
+				groupMedia[i].Cleanup()
 			}
 			continue
 		}
@@ -248,8 +315,8 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			result.Errors = append(result.Errors, errMsg)
 			log.Warn(errMsg)
 			// Cleanup media for this message
-			for i := range info.media {
-				info.media[i].Cleanup()
+			for i := range groupMedia {
+				groupMedia[i].Cleanup()
 			}
 			continue
 		case *graphmodel.PushNotesPayload:
@@ -292,7 +359,7 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			}
 
 			result.ImportedCount++
-			log.Debug("imported message", "id", info.msg.ID, "path", notePath, "assets", len(assetInfos))
+			log.Debug("imported message", "id", msg.ID, "path", notePath, "assets", len(assetInfos), "groupSize", len(info.group.allMsgs))
 		}
 	}
 
