@@ -1000,7 +1000,7 @@ type Purchase {
 type NotePath @goModel(model: "trip2g/internal/model.NotePath"){
   value: String!
   latestContentHash: String!
-  latestNoteView: NoteView!
+  latestNoteView: NoteView
 }
 
 input NoteInput {
@@ -1148,7 +1148,7 @@ input PushNoteInput {
   content: String!
 }
 
-input PushNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
+input PushNotesInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") @goExtraField(name: "Partial", type: "bool") {
   updates: [PushNoteInput!]!
 }
 
@@ -1174,7 +1174,7 @@ union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
 # uploadNoteAsset
 #
 
-input UploadNoteAssetInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
+input UploadNoteAssetInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") @goExtraField(name: "Partial", type: "bool") {
   file: Upload!
   noteId: Int64! # TODO: change to noteVersionId
   sha256Hash: String! # must be calculated by the client, the request will be reqected if the hash does not match after upload

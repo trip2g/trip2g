@@ -223,10 +223,25 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 	// PHASE 3: Create notes with full postMap (wikilinks resolved) and upload assets
 	assetsDir := fmt.Sprintf("%s/assets", params.BasePath)
 
+	// Count items to process (for determining last item)
+	toProcessCount := 0
+	for _, info := range messageInfos {
+		if !info.skip {
+			toProcessCount++
+		}
+	}
+
+	processedCount := 0
 	for _, info := range messageInfos {
 		if info.skip {
 			continue
 		}
+		processedCount++
+
+		// Determine if we should trigger full index rebuild (every 50 notes and at the end)
+		isLast := processedCount == toProcessCount
+		willBeNth := result.ImportedCount + 1
+		shouldRebuildIndex := willBeNth%50 == 0 || isLast
 
 		msg := info.group.primaryMsg
 
@@ -241,6 +256,8 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		}
 
 		if hasMedia {
+			downloadStart := time.Now()
+			var totalSize int64
 			downloadErr := tgClient.RunWithAPI(ctx, account.SessionData, func(ctx context.Context, api *tg.Client) error {
 				for _, m := range info.group.allMsgs {
 					if m.Media == nil {
@@ -251,12 +268,21 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 						log.Warn("failed to download media", "msgID", m.ID, "error", err)
 						continue
 					}
+					for _, med := range media {
+						totalSize += med.Size
+					}
 					groupMedia = append(groupMedia, media...)
 				}
 				return nil
 			})
 			if downloadErr != nil {
 				log.Warn("failed to download media for group", "msgID", msg.ID, "error", downloadErr)
+			} else if len(groupMedia) > 0 {
+				log.Info("downloaded media",
+					"msgID", msg.ID,
+					"count", len(groupMedia),
+					"totalSize", formatBytes(totalSize),
+					"duration", time.Since(downloadStart).Round(time.Millisecond))
 			}
 		}
 
@@ -305,12 +331,17 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 
 		// Push single note
 		pushInput := graphmodel.PushNotesInput{
+			Partial: !shouldRebuildIndex,
 			Updates: []graphmodel.PushNoteInput{
 				{
 					Path:    notePath,
 					Content: content,
 				},
 			},
+		}
+
+		if shouldRebuildIndex {
+			log.Info("will rebuild search index", "noteNumber", willBeNth, "isLast", isLast)
 		}
 
 		payload, pushErr := env.PushNotes(ctx, pushInput)
@@ -349,25 +380,21 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 				continue
 			}
 
-			log.Info("pushed note",
-				"noteID", note.ID,
-				"path", note.Path,
-				"assetsCount", len(note.Assets))
-			for _, asset := range note.Assets {
-				log.Info("note asset", "path", asset.Path)
-			}
-
 			noteID := note.ID
 
 			// Upload assets for this note
 			for _, asset := range assetInfos {
-				log.Info("uploading asset", "relativePath", asset.relativePath, "absolutePath", asset.absolutePath)
+				uploadStart := time.Now()
 				uploadErr := uploadAsset(ctx, env, log, noteID, asset)
 				if uploadErr != nil {
 					errMsg := fmt.Sprintf("failed to upload asset %s: %v", asset.filename, uploadErr)
 					result.Errors = append(result.Errors, errMsg)
 					log.Warn(errMsg)
 				} else {
+					log.Info("uploaded asset",
+						"filename", asset.filename,
+						"size", formatBytes(asset.media.Size),
+						"duration", time.Since(uploadStart).Round(time.Millisecond))
 					result.AssetsCount++
 				}
 				// Cleanup temp file after upload attempt
@@ -403,6 +430,7 @@ func uploadAsset(ctx context.Context, env Env, log logger.Logger, noteID int64, 
 	defer file.Close()
 
 	input := graphmodel.UploadNoteAssetInput{
+		Partial:      true,
 		NoteID:       noteID,
 		Path:         asset.relativePath,
 		Sha256Hash:   asset.media.Sha256Hash,
@@ -477,4 +505,17 @@ func generateFrontmatter(channelID int64, msg *tg.Message) string {
 	sb.WriteString(fmt.Sprintf("telegram_publish_at: %s\n", publishAt))
 	sb.WriteString("---\n\n")
 	return sb.String()
+}
+
+func formatBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }

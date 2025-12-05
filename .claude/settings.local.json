@@ -38,7 +38,8 @@
       "Bash(go vet:*)",
       "Bash(chmod:*)",
       "Bash(docker-compose up:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   },

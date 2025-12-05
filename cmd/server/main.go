@@ -1003,8 +1003,14 @@ func (a *app) SearchLatestNotes(query string) ([]model.SearchResult, error) {
 	return a.latestNoteLoader.Search(query)
 }
 
-func (a *app) PrepareLatestNotes(ctx context.Context) (*model.NoteViews, error) {
-	err := a.latestNoteLoader.Load(ctx, noteloader.LoadOptions{})
+func (a *app) PrepareLatestNotes(ctx context.Context, partial bool) (*model.NoteViews, error) {
+	options := noteloader.LoadOptions{}
+
+	if partial {
+		options.SkipSearchIndex = true
+	}
+
+	err := a.latestNoteLoader.Load(ctx, options)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load latest notes: %w", err)
 	}

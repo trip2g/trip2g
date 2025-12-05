@@ -1116,6 +1116,7 @@ type PushNoteInput struct {
 type PushNotesInput struct {
 	Updates []PushNoteInput `json:"updates"`
 	ApiKey  db.ApiKey       `json:"-"`
+	Partial bool            `json:"-"`
 }
 
 type PushNotesPayload struct {
@@ -1540,6 +1541,7 @@ type UploadNoteAssetInput struct {
 	Path         string         `json:"path"`
 	AbsolutePath string         `json:"absolutePath"`
 	ApiKey       db.ApiKey      `json:"-"`
+	Partial      bool           `json:"-"`
 }
 
 type UploadNoteAssetPayload struct {

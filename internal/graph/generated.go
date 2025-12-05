@@ -24743,9 +24743,9 @@ func (ec *executionContext) _NotePath_latestNoteView(ctx context.Context, field 
 			return ec.resolvers.NotePath().LatestNoteView(ctx, obj)
 		},
 		nil,
-		ec.marshalNNoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView,
+		ec.marshalONoteView2ᚖtrip2gᚋinternalᚋmodelᚐNoteView,
 		true,
-		true,
+		false,
 	)
 }
 
@@ -49894,16 +49894,13 @@ func (ec *executionContext) _NotePath(ctx context.Context, sel ast.SelectionSet,
 		case "latestNoteView":
 			field := field
 
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._NotePath_latestNoteView(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
 				return res
 			}
 

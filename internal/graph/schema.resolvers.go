@@ -489,7 +489,7 @@ func (r *adminLatestNoteViewsConnectionResolver) Nodes(ctx context.Context, obj 
 	res := make([]appmodel.NoteView, 0, len(notes.Map))
 	keys := make([]string, 0, len(notes.Map))
 
-	for _, note := range notes.Map {
+	for _, note := range notes.List {
 		// Apply filter if provided
 		if obj.Filter != nil && obj.Filter.WithWarnings != nil && *obj.Filter.WithWarnings {
 			// Only include notes that have warnings

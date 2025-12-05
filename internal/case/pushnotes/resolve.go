@@ -16,7 +16,7 @@ type Env interface {
 	Logger() logger.Logger
 	InsertNote(ctx context.Context, update appmodel.RawNote) error
 	InsertSubgraph(ctx context.Context, name string) error
-	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
+	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
 	Layouts() *appmodel.Layouts
 }
@@ -55,7 +55,7 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		changedPaths[update.Path] = struct{}{}
 	}
 
-	nvs, err := env.PrepareLatestNotes(ctx)
+	nvs, err := env.PrepareLatestNotes(ctx, input.Partial)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}

@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	channelID = 1593462649
-	messageID = 1053
+	channelID = 2415394206
+	messageID = 91
 )
 
 func main() {
@@ -89,6 +89,29 @@ func main() {
 func processMessage(msg *tg.Message) {
 	// Debug: print message text as Go string
 	fmt.Printf("Message: %q\n\n", msg.Message)
+
+	// Debug: print poll data if present
+	if msg.Media != nil {
+		if poll, ok := msg.Media.(*tg.MessageMediaPoll); ok {
+			fmt.Println("Poll:")
+			fmt.Printf("  Question: %q\n", poll.Poll.Question.Text)
+			fmt.Printf("  Quiz: %v\n", poll.Poll.Quiz)
+			fmt.Println("  Answers:")
+			for i, a := range poll.Poll.Answers {
+				fmt.Printf("    [%d] Option: %v, Text: %q\n", i, a.Option, a.Text.Text)
+			}
+			fmt.Println("  Results:")
+			if poll.Results.Results != nil {
+				for i, r := range poll.Results.Results {
+					fmt.Printf("    [%d] Option: %v, Correct: %v, Chosen: %v, Voters: %d\n",
+						i, r.Option, r.Correct, r.Chosen, r.Voters)
+				}
+			} else {
+				fmt.Println("    (no results)")
+			}
+			fmt.Println()
+		}
+	}
 
 	// Debug: print entities as Go code for tests
 	fmt.Println("Entities: []tg.MessageEntityClass{")
