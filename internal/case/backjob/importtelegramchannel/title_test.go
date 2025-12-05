@@ -68,6 +68,16 @@ func TestExtractTitle(t *testing.T) {
 			input:    "![emoji](https://ce.trip2g.com/123.webp) Content here",
 			expected: "Content here",
 		},
+		{
+			name:     "percent sign removed",
+			input:    "100% сил для успеха",
+			expected: "100 сил для успеха",
+		},
+		{
+			name:     "multiple special chars removed",
+			input:    "File* name& with^ special~ chars",
+			expected: "File name with special chars",
+		},
 	}
 
 	for _, tt := range tests {

@@ -19,6 +19,9 @@ var (
 			`\x{2700}-\x{27BF}\x{25A0}-\x{25FF}\x{2B00}-\x{2BFF}` +
 			`\x{FE00}-\x{FE0F}\x{200D}\s\-–—•·°№#@!?\.,;:\*"'«»„"'']+`,
 	)
+	// safeFilenameRegex matches only characters safe for filenames on all platforms
+	// Allowed: a-z, A-Z, 0-9, Cyrillic (а-яА-ЯёЁ), space, hyphen, underscore, period
+	safeFilenameRegex = regexp.MustCompile(`[^a-zA-Z0-9\p{Cyrillic} \-_.]`)
 )
 
 func extractTitle(content string) string {
@@ -77,11 +80,11 @@ func extractTitle(content string) string {
 
 	title := strings.Join(words, " ")
 
-	// Remove invalid filename characters
-	invalidChars := []string{"/", "\\", ":", "?", "\"", "<", ">", "|", "[", "]", "(", ")", "#"}
-	for _, char := range invalidChars {
-		title = strings.ReplaceAll(title, char, "")
-	}
+	// Keep only safe filename characters (whitelist approach)
+	title = safeFilenameRegex.ReplaceAllString(title, "")
+
+	// Collapse multiple spaces
+	title = strings.Join(strings.Fields(title), " ")
 
 	// Strip trailing punctuation
 	title = strings.TrimRight(title, ".,;:!?…-–—")
