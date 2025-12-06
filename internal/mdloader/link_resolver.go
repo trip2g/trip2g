@@ -2,7 +2,6 @@ package mdloader
 
 import (
 	"bytes"
-	"fmt"
 	"net/url"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
@@ -50,17 +49,12 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 
 	// TODO: don't resolve links to assets, not only images
 	if len(r.version) > 0 && r.version != DefaultVersion && !resolveAsImage(n) {
-		// parse url and add ?version= to the end
-		u, err := url.Parse(string(dest[:i]))
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse URL: %w", err)
-		}
+		// Add ?version= to the end
+		// Wikilinks can contain special chars like %, so we need to build URL manually
+		destStr := string(dest[:i])
+		encoded := url.PathEscape(destStr) + "?version=" + url.QueryEscape(r.version)
 
-		query := u.Query()
-		query.Set("version", r.version)
-		u.RawQuery = query.Encode()
-
-		return []byte(u.String()), nil
+		return []byte(encoded), nil
 	}
 
 	return dest[:i], nil
