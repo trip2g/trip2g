@@ -274,6 +274,8 @@ export type AdminImportTelegramAccountChannelInput = {
   accountId: Scalars['Int64']['input'];
   basePath: Scalars['String']['input'];
   channelId: Scalars['Int64']['input'];
+  skipExists?: InputMaybe<Scalars['Boolean']['input']>;
+  withMedia?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type AdminImportTelegramAccountChannelOrErrorPayload = AdminImportTelegramAccountChannelPayload | ErrorPayload;

@@ -12,6 +12,7 @@ $trip2g_admin_telegramaccount_show $mol_page
 		account_id <= account_id
 	SignoutForm $trip2g_admin_telegramaccount_signout
 		account_id <= account_id
+	ImportForm $trip2g_admin_telegramaccount_show_dialogs_import
 	body /
 		<= DialogsSection $mol_section
 			title \Dialogs (Publish Tags)

@@ -9,10 +9,13 @@ $trip2g_admin_telegramaccount_show_dialogs $mol_view
 		chat_id <= row_id* \
 		current_ids <= row_publish_instant_tag_ids* /number
 	Empty $mol_view
-	Import* $trip2g_admin_telegramaccount_show_dialogs_import
-		account_id <= account_id
-		chat_id <= row_id* \
-		default_base_path <= row_default_import_base_path* \
+	ImportLink* $mol_link
+		arg *
+			action \import
+			account_id <= import_link_account_id* \
+			chat_id <= row_id* \
+			default_base_path <= row_default_import_base_path* \
+		title \Import
 	style *
 		flexDirection \column
 		minWidth \800px
@@ -45,4 +48,4 @@ $trip2g_admin_telegramaccount_show_dialogs $mol_view
 							Content <= instant_tags* $mol_view
 						<= Import_labeler* $mol_labeler
 							title \Import
-							Content <= import* $mol_view
+							Content <= import_link* $mol_view

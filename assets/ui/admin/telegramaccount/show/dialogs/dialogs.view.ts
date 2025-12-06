@@ -84,12 +84,16 @@ namespace $.$$ {
 			return this.InstantTags(id)
 		}
 
-		override import(id: any) {
+		override import_link(id: any) {
 			if (this.row(id).type === 'channel') {
-				return this.Import(id)
+				return this.ImportLink(id)
 			}
 
 			return this.Empty()
+		}
+
+		override import_link_account_id(id: any): string {
+			return String(this.account_id())
 		}
 
 		override row_default_import_base_path(id: any): string {

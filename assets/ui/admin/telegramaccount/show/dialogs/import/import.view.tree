@@ -1,11 +1,21 @@
 $trip2g_admin_telegramaccount_show_dialogs_import $mol_view
-	account_id 0
-	chat_id \
-	default_base_path \
 	sub /
-		<= BasePath $mol_string
-			hint \folder/path
-			value? <=> base_path? \
-		<= Submit $mol_button_major
-			title <= submit_title? \Import
-			click? <=> submit? null
+		<= Form $mol_form
+			body /
+				<= BasePath_field $mol_form_field
+					name \Base Path
+					Content <= BasePath $mol_string
+						hint \folder/path
+						value? <=> base_path? \
+				<= SkipExists_field $mol_form_field
+					name \Skip Exists
+					Content <= SkipExists $mol_check_box
+						checked? <=> skip_exists? true
+				<= WithMedia_field $mol_form_field
+					name \With Media
+					Content <= WithMedia $mol_check_box
+						checked? <=> with_media? false
+			buttons /
+				<= Submit $mol_button_major
+					title <= submit_title? \Import
+					click? <=> submit? null

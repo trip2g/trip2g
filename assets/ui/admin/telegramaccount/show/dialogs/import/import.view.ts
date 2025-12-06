@@ -16,8 +16,25 @@ namespace $.$$ {
 	`)
 
 	export class $trip2g_admin_telegramaccount_show_dialogs_import extends $.$trip2g_admin_telegramaccount_show_dialogs_import {
+		account_id() {
+			return this.$.$mol_state_arg.value('account_id') || ''
+		}
+
+		chat_id() {
+			return this.$.$mol_state_arg.value('chat_id') || ''
+		}
+
+		default_base_path() {
+			return this.$.$mol_state_arg.value('default_base_path') || ''
+		}
+
+		@$mol_mem
 		override base_path(next?: string): string {
-			return next || this.default_base_path()
+			if (next !== undefined) {
+				return next
+			}
+
+			return this.default_base_path()
 		}
 
 		submit(event?: Event) {
@@ -28,9 +45,11 @@ namespace $.$$ {
 
 			const res = mutate({
 				input: {
-					accountId: String(this.account_id()),
+					accountId: this.account_id(),
 					channelId: this.chat_id(),
 					basePath: basePath,
+					skipExists: this.skip_exists(),
+					withMedia: this.with_media(),
 				},
 			})
 
