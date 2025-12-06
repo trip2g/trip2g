@@ -7,10 +7,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/gotd/td/tg"
+	"golang.org/x/sync/errgroup"
 
 	"trip2g/internal/db"
 	graphmodel "trip2g/internal/graph/model"
@@ -19,7 +21,11 @@ import (
 	"trip2g/internal/tgtd"
 )
 
-const fetchBatchSize = 100
+const (
+	fetchBatchSize = 100
+	pushBatchSize  = 10
+	assetWorkers   = 5
+)
 
 type Env interface {
 	Logger() logger.Logger
@@ -223,7 +229,7 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 	// PHASE 3: Create notes with full postMap (wikilinks resolved) and upload assets
 	assetsDir := fmt.Sprintf("%s/assets", params.BasePath)
 
-	// Count items to process (for determining last item)
+	// Count items to process (for determining last batch)
 	toProcessCount := 0
 	for _, info := range messageInfos {
 		if !info.skip {
@@ -231,21 +237,141 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		}
 	}
 
+	// Process in batches
+	var batch []preparedNote
 	processedCount := 0
+
+	flushBatch := func(isLastBatch bool) error {
+		if len(batch) == 0 {
+			return nil
+		}
+
+		// Determine if we should rebuild index
+		shouldRebuildIndex := (result.ImportedCount+len(batch))%50 < len(batch) || isLastBatch
+
+		// Build push input with all notes in batch
+		updates := make([]graphmodel.PushNoteInput, len(batch))
+		for i, note := range batch {
+			updates[i] = graphmodel.PushNoteInput{
+				Path:    note.path,
+				Content: note.content,
+			}
+		}
+
+		pushInput := graphmodel.PushNotesInput{
+			Partial: !shouldRebuildIndex,
+			Updates: updates,
+		}
+
+		if shouldRebuildIndex {
+			log.Info("will rebuild search index", "batchSize", len(batch), "totalImported", result.ImportedCount+len(batch))
+		}
+
+		log.Info("pushing batch", "size", len(batch))
+		payload, pushErr := env.PushNotes(ctx, pushInput)
+		if pushErr != nil {
+			errMsg := fmt.Sprintf("failed to push batch: %v", pushErr)
+			result.Errors = append(result.Errors, errMsg)
+			log.Warn(errMsg)
+			// Cleanup all media in batch
+			for _, note := range batch {
+				for _, asset := range note.assets {
+					asset.media.Cleanup()
+				}
+			}
+			batch = nil
+			return nil
+		}
+
+		switch p := payload.(type) {
+		case *graphmodel.ErrorPayload:
+			errMsg := fmt.Sprintf("push batch error: %s", p.Message)
+			result.Errors = append(result.Errors, errMsg)
+			log.Warn(errMsg)
+			// Cleanup all media in batch
+			for _, note := range batch {
+				for _, asset := range note.assets {
+					asset.media.Cleanup()
+				}
+			}
+		case *graphmodel.PushNotesPayload:
+			// Build path -> noteID map
+			noteIDByPath := make(map[string]int64)
+			for _, n := range p.Notes {
+				noteIDByPath[n.Path] = n.ID
+			}
+
+			// Collect all assets to upload with their note IDs
+			type assetUploadJob struct {
+				noteID int64
+				asset  assetInfo
+			}
+			var jobs []assetUploadJob
+
+			for _, note := range batch {
+				noteID, ok := noteIDByPath[note.path]
+				if !ok {
+					log.Warn("note not found in response", "path", note.path)
+					for _, asset := range note.assets {
+						asset.media.Cleanup()
+					}
+					continue
+				}
+
+				for _, asset := range note.assets {
+					jobs = append(jobs, assetUploadJob{noteID: noteID, asset: asset})
+				}
+				result.ImportedCount++
+			}
+
+			// Upload assets in parallel
+			if len(jobs) > 0 {
+				log.Info("uploading assets", "count", len(jobs), "workers", assetWorkers)
+				uploadStart := time.Now()
+
+				var mu sync.Mutex
+				g, gctx := errgroup.WithContext(ctx)
+				g.SetLimit(assetWorkers)
+
+				for _, job := range jobs {
+					job := job // capture
+					g.Go(func() error {
+						uploadErr := uploadAsset(gctx, env, log, job.noteID, job.asset)
+						job.asset.media.Cleanup()
+
+						mu.Lock()
+						defer mu.Unlock()
+
+						if uploadErr != nil {
+							errMsg := fmt.Sprintf("failed to upload asset %s: %v", job.asset.filename, uploadErr)
+							result.Errors = append(result.Errors, errMsg)
+							log.Warn(errMsg)
+						} else {
+							result.AssetsCount++
+						}
+						return nil // don't fail the group on asset errors
+					})
+				}
+				g.Wait()
+
+				log.Info("assets uploaded", "count", result.AssetsCount, "duration", time.Since(uploadStart).Round(time.Millisecond))
+			}
+		}
+
+		batch = nil
+		return nil
+	}
+
 	for _, info := range messageInfos {
 		if info.skip {
 			continue
 		}
 		processedCount++
-
-		// Determine if we should trigger full index rebuild (every 50 notes and at the end)
 		isLast := processedCount == toProcessCount
-		willBeNth := result.ImportedCount + 1
-		shouldRebuildIndex := willBeNth%50 == 0 || isLast
 
 		msg := info.group.primaryMsg
 
-		// Download media for this group only
+		// Download media for this group
 		var groupMedia []tgtd.DownloadedMedia
 		hasMedia := false
 		for _, m := range info.group.allMsgs {
@@ -289,28 +415,26 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		// Convert message to markdown
 		markdown := tgtd.Convert(msg)
 
-		// Replace telegram links with wikilinks (using COMPLETE postMap)
+		// Replace telegram links with wikilinks
 		markdown = replaceTelegramLinks(markdown, postMap)
 
 		// Build asset links and prepare filenames
 		var assetLinks []string
-		var assetInfos []assetInfo
+		var assets []assetInfo
 
 		for idx, media := range groupMedia {
 			ext := filepath.Ext(media.Filename)
 			assetFilename := fmt.Sprintf("%d_%d%s", msg.ID, idx, ext)
-			// Relative path with ./ prefix (used for both markdown and upload)
 			relativePath := fmt.Sprintf("./assets/%s", assetFilename)
 			absolutePath := fmt.Sprintf("/%s/%s", assetsDir, assetFilename)
 
-			assetInfos = append(assetInfos, assetInfo{
+			assets = append(assets, assetInfo{
 				media:        &groupMedia[idx],
 				relativePath: relativePath,
 				absolutePath: absolutePath,
 				filename:     assetFilename,
 			})
 
-			// Add markdown image link (parsed as asset by the system)
 			assetLinks = append(assetLinks, fmt.Sprintf("![%s](%s)", assetFilename, relativePath))
 		}
 
@@ -320,89 +444,22 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			markdown = assetSection + markdown
 		}
 
-		// Generate frontmatter
+		// Generate frontmatter and full content
 		frontmatter := generateFrontmatter(params.ChannelID, msg)
-
-		// Full note content
 		content := frontmatter + markdown
-
-		// Full path
 		notePath := fmt.Sprintf("%s/%s", params.BasePath, info.filename)
 
-		// Push single note
-		pushInput := graphmodel.PushNotesInput{
-			Partial: !shouldRebuildIndex,
-			Updates: []graphmodel.PushNoteInput{
-				{
-					Path:    notePath,
-					Content: content,
-				},
-			},
-		}
+		// Add to batch
+		batch = append(batch, preparedNote{
+			path:    notePath,
+			content: content,
+			assets:  assets,
+			msgID:   msg.ID,
+		})
 
-		if shouldRebuildIndex {
-			log.Info("will rebuild search index", "noteNumber", willBeNth, "isLast", isLast)
-		}
-
-		payload, pushErr := env.PushNotes(ctx, pushInput)
-		if pushErr != nil {
-			errMsg := fmt.Sprintf("failed to push note %s: %v", notePath, pushErr)
-			result.Errors = append(result.Errors, errMsg)
-			log.Warn(errMsg)
-			// Cleanup media for this message
-			for i := range groupMedia {
-				groupMedia[i].Cleanup()
-			}
-			continue
-		}
-
-		switch p := payload.(type) {
-		case *graphmodel.ErrorPayload:
-			errMsg := fmt.Sprintf("push note error %s: %s", notePath, p.Message)
-			result.Errors = append(result.Errors, errMsg)
-			log.Warn(errMsg)
-			// Cleanup media for this message
-			for i := range groupMedia {
-				groupMedia[i].Cleanup()
-			}
-			continue
-		case *graphmodel.PushNotesPayload:
-			// Find our note by path
-			var note *graphmodel.PushedNote
-			for i := range p.Notes {
-				if p.Notes[i].Path == notePath {
-					note = &p.Notes[i]
-					break
-				}
-			}
-			if note == nil {
-				log.Warn("note not found in response", "path", notePath)
-				continue
-			}
-
-			noteID := note.ID
-
-			// Upload assets for this note
-			for _, asset := range assetInfos {
-				uploadStart := time.Now()
-				uploadErr := uploadAsset(ctx, env, log, noteID, asset)
-				if uploadErr != nil {
-					errMsg := fmt.Sprintf("failed to upload asset %s: %v", asset.filename, uploadErr)
-					result.Errors = append(result.Errors, errMsg)
-					log.Warn(errMsg)
-				} else {
-					log.Info("uploaded asset",
-						"filename", asset.filename,
-						"size", formatBytes(asset.media.Size),
-						"duration", time.Since(uploadStart).Round(time.Millisecond))
-					result.AssetsCount++
-				}
-				// Cleanup temp file after upload attempt
-				asset.media.Cleanup()
-			}
-
-			result.ImportedCount++
-			log.Debug("imported message", "id", msg.ID, "path", notePath, "assets", len(assetInfos), "groupSize", len(info.group.allMsgs))
+		// Flush batch if full or last
+		if len(batch) >= pushBatchSize || isLast {
+			flushBatch(isLast)
 		}
 	}
 
@@ -419,6 +476,14 @@ type assetInfo struct {
 	relativePath string // "./assets/filename"
 	absolutePath string
 	filename     string
+}
+
+// preparedNote holds all data needed to push a note and upload its assets
+type preparedNote struct {
+	path    string
+	content string
+	assets  []assetInfo
+	msgID   int
 }
 
 func uploadAsset(ctx context.Context, env Env, log logger.Logger, noteID int64, asset assetInfo) error {
