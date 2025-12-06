@@ -103,7 +103,7 @@ func TestResolve(t *testing.T) {
 }
 
 // assertErrorContains checks if the error payload contains the expected message
-// either in Message field or in ByFields
+// either in Message field or in ByFields.
 func assertErrorContains(t *testing.T, payload *model.ErrorPayload, expected string) {
 	t.Helper()
 

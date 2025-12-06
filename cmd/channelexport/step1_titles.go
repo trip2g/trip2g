@@ -12,17 +12,17 @@ import (
 var (
 	// Custom emoji in markdown: ![emoji](tg://emoji?id=123) or ![emoji](https://ce.trip2g.com/123.webp)
 	customEmojiRegex = regexp.MustCompile(`!\[[^\]]*\]\((tg://emoji\?id=\d+|https://ce\.trip2g\.com/\d+\.webp)\)`)
-	// Malformed custom emoji with extra chars: ![<u](tg://emoji?id=123)>➡️</u>
+	// Malformed custom emoji with extra chars: ![<u](tg://emoji?id=123)>➡️</u>.
 	malformedEmojiRegex = regexp.MustCompile(`!\[[^\]]*\]\(tg://emoji\?id=\d+\)>[^<]*</u>`)
-	// Numbered list prefix with emoji: ![1️⃣](url). or ![1️⃣](url) followed by dot/space
+	// Numbered list prefix with emoji: ![1️⃣](url). or ![1️⃣](url) followed by dot/space.
 	numberedEmojiPrefixRegex = regexp.MustCompile(`^!\[[^\]]*\]\([^)]+\)[\.\s]*`)
-	// Markdown links: [text](url) -> text
+	// Markdown links: [text](url) -> text.
 	markdownLinkRegex = regexp.MustCompile(`\[([^\]]*)\]\([^)]+\)`)
-	// HTML tags like <u>, </u>, <b>, </b>
+	// HTML tags like <u>, </u>, <b>, </b>.
 	htmlTagRegex = regexp.MustCompile(`</?[a-zA-Z][^>]*>`)
-	// Timecodes: 00:00, 1:23, 01:23:45 (anywhere in text)
+	// Timecodes: 00:00, 1:23, 01:23:45 (anywhere in text).
 	timecodeRegex = regexp.MustCompile(`\d{1,2}:\d{2}(?::\d{2})?\s*`)
-	// Leading emoji (including skin tones) and special chars
+	// Leading emoji (including skin tones) and special chars.
 	leadingJunkRegex = regexp.MustCompile(`^[\x{1F300}-\x{1F9FF}\x{1F3FB}-\x{1F3FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{25A0}-\x{25FF}\x{2B00}-\x{2BFF}\x{FE00}-\x{FE0F}\x{200D}\s\-–—•·°№#@!?\.,;:\*"'«»„"'']+`)
 )
 

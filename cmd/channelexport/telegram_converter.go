@@ -9,7 +9,7 @@ import (
 	"trip2g/internal/tgtd"
 )
 
-// ConvertToMarkdown converts a Telegram message to Markdown format
+// ConvertToMarkdown converts a Telegram message to Markdown format.
 func ConvertToMarkdown(msg *tg.Message, channelID int64) (string, map[string]interface{}) {
 	// Convert text with entities to markdown
 	markdown := tgtd.Convert(msg)

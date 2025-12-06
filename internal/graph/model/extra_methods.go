@@ -57,7 +57,7 @@ func prepareTOC(note *model.NoteView) []NoteTocItem {
 		toc = append(toc, NoteTocItem{
 			ID:    heading.ID,
 			Title: heading.Text,
-			Level: int32(level), //nolint:gosec // heading level is always a small positive number
+			Level: int32(level),
 		})
 	}
 

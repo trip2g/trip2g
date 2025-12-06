@@ -434,12 +434,6 @@ func (c *Config) validate() error {
 	)
 }
 
-// loadDotEnv loads environment variables from .env file in the current directory.
-// It doesn't override existing environment variables.
-func loadDotEnv() error {
-	return loadDotEnvFromPath(".env")
-}
-
 // loadDotEnvFromPath loads environment variables from a specific .env file path.
 // It doesn't override existing environment variables.
 func loadDotEnvFromPath(path string) error {

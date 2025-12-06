@@ -13,7 +13,7 @@ import (
 	"trip2g/internal/usertoken"
 )
 
-// isNoChatsError checks if the error is "no chats found" error
+// isNoChatsError checks if the error is "no chats found" error.
 func isNoChatsError(err error) bool {
 	if err == nil {
 		return false

@@ -460,7 +460,7 @@ func (r *adminHtmlInjectionResolver) Position(ctx context.Context, obj *db.HtmlI
 		return 0, fmt.Errorf("position value %d exceeds int32 max", obj.Position)
 	}
 
-	return int32(obj.Position), nil //nolint:gosec // bounds checked above
+	return int32(obj.Position), nil
 }
 
 // Nodes is the resolver for the nodes field.
@@ -663,7 +663,6 @@ func (r *adminMutationResolver) RemoveExpiredTgChatMembers(ctx context.Context, 
 			if result.RemovedCount > 2147483647 {
 				return 2147483647 // max int32
 			}
-			//nolint:gosec // overflow check above ensures safe conversion
 			return int32(result.RemovedCount)
 		}(),
 		Errors: errors,
@@ -1642,7 +1641,7 @@ func (r *adminTgBotChatResolver) MemberCount(ctx context.Context, obj *db.TgBotC
 	if count > math.MaxInt32 {
 		return math.MaxInt32, nil
 	}
-	return int32(count), nil //nolint:gosec // count is bounded by MaxInt32
+	return int32(count), nil
 }
 
 // SubgraphAccesses is the resolver for the subgraphAccesses field.

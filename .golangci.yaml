@@ -486,3 +486,6 @@ linters:
       # TODO: Remove this exclusion when upstream fixes are merged
       # See: https://github.com/quailyquaily/goldmark-enclave/issues/4
       - internal/enclavefix/
+      # One-off CLI tools for channel export/conversion
+      - cmd/channelexport/
+      - cmd/tgconvert/

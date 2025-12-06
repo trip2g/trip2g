@@ -9,7 +9,7 @@ import (
 	"github.com/gotd/td/tg"
 )
 
-// Entity priorities - lower = outer wrapper (opens first, closes last)
+// Entity priorities - lower = outer wrapper (opens first, closes last).
 var priorities = map[string]int{
 	"mention":               50,
 	"hashtag":               50,
@@ -46,7 +46,7 @@ func getPriority(entityType string) int {
 	return 50
 }
 
-// ConvertToMarkdownV2 converts tg.Message to markdown using entity-based approach
+// ConvertToMarkdownV2 converts tg.Message to markdown using entity-based approach.
 func ConvertToMarkdownV2(msg *tg.Message) string {
 	text := msg.Message
 	if len(msg.Entities) == 0 {
@@ -76,7 +76,7 @@ func ConvertToMarkdownV2(msg *tg.Message) string {
 	return result
 }
 
-// removeRedundantMarkers removes patterns like **** (close bold + open bold)
+// removeRedundantMarkers removes patterns like **** (close bold + open bold).
 func removeRedundantMarkers(text string) string {
 	// Only replace adjacent close+open of same type
 	// Order matters - replace longer patterns first
@@ -92,7 +92,7 @@ func removeRedundantMarkers(text string) string {
 	return text
 }
 
-// fixNewlinesInLinks moves newlines from inside link text to outside
+// fixNewlinesInLinks moves newlines from inside link text to outside.
 func fixNewlinesInLinks(text string) string {
 	// Pattern: newline followed by ](url)
 	// Replace \n]( with ](\n but we need to find the full link first
@@ -413,7 +413,7 @@ func closeMarkerV2(e *processedEntity) string {
 	}
 }
 
-// utf16OffsetToByteOffset converts UTF-16 code unit offset to byte offset
+// utf16OffsetToByteOffset converts UTF-16 code unit offset to byte offset.
 func utf16OffsetToByteOffset(text string, utf16Offset int) int {
 	if utf16Offset == 0 {
 		return 0

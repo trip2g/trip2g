@@ -18,8 +18,8 @@ import (
 // ceEmojiURLPattern matches URLs like https://ce.trip2g.com/5460736117236048513.webp
 var ceEmojiURLPattern = regexp.MustCompile(`^https://ce\.trip2g\.com/(\d+)\.webp$`)
 
-// extractCustomEmojiID extracts emoji ID from ce.trip2g.com URL
-// Returns empty string if URL doesn't match the pattern
+// extractCustomEmojiID extracts emoji ID from ce.trip2g.com URL.
+// Returns empty string if URL doesn't match the pattern.
 func extractCustomEmojiID(url string) string {
 	matches := ceEmojiURLPattern.FindStringSubmatch(url)
 	if len(matches) == 2 {

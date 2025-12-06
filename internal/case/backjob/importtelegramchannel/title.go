@@ -19,8 +19,8 @@ var (
 			`\x{2700}-\x{27BF}\x{25A0}-\x{25FF}\x{2B00}-\x{2BFF}` +
 			`\x{FE00}-\x{FE0F}\x{200D}\s\-–—•·°№#@!?\.,;:\*"'«»„"'']+`,
 	)
-	// safeFilenameRegex matches only characters safe for filenames on all platforms
-	// Allowed: a-z, A-Z, 0-9, Cyrillic (а-яА-ЯёЁ), space, hyphen, underscore, period
+	// safeFilenameRegex matches only characters safe for filenames on all platforms.
+	// Allowed: a-z, A-Z, 0-9, Cyrillic (а-яА-ЯёЁ), space, hyphen, underscore, period.
 	safeFilenameRegex = regexp.MustCompile(`[^a-zA-Z0-9\p{Cyrillic} \-_.]`)
 )
 

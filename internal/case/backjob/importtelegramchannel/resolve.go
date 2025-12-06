@@ -44,13 +44,13 @@ type Result struct {
 	Errors        []string
 }
 
-// messageGroup represents a single post (may contain multiple messages if it's a media group)
+// messageGroup represents a single post (may contain multiple messages if it's a media group).
 type messageGroup struct {
 	primaryMsg *tg.Message   // First message in group (has text/caption)
 	allMsgs    []*tg.Message // All messages in the group
 }
 
-// messageInfo stores pre-computed info for two-pass processing
+// messageInfo stores pre-computed info for two-pass processing.
 type messageInfo struct {
 	group    *messageGroup
 	title    string
@@ -58,7 +58,7 @@ type messageInfo struct {
 	skip     bool
 }
 
-// groupMessagesByMediaGroup groups messages by GroupedID into logical posts
+// groupMessagesByMediaGroup groups messages by GroupedID into logical posts.
 func groupMessagesByMediaGroup(messages []*tg.Message) []*messageGroup {
 	// Map groupedID -> messages
 	groupMap := make(map[int64][]*tg.Message)
@@ -106,7 +106,7 @@ func groupMessagesByMediaGroup(messages []*tg.Message) []*messageGroup {
 	return result
 }
 
-// sortGroupsByID sorts groups by primary message ID (descending - newest first)
+// sortGroupsByID sorts groups by primary message ID (descending - newest first).
 func sortGroupsByID(groups []*messageGroup) {
 	sort.Slice(groups, func(i, j int) bool {
 		return groups[i].primaryMsg.ID > groups[j].primaryMsg.ID
@@ -339,7 +339,6 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 				g.SetLimit(assetWorkers)
 
 				for _, job := range jobs {
-					job := job // capture
 					g.Go(func() error {
 						uploadErr := uploadAsset(gctx, env, log, job.noteID, job.asset)
 						job.asset.media.Cleanup()
@@ -490,7 +489,7 @@ type assetInfo struct {
 	filename     string
 }
 
-// preparedNote holds all data needed to push a note and upload its assets
+// preparedNote holds all data needed to push a note and upload its assets.
 type preparedNote struct {
 	path    string
 	content string

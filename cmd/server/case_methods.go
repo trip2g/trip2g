@@ -36,7 +36,7 @@ func (a *app) ConvertNoteViewToTelegramPost(ctx context.Context, source model.Te
 	return convertnoteviewtotgpost.Resolve(ctx, a, source)
 }
 
-// Account publishing methods
+// Account publishing methods.
 func (a *app) UpdateTelegramAccountPublishPost(ctx context.Context, notePathID int64) error {
 	return updatetelegramaccountpublishpost.Resolve(ctx, a, notePathID)
 }

@@ -40,7 +40,7 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 	return a.initTelegramBots(ctx)
 }
 
-// TelegramAccountStartAuth starts authentication for a phone number
+// TelegramAccountStartAuth starts authentication for a phone number.
 func (a *app) TelegramAccountStartAuth(ctx context.Context, phone string, apiID int, apiHash string) (*appmodel.TelegramStartAuthResult, error) {
 	pending, err := a.telegramAuthManager.StartAuth(ctx, phone, apiID, apiHash)
 	if err != nil {
@@ -54,7 +54,7 @@ func (a *app) TelegramAccountStartAuth(ctx context.Context, phone string, apiID 
 	}, nil
 }
 
-// TelegramAccountCompleteAuth completes authentication with code and optional password
+// TelegramAccountCompleteAuth completes authentication with code and optional password.
 func (a *app) TelegramAccountCompleteAuth(ctx context.Context, phone, code, password string) (*appmodel.TelegramCompleteAuthResult, error) {
 	// Get API credentials from pending auth
 	apiID, apiHash, exists := a.telegramAuthManager.GetPendingAuthAPICredentials(phone)
@@ -76,12 +76,12 @@ func (a *app) TelegramAccountCompleteAuth(ctx context.Context, phone, code, pass
 	}, nil
 }
 
-// TelegramAccountCancelAuth cancels a pending authentication
+// TelegramAccountCancelAuth cancels a pending authentication.
 func (a *app) TelegramAccountCancelAuth(phone string) error {
 	return a.telegramAuthManager.CancelAuth(phone)
 }
 
-// TelegramAccountGetPasswordHint returns the password hint for a pending authentication
+// TelegramAccountGetPasswordHint returns the password hint for a pending authentication.
 func (a *app) TelegramAccountGetPasswordHint(phone string) string {
 	pending := a.telegramAuthManager.GetPendingAuth(phone)
 	if pending == nil {
@@ -90,7 +90,7 @@ func (a *app) TelegramAccountGetPasswordHint(phone string) string {
 	return pending.PasswordHint
 }
 
-// TelegramAccountGetAppConfig fetches app config from Telegram API
+// TelegramAccountGetAppConfig fetches app config from Telegram API.
 func (a *app) TelegramAccountGetAppConfig(ctx context.Context, accountID int64) (string, error) {
 	account, err := a.GetTelegramAccountByID(ctx, accountID)
 	if err != nil {
@@ -105,7 +105,7 @@ func (a *app) TelegramAccountGetAppConfig(ctx context.Context, accountID int64) 
 	return config.JSON, nil
 }
 
-// TelegramAccountGetUserInfo fetches user info (premium status) from Telegram API
+// TelegramAccountGetUserInfo fetches user info (premium status) from Telegram API.
 func (a *app) TelegramAccountGetUserInfo(ctx context.Context, accountID int64) (*tgtd.UserInfo, error) {
 	account, err := a.GetTelegramAccountByID(ctx, accountID)
 	if err != nil {
@@ -335,7 +335,7 @@ func (a *app) BotStartLink(botID int64, param string) (string, error) {
 	return handlerIO.BotStartLink(param), nil
 }
 
-// ListTelegramAccountDialogs fetches dialogs (users, channels, groups) for a telegram account
+// ListTelegramAccountDialogs fetches dialogs (users, channels, groups) for a telegram account.
 func (a *app) ListTelegramAccountDialogs(ctx context.Context, accountID int64) ([]appmodel.TelegramAccountDialog, error) {
 	// Get the account to retrieve api credentials and session data
 	account, err := a.GetTelegramAccountByID(ctx, accountID)
@@ -367,7 +367,7 @@ func (a *app) ListTelegramAccountDialogs(ctx context.Context, accountID int64) (
 	return result, nil
 }
 
-// GetTelegramAccountDialogPublishTags returns publish tags for a specific dialog
+// GetTelegramAccountDialogPublishTags returns publish tags for a specific dialog.
 func (a *app) GetTelegramAccountDialogPublishTags(ctx context.Context, accountID, telegramChatID int64) ([]db.TelegramPublishTag, error) {
 	return a.ListTelegramPublishTagsByAccountChatID(ctx, db.ListTelegramPublishTagsByAccountChatIDParams{
 		AccountID:      accountID,
@@ -375,7 +375,7 @@ func (a *app) GetTelegramAccountDialogPublishTags(ctx context.Context, accountID
 	})
 }
 
-// GetTelegramAccountDialogPublishInstantTags returns instant publish tags for a specific dialog
+// GetTelegramAccountDialogPublishInstantTags returns instant publish tags for a specific dialog.
 func (a *app) GetTelegramAccountDialogPublishInstantTags(ctx context.Context, accountID, telegramChatID int64) ([]db.TelegramPublishTag, error) {
 	return a.ListTelegramPublishInstantTagsByAccountChatID(ctx, db.ListTelegramPublishInstantTagsByAccountChatIDParams{
 		AccountID:      accountID,
@@ -383,7 +383,7 @@ func (a *app) GetTelegramAccountDialogPublishInstantTags(ctx context.Context, ac
 	})
 }
 
-// DeleteTelegramAccountMessage deletes a message via user account (MTProto)
+// DeleteTelegramAccountMessage deletes a message via user account (MTProto).
 func (a *app) DeleteTelegramAccountMessage(ctx context.Context, account db.TelegramAccount, chatID, messageID int64) error {
 	client := tgtd.NewClient(int(account.ApiID), account.ApiHash)
 	return client.DeleteMessage(ctx, account.SessionData, tgtd.DeleteMessageParams{

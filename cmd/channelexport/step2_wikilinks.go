@@ -16,7 +16,7 @@ var (
 	customEmojiReplaceRegex = regexp.MustCompile(`!\[([^\]]*)\]\(tg://emoji\?id=(\d+)\)`)
 )
 
-// PostInfo holds info about a post
+// PostInfo holds info about a post.
 type PostInfo struct {
 	ID       string
 	Title    string // filename without .md
