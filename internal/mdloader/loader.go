@@ -48,6 +48,10 @@ type loader struct {
 	linkResolver *myLinkResolver
 
 	config Config
+
+	// basenameIndex maps lowercase basename (without extension) to notes
+	// Used for O(1) lookup in extractInLinks instead of O(n) iteration
+	basenameIndex map[string][]*model.NoteView
 }
 
 type Config struct {
@@ -116,6 +120,8 @@ func Load(options Options) (*model.NoteViews, error) {
 
 		ldr.nvs.RegisterNote(page)
 	}
+
+	ldr.buildBasenameIndex()
 
 	err := ldr.extractInLinks()
 	if err != nil {
@@ -278,6 +284,17 @@ func (ldr *loader) generatePageHTML(p *model.NoteView) error {
 	return nil
 }
 
+// buildBasenameIndex creates a map from lowercase basename to notes
+// for O(1) lookup in extractInLinks instead of O(n) iteration per link.
+func (ldr *loader) buildBasenameIndex() {
+	ldr.basenameIndex = make(map[string][]*model.NoteView, len(ldr.nvs.PathMap))
+	for path, note := range ldr.nvs.PathMap {
+		filename := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+		key := strings.ToLower(filename)
+		ldr.basenameIndex[key] = append(ldr.basenameIndex[key], note)
+	}
+}
+
 func (ldr *loader) extractInLinks() error {
 	for _, p := range ldr.nvs.PathMap {
 		err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -338,17 +355,9 @@ func (ldr *loader) extractInLinks() error {
 
 			if isSimpleFilename {
 				// Global filename resolution (Obsidian behavior)
-				// Search for files whose basename matches the target
-				targetBasename := strings.ToLower(filepath.Base(target))
-				var candidates []*model.NoteView
-
-				for path, note := range ldr.nvs.PathMap {
-					// Get filename without extension
-					filename := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-					if strings.ToLower(filename) == targetBasename {
-						candidates = append(candidates, note)
-					}
-				}
+				// Use pre-built index for O(1) lookup instead of O(n) iteration
+				targetBasename := strings.ToLower(strings.TrimSuffix(filepath.Base(target), filepath.Ext(target)))
+				candidates := ldr.basenameIndex[targetBasename]
 
 				// If we found exactly one match, use it
 				if len(candidates) == 1 {
