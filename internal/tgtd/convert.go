@@ -82,7 +82,7 @@ func convertPoll(media *tg.MessageMediaPoll) string {
 
 // convertText converts message text with entities to Markdown.
 //
-//nolint:gocognit // complex entity processing with nested type switches
+//nolint:gocognit,gocyclo,cyclop,funlen // complex entity processing with nested type switches
 func convertText(msg *tg.Message) string {
 	source := []rune(msg.Message)
 	if len(source) == 0 {
@@ -215,6 +215,7 @@ func convertText(msg *tg.Message) string {
 		atLineStart = false
 
 		// Transition formatting
+		//nolint:nestif // complex format transition with multiple open/close operations
 		if !currentFmt.Equal(targetFmt) {
 			// Close formats that are ending (reverse order)
 			if currentFmt.Spoiler && !targetFmt.Spoiler {

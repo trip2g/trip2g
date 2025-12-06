@@ -52,79 +52,40 @@ func Resolve(ctx context.Context, env Env) (any, error) {
 	return res, nil
 }
 
+type jobConfig struct {
+	logPrefix     string
+	postType      string
+	listIDs       func(ctx context.Context) ([]int64, error)
+	enqueueSend   func(ctx context.Context, params model.SendTelegramPublishPostParams) error
+	enqueueUpdate func(ctx context.Context, notePathID int64) error
+}
+
 func enqueueBotJobs(ctx context.Context, env Env) ([]ResultPost, error) {
-	log := logger.WithPrefix(env.Logger(), "sendscheduledtelegrampublishposts:bot:")
-
-	ids, err := env.ListSheduledTelegarmPublishNoteIDs(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to ListSheduledTelegarmPublishNoteIDs: %w", err)
-	}
-
-	if len(ids) == 0 {
-		return nil, nil
-	}
-
-	nvs := env.LatestNoteViews()
-
-	if len(ids) > 1 {
-		ids = topologicalsort.ReverseSort(nvs, ids)
-		log.Debug("posts found, sort applied", "count", len(ids))
-	} else {
-		log.Debug("one post found, no sort needed")
-	}
-
-	var posts []ResultPost
-	updateIDs := map[int64]struct{}{}
-
-	for _, id := range ids {
-		params := model.SendTelegramPublishPostParams{
-			NotePathID:        id,
-			Instant:           false,
-			UpdateLinkedPosts: false,
-		}
-
-		sendErr := env.EnqueueSendTelegramPost(ctx, params)
-		if sendErr != nil {
-			posts = append(posts, ResultPost{
-				NotePathID: id,
-				Type:       "bot",
-				Error:      sendErr,
-			})
-			return posts, fmt.Errorf("failed to EnqueueSendTelegramPost for note_path_id %d: %w", id, sendErr)
-		}
-
-		posts = append(posts, ResultPost{
-			NotePathID: id,
-			Type:       "bot",
-		})
-
-		noteView := nvs.GetByPathID(id)
-		if noteView != nil {
-			for inLink := range noteView.InLinks {
-				inNote, ok := nvs.Map[inLink]
-				if ok && inNote.IsTelegramPublishPost() {
-					updateIDs[inNote.PathID] = struct{}{}
-				}
-			}
-		}
-	}
-
-	for updateID := range updateIDs {
-		err = env.EnqueueUpdateTelegramPost(ctx, updateID)
-		if err != nil {
-			return posts, fmt.Errorf("failed to EnqueueUpdateTelegramPost for note_path_id %d: %w", updateID, err)
-		}
-	}
-
-	return posts, nil
+	return enqueueJobs(ctx, env, jobConfig{
+		logPrefix:     "sendscheduledtelegrampublishposts:bot:",
+		postType:      "bot",
+		listIDs:       env.ListSheduledTelegarmPublishNoteIDs,
+		enqueueSend:   env.EnqueueSendTelegramPost,
+		enqueueUpdate: env.EnqueueUpdateTelegramPost,
+	})
 }
 
 func enqueueAccountJobs(ctx context.Context, env Env) ([]ResultPost, error) {
-	log := logger.WithPrefix(env.Logger(), "sendscheduledtelegrampublishposts:account:")
+	return enqueueJobs(ctx, env, jobConfig{
+		logPrefix:     "sendscheduledtelegrampublishposts:account:",
+		postType:      "account",
+		listIDs:       env.ListSheduledTelegarmAccountPublishNoteIDs,
+		enqueueSend:   env.EnqueueSendTelegramAccountPost,
+		enqueueUpdate: env.EnqueueUpdateTelegramAccountPost,
+	})
+}
 
-	ids, err := env.ListSheduledTelegarmAccountPublishNoteIDs(ctx)
+func enqueueJobs(ctx context.Context, env Env, cfg jobConfig) ([]ResultPost, error) {
+	log := logger.WithPrefix(env.Logger(), cfg.logPrefix)
+
+	ids, err := cfg.listIDs(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to ListSheduledTelegarmAccountPublishNoteIDs: %w", err)
+		return nil, fmt.Errorf("failed to list scheduled %s publish note IDs: %w", cfg.postType, err)
 	}
 
 	if len(ids) == 0 {
@@ -150,19 +111,19 @@ func enqueueAccountJobs(ctx context.Context, env Env) ([]ResultPost, error) {
 			UpdateLinkedPosts: false,
 		}
 
-		sendErr := env.EnqueueSendTelegramAccountPost(ctx, params)
+		sendErr := cfg.enqueueSend(ctx, params)
 		if sendErr != nil {
 			posts = append(posts, ResultPost{
 				NotePathID: id,
-				Type:       "account",
+				Type:       cfg.postType,
 				Error:      sendErr,
 			})
-			return posts, fmt.Errorf("failed to EnqueueSendTelegramAccountPost for note_path_id %d: %w", id, sendErr)
+			return posts, fmt.Errorf("failed to enqueue send %s post for note_path_id %d: %w", cfg.postType, id, sendErr)
 		}
 
 		posts = append(posts, ResultPost{
 			NotePathID: id,
-			Type:       "account",
+			Type:       cfg.postType,
 		})
 
 		noteView := nvs.GetByPathID(id)
@@ -177,9 +138,9 @@ func enqueueAccountJobs(ctx context.Context, env Env) ([]ResultPost, error) {
 	}
 
 	for updateID := range updateIDs {
-		err = env.EnqueueUpdateTelegramAccountPost(ctx, updateID)
+		err = cfg.enqueueUpdate(ctx, updateID)
 		if err != nil {
-			return posts, fmt.Errorf("failed to EnqueueUpdateTelegramAccountPost for note_path_id %d: %w", updateID, err)
+			return posts, fmt.Errorf("failed to enqueue update %s post for note_path_id %d: %w", cfg.postType, updateID, err)
 		}
 	}
 

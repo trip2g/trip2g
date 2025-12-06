@@ -67,15 +67,7 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 
 	// Determine new post type
 	mediaCount := len(post.Media)
-	var newPostType string
-	switch mediaCount {
-	case 0:
-		newPostType = db.TelegramPublishSentMessagePostTypeText
-	case 1:
-		newPostType = db.TelegramPublishSentMessagePostTypePhoto
-	default:
-		newPostType = db.TelegramPublishSentMessagePostTypeMediaGroup
-	}
+	newPostType := db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
 
 	// Check if we can update this post type
 	if currentPostType != db.TelegramPublishSentMessagePostTypeText && currentPostType != db.TelegramPublishSentMessagePostTypePhoto {

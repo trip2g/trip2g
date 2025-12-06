@@ -113,7 +113,7 @@ func sortGroupsByID(groups []*messageGroup) {
 	})
 }
 
-//nolint:gocognit // complex import logic with multiple processing stages
+//nolint:gocognit,gocyclo,cyclop,funlen // complex import logic with multiple processing stages
 func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelParams) error {
 	log := logger.WithPrefix(env.Logger(), "importtelegramchannel:")
 
@@ -406,9 +406,9 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 					if m.Media == nil {
 						continue
 					}
-					media, err := tgtd.DownloadMessageMedia(ctx, api, m)
-					if err != nil {
-						log.Warn("failed to download media", "msgID", m.ID, "error", err)
+					media, downloadErr := tgtd.DownloadMessageMedia(ctx, api, m)
+					if downloadErr != nil {
+						log.Warn("failed to download media", "msgID", m.ID, "error", downloadErr)
 						continue
 					}
 					for _, med := range media {
@@ -476,7 +476,10 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 
 		// Flush batch if full or last
 		if len(batch) >= pushBatchSize || isLast {
-			flushBatch(isLast)
+			flushErr := flushBatch(isLast)
+			if flushErr != nil {
+				return flushErr
+			}
 		}
 	}
 

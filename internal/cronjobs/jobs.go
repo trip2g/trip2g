@@ -115,9 +115,9 @@ func New(ctx context.Context, env Env, jobConfigs []Job) (*CronJobs, error) {
 		}
 
 		// get current cron job settings
-		dbJob, err := env.CronJobByName(ctx, name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get cron job %s from database: %w", name, err)
+		dbJob, getErr := env.CronJobByName(ctx, name)
+		if getErr != nil {
+			return nil, fmt.Errorf("failed to get cron job %s from database: %w", name, getErr)
 		}
 
 		// Register job with cronjobs prefix

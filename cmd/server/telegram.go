@@ -210,7 +210,7 @@ func (a *app) SendTelegramMessage(ctx context.Context, chatID int64, msg tgbotap
 
 	// Check if this is a media group (which returns array of messages)
 	if _, isMediaGroup := msg.(tgbotapi.MediaGroupConfig); isMediaGroup {
-		apiResp, err := handlerIO.Request(msg)
+		apiResp, err := handlerIO.Request(msg) //nolint:govet // shadow: intentional new err scope for media group branch
 		if err != nil {
 			return 0, fmt.Errorf("failed to send Telegram message: %w", err)
 		}

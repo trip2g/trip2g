@@ -28,8 +28,14 @@ type Env interface {
 	Logger() logger.Logger
 }
 
+type accountChat struct {
+	AccountID      int64
+	TelegramChatID int64
+	SessionData    []byte
+}
+
 func Resolve(ctx context.Context, env Env, params model.SendTelegramPublishPostParams) error {
-	logger := logger.WithPrefix(env.Logger(), "sendtelegramaccountpublishpost:")
+	log := logger.WithPrefix(env.Logger(), "sendtelegramaccountpublishpost:")
 	nvs := env.LatestNoteViews()
 
 	noteView := nvs.GetByPathID(params.NotePathID)
@@ -38,58 +44,19 @@ func Resolve(ctx context.Context, env Env, params model.SendTelegramPublishPostP
 	}
 
 	// Get account chats that should receive this post
-	var chats []db.ListTelegramAccountChatsByNotePathIDRow
-	var instantChats []db.ListTelegramAccountInstantChatsByNotePathIDRow
-	var err error
-
-	if params.Instant {
-		instantChats, err = env.ListTelegramAccountInstantChatsByNotePathID(ctx, params.NotePathID)
-		if err != nil {
-			return fmt.Errorf("failed to get instant account chats for note: %w", err)
-		}
-	} else {
-		chats, err = env.ListTelegramAccountChatsByNotePathID(ctx, params.NotePathID)
-		if err != nil {
-			return fmt.Errorf("failed to get account chats for note: %w", err)
-		}
-	}
-
-	// Combine chats into unified slice for processing
-	type accountChat struct {
-		AccountID      int64
-		TelegramChatID int64
-		SessionData    []byte
-	}
-
-	var accountChats []accountChat
-
-	if params.Instant {
-		for _, c := range instantChats {
-			accountChats = append(accountChats, accountChat{
-				AccountID:      c.AccountID,
-				TelegramChatID: c.TelegramChatID,
-				SessionData:    c.SessionData,
-			})
-		}
-	} else {
-		for _, c := range chats {
-			accountChats = append(accountChats, accountChat{
-				AccountID:      c.AccountID,
-				TelegramChatID: c.TelegramChatID,
-				SessionData:    c.SessionData,
-			})
-		}
+	accountChats, err := getAccountChats(ctx, env, params)
+	if err != nil {
+		return err
 	}
 
 	if len(accountChats) == 0 {
 		if params.Instant {
-			// For instant posts, no chats is fine
 			return nil
 		}
 		return fmt.Errorf("no account chats found for note path ID %d", params.NotePathID)
 	}
 
-	logger.Info("sending via accounts",
+	log.Info("sending via accounts",
 		"note_path_id", params.NotePathID,
 		"instant", params.Instant,
 		"account_chat_count", len(accountChats),
@@ -97,42 +64,14 @@ func Resolve(ctx context.Context, env Env, params model.SendTelegramPublishPostP
 
 	// Send the post to each account chat
 	for _, chat := range accountChats {
-		source := model.TelegramPostSource{
-			NoteView: noteView,
-			ChatID:   0, // Not used for account publishing
-			Instant:  params.Instant,
-		}
-
-		// Convert note to Telegram post
-		post, convertErr := env.ConvertNoteViewToTelegramPost(ctx, source)
-		if convertErr != nil {
-			return fmt.Errorf("failed to convert note to telegram post: %w", convertErr)
-		}
-
-		// Prepare send params
-		sendParams := model.TelegramAccountSendPostParams{
-			NotePathID:        params.NotePathID,
-			AccountID:         chat.AccountID,
-			TelegramChatID:    chat.TelegramChatID,
-			SessionData:       chat.SessionData,
-			Post:              *post,
-			Instant:           params.Instant,
-			UpdateLinkedPosts: params.UpdateLinkedPosts,
-		}
-
-		// Enqueue the message to be sent via telegram account queue
-		sendErr := env.EnqueueSendTelegramAccountMessage(ctx, sendParams)
+		sendErr := enqueuePostToChat(ctx, env, params, noteView, chat)
 		if sendErr != nil {
-			return fmt.Errorf("failed to enqueue telegram account post for account %d, chat %d: %w",
-				chat.AccountID, chat.TelegramChatID, sendErr)
+			return sendErr
 		}
 	}
 
-	// Mark as published is handled by the bot pipeline, not here
-	// This avoids double-updating the published state
-	if !params.Instant && len(chats) > 0 {
-		// Only mark as published if this is the only pipeline (no bot chats)
-		// Actually, let the bot pipeline handle this since both share the same telegram_publish_notes table
+	// Mark as published for non-instant posts
+	if !params.Instant {
 		updateParams := db.UpdateTelegramPublishNoteAsPublishedParams{
 			PublishedVersionID: sql.NullInt64{Int64: noteView.VersionID, Valid: true},
 			NotePathID:         params.NotePathID,
@@ -142,6 +81,69 @@ func Resolve(ctx context.Context, env Env, params model.SendTelegramPublishPostP
 		if err != nil {
 			return fmt.Errorf("failed to mark note as published: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func getAccountChats(ctx context.Context, env Env, params model.SendTelegramPublishPostParams) ([]accountChat, error) {
+	var result []accountChat
+
+	if params.Instant {
+		chats, err := env.ListTelegramAccountInstantChatsByNotePathID(ctx, params.NotePathID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get instant account chats for note: %w", err)
+		}
+		for _, c := range chats {
+			result = append(result, accountChat{
+				AccountID:      c.AccountID,
+				TelegramChatID: c.TelegramChatID,
+				SessionData:    c.SessionData,
+			})
+		}
+	} else {
+		chats, err := env.ListTelegramAccountChatsByNotePathID(ctx, params.NotePathID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get account chats for note: %w", err)
+		}
+		for _, c := range chats {
+			result = append(result, accountChat{
+				AccountID:      c.AccountID,
+				TelegramChatID: c.TelegramChatID,
+				SessionData:    c.SessionData,
+			})
+		}
+	}
+
+	return result, nil
+}
+
+func enqueuePostToChat(ctx context.Context, env Env, params model.SendTelegramPublishPostParams, noteView *model.NoteView, chat accountChat) error {
+	source := model.TelegramPostSource{
+		NoteView: noteView,
+		ChatID:   0, // Not used for account publishing
+		Instant:  params.Instant,
+	}
+
+	post, convertErr := env.ConvertNoteViewToTelegramPost(ctx, source)
+	if convertErr != nil {
+		return fmt.Errorf("failed to convert note to telegram post: %w", convertErr)
+	}
+
+	sendParams := model.TelegramAccountSendPostParams{
+		NotePathID:        params.NotePathID,
+		AccountID:         chat.AccountID,
+		TelegramChatID:    chat.TelegramChatID,
+		SessionData:       chat.SessionData,
+		Post:              *post,
+		Instant:           params.Instant,
+		UpdateLinkedPosts: params.UpdateLinkedPosts,
+	}
+
+	sendErr := env.EnqueueSendTelegramAccountMessage(ctx, sendParams)
+	if sendErr != nil {
+		return fmt.Errorf("failed to enqueue telegram account post for account %d, chat %d: %w",
+			chat.AccountID, chat.TelegramChatID, sendErr)
 	}
 
 	return nil

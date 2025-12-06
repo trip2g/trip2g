@@ -67,15 +67,7 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParam
 
 	// Determine new post type based on current media
 	mediaCount := len(post.Media)
-	var newPostType string
-	switch mediaCount {
-	case 0:
-		newPostType = "text"
-	case 1:
-		newPostType = "photo"
-	default:
-		newPostType = "media_group"
-	}
+	newPostType := db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
 
 	// Check if post type changed - if so, add warning and use original type
 	postTypeChanged := currentPostType != newPostType
@@ -96,7 +88,7 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParam
 	}
 
 	// Use current post type for determining content length limit
-	hasMedia := currentPostType == "photo" || currentPostType == "media_group"
+	hasMedia := currentPostType == db.TelegramPublishSentMessagePostTypePhoto || currentPostType == db.TelegramPublishSentMessagePostTypeMediaGroup
 
 	// Truncate content to telegram limits (minus 3 for '...')
 	content := telegram.TruncateContent(post.Content, hasMedia)
@@ -123,7 +115,7 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParam
 
 	// Edit the message in Telegram based on current (saved) post type
 	var editErr error
-	if currentPostType == "text" {
+	if currentPostType == db.TelegramPublishSentMessagePostTypeText {
 		// Edit text for text message
 		editMsg := tgbotapi.NewEditMessageText(params.TelegramChatID, int(params.MessageID), content)
 		editMsg.ParseMode = "HTML"

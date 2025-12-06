@@ -84,15 +84,7 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountSendPost
 
 	// Determine post type based on media count
 	mediaCount := len(post.Media)
-	var postType string
-	switch mediaCount {
-	case 0:
-		postType = db.TelegramPublishSentMessagePostTypeText
-	case 1:
-		postType = db.TelegramPublishSentMessagePostTypePhoto
-	default:
-		postType = db.TelegramPublishSentMessagePostTypeMediaGroup
-	}
+	postType := db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
 
 	// Truncate content to telegram limits (media posts have lower limit)
 	content := telegram.TruncateContent(post.Content, mediaCount > 0)

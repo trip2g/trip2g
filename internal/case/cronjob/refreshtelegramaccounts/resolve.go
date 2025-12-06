@@ -67,6 +67,7 @@ func Resolve(ctx context.Context, env Env) (*Result, error) {
 
 		// Update premium status
 		userInfo, userErr := env.TelegramAccountGetUserInfo(ctx, account.ID)
+		//nolint:nestif // complex error handling with multiple update paths
 		if userErr != nil {
 			log.Error("failed to get user info",
 				"account_id", account.ID,

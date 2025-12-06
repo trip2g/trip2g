@@ -171,6 +171,7 @@ func (m *AuthManager) CompleteAuth(ctx context.Context, phone, code, password st
 	}
 
 	// If we're waiting for password and password is provided, submit it directly
+	//nolint:nestif // complex auth state handling with multiple branches
 	if pending.State == AuthStateWaitingForPassword && password != "" {
 		_, err := pending.client.Auth().Password(pending.ctx, password)
 		if err != nil {

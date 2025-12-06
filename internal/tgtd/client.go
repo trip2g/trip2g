@@ -48,7 +48,7 @@ type ClientEnv interface {
 // retryOnFloodWait executes fn and retries on FLOOD_WAIT errors.
 func retryOnFloodWait[T any](ctx context.Context, log logger.Logger, fn func() (T, error)) (T, error) {
 	var zero T
-	for i := 0; i < maxFloodWaitRetries; i++ {
+	for i := range maxFloodWaitRetries {
 		result, err := fn()
 		if err == nil {
 			return result, nil
@@ -334,7 +334,7 @@ func (c *Client) SendMessage(ctx context.Context, sessionData []byte, params Sen
 			Message:   messageText,
 			Entities:  entities,
 			NoWebpage: params.NoWebpage,
-			RandomID:  rand.Int64(),
+			RandomID:  rand.Int64(), //nolint:gosec // G404: RandomID is for message deduplication, not security
 		}
 
 		// Send message using raw API
@@ -1182,7 +1182,7 @@ func (m *DownloadedMedia) Cleanup() {
 // IMPORTANT: Use this within RunWithAPI callback, not standalone!
 // Caller MUST call Cleanup() on each returned media when done.
 //
-//nolint:gocognit // complex media type handling with multiple branches
+//nolint:gocognit,funlen // complex media type handling with multiple branches
 func DownloadMessageMedia(ctx context.Context, api *tg.Client, msg *tg.Message) ([]DownloadedMedia, error) {
 	if msg.Media == nil {
 		return nil, nil

@@ -63,54 +63,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return &model.ErrorPayload{Message: fmt.Sprintf("Authentication failed: %s", err.Error())}, nil
 	}
 
-	isPremium := int64(0)
-	if result.IsPremium {
-		isPremium = 1
-	}
-
-	// Check if account with this phone already exists
-	existingAccount, err := env.GetTelegramAccountByPhone(ctx, phone)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, fmt.Errorf("failed to check existing account: %w", err)
-	}
-
-	var account db.TelegramAccount
-
-	if err == nil {
-		// Account exists - update session and enable it
-		enabled := int64(1)
-		err = env.UpdateTelegramAccount(ctx, db.UpdateTelegramAccountParams{
-			ID:          existingAccount.ID,
-			SessionData: result.SessionData,
-			DisplayName: sql.NullString{String: result.DisplayName, Valid: true},
-			IsPremium:   sql.NullInt64{Int64: isPremium, Valid: true},
-			ApiID:       sql.NullInt64{Int64: int64(result.APIID), Valid: true},
-			ApiHash:     sql.NullString{String: result.APIHash, Valid: true},
-			Enabled:     sql.NullInt64{Int64: enabled, Valid: true},
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to update telegram account: %w", err)
-		}
-
-		// Fetch updated account
-		account, err = env.GetTelegramAccountByPhone(ctx, phone)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get updated telegram account: %w", err)
-		}
-	} else {
-		// Account doesn't exist - insert new
-		account, err = env.InsertTelegramAccount(ctx, db.InsertTelegramAccountParams{
-			Phone:       phone,
-			SessionData: result.SessionData,
-			DisplayName: result.DisplayName,
-			IsPremium:   isPremium,
-			ApiID:       int64(result.APIID),
-			ApiHash:     result.APIHash,
-			CreatedBy:   int64(token.ID),
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to insert telegram account: %w", err)
-		}
+	// Upsert account (update existing or insert new)
+	account, err := upsertAccount(ctx, env, phone, result, token.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	// Fetch and save app config
@@ -130,4 +86,57 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	return &payload, nil
+}
+
+func upsertAccount(ctx context.Context, env Env, phone string, result *appmodel.TelegramCompleteAuthResult, createdBy int) (db.TelegramAccount, error) {
+	isPremium := int64(0)
+	if result.IsPremium {
+		isPremium = 1
+	}
+
+	// Check if account with this phone already exists
+	existingAccount, err := env.GetTelegramAccountByPhone(ctx, phone)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return db.TelegramAccount{}, fmt.Errorf("failed to check existing account: %w", err)
+	}
+
+	// Account exists - update session and enable it
+	if err == nil {
+		enabled := int64(1)
+		updateErr := env.UpdateTelegramAccount(ctx, db.UpdateTelegramAccountParams{
+			ID:          existingAccount.ID,
+			SessionData: result.SessionData,
+			DisplayName: sql.NullString{String: result.DisplayName, Valid: true},
+			IsPremium:   sql.NullInt64{Int64: isPremium, Valid: true},
+			ApiID:       sql.NullInt64{Int64: int64(result.APIID), Valid: true},
+			ApiHash:     sql.NullString{String: result.APIHash, Valid: true},
+			Enabled:     sql.NullInt64{Int64: enabled, Valid: true},
+		})
+		if updateErr != nil {
+			return db.TelegramAccount{}, fmt.Errorf("failed to update telegram account: %w", updateErr)
+		}
+
+		// Fetch updated account
+		account, getErr := env.GetTelegramAccountByPhone(ctx, phone)
+		if getErr != nil {
+			return db.TelegramAccount{}, fmt.Errorf("failed to get updated telegram account: %w", getErr)
+		}
+		return account, nil
+	}
+
+	// Account doesn't exist - insert new
+	account, insertErr := env.InsertTelegramAccount(ctx, db.InsertTelegramAccountParams{
+		Phone:       phone,
+		SessionData: result.SessionData,
+		DisplayName: result.DisplayName,
+		IsPremium:   isPremium,
+		ApiID:       int64(result.APIID),
+		ApiHash:     result.APIHash,
+		CreatedBy:   int64(createdBy),
+	})
+	if insertErr != nil {
+		return db.TelegramAccount{}, fmt.Errorf("failed to insert telegram account: %w", insertErr)
+	}
+
+	return account, nil
 }

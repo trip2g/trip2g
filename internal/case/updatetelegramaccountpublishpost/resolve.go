@@ -11,9 +11,11 @@ import (
 
 //go:generate go run github.com/matryer/moq -out mocks_test.go -pkg updatetelegramaccountpublishpost_test . Env
 
+type SentMessageRow = db.ListTelegramPublishSentAccountMessagesByNotePathIDRow
+
 type Env interface {
 	LatestNoteViews() *model.NoteViews
-	ListTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error)
+	ListTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) ([]SentMessageRow, error)
 	ConvertNoteViewToTelegramPost(ctx context.Context, source model.TelegramPostSource) (*model.TelegramPost, error)
 	EnqueueUpdateTelegramAccountMessage(ctx context.Context, params model.TelegramAccountUpdatePostParams) error
 	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)

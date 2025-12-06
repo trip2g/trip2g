@@ -16,17 +16,20 @@ import (
 
 //go:generate go run github.com/matryer/moq -out mocks_test.go -pkg resettelegrampublishnote_test . Env
 
+type SentMessageRow = db.ListTelegramPublishSentMessagesByNotePathIDRow
+type SentAccountMessageRow = db.ListTelegramPublishSentAccountMessagesByNotePathIDRow
+
 type Env interface {
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
 	Logger() logger.Logger
 
 	// Bot messages
-	ListTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentMessagesByNotePathIDRow, error)
+	ListTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) ([]SentMessageRow, error)
 	DeleteTelegramPublishSentMessagesByNotePathID(ctx context.Context, notePathID int64) error
 	SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
 
 	// Account messages
-	ListTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error)
+	ListTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) ([]SentAccountMessageRow, error)
 	DeleteTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) error
 	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)
 	DeleteTelegramAccountMessage(ctx context.Context, account db.TelegramAccount, chatID, messageID int64) error
@@ -119,7 +122,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 		deleteErr := env.DeleteTelegramAccountMessage(ctx, account, sentMsg.TelegramChatID, sentMsg.MessageID)
 		if deleteErr != nil {
-			log.Error("failed to delete account message", "account_id", sentMsg.AccountID, "chat_id", sentMsg.TelegramChatID, "message_id", sentMsg.MessageID, "error", deleteErr)
+			log.Error("failed to delete account message",
+				"account_id", sentMsg.AccountID,
+				"chat_id", sentMsg.TelegramChatID,
+				"message_id", sentMsg.MessageID,
+				"error", deleteErr,
+			)
 		}
 	}
 

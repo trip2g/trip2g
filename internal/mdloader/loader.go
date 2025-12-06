@@ -311,6 +311,7 @@ func (ldr *loader) extractInLinks() error {
 			target := string(link.Target)
 
 			// Handle explicit relative paths first (./file or ../file)
+			//nolint:nestif // complex path resolution with multiple cases
 			if strings.HasPrefix(target, "./") || strings.HasPrefix(target, "../") {
 				dir := filepath.Dir(p.Path)
 				if dir == "." {
@@ -353,6 +354,7 @@ func (ldr *loader) extractInLinks() error {
 			// For paths with '/', use relative path resolution.
 			isSimpleFilename := !strings.Contains(target, "/")
 
+			//nolint:nestif // complex filename resolution with candidate matching
 			if isSimpleFilename {
 				// Global filename resolution (Obsidian behavior)
 				// Use pre-built index for O(1) lookup instead of O(n) iteration
