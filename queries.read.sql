@@ -1020,4 +1020,8 @@ select post_type
    and message_id = ?;
 
 -- name: RecentlyModifiedNoteVersionIDs :many
-select id from note_versions order by created_at desc limit 20;
+select v.id
+  from note_versions v
+  join note_paths p on v.path_id = p.id
+ where p.hidden_by is null
+ order by v.created_at desc limit 20;

@@ -73,3 +73,6 @@ yarn-error.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+testdata/vault
+obsidian-sync
