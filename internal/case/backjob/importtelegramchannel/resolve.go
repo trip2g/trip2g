@@ -180,16 +180,18 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 
 	// Partition: not-imported first, then already-imported (both newest to oldest)
 	var notImported, alreadyImported []*messageGroup
+	alreadyImportedSet := make(map[int]bool) // primaryMsg.ID -> true
 	for _, g := range groups {
 		key := model.FormatImportKey(params.ChannelID, g.primaryMsg.ID)
 		if _, exists := importedNotes[key]; exists {
 			alreadyImported = append(alreadyImported, g)
+			alreadyImportedSet[g.primaryMsg.ID] = true
 		} else {
 			notImported = append(notImported, g)
 		}
 	}
 	groups = append(notImported, alreadyImported...)
-	log.Info("partitioned groups", "notImported", len(notImported), "alreadyImported", len(alreadyImported))
+	log.Info("partitioned groups", "notImported", len(notImported), "alreadyImported", len(alreadyImported), "skipExists", params.SkipExists)
 
 	// PHASE 2: Build complete postMap and messageInfos (newest first, not-imported before already-imported)
 	usedFilenames := make(map[string]bool)
@@ -216,11 +218,14 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			postMap[strconv.Itoa(m.ID)] = titleWithoutExt
 		}
 
+		// Skip if already imported and skipExists is enabled
+		shouldSkip := params.SkipExists && alreadyImportedSet[msg.ID]
+
 		messageInfos[i] = messageInfo{
 			group:    group,
 			title:    titleWithoutExt,
 			filename: filename,
-			skip:     false,
+			skip:     shouldSkip,
 		}
 	}
 
@@ -376,17 +381,19 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			log.Info("processing", "progress", fmt.Sprintf("%d/%d", processedCount, toProcessCount), "msgID", msg.ID)
 		}
 
-		// Download media for this group
+		// Download media for this group (only if withMedia is enabled)
 		var groupMedia []tgtd.DownloadedMedia
 		hasMedia := false
-		for _, m := range info.group.allMsgs {
-			if m.Media != nil {
-				hasMedia = true
-				break
+		if params.WithMedia {
+			for _, m := range info.group.allMsgs {
+				if m.Media != nil {
+					hasMedia = true
+					break
+				}
 			}
 		}
 
-		if hasMedia {
+		if hasMedia && params.WithMedia {
 			downloadStart := time.Now()
 			var totalSize int64
 			downloadErr := tgClient.RunWithAPI(ctx, account.SessionData, func(ctx context.Context, api *tg.Client) error {

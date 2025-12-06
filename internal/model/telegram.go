@@ -73,7 +73,9 @@ type TelegramAccountUpdatePostParams struct {
 
 // ImportTelegramChannelParams contains parameters for import background job.
 type ImportTelegramChannelParams struct {
-	AccountID int64  `json:"account_id"`
-	ChannelID int64  `json:"channel_id"`
-	BasePath  string `json:"base_path"`
+	AccountID  int64  `json:"account_id"`
+	ChannelID  int64  `json:"channel_id"`
+	BasePath   string `json:"base_path"`
+	WithMedia  bool   `json:"with_media"`  // Download and import media. Default: false
+	SkipExists bool   `json:"skip_exists"` // Skip posts that already exist. Default: true
 }

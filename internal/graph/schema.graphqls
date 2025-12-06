@@ -845,6 +845,10 @@ input AdminImportTelegramAccountChannelInput {
   accountId: Int64!
   channelId: Int64!
   basePath: String!
+  # Download and import media (photos/videos). Default: false
+  withMedia: Boolean
+  # Skip posts that already exist in notes. Default: true
+  skipExists: Boolean
 }
 
 type AdminImportTelegramAccountChannelPayload {

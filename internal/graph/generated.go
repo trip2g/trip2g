@@ -31363,7 +31363,7 @@ func (ec *executionContext) unmarshalInputAdminImportTelegramAccountChannelInput
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"accountId", "channelId", "basePath"}
+	fieldsInOrder := [...]string{"accountId", "channelId", "basePath", "withMedia", "skipExists"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -31391,6 +31391,20 @@ func (ec *executionContext) unmarshalInputAdminImportTelegramAccountChannelInput
 				return it, err
 			}
 			it.BasePath = data
+		case "withMedia":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("withMedia"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.WithMedia = data
+		case "skipExists":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skipExists"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SkipExists = data
 		}
 	}
 

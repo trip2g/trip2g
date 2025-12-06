@@ -82,6 +82,8 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 
 	assetMap := make(map[int64]map[string]*model.NoteAssetReplace)
 
+	l.log.Debug("check assets")
+
 	for _, asset := range assets {
 		noteMap, ok := assetMap[asset.VersionID]
 		if !ok {
@@ -116,6 +118,8 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 			Hash: asset.NoteAsset.Sha256Hash,
 		}
 	}
+
+	l.log.Debug("load markdown files")
 
 	mdSources := []mdloader.SourceFile{}
 	templateSources := []layoutloader.SourceFile{}
@@ -167,6 +171,8 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		return fmt.Errorf("failed to load pages: %w", err)
 	}
 
+	l.log.Debug("load layouts")
+
 	layoutOptions := layoutloader.Options{
 		BasePath: layoutBasePath,
 	}
@@ -179,11 +185,15 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	var searchIndex bleve.Index
 
 	if !options.SkipSearchIndex {
+		l.log.Debug("build search index")
+
 		searchIndex, err = l.buildSearchIndex(nvs)
 		if err != nil {
 			return fmt.Errorf("failed to build search index: %w", err)
 		}
 	}
+
+	l.log.Debug("done")
 
 	l.Lock()
 	l.nvs = nvs

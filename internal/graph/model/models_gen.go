@@ -401,9 +401,11 @@ type AdminHTMLInjectionsConnection struct {
 }
 
 type AdminImportTelegramAccountChannelInput struct {
-	AccountID int64  `json:"accountId"`
-	ChannelID int64  `json:"channelId"`
-	BasePath  string `json:"basePath"`
+	AccountID  int64  `json:"accountId"`
+	ChannelID  int64  `json:"channelId"`
+	BasePath   string `json:"basePath"`
+	WithMedia  *bool  `json:"withMedia,omitempty"`
+	SkipExists *bool  `json:"skipExists,omitempty"`
 }
 
 type AdminImportTelegramAccountChannelPayload struct {

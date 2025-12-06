@@ -77,11 +77,23 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return &model.ErrorPayload{Message: "Telegram account not found"}, nil //nolint:nilerr // intentional: return user-visible error
 	}
 
+	// Apply defaults: withMedia: false, skipExists: true
+	withMedia := false
+	if input.WithMedia != nil {
+		withMedia = *input.WithMedia
+	}
+	skipExists := true
+	if input.SkipExists != nil {
+		skipExists = *input.SkipExists
+	}
+
 	// Enqueue background job with sanitized path
 	params := appmodel.ImportTelegramChannelParams{
-		AccountID: input.AccountID,
-		ChannelID: input.ChannelID,
-		BasePath:  sanitizedPath,
+		AccountID:  input.AccountID,
+		ChannelID:  input.ChannelID,
+		BasePath:   sanitizedPath,
+		WithMedia:  withMedia,
+		SkipExists: skipExists,
 	}
 
 	err = env.EnqueueImportTelegramChannel(ctx, params)
