@@ -113,6 +113,7 @@ func sortGroupsByID(groups []*messageGroup) {
 	})
 }
 
+//nolint:gocognit // complex import logic with multiple processing stages
 func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelParams) error {
 	log := logger.WithPrefix(env.Logger(), "importtelegramchannel:")
 
@@ -190,7 +191,9 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			notImported = append(notImported, g)
 		}
 	}
-	groups = append(notImported, alreadyImported...)
+	groups = make([]*messageGroup, 0, len(notImported)+len(alreadyImported))
+	groups = append(groups, notImported...)
+	groups = append(groups, alreadyImported...)
 	log.Info("partitioned groups", "notImported", len(notImported), "alreadyImported", len(alreadyImported), "skipExists", params.SkipExists)
 
 	// PHASE 2: Build complete postMap and messageInfos (newest first, not-imported before already-imported)
@@ -356,7 +359,10 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 						return nil // don't fail the group on asset errors
 					})
 				}
-				g.Wait()
+				err = g.Wait()
+				if err != nil {
+					return fmt.Errorf("failed to upload assets: %w", err)
+				}
 
 				log.Info("assets uploaded", "count", result.AssetsCount, "duration", time.Since(uploadStart).Round(time.Millisecond))
 			}
@@ -535,39 +541,6 @@ func uploadAsset(ctx context.Context, env Env, log logger.Logger, noteID int64, 
 	}
 
 	return nil
-}
-
-// buildPostMapFromNotes builds a message_id -> title map from existing notes.
-func buildPostMapFromNotes(nvs *model.NoteViews, channelID int64) map[string]string {
-	postMap := make(map[string]string)
-	for _, note := range nvs.List {
-		noteChannelID, hasChannel := note.ExtractTelegramPublishChannelID()
-		messageID, hasMessage := note.ExtractTelegramPublishMessageID()
-		if hasChannel && hasMessage && noteChannelID == channelID {
-			// Extract title from path (filename without .md)
-			parts := strings.Split(note.Path, "/")
-			filename := parts[len(parts)-1]
-			title := strings.TrimSuffix(filename, ".md")
-			postMap[strconv.Itoa(messageID)] = title
-		}
-	}
-	return postMap
-}
-
-// buildUsedFilenamesFromNotes builds a set of used filenames in the target directory.
-func buildUsedFilenamesFromNotes(nvs *model.NoteViews, basePath string) map[string]bool {
-	usedFilenames := make(map[string]bool)
-	prefix := basePath + "/"
-	for _, note := range nvs.List {
-		if strings.HasPrefix(note.Path, prefix) {
-			// Extract filename
-			filename := strings.TrimPrefix(note.Path, prefix)
-			if !strings.Contains(filename, "/") {
-				usedFilenames[filename] = true
-			}
-		}
-	}
-	return usedFilenames
 }
 
 func generateFrontmatter(channelID int64, msg *tg.Message) string {

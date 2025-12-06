@@ -87,18 +87,18 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountSendPost
 	var postType string
 	switch mediaCount {
 	case 0:
-		postType = "text"
+		postType = db.TelegramPublishSentMessagePostTypeText
 	case 1:
-		postType = "photo"
+		postType = db.TelegramPublishSentMessagePostTypePhoto
 	default:
-		postType = "media_group"
+		postType = db.TelegramPublishSentMessagePostTypeMediaGroup
 	}
 
 	// Truncate content to telegram limits (media posts have lower limit)
 	content := telegram.TruncateContent(post.Content, mediaCount > 0)
 
 	// Create tgtd client and send message
-	client := tgtd.NewClient(int(account.ApiID), account.ApiHash)
+	client := tgtd.NewClient(env, int(account.ApiID), account.ApiHash)
 
 	var result *tgtd.SendMessageResult
 	var sendErr error

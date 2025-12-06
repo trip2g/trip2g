@@ -227,31 +227,7 @@ func main() {
 
 	// RESTORE PHASE (Pre-DB Init) - if simple backup enabled
 	if config.SimpleBackup.Enabled {
-		log.Info("simple backup enabled, checking for restore")
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-
-		// Create temporary storage client for restore
-		restoreStorage, restoreErr := miniostorage.New(ctx, config.Storage)
-		if restoreErr != nil {
-			log.Error("FATAL: failed to init storage for restore", "error", restoreErr)
-			panic(fmt.Errorf("failed to init storage for restore: %w", restoreErr))
-		}
-
-		// Create restore environment adapter
-		restoreEnv := &restoreEnvAdapter{
-			FileStorage: restoreStorage,
-			log:         log,
-		}
-
-		restoreMgr := simplebackup.New(restoreEnv, config.DatabaseFile)
-
-		startupErr := restoreMgr.RestoreOnStartup(ctx)
-		if startupErr != nil {
-			log.Error("FATAL: failed to restore database", "error", startupErr)
-			panic(fmt.Errorf("failed to restore database: %w", startupErr))
-		}
+		restoreBackup(log, config)
 	}
 
 	conn, writeConn := initDBs(config, log)
@@ -402,6 +378,34 @@ func main() {
 	a.telegramAPIQueue.start()
 
 	a.startServer()
+}
+
+func restoreBackup(log logger.Logger, config *appconfig.Config) {
+	log.Info("simple backup enabled, checking for restore")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	// Create temporary storage client for restore
+	restoreStorage, restoreErr := miniostorage.New(ctx, config.Storage)
+	if restoreErr != nil {
+		log.Error("FATAL: failed to init storage for restore", "error", restoreErr)
+		panic(fmt.Errorf("failed to init storage for restore: %w", restoreErr))
+	}
+
+	// Create restore environment adapter
+	restoreEnv := &restoreEnvAdapter{
+		FileStorage: restoreStorage,
+		log:         log,
+	}
+
+	restoreMgr := simplebackup.New(restoreEnv, config.DatabaseFile)
+
+	startupErr := restoreMgr.RestoreOnStartup(ctx)
+	if startupErr != nil {
+		log.Error("FATAL: failed to restore database", "error", startupErr)
+		panic(fmt.Errorf("failed to restore database: %w", startupErr))
+	}
 }
 
 func (a *app) initPatreon(ctx context.Context) {

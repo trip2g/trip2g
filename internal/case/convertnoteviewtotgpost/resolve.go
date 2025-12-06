@@ -35,6 +35,7 @@ type Env interface {
 	Now() time.Time
 }
 
+//nolint:gocognit // complex conversion logic
 func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*model.TelegramPost, error) {
 	logger := logger.WithPrefix(env.Logger(), "convertnoteviewtotgpost")
 

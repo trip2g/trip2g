@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"math/rand/v2"
 	"net/http"
 	"net/url"
@@ -25,12 +24,29 @@ import (
 	"github.com/gotd/td/telegram/uploader"
 	"github.com/gotd/td/tg"
 	"github.com/gotd/td/tgerr"
+
+	"trip2g/internal/logger"
 )
 
-const maxFloodWaitRetries = 3
+const (
+	maxFloodWaitRetries = 3
+
+	// Video file extensions.
+	extMP4  = ".mp4"
+	extAVI  = ".avi"
+	extMOV  = ".mov"
+	extMKV  = ".mkv"
+	extWEBM = ".webm"
+	extM4V  = ".m4v"
+)
+
+// ClientEnv provides dependencies for Client.
+type ClientEnv interface {
+	Logger() logger.Logger
+}
 
 // retryOnFloodWait executes fn and retries on FLOOD_WAIT errors.
-func retryOnFloodWait[T any](ctx context.Context, fn func() (T, error)) (T, error) {
+func retryOnFloodWait[T any](ctx context.Context, log logger.Logger, fn func() (T, error)) (T, error) {
 	var zero T
 	for i := 0; i < maxFloodWaitRetries; i++ {
 		result, err := fn()
@@ -46,24 +62,26 @@ func retryOnFloodWait[T any](ctx context.Context, fn func() (T, error)) (T, erro
 
 		// Log and retry
 		if d, ok := tgerr.AsFloodWait(err); ok {
-			slog.Info("FLOOD_WAIT: retrying after delay", "delay", d, "attempt", i+1)
+			log.Info("FLOOD_WAIT: retrying after delay", "delay", d, "attempt", i+1)
 		}
 	}
 
-	return zero, fmt.Errorf("max retries exceeded for FLOOD_WAIT")
+	return zero, errors.New("max retries exceeded for FLOOD_WAIT")
 }
 
 // Client wraps the gotd/td Telegram client for user account operations.
 type Client struct {
 	apiID   int
 	apiHash string
+	log     logger.Logger
 }
 
 // NewClient creates a new Client.
-func NewClient(apiID int, apiHash string) *Client {
+func NewClient(env ClientEnv, apiID int, apiHash string) *Client {
 	return &Client{
 		apiID:   apiID,
 		apiHash: apiHash,
+		log:     logger.WithPrefix(env.Logger(), "tgtd:client:"),
 	}
 }
 
@@ -75,6 +93,7 @@ type ChatInfo struct {
 }
 
 // DialogInfo contains information about a Telegram dialog (user, channel, or group).
+
 // DialogType represents the type of a Telegram dialog.
 type DialogType string
 
@@ -301,7 +320,7 @@ func (c *Client) SendMessage(ctx context.Context, sessionData []byte, params Sen
 		// Debug custom emoji entities
 		for _, ent := range entities {
 			if ce, ok := ent.(*tg.MessageEntityCustomEmoji); ok {
-				slog.Info("SendMessage: CustomEmoji entity",
+				c.log.Debug("SendMessage: CustomEmoji entity",
 					"offset", ce.Offset,
 					"length", ce.Length,
 					"document_id", ce.DocumentID,
@@ -565,7 +584,7 @@ func downloadMedia(ctx context.Context, mediaURL string) ([]byte, error) {
 // isVideoExtension returns true if the extension is a video format.
 func isVideoExtension(ext string) bool {
 	switch ext {
-	case ".mp4", ".avi", ".mov", ".mkv", ".webm", ".m4v":
+	case extMP4, extAVI, extMOV, extMKV, extWEBM, extM4V:
 		return true
 	default:
 		return false
@@ -575,15 +594,15 @@ func isVideoExtension(ext string) bool {
 // videoMIMEType returns the MIME type for a video extension.
 func videoMIMEType(ext string) string {
 	switch ext {
-	case ".mp4", ".m4v":
+	case extMP4, extM4V:
 		return "video/mp4"
-	case ".avi":
+	case extAVI:
 		return "video/x-msvideo"
-	case ".mov":
+	case extMOV:
 		return "video/quicktime"
-	case ".mkv":
+	case extMKV:
 		return "video/x-matroska"
-	case ".webm":
+	case extWEBM:
 		return "video/webm"
 	default:
 		return "video/mp4"
@@ -1021,6 +1040,8 @@ type GetChannelMessagesResult struct {
 
 // GetChannelMessagesWithAPI fetches messages using an existing API connection.
 // IMPORTANT: Use this within RunWithAPI callback, not standalone!
+//
+//nolint:gocognit // complex message processing with multiple type assertions
 func (c *Client) GetChannelMessagesWithAPI(ctx context.Context, api *tg.Client, params GetChannelMessagesParams) (*GetChannelMessagesResult, error) {
 	// Resolve channel peer
 	peer, err := c.resolvePeerWithAPI(ctx, api, params.ChannelID)
@@ -1039,7 +1060,7 @@ func (c *Client) GetChannelMessagesWithAPI(ctx context.Context, api *tg.Client, 
 	}
 
 	// Get history with retry on FLOOD_WAIT
-	messages, err := retryOnFloodWait(ctx, func() (tg.MessagesMessagesClass, error) {
+	messages, err := retryOnFloodWait(ctx, c.log, func() (tg.MessagesMessagesClass, error) {
 		return api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
 			Peer:     channelPeer,
 			Limit:    limit,
@@ -1092,7 +1113,7 @@ func (c *Client) GetChannelMessagesWithAPI(ctx context.Context, api *tg.Client, 
 
 func (c *Client) resolvePeerWithAPI(ctx context.Context, api *tg.Client, chatID int64) (tg.InputPeerClass, error) {
 	// Try to get channel/chat from dialogs with retry on FLOOD_WAIT
-	dialogs, err := retryOnFloodWait(ctx, func() (tg.MessagesDialogsClass, error) {
+	dialogs, err := retryOnFloodWait(ctx, c.log, func() (tg.MessagesDialogsClass, error) {
 		return api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
 			OffsetPeer: &tg.InputPeerEmpty{},
 			Limit:      100,
@@ -1152,7 +1173,7 @@ func (m *DownloadedMedia) Open() (*os.File, error) {
 // Cleanup removes the temp file.
 func (m *DownloadedMedia) Cleanup() {
 	if m.TempPath != "" {
-		os.Remove(m.TempPath)
+		_ = os.Remove(m.TempPath)
 	}
 }
 
@@ -1160,6 +1181,8 @@ func (m *DownloadedMedia) Cleanup() {
 // Returns nil if message has no media or media type is not supported.
 // IMPORTANT: Use this within RunWithAPI callback, not standalone!
 // Caller MUST call Cleanup() on each returned media when done.
+//
+//nolint:gocognit // complex media type handling with multiple branches
 func DownloadMessageMedia(ctx context.Context, api *tg.Client, msg *tg.Message) ([]DownloadedMedia, error) {
 	if msg.Media == nil {
 		return nil, nil
@@ -1313,17 +1336,17 @@ func downloadToTempFile(
 
 	// Download
 	_, err = d.Download(api, location).Stream(ctx, writer)
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	if err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return nil, fmt.Errorf("failed to download: %w", err)
 	}
 
 	// Get file size
 	stat, err := os.Stat(tmpPath)
 	if err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return nil, fmt.Errorf("failed to stat temp file: %w", err)
 	}
 

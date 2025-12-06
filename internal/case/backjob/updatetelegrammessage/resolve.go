@@ -68,10 +68,10 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParam
 	// Determine new post type based on current media
 	mediaCount := len(post.Media)
 	var newPostType string
-	switch {
-	case mediaCount == 0:
+	switch mediaCount {
+	case 0:
 		newPostType = "text"
-	case mediaCount == 1:
+	case 1:
 		newPostType = "photo"
 	default:
 		newPostType = "media_group"

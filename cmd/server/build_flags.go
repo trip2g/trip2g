@@ -1,3 +1,3 @@
 package main
 
-var GitCommit = "dev"
+var GitCommit = "dev" //nolint:gochecknoglobals // set at build time

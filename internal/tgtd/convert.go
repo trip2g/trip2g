@@ -66,8 +66,7 @@ func convertPoll(media *tg.MessageMediaPoll) string {
 	sb.WriteString("**\n\n")
 
 	for _, answer := range poll.Answers {
-		optionKey := string(answer.Option)
-		if correctOptions[optionKey] {
+		if correctOptions[string(answer.Option)] {
 			sb.WriteString("- [x] ")
 		} else {
 			sb.WriteString("- [ ] ")
@@ -82,6 +81,8 @@ func convertPoll(media *tg.MessageMediaPoll) string {
 }
 
 // convertText converts message text with entities to Markdown.
+//
+//nolint:gocognit // complex entity processing with nested type switches
 func convertText(msg *tg.Message) string {
 	source := []rune(msg.Message)
 	if len(source) == 0 {

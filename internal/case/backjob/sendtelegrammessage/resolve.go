@@ -87,10 +87,10 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramSendPostParams)
 
 	// Determine post type based on media count
 	mediaCount := len(post.Media)
-	switch {
-	case mediaCount == 0:
+	switch mediaCount {
+	case 0:
 		postType = "text"
-	case mediaCount == 1:
+	case 1:
 		postType = "photo"
 	default:
 		postType = "media_group"
@@ -99,8 +99,8 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramSendPostParams)
 	// Truncate content to telegram limits (minus 3 for '...')
 	content := telegram.TruncateContent(post.Content, mediaCount > 0)
 
-	switch {
-	case mediaCount == 0:
+	switch mediaCount {
+	case 0:
 		// Send as text message
 		msg := tgbotapi.NewMessage(params.TelegramChatID, content)
 		msg.ParseMode = parseMode
@@ -108,7 +108,7 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramSendPostParams)
 		msg.DisableWebPagePreview = post.DisableWebPagePreview
 
 		messageID, err = env.SendTelegramMessage(ctx, params.DBChatID, msg)
-	case mediaCount == 1:
+	case 1:
 		// Send as single photo (can be edited later)
 		paramsCopy := params
 		paramsCopy.Post.Content = content

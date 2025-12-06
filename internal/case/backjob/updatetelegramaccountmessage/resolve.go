@@ -70,15 +70,15 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	var newPostType string
 	switch mediaCount {
 	case 0:
-		newPostType = "text"
+		newPostType = db.TelegramPublishSentMessagePostTypeText
 	case 1:
-		newPostType = "photo"
+		newPostType = db.TelegramPublishSentMessagePostTypePhoto
 	default:
-		newPostType = "media_group"
+		newPostType = db.TelegramPublishSentMessagePostTypeMediaGroup
 	}
 
 	// Check if we can update this post type
-	if currentPostType != "text" && currentPostType != "photo" {
+	if currentPostType != db.TelegramPublishSentMessagePostTypeText && currentPostType != db.TelegramPublishSentMessagePostTypePhoto {
 		logger.Warn("only text and photo messages can be updated via account",
 			"current_type", currentPostType,
 			"note_path_id", params.NotePathID,
@@ -87,7 +87,7 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	}
 
 	// Can't convert to media_group (need to delete and resend)
-	if newPostType == "media_group" {
+	if newPostType == db.TelegramPublishSentMessagePostTypeMediaGroup {
 		logger.Warn("cannot convert to media_group, would need delete and resend",
 			"current_type", currentPostType,
 			"new_type", newPostType,
@@ -133,7 +133,7 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	}
 
 	// Create tgtd client
-	client := tgtd.NewClient(int(account.ApiID), account.ApiHash)
+	client := tgtd.NewClient(env, int(account.ApiID), account.ApiHash)
 
 	logger.Info("updating message",
 		"note_path_id", params.NotePathID,
@@ -148,7 +148,7 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	var editErr error
 
 	// Determine which edit method to use based on post types
-	if currentPostType == "text" && newPostType == "photo" {
+	if currentPostType == db.TelegramPublishSentMessagePostTypeText && newPostType == db.TelegramPublishSentMessagePostTypePhoto {
 		// Add photo to existing text message
 		editErr = client.EditMessageWithPhoto(ctx, account.SessionData, tgtd.EditMessageWithPhotoParams{
 			ChatID:    params.TelegramChatID,

@@ -116,10 +116,13 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	// Fetch and save app config
 	appConfig, configErr := env.TelegramAccountGetAppConfig(ctx, account.ID)
 	if configErr == nil && appConfig != "" {
-		env.UpdateTelegramAccountAppConfig(ctx, db.UpdateTelegramAccountAppConfigParams{
+		err = env.UpdateTelegramAccountAppConfig(ctx, db.UpdateTelegramAccountAppConfigParams{
 			AppConfig: appConfig,
 			ID:        account.ID,
 		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to update app config: %w", err)
+		}
 	}
 
 	payload := model.AdminCompleteTelegramAccountAuthPayload{

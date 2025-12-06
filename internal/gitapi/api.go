@@ -259,9 +259,9 @@ func (api *API) HandleRequest(ctx *fasthttp.RequestCtx) bool {
 func (api *API) checkAuth(ctx *fasthttp.RequestCtx) error {
 	auth := strings.TrimSpace(string(ctx.Request.Header.Peek("Authorization")))
 	if auth == "" {
-		ctx.Request.Header.VisitAll(func(key, value []byte) {
-			api.logger.Debug("header", "key", string(key), "value", string(value))
-		})
+		for k, v := range ctx.Request.Header.All() {
+			api.logger.Debug("header", "key", k, "value", v)
+		}
 
 		api.logger.Debug("no auth header")
 		return ErrNoAuth
