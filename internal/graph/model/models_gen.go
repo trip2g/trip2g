@@ -1542,6 +1542,7 @@ type UploadNoteAssetInput struct {
 	AbsolutePath string         `json:"absolutePath"`
 	ApiKey       db.ApiKey      `json:"-"`
 	Partial      bool           `json:"-"`
+	SkipPrepare  bool           `json:"-"`
 }
 
 type UploadNoteAssetPayload struct {

@@ -1175,7 +1175,7 @@ union PushNotesOrErrorPayload = PushNotesPayload | ErrorPayload
 # uploadNoteAsset
 #
 
-input UploadNoteAssetInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") @goExtraField(name: "Partial", type: "bool") {
+input UploadNoteAssetInput @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") @goExtraField(name: "Partial", type: "bool") @goExtraField(name: "SkipPrepare", type: "bool") {
   file: Upload!
   noteId: Int64! # TODO: change to noteVersionId
   sha256Hash: String! # must be calculated by the client, the request will be reqected if the hash does not match after upload

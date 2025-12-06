@@ -501,6 +501,7 @@ func uploadAsset(ctx context.Context, env Env, log logger.Logger, noteID int64, 
 
 	input := graphmodel.UploadNoteAssetInput{
 		Partial:      true,
+		SkipPrepare:  true, // Skip PrepareLatestNotes during batch import to avoid race conditions
 		NoteID:       noteID,
 		Path:         asset.relativePath,
 		Sha256Hash:   asset.media.Sha256Hash,

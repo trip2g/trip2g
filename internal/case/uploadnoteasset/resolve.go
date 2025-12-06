@@ -93,9 +93,12 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	// Prepare latest notes after any asset changes (upload or linking)
-	_, err = env.PrepareLatestNotes(ctx, input.Partial)
-	if err != nil {
-		return nil, fmt.Errorf("failed to prepare notes: %w", err)
+	// SkipPrepare is used during batch imports to avoid race conditions
+	if !input.SkipPrepare {
+		_, err = env.PrepareLatestNotes(ctx, input.Partial)
+		if err != nil {
+			return nil, fmt.Errorf("failed to prepare notes: %w", err)
+		}
 	}
 
 	response := model.UploadNoteAssetPayload{

@@ -35,6 +35,7 @@ require (
 	github.com/yuin/goldmark-meta v1.1.0
 	go.abhg.dev/goldmark/wikilink v0.6.0
 	golang.org/x/crypto v0.44.0
+	golang.org/x/sync v0.18.0
 	maragu.dev/goqite v0.3.1
 	modernc.org/sqlite v1.37.0
 )
@@ -357,7 +358,6 @@ require (
 	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.29.0 // indirect
-	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/telemetry v0.0.0-20251111182119-bc8e575c7b54 // indirect
 	golang.org/x/text v0.31.0 // indirect
