@@ -331,7 +331,13 @@ func (ldr *loader) extractInLinks() error {
 				if found {
 					p.ResolvedLinks[string(link.Target)] = pp.Permalink
 					pp.InLinks[p.Permalink] = struct{}{}
-					link.Target = []byte(pp.Permalink)
+					// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
+					// Use Permalink for regular pages (already transliterated)
+					if pp.Slug != "" {
+						link.Target = []byte(pp.PermalinkOriginal)
+					} else {
+						link.Target = []byte(pp.Permalink)
+					}
 
 					return ast.WalkContinue, nil
 				}
@@ -366,7 +372,13 @@ func (ldr *loader) extractInLinks() error {
 					pp := candidates[0]
 					p.ResolvedLinks[string(link.Target)] = pp.Permalink
 					pp.InLinks[p.Permalink] = struct{}{}
-					link.Target = []byte(pp.Permalink)
+					// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
+					// Use Permalink for regular pages (already transliterated)
+					if pp.Slug != "" {
+						link.Target = []byte(pp.PermalinkOriginal)
+					} else {
+						link.Target = []byte(pp.Permalink)
+					}
 
 					return ast.WalkContinue, nil
 				}
@@ -386,7 +398,13 @@ func (ldr *loader) extractInLinks() error {
 
 					p.ResolvedLinks[string(link.Target)] = shortest.Permalink
 					shortest.InLinks[p.Permalink] = struct{}{}
-					link.Target = []byte(shortest.Permalink)
+					// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
+					// Use Permalink for regular pages (already transliterated)
+					if shortest.Slug != "" {
+						link.Target = []byte(shortest.PermalinkOriginal)
+					} else {
+						link.Target = []byte(shortest.Permalink)
+					}
 
 					return ast.WalkContinue, nil
 				}
@@ -424,7 +442,13 @@ func (ldr *loader) extractInLinks() error {
 					if found {
 						p.ResolvedLinks[string(link.Target)] = pp.Permalink
 						pp.InLinks[p.Permalink] = struct{}{}
-						link.Target = []byte(pp.Permalink)
+						// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
+						// Use Permalink for regular pages (already transliterated)
+						if pp.Slug != "" {
+							link.Target = []byte(pp.PermalinkOriginal)
+						} else {
+							link.Target = []byte(pp.Permalink)
+						}
 
 						return ast.WalkContinue, nil
 					}
@@ -486,6 +510,16 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		}
 	}
 
+	// Extract RawMeta first so slug is available for PreparePermalink
+	pp.RawMeta = meta.Get(context)
+
+	// Extract slug from metadata before preparing permalink
+	if slugI, ok := pp.RawMeta["slug"]; ok {
+		if slugStr, isString := slugI.(string); isString {
+			pp.Slug = slugStr
+		}
+	}
+
 	pp.PreparePermalink()
 	pp.SetAst(doc)
 
@@ -494,7 +528,6 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		partialRenderer.SetContent(doc, content)
 	}
 
-	pp.RawMeta = meta.Get(context)
 	pp.Title = pp.ExtractTitle()
 	pp.Free = pp.RawMeta["free"] == true
 

@@ -166,6 +166,59 @@ test.describe('Special Features', () => {
   });
 });
 
+test.describe('Custom Slug URL Override', () => {
+  test('home page has no WIP links', async ({ page }) => {
+    await page.goto('/');
+
+    // All links on home page should resolve - no WIP links
+    const wipLinks = await page.locator('a.wip').count();
+    expect(wipLinks).toBe(0);
+  });
+
+  test('relative slug replaces filename only', async ({ page }) => {
+    await page.goto('/custom-name');
+
+    await expect(page.locator('h1').first()).toContainText('Relative Slug Test');
+    await expect(page.getByText('Expected URL: /custom-name')).toBeVisible();
+  });
+
+  test('relative slug in nested folder preserves directory', async ({ page }) => {
+    await page.goto('/folder/my-custom-page');
+
+    await expect(page.locator('h1').first()).toContainText('Nested Relative Slug');
+    await expect(page.getByText('Expected URL: /folder/my-custom-page')).toBeVisible();
+  });
+
+  test('absolute slug overrides full path', async ({ page }) => {
+    await page.goto('/archive/old-post');
+
+    await expect(page.locator('h1').first()).toContainText('Absolute Slug Test');
+    await expect(page.getByText('Expected URL: /archive/old-post')).toBeVisible();
+  });
+
+  test('relative slug with subdirectory creates nested path', async ({ page }) => {
+    await page.goto('/sub/nested/page');
+
+    await expect(page.locator('h1').first()).toContainText('Slug with Subdirectory');
+    await expect(page.getByText('Expected URL: /sub/nested/page')).toBeVisible();
+  });
+
+  test('cyrillic slug without transliteration', async ({ page }) => {
+    // URL-encoded cyrillic
+    await page.goto('/%D0%BC%D0%BE%D1%8F-%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0');
+
+    await expect(page.locator('h1').first()).toContainText('Cyrillic Slug');
+    await expect(page.getByText('no transliteration')).toBeVisible();
+  });
+
+  test('slug with spaces is URL encoded', async ({ page }) => {
+    await page.goto('/page%20with%20spaces');
+
+    await expect(page.locator('h1').first()).toContainText('Slug with Spaces');
+    await expect(page.getByText('URL encoded')).toBeVisible();
+  });
+});
+
 test.describe('Image Resolution', () => {
   test('image resolution with duplicates - root priority', async ({ page }) => {
     await page.goto('/img_test');

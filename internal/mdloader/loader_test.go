@@ -777,6 +777,137 @@ Page content`),
 	require.Contains(t, html, `href="/page"`, "Link should not have version parameter")
 }
 
+// TestSlugWithCyrillicNoDoubleEncoding tests that pages with cyrillic slug
+// don't get double URL-encoded when linked from other pages.
+// Bug: link.Target was set to URL-encoded Permalink, then link_renderer
+// encoded it again via util.URLEscape, resulting in %25D0%25... instead of %D0%...
+func TestSlugWithCyrillicNoDoubleEncoding(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Link to cyrillic slug: [[slug_cyrillic]]`),
+	}, {
+		Path: "slug_cyrillic.md",
+		Content: []byte(`---
+free: true
+slug: моя-страница
+title: Cyrillic Slug Page
+---
+Content with cyrillic slug`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "latest",
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/"].HTML)
+
+	// Should have properly encoded cyrillic URL (single encoding)
+	// %D0%BC%D0%BE%D1%8F = "моя" in URL encoding
+	require.Contains(t, html, `href="/%D0%BC%D0%BE%D1%8F-%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0?version=latest"`,
+		"Cyrillic slug should be URL-encoded once, not double-encoded")
+
+	// Should NOT have double-encoded percent signs (%25)
+	require.NotContains(t, html, `%25`,
+		"Should not have double-encoded percent signs")
+}
+
+// TestSlugWithSpacesNoDoubleEncoding tests that pages with spaces in slug
+// don't get double URL-encoded when linked from other pages.
+func TestSlugWithSpacesNoDoubleEncoding(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Link to slug with spaces: [[slug_spaces]]`),
+	}, {
+		Path: "slug_spaces.md",
+		Content: []byte(`---
+free: true
+slug: page with spaces
+title: Page With Spaces
+---
+Content with spaces in slug`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "latest",
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/"].HTML)
+
+	// Should have properly encoded space as %20 (single encoding)
+	require.Contains(t, html, `href="/page%20with%20spaces?version=latest"`,
+		"Spaces in slug should be URL-encoded as %%20, not double-encoded")
+
+	// Should NOT have double-encoded %2520 (where %25 is encoded %)
+	require.NotContains(t, html, `%2520`,
+		"Should not have double-encoded spaces (%%2520)")
+}
+
+// TestSlugLinksNotMarkedAsWIP tests that pages with custom slug are found
+// by link_renderer and not marked as WIP (class="wip").
+func TestSlugLinksNotMarkedAsWIP(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+[[slug_cyrillic]] [[slug_spaces]]`),
+	}, {
+		Path: "slug_cyrillic.md",
+		Content: []byte(`---
+free: true
+slug: моя-страница
+---
+Cyrillic slug`),
+	}, {
+		Path: "slug_spaces.md",
+		Content: []byte(`---
+free: true
+slug: page with spaces
+---
+Spaces slug`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/"].HTML)
+
+	// Links should NOT have class="wip" since the pages exist
+	require.NotContains(t, html, `class="wip"`,
+		"Links to existing pages with custom slug should not be marked as WIP")
+
+	// Links should have data-pid attribute (proving page was found)
+	require.Contains(t, html, `data-pid=`,
+		"Links should have data-pid attribute since pages exist")
+
+	// Should NOT have double-encoded URLs
+	require.NotContains(t, html, `%25`,
+		"Should not have double-encoded percent signs")
+	require.NotContains(t, html, `%2520`,
+		"Should not have double-encoded spaces")
+}
+
 // TestEmptyVersionNoParameter tests that empty version doesn't add ?version= parameter.
 func TestEmptyVersionNoParameter(t *testing.T) {
 	log := logger.TestLogger{}

@@ -38,6 +38,105 @@ func TestPerparePermalink(t *testing.T) {
 	require.True(t, n.IsIndex)
 }
 
+func TestPreparePermalinkWithSlug(t *testing.T) {
+	tests := []struct {
+		name              string
+		path              string
+		slug              string
+		expectedPermalink string
+		expectedOriginal  string
+		expectedIsIndex   bool
+	}{
+		{
+			name:              "relative slug replaces filename",
+			path:              "my-file.md",
+			slug:              "custom-name",
+			expectedPermalink: "/custom-name",
+			expectedOriginal:  "/custom-name",
+			expectedIsIndex:   false,
+		},
+		{
+			name:              "relative slug in nested folder",
+			path:              "folder/my-file.md",
+			slug:              "my-custom-page",
+			expectedPermalink: "/folder/my-custom-page",
+			expectedOriginal:  "/folder/my-custom-page",
+			expectedIsIndex:   false,
+		},
+		{
+			name:              "absolute slug overrides full path",
+			path:              "some/deep/path/file.md",
+			slug:              "/archive/old-post",
+			expectedPermalink: "/archive/old-post",
+			expectedOriginal:  "/archive/old-post",
+			expectedIsIndex:   false,
+		},
+		{
+			name:              "relative slug with subdirectory",
+			path:              "root-file.md",
+			slug:              "sub/nested/page",
+			expectedPermalink: "/sub/nested/page",
+			expectedOriginal:  "/sub/nested/page",
+			expectedIsIndex:   false,
+		},
+		{
+			name:              "cyrillic slug no transliteration",
+			path:              "file.md",
+			slug:              "моя-страница",
+			expectedPermalink: "/%D0%BC%D0%BE%D1%8F-%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0",
+			expectedOriginal:  "/моя-страница",
+			expectedIsIndex:   false,
+		},
+		{
+			name:              "slug with spaces URL encoded",
+			path:              "file.md",
+			slug:              "page with spaces",
+			expectedPermalink: "/page%20with%20spaces",
+			expectedOriginal:  "/page with spaces",
+			expectedIsIndex:   false,
+		},
+		{
+			name:              "absolute slug with index",
+			path:              "file.md",
+			slug:              "/section/index",
+			expectedPermalink: "/section/index",
+			expectedOriginal:  "/section/index",
+			expectedIsIndex:   true,
+		},
+		{
+			name:              "relative slug ending with index",
+			path:              "folder/file.md",
+			slug:              "sub/index",
+			expectedPermalink: "/folder/sub/index",
+			expectedOriginal:  "/folder/sub/index",
+			expectedIsIndex:   true,
+		},
+		{
+			name:              "empty slug uses default behavior",
+			path:              "Тестовый файл.md",
+			slug:              "",
+			expectedPermalink: "/testovyij_fajl",
+			expectedOriginal:  "/тестовый_файл",
+			expectedIsIndex:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &NoteView{
+				Path: tt.path,
+				Slug: tt.slug,
+			}
+
+			n.PreparePermalink()
+
+			require.Equal(t, tt.expectedPermalink, n.Permalink)
+			require.Equal(t, tt.expectedOriginal, n.PermalinkOriginal)
+			require.Equal(t, tt.expectedIsIndex, n.IsIndex)
+		})
+	}
+}
+
 func TestExtractReadingTime(t *testing.T) {
 	tests := []struct {
 		name        string

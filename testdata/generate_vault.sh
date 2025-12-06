@@ -194,7 +194,7 @@ Numbered list:
 > This is a blockquote
 > Multiple lines supported
 
-**Emoji support:** 🚀 🎉 ✅ 📱 💻
+**Custom emoji:** ![2️⃣](https://ce.trip2g.com/5307907239380528763.webp)
 
 This tests comprehensive Telegram text formatting with all supported markdown features.
 EOF
@@ -718,6 +718,70 @@ cat > "$VAULT/_layouts/custom/page.html" << 'EOF'
 EOF
 
 # ============================================================================
+# Test 8: Custom slug URL override
+# ============================================================================
+
+cat > "$VAULT/slug_relative.md" << 'EOF'
+---
+free: true
+slug: custom-name
+title: Relative Slug Test
+---
+File: slug_relative.md
+Expected URL: /custom-name (relative, replaces filename only)
+EOF
+
+cat > "$VAULT/folder/slug_relative_nested.md" << 'EOF'
+---
+free: true
+slug: my-custom-page
+title: Nested Relative Slug
+---
+File: folder/slug_relative_nested.md
+Expected URL: /folder/my-custom-page
+EOF
+
+cat > "$VAULT/slug_absolute.md" << 'EOF'
+---
+free: true
+slug: /archive/old-post
+title: Absolute Slug Test
+---
+File: slug_absolute.md
+Expected URL: /archive/old-post (absolute, full path override)
+EOF
+
+cat > "$VAULT/slug_with_subdir.md" << 'EOF'
+---
+free: true
+slug: sub/nested/page
+title: Slug with Subdirectory
+---
+File: slug_with_subdir.md
+Expected URL: /sub/nested/page (relative with subdirs)
+EOF
+
+cat > "$VAULT/slug_cyrillic.md" << 'EOF'
+---
+free: true
+slug: моя-страница
+title: Cyrillic Slug
+---
+File: slug_cyrillic.md
+Expected URL: /моя-страница (no transliteration!)
+EOF
+
+cat > "$VAULT/slug_spaces.md" << 'EOF'
+---
+free: true
+slug: page with spaces
+title: Slug with Spaces
+---
+File: slug_spaces.md
+Expected URL: /page%20with%20spaces (URL encoded)
+EOF
+
+# ============================================================================
 # Main page and sidebar
 # ============================================================================
 
@@ -781,10 +845,15 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 17. [[code_and_media]] - code blocks and media embeds
 18. [[complex_content]] - comprehensive markdown features
 19. [[redirect_test]] - page redirect functionality
+20. [[slug_relative]] - relative slug (replaces filename)
+21. [[slug_absolute]] - absolute slug (full path override)
+22. [[slug_with_subdir]] - slug with subdirectory
+23. [[slug_cyrillic]] - cyrillic slug (no transliteration)
+24. [[slug_spaces]] - slug with spaces (URL encoded)
 
 ## Subgraph (Premium Course) Tests
-20. [[premium]] - premium subgraph home page
-21. Check sidebar: should show premium sidebar for premium pages
+25. [[premium]] - premium subgraph home page
+26. Check sidebar: should show premium sidebar for premium pages
 
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])
@@ -827,6 +896,7 @@ From [[embedding]]:
 | `telegram_publish_tags` | `[tag1]` | Telegram groups |
 | `hidden` | `true` | Hide from listing |
 | `embed_class` | `alert` | CSS class for embeds |
+| `slug` | `custom-url` or `/full/path` | Custom URL (relative or absolute) |
 
 ![[_banner]]
 EOF
@@ -853,6 +923,7 @@ echo "   ✓ Code blocks and media embeds"
 echo "   ✓ Redirects"
 echo "   ✓ Headers and block references"
 echo "   ✓ Complex markdown (tables, lists, quotes, tasks)"
+echo "   ✓ Custom slug URL override (relative, absolute, cyrillic, spaces)"
 echo ""
 echo "📖 Open vault/_index.md to see all available tests"
 echo ""

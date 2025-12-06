@@ -136,6 +136,8 @@ type NoteView struct {
 	FirstImage *string
 
 	Layout string
+
+	Slug string // custom URL override from YAML metadata
 }
 
 type NoteSubgraph struct {
@@ -205,7 +207,55 @@ func normalizeURLPart(s string) string {
 	return res
 }
 
+// escapeAndJoinPath escapes each segment of a path and joins them.
+func escapeAndJoinPath(path string) string {
+	parts := strings.Split(path, "/")
+	escapedParts := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		escapedParts = append(escapedParts, url.PathEscape(part))
+	}
+	return "/" + strings.Join(escapedParts, "/")
+}
+
+// preparePermalinkFromSlug handles custom slug URL override.
+func (n *NoteView) preparePermalinkFromSlug() {
+	if strings.HasPrefix(n.Slug, "/") {
+		// Absolute slug - use as full path
+		n.IsIndex = strings.HasSuffix(n.Slug, "/index") || strings.HasSuffix(n.Slug, "/_index")
+		n.Permalink = escapeAndJoinPath(n.Slug)
+		n.PermalinkOriginal = n.Slug
+		return
+	}
+
+	// Relative slug - replace only the filename, keep directory
+	dir := filepath.Dir(n.Path)
+	if dir == "." {
+		dir = ""
+	}
+
+	var fullPath string
+	if dir == "" {
+		fullPath = "/" + n.Slug
+	} else {
+		fullPath = "/" + dir + "/" + n.Slug
+	}
+
+	n.IsIndex = strings.HasSuffix(n.Slug, "/index") || strings.HasSuffix(n.Slug, "/_index")
+	n.Permalink = escapeAndJoinPath(fullPath)
+	n.PermalinkOriginal = fullPath
+}
+
 func (n *NoteView) PreparePermalink() {
+	// If slug is set in metadata, use it instead of normalizing path
+	if n.Slug != "" {
+		n.preparePermalinkFromSlug()
+		return
+	}
+
+	// Default behavior: normalize path with transliteration
 	link := n.Path
 
 	// Remove .md extension if present
