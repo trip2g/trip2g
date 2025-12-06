@@ -1,6 +1,5 @@
 ---
 telegram_publish_at: 2025-11-18T09:36:00
-telegram_publish_disable_web_page_preview: true
 telegram_publish_tags:
   - test_channel
 free: true
@@ -48,12 +47,6 @@ Numbered list:
 > This is a blockquote
 > Multiple lines supported
 
-Custom emoji:
+**Custom emoji:** ![2️⃣](https://ce.trip2g.com/5307907239380528763.webp)
 
-![emoji](https://ce.trip2g.com/5307907239380528763.webp)
-
-![2️⃣](https://ce.trip2g.com/5307907239380528763.webp)
-
-End of the text-only Telegram post example.
-
-https://www.youtube.com/watch?v=0S8DY7k_7Yw hello 2
+This tests comprehensive Telegram text formatting with all supported markdown features.

@@ -29,10 +29,15 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 17. [[code_and_media]] - code blocks and media embeds
 18. [[complex_content]] - comprehensive markdown features
 19. [[redirect_test]] - page redirect functionality
+20. [[slug_relative]] - relative slug (replaces filename)
+21. [[slug_absolute]] - absolute slug (full path override)
+22. [[slug_with_subdir]] - slug with subdirectory
+23. [[slug_cyrillic]] - cyrillic slug (no transliteration)
+24. [[slug_spaces]] - slug with spaces (URL encoded)
 
 ## Subgraph (Premium Course) Tests
-20. [[premium]] - premium subgraph home page
-21. Check sidebar: should show premium sidebar for premium pages
+25. [[premium]] - premium subgraph home page
+26. Check sidebar: should show premium sidebar for premium pages
 
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])
@@ -75,5 +80,6 @@ From [[embedding]]:
 | `telegram_publish_tags` | `[tag1]` | Telegram groups |
 | `hidden` | `true` | Hide from listing |
 | `embed_class` | `alert` | CSS class for embeds |
+| `slug` | `custom-url` or `/full/path` | Custom URL (relative or absolute) |
 
 ![[_banner]]
