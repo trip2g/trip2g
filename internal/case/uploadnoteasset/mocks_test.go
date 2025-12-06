@@ -41,7 +41,7 @@ var _ uploadnoteasset.Env = &EnvMock{}
 //			NoteVersionAssetPathsFunc: func(ctx context.Context, id int64) (map[string]struct{}, error) {
 //				panic("mock out the NoteVersionAssetPaths method")
 //			},
-//			PrepareLatestNotesFunc: func(ctx context.Context) (*appmodel.NoteViews, error) {
+//			PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 //				panic("mock out the PrepareLatestNotes method")
 //			},
 //			PutAssetObjectFunc: func(ctx context.Context, reader io.Reader, info db.NoteAsset) error {
@@ -76,7 +76,7 @@ type EnvMock struct {
 	NoteVersionAssetPathsFunc func(ctx context.Context, id int64) (map[string]struct{}, error)
 
 	// PrepareLatestNotesFunc mocks the PrepareLatestNotes method.
-	PrepareLatestNotesFunc func(ctx context.Context) (*appmodel.NoteViews, error)
+	PrepareLatestNotesFunc func(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 
 	// PutAssetObjectFunc mocks the PutAssetObject method.
 	PutAssetObjectFunc func(ctx context.Context, reader io.Reader, info db.NoteAsset) error
@@ -128,6 +128,8 @@ type EnvMock struct {
 		PrepareLatestNotes []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
+			// Partial is the partial argument value.
+			Partial bool
 		}
 		// PutAssetObject holds details about calls to the PutAssetObject method.
 		PutAssetObject []struct {
@@ -365,19 +367,21 @@ func (mock *EnvMock) NoteVersionAssetPathsCalls() []struct {
 }
 
 // PrepareLatestNotes calls PrepareLatestNotesFunc.
-func (mock *EnvMock) PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error) {
+func (mock *EnvMock) PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 	if mock.PrepareLatestNotesFunc == nil {
 		panic("EnvMock.PrepareLatestNotesFunc: method is nil but Env.PrepareLatestNotes was just called")
 	}
 	callInfo := struct {
-		Ctx context.Context
+		Ctx     context.Context
+		Partial bool
 	}{
-		Ctx: ctx,
+		Ctx:     ctx,
+		Partial: partial,
 	}
 	mock.lockPrepareLatestNotes.Lock()
 	mock.calls.PrepareLatestNotes = append(mock.calls.PrepareLatestNotes, callInfo)
 	mock.lockPrepareLatestNotes.Unlock()
-	return mock.PrepareLatestNotesFunc(ctx)
+	return mock.PrepareLatestNotesFunc(ctx, partial)
 }
 
 // PrepareLatestNotesCalls gets all the calls that were made to PrepareLatestNotes.
@@ -385,10 +389,12 @@ func (mock *EnvMock) PrepareLatestNotes(ctx context.Context) (*appmodel.NoteView
 //
 //	len(mockedEnv.PrepareLatestNotesCalls())
 func (mock *EnvMock) PrepareLatestNotesCalls() []struct {
-	Ctx context.Context
+	Ctx     context.Context
+	Partial bool
 } {
 	var calls []struct {
-		Ctx context.Context
+		Ctx     context.Context
+		Partial bool
 	}
 	mock.lockPrepareLatestNotes.RLock()
 	calls = mock.calls.PrepareLatestNotes

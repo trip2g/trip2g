@@ -25,10 +25,12 @@ type Env interface {
 	Logger() logger.Logger
 	PutAssetObject(ctx context.Context, reader io.Reader, info db.NoteAsset) error
 	DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error
-	CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) error
+	DeleteNoteAsset(ctx context.Context, id int64) error
+	CreateNoteAsset(ctx context.Context, params db.CreateNoteAssetParams) (db.NoteAsset, error)
+	UpsertNoteVersionAsset(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error
 	NoteAssetByPathAndHash(ctx context.Context, arg db.NoteAssetByPathAndHashParams) (db.NoteAsset, error)
 	NoteVersionAssetPaths(ctx context.Context, id int64) (map[string]struct{}, error)
-	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
+	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 }
 
 func calcHash(content []byte) string {
@@ -95,7 +97,7 @@ func TestResolve(t *testing.T) {
 					DeleteNoteAssetFunc: func(ctx context.Context, id int64) error {
 						return nil
 					},
-					PrepareLatestNotesFunc: func(ctx context.Context) (*appmodel.NoteViews, error) {
+					PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 						return &appmodel.NoteViews{}, nil
 					},
 				}
@@ -268,7 +270,7 @@ func TestResolve(t *testing.T) {
 					UpsertNoteVersionAssetFunc: func(ctx context.Context, arg db.UpsertNoteVersionAssetParams) error {
 						return nil
 					},
-					PrepareLatestNotesFunc: func(ctx context.Context) (*appmodel.NoteViews, error) {
+					PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 						return &appmodel.NoteViews{}, nil
 					},
 				}

@@ -19,8 +19,8 @@ type Env interface {
 	Logger() logger.Logger
 	InsertNote(ctx context.Context, update appmodel.RawNote) error
 	InsertSubgraph(ctx context.Context, name string) error
-	PrepareLatestNotes(ctx context.Context) (*appmodel.NoteViews, error)
-	HandleLatestNotesAfterSave(changedPathIDs []int64) error
+	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
+	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
 	Layouts() *appmodel.Layouts
 }
 
@@ -71,7 +71,7 @@ func TestResolve(t *testing.T) {
 					InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) error {
 						return nil
 					},
-					PrepareLatestNotesFunc: func(ctx context.Context) (*appmodel.NoteViews, error) {
+					PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 						return &appmodel.NoteViews{
 							List: []*appmodel.NoteView{
 								{
@@ -134,7 +134,7 @@ func TestResolve(t *testing.T) {
 					InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) error {
 						return nil
 					},
-					PrepareLatestNotesFunc: func(ctx context.Context) (*appmodel.NoteViews, error) {
+					PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 						return nil, errors.New("prepare error")
 					},
 				}

@@ -1,6 +1,9 @@
 package image
 
-import "path/filepath"
+import (
+	"path/filepath"
+	"strings"
+)
 
 //nolint:gochecknoglobals // readonly constant map
 var exts = map[string]struct{}{
@@ -32,13 +35,13 @@ func GetExtensions() map[string]struct{} {
 }
 
 func IsRightExtension(target string) bool {
-	ext := filepath.Ext(target)
+	ext := strings.ToLower(filepath.Ext(target))
 	_, ok := exts[ext]
 	return ok
 }
 
 func IsVideoExtension(target string) bool {
-	ext := filepath.Ext(target)
+	ext := strings.ToLower(filepath.Ext(target))
 	_, ok := videoExts[ext]
 	return ok
 }
