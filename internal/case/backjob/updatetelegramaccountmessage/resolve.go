@@ -92,8 +92,12 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	hasMedia := mediaCount > 0
 	content := telegram.TruncateContent(post.Content, hasMedia)
 
-	// Calculate content hash for new content
-	hash := sha256.Sum256([]byte(content))
+	// Calculate content hash for new content (include media URLs)
+	hashInput := content
+	if len(post.Media) > 0 {
+		hashInput += "|" + strings.Join(post.Media, "|")
+	}
+	hash := sha256.Sum256([]byte(hashInput))
 	newContentHash := hex.EncodeToString(hash[:])
 
 	// Get current content hash from database
@@ -140,8 +144,8 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	var editErr error
 
 	// Determine which edit method to use based on post types
-	if currentPostType == db.TelegramPublishSentMessagePostTypeText && newPostType == db.TelegramPublishSentMessagePostTypePhoto {
-		// Add photo to existing text message
+	if newPostType == db.TelegramPublishSentMessagePostTypePhoto {
+		// Edit with photo (add photo to text, or replace existing photo)
 		editErr = client.EditMessageWithPhoto(ctx, account.SessionData, tgtd.EditMessageWithPhotoParams{
 			ChatID:    params.TelegramChatID,
 			MessageID: params.MessageID,

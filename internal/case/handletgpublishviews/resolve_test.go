@@ -85,11 +85,11 @@ func prepare(t *testing.T, nvs *model.NoteViews) *EnvMock {
 			return nil
 		},
 
-		UpdateTelegramPublishPostFunc: func(ctx context.Context, notePathID int64) error {
+		EnqueueUpdateTelegramPostFunc: func(ctx context.Context, notePathID int64) error {
 			return nil
 		},
 
-		UpdateTelegramAccountPublishPostFunc: func(ctx context.Context, notePathID int64) error {
+		EnqueueUpdateTelegramAccountPostFunc: func(ctx context.Context, notePathID int64) error {
 			return nil
 		},
 	}
