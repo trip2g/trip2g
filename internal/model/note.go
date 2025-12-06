@@ -22,6 +22,20 @@ const (
 	TOCDisplayHide
 )
 
+// Pre-compiled regexes for removeMarkdownSyntax (compiled once at init).
+var (
+	mdCodeBlockRegex     = regexp.MustCompile("```[\\s\\S]*?```")
+	mdInlineCodeRegex    = regexp.MustCompile("`[^`]*`")
+	mdHeaderRegex        = regexp.MustCompile(`^#{1,6}\s+`)
+	mdLinkRegex          = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
+	mdWikilinkRegex      = regexp.MustCompile(`\[\[([^|\]]*?)(?:\|([^\]]*?))?\]\]`)
+	mdBoldItalicRegex    = regexp.MustCompile(`\*+([^*]+)\*+`)
+	mdStrikethroughRegex = regexp.MustCompile(`~~([^~]+)~~`)
+	mdHTMLRegex          = regexp.MustCompile(`<[^>]*>`)
+	mdListRegex          = regexp.MustCompile(`^\s*[-*+]\s+|^\s*\d+\.\s+`)
+	mdBlockquoteRegex    = regexp.MustCompile(`^\s*>\s*`)
+)
+
 type NoteViewHeading struct {
 	Text  string
 	Level int
@@ -929,25 +943,20 @@ func (nv *NoteViews) RegisterNote(note *NoteView) {
 // removeMarkdownSyntax removes common markdown syntax for more accurate word counting.
 func removeMarkdownSyntax(content string) string {
 	// Remove code blocks (```code```)
-	codeBlockRegex := regexp.MustCompile("```[\\s\\S]*?```")
-	content = codeBlockRegex.ReplaceAllString(content, " ")
+	content = mdCodeBlockRegex.ReplaceAllString(content, " ")
 
 	// Remove inline code (`code`)
-	inlineCodeRegex := regexp.MustCompile("`[^`]*`")
-	content = inlineCodeRegex.ReplaceAllString(content, " ")
+	content = mdInlineCodeRegex.ReplaceAllString(content, " ")
 
 	// Remove headers (# ## ###)
-	headerRegex := regexp.MustCompile(`^#{1,6}\s+`)
-	content = headerRegex.ReplaceAllString(content, "")
+	content = mdHeaderRegex.ReplaceAllString(content, "")
 
 	// Remove links but keep the text [text](url) -> text
-	linkRegex := regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
-	content = linkRegex.ReplaceAllString(content, "$1")
+	content = mdLinkRegex.ReplaceAllString(content, "$1")
 
 	// Remove wikilinks but keep the text [[link|text]] -> text or [[link]] -> link
-	wikilinkRegex := regexp.MustCompile(`\[\[([^|\]]*?)(?:\|([^\]]*?))?\]\]`)
-	content = wikilinkRegex.ReplaceAllStringFunc(content, func(match string) string {
-		parts := wikilinkRegex.FindStringSubmatch(match)
+	content = mdWikilinkRegex.ReplaceAllStringFunc(content, func(match string) string {
+		parts := mdWikilinkRegex.FindStringSubmatch(match)
 		if len(parts) > 2 && parts[2] != "" {
 			return parts[2] // Use display text if available
 		}
@@ -955,24 +964,19 @@ func removeMarkdownSyntax(content string) string {
 	})
 
 	// Remove bold/italic markers (**text** *text*)
-	boldItalicRegex := regexp.MustCompile(`\*+([^*]+)\*+`)
-	content = boldItalicRegex.ReplaceAllString(content, "$1")
+	content = mdBoldItalicRegex.ReplaceAllString(content, "$1")
 
 	// Remove strikethrough (~~text~~)
-	strikethroughRegex := regexp.MustCompile(`~~([^~]+)~~`)
-	content = strikethroughRegex.ReplaceAllString(content, "$1")
+	content = mdStrikethroughRegex.ReplaceAllString(content, "$1")
 
 	// Remove HTML tags
-	htmlRegex := regexp.MustCompile(`<[^>]*>`)
-	content = htmlRegex.ReplaceAllString(content, " ")
+	content = mdHTMLRegex.ReplaceAllString(content, " ")
 
 	// Remove list markers (- * + 1.)
-	listRegex := regexp.MustCompile(`^\s*[-*+]\s+|^\s*\d+\.\s+`)
-	content = listRegex.ReplaceAllString(content, "")
+	content = mdListRegex.ReplaceAllString(content, "")
 
 	// Remove blockquotes (>)
-	blockquoteRegex := regexp.MustCompile(`^\s*>\s*`)
-	content = blockquoteRegex.ReplaceAllString(content, "")
+	content = mdBlockquoteRegex.ReplaceAllString(content, "")
 
 	return content
 }
