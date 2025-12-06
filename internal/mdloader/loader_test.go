@@ -617,3 +617,195 @@ Another video: ![[movie.webm]]`),
 	require.NotContains(t, html, `<img src="clip.mp4"`)
 	require.NotContains(t, html, `<img src="movie.webm"`)
 }
+
+// TestVersionedLinks tests that links with version parameter preserve slashes in paths.
+// Bug: url.PathEscape encodes "/" as "%2F", breaking paths like "/folder/source".
+func TestVersionedLinks(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Links: [[folder/source]] [[simple]]`),
+	}, {
+		Path: "folder/source.md",
+		Content: []byte(`---
+free: true
+---
+Content in folder`),
+	}, {
+		Path: "simple.md",
+		Content: []byte(`---
+free: true
+---
+Simple content`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "v1.2.3",
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/"].HTML)
+
+	// Path slashes should NOT be encoded as %2F
+	require.NotContains(t, html, `%2F`, "Slashes in paths should not be URL-encoded")
+
+	// Version parameter should be present
+	require.Contains(t, html, `?version=v1.2.3`, "Version parameter should be in URL")
+
+	// The href should look like: href="/folder/source?version=v1.2.3"
+	require.Contains(t, html, `href="/folder/source?version=v1.2.3"`, "Path with version should preserve slashes")
+	require.Contains(t, html, `href="/simple?version=v1.2.3"`, "Simple path with version should work")
+}
+
+// TestVersionedLinksWithSpecialChars tests that paths with special characters
+// are normalized (transliterated) and slashes are preserved.
+func TestVersionedLinksWithSpecialChars(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Links: [[100% силы]] [[путь/файл]]`),
+	}, {
+		Path: "100% силы.md",
+		Content: []byte(`---
+free: true
+---
+Content with percent`),
+	}, {
+		Path: "путь/файл.md",
+		Content: []byte(`---
+free: true
+---
+Content in Cyrillic path`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "latest",
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/"].HTML)
+
+	// Path slashes should NOT be encoded as %2F
+	require.NotContains(t, html, `%2F`, "Slashes should not be encoded")
+
+	// Cyrillic paths are transliterated, slashes preserved
+	// "путь/файл" becomes "/putj/fajl" with slash preserved
+	require.Contains(t, html, `/putj/fajl?version=latest`, "Cyrillic path should be transliterated with slashes preserved")
+
+	// Version parameter should be present
+	require.Contains(t, html, `?version=latest`, "Version parameter should be in URL")
+}
+
+// TestVersionedLinksNotAppliedToImages tests that version parameter is NOT added to image links.
+func TestVersionedLinksNotAppliedToImages(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Image: ![[photo.png]]
+Link: [[page]]`),
+	}, {
+		Path: "page.md",
+		Content: []byte(`---
+free: true
+---
+Page content`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "v1.0",
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/"].HTML)
+
+	// Images should NOT have version parameter
+	require.Contains(t, html, `<img src="photo.png">`, "Image should not have version parameter")
+	require.NotContains(t, html, `photo.png?version`, "Image should not have version in URL")
+
+	// Links should have version parameter
+	require.Contains(t, html, `href="/page?version=v1.0"`, "Link should have version parameter")
+}
+
+// TestDefaultVersionNoParameter tests that default "live" version doesn't add ?version= parameter.
+func TestDefaultVersionNoParameter(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Link: [[page]]`),
+	}, {
+		Path: "page.md",
+		Content: []byte(`---
+free: true
+---
+Page content`),
+	}}
+
+	// Test with default "live" version
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "live",
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/"].HTML)
+
+	// Should NOT have version parameter for default version
+	require.NotContains(t, html, `?version=`, "Default 'live' version should not add version parameter")
+	require.Contains(t, html, `href="/page"`, "Link should not have version parameter")
+}
+
+// TestEmptyVersionNoParameter tests that empty version doesn't add ?version= parameter.
+func TestEmptyVersionNoParameter(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Link: [[page]]`),
+	}, {
+		Path: "page.md",
+		Content: []byte(`---
+free: true
+---
+Page content`),
+	}}
+
+	// Test with empty version
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "",
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/"].HTML)
+
+	// Should NOT have version parameter for empty version
+	require.NotContains(t, html, `?version=`, "Empty version should not add version parameter")
+	require.Contains(t, html, `href="/page"`, "Link should not have version parameter")
+}
