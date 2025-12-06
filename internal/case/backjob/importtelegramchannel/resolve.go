@@ -371,6 +371,11 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 
 		msg := info.group.primaryMsg
 
+		// Log progress every 10 notes
+		if processedCount%10 == 1 || processedCount == toProcessCount {
+			log.Info("processing", "progress", fmt.Sprintf("%d/%d", processedCount, toProcessCount), "msgID", msg.ID)
+		}
+
 		// Download media for this group
 		var groupMedia []tgtd.DownloadedMedia
 		hasMedia := false
