@@ -52,6 +52,7 @@ interface SyncState {
 | A | B | A | `pull` | Локальный не изменён, сервер изменён |
 | A | B | B | `push` | Локальный изменён, сервер не изменён |
 | A | B | C | `conflict` | Оба изменены |
+| A | null | B | `server_deleted` | Удалён на сервере → спросить пользователя |
 
 ### Ключевая логика (sync.ts)
 
@@ -61,7 +62,12 @@ function classifyFile(localHash, remoteHash, lastSyncedHash): SyncAction {
   if (localHash === remoteHash) return "unchanged";
 
   // Только локально
-  if (localHash !== null && remoteHash === null) return "local_only";
+  if (localHash !== null && remoteHash === null) {
+    // Был синхронизирован раньше → удалён на сервере
+    if (lastSyncedHash) return "server_deleted";
+    // Никогда не видели → новый локальный файл
+    return "local_only";
+  }
 
   // Только на сервере
   if (localHash === null && remoteHash !== null) {
@@ -116,6 +122,27 @@ function classifyFile(localHash, remoteHash, lastSyncedHash): SyncAction {
 - Через 3 секунды после загрузки плагина
 
 Tooltip иконки показывает количество: `Trip2g Sync (↓3 ↑2)`
+
+## Подтверждение загрузки (Push Confirmation)
+
+Перед загрузкой файлов на сервер показывается модальное окно подтверждения со списком файлов.
+
+| Опция | Действие |
+|-------|----------|
+| Upload | Загрузить файлы на сервер |
+| Cancel | Отменить загрузку |
+| Don't ask again | Сохранить настройку и больше не показывать подтверждение |
+
+Настройку "Не спрашивать подтверждение" можно изменить в настройках плагина.
+
+## Обработка удалённых на сервере файлов
+
+Когда файл удалён/скрыт на сервере, но существует локально, показывается модальное окно:
+
+| Опция | Действие |
+|-------|----------|
+| Delete locally | Удалить локальные файлы |
+| Keep locally | Оставить файлы локально (не будут загружены повторно) |
 
 ## Разрешение конфликтов
 
@@ -267,4 +294,4 @@ obsidian-sync/
 - User A создаёт файл → push
 - User B синхронизирует → pull (новый файл)
 - User B удаляет → hideNotes
-- User A синхронизирует → файл скрыт, но есть локально → `local_only` → push (восстановит)
+- User A синхронизирует → файл скрыт, но есть локально → `server_deleted` → спросит пользователя
