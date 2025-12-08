@@ -48,9 +48,10 @@ func (e *liveNoteLoaderEnv) RawAssets(ctx context.Context) ([]noteloader.RawAsse
 	res := make([]noteloader.RawAsset, len(assets))
 	for i, asset := range assets {
 		res[i] = noteloader.RawAsset{
-			VersionID: asset.VersionID,
-			Path:      asset.Path,
-			NoteAsset: asset.NoteAsset,
+			VersionID:    asset.VersionID,
+			Path:         asset.Path,
+			NoteAsset:    asset.NoteAsset,
+			AbsolutePath: asset.NoteAsset.AbsolutePath,
 		}
 	}
 
@@ -103,13 +104,10 @@ func (e *latestNoteLoaderEnv) RawAssets(ctx context.Context) ([]noteloader.RawAs
 	res := make([]noteloader.RawAsset, len(assets))
 	for i, asset := range assets {
 		res[i] = noteloader.RawAsset{
-			VersionID: asset.VersionID,
-			Path:      asset.Path,
-			NoteAsset: asset.NoteAsset,
-		}
-
-		if asset.NoteAsset.FileName != "hardreset_loop.png" {
-			continue
+			VersionID:    asset.VersionID,
+			Path:         asset.Path,
+			NoteAsset:    asset.NoteAsset,
+			AbsolutePath: asset.NoteAsset.AbsolutePath,
 		}
 	}
 
@@ -170,13 +168,10 @@ func (e *singleNoteLoaderEnv) RawAssets(ctx context.Context) ([]noteloader.RawAs
 	res := make([]noteloader.RawAsset, len(assets))
 	for i, asset := range assets {
 		res[i] = noteloader.RawAsset{
-			VersionID: asset.VersionID,
-			Path:      asset.Path,
-			NoteAsset: asset.NoteAsset,
-		}
-
-		if asset.NoteAsset.FileName != "hardreset_loop.png" {
-			continue
+			VersionID:    asset.VersionID,
+			Path:         asset.Path,
+			NoteAsset:    asset.NoteAsset,
+			AbsolutePath: asset.NoteAsset.AbsolutePath,
 		}
 	}
 
