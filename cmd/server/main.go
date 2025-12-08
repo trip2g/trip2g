@@ -219,6 +219,14 @@ func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB) {
 	return conn, writeConn
 }
 
+func initDataEncryptionManager(config *appconfig.Config) *dataencryption.Manager {
+	manager, err := dataencryption.NewManager(config.DataEncryption)
+	if err != nil {
+		panic(fmt.Errorf("failed to create data encryption manager: %w", err))
+	}
+	return manager
+}
+
 func main() {
 	config, err := appconfig.Get()
 	if err != nil {
@@ -246,11 +254,6 @@ func main() {
 		panic(err)
 	}
 
-	dataEncryptionManager, err := dataencryption.NewManager(config.DataEncryption)
-	if err != nil {
-		panic(fmt.Errorf("failed to create data encryption manager: %w", err))
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -274,7 +277,7 @@ func main() {
 		WriteQueries: writeQueries,
 
 		FileStorage: fileStorage,
-		Manager:     dataEncryptionManager,
+		Manager:     initDataEncryptionManager(config),
 
 		config: config,
 
