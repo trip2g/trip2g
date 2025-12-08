@@ -14,6 +14,8 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 4. [[img-test]] - image resolution
 5. [[headers]] - headers and block references
 6. [[embedding]] - markdown embeds with duplicates
+7. [[software]] - image with same name as note (regression)
+8. [[scenarios_test]] - links with dots in filenames (regression)
 
 ## Publishing Features Tests
 7. [[public]] - free public page (no paywall)

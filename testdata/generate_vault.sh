@@ -19,7 +19,7 @@ download_placeholder() {
 }
 
 echo "Creating test vault: $VAULT"
-rm -rf "$VAULT"
+# rm -rf "$VAULT"
 mkdir -p "$VAULT"/folder/folder
 mkdir -p "$VAULT"/assets
 mkdir -p "$VAULT"/projectA
@@ -623,7 +623,65 @@ Link to block: [[headers#^block-id]]
 EOF
 
 # ============================================================================
-# Test 6: Markdown embeds with duplicates
+# Test 6: Image with same name as note (regression test)
+# Bug: ![[software.png]] was resolved as /software (the note) when software.md exists
+# ============================================================================
+
+cat > "$VAULT/software.md" << 'EOF'
+---
+free: true
+title: Software Page
+---
+This page tests image with same basename as the note.
+
+![[software.png]]
+
+The image above should render as an image, not cause a render error.
+EOF
+
+download_placeholder "software.png" "2980b9"
+
+# ============================================================================
+# Test 7: Links with dots in filenames (regression test)
+# Bug: filepath.Ext("Сценарий. Ютубер") returns ". Ютубер" as extension
+# ============================================================================
+
+cat > "$VAULT/_scenarios.md" << 'EOF'
+Links to pages with dots in names:
+- [[Сценарий. Ютубер|Ютубер]]
+- [[Сценарий. Курсы|Курсы]]
+EOF
+
+cat > "$VAULT/Сценарий. Ютубер.md" << 'EOF'
+---
+free: true
+title: Сценарий Ютубер
+---
+Страница со сценарием для ютуберов.
+EOF
+
+cat > "$VAULT/Сценарий. Курсы.md" << 'EOF'
+---
+free: true
+title: Сценарий Курсы
+---
+Страница со сценарием для курсов.
+EOF
+
+cat > "$VAULT/scenarios_test.md" << 'EOF'
+---
+free: true
+title: Scenarios Test
+---
+This page embeds _scenarios which has links with dots in names.
+
+![[_scenarios]]
+
+Links above should NOT be marked as "wip" since target pages exist.
+EOF
+
+# ============================================================================
+# Test 8: Markdown embeds with duplicates
 # ============================================================================
 
 cat > "$VAULT/_banner.md" << 'EOF'
@@ -830,6 +888,8 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 4. [[img-test]] - image resolution
 5. [[headers]] - headers and block references
 6. [[embedding]] - markdown embeds with duplicates
+7. [[software]] - image with same name as note (regression)
+8. [[scenarios_test]] - links with dots in filenames (regression)
 
 ## Publishing Features Tests
 7. [[public]] - free public page (no paywall)

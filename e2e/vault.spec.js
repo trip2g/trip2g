@@ -219,6 +219,52 @@ test.describe('Custom Slug URL Override', () => {
   });
 });
 
+test.describe('Regression Tests', () => {
+  test('image with same name as note renders correctly', async ({ page }) => {
+    // Bug: ![[software.png]] was resolved as /software (the note) when software.md exists
+    await page.goto('/software');
+
+    await expect(page.locator('h1').first()).toContainText('Software Page');
+
+    // The image should be rendered as <img>, not cause a render error
+    const image = page.locator('#noteview-content img');
+    await expect(image).toHaveCount(1);
+    await expect(image).toBeVisible();
+
+    // Image src should be software.png, not /software
+    const src = await image.getAttribute('src');
+    expect(src).toContain('software.png');
+    expect(src).not.toContain('?version'); // Images don't get version parameter
+  });
+
+  test('links with dots in filenames resolve correctly in embeds', async ({ page }) => {
+    // Bug: filepath.Ext("Сценарий. Ютубер") returns ". Ютубер" as extension
+    await page.goto('/scenarios_test');
+
+    await expect(page.locator('h1').first()).toContainText('Scenarios Test');
+
+    // Check that embedded content is present
+    await expect(page.getByText('Ютубер')).toBeVisible();
+    await expect(page.getByText('Курсы')).toBeVisible();
+
+    // Links should NOT be marked as wip since target pages exist
+    const wipLinks = page.locator('#noteview-content a.wip');
+    await expect(wipLinks).toHaveCount(0);
+
+    // Links should have data-pid (proving pages were found)
+    const links = page.locator('#noteview-content a[data-pid]');
+    await expect(links).toHaveCount(2);
+  });
+
+  test('pages with dots in names are accessible directly', async ({ page }) => {
+    // Navigate to page with dot in name
+    await page.goto('/scenarij_ispoljzovaniya_yutubyer');
+
+    await expect(page.locator('h1').first()).toContainText('Сценарий Ютубер');
+    await expect(page.getByText('сценарием для ютуберов')).toBeVisible();
+  });
+});
+
 test.describe('Image Resolution', () => {
   test('image resolution with duplicates - root priority', async ({ page }) => {
     await page.goto('/img_test');
