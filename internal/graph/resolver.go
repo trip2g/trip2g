@@ -127,6 +127,7 @@ type Env interface {
 	ListEnabledTgBots(ctx context.Context) ([]db.TgBot, error)
 	ListAuditLogs(ctx context.Context, arg db.ListAuditLogsParams) ([]db.AuditLog, error)
 	ListNotePathsLike(ctx context.Context, like string) ([]db.NotePath, error)
+	ListNotePathsByValues(ctx context.Context, paths []string) ([]db.NotePath, error)
 	ListAllTelegramPublishTags(ctx context.Context) ([]db.TelegramPublishTag, error)
 	AllWaitListEmailRequests(ctx context.Context) ([]db.AllWaitListEmailRequestsRow, error)
 	ListAllConfigVersions(ctx context.Context) ([]db.ConfigVersion, error)

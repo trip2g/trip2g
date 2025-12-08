@@ -1935,6 +1935,16 @@ func (r *notePathResolver) LatestNoteView(ctx context.Context, obj *db.NotePath)
 }
 
 // Content is the resolver for the content field.
+func (r *notePathResolver) Content(ctx context.Context, obj *db.NotePath) (string, error) {
+	panic(fmt.Errorf("not implemented: Content - content"))
+}
+
+// AssetReplaces is the resolver for the assetReplaces field.
+func (r *notePathResolver) AssetReplaces(ctx context.Context, obj *db.NotePath) ([]model.NoteAssetReplaceT, error) {
+	panic(fmt.Errorf("not implemented: AssetReplaces - assetReplaces"))
+}
+
+// Content is the resolver for the content field.
 func (r *noteViewResolver) Content(ctx context.Context, obj *appmodel.NoteView) (string, error) {
 	return string(obj.Content), nil
 }
@@ -2140,6 +2150,10 @@ func (r *queryResolver) NotePaths(ctx context.Context, filter *model.NotePathsFi
 	_, err := checkapikey.Resolve(ctx, r.env(ctx), "get_note_paths")
 	if err != nil {
 		return nil, err
+	}
+
+	if filter != nil && len(filter.Paths) > 0 {
+		return r.env(ctx).ListNotePathsByValues(ctx, filter.Paths)
 	}
 
 	if filter != nil && filter.Search != nil {

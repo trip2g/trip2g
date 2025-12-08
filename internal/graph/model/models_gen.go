@@ -1087,6 +1087,8 @@ type NotePathsFilter struct {
 	Like *string `json:"like,omitempty"`
 	// Full-text search on note paths. like will be ignored if search is set.
 	Search *string `json:"search,omitempty"`
+	// Only return these specific note paths. Search and like will be ignored if paths is set.
+	Paths []string `json:"paths,omitempty"`
 }
 
 type NoteTocItem struct {

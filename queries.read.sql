@@ -768,6 +768,11 @@ select * from note_paths
  where value like ?
  order by id;
 
+-- name: ListNotePathsByValues :many
+select * from note_paths
+ where value in (sqlc.slice('paths'))
+ order by id;
+
 -- name: NotePathByID :one
 select * from note_paths
  where id = ?;

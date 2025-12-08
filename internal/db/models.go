@@ -385,18 +385,17 @@ type Subgraph struct {
 }
 
 type TelegramAccount struct {
-	ID            int64     `json:"id"`
-	Phone         string    `json:"phone"`
-	SessionData   []byte    `json:"session_data"`
-	DisplayName   string    `json:"display_name"`
-	IsPremium     int64     `json:"is_premium"`
-	Enabled       int64     `json:"enabled"`
-	CreatedAt     time.Time `json:"created_at"`
-	CreatedBy     int64     `json:"created_by"`
-	ApiID         int64     `json:"api_id"`
-	ApiHash       string    `json:"api_hash"`
-	AppConfigHash int64     `json:"app_config_hash"`
-	AppConfig     string    `json:"app_config"`
+	ID          int64     `json:"id"`
+	Phone       string    `json:"phone"`
+	SessionData []byte    `json:"session_data"`
+	DisplayName string    `json:"display_name"`
+	IsPremium   int64     `json:"is_premium"`
+	Enabled     int64     `json:"enabled"`
+	CreatedAt   time.Time `json:"created_at"`
+	CreatedBy   int64     `json:"created_by"`
+	ApiID       int64     `json:"api_id"`
+	ApiHash     string    `json:"api_hash"`
+	AppConfig   string    `json:"app_config"`
 }
 
 type TelegramPublishAccountChat struct {

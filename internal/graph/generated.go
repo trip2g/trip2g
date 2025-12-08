@@ -985,6 +985,8 @@ type ComplexityRoot struct {
 	}
 
 	NotePath struct {
+		AssetReplaces     func(childComplexity int) int
+		Content           func(childComplexity int) int
 		LatestContentHash func(childComplexity int) int
 		LatestNoteView    func(childComplexity int) int
 		Value             func(childComplexity int) int
@@ -1727,6 +1729,8 @@ type MutationResolver interface {
 }
 type NotePathResolver interface {
 	LatestNoteView(ctx context.Context, obj *db.NotePath) (*model1.NoteView, error)
+	Content(ctx context.Context, obj *db.NotePath) (string, error)
+	AssetReplaces(ctx context.Context, obj *db.NotePath) ([]model.NoteAssetReplaceT, error)
 }
 type NoteViewResolver interface {
 	Content(ctx context.Context, obj *model1.NoteView) (string, error)
@@ -5299,6 +5303,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.NoteAssetReplaceT.URL(childComplexity), true
 
+	case "NotePath.assetReplaces":
+		if e.complexity.NotePath.AssetReplaces == nil {
+			break
+		}
+
+		return e.complexity.NotePath.AssetReplaces(childComplexity), true
+	case "NotePath.content":
+		if e.complexity.NotePath.Content == nil {
+			break
+		}
+
+		return e.complexity.NotePath.Content(childComplexity), true
 	case "NotePath.latestContentHash":
 		if e.complexity.NotePath.LatestContentHash == nil {
 			break
@@ -24875,6 +24891,72 @@ func (ec *executionContext) fieldContext_NotePath_latestNoteView(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _NotePath_content(ctx context.Context, field graphql.CollectedField, obj *db.NotePath) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NotePath_content,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NotePath().Content(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NotePath_content(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NotePath",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _NotePath_assetReplaces(ctx context.Context, field graphql.CollectedField, obj *db.NotePath) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NotePath_assetReplaces,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.NotePath().AssetReplaces(ctx, obj)
+		},
+		nil,
+		ec.marshalNNoteAssetReplaceT2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐNoteAssetReplaceTᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NotePath_assetReplaces(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NotePath",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_NoteAssetReplaceT_id(ctx, field)
+			case "url":
+				return ec.fieldContext_NoteAssetReplaceT_url(ctx, field)
+			case "hash":
+				return ec.fieldContext_NoteAssetReplaceT_hash(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type NoteAssetReplaceT", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NoteTocItem_id(ctx context.Context, field graphql.CollectedField, obj *model.NoteTocItem) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -26477,6 +26559,10 @@ func (ec *executionContext) fieldContext_Query_notePaths(ctx context.Context, fi
 				return ec.fieldContext_NotePath_latestContentHash(ctx, field)
 			case "latestNoteView":
 				return ec.fieldContext_NotePath_latestNoteView(ctx, field)
+			case "content":
+				return ec.fieldContext_NotePath_content(ctx, field)
+			case "assetReplaces":
+				return ec.fieldContext_NotePath_assetReplaces(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NotePath", field.Name)
 		},
@@ -32778,7 +32864,7 @@ func (ec *executionContext) unmarshalInputNotePathsFilter(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"like", "search"}
+	fieldsInOrder := [...]string{"like", "search", "paths"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -32799,6 +32885,13 @@ func (ec *executionContext) unmarshalInputNotePathsFilter(ctx context.Context, o
 				return it, err
 			}
 			it.Search = data
+		case "paths":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("paths"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Paths = data
 		}
 	}
 
@@ -50028,6 +50121,78 @@ func (ec *executionContext) _NotePath(ctx context.Context, sel ast.SelectionSet,
 					}
 				}()
 				res = ec._NotePath_latestNoteView(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "content":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NotePath_content(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "assetReplaces":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._NotePath_assetReplaces(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 

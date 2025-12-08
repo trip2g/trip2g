@@ -1594,7 +1594,7 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 }
 
 const getTelegramAccountByID = `-- name: GetTelegramAccountByID :one
-select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config_hash, app_config from telegram_accounts
+select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config from telegram_accounts
  where id = ?
 `
 
@@ -1612,14 +1612,13 @@ func (q *Queries) GetTelegramAccountByID(ctx context.Context, id int64) (Telegra
 		&i.CreatedBy,
 		&i.ApiID,
 		&i.ApiHash,
-		&i.AppConfigHash,
 		&i.AppConfig,
 	)
 	return i, err
 }
 
 const getTelegramAccountByPhone = `-- name: GetTelegramAccountByPhone :one
-select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config_hash, app_config from telegram_accounts
+select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config from telegram_accounts
  where phone = ?
 `
 
@@ -1637,7 +1636,6 @@ func (q *Queries) GetTelegramAccountByPhone(ctx context.Context, phone string) (
 		&i.CreatedBy,
 		&i.ApiID,
 		&i.ApiHash,
-		&i.AppConfigHash,
 		&i.AppConfig,
 	)
 	return i, err
@@ -2795,7 +2793,7 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 
 const listAllTelegramAccounts = `-- name: ListAllTelegramAccounts :many
 
-select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config_hash, app_config from telegram_accounts
+select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config from telegram_accounts
  order by created_at desc
 `
 
@@ -2822,7 +2820,6 @@ func (q *Queries) ListAllTelegramAccounts(ctx context.Context) ([]TelegramAccoun
 			&i.CreatedBy,
 			&i.ApiID,
 			&i.ApiHash,
-			&i.AppConfigHash,
 			&i.AppConfig,
 		); err != nil {
 			return nil, err
@@ -3299,6 +3296,56 @@ func (q *Queries) ListHTMLInjections(ctx context.Context) ([]HtmlInjection, erro
 			&i.Position,
 			&i.Placement,
 			&i.Content,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listNotePathsByValues = `-- name: ListNotePathsByValues :many
+select id, value, value_hash, latest_content_hash, created_at, version_count, graph_position_x, graph_position_y, hidden_by, hidden_at from note_paths
+ where value in (/*SLICE:paths*/?)
+ order by id
+`
+
+func (q *Queries) ListNotePathsByValues(ctx context.Context, paths []string) ([]NotePath, error) {
+	query := listNotePathsByValues
+	var queryParams []interface{}
+	if len(paths) > 0 {
+		for _, v := range paths {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:paths*/?", strings.Repeat(",?", len(paths))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:paths*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NotePath
+	for rows.Next() {
+		var i NotePath
+		if err := rows.Scan(
+			&i.ID,
+			&i.Value,
+			&i.ValueHash,
+			&i.LatestContentHash,
+			&i.CreatedAt,
+			&i.VersionCount,
+			&i.GraphPositionX,
+			&i.GraphPositionY,
+			&i.HiddenBy,
+			&i.HiddenAt,
 		); err != nil {
 			return nil, err
 		}

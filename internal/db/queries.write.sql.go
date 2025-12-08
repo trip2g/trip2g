@@ -1207,7 +1207,7 @@ const insertTelegramAccount = `-- name: InsertTelegramAccount :one
 
 insert into telegram_accounts (phone, session_data, display_name, is_premium, api_id, api_hash, created_by)
 values (?, ?, ?, ?, ?, ?, ?)
-returning id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config_hash, app_config
+returning id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config
 `
 
 type InsertTelegramAccountParams struct {
@@ -1245,7 +1245,6 @@ func (q *WriteQueries) InsertTelegramAccount(ctx context.Context, arg InsertTele
 		&i.CreatedBy,
 		&i.ApiID,
 		&i.ApiHash,
-		&i.AppConfigHash,
 		&i.AppConfig,
 	)
 	return i, err

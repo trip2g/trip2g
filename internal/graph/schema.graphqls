@@ -1006,6 +1006,8 @@ type NotePath @goModel(model: "trip2g/internal/model.NotePath"){
   value: String!
   latestContentHash: String!
   latestNoteView: NoteView
+  content: String!
+  assetReplaces: [NoteAssetReplaceT!]!
 }
 
 input NoteInput {
@@ -1058,6 +1060,11 @@ input NotePathsFilter {
   Full-text search on note paths. like will be ignored if search is set.
   """
   search: String
+
+  """
+  Only return these specific note paths. Search and like will be ignored if paths is set.
+  """
+  paths: [String!]
 }
 
 type Query {
