@@ -1070,9 +1070,10 @@ type Mutation struct {
 }
 
 type NoteAssetReplaceT struct {
-	ID   string `json:"id"`
-	URL  string `json:"url"`
-	Hash string `json:"hash"`
+	ID           string `json:"id"`
+	URL          string `json:"url"`
+	Hash         string `json:"hash"`
+	AbsolutePath string `json:"absolutePath"`
 }
 
 type NoteInput struct {

@@ -101,6 +101,7 @@ type NoteAssetReplaceT {
   id: String!
   url: String!
   hash: String!
+  absolutePath: String!
 }
 
 type NoteView {

@@ -979,9 +979,10 @@ type ComplexityRoot struct {
 	}
 
 	NoteAssetReplaceT struct {
-		Hash func(childComplexity int) int
-		ID   func(childComplexity int) int
-		URL  func(childComplexity int) int
+		AbsolutePath func(childComplexity int) int
+		Hash         func(childComplexity int) int
+		ID           func(childComplexity int) int
+		URL          func(childComplexity int) int
 	}
 
 	NotePath struct {
@@ -5284,6 +5285,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.UploadNoteAsset(childComplexity, args["input"].(model.UploadNoteAssetInput)), true
 
+	case "NoteAssetReplaceT.absolutePath":
+		if e.complexity.NoteAssetReplaceT.AbsolutePath == nil {
+			break
+		}
+
+		return e.complexity.NoteAssetReplaceT.AbsolutePath(childComplexity), true
 	case "NoteAssetReplaceT.hash":
 		if e.complexity.NoteAssetReplaceT.Hash == nil {
 			break
@@ -24766,6 +24773,35 @@ func (ec *executionContext) fieldContext_NoteAssetReplaceT_hash(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _NoteAssetReplaceT_absolutePath(ctx context.Context, field graphql.CollectedField, obj *model.NoteAssetReplaceT) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_NoteAssetReplaceT_absolutePath,
+		func(ctx context.Context) (any, error) {
+			return obj.AbsolutePath, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_NoteAssetReplaceT_absolutePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "NoteAssetReplaceT",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _NotePath_value(ctx context.Context, field graphql.CollectedField, obj *db.NotePath) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24950,6 +24986,8 @@ func (ec *executionContext) fieldContext_NotePath_assetReplaces(_ context.Contex
 				return ec.fieldContext_NoteAssetReplaceT_url(ctx, field)
 			case "hash":
 				return ec.fieldContext_NoteAssetReplaceT_hash(ctx, field)
+			case "absolutePath":
+				return ec.fieldContext_NoteAssetReplaceT_absolutePath(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteAssetReplaceT", field.Name)
 		},
@@ -25631,6 +25669,8 @@ func (ec *executionContext) fieldContext_NoteView_assetReplaces(_ context.Contex
 				return ec.fieldContext_NoteAssetReplaceT_url(ctx, field)
 			case "hash":
 				return ec.fieldContext_NoteAssetReplaceT_hash(ctx, field)
+			case "absolutePath":
+				return ec.fieldContext_NoteAssetReplaceT_absolutePath(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type NoteAssetReplaceT", field.Name)
 		},
@@ -50064,6 +50104,11 @@ func (ec *executionContext) _NoteAssetReplaceT(ctx context.Context, sel ast.Sele
 			}
 		case "hash":
 			out.Values[i] = ec._NoteAssetReplaceT_hash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "absolutePath":
+			out.Values[i] = ec._NoteAssetReplaceT_absolutePath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

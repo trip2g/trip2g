@@ -28,6 +28,8 @@ type RawAsset struct {
 	VersionID int64
 	Path      string
 	NoteAsset db.NoteAsset
+
+	AbsolutePath string
 }
 
 type Env interface {
@@ -103,6 +105,8 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 			noteMap[asset.Path] = &model.NoteAssetReplace{
 				URL:  "/assets/missed_image.png",
 				Hash: fmt.Sprintf("%+v", asset),
+
+				AbsolutePath: asset.AbsolutePath,
 			}
 
 			continue
@@ -116,6 +120,8 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		noteMap[asset.Path] = &model.NoteAssetReplace{
 			URL:  assetURL,
 			Hash: asset.NoteAsset.Sha256Hash,
+
+			AbsolutePath: asset.AbsolutePath,
 		}
 	}
 

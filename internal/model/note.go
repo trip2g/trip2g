@@ -60,6 +60,8 @@ type NoteWarning struct {
 type NoteAssetReplace struct {
 	URL  string
 	Hash string
+
+	AbsolutePath string
 }
 
 type NoteViewHeadingBlock struct {
