@@ -1499,7 +1499,7 @@ func (a *app) handleCors(ctx *fasthttp.RequestCtx) bool {
 	if origin == "http://localhost:9081" || origin == "app://obsidian.md" {
 		ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
 		ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
-		ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Cookie, X-API-Key")
+		ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Cookie, X-API-Key, X-Plugin-Version")
 		ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
 	}
 
