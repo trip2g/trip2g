@@ -12,6 +12,7 @@ type Layout struct {
 	Path      string
 	View      *jet.Template
 	Assets    []LayoutAsset
+	Content   string
 
 	AssetReplaces map[string]*NoteAssetReplace
 }

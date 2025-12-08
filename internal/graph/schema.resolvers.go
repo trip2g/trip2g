@@ -1936,12 +1936,50 @@ func (r *notePathResolver) LatestNoteView(ctx context.Context, obj *db.NotePath)
 
 // Content is the resolver for the content field.
 func (r *notePathResolver) Content(ctx context.Context, obj *db.NotePath) (string, error) {
-	panic(fmt.Errorf("not implemented: Content - content"))
+	layout, layoutExists := r.env(ctx).Layouts().Map[obj.Value]
+	if layoutExists {
+		return layout.Content, nil
+	}
+
+	nvs := r.env(ctx).LatestNoteViews()
+	nv := nvs.PathMap[obj.Value]
+
+	if nv != nil {
+		return string(nv.Content), nil
+	}
+
+	return "", nil
 }
 
 // AssetReplaces is the resolver for the assetReplaces field.
 func (r *notePathResolver) AssetReplaces(ctx context.Context, obj *db.NotePath) ([]model.NoteAssetReplaceT, error) {
-	panic(fmt.Errorf("not implemented: AssetReplaces - assetReplaces"))
+	var assetReplaces map[string]*appmodel.NoteAssetReplace
+
+	layout, layoutExists := r.env(ctx).Layouts().Map[obj.Value]
+	if layoutExists {
+		assetReplaces = layout.AssetReplaces
+	} else {
+		nvs := r.env(ctx).LatestNoteViews()
+		nv := nvs.PathMap[obj.Value]
+		if nv != nil {
+			assetReplaces = nv.AssetReplaces
+		}
+	}
+
+	res := []model.NoteAssetReplaceT{}
+	for id, replace := range assetReplaces {
+		if replace == nil {
+			continue
+		}
+		res = append(res, model.NoteAssetReplaceT{
+			ID:           id,
+			URL:          replace.URL,
+			Hash:         replace.Hash,
+			AbsolutePath: replace.AbsolutePath,
+		})
+	}
+
+	return res, nil
 }
 
 // Content is the resolver for the content field.

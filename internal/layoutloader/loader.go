@@ -121,6 +121,7 @@ func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, e
 			Path:      source.Path,
 			View:      view,
 			Assets:    assets,
+			Content:   source.Content,
 
 			AssetReplaces: source.Assets,
 		}
