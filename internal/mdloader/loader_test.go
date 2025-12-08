@@ -1091,6 +1091,95 @@ Page 2 content with link [[page1]]`),
 	}
 }
 
+// TestEmbedWithCyrillicLinks tests that links inside embedded notes
+// are correctly resolved to existing pages.
+// Bug: Links in embedded notes were marked as "wip" even though target pages exist.
+func TestEmbedWithCyrillicLinks(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "main.md",
+		Content: []byte(`---
+free: true
+---
+![[_embed]]`),
+	}, {
+		Path:    "_embed.md",
+		Content: []byte(`[[Кириллица]]`),
+	}, {
+		Path: "Кириллица.md",
+		Content: []byte(`---
+free: true
+---
+Cyrillic page content`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "latest",
+	})
+	require.NoError(t, err)
+
+	// Main page should have non-empty HTML with embedded content
+	mainPage := pages.PathMap["main.md"]
+	require.NotNil(t, mainPage, "main.md should exist")
+	require.NotEmpty(t, mainPage.HTML, "main.md should have non-empty HTML")
+
+	// The embedded link should NOT be marked as wip
+	require.NotContains(t, string(mainPage.HTML), `class="wip"`,
+		"Link in embed should not be marked as wip")
+
+	// The link should have data-pid (proving page was found)
+	require.Contains(t, string(mainPage.HTML), `data-pid=`,
+		"Link should have data-pid since target page exists")
+}
+
+// TestLinkWithDotInName tests that links to pages with dots in filename
+// are correctly resolved.
+// Bug: filepath.Ext("Сценарий. Ютубер") returns ". Ютубер" treating it as extension,
+// so basename lookup fails because index key != search key.
+func TestLinkWithDotInName(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "main.md",
+		Content: []byte(`---
+free: true
+---
+![[_embed]]`),
+	}, {
+		Path:    "_embed.md",
+		Content: []byte(`[[Сценарий. Ютубер]]`),
+	}, {
+		Path: "Сценарий. Ютубер.md",
+		Content: []byte(`---
+free: true
+---
+Page with dot in name`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "latest",
+	})
+	require.NoError(t, err)
+
+	// Main page should have embedded content
+	mainPage := pages.PathMap["main.md"]
+	require.NotNil(t, mainPage, "main.md should exist")
+	require.NotEmpty(t, mainPage.HTML, "main.md should have non-empty HTML")
+
+	// The link should NOT be marked as wip
+	require.NotContains(t, string(mainPage.HTML), `class="wip"`,
+		"Link to page with dot in name should not be marked as wip")
+
+	// The link should have data-pid (proving page was found)
+	require.Contains(t, string(mainPage.HTML), `data-pid=`,
+		"Link should have data-pid since target page exists")
+}
+
 // TestImageWithSameNameAsNote tests that image embeds ![[note.png]] are NOT
 // resolved as note links when a note with the same basename exists.
 // Bug: extractInLinks resolved ![[software.png]] as /software (the note)
