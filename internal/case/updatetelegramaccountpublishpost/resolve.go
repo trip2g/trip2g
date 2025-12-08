@@ -43,9 +43,10 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 	// Enqueue update for each sent message
 	for _, sentMsg := range sentMessages {
 		source := model.TelegramPostSource{
-			NoteView: noteView,
-			ChatID:   0, // Not used for account publishing
-			Instant:  false,
+			NoteView:       noteView,
+			ChatID:         0, // Not used for account publishing
+			TelegramChatID: sentMsg.TelegramChatID,
+			Instant:        false,
 		}
 
 		// Convert note to Telegram post

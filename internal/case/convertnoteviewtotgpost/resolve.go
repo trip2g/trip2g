@@ -54,6 +54,42 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 
 	nvs := env.LatestNoteViews()
 
+	// Add notes from frontmatter with telegram_publish_channel_id matching current channel
+	// This enables link resolution for imported notes that weren't sent through our service
+	if source.TelegramChatID != 0 {
+		// Normalize TelegramChatID: remove -100 prefix for channels (e.g., -1001234567890 -> 1234567890)
+		normalizedChatID := normalizeTelegramChatID(source.TelegramChatID)
+
+		for _, nv := range nvs.List {
+			// Skip if already in sentMap (sent through our service takes priority)
+			if _, exists := sentMap[nv.PathID]; exists {
+				continue
+			}
+
+			channelID, hasChannel := nv.ExtractTelegramPublishChannelID()
+			if !hasChannel {
+				continue
+			}
+
+			// Match if channel IDs are equal (both should be without -100 prefix)
+			if channelID != normalizedChatID {
+				continue
+			}
+
+			messageID, hasMessage := nv.ExtractTelegramPublishMessageID()
+			if !hasMessage {
+				continue
+			}
+
+			// Create a synthetic SentMessage for link resolution
+			sentMap[nv.PathID] = &SentMessage{
+				NotePathID:     nv.PathID,
+				TelegramChatID: source.TelegramChatID,
+				MessageID:      int64(messageID),
+			}
+		}
+	}
+
 	// allowExternalLinks := getAllowExternalLinks(source.NoteView) || source.Instant
 	// always allow external links
 	allowExternalLinks := true
@@ -193,6 +229,28 @@ func getAllMediaURLs(noteView *model.NoteView) ([]string, error) {
 	}
 
 	return mediaURLs, nil
+}
+
+// normalizeTelegramChatID converts Telegram chat ID to channel ID format.
+// For channels, removes the -100 prefix (e.g., -1001234567890 -> 1234567890).
+// For other chat types, returns the absolute value.
+func normalizeTelegramChatID(chatID int64) int64 {
+	// Convert to string to handle the -100 prefix
+	chatStr := strconv.FormatInt(chatID, 10)
+
+	// Remove -100 prefix for channels
+	if strings.HasPrefix(chatStr, "-100") {
+		normalized, err := strconv.ParseInt(chatStr[4:], 10, 64)
+		if err == nil {
+			return normalized
+		}
+	}
+
+	// For other cases, return absolute value
+	if chatID < 0 {
+		return -chatID
+	}
+	return chatID
 }
 
 /*

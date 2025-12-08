@@ -21,7 +21,8 @@ type TelegramPost struct {
 
 type TelegramPostSource struct {
 	NoteView           *NoteView
-	ChatID             int64
+	ChatID             int64 // Internal DB ID (tg_bot_chats.id)
+	TelegramChatID     int64 // Telegram chat ID (e.g., -1001234567890 for channels)
 	Instant            bool
 	CaptionLengthLimit int
 }

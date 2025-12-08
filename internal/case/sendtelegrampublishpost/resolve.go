@@ -64,9 +64,10 @@ func Resolve(ctx context.Context, env Env, params model.SendTelegramPublishPostP
 	// Send the post to each chat
 	for _, chat := range chats {
 		source := model.TelegramPostSource{
-			NoteView: noteView,
-			ChatID:   chat.ID,
-			Instant:  params.Instant,
+			NoteView:       noteView,
+			ChatID:         chat.ID,
+			TelegramChatID: chat.TelegramID,
+			Instant:        params.Instant,
 		}
 
 		// Convert note to Telegram post

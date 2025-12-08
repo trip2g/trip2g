@@ -120,9 +120,10 @@ func getAccountChats(ctx context.Context, env Env, params model.SendTelegramPubl
 
 func enqueuePostToChat(ctx context.Context, env Env, params model.SendTelegramPublishPostParams, noteView *model.NoteView, chat accountChat) error {
 	source := model.TelegramPostSource{
-		NoteView: noteView,
-		ChatID:   0, // Not used for account publishing
-		Instant:  params.Instant,
+		NoteView:       noteView,
+		ChatID:         0, // Not used for account publishing
+		TelegramChatID: chat.TelegramChatID,
+		Instant:        params.Instant,
 	}
 
 	post, convertErr := env.ConvertNoteViewToTelegramPost(ctx, source)
