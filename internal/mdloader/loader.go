@@ -232,7 +232,8 @@ func (ldr *loader) findAssets() error {
 func (ldr *loader) generatePageHTMLs() error {
 	retryNotes := []*model.NoteView{}
 
-	for _, p := range ldr.nvs.Map {
+	// Use PathMap to iterate over unique notes (Map contains duplicates under different URLs)
+	for _, p := range ldr.nvs.PathMap {
 		err := ldr.generatePageHTML(p)
 		if err != nil {
 			if errors.Is(err, errNoHTML) {
@@ -274,6 +275,10 @@ func (ldr *loader) generatePageHTML(p *model.NoteView) error {
 
 	p.HTML = template.HTML(buf.String()) //nolint:gosec // it's safe from admins
 
+	if p.HTML == "" {
+		ldr.log.Warn("generated empty HTML", "path", p.Path, "content_len", len(p.Content), "ast_nil", p.Ast() == nil)
+	}
+
 	// Generate free HTML if needed
 	err = ldr.generateFreeHTML(p)
 	if err != nil {
@@ -295,6 +300,7 @@ func (ldr *loader) buildBasenameIndex() {
 	}
 }
 
+//nolint:funlen // complex link resolution with multiple cases
 func (ldr *loader) extractInLinks() error {
 	for _, p := range ldr.nvs.PathMap {
 		err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -309,6 +315,11 @@ func (ldr *loader) extractInLinks() error {
 			}
 
 			target := string(link.Target)
+
+			// Skip image/video links - they should not be resolved as note links
+			if resolveAsImage(link) {
+				return ast.WalkContinue, nil
+			}
 
 			// Handle explicit relative paths first (./file or ../file)
 			//nolint:nestif // complex path resolution with multiple cases

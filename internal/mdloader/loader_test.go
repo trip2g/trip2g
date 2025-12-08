@@ -940,3 +940,203 @@ Page content`),
 	require.NotContains(t, html, `?version=`, "Empty version should not add version parameter")
 	require.Contains(t, html, `href="/page"`, "Link should not have version parameter")
 }
+
+// TestAllPagesHaveHTMLWithVersion tests that all pages have non-empty HTML
+// when using versioned links. This is a regression test for a bug where
+// the escapePathPreserveSlashes function caused HTML to be empty.
+func TestAllPagesHaveHTMLWithVersion(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Links: [[page1]] [[folder/page2]] [[page3]]`),
+	}, {
+		Path: "page1.md",
+		Content: []byte(`---
+free: true
+---
+Page 1 content with link to [[page3]]`),
+	}, {
+		Path: "folder/page2.md",
+		Content: []byte(`---
+free: true
+---
+Page 2 in folder`),
+	}, {
+		Path: "page3.md",
+		Content: []byte(`---
+free: true
+---
+Page 3 content`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "latest",
+	})
+	require.NoError(t, err)
+
+	// All pages must have non-empty HTML
+	for path, page := range pages.PathMap {
+		require.NotEmpty(t, page.HTML, "Page %s should have non-empty HTML", path)
+		require.NotEmpty(t, page.Content, "Page %s should have non-empty Content", path)
+	}
+}
+
+// TestEmbedOrderDoesNotAffectHTML tests that pages with embeds get HTML
+// regardless of the order they are processed. This is a regression test
+// for a bug where embed dependencies could cause empty HTML.
+func TestEmbedOrderDoesNotAffectHTML(t *testing.T) {
+	log := logger.TestLogger{}
+
+	// Create a scenario where index embeds software, which embeds scenarios
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "weekly_digest/index.md",
+		Content: []byte(`---
+free: true
+---
+Weekly digest with embed:
+![[software]]`),
+	}, {
+		Path: "software.md",
+		Content: []byte(`---
+free: true
+---
+Software page with embed:
+![[_scenarios]]`),
+	}, {
+		Path: "_scenarios.md",
+		Content: []byte(`---
+free: true
+---
+Scenarios content here`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "latest",
+	})
+	require.NoError(t, err)
+
+	// All pages must have non-empty HTML
+	for path, page := range pages.PathMap {
+		require.NotEmpty(t, page.HTML, "Page %s should have non-empty HTML", path)
+		require.NotEmpty(t, page.Content, "Page %s should have non-empty Content", path)
+	}
+
+	// Specifically check software.md has HTML
+	softwarePage := pages.PathMap["software.md"]
+	require.NotNil(t, softwarePage, "software.md should exist")
+	require.NotEmpty(t, softwarePage.HTML, "software.md should have non-empty HTML")
+	require.Contains(t, string(softwarePage.HTML), "Scenarios content", "software.md should contain embedded scenarios")
+}
+
+// TestPagesWithEmptyContentDontBreakOthers tests that pages with empty content
+// don't break HTML generation for other pages. This is a regression test for
+// a bug where escapePathPreserveSlashes caused issues when empty content pages existed.
+func TestPagesWithEmptyContentDontBreakOthers(t *testing.T) {
+	log := logger.TestLogger{}
+
+	// Mix of pages with content and empty pages (simulating DB with empty content)
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "index.md",
+		Content: []byte(`---
+free: true
+---
+Links: [[page1]] [[empty1]] [[page2]]`),
+	}, {
+		Path: "page1.md",
+		Content: []byte(`---
+free: true
+---
+Page 1 content`),
+	}, {
+		Path:    "empty1.md",
+		Content: []byte(``), // Empty content - simulates DB issue
+	}, {
+		Path:    "empty2.md",
+		Content: []byte(``), // Another empty page
+	}, {
+		Path: "page2.md",
+		Content: []byte(`---
+free: true
+---
+Page 2 content with link [[page1]]`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "latest",
+	})
+	require.NoError(t, err)
+
+	// Pages with content must have non-empty HTML
+	for _, path := range []string{"index.md", "page1.md", "page2.md"} {
+		page := pages.PathMap[path]
+		require.NotNil(t, page, "Page %s should exist", path)
+		require.NotEmpty(t, page.HTML, "Page %s should have non-empty HTML", path)
+	}
+
+	// Empty pages should have empty HTML (not crash)
+	for _, path := range []string{"empty1.md", "empty2.md"} {
+		page := pages.PathMap[path]
+		require.NotNil(t, page, "Page %s should exist", path)
+		// Empty content = empty HTML, that's OK
+	}
+}
+
+// TestImageWithSameNameAsNote tests that image embeds ![[note.png]] are NOT
+// resolved as note links when a note with the same basename exists.
+// Bug: extractInLinks resolved ![[software.png]] as /software (the note)
+// instead of keeping it as an image reference, breaking the page render.
+func TestImageWithSameNameAsNote(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "software.md",
+		Content: []byte(`---
+free: true
+---
+![[software.png]]
+
+Some content about software.`),
+	}, {
+		Path: "other.md",
+		Content: []byte(`---
+free: true
+---
+Link to [[software]]`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+		Version: "latest",
+	})
+	require.NoError(t, err)
+
+	// software.md must have non-empty HTML
+	softwarePage := pages.PathMap["software.md"]
+	require.NotNil(t, softwarePage, "software.md should exist")
+	require.NotEmpty(t, softwarePage.HTML, "software.md should have non-empty HTML")
+
+	// The image should be rendered as <img>, not as a broken embed
+	require.Contains(t, string(softwarePage.HTML), `<img src="software.png">`,
+		"Image embed should be rendered as img tag")
+
+	// Should NOT contain self-reference error or embed error
+	require.NotContains(t, string(softwarePage.HTML), `/software?version`,
+		"Image should not be resolved as a versioned link to the note")
+
+	// other.md should link to software correctly
+	otherPage := pages.PathMap["other.md"]
+	require.NotNil(t, otherPage, "other.md should exist")
+	require.Contains(t, string(otherPage.HTML), `href="/software?version=latest"`,
+		"Link to software should work correctly")
+}

@@ -11,8 +11,6 @@ import (
 )
 
 // escapePathPreserveSlashes encodes path segments but preserves slashes.
-// url.PathEscape encodes "/" as "%2F" which breaks URL paths.
-// This function splits by "/", encodes each segment, and rejoins with "/".
 func escapePathPreserveSlashes(path string) string {
 	segments := strings.Split(path, "/")
 	for i, seg := range segments {
@@ -62,8 +60,6 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 	// TODO: don't resolve links to assets, not only images
 	if len(r.version) > 0 && r.version != DefaultVersion && !resolveAsImage(n) {
 		// Add ?version= to the end
-		// Wikilinks can contain special chars like %, so we need to encode path segments
-		// but preserve slashes (url.PathEscape encodes / as %2F which breaks paths)
 		destStr := string(dest[:i])
 		encoded := escapePathPreserveSlashes(destStr) + "?version=" + url.QueryEscape(r.version)
 

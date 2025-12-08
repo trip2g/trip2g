@@ -496,27 +496,6 @@ CREATE TABLE IF NOT EXISTS "telegram_publish_sent_messages" (
   content_hash text not null default '',
   content text not null default ''
 , post_type text not null default 'text');
-CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
-CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
-CREATE INDEX idx_releases_is_live on releases(is_live);
-CREATE INDEX tg_user_profiles_chat_id_idx on tg_user_profiles(chat_id);
-CREATE UNIQUE INDEX unique_patreon_member on patreon_members(patreon_id, campaign_id);
-CREATE INDEX idx_boosty_members_email on boosty_members(email);
-CREATE INDEX idx_patreon_members_email on patreon_members(email);
-CREATE INDEX idx_tg_chat_subgraph_accesses_chat_id on tg_chat_subgraph_accesses(chat_id);
-CREATE INDEX idx_tg_bot_chat_subgraph_invites_chat_id on tg_bot_chat_subgraph_invites(chat_id);
-CREATE INDEX idx_tg_chat_members_chat_id on tg_chat_members(chat_id);
-CREATE INDEX idx_audit_logs_created_at on audit_logs (created_at);
-CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
-CREATE INDEX goqite_queue_priority_created_idx on goqite (queue, priority desc, created);
-CREATE UNIQUE INDEX idx_telegram_publish_sent_messages_unique_scheduled
-on telegram_publish_sent_messages(chat_id, note_path_id)
-where instant = 0;
-CREATE INDEX idx_telegram_publish_sent_messages_chat_id on telegram_publish_sent_messages(chat_id);
-CREATE INDEX idx_telegram_publish_sent_messages_note_path_id on telegram_publish_sent_messages(note_path_id);
-CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
-  update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
-end;
 CREATE TABLE telegram_accounts (
   id integer primary key autoincrement,
   phone text not null unique,
@@ -554,6 +533,24 @@ CREATE TABLE telegram_publish_sent_account_messages (
   content text not null default '',
   post_type text not null default 'text'
 );
+CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
+CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
+CREATE INDEX idx_releases_is_live on releases(is_live);
+CREATE INDEX tg_user_profiles_chat_id_idx on tg_user_profiles(chat_id);
+CREATE UNIQUE INDEX unique_patreon_member on patreon_members(patreon_id, campaign_id);
+CREATE INDEX idx_boosty_members_email on boosty_members(email);
+CREATE INDEX idx_patreon_members_email on patreon_members(email);
+CREATE INDEX idx_tg_chat_subgraph_accesses_chat_id on tg_chat_subgraph_accesses(chat_id);
+CREATE INDEX idx_tg_bot_chat_subgraph_invites_chat_id on tg_bot_chat_subgraph_invites(chat_id);
+CREATE INDEX idx_tg_chat_members_chat_id on tg_chat_members(chat_id);
+CREATE INDEX idx_audit_logs_created_at on audit_logs (created_at);
+CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
+CREATE INDEX goqite_queue_priority_created_idx on goqite (queue, priority desc, created);
+CREATE UNIQUE INDEX idx_telegram_publish_sent_messages_unique_scheduled
+on telegram_publish_sent_messages(chat_id, note_path_id)
+where instant = 0;
+CREATE INDEX idx_telegram_publish_sent_messages_chat_id on telegram_publish_sent_messages(chat_id);
+CREATE INDEX idx_telegram_publish_sent_messages_note_path_id on telegram_publish_sent_messages(note_path_id);
 CREATE UNIQUE INDEX idx_telegram_publish_sent_account_messages_unique
   on telegram_publish_sent_account_messages(note_path_id, account_id, telegram_chat_id)
   where instant = 0;
@@ -561,6 +558,9 @@ CREATE INDEX idx_telegram_publish_sent_account_messages_account_id
   on telegram_publish_sent_account_messages(account_id);
 CREATE INDEX idx_telegram_publish_sent_account_messages_note_path_id
   on telegram_publish_sent_account_messages(note_path_id);
+CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
+  update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
+end;
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
