@@ -194,7 +194,7 @@ def resolve_asset_path(relative_path: str, note_path: str, base_path: str, file_
 
     return candidate_paths[0] if candidate_paths else os.path.join(base_path, relative_path)
 
-def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash: str, max_retries: int = 3) -> bool:
+def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash: str, base_path: str, max_retries: int = 3) -> bool:
     """Upload asset file to server with retry logic"""
     if not os.path.exists(asset_path):
         print(f"⚠️ Asset file not found: {asset_path}")
@@ -222,7 +222,7 @@ def upload_asset(note_id: str, asset_path: str, relative_path: str, sha256_hash:
                 "noteId": note_id,
                 "sha256Hash": sha256_hash,
                 "path": relative_path,
-                "absolutePath": asset_path
+                "absolutePath": os.path.relpath(asset_path, base_path)
             }
         },
         "query": query
@@ -344,7 +344,7 @@ def process_note_assets(notes, base_path):
 
             if not server_hash or server_hash != local_hash:
                 print(f"   📤 Uploading: {relative_path}")
-                if upload_asset(note_id, absolute_path, relative_path, local_hash):
+                if upload_asset(note_id, absolute_path, relative_path, local_hash, base_path):
                     stats['assets_uploaded'] += 1
                 else:
                     stats['assets_failed'] += 1
