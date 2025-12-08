@@ -31,7 +31,7 @@ Note → telegram_publish_tags → telegram_publish_account_chats → telegram_a
 create table telegram_accounts (
   id integer primary key autoincrement,
   phone text not null unique,
-  session_data blob not null,          -- encrypted MTProto session
+  session_data text not null,          -- AES-256-GCM encrypted MTProto session (base64)
   display_name text not null default '', -- default: [first_name, last_name, username].join(" ")
   is_premium integer not null default 0 check (is_premium in (0, 1)),
   enabled integer not null default 1 check (enabled in (0, 1)),
@@ -624,7 +624,7 @@ mutation {
 
 ### Session Storage
 
-Session data хранится в БД как blob. Шифрование опционально на первом этапе, можно добавить позже.
+Session data is stored in DB as text (base64) and encrypted with AES-256-GCM. Encryption key is set via `-data-encryption-key` flag (must be exactly 32 bytes). In production mode the app will panic if the default key is used.
 
 ### Display Name
 

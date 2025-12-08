@@ -53,12 +53,12 @@ func TestResolve(t *testing.T) {
 		{
 			AccountID:      1,
 			TelegramChatID: -1001234567890,
-			SessionData:    []byte("session1"),
+			SessionData:    []byte("encrypted_session1"),
 		},
 		{
 			AccountID:      2,
 			TelegramChatID: -1001234567891,
-			SessionData:    []byte("session2"),
+			SessionData:    []byte("encrypted_session2"),
 		},
 	}
 
@@ -66,7 +66,7 @@ func TestResolve(t *testing.T) {
 		{
 			AccountID:      1,
 			TelegramChatID: -1001234567890,
-			SessionData:    []byte("session1"),
+			SessionData:    []byte("encrypted_session1"),
 		},
 	}
 

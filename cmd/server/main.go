@@ -56,6 +56,7 @@ import (
 	"trip2g/internal/case/signinbytgauthtoken"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/cronjobs"
+	"trip2g/internal/dataencryption"
 	"trip2g/internal/db"
 	"trip2g/internal/gitapi"
 	"trip2g/internal/graph"
@@ -111,6 +112,7 @@ type app struct {
 	*db.WriteQueries
 
 	*miniostorage.FileStorage
+	*dataencryption.Manager
 	*patreonjobs.PatreonJobs
 	*boostyjobs.BoostyJobs
 	*tgbots.TgBots
@@ -244,6 +246,11 @@ func main() {
 		panic(err)
 	}
 
+	dataEncryptionManager, err := dataencryption.NewManager(config.DataEncryption)
+	if err != nil {
+		panic(fmt.Errorf("failed to create data encryption manager: %w", err))
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -267,6 +274,7 @@ func main() {
 		WriteQueries: writeQueries,
 
 		FileStorage: fileStorage,
+		Manager:     dataEncryptionManager,
 
 		config: config,
 

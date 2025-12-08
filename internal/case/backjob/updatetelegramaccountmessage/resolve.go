@@ -22,6 +22,7 @@ type Env interface {
 	GetTelegramPublishSentAccountMessagePostType(ctx context.Context, arg db.GetTelegramPublishSentAccountMessagePostTypeParams) (string, error)
 	UpdateTelegramPublishSentAccountMessageContent(ctx context.Context, arg db.UpdateTelegramPublishSentAccountMessageContentParams) error
 	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)
+	DecryptData(ciphertext []byte) ([]byte, error)
 }
 
 func Resolve(ctx context.Context, env Env, params model.TelegramAccountUpdatePostParams) error {
@@ -128,6 +129,12 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 		return fmt.Errorf("failed to get telegram account: %w", err)
 	}
 
+	// Decrypt session data
+	sessionData, err := env.DecryptData(account.SessionData)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt session data: %w", err)
+	}
+
 	// Create tgtd client
 	client := tgtd.NewClient(env, int(account.ApiID), account.ApiHash)
 
@@ -146,7 +153,7 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	// Determine which edit method to use based on post types
 	if newPostType == db.TelegramPublishSentMessagePostTypePhoto {
 		// Edit with photo (add photo to text, or replace existing photo)
-		editErr = client.EditMessageWithPhoto(ctx, account.SessionData, tgtd.EditMessageWithPhotoParams{
+		editErr = client.EditMessageWithPhoto(ctx, sessionData, tgtd.EditMessageWithPhotoParams{
 			ChatID:    params.TelegramChatID,
 			MessageID: params.MessageID,
 			PhotoURL:  post.Media[0],
@@ -154,7 +161,7 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 		})
 	} else {
 		// Regular text edit
-		editErr = client.EditMessage(ctx, account.SessionData, tgtd.EditMessageParams{
+		editErr = client.EditMessage(ctx, sessionData, tgtd.EditMessageParams{
 			ChatID:    params.TelegramChatID,
 			MessageID: params.MessageID,
 			Message:   content,

@@ -25,6 +25,9 @@ var _ completetelegramaccountauth.Env = &EnvMock{}
 //			CurrentAdminUserTokenFunc: func(ctx context.Context) (*usertoken.Data, error) {
 //				panic("mock out the CurrentAdminUserToken method")
 //			},
+//			EncryptDataFunc: func(plaintext []byte) ([]byte, error) {
+//				panic("mock out the EncryptData method")
+//			},
 //			GetTelegramAccountByPhoneFunc: func(ctx context.Context, phone string) (db.TelegramAccount, error) {
 //				panic("mock out the GetTelegramAccountByPhone method")
 //			},
@@ -56,6 +59,9 @@ type EnvMock struct {
 	// CurrentAdminUserTokenFunc mocks the CurrentAdminUserToken method.
 	CurrentAdminUserTokenFunc func(ctx context.Context) (*usertoken.Data, error)
 
+	// EncryptDataFunc mocks the EncryptData method.
+	EncryptDataFunc func(plaintext []byte) ([]byte, error)
+
 	// GetTelegramAccountByPhoneFunc mocks the GetTelegramAccountByPhone method.
 	GetTelegramAccountByPhoneFunc func(ctx context.Context, phone string) (db.TelegramAccount, error)
 
@@ -83,6 +89,11 @@ type EnvMock struct {
 		CurrentAdminUserToken []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
+		}
+		// EncryptData holds details about calls to the EncryptData method.
+		EncryptData []struct {
+			// Plaintext is the plaintext argument value.
+			Plaintext []byte
 		}
 		// GetTelegramAccountByPhone holds details about calls to the GetTelegramAccountByPhone method.
 		GetTelegramAccountByPhone []struct {
@@ -137,6 +148,7 @@ type EnvMock struct {
 		}
 	}
 	lockCurrentAdminUserToken          sync.RWMutex
+	lockEncryptData                    sync.RWMutex
 	lockGetTelegramAccountByPhone      sync.RWMutex
 	lockInsertTelegramAccount          sync.RWMutex
 	lockTelegramAccountCompleteAuth    sync.RWMutex
@@ -175,6 +187,38 @@ func (mock *EnvMock) CurrentAdminUserTokenCalls() []struct {
 	mock.lockCurrentAdminUserToken.RLock()
 	calls = mock.calls.CurrentAdminUserToken
 	mock.lockCurrentAdminUserToken.RUnlock()
+	return calls
+}
+
+// EncryptData calls EncryptDataFunc.
+func (mock *EnvMock) EncryptData(plaintext []byte) ([]byte, error) {
+	if mock.EncryptDataFunc == nil {
+		panic("EnvMock.EncryptDataFunc: method is nil but Env.EncryptData was just called")
+	}
+	callInfo := struct {
+		Plaintext []byte
+	}{
+		Plaintext: plaintext,
+	}
+	mock.lockEncryptData.Lock()
+	mock.calls.EncryptData = append(mock.calls.EncryptData, callInfo)
+	mock.lockEncryptData.Unlock()
+	return mock.EncryptDataFunc(plaintext)
+}
+
+// EncryptDataCalls gets all the calls that were made to EncryptData.
+// Check the length with:
+//
+//	len(mockedEnv.EncryptDataCalls())
+func (mock *EnvMock) EncryptDataCalls() []struct {
+	Plaintext []byte
+} {
+	var calls []struct {
+		Plaintext []byte
+	}
+	mock.lockEncryptData.RLock()
+	calls = mock.calls.EncryptData
+	mock.lockEncryptData.RUnlock()
 	return calls
 }
 

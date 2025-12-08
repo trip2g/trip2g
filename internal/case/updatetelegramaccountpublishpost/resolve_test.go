@@ -70,7 +70,7 @@ func TestResolve_Success(t *testing.T) {
 		ID:          1,
 		ApiID:       12345,
 		ApiHash:     "testhash",
-		SessionData: []byte("session"),
+		SessionData: []byte("encrypted_session"),
 	}
 
 	env := &EnvMock{
@@ -388,7 +388,7 @@ func TestResolve_Error_EnqueueUpdate(t *testing.T) {
 		ID:          1,
 		ApiID:       12345,
 		ApiHash:     "testhash",
-		SessionData: []byte("session"),
+		SessionData: []byte("encrypted_session"),
 	}
 
 	expectedErr := errors.New("enqueue error")
@@ -459,7 +459,7 @@ func TestResolve_AccountCaching(t *testing.T) {
 		ID:          1,
 		ApiID:       12345,
 		ApiHash:     "testhash",
-		SessionData: []byte("session"),
+		SessionData: []byte("encrypted_session"),
 	}
 
 	getAccountCallCount := 0

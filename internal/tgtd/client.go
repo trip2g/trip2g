@@ -43,6 +43,7 @@ const (
 // ClientEnv provides dependencies for Client.
 type ClientEnv interface {
 	Logger() logger.Logger
+	DecryptData(ciphertext []byte) ([]byte, error)
 }
 
 // retryOnFloodWait executes fn and retries on FLOOD_WAIT errors.

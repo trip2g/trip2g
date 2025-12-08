@@ -31,7 +31,6 @@ type Env interface {
 type accountChat struct {
 	AccountID      int64
 	TelegramChatID int64
-	SessionData    []byte
 }
 
 func Resolve(ctx context.Context, env Env, params model.SendTelegramPublishPostParams) error {
@@ -98,7 +97,6 @@ func getAccountChats(ctx context.Context, env Env, params model.SendTelegramPubl
 			result = append(result, accountChat{
 				AccountID:      c.AccountID,
 				TelegramChatID: c.TelegramChatID,
-				SessionData:    c.SessionData,
 			})
 		}
 	} else {
@@ -110,7 +108,6 @@ func getAccountChats(ctx context.Context, env Env, params model.SendTelegramPubl
 			result = append(result, accountChat{
 				AccountID:      c.AccountID,
 				TelegramChatID: c.TelegramChatID,
-				SessionData:    c.SessionData,
 			})
 		}
 	}
@@ -135,7 +132,6 @@ func enqueuePostToChat(ctx context.Context, env Env, params model.SendTelegramPu
 		NotePathID:        params.NotePathID,
 		AccountID:         chat.AccountID,
 		TelegramChatID:    chat.TelegramChatID,
-		SessionData:       chat.SessionData,
 		Post:              *post,
 		Instant:           params.Instant,
 		UpdateLinkedPosts: params.UpdateLinkedPosts,

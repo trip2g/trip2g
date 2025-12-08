@@ -12,6 +12,7 @@ import (
 
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boostyjobs"
+	"trip2g/internal/dataencryption"
 	"trip2g/internal/gitapi"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
@@ -102,6 +103,8 @@ type Config struct {
 	GitAPI gitapi.Config
 
 	Notion notion.Config
+
+	DataEncryption dataencryption.Config
 
 	SimpleBackup SimpleBackupConfig
 }
@@ -359,6 +362,16 @@ func (c *Config) defineFlags() {
 	notionDefaults := notion.DefaultConfig()
 
 	flag.DurationVar(&c.Notion.RequestTimeout, "notion-request-timeout", notionDefaults.RequestTimeout, "Notion API request timeout")
+
+	// Data Encryption
+	dataEncryptionDefaults := dataencryption.DefaultConfig()
+
+	flag.StringVar(
+		&c.DataEncryption.Key,
+		"data-encryption-key",
+		dataEncryptionDefaults.Key,
+		"32-byte key for encrypting sensitive data (AES-256)",
+	)
 }
 
 func (c *Config) defineServerFlags() {
@@ -410,7 +423,9 @@ func (c *Config) validate() error {
 			panic("in production, user token secret must be changed from default")
 		}
 
-		// TODO: other production checks
+		if c.DataEncryption.Key == dataencryption.DefaultConfig().Key {
+			panic("in production, data encryption key must be changed from default")
+		}
 	}
 
 	return ozzo.ValidateStruct(c,

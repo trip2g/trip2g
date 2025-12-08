@@ -31,6 +31,7 @@ type Env interface {
 	Logger() logger.Logger
 	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)
 	TelegramClientForAccount(account db.TelegramAccount) *tgtd.Client
+	DecryptData(ciphertext []byte) ([]byte, error)
 	LatestNoteViews() *model.NoteViews
 	// PushNotes saves notes to the database.
 	PushNotes(ctx context.Context, input graphmodel.PushNotesInput) (graphmodel.PushNotesOrErrorPayload, error)
@@ -127,6 +128,12 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		return fmt.Errorf("failed to get telegram account: %w", err)
 	}
 
+	// Decrypt session data
+	sessionData, err := env.DecryptData(account.SessionData)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt session data: %w", err)
+	}
+
 	tgClient := env.TelegramClientForAccount(account)
 
 	// Build map of existing imported notes
@@ -137,7 +144,7 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 	// PHASE 1: Fetch ALL messages (metadata only, no media download)
 	var allMessages []*tg.Message
 
-	err = tgClient.RunWithAPI(ctx, account.SessionData, func(ctx context.Context, api *tg.Client) error {
+	err = tgClient.RunWithAPI(ctx, sessionData, func(ctx context.Context, api *tg.Client) error {
 		offsetID := 0
 
 		for {
@@ -401,7 +408,7 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		if hasMedia && params.WithMedia {
 			downloadStart := time.Now()
 			var totalSize int64
-			downloadErr := tgClient.RunWithAPI(ctx, account.SessionData, func(ctx context.Context, api *tg.Client) error {
+			downloadErr := tgClient.RunWithAPI(ctx, sessionData, func(ctx context.Context, api *tg.Client) error {
 				for _, m := range info.group.allMsgs {
 					if m.Media == nil {
 						continue

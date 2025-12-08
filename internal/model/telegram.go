@@ -55,10 +55,9 @@ type SendTelegramPublishPostParams struct {
 
 // TelegramAccountSendPostParams contains parameters for sending a post via user account (MTProto).
 type TelegramAccountSendPostParams struct {
-	NotePathID     int64  `json:"note_path_id"`
-	AccountID      int64  `json:"account_id"`
-	TelegramChatID int64  `json:"telegram_chat_id"`
-	SessionData    []byte `json:"session_data"`
+	NotePathID     int64 `json:"note_path_id"`
+	AccountID      int64 `json:"account_id"`
+	TelegramChatID int64 `json:"telegram_chat_id"`
 
 	Post              TelegramPost `json:"post"`
 	Instant           bool         `json:"instant"`

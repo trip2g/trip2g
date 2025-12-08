@@ -21,7 +21,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	err := env.UpdateTelegramAccount(ctx, db.UpdateTelegramAccountParams{
 		ID:          input.ID,
 		Enabled:     sql.NullInt64{Int64: 0, Valid: true},
-		SessionData: []byte{}, // Empty session data
+		SessionData: []byte{}, // Clear encrypted session data
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign out telegram account: %w", err)

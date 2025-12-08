@@ -64,11 +64,10 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 			continue
 		}
 
-		// Get account (from cache or database)
-		account, ok := accountCache[sentMsg.AccountID]
+		// Get account (from cache or database) to verify it exists
+		_, ok := accountCache[sentMsg.AccountID]
 		if !ok {
-			var accountErr error
-			account, accountErr = env.GetTelegramAccountByID(ctx, sentMsg.AccountID)
+			account, accountErr := env.GetTelegramAccountByID(ctx, sentMsg.AccountID)
 			if accountErr != nil {
 				return fmt.Errorf("failed to get account %d: %w", sentMsg.AccountID, accountErr)
 			}
@@ -81,7 +80,6 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 				NotePathID:        notePathID,
 				AccountID:         sentMsg.AccountID,
 				TelegramChatID:    sentMsg.TelegramChatID,
-				SessionData:       account.SessionData,
 				Post:              *post,
 				Instant:           false,
 				UpdateLinkedPosts: false,

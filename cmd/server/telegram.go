@@ -97,8 +97,13 @@ func (a *app) TelegramAccountGetAppConfig(ctx context.Context, accountID int64) 
 		return "", fmt.Errorf("failed to get account: %w", err)
 	}
 
+	sessionData, err := a.DecryptSessionData(account.SessionData)
+	if err != nil {
+		return "", fmt.Errorf("failed to decrypt session data: %w", err)
+	}
+
 	client := tgtd.NewClient(a, int(account.ApiID), account.ApiHash)
-	config, err := client.GetAppConfig(ctx, account.SessionData)
+	config, err := client.GetAppConfig(ctx, sessionData)
 	if err != nil {
 		return "", err
 	}
@@ -112,8 +117,13 @@ func (a *app) TelegramAccountGetUserInfo(ctx context.Context, accountID int64) (
 		return nil, fmt.Errorf("failed to get account: %w", err)
 	}
 
+	sessionData, err := a.DecryptSessionData(account.SessionData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt session data: %w", err)
+	}
+
 	client := tgtd.NewClient(a, int(account.ApiID), account.ApiHash)
-	return client.GetUserInfo(ctx, account.SessionData)
+	return client.GetUserInfo(ctx, sessionData)
 }
 
 // TelegramCaptionLengthLimit returns the caption length limit based on account premium status.
@@ -343,11 +353,16 @@ func (a *app) ListTelegramAccountDialogs(ctx context.Context, accountID int64) (
 		return nil, fmt.Errorf("failed to get telegram account: %w", err)
 	}
 
+	sessionData, err := a.DecryptSessionData(account.SessionData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt session data: %w", err)
+	}
+
 	// Create tgtd client
 	client := tgtd.NewClient(a, int(account.ApiID), account.ApiHash)
 
 	// List dialogs from Telegram
-	dialogs, err := client.ListDialogs(ctx, account.SessionData)
+	dialogs, err := client.ListDialogs(ctx, sessionData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list dialogs: %w", err)
 	}
@@ -385,8 +400,13 @@ func (a *app) GetTelegramAccountDialogPublishInstantTags(ctx context.Context, ac
 
 // DeleteTelegramAccountMessage deletes a message via user account (MTProto).
 func (a *app) DeleteTelegramAccountMessage(ctx context.Context, account db.TelegramAccount, chatID, messageID int64) error {
+	sessionData, err := a.DecryptSessionData(account.SessionData)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt session data: %w", err)
+	}
+
 	client := tgtd.NewClient(a, int(account.ApiID), account.ApiHash)
-	return client.DeleteMessage(ctx, account.SessionData, tgtd.DeleteMessageParams{
+	return client.DeleteMessage(ctx, sessionData, tgtd.DeleteMessageParams{
 		ChatID:    chatID,
 		MessageID: messageID,
 	})
@@ -403,4 +423,9 @@ func (a *app) TelegramClient() *tgtd.Client {
 // TelegramClientForAccount creates a tgtd.Client for a specific account.
 func (a *app) TelegramClientForAccount(account db.TelegramAccount) *tgtd.Client {
 	return tgtd.NewClient(a, int(account.ApiID), account.ApiHash)
+}
+
+// DecryptSessionData decrypts the encrypted session data from a telegram account.
+func (a *app) DecryptSessionData(encryptedSession []byte) ([]byte, error) {
+	return a.DecryptData(encryptedSession)
 }

@@ -126,6 +126,9 @@ func TestResolve(t *testing.T) {
 						APIHash:     "abc123",
 					}, nil
 				},
+				EncryptDataFunc: func(plaintext []byte) ([]byte, error) {
+					return []byte("encrypted_session"), nil
+				},
 				GetTelegramAccountByPhoneFunc: func(ctx context.Context, phone string) (db.TelegramAccount, error) {
 					return db.TelegramAccount{}, sql.ErrNoRows
 				},
@@ -166,6 +169,9 @@ func TestResolve(t *testing.T) {
 						APIHash:     "abc123",
 					}, nil
 				},
+				EncryptDataFunc: func(plaintext []byte) ([]byte, error) {
+					return []byte("encrypted_new_session"), nil
+				},
 				GetTelegramAccountByPhoneFunc: func(ctx context.Context, phone string) (db.TelegramAccount, error) {
 					return db.TelegramAccount{
 						ID:          5,
@@ -176,7 +182,7 @@ func TestResolve(t *testing.T) {
 				},
 				UpdateTelegramAccountFunc: func(ctx context.Context, arg db.UpdateTelegramAccountParams) error {
 					require.Equal(t, int64(5), arg.ID)
-					require.Equal(t, []byte("new_session"), arg.SessionData)
+					require.Equal(t, []byte("encrypted_new_session"), arg.SessionData)
 					require.Equal(t, int64(1), arg.Enabled.Int64)
 					return nil
 				},

@@ -24,6 +24,7 @@ type Env interface {
 	SetTelegramPublishNoteLastError(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error
 	ClearTelegramPublishNoteLastError(ctx context.Context, notePathID int64) error
 	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)
+	DecryptData(ciphertext []byte) ([]byte, error)
 	Logger() logger.Logger
 }
 
@@ -80,6 +81,12 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountSendPost
 		return fmt.Errorf("failed to get telegram account: %w", err)
 	}
 
+	// Decrypt session data
+	sessionData, err := env.DecryptData(account.SessionData)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt session data: %w", err)
+	}
+
 	post := params.Post
 
 	// Determine post type based on media count
@@ -98,21 +105,21 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountSendPost
 	switch mediaCount {
 	case 0:
 		// Send as text message
-		result, sendErr = client.SendMessage(ctx, account.SessionData, tgtd.SendMessageParams{
+		result, sendErr = client.SendMessage(ctx, sessionData, tgtd.SendMessageParams{
 			ChatID:    params.TelegramChatID,
 			Message:   content,
 			NoWebpage: post.DisableWebPagePreview,
 		})
 	case 1:
 		// Send as single photo
-		result, sendErr = client.SendPhoto(ctx, account.SessionData, tgtd.SendPhotoParams{
+		result, sendErr = client.SendPhoto(ctx, sessionData, tgtd.SendPhotoParams{
 			ChatID:   params.TelegramChatID,
 			PhotoURL: post.Media[0],
 			Caption:  content,
 		})
 	default:
 		// Send as media group (2-10 media files)
-		result, sendErr = client.SendMediaGroup(ctx, account.SessionData, tgtd.SendMediaGroupParams{
+		result, sendErr = client.SendMediaGroup(ctx, sessionData, tgtd.SendMediaGroupParams{
 			ChatID:    params.TelegramChatID,
 			MediaURLs: post.Media,
 			Caption:   content,

@@ -24,6 +24,7 @@ type Env interface {
 	UpdateTelegramAccount(ctx context.Context, arg db.UpdateTelegramAccountParams) error
 	UpdateTelegramAccountAppConfig(ctx context.Context, arg db.UpdateTelegramAccountAppConfigParams) error
 	CurrentAdminUserToken(ctx context.Context) (*usertoken.Data, error)
+	EncryptData(plaintext []byte) ([]byte, error)
 }
 
 type Input = model.AdminCompleteTelegramAccountAuthInput
@@ -94,6 +95,12 @@ func upsertAccount(ctx context.Context, env Env, phone string, result *appmodel.
 		isPremium = 1
 	}
 
+	// Encrypt session data before storing
+	encryptedSession, err := env.EncryptData(result.SessionData)
+	if err != nil {
+		return db.TelegramAccount{}, fmt.Errorf("failed to encrypt session data: %w", err)
+	}
+
 	// Check if account with this phone already exists
 	existingAccount, err := env.GetTelegramAccountByPhone(ctx, phone)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -105,7 +112,7 @@ func upsertAccount(ctx context.Context, env Env, phone string, result *appmodel.
 		enabled := int64(1)
 		updateErr := env.UpdateTelegramAccount(ctx, db.UpdateTelegramAccountParams{
 			ID:          existingAccount.ID,
-			SessionData: result.SessionData,
+			SessionData: encryptedSession,
 			DisplayName: sql.NullString{String: result.DisplayName, Valid: true},
 			IsPremium:   sql.NullInt64{Int64: isPremium, Valid: true},
 			ApiID:       sql.NullInt64{Int64: int64(result.APIID), Valid: true},
@@ -127,7 +134,7 @@ func upsertAccount(ctx context.Context, env Env, phone string, result *appmodel.
 	// Account doesn't exist - insert new
 	account, insertErr := env.InsertTelegramAccount(ctx, db.InsertTelegramAccountParams{
 		Phone:       phone,
-		SessionData: result.SessionData,
+		SessionData: encryptedSession,
 		DisplayName: result.DisplayName,
 		IsPremium:   isPremium,
 		ApiID:       int64(result.APIID),

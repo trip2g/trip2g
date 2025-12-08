@@ -33,7 +33,7 @@ var _ updatetelegramaccountpublishpost.Env = &EnvMock{}
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
 //			},
-//			ListTelegramPublishSentAccountMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error) {
+//			ListTelegramPublishSentAccountMessagesByNotePathIDFunc: func(ctx context.Context, notePathID int64) ([]updatetelegramaccountpublishpost.SentMessageRow, error) {
 //				panic("mock out the ListTelegramPublishSentAccountMessagesByNotePathID method")
 //			},
 //		}
@@ -56,7 +56,7 @@ type EnvMock struct {
 	LatestNoteViewsFunc func() *model.NoteViews
 
 	// ListTelegramPublishSentAccountMessagesByNotePathIDFunc mocks the ListTelegramPublishSentAccountMessagesByNotePathID method.
-	ListTelegramPublishSentAccountMessagesByNotePathIDFunc func(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error)
+	ListTelegramPublishSentAccountMessagesByNotePathIDFunc func(ctx context.Context, notePathID int64) ([]updatetelegramaccountpublishpost.SentMessageRow, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -235,7 +235,7 @@ func (mock *EnvMock) LatestNoteViewsCalls() []struct {
 }
 
 // ListTelegramPublishSentAccountMessagesByNotePathID calls ListTelegramPublishSentAccountMessagesByNotePathIDFunc.
-func (mock *EnvMock) ListTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) ([]db.ListTelegramPublishSentAccountMessagesByNotePathIDRow, error) {
+func (mock *EnvMock) ListTelegramPublishSentAccountMessagesByNotePathID(ctx context.Context, notePathID int64) ([]updatetelegramaccountpublishpost.SentMessageRow, error) {
 	if mock.ListTelegramPublishSentAccountMessagesByNotePathIDFunc == nil {
 		panic("EnvMock.ListTelegramPublishSentAccountMessagesByNotePathIDFunc: method is nil but Env.ListTelegramPublishSentAccountMessagesByNotePathID was just called")
 	}
