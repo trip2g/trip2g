@@ -1,5 +1,7 @@
 package insertnote
 
+//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg insertnote_test . Env
+
 import (
 	"context"
 	"crypto/sha256"
@@ -60,8 +62,14 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) error {
 		return ErrNotePathHashUnresolvedCollision
 	}
 
+	// Always unhide note when pushed (even if content hasn't changed)
+	err := env.UnhideNotePath(ctx, arg.Path)
+	if err != nil {
+		return fmt.Errorf("failed to unhide note path: %w", err)
+	}
+
 	if notePath.VersionCount > 0 && notePath.LatestContentHash == contentHash {
-		// return fmt.Errorf("note %s already exists", arg.Path)
+		// Content hasn't changed, no need to create new version
 		return nil
 	}
 
@@ -85,12 +93,6 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) error {
 	err = env.InsertNoteVersion(ctx, noteVersion)
 	if err != nil {
 		return fmt.Errorf("failed to InsertNoteVersion: %w", err)
-	}
-
-	// Reset hidden_by and hidden_at when note is pushed
-	err = env.UnhideNotePath(ctx, arg.Path)
-	if err != nil {
-		return fmt.Errorf("failed to unhide note path: %w", err)
 	}
 
 	return nil
