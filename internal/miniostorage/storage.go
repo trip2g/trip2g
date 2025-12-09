@@ -61,6 +61,7 @@ func New(ctx context.Context, config Config) (*FileStorage, error) {
 	options := minio.Options{
 		Creds:  credentials.NewStaticV4(config.AccessKey, config.SecretKey, ""),
 		Secure: config.UseSSL,
+		Region: config.Region,
 	}
 
 	minioClient, err := minio.New(config.Endpoint, &options)
@@ -120,11 +121,11 @@ func (a *FileStorage) ctx(ctx context.Context) (context.Context, context.CancelF
 	// Check if this is a fasthttp context
 	if _, ok := ctx.(*fasthttp.RequestCtx); ok {
 		// Create independent context with timeout to avoid data race
-		return context.WithTimeout(context.Background(), 60*time.Second)
+		return context.WithTimeout(context.Background(), 5*time.Minute)
 	}
 
 	// For non-fasthttp contexts, use as-is but add timeout for safety
-	return context.WithTimeout(ctx, 60*time.Second)
+	return context.WithTimeout(ctx, 5*time.Minute)
 }
 
 func (a *FileStorage) NoteAssetPath(asset db.NoteAsset) string {

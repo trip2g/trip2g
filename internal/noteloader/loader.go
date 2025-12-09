@@ -93,24 +93,28 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 			assetMap[asset.VersionID] = noteMap
 		}
 
-		exists, existsErr := l.env.NoteAssetExists(ctx, asset.NoteAsset)
-		if existsErr != nil {
-			return fmt.Errorf("failed to check if note asset exists: %w", existsErr)
-		}
-
-		if !exists {
-			l.log.Warn("note asset not exists", "asset", asset, "object_id", l.env.NoteAssetPath(asset.NoteAsset))
-
-			// is not always image... TODO: fix it
-			noteMap[asset.Path] = &model.NoteAssetReplace{
-				URL:  "/assets/missed_image.png",
-				Hash: fmt.Sprintf("%+v", asset),
-
-				AbsolutePath: asset.AbsolutePath,
-			}
-
-			continue
-		}
+		// TODO: re-enable after fixing startup timeout with many assets
+		// Disabled because NoteAssetExists makes HEAD request for each asset,
+		// which causes timeout on startup when there are many files.
+		//
+		// exists, existsErr := l.env.NoteAssetExists(ctx, asset.NoteAsset)
+		// if existsErr != nil {
+		// 	return fmt.Errorf("failed to check if note asset exists: %w", existsErr)
+		// }
+		//
+		// if !exists {
+		// 	l.log.Warn("note asset not exists", "asset", asset, "object_id", l.env.NoteAssetPath(asset.NoteAsset))
+		//
+		// 	// is not always image... TODO: fix it
+		// 	noteMap[asset.Path] = &model.NoteAssetReplace{
+		// 		URL:  "/assets/missed_image.png",
+		// 		Hash: fmt.Sprintf("%+v", asset),
+		//
+		// 		AbsolutePath: asset.AbsolutePath,
+		// 	}
+		//
+		// 	continue
+		// }
 
 		assetURL, assetErr := l.env.NoteAssetURL(ctx, asset.NoteAsset)
 		if assetErr != nil {
