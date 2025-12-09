@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
@@ -24,6 +25,7 @@ import (
 	"github.com/gotd/td/telegram/uploader"
 	"github.com/gotd/td/tg"
 	"github.com/gotd/td/tgerr"
+	"github.com/valyala/fasthttp"
 
 	"trip2g/internal/logger"
 )
@@ -86,6 +88,31 @@ func NewClient(env ClientEnv, apiID int, apiHash string) *Client {
 	}
 }
 
+// safeCtx creates a safe context for Telegram operations.
+//
+// WHY THIS IS NEEDED:
+// When using fasthttpadaptor to convert fasthttp requests to net/http (for GraphQL),
+// the fasthttp.RequestCtx is passed directly as context.Context to the net/http handler.
+// gotd/td uses net/http client which creates persistent HTTP connections with goroutines.
+// These goroutines may outlive the fasthttp request. When fasthttp finishes the request,
+// it calls RequestCtx.Reset() which causes a DATA RACE:
+//   - fasthttp goroutine: writes to RequestCtx.userData (in Reset())
+//   - gotd HTTP goroutine: reads from RequestCtx.userData (for cancellation)
+//
+// SOLUTION:
+// Detect fasthttp.RequestCtx and replace it with an independent context.Background()
+// with timeout, so Telegram HTTP connections don't hold references to the recycled RequestCtx.
+func safeCtx(ctx context.Context) (context.Context, context.CancelFunc) {
+	// Check if this is a fasthttp context
+	if _, ok := ctx.(*fasthttp.RequestCtx); ok {
+		// Create independent context with timeout to avoid data race
+		return context.WithTimeout(context.Background(), 5*time.Minute)
+	}
+
+	// For non-fasthttp contexts, add timeout for safety
+	return context.WithTimeout(ctx, 5*time.Minute)
+}
+
 // ChatInfo contains information about a Telegram chat.
 type ChatInfo struct {
 	ID       int64
@@ -113,6 +140,9 @@ type DialogInfo struct {
 
 // ListChats returns all chats/channels the account has access to.
 func (c *Client) ListChats(ctx context.Context, sessionData []byte) ([]ChatInfo, error) {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	storage := &session.StorageMemory{}
 	err := storage.StoreSession(ctx, sessionData)
 	if err != nil {
@@ -178,6 +208,9 @@ func (c *Client) ListChats(ctx context.Context, sessionData []byte) ([]ChatInfo,
 
 // ListDialogs returns all dialogs (users, channels, groups) the account has.
 func (c *Client) ListDialogs(ctx context.Context, sessionData []byte) ([]DialogInfo, error) {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	storage := &session.StorageMemory{}
 	err := storage.StoreSession(ctx, sessionData)
 	if err != nil {
@@ -290,6 +323,9 @@ type SendMessageResult struct {
 
 // SendMessage sends a text message to a chat with HTML formatting.
 func (c *Client) SendMessage(ctx context.Context, sessionData []byte, params SendMessageParams) (*SendMessageResult, error) {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	storage := &session.StorageMemory{}
 	err := storage.StoreSession(ctx, sessionData)
 	if err != nil {
@@ -366,6 +402,9 @@ func (c *Client) SendMessage(ctx context.Context, sessionData []byte, params Sen
 
 // SendPhoto sends a photo to a chat with HTML formatted caption.
 func (c *Client) SendPhoto(ctx context.Context, sessionData []byte, params SendPhotoParams) (*SendMessageResult, error) {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	storage := &session.StorageMemory{}
 	err := storage.StoreSession(ctx, sessionData)
 	if err != nil {
@@ -431,6 +470,9 @@ func (c *Client) SendPhoto(ctx context.Context, sessionData []byte, params SendP
 
 // SendMediaGroup sends a media group (multiple photos/videos) to a chat.
 func (c *Client) SendMediaGroup(ctx context.Context, sessionData []byte, params SendMediaGroupParams) (*SendMessageResult, error) {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	storage := &session.StorageMemory{}
 	err := storage.StoreSession(ctx, sessionData)
 	if err != nil {
@@ -640,6 +682,9 @@ type EditMessageParams struct {
 
 // EditMessage edits an existing message with HTML formatting.
 func (c *Client) EditMessage(ctx context.Context, sessionData []byte, params EditMessageParams) error {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	storage := &session.StorageMemory{}
 	err := storage.StoreSession(ctx, sessionData)
 	if err != nil {
@@ -681,6 +726,9 @@ type EditMessageWithPhotoParams struct {
 
 // EditMessageWithPhoto edits an existing message to add a photo with HTML formatted caption.
 func (c *Client) EditMessageWithPhoto(ctx context.Context, sessionData []byte, params EditMessageWithPhotoParams) error {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	storage := &session.StorageMemory{}
 	err := storage.StoreSession(ctx, sessionData)
 	if err != nil {
@@ -739,6 +787,59 @@ func (c *Client) EditMessageWithPhoto(ctx context.Context, sessionData []byte, p
 	})
 }
 
+// EditMessageCaptionParams contains parameters for editing a message caption.
+type EditMessageCaptionParams struct {
+	ChatID    int64
+	MessageID int64
+	Caption   string
+}
+
+// EditMessageCaption edits the caption of a photo or media group message with HTML formatting.
+func (c *Client) EditMessageCaption(ctx context.Context, sessionData []byte, params EditMessageCaptionParams) error {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
+	storage := &session.StorageMemory{}
+	err := storage.StoreSession(ctx, sessionData)
+	if err != nil {
+		return fmt.Errorf("failed to load session: %w", err)
+	}
+
+	client := telegram.NewClient(c.apiID, c.apiHash, telegram.Options{
+		SessionStorage: storage,
+	})
+
+	return client.Run(ctx, func(ctx context.Context) error {
+		api := client.API()
+
+		// Get peer for the chat
+		peer, peerErr := c.resolvePeer(ctx, api, params.ChatID)
+		if peerErr != nil {
+			return fmt.Errorf("failed to resolve peer: %w", peerErr)
+		}
+
+		// Parse caption with HTML
+		eb := entity.Builder{}
+		if parseErr := html.HTML(strings.NewReader(params.Caption), &eb, html.Options{}); parseErr != nil {
+			return fmt.Errorf("failed to parse caption HTML: %w", parseErr)
+		}
+		captionText, entities := eb.Complete()
+
+		// Edit message caption (without changing media)
+		_, editErr := api.MessagesEditMessage(ctx, &tg.MessagesEditMessageRequest{
+			Peer:     peer,
+			ID:       int(params.MessageID),
+			Message:  captionText,
+			Entities: entities,
+		})
+		if editErr != nil {
+			return fmt.Errorf("failed to edit message caption: %w", editErr)
+		}
+
+		return nil
+	})
+}
+
 // DeleteMessageParams contains parameters for deleting a message.
 type DeleteMessageParams struct {
 	ChatID    int64
@@ -747,6 +848,9 @@ type DeleteMessageParams struct {
 
 // DeleteMessage deletes a message from a chat.
 func (c *Client) DeleteMessage(ctx context.Context, sessionData []byte, params DeleteMessageParams) error {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	storage := &session.StorageMemory{}
 	err := storage.StoreSession(ctx, sessionData)
 	if err != nil {
@@ -866,6 +970,9 @@ type AppConfig struct {
 
 // GetAppConfig fetches the app configuration from Telegram.
 func (c *Client) GetAppConfig(ctx context.Context, sessionData []byte) (*AppConfig, error) {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	storage := &session.StorageMemory{}
 	err := storage.StoreSession(ctx, sessionData)
 	if err != nil {
@@ -972,6 +1079,9 @@ type UserInfo struct {
 
 // GetUserInfo fetches information about the authenticated user.
 func (c *Client) GetUserInfo(ctx context.Context, sessionData []byte) (*UserInfo, error) {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	storage := &session.StorageMemory{}
 	err := storage.StoreSession(ctx, sessionData)
 	if err != nil {
@@ -1011,6 +1121,9 @@ type APIFunc func(ctx context.Context, api *tg.Client) error
 // Use this to perform multiple operations within a single session.
 // This avoids creating new connections for each operation, preventing FloodWait.
 func (c *Client) RunWithAPI(ctx context.Context, sessionData []byte, f APIFunc) error {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	storage := &session.StorageMemory{}
 	err := storage.StoreSession(ctx, sessionData)
 	if err != nil {
@@ -1044,6 +1157,9 @@ type GetChannelMessagesResult struct {
 //
 //nolint:gocognit // complex message processing with multiple type assertions
 func (c *Client) GetChannelMessagesWithAPI(ctx context.Context, api *tg.Client, params GetChannelMessagesParams) (*GetChannelMessagesResult, error) {
+	ctx, cancel := safeCtx(ctx)
+	defer cancel()
+
 	// Resolve channel peer
 	peer, err := c.resolvePeerWithAPI(ctx, api, params.ChannelID)
 	if err != nil {

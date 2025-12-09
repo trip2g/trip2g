@@ -77,6 +77,13 @@ func TestResolve(t *testing.T) { //nolint:gocognit // test complexity is accepta
 					}
 					return nil
 				},
+				// Account methods - return empty for these tests
+				ListDistinctAccountIDsFromSentAccountMessagesFunc: func(ctx context.Context) ([]int64, error) {
+					return []int64{}, nil
+				},
+				EnqueueUpdateAllAccountTelegramPublishPostsFunc: func(ctx context.Context, accountID int64) error {
+					return nil
+				},
 			}
 
 			result, err := updatetelegrampublishposts.Resolve(context.Background(), env)

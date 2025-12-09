@@ -784,13 +784,39 @@ default:
 }
 ```
 
-#### 4. No Need for Account Caching
+#### 4. Editing Messages by Post Type
+
+**Разные типы постов редактируются по-разному:**
+
+| Post Type | What Can Be Changed | Method |
+|-----------|---------------------|--------|
+| `text` | Text content | `EditMessage` |
+| `photo` | Caption AND photo | `EditMessageWithPhoto` |
+| `media_group` | Caption only (NOT media) | `EditMessageCaption` |
+
+**Важно:** Тип поста нельзя менять после публикации. Если text-пост обновился и теперь имеет фото, изменения медиа игнорируются.
+
+```go
+switch currentPostType {
+case db.TelegramPublishSentMessagePostTypeText:
+    // Edit text
+    client.EditMessage(...)
+case db.TelegramPublishSentMessagePostTypePhoto:
+    // Can replace photo
+    client.EditMessageWithPhoto(...)
+case db.TelegramPublishSentMessagePostTypeMediaGroup:
+    // Can only edit caption of first message
+    client.EditMessageCaption(...)
+}
+```
+
+#### 5. No Need for Account Caching
 
 **Первоначальный подход:** Кэшировать account при удалении нескольких сообщений.
 
 **Реальность:** SQLite отлично справляется с N+1 запросами. Кэширование добавляет сложность без заметного выигрыша.
 
-#### 5. bool to int64 Conversion for `instant` Field
+#### 6. bool to int64 Conversion for `instant` Field
 
 **Проблема:** `params.Instant` имеет тип `bool`, а в базе поле `instant` имеет тип `integer`.
 
@@ -807,7 +833,7 @@ insertParams := db.InsertTelegramPublishSentAccountMessageParams{
 }
 ```
 
-#### 6. Test Mocks for Extended Interfaces
+#### 7. Test Mocks for Extended Interfaces
 
 **Проблема:** При расширении `Env` интерфейсов (добавление account-методов) тесты падали с `method is nil`.
 
@@ -839,14 +865,18 @@ return addAccountMocks(&EnvMock{
 - `internal/case/backjob/sendtelegramaccountpost/resolve.go`
 - `internal/case/backjob/updatetelegramaccountmessage/resolve.go`
 - `internal/case/backjob/updatetelegramaccountpost/resolve.go`
+- `internal/case/backjob/updateallaccounttelegrampublishposts/resolve.go` - обновление всех постов для одного аккаунта
+- `internal/case/backjob/updateallaccounttelegrampublishposts/job.go`
 
 #### Modified Files
-- `internal/tgtd/client.go` - добавлены `SendMessage`, `EditMessage`, `DeleteMessage` с HTML support
+- `internal/tgtd/client.go` - добавлены `SendMessage`, `EditMessage`, `EditMessageCaption`, `DeleteMessage` с HTML support
 - `internal/case/cronjob/sendscheduledtelegrampublishposts/resolve.go` - разделение на `enqueueBotJobs()` и `enqueueAccountJobs()`
+- `internal/case/cronjob/updatetelegrampublishposts/resolve.go` - добавлена поддержка обновления account-постов (параллельно с bot-постами)
 - `internal/case/admin/resettelegrampublishnote/resolve.go` - удаление account-сообщений
 - `internal/case/admin/sendtelegrampublishnotenow/resolve.go` - отправка через account
 - `internal/case/handletgpublishviews/resolve.go` - instant preview через account
 - `cmd/server/telegram.go` - добавлен `DeleteTelegramAccountMessage()`
 - `cmd/server/case_methods.go` - добавлены методы для account publishing
 - `cmd/server/jobs.go` - регистрация новых job handlers
-- `queries.read.sql` - добавлен `ListSheduledTelegarmAccountPublishNoteIDs`
+- `cmd/server/main.go` - регистрация `UpdateAllAccountTelegramPublishPostsJob`
+- `queries.read.sql` - добавлены `ListSheduledTelegarmAccountPublishNoteIDs`, `ListDistinctAccountIDsFromSentAccountMessages`, `ListTelegramPublishSentAccountMessagesByAccountID`

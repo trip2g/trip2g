@@ -51,6 +51,7 @@ func Resolve(ctx context.Context, env Env, params model.TelegramAccountUpdatePos
 	return nil
 }
 
+//nolint:funlen // complex edit logic with multiple post types
 func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePostParams) error {
 	logger := logger.WithPrefix(env.Logger(), "backjob/updatetelegramaccountmessage:")
 	post := params.Post
@@ -70,33 +71,28 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	mediaCount := len(post.Media)
 	newPostType := db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
 
-	// Check if we can update this post type
-	if currentPostType != db.TelegramPublishSentMessagePostTypeText && currentPostType != db.TelegramPublishSentMessagePostTypePhoto {
-		logger.Warn("only text and photo messages can be updated via account",
-			"current_type", currentPostType,
-			"note_path_id", params.NotePathID,
-		)
-		return nil
-	}
-
-	// Can't convert to media_group (need to delete and resend)
-	if newPostType == db.TelegramPublishSentMessagePostTypeMediaGroup {
-		logger.Warn("cannot convert to media_group, would need delete and resend",
+	// Check if post type changed - we cannot change post type after publishing
+	postTypeChanged := currentPostType != newPostType
+	if postTypeChanged {
+		logger.Warn("post type change detected, ignoring media changes",
 			"current_type", currentPostType,
 			"new_type", newPostType,
 			"note_path_id", params.NotePathID,
 		)
-		return nil
 	}
 
+	// Use current post type for determining content length limit (like bot does)
+	hasMedia := currentPostType == db.TelegramPublishSentMessagePostTypePhoto || currentPostType == db.TelegramPublishSentMessagePostTypeMediaGroup
+
 	// Truncate content to telegram limits (media posts have lower limit)
-	hasMedia := mediaCount > 0
 	content := telegram.TruncateContent(post.Content, hasMedia)
 
-	// Calculate content hash for new content (include media URLs)
+	// Calculate content hash for new content
+	// For photo: include media URL (can be changed)
+	// For media_group: only text (can't change media, only caption)
 	hashInput := content
-	if len(post.Media) > 0 {
-		hashInput += "|" + strings.Join(post.Media, "|")
+	if currentPostType == db.TelegramPublishSentMessagePostTypePhoto && len(post.Media) > 0 {
+		hashInput += "|" + post.Media[0]
 	}
 	hash := sha256.Sum256([]byte(hashInput))
 	newContentHash := hex.EncodeToString(hash[:])
@@ -150,21 +146,39 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 
 	var editErr error
 
-	// Determine which edit method to use based on post types
-	if newPostType == db.TelegramPublishSentMessagePostTypePhoto {
-		// Edit with photo (add photo to text, or replace existing photo)
-		editErr = client.EditMessageWithPhoto(ctx, sessionData, tgtd.EditMessageWithPhotoParams{
-			ChatID:    params.TelegramChatID,
-			MessageID: params.MessageID,
-			PhotoURL:  post.Media[0],
-			Caption:   content,
-		})
-	} else {
-		// Regular text edit
+	// Determine which edit method to use based on CURRENT post type (saved in DB)
+	// We cannot change post type after publishing, so always use current type
+	switch currentPostType {
+	case db.TelegramPublishSentMessagePostTypeText:
+		// Edit text message
 		editErr = client.EditMessage(ctx, sessionData, tgtd.EditMessageParams{
 			ChatID:    params.TelegramChatID,
 			MessageID: params.MessageID,
 			Message:   content,
+		})
+	case db.TelegramPublishSentMessagePostTypePhoto:
+		// Edit photo with caption (can replace photo)
+		if len(post.Media) > 0 {
+			editErr = client.EditMessageWithPhoto(ctx, sessionData, tgtd.EditMessageWithPhotoParams{
+				ChatID:    params.TelegramChatID,
+				MessageID: params.MessageID,
+				PhotoURL:  post.Media[0],
+				Caption:   content,
+			})
+		} else {
+			// No photo in update, just edit caption
+			editErr = client.EditMessageCaption(ctx, sessionData, tgtd.EditMessageCaptionParams{
+				ChatID:    params.TelegramChatID,
+				MessageID: params.MessageID,
+				Caption:   content,
+			})
+		}
+	case db.TelegramPublishSentMessagePostTypeMediaGroup:
+		// Edit caption only for media_group (cannot change media)
+		editErr = client.EditMessageCaption(ctx, sessionData, tgtd.EditMessageCaptionParams{
+			ChatID:    params.TelegramChatID,
+			MessageID: params.MessageID,
+			Caption:   content,
 		})
 	}
 

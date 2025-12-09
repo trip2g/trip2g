@@ -20,8 +20,14 @@ var _ updatetelegrampublishposts.Env = &EnvMock{}
 //
 //		// make and configure a mocked updatetelegrampublishposts.Env
 //		mockedEnv := &EnvMock{
+//			EnqueueUpdateAllAccountTelegramPublishPostsFunc: func(ctx context.Context, accountID int64) error {
+//				panic("mock out the EnqueueUpdateAllAccountTelegramPublishPosts method")
+//			},
 //			EnqueueUpdateAllChatTelegramPublishPostsFunc: func(ctx context.Context, chatID int64) error {
 //				panic("mock out the EnqueueUpdateAllChatTelegramPublishPosts method")
+//			},
+//			ListDistinctAccountIDsFromSentAccountMessagesFunc: func(ctx context.Context) ([]int64, error) {
+//				panic("mock out the ListDistinctAccountIDsFromSentAccountMessages method")
 //			},
 //			ListDistinctChatIDsFromSentMessagesFunc: func(ctx context.Context) ([]int64, error) {
 //				panic("mock out the ListDistinctChatIDsFromSentMessages method")
@@ -36,8 +42,14 @@ var _ updatetelegrampublishposts.Env = &EnvMock{}
 //
 //	}
 type EnvMock struct {
+	// EnqueueUpdateAllAccountTelegramPublishPostsFunc mocks the EnqueueUpdateAllAccountTelegramPublishPosts method.
+	EnqueueUpdateAllAccountTelegramPublishPostsFunc func(ctx context.Context, accountID int64) error
+
 	// EnqueueUpdateAllChatTelegramPublishPostsFunc mocks the EnqueueUpdateAllChatTelegramPublishPosts method.
 	EnqueueUpdateAllChatTelegramPublishPostsFunc func(ctx context.Context, chatID int64) error
+
+	// ListDistinctAccountIDsFromSentAccountMessagesFunc mocks the ListDistinctAccountIDsFromSentAccountMessages method.
+	ListDistinctAccountIDsFromSentAccountMessagesFunc func(ctx context.Context) ([]int64, error)
 
 	// ListDistinctChatIDsFromSentMessagesFunc mocks the ListDistinctChatIDsFromSentMessages method.
 	ListDistinctChatIDsFromSentMessagesFunc func(ctx context.Context) ([]int64, error)
@@ -47,12 +59,24 @@ type EnvMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// EnqueueUpdateAllAccountTelegramPublishPosts holds details about calls to the EnqueueUpdateAllAccountTelegramPublishPosts method.
+		EnqueueUpdateAllAccountTelegramPublishPosts []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// AccountID is the accountID argument value.
+			AccountID int64
+		}
 		// EnqueueUpdateAllChatTelegramPublishPosts holds details about calls to the EnqueueUpdateAllChatTelegramPublishPosts method.
 		EnqueueUpdateAllChatTelegramPublishPosts []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// ChatID is the chatID argument value.
 			ChatID int64
+		}
+		// ListDistinctAccountIDsFromSentAccountMessages holds details about calls to the ListDistinctAccountIDsFromSentAccountMessages method.
+		ListDistinctAccountIDsFromSentAccountMessages []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 		}
 		// ListDistinctChatIDsFromSentMessages holds details about calls to the ListDistinctChatIDsFromSentMessages method.
 		ListDistinctChatIDsFromSentMessages []struct {
@@ -63,9 +87,47 @@ type EnvMock struct {
 		Logger []struct {
 		}
 	}
-	lockEnqueueUpdateAllChatTelegramPublishPosts sync.RWMutex
-	lockListDistinctChatIDsFromSentMessages      sync.RWMutex
-	lockLogger                                   sync.RWMutex
+	lockEnqueueUpdateAllAccountTelegramPublishPosts   sync.RWMutex
+	lockEnqueueUpdateAllChatTelegramPublishPosts      sync.RWMutex
+	lockListDistinctAccountIDsFromSentAccountMessages sync.RWMutex
+	lockListDistinctChatIDsFromSentMessages           sync.RWMutex
+	lockLogger                                        sync.RWMutex
+}
+
+// EnqueueUpdateAllAccountTelegramPublishPosts calls EnqueueUpdateAllAccountTelegramPublishPostsFunc.
+func (mock *EnvMock) EnqueueUpdateAllAccountTelegramPublishPosts(ctx context.Context, accountID int64) error {
+	if mock.EnqueueUpdateAllAccountTelegramPublishPostsFunc == nil {
+		panic("EnvMock.EnqueueUpdateAllAccountTelegramPublishPostsFunc: method is nil but Env.EnqueueUpdateAllAccountTelegramPublishPosts was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		AccountID int64
+	}{
+		Ctx:       ctx,
+		AccountID: accountID,
+	}
+	mock.lockEnqueueUpdateAllAccountTelegramPublishPosts.Lock()
+	mock.calls.EnqueueUpdateAllAccountTelegramPublishPosts = append(mock.calls.EnqueueUpdateAllAccountTelegramPublishPosts, callInfo)
+	mock.lockEnqueueUpdateAllAccountTelegramPublishPosts.Unlock()
+	return mock.EnqueueUpdateAllAccountTelegramPublishPostsFunc(ctx, accountID)
+}
+
+// EnqueueUpdateAllAccountTelegramPublishPostsCalls gets all the calls that were made to EnqueueUpdateAllAccountTelegramPublishPosts.
+// Check the length with:
+//
+//	len(mockedEnv.EnqueueUpdateAllAccountTelegramPublishPostsCalls())
+func (mock *EnvMock) EnqueueUpdateAllAccountTelegramPublishPostsCalls() []struct {
+	Ctx       context.Context
+	AccountID int64
+} {
+	var calls []struct {
+		Ctx       context.Context
+		AccountID int64
+	}
+	mock.lockEnqueueUpdateAllAccountTelegramPublishPosts.RLock()
+	calls = mock.calls.EnqueueUpdateAllAccountTelegramPublishPosts
+	mock.lockEnqueueUpdateAllAccountTelegramPublishPosts.RUnlock()
+	return calls
 }
 
 // EnqueueUpdateAllChatTelegramPublishPosts calls EnqueueUpdateAllChatTelegramPublishPostsFunc.
@@ -101,6 +163,38 @@ func (mock *EnvMock) EnqueueUpdateAllChatTelegramPublishPostsCalls() []struct {
 	mock.lockEnqueueUpdateAllChatTelegramPublishPosts.RLock()
 	calls = mock.calls.EnqueueUpdateAllChatTelegramPublishPosts
 	mock.lockEnqueueUpdateAllChatTelegramPublishPosts.RUnlock()
+	return calls
+}
+
+// ListDistinctAccountIDsFromSentAccountMessages calls ListDistinctAccountIDsFromSentAccountMessagesFunc.
+func (mock *EnvMock) ListDistinctAccountIDsFromSentAccountMessages(ctx context.Context) ([]int64, error) {
+	if mock.ListDistinctAccountIDsFromSentAccountMessagesFunc == nil {
+		panic("EnvMock.ListDistinctAccountIDsFromSentAccountMessagesFunc: method is nil but Env.ListDistinctAccountIDsFromSentAccountMessages was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockListDistinctAccountIDsFromSentAccountMessages.Lock()
+	mock.calls.ListDistinctAccountIDsFromSentAccountMessages = append(mock.calls.ListDistinctAccountIDsFromSentAccountMessages, callInfo)
+	mock.lockListDistinctAccountIDsFromSentAccountMessages.Unlock()
+	return mock.ListDistinctAccountIDsFromSentAccountMessagesFunc(ctx)
+}
+
+// ListDistinctAccountIDsFromSentAccountMessagesCalls gets all the calls that were made to ListDistinctAccountIDsFromSentAccountMessages.
+// Check the length with:
+//
+//	len(mockedEnv.ListDistinctAccountIDsFromSentAccountMessagesCalls())
+func (mock *EnvMock) ListDistinctAccountIDsFromSentAccountMessagesCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockListDistinctAccountIDsFromSentAccountMessages.RLock()
+	calls = mock.calls.ListDistinctAccountIDsFromSentAccountMessages
+	mock.lockListDistinctAccountIDsFromSentAccountMessages.RUnlock()
 	return calls
 }
 

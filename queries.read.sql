@@ -1024,6 +1024,17 @@ select post_type
    and telegram_chat_id = ?
    and message_id = ?;
 
+-- name: ListDistinctAccountIDsFromSentAccountMessages :many
+select distinct account_id
+  from telegram_publish_sent_account_messages
+ where instant = 0;
+
+-- name: ListTelegramPublishSentAccountMessagesByAccountID :many
+select note_path_id, telegram_chat_id, message_id, content_hash
+  from telegram_publish_sent_account_messages
+ where account_id = ?
+   and instant = 0;
+
 -- name: RecentlyModifiedNoteVersionIDs :many
 select v.id
   from note_versions v

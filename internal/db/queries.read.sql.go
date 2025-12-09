@@ -1594,7 +1594,7 @@ func (q *Queries) GetSubgraphsByTierID(ctx context.Context, tierID int64) ([]Sub
 }
 
 const getTelegramAccountByID = `-- name: GetTelegramAccountByID :one
-select id, phone, session_data, display_name, is_premium, api_id, api_hash, enabled, app_config, created_by, created_at from telegram_accounts
+select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config from telegram_accounts
  where id = ?
 `
 
@@ -1607,18 +1607,18 @@ func (q *Queries) GetTelegramAccountByID(ctx context.Context, id int64) (Telegra
 		&i.SessionData,
 		&i.DisplayName,
 		&i.IsPremium,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.CreatedBy,
 		&i.ApiID,
 		&i.ApiHash,
-		&i.Enabled,
 		&i.AppConfig,
-		&i.CreatedBy,
-		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getTelegramAccountByPhone = `-- name: GetTelegramAccountByPhone :one
-select id, phone, session_data, display_name, is_premium, api_id, api_hash, enabled, app_config, created_by, created_at from telegram_accounts
+select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config from telegram_accounts
  where phone = ?
 `
 
@@ -1631,12 +1631,12 @@ func (q *Queries) GetTelegramAccountByPhone(ctx context.Context, phone string) (
 		&i.SessionData,
 		&i.DisplayName,
 		&i.IsPremium,
+		&i.Enabled,
+		&i.CreatedAt,
+		&i.CreatedBy,
 		&i.ApiID,
 		&i.ApiHash,
-		&i.Enabled,
 		&i.AppConfig,
-		&i.CreatedBy,
-		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -2793,7 +2793,7 @@ func (q *Queries) ListAllSubgraphs(ctx context.Context) ([]Subgraph, error) {
 
 const listAllTelegramAccounts = `-- name: ListAllTelegramAccounts :many
 
-select id, phone, session_data, display_name, is_premium, api_id, api_hash, enabled, app_config, created_by, created_at from telegram_accounts
+select id, phone, session_data, display_name, is_premium, enabled, created_at, created_by, api_id, api_hash, app_config from telegram_accounts
  order by created_at desc
 `
 
@@ -2815,12 +2815,12 @@ func (q *Queries) ListAllTelegramAccounts(ctx context.Context) ([]TelegramAccoun
 			&i.SessionData,
 			&i.DisplayName,
 			&i.IsPremium,
+			&i.Enabled,
+			&i.CreatedAt,
+			&i.CreatedBy,
 			&i.ApiID,
 			&i.ApiHash,
-			&i.Enabled,
 			&i.AppConfig,
-			&i.CreatedBy,
-			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3097,6 +3097,35 @@ func (q *Queries) ListCronJobExecutionsByJobID(ctx context.Context, jobID int64)
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDistinctAccountIDsFromSentAccountMessages = `-- name: ListDistinctAccountIDsFromSentAccountMessages :many
+select distinct account_id
+  from telegram_publish_sent_account_messages
+ where instant = 0
+`
+
+func (q *Queries) ListDistinctAccountIDsFromSentAccountMessages(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listDistinctAccountIDsFromSentAccountMessages)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var account_id int64
+		if err := rows.Scan(&account_id); err != nil {
+			return nil, err
+		}
+		items = append(items, account_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -3748,6 +3777,48 @@ func (q *Queries) ListTelegramPublishInstantTagsByChatID(ctx context.Context, ch
 			&i.CreatedAt,
 			&i.Hidden,
 			&i.Label,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTelegramPublishSentAccountMessagesByAccountID = `-- name: ListTelegramPublishSentAccountMessagesByAccountID :many
+select note_path_id, telegram_chat_id, message_id, content_hash
+  from telegram_publish_sent_account_messages
+ where account_id = ?
+   and instant = 0
+`
+
+type ListTelegramPublishSentAccountMessagesByAccountIDRow struct {
+	NotePathID     int64  `json:"note_path_id"`
+	TelegramChatID int64  `json:"telegram_chat_id"`
+	MessageID      int64  `json:"message_id"`
+	ContentHash    string `json:"content_hash"`
+}
+
+func (q *Queries) ListTelegramPublishSentAccountMessagesByAccountID(ctx context.Context, accountID int64) ([]ListTelegramPublishSentAccountMessagesByAccountIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, listTelegramPublishSentAccountMessagesByAccountID, accountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTelegramPublishSentAccountMessagesByAccountIDRow
+	for rows.Next() {
+		var i ListTelegramPublishSentAccountMessagesByAccountIDRow
+		if err := rows.Scan(
+			&i.NotePathID,
+			&i.TelegramChatID,
+			&i.MessageID,
+			&i.ContentHash,
 		); err != nil {
 			return nil, err
 		}

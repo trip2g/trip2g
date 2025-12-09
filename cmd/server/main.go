@@ -40,6 +40,7 @@ import (
 	"trip2g/internal/case/backjob/sendtelegramaccountpost"
 	"trip2g/internal/case/backjob/sendtelegrammessage"
 	"trip2g/internal/case/backjob/sendtelegrampost"
+	"trip2g/internal/case/backjob/updateallaccounttelegrampublishposts"
 	"trip2g/internal/case/backjob/updateallchattelegrampublishposts"
 	"trip2g/internal/case/backjob/updatetelegramaccountmessage"
 	"trip2g/internal/case/backjob/updatetelegramaccountpost"
@@ -129,6 +130,7 @@ type app struct {
 	*importtelegramchannel.ImportTelegramChannelJob
 	*extractnotionpages.ExtractNotionPagesJob
 	*updateallchattelegrampublishposts.UpdateAllChatTelegramPublishPostsJob
+	*updateallaccounttelegrampublishposts.UpdateAllAccountTelegramPublishPostsJob
 
 	sigChan     chan os.Signal
 	shutdownCtx context.Context
@@ -343,6 +345,7 @@ func main() {
 	a.UpdateTelegramPostJob = updatetelegrampost.New(a)
 	a.ExtractNotionPagesJob = extractnotionpages.New(a)
 	a.UpdateAllChatTelegramPublishPostsJob = updateallchattelegrampublishposts.New(a)
+	a.UpdateAllAccountTelegramPublishPostsJob = updateallaccounttelegrampublishposts.New(a)
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)
 	if err != nil {
