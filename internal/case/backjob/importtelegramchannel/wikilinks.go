@@ -6,8 +6,11 @@ import (
 )
 
 var (
-	// tgLinkRegex matches [text](https://t.me/channel/123) - any channel.
-	tgLinkRegex = regexp.MustCompile(`\[([^\]]*)\]\(https?://t\.me/[^/]+/(\d+)\)`)
+	// tgLinkRegex matches telegram links in two formats:
+	// - Public channels: [text](https://t.me/channel_name/123)
+	// - Private channels: [text](https://t.me/c/1234567890/123)
+	// Captures the LAST number in the path (message ID).
+	tgLinkRegex = regexp.MustCompile(`\[([^\]]*)\]\(https?://t\.me/(?:[^/]+/)*(\d+)\)`)
 	// Custom emoji with tg://emoji?id=123
 	customEmojiReplaceRegex = regexp.MustCompile(`!\[([^\]]*)\]\(tg://emoji\?id=(\d+)\)`)
 )
