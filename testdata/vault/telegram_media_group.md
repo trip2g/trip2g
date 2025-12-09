@@ -21,3 +21,5 @@ Features:
 - Media files cannot be changed after sending
 
 This tests media group functionality with mixed photo and video content.
+
+[[telegram_text]] | [[telegram_one_photo]]

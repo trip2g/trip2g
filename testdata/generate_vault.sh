@@ -197,6 +197,8 @@ Numbered list:
 **Custom emoji:** ![2️⃣](https://ce.trip2g.com/5307907239380528763.webp)
 
 This tests comprehensive Telegram text formatting with all supported markdown features.
+
+[[telegram_one_photo]] | [[telegram_media_group]]
 EOF
 
 cat > "$VAULT/telegram_one_photo.md" << 'EOF'
@@ -220,6 +222,8 @@ Caption features:
 - Can be edited later with `editMessageCaption`
 
 This tests single media attachment with caption.
+
+[[telegram_text]] | [[telegram_media_group]]
 EOF
 
 cat > "$VAULT/telegram_media_group.md" << 'EOF'
@@ -246,6 +250,8 @@ Features:
 - Media files cannot be changed after sending
 
 This tests media group functionality with mixed photo and video content.
+
+[[telegram_text]] | [[telegram_one_photo]]
 EOF
 
 cat > "$VAULT/paid_with_preview.md" << 'EOF'

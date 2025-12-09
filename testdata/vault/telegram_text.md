@@ -50,3 +50,5 @@ Numbered list:
 **Custom emoji:** ![2️⃣](https://ce.trip2g.com/5307907239380528763.webp)
 
 This tests comprehensive Telegram text formatting with all supported markdown features.
+
+[[telegram_one_photo]] | [[telegram_media_group]]

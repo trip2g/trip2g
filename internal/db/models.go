@@ -390,12 +390,12 @@ type TelegramAccount struct {
 	SessionData []byte    `json:"session_data"`
 	DisplayName string    `json:"display_name"`
 	IsPremium   int64     `json:"is_premium"`
+	Enabled     int64     `json:"enabled"`
+	CreatedAt   time.Time `json:"created_at"`
+	CreatedBy   int64     `json:"created_by"`
 	ApiID       int64     `json:"api_id"`
 	ApiHash     string    `json:"api_hash"`
-	Enabled     int64     `json:"enabled"`
 	AppConfig   string    `json:"app_config"`
-	CreatedBy   int64     `json:"created_by"`
-	CreatedAt   time.Time `json:"created_at"`
 }
 
 type TelegramPublishAccountChat struct {

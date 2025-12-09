@@ -18,3 +18,5 @@ Caption features:
 - Can be edited later with `editMessageCaption`
 
 This tests single media attachment with caption.
+
+[[telegram_text]] | [[telegram_media_group]]
