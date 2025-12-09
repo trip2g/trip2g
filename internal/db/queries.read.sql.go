@@ -3791,6 +3791,62 @@ func (q *Queries) ListTelegramPublishInstantTagsByChatID(ctx context.Context, ch
 	return items, nil
 }
 
+const listTelegramPublishSentAccountMessagesByAccountAndChat = `-- name: ListTelegramPublishSentAccountMessagesByAccountAndChat :many
+select tsam.account_id
+     , tsam.message_id
+     , tsam.note_path_id
+     , p.value as note_path
+     , tsam.telegram_chat_id
+  from telegram_publish_sent_account_messages tsam
+  join note_paths p on tsam.note_path_id = p.id
+ where tsam.account_id = ?
+   and tsam.telegram_chat_id = ?
+   and p.hidden_at is null
+ order by tsam.created_at asc
+`
+
+type ListTelegramPublishSentAccountMessagesByAccountAndChatParams struct {
+	AccountID      int64 `json:"account_id"`
+	TelegramChatID int64 `json:"telegram_chat_id"`
+}
+
+type ListTelegramPublishSentAccountMessagesByAccountAndChatRow struct {
+	AccountID      int64  `json:"account_id"`
+	MessageID      int64  `json:"message_id"`
+	NotePathID     int64  `json:"note_path_id"`
+	NotePath       string `json:"note_path"`
+	TelegramChatID int64  `json:"telegram_chat_id"`
+}
+
+func (q *Queries) ListTelegramPublishSentAccountMessagesByAccountAndChat(ctx context.Context, arg ListTelegramPublishSentAccountMessagesByAccountAndChatParams) ([]ListTelegramPublishSentAccountMessagesByAccountAndChatRow, error) {
+	rows, err := q.db.QueryContext(ctx, listTelegramPublishSentAccountMessagesByAccountAndChat, arg.AccountID, arg.TelegramChatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTelegramPublishSentAccountMessagesByAccountAndChatRow
+	for rows.Next() {
+		var i ListTelegramPublishSentAccountMessagesByAccountAndChatRow
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.MessageID,
+			&i.NotePathID,
+			&i.NotePath,
+			&i.TelegramChatID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTelegramPublishSentAccountMessagesByAccountID = `-- name: ListTelegramPublishSentAccountMessagesByAccountID :many
 select note_path_id, telegram_chat_id, message_id, content_hash
   from telegram_publish_sent_account_messages

@@ -45,6 +45,7 @@ func Resolve(ctx context.Context, env Env, notePathID int64) error {
 		source := model.TelegramPostSource{
 			NoteView:       noteView,
 			ChatID:         0, // Not used for account publishing
+			AccountID:      sentMsg.AccountID,
 			TelegramChatID: sentMsg.TelegramChatID,
 			Instant:        false,
 		}

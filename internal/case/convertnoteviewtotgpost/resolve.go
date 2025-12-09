@@ -24,23 +24,29 @@ func (e *ErrAssetsNotReadyError) Error() string {
 }
 
 type SentMessage = db.ListTelegramPublishSentMessagesByChatIDRow
+type SentAccountMessage = db.ListTelegramPublishSentAccountMessagesByAccountAndChatRow
 
 type Env interface {
 	LatestNoteViews() *model.NoteViews
 	Logger() logger.Logger
 	ListTelegramPublishSentMessagesByChatID(ctx context.Context, chatID int64) ([]SentMessage, error)
+	ListTelegramPublishSentAccountMessagesByAccountAndChat(
+		ctx context.Context,
+		arg db.ListTelegramPublishSentAccountMessagesByAccountAndChatParams,
+	) ([]SentAccountMessage, error)
 
 	TimeLocation() *time.Location
 	PublicURL() string
 	Now() time.Time
 }
 
-//nolint:gocognit // complex conversion logic
+//nolint:gocognit,funlen // complex conversion logic
 func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*model.TelegramPost, error) {
 	logger := logger.WithPrefix(env.Logger(), "convertnoteviewtotgpost")
 
 	sentMap := make(map[int64]*SentMessage)
 
+	// Load bot sent messages
 	if source.ChatID != 0 {
 		sentMsgs, err := env.ListTelegramPublishSentMessagesByChatID(ctx, source.ChatID)
 		if err != nil {
@@ -49,6 +55,26 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 
 		for _, msg := range sentMsgs {
 			sentMap[msg.NotePathID] = &msg
+		}
+	}
+
+	// Load account sent messages
+	if source.AccountID != 0 && source.TelegramChatID != 0 {
+		accountMsgs, err := env.ListTelegramPublishSentAccountMessagesByAccountAndChat(ctx, db.ListTelegramPublishSentAccountMessagesByAccountAndChatParams{
+			AccountID:      source.AccountID,
+			TelegramChatID: source.TelegramChatID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list telegram publish sent account messages: %w", err)
+		}
+
+		for _, msg := range accountMsgs {
+			// Convert account message to SentMessage format for link resolution
+			sentMap[msg.NotePathID] = &SentMessage{
+				NotePathID:     msg.NotePathID,
+				TelegramChatID: msg.TelegramChatID,
+				MessageID:      msg.MessageID,
+			}
 		}
 	}
 

@@ -877,6 +877,19 @@ select tsm.chat_id
    and p.hidden_at is null
  order by tsm.created_at asc;
 
+-- name: ListTelegramPublishSentAccountMessagesByAccountAndChat :many
+select tsam.account_id
+     , tsam.message_id
+     , tsam.note_path_id
+     , p.value as note_path
+     , tsam.telegram_chat_id
+  from telegram_publish_sent_account_messages tsam
+  join note_paths p on tsam.note_path_id = p.id
+ where tsam.account_id = ?
+   and tsam.telegram_chat_id = ?
+   and p.hidden_at is null
+ order by tsam.created_at asc;
+
 -- name: GetTelegramPublishNoteByNotePathID :one
 select *
   from telegram_publish_notes

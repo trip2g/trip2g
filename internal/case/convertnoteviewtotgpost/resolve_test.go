@@ -33,6 +33,13 @@ func (e *testEnv) ListTelegramPublishSentMessagesByChatID(ctx context.Context, c
 	return e.sentMsgs, nil
 }
 
+func (e *testEnv) ListTelegramPublishSentAccountMessagesByAccountAndChat(
+	ctx context.Context,
+	arg db.ListTelegramPublishSentAccountMessagesByAccountAndChatParams,
+) ([]db.ListTelegramPublishSentAccountMessagesByAccountAndChatRow, error) {
+	return nil, nil
+}
+
 func (e *testEnv) PublicURL() string {
 	return e.publicURL
 }

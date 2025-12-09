@@ -119,6 +119,7 @@ func enqueuePostToChat(ctx context.Context, env Env, params model.SendTelegramPu
 	source := model.TelegramPostSource{
 		NoteView:       noteView,
 		ChatID:         0, // Not used for account publishing
+		AccountID:      chat.AccountID,
 		TelegramChatID: chat.TelegramChatID,
 		Instant:        params.Instant,
 	}
