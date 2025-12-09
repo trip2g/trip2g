@@ -23,10 +23,15 @@ func replaceTelegramLinks(content string, postMap map[string]string) string {
 			return match
 		}
 
+		linkText := submatches[1]
 		postID := submatches[2]
 
 		// Look up in map
 		if title, ok := postMap[postID]; ok {
+			// Use alias if link text differs from title
+			if linkText != "" && linkText != title {
+				return fmt.Sprintf("[[%s|%s]]", title, linkText)
+			}
 			return fmt.Sprintf("[[%s]]", title)
 		}
 
