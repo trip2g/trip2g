@@ -65,6 +65,8 @@ type Response struct {
 
 	ViewedAt *time.Time
 
+	Config db.ConfigVersion
+
 	IsAdmin bool
 }
 
@@ -104,6 +106,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.IsAdmin = isAdmin
 
 	config := env.LatestConfig()
+	response.Config = config
 
 	if isAdmin || config.ShowDraftVersions {
 		response.DefaultVersion = "latest"

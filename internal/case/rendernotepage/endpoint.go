@@ -91,8 +91,13 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	if resp.Note.Layout != "" {
-		processed, layoutErr := renderLayout(ctx, env, resp)
+	layout := resp.Note.Layout
+	if layout == "" && resp.Config.DefaultLayout != "" {
+		layout = resp.Config.DefaultLayout
+	}
+
+	if layout != "" {
+		processed, layoutErr := renderLayout(ctx, env, resp, layout)
 		if layoutErr != nil {
 			return nil, layoutErr
 		}
@@ -119,8 +124,9 @@ func renderLayout(
 	ctx *fasthttp.RequestCtx,
 	env Env,
 	resp *Response,
+	layoutName string,
 ) (bool, error) {
-	layout, layoutExists := env.Layouts().Map["/"+resp.Note.Layout]
+	layout, layoutExists := env.Layouts().Map["/"+layoutName]
 	if !layoutExists {
 		env.Logger().Warn("layout not found: " + resp.Note.Layout)
 		return false, nil
