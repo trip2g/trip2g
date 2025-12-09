@@ -257,27 +257,39 @@ mutation($input: UploadNoteAssetInput!) {
 
 ## Синхронизация ассетов
 
+### Путь ассетов (absolutePath)
+
+**Важно**: `absolutePath` хранится на сервере **относительно папки синхронизации** (без prefix), чтобы разные пользователи могли синхронизировать в свои папки.
+
+**Пример:**
+- User A: sync folder = `notes/`, файл в vault `notes/assets/img.png`
+  - При PUSH: отправляет `absolutePath = "assets/img.png"` (без `notes/`)
+- User B: sync folder = `/` (root)
+  - При PULL: получает `absolutePath = "assets/img.png"`, сохраняет как `assets/img.png`
+- User C: sync folder = `my-vault/`
+  - При PULL: получает `absolutePath = "assets/img.png"`, сохраняет как `my-vault/assets/img.png`
+
 ### При PUSH (локальные изменения → сервер)
 
 После отправки заметки сервер возвращает список ассетов с их хэшами. Плагин:
 1. Находит локальный файл через `metadataCache.getFirstLinkpathDest()`
 2. Вычисляет SHA256 хэш
-3. Если хэш отличается от серверного → загружает файл
+3. Если хэш отличается от серверного → загружает файл с **относительным** `absolutePath` (без sync folder prefix)
 
 ### При PULL (изменения с сервера → локально)
 
 ```
 Для каждого ассета из assetReplaces:
-├─ Ищем локальный файл через metadataCache
+├─ Получаем absolutePath с сервера (относительный)
+├─ Добавляем sync folder prefix → получаем полный путь в vault
+├─ Ищем локальный файл
 ├─ Если найден:
 │   ├─ Вычисляем SHA256 хэш
 │   ├─ Hash совпадает → пропускаем ✓
 │   └─ Hash отличается → скачиваем с asset.url
 └─ Если не найден:
     ├─ Скачиваем с asset.url
-    └─ Сохраняем:
-        ├─ Если asset.id содержит "/" → относительно папки синхронизации
-        └─ Иначе → в папку заметки
+    └─ Сохраняем по полному пути (sync folder + absolutePath)
 ```
 
 ### Типы ассетов
@@ -285,15 +297,16 @@ mutation($input: UploadNoteAssetInput!) {
 ```typescript
 // При push - сервер сообщает что нужно загрузить
 interface NoteAsset {
-  path: string;      // путь в заметке
+  path: string;      // путь в заметке (относительный к заметке)
   sha256Hash: string;
 }
 
 // При pull - сервер даёт URL для скачивания
 interface RemoteAsset {
-  id: string;   // путь в заметке (image.png)
-  url: string;  // полный URL для скачивания
-  hash: string; // SHA256 хэш для проверки
+  id: string;           // путь в заметке (image.png)
+  url: string;          // полный URL для скачивания
+  hash: string;         // SHA256 хэш для проверки
+  absolutePath: string; // путь относительно sync folder (БЕЗ prefix)
 }
 ```
 
@@ -314,6 +327,30 @@ obsidian-sync/
 ├── styles.css
 └── manifest.json
 ```
+
+## HTTP запросы и CORS
+
+### GraphQL API
+GraphQL запросы используют обычный `fetch` через библиотеку `graphql-request`. Это позволяет видеть запросы в DevTools Network tab для отладки.
+
+### Загрузка ассетов
+Для загрузки ассетов используется `requestUrl` из Obsidian API вместо `fetch`. Причина — CORS: ассеты могут храниться на CDN/S3, и браузер блокирует запросы без CORS-заголовков.
+
+```typescript
+import { requestUrl } from "obsidian";
+
+// Обычный fetch — заблокируется CORS
+const response = await fetch(assetUrl); // ❌ CORS error
+
+// requestUrl — обходит CORS (работает через Node.js в Electron)
+const response = await requestUrl({ url: assetUrl }); // ✓
+const data = response.arrayBuffer;
+```
+
+**Особенности `requestUrl`:**
+- Не виден в DevTools Network tab
+- Возвращает `{ json, text, arrayBuffer, status, headers }` (не `Response` объект)
+- Работает только в Obsidian (Electron), не в браузере
 
 ## Edge Cases
 
