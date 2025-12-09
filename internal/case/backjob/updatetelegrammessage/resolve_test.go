@@ -133,6 +133,9 @@ func TestResolve_Success_PhotoMessage(t *testing.T) {
 		GetTelegramPublishSentMessageContentHashFunc: func(ctx context.Context, arg db.GetTelegramPublishSentMessageContentHashParams) (string, error) {
 			return "old_hash", nil
 		},
+		TelegramCaptionLengthLimitFunc: func(ctx context.Context, accountID *int64) int {
+			return 1024
+		},
 		SendTelegramRequestFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error {
 			// Verify it's an edit message caption request
 			editMsg, ok := msg.(tgbotapi.EditMessageCaptionConfig)

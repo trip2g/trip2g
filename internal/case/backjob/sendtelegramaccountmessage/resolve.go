@@ -25,6 +25,7 @@ type Env interface {
 	ClearTelegramPublishNoteLastError(ctx context.Context, notePathID int64) error
 	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)
 	DecryptData(ciphertext []byte) ([]byte, error)
+	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
 	Logger() logger.Logger
 }
 
@@ -93,8 +94,12 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountSendPost
 	mediaCount := len(post.Media)
 	postType := db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
 
-	// Truncate content to telegram limits (media posts have lower limit)
-	content := telegram.TruncateContent(post.Content, mediaCount > 0)
+	// Truncate content to telegram limits
+	maxLength := 4096
+	if mediaCount > 0 {
+		maxLength = env.TelegramCaptionLengthLimit(ctx, &params.AccountID)
+	}
+	content := telegram.TruncateContent(post.Content, maxLength)
 
 	// Create tgtd client and send message
 	client := tgtd.NewClient(env, int(account.ApiID), account.ApiHash)

@@ -79,15 +79,13 @@ func GetVisibleTelegramLength(text string) int {
 	return GetTelegramLength(stripped)
 }
 
-// TruncateContent truncates content to Telegram limits.
-// Text messages: 4096 chars, Photo captions: 1024 chars.
+// TruncateContent truncates content to the specified Telegram limit.
 // Reserve 3 chars for '...' if truncation is needed.
 // Telegram counts visible length (without HTML tags).
 // Removes unclosed HTML tags after truncation.
-func TruncateContent(content string, hasImages bool) string {
-	maxLength := 4096
-	if hasImages {
-		maxLength = 1024
+func TruncateContent(content string, maxLength int) string {
+	if maxLength <= 0 {
+		maxLength = 4096
 	}
 
 	// Reserve 3 chars for ellipsis

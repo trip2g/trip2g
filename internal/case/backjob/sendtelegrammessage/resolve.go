@@ -30,6 +30,7 @@ type Env interface {
 	UpdateTelegramPublishPost(ctx context.Context, notePathID int64) error
 	SetTelegramPublishNoteLastError(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error
 	ClearTelegramPublishNoteLastError(ctx context.Context, notePathID int64) error
+	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
 	Logger() logger.Logger
 }
 
@@ -89,8 +90,12 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramSendPostParams)
 	mediaCount := len(post.Media)
 	postType = db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
 
-	// Truncate content to telegram limits (minus 3 for '...')
-	content := telegram.TruncateContent(post.Content, mediaCount > 0)
+	// Truncate content to telegram limits
+	maxLength := 4096
+	if mediaCount > 0 {
+		maxLength = env.TelegramCaptionLengthLimit(ctx, nil)
+	}
+	content := telegram.TruncateContent(post.Content, maxLength)
 
 	switch mediaCount {
 	case 0:

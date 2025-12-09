@@ -23,6 +23,7 @@ type Env interface {
 	GetTelegramPublishSentMessagePostType(ctx context.Context, arg db.GetTelegramPublishSentMessagePostTypeParams) (string, error)
 	SendTelegramRequest(ctx context.Context, chatID int64, msg tgbotapi.Chattable) error
 	UpdateTelegramPublishSentMessageContent(ctx context.Context, arg db.UpdateTelegramPublishSentMessageContentParams) error
+	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
 }
 
 func Resolve(ctx context.Context, env Env, params model.TelegramUpdatePostParams) error {
@@ -90,8 +91,12 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramUpdatePostParam
 	// Use current post type for determining content length limit
 	hasMedia := currentPostType == db.TelegramPublishSentMessagePostTypePhoto || currentPostType == db.TelegramPublishSentMessagePostTypeMediaGroup
 
-	// Truncate content to telegram limits (minus 3 for '...')
-	content := telegram.TruncateContent(post.Content, hasMedia)
+	// Truncate content to telegram limits
+	maxLength := 4096
+	if hasMedia {
+		maxLength = env.TelegramCaptionLengthLimit(ctx, nil)
+	}
+	content := telegram.TruncateContent(post.Content, maxLength)
 
 	// Calculate content hash for new content
 	hash := sha256.Sum256([]byte(content))

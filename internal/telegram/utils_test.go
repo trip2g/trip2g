@@ -8,7 +8,7 @@ import (
 
 func TestTruncateContent_NoTruncationNeeded(t *testing.T) {
 	content := "Short message"
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 	if result != content {
 		t.Errorf("expected no truncation for short content, got %q", result)
 	}
@@ -17,7 +17,7 @@ func TestTruncateContent_NoTruncationNeeded(t *testing.T) {
 func TestTruncateContent_SimpleText(t *testing.T) {
 	// Create content that exceeds 4093 chars (4096 - 3 for '...')
 	content := strings.Repeat("a", 5000)
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 
 	// Should be truncated to 4093 + 3 ('...') = 4096
 	if telegram.GetTelegramLength(result) > 4096 {
@@ -32,7 +32,7 @@ func TestTruncateContent_SimpleText(t *testing.T) {
 func TestTruncateContent_WithImages(t *testing.T) {
 	// Create content that exceeds 1021 chars (1024 - 3 for '...')
 	content := strings.Repeat("a", 1500)
-	result := telegram.TruncateContent(content, true)
+	result := telegram.TruncateContent(content, 1024)
 
 	// Should be truncated to 1021 + 3 ('...') = 1024
 	if telegram.GetTelegramLength(result) > 1024 {
@@ -49,7 +49,7 @@ func TestTruncateContent_RemoveIncompleteTags(t *testing.T) {
 	baseContent := strings.Repeat("a", 4100)
 	content := baseContent + "<b"
 
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 
 	// Should remove the incomplete tag
 	if strings.Contains(result, "<b") && !strings.Contains(result, "<b>") {
@@ -65,7 +65,7 @@ func TestTruncateContent_RemoveUnclosedTag(t *testing.T) {
 	// Content with unclosed tag
 	content := "Some text <b>bold text without closing tag" + strings.Repeat("a", 4100)
 
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 
 	// Should remove the unclosed <b> tag and its content
 	if strings.Contains(result, "<b>") {
@@ -85,7 +85,7 @@ func TestTruncateContent_PreserveClosedTags(t *testing.T) {
 	// Content with properly closed tags
 	content := "Text <b>bold</b> <i>italic</i> " + strings.Repeat("a", 4100)
 
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 
 	// Closed tags before truncation point should be preserved
 	if !strings.Contains(result, "<b>bold</b>") {
@@ -101,7 +101,7 @@ func TestTruncateContent_NestedTags(t *testing.T) {
 	// Content with nested unclosed tags
 	content := "Text <b>bold <i>italic" + strings.Repeat("a", 4100)
 
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 
 	// Should remove the outermost unclosed tag
 	if strings.Contains(result, "<b>") {
@@ -117,7 +117,7 @@ func TestTruncateContent_ComplexHTML(t *testing.T) {
 	// Content with various HTML tags
 	content := "<b>Bold</b> <i>Italic</i> <code>Code</code> <u>Underline</u> " + strings.Repeat("a", 4100)
 
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 
 	// All properly closed tags should be preserved
 	if !strings.Contains(result, "<b>Bold</b>") {
@@ -133,7 +133,7 @@ func TestTruncateContent_TagWithAttributes(t *testing.T) {
 	// Content with tag that has attributes
 	content := `<a href="https://example.com">Link</a> ` + strings.Repeat("a", 4100)
 
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 
 	// Properly closed tag with attributes should be preserved
 	if !strings.Contains(result, `<a href="https://example.com">Link</a>`) {
@@ -149,7 +149,7 @@ func TestTruncateContent_UnclosedTagWithAttributes(t *testing.T) {
 	// Content with unclosed tag that has attributes
 	content := `Text <a href="https://example.com">Link without closing` + strings.Repeat("a", 4100)
 
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 
 	// Should remove the unclosed tag
 	if strings.Contains(result, `<a href`) {
@@ -270,7 +270,7 @@ func TestGetVisibleTelegramLength_TagsWithCyrillic(t *testing.T) {
 func TestTruncateContent_WithHTMLTags(t *testing.T) {
 	// Content with HTML tags that fits within limit
 	content := "<b>Bold</b> " + strings.Repeat("a", 4080)
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 
 	// Should not be truncated (visible length is 4084, which is < 4093)
 	if strings.HasSuffix(result, "...") {
@@ -281,7 +281,7 @@ func TestTruncateContent_WithHTMLTags(t *testing.T) {
 func TestTruncateContent_WithHTMLTagsExceedsLimit(t *testing.T) {
 	// Content with HTML tags that exceeds visible limit
 	content := "<b>Bold</b> " + strings.Repeat("a", 4090)
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 
 	// Should be truncated
 	if !strings.HasSuffix(result, "...") {
@@ -300,7 +300,7 @@ func TestTruncateContent_LongTagsDontCount(t *testing.T) {
 	longAttr := strings.Repeat("x", 1000)
 	content := `<a href="` + longAttr + `">Short visible text</a>`
 
-	result := telegram.TruncateContent(content, false)
+	result := telegram.TruncateContent(content, 4096)
 
 	// Should not be truncated because visible text is only 17 chars
 	if strings.HasSuffix(result, "...") {

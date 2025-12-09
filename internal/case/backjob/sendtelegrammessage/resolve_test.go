@@ -149,6 +149,9 @@ func TestResolve_Success_WithImages(t *testing.T) {
 		CheckTelegramPublishSentMessageExistsFunc: func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error) {
 			return 0, nil
 		},
+		TelegramCaptionLengthLimitFunc: func(ctx context.Context, accountID *int64) int {
+			return 1024
+		},
 		SendTelegramMessageFunc: func(ctx context.Context, chatID int64, msg tgbotapi.Chattable) (int64, error) {
 			// Should send photo
 			return 333, nil

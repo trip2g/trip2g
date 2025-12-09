@@ -23,6 +23,7 @@ type Env interface {
 	UpdateTelegramPublishSentAccountMessageContent(ctx context.Context, arg db.UpdateTelegramPublishSentAccountMessageContentParams) error
 	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)
 	DecryptData(ciphertext []byte) ([]byte, error)
+	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
 }
 
 func Resolve(ctx context.Context, env Env, params model.TelegramAccountUpdatePostParams) error {
@@ -84,8 +85,12 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	// Use current post type for determining content length limit (like bot does)
 	hasMedia := currentPostType == db.TelegramPublishSentMessagePostTypePhoto || currentPostType == db.TelegramPublishSentMessagePostTypeMediaGroup
 
-	// Truncate content to telegram limits (media posts have lower limit)
-	content := telegram.TruncateContent(post.Content, hasMedia)
+	// Truncate content to telegram limits
+	maxLength := 4096
+	if hasMedia {
+		maxLength = env.TelegramCaptionLengthLimit(ctx, &params.AccountID)
+	}
+	content := telegram.TruncateContent(post.Content, maxLength)
 
 	// Calculate content hash for new content
 	// For photo: include media URL (can be changed)

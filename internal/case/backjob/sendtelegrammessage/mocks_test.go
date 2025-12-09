@@ -44,6 +44,9 @@ var _ sendtelegrammessage.Env = &EnvMock{}
 //			SetTelegramPublishNoteLastErrorFunc: func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error {
 //				panic("mock out the SetTelegramPublishNoteLastError method")
 //			},
+//			TelegramCaptionLengthLimitFunc: func(ctx context.Context, accountID *int64) int {
+//				panic("mock out the TelegramCaptionLengthLimit method")
+//			},
 //			UpdateTelegramPublishPostFunc: func(ctx context.Context, notePathID int64) error {
 //				panic("mock out the UpdateTelegramPublishPost method")
 //			},
@@ -74,6 +77,9 @@ type EnvMock struct {
 
 	// SetTelegramPublishNoteLastErrorFunc mocks the SetTelegramPublishNoteLastError method.
 	SetTelegramPublishNoteLastErrorFunc func(ctx context.Context, arg db.SetTelegramPublishNoteLastErrorParams) error
+
+	// TelegramCaptionLengthLimitFunc mocks the TelegramCaptionLengthLimit method.
+	TelegramCaptionLengthLimitFunc func(ctx context.Context, accountID *int64) int
 
 	// UpdateTelegramPublishPostFunc mocks the UpdateTelegramPublishPost method.
 	UpdateTelegramPublishPostFunc func(ctx context.Context, notePathID int64) error
@@ -123,6 +129,13 @@ type EnvMock struct {
 			// Arg is the arg argument value.
 			Arg db.SetTelegramPublishNoteLastErrorParams
 		}
+		// TelegramCaptionLengthLimit holds details about calls to the TelegramCaptionLengthLimit method.
+		TelegramCaptionLengthLimit []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// AccountID is the accountID argument value.
+			AccountID *int64
+		}
 		// UpdateTelegramPublishPost holds details about calls to the UpdateTelegramPublishPost method.
 		UpdateTelegramPublishPost []struct {
 			// Ctx is the ctx argument value.
@@ -138,6 +151,7 @@ type EnvMock struct {
 	lockLogger                                sync.RWMutex
 	lockSendTelegramMessage                   sync.RWMutex
 	lockSetTelegramPublishNoteLastError       sync.RWMutex
+	lockTelegramCaptionLengthLimit            sync.RWMutex
 	lockUpdateTelegramPublishPost             sync.RWMutex
 }
 
@@ -376,6 +390,42 @@ func (mock *EnvMock) SetTelegramPublishNoteLastErrorCalls() []struct {
 	mock.lockSetTelegramPublishNoteLastError.RLock()
 	calls = mock.calls.SetTelegramPublishNoteLastError
 	mock.lockSetTelegramPublishNoteLastError.RUnlock()
+	return calls
+}
+
+// TelegramCaptionLengthLimit calls TelegramCaptionLengthLimitFunc.
+func (mock *EnvMock) TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int {
+	if mock.TelegramCaptionLengthLimitFunc == nil {
+		panic("EnvMock.TelegramCaptionLengthLimitFunc: method is nil but Env.TelegramCaptionLengthLimit was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		AccountID *int64
+	}{
+		Ctx:       ctx,
+		AccountID: accountID,
+	}
+	mock.lockTelegramCaptionLengthLimit.Lock()
+	mock.calls.TelegramCaptionLengthLimit = append(mock.calls.TelegramCaptionLengthLimit, callInfo)
+	mock.lockTelegramCaptionLengthLimit.Unlock()
+	return mock.TelegramCaptionLengthLimitFunc(ctx, accountID)
+}
+
+// TelegramCaptionLengthLimitCalls gets all the calls that were made to TelegramCaptionLengthLimit.
+// Check the length with:
+//
+//	len(mockedEnv.TelegramCaptionLengthLimitCalls())
+func (mock *EnvMock) TelegramCaptionLengthLimitCalls() []struct {
+	Ctx       context.Context
+	AccountID *int64
+} {
+	var calls []struct {
+		Ctx       context.Context
+		AccountID *int64
+	}
+	mock.lockTelegramCaptionLengthLimit.RLock()
+	calls = mock.calls.TelegramCaptionLengthLimit
+	mock.lockTelegramCaptionLengthLimit.RUnlock()
 	return calls
 }
 
