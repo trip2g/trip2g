@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	channelID = 2415394206
-	messageID = 91
+	channelID = 1593462649
+	messageID = 2079
 )
 
 func main() {

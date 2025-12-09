@@ -304,6 +304,26 @@ func TestConvert_CodeBlockNoLanguage(t *testing.T) {
 	require.Equal(t, expected, res)
 }
 
+func TestConvert_BoldWithTrailingSpace(t *testing.T) {
+	// Bold entity that ends with a space - space should be moved outside the bold
+	// Original: "**Главная причина тревоги — это желание преодолеть неопределенность. **Искусственный"
+	// Expected: "**Главная причина тревоги — это желание преодолеть неопределенность.** Искусственный"
+	msg := &tg.Message{
+		Message: "Главная причина тревоги — это желание преодолеть неопределенность. Искусственный интеллект многократно усиливает эту неопределенность, делая будущее еще более туманным.",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityBold{
+				Offset: 0,
+				Length: 67, // includes trailing space
+			},
+		},
+	}
+
+	res := Convert(msg)
+	expected := "**Главная причина тревоги — это желание преодолеть неопределенность.** Искусственный интеллект многократно усиливает эту неопределенность, делая будущее еще более туманным."
+
+	require.Equal(t, expected, res)
+}
+
 func TestConvert_PollWithText(t *testing.T) {
 	msg := &tg.Message{
 		Message:  "Check out this quiz:",

@@ -310,7 +310,7 @@ type adjustedEntity struct {
 	length int
 }
 
-// trimEntitySpaces trims leading spaces from entity.
+// trimEntitySpaces trims leading and trailing spaces from entity.
 // Returns nil if entity becomes empty (only whitespace).
 func trimEntitySpaces(source []rune, utf16Offset, utf16Length int) *adjustedEntity {
 	// Convert to rune positions
@@ -328,15 +328,14 @@ func trimEntitySpaces(source []rune, utf16Offset, utf16Length int) *adjustedEnti
 		newStart++
 	}
 
-	// If all spaces, skip this entity
-	allSpaces := true
-	for i := newStart; i < end; i++ {
-		if source[i] != ' ' && source[i] != '\t' {
-			allSpaces = false
-			break
-		}
+	// Trim trailing spaces (but not newlines)
+	newEnd := end
+	for newEnd > newStart && source[newEnd-1] == ' ' {
+		newEnd--
 	}
-	if allSpaces {
+
+	// If all spaces, skip this entity
+	if newStart >= newEnd {
 		return nil
 	}
 
@@ -345,9 +344,10 @@ func trimEntitySpaces(source []rune, utf16Offset, utf16Length int) *adjustedEnti
 	for i := start; i < newStart; i++ {
 		newUtf16Offset += utf16RuneLen(source[i])
 	}
-	newUtf16Length := utf16Length
-	for i := start; i < newStart; i++ {
-		newUtf16Length -= utf16RuneLen(source[i])
+
+	newUtf16Length := 0
+	for i := newStart; i < newEnd; i++ {
+		newUtf16Length += utf16RuneLen(source[i])
 	}
 
 	if newUtf16Length <= 0 {
