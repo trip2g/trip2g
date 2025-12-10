@@ -22,20 +22,6 @@ const (
 	TOCDisplayHide
 )
 
-// Pre-compiled regexes for removeMarkdownSyntax (compiled once at init).
-var (
-	mdCodeBlockRegex     = regexp.MustCompile("```[\\s\\S]*?```")
-	mdInlineCodeRegex    = regexp.MustCompile("`[^`]*`")
-	mdHeaderRegex        = regexp.MustCompile(`^#{1,6}\s+`)
-	mdLinkRegex          = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
-	mdWikilinkRegex      = regexp.MustCompile(`\[\[([^|\]]*?)(?:\|([^\]]*?))?\]\]`)
-	mdBoldItalicRegex    = regexp.MustCompile(`\*+([^*]+)\*+`)
-	mdStrikethroughRegex = regexp.MustCompile(`~~([^~]+)~~`)
-	mdHTMLRegex          = regexp.MustCompile(`<[^>]*>`)
-	mdListRegex          = regexp.MustCompile(`^\s*[-*+]\s+|^\s*\d+\.\s+`)
-	mdBlockquoteRegex    = regexp.MustCompile(`^\s*>\s*`)
-)
-
 type NoteViewHeading struct {
 	Text  string
 	Level int
@@ -438,20 +424,21 @@ func (n *NoteView) extractReadingTime() {
 		}
 	}
 
-	// Calculate reading time based on content
-	content := string(n.Content)
+	// Short-circuit for short content: ~1000 chars per minute
+	estimatedTime := len(n.Content) / 1000
+	if estimatedTime <= 4 {
+		if estimatedTime < 1 {
+			estimatedTime = 1
+		}
+		n.ReadingTime = estimatedTime
+		return
+	}
 
-	// Remove markdown syntax for more accurate word count
-	content = removeMarkdownSyntax(content)
-
-	// Count words
-	wordCount := countWords(content)
+	// For longer content, count words (single-pass, no allocations)
+	wordCount := countWordsForReadingTime(string(n.Content))
 
 	// Average reading speed: 200 words per minute
-	// Round up to nearest minute
 	readingTime := (wordCount + 199) / 200
-
-	// Minimum reading time is 1 minute
 	if readingTime < 1 {
 		readingTime = 1
 	}
@@ -993,62 +980,46 @@ func (nv *NoteViews) RegisterNote(note *NoteView) {
 	}
 }
 
-// removeMarkdownSyntax removes common markdown syntax for more accurate word counting.
-func removeMarkdownSyntax(content string) string {
-	// Remove code blocks (```code```)
-	content = mdCodeBlockRegex.ReplaceAllString(content, " ")
-
-	// Remove inline code (`code`)
-	content = mdInlineCodeRegex.ReplaceAllString(content, " ")
-
-	// Remove headers (# ## ###)
-	content = mdHeaderRegex.ReplaceAllString(content, "")
-
-	// Remove links but keep the text [text](url) -> text
-	content = mdLinkRegex.ReplaceAllString(content, "$1")
-
-	// Remove wikilinks but keep the text [[link|text]] -> text or [[link]] -> link
-	content = mdWikilinkRegex.ReplaceAllStringFunc(content, func(match string) string {
-		parts := mdWikilinkRegex.FindStringSubmatch(match)
-		if len(parts) > 2 && parts[2] != "" {
-			return parts[2] // Use display text if available
-		}
-		return parts[1] // Use link target
-	})
-
-	// Remove bold/italic markers (**text** *text*)
-	content = mdBoldItalicRegex.ReplaceAllString(content, "$1")
-
-	// Remove strikethrough (~~text~~)
-	content = mdStrikethroughRegex.ReplaceAllString(content, "$1")
-
-	// Remove HTML tags
-	content = mdHTMLRegex.ReplaceAllString(content, " ")
-
-	// Remove list markers (- * + 1.)
-	content = mdListRegex.ReplaceAllString(content, "")
-
-	// Remove blockquotes (>)
-	content = mdBlockquoteRegex.ReplaceAllString(content, "")
-
-	return content
-}
-
-// countWords counts the number of words in the given text.
-func countWords(content string) int {
-	if content == "" {
-		return 0
-	}
-
-	// Split by whitespace and count non-empty words
-	words := strings.Fields(content)
+// countWordsForReadingTime counts words in a single pass, skipping code blocks.
+// This is optimized for reading time calculation - exact accuracy is not required.
+// No allocations, no regex - just a simple state machine.
+func countWordsForReadingTime(content string) int {
 	wordCount := 0
+	inWord := false
+	inCodeBlock := false
+	backtickCount := 0
 
-	for _, word := range words {
-		// Remove punctuation from start and end
-		word = strings.Trim(word, ".,!?;:\"'()[]{}/-_=+")
-		if word != "" && len(word) > 0 {
-			wordCount++
+	for i := range len(content) {
+		c := content[i]
+
+		// Track code block fences (```)
+		if c == '`' {
+			backtickCount++
+			if backtickCount == 3 {
+				inCodeBlock = !inCodeBlock
+				backtickCount = 0
+			}
+			inWord = false
+			continue
+		}
+		backtickCount = 0
+
+		// Skip content inside code blocks
+		if inCodeBlock {
+			continue
+		}
+
+		// Check if character is a word character (letter or digit)
+		isWordChar := (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') || c >= 0x80 // 0x80+ for UTF-8 multibyte
+
+		if isWordChar {
+			if !inWord {
+				wordCount++
+				inWord = true
+			}
+		} else {
+			inWord = false
 		}
 	}
 
