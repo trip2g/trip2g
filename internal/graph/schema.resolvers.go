@@ -2125,20 +2125,6 @@ func (r *purchaseResolver) Successful(ctx context.Context, obj *db.Purchase) (bo
 	return nowpayments.PaymentStatus(obj.Status).IsSuccessful(), nil
 }
 
-// URL is the resolver for the url field.
-func (r *pushedNoteAssetResolver) URL(ctx context.Context, obj *model.PushedNoteAsset) (string, error) {
-	if obj.AssetID == 0 {
-		return "", nil
-	}
-
-	asset, err := r.env(ctx).NoteAssetByID(ctx, obj.AssetID)
-	if err != nil {
-		return "", fmt.Errorf("failed to get asset: %w", err)
-	}
-
-	return r.env(ctx).NoteAssetURL(ctx, asset)
-}
-
 // Viewer is the resolver for the viewer field.
 func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 	req, err := appreq.FromCtx(ctx)
@@ -2905,9 +2891,6 @@ func (r *Resolver) Offer() OfferResolver { return &offerResolver{r} }
 // Purchase returns PurchaseResolver implementation.
 func (r *Resolver) Purchase() PurchaseResolver { return &purchaseResolver{r} }
 
-// PushedNoteAsset returns PushedNoteAssetResolver implementation.
-func (r *Resolver) PushedNoteAsset() PushedNoteAssetResolver { return &pushedNoteAssetResolver{r} }
-
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -3055,7 +3038,6 @@ type noteViewResolver struct{ *Resolver }
 type noteWarningResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
 type purchaseResolver struct{ *Resolver }
-type pushedNoteAssetResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type refreshBoostyDataPayloadResolver struct{ *Resolver }
 type refreshPatreonDataPayloadResolver struct{ *Resolver }
@@ -3072,3 +3054,26 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *pushedNoteAssetResolver) URL(ctx context.Context, obj *model.PushedNoteAsset) (string, error) {
+	if obj.AssetID == 0 {
+		return "", nil
+	}
+
+	asset, err := r.env(ctx).NoteAssetByID(ctx, obj.AssetID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get asset: %w", err)
+	}
+
+	return r.env(ctx).NoteAssetURL(ctx, asset)
+}
+func (r *Resolver) PushedNoteAsset() PushedNoteAssetResolver { return &pushedNoteAssetResolver{r} }
+type pushedNoteAssetResolver struct{ *Resolver }
+*/

@@ -125,7 +125,6 @@ type ResolverRoot interface {
 	NoteWarning() NoteWarningResolver
 	Offer() OfferResolver
 	Purchase() PurchaseResolver
-	PushedNoteAsset() PushedNoteAssetResolver
 	Query() QueryResolver
 	RefreshBoostyDataPayload() RefreshBoostyDataPayloadResolver
 	RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
@@ -1766,9 +1765,6 @@ type OfferResolver interface {
 }
 type PurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
-}
-type PushedNoteAssetResolver interface {
-	URL(ctx context.Context, obj *model.PushedNoteAsset) (string, error)
 }
 type QueryResolver interface {
 	Viewer(ctx context.Context) (*model1.Viewer, error)
@@ -26499,7 +26495,7 @@ func (ec *executionContext) _PushedNoteAsset_url(ctx context.Context, field grap
 		field,
 		ec.fieldContext_PushedNoteAsset_url,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.PushedNoteAsset().URL(ctx, obj)
+			return obj.URL, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -26512,8 +26508,8 @@ func (ec *executionContext) fieldContext_PushedNoteAsset_url(_ context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "PushedNoteAsset",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -51512,61 +51508,30 @@ func (ec *executionContext) _PushedNoteAsset(ctx context.Context, sel ast.Select
 		case "id":
 			out.Values[i] = ec._PushedNoteAsset_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "assetId":
 			out.Values[i] = ec._PushedNoteAsset_assetId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "path":
 			out.Values[i] = ec._PushedNoteAsset_path(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "sha256Hash":
 			out.Values[i] = ec._PushedNoteAsset_sha256Hash(ctx, field, obj)
 		case "absolutePath":
 			out.Values[i] = ec._PushedNoteAsset_absolutePath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "url":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._PushedNoteAsset_url(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._PushedNoteAsset_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

@@ -135,7 +135,7 @@ func (a *FileStorage) NoteAssetPath(asset db.NoteAsset) string {
 // OnURLExpiring sets up a callback to be called when the URL is about to expire.
 // The app must rebuild dependent pages before the URL expires.
 func (a *FileStorage) OnURLExpiring(callback func()) {
-	interval := a.config.URLExpiresIn - time.Minute
+	interval := a.config.URLExpiresIn - time.Minute*2
 	if interval < 0 {
 		interval = time.Minute
 	}

@@ -121,12 +121,14 @@ func buildNoteAssets(note *appmodel.NoteView) []model.PushedNoteAsset {
 		var hash *string
 		var assetID int64
 		var absolutePath string
+		var url string
 
 		replace, ok := note.AssetReplaces[relativePath]
 		if ok && replace != nil {
 			hash = &replace.Hash
 			assetID = replace.ID
 			absolutePath = replace.AbsolutePath
+			url = replace.URL
 		}
 
 		assets = append(assets, model.PushedNoteAsset{
@@ -135,6 +137,7 @@ func buildNoteAssets(note *appmodel.NoteView) []model.PushedNoteAsset {
 			Path:         relativePath,
 			Sha256Hash:   hash,
 			AbsolutePath: absolutePath,
+			URL:          url,
 		})
 	}
 
@@ -148,12 +151,14 @@ func buildLayoutAssets(layout appmodel.Layout) []model.PushedNoteAsset {
 		var hash *string
 		var assetID int64
 		var absolutePath string
+		var url string
 
 		replace, ok := layout.AssetReplaces[asset.Path]
 		if ok && replace != nil {
 			hash = &replace.Hash
 			assetID = replace.ID
 			absolutePath = replace.AbsolutePath
+			url = replace.URL
 		}
 
 		assets = append(assets, model.PushedNoteAsset{
@@ -162,6 +167,7 @@ func buildLayoutAssets(layout appmodel.Layout) []model.PushedNoteAsset {
 			Path:         asset.Path,
 			Sha256Hash:   hash,
 			AbsolutePath: absolutePath,
+			URL:          url,
 		})
 	}
 
