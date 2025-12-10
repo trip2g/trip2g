@@ -241,6 +241,24 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 
 	log.Info("phase 2 complete", "postMapSize", len(postMap), "toProcess", len(groups))
 
+	// Generate _index.md with navigation (oldest first for chronological reading)
+	indexContent := generateIndexContent(messageInfos)
+	indexPath := fmt.Sprintf("%s/_index.md", params.BasePath)
+
+	indexPayload, indexErr := env.PushNotes(ctx, graphmodel.PushNotesInput{
+		Partial: true,
+		Updates: []graphmodel.PushNoteInput{
+			{Path: indexPath, Content: indexContent},
+		},
+	})
+	if indexErr != nil {
+		log.Warn("failed to push _index.md", "error", indexErr)
+	} else if errPayload, ok := indexPayload.(*graphmodel.ErrorPayload); ok {
+		log.Warn("failed to push _index.md", "error", errPayload.Message)
+	} else {
+		log.Info("created _index.md", "path", indexPath)
+	}
+
 	// PHASE 3: Create notes with full postMap (wikilinks resolved) and upload assets
 	assetsDir := fmt.Sprintf("%s/assets", params.BasePath)
 
@@ -578,4 +596,31 @@ func formatBytes(bytes int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+// generateIndexContent creates _index.md content with navigation links.
+// Format: {date & time truncated to hour}\n[[{title}]]\n\n
+// Sorted chronologically (oldest first).
+func generateIndexContent(infos []messageInfo) string {
+	// Copy and sort by message date (oldest first)
+	sorted := make([]messageInfo, len(infos))
+	copy(sorted, infos)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].group.primaryMsg.Date < sorted[j].group.primaryMsg.Date
+	})
+
+	var sb strings.Builder
+	for _, info := range sorted {
+		msg := info.group.primaryMsg
+		// Truncate to hour
+		t := time.Unix(int64(msg.Date), 0)
+		dateStr := t.Format("2006-01-02 15:00")
+
+		sb.WriteString(dateStr)
+		sb.WriteString("\n")
+		sb.WriteString(fmt.Sprintf("[[%s]]", info.title))
+		sb.WriteString("\n\n")
+	}
+
+	return sb.String()
 }
