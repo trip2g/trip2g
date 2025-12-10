@@ -73,6 +73,7 @@ import (
 	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
+	"trip2g/internal/case/commitnotes"
 	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/case/createemailwaitlistrequest"
 	"trip2g/internal/case/createpaymentlink"
@@ -1915,7 +1916,12 @@ func (r *mutationResolver) UploadNoteAsset(ctx context.Context, input model.Uplo
 
 // CommitNotes is the resolver for the commitNotes field.
 func (r *mutationResolver) CommitNotes(ctx context.Context) (model.CommitNotesOrErrorPayload, error) {
-	panic(fmt.Errorf("not implemented: CommitNotes - commitNotes"))
+	_, err := checkapikey.Resolve(ctx, r.env(ctx), "commit_notes")
+	if err != nil {
+		return nil, err
+	}
+
+	return commitnotes.Resolve(ctx, r.env(ctx))
 }
 
 // GenerateTgAttachCode is the resolver for the generateTgAttachCode field.

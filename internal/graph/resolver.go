@@ -63,6 +63,7 @@ import (
 	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
 	"trip2g/internal/case/checkapikey"
+	"trip2g/internal/case/commitnotes"
 	"trip2g/internal/case/convertnoteviewtotgpost"
 	"trip2g/internal/case/createemailwaitlistrequest"
 	"trip2g/internal/case/createpaymentlink"
@@ -181,6 +182,7 @@ type Env interface {
 	createemailwaitlistrequest.Env
 	toggleuserfavoritenote.Env
 	pushnotes.Env
+	commitnotes.Env
 	rendernotepage.Env
 	uploadnoteasset.Env
 	checkapikey.Env
