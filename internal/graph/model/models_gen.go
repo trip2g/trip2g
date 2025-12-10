@@ -54,6 +54,10 @@ type ClearBackgroundQueueOrErrorPayload interface {
 	IsClearBackgroundQueueOrErrorPayload()
 }
 
+type CommitNotesOrErrorPayload interface {
+	IsCommitNotesOrErrorPayload()
+}
+
 type CreateAPIKeyOrErrorPayload interface {
 	IsCreateAPIKeyOrErrorPayload()
 }
@@ -636,6 +640,12 @@ type ClearBackgroundQueuePayload struct {
 
 func (ClearBackgroundQueuePayload) IsClearBackgroundQueueOrErrorPayload() {}
 
+type CommitNotesPayload struct {
+	Success bool `json:"success"`
+}
+
+func (CommitNotesPayload) IsCommitNotesOrErrorPayload() {}
+
 type CreateAPIKeyInput struct {
 	Description string `json:"description"`
 }
@@ -917,6 +927,8 @@ func (ErrorPayload) IsToggleFavoriteNoteOrErrorPayload() {}
 
 func (ErrorPayload) IsGenerateTgAttachCodeOrErrorPayload() {}
 
+func (ErrorPayload) IsCommitNotesOrErrorPayload() {}
+
 func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
@@ -1119,9 +1131,10 @@ type PushNoteInput struct {
 }
 
 type PushNotesInput struct {
-	Updates []PushNoteInput `json:"updates"`
-	ApiKey  db.ApiKey       `json:"-"`
-	Partial bool            `json:"-"`
+	SkipCommit *bool           `json:"skipCommit,omitempty"`
+	Updates    []PushNoteInput `json:"updates"`
+	ApiKey     db.ApiKey       `json:"-"`
+	Partial    bool            `json:"-"`
 }
 
 type PushNotesPayload struct {
@@ -1137,8 +1150,12 @@ type PushedNote struct {
 }
 
 type PushedNoteAsset struct {
-	Path       string  `json:"path"`
-	Sha256Hash *string `json:"sha256Hash,omitempty"`
+	ID           string  `json:"id"`
+	AssetID      int64   `json:"assetId"`
+	Path         string  `json:"path"`
+	Sha256Hash   *string `json:"sha256Hash,omitempty"`
+	AbsolutePath string  `json:"absolutePath"`
+	URL          string  `json:"url"`
 }
 
 type Query struct {
@@ -1540,6 +1557,7 @@ type UpdateUserSubgraphAccessPayload struct {
 func (UpdateUserSubgraphAccessPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
 
 type UploadNoteAssetInput struct {
+	SkipCommit   *bool          `json:"skipCommit,omitempty"`
 	File         graphql.Upload `json:"file"`
 	NoteID       int64          `json:"noteId"`
 	Sha256Hash   string         `json:"sha256Hash"`

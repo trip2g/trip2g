@@ -125,6 +125,7 @@ type ResolverRoot interface {
 	NoteWarning() NoteWarningResolver
 	Offer() OfferResolver
 	Purchase() PurchaseResolver
+	PushedNoteAsset() PushedNoteAssetResolver
 	Query() QueryResolver
 	RefreshBoostyDataPayload() RefreshBoostyDataPayloadResolver
 	RefreshPatreonDataPayload() RefreshPatreonDataPayloadResolver
@@ -846,6 +847,10 @@ type ComplexityRoot struct {
 		Queue        func(childComplexity int) int
 	}
 
+	CommitNotesPayload struct {
+		Success func(childComplexity int) int
+	}
+
 	CreateApiKeyPayload struct {
 		APIKey func(childComplexity int) int
 		Value  func(childComplexity int) int
@@ -966,6 +971,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		Admin                      func(childComplexity int) int
+		CommitNotes                func(childComplexity int) int
 		CreateEmailWaitListRequest func(childComplexity int, input model.CreateEmailWaitListRequestInput) int
 		CreatePaymentLink          func(childComplexity int, input model.CreatePaymentLinkInput) int
 		GenerateTgAttachCode       func(childComplexity int, input model.GenerateTgAttachCodeInput) int
@@ -1060,8 +1066,12 @@ type ComplexityRoot struct {
 	}
 
 	PushedNoteAsset struct {
-		Path       func(childComplexity int) int
-		Sha256Hash func(childComplexity int) int
+		AbsolutePath func(childComplexity int) int
+		AssetID      func(childComplexity int) int
+		ID           func(childComplexity int) int
+		Path         func(childComplexity int) int
+		Sha256Hash   func(childComplexity int) int
+		URL          func(childComplexity int) int
 	}
 
 	Query struct {
@@ -1725,6 +1735,7 @@ type MutationResolver interface {
 	PushNotes(ctx context.Context, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error)
 	HideNotes(ctx context.Context, input model.HideNotesInput) (model.HideNotesOrErrorPayload, error)
 	UploadNoteAsset(ctx context.Context, input model.UploadNoteAssetInput) (model.UploadNoteAssetOrErrorPayload, error)
+	CommitNotes(ctx context.Context) (model.CommitNotesOrErrorPayload, error)
 	GenerateTgAttachCode(ctx context.Context, input model.GenerateTgAttachCodeInput) (model.GenerateTgAttachCodeOrErrorPayload, error)
 	Admin(ctx context.Context) (*model1.AdminMutation, error)
 }
@@ -1755,6 +1766,9 @@ type OfferResolver interface {
 }
 type PurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
+}
+type PushedNoteAssetResolver interface {
+	URL(ctx context.Context, obj *model.PushedNoteAsset) (string, error)
 }
 type QueryResolver interface {
 	Viewer(ctx context.Context) (*model1.Viewer, error)
@@ -4924,6 +4938,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.ClearBackgroundQueuePayload.Queue(childComplexity), true
 
+	case "CommitNotesPayload.success":
+		if e.complexity.CommitNotesPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.CommitNotesPayload.Success(childComplexity), true
+
 	case "CreateApiKeyPayload.apiKey":
 		if e.complexity.CreateApiKeyPayload.APIKey == nil {
 			break
@@ -5179,6 +5200,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.Admin(childComplexity), true
+	case "Mutation.commitNotes":
+		if e.complexity.Mutation.CommitNotes == nil {
+			break
+		}
+
+		return e.complexity.Mutation.CommitNotes(childComplexity), true
 	case "Mutation.createEmailWaitListRequest":
 		if e.complexity.Mutation.CreateEmailWaitListRequest == nil {
 			break
@@ -5584,6 +5611,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.PushedNote.Path(childComplexity), true
 
+	case "PushedNoteAsset.absolutePath":
+		if e.complexity.PushedNoteAsset.AbsolutePath == nil {
+			break
+		}
+
+		return e.complexity.PushedNoteAsset.AbsolutePath(childComplexity), true
+	case "PushedNoteAsset.assetId":
+		if e.complexity.PushedNoteAsset.AssetID == nil {
+			break
+		}
+
+		return e.complexity.PushedNoteAsset.AssetID(childComplexity), true
+	case "PushedNoteAsset.id":
+		if e.complexity.PushedNoteAsset.ID == nil {
+			break
+		}
+
+		return e.complexity.PushedNoteAsset.ID(childComplexity), true
 	case "PushedNoteAsset.path":
 		if e.complexity.PushedNoteAsset.Path == nil {
 			break
@@ -5596,6 +5641,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PushedNoteAsset.Sha256Hash(childComplexity), true
+	case "PushedNoteAsset.url":
+		if e.complexity.PushedNoteAsset.URL == nil {
+			break
+		}
+
+		return e.complexity.PushedNoteAsset.URL(childComplexity), true
 
 	case "Query.admin":
 		if e.complexity.Query.Admin == nil {
@@ -22759,6 +22810,35 @@ func (ec *executionContext) fieldContext_ClearBackgroundQueuePayload_deletedCoun
 	return fc, nil
 }
 
+func (ec *executionContext) _CommitNotesPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.CommitNotesPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CommitNotesPayload_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CommitNotesPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CommitNotesPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreateApiKeyPayload_value(ctx context.Context, field graphql.CollectedField, obj *model.CreateAPIKeyPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24496,6 +24576,35 @@ func (ec *executionContext) fieldContext_Mutation_uploadNoteAsset(ctx context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_commitNotes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_commitNotes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Mutation().CommitNotes(ctx)
+		},
+		nil,
+		ec.marshalNCommitNotesOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCommitNotesOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_commitNotes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CommitNotesOrErrorPayload does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_generateTgAttachCode(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -26219,12 +26328,78 @@ func (ec *executionContext) fieldContext_PushedNote_assets(_ context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "id":
+				return ec.fieldContext_PushedNoteAsset_id(ctx, field)
+			case "assetId":
+				return ec.fieldContext_PushedNoteAsset_assetId(ctx, field)
 			case "path":
 				return ec.fieldContext_PushedNoteAsset_path(ctx, field)
 			case "sha256Hash":
 				return ec.fieldContext_PushedNoteAsset_sha256Hash(ctx, field)
+			case "absolutePath":
+				return ec.fieldContext_PushedNoteAsset_absolutePath(ctx, field)
+			case "url":
+				return ec.fieldContext_PushedNoteAsset_url(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type PushedNoteAsset", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushedNoteAsset_id(ctx context.Context, field graphql.CollectedField, obj *model.PushedNoteAsset) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PushedNoteAsset_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PushedNoteAsset_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushedNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushedNoteAsset_assetId(ctx context.Context, field graphql.CollectedField, obj *model.PushedNoteAsset) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PushedNoteAsset_assetId,
+		func(ctx context.Context) (any, error) {
+			return obj.AssetID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PushedNoteAsset_assetId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushedNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
 		},
 	}
 	return fc, nil
@@ -26281,6 +26456,64 @@ func (ec *executionContext) fieldContext_PushedNoteAsset_sha256Hash(_ context.Co
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushedNoteAsset_absolutePath(ctx context.Context, field graphql.CollectedField, obj *model.PushedNoteAsset) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PushedNoteAsset_absolutePath,
+		func(ctx context.Context) (any, error) {
+			return obj.AbsolutePath, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PushedNoteAsset_absolutePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushedNoteAsset",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PushedNoteAsset_url(ctx context.Context, field graphql.CollectedField, obj *model.PushedNoteAsset) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PushedNoteAsset_url,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.PushedNoteAsset().URL(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PushedNoteAsset_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PushedNoteAsset",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -32979,13 +33212,20 @@ func (ec *executionContext) unmarshalInputPushNotesInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"updates"}
+	fieldsInOrder := [...]string{"skipCommit", "updates"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "skipCommit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skipCommit"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SkipCommit = data
 		case "updates":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updates"))
 			data, err := ec.unmarshalNPushNoteInput2ᚕtrip2gᚋinternalᚋgraphᚋmodelᚐPushNoteInputᚄ(ctx, v)
@@ -34197,13 +34437,20 @@ func (ec *executionContext) unmarshalInputUploadNoteAssetInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"file", "noteId", "sha256Hash", "path", "absolutePath"}
+	fieldsInOrder := [...]string{"skipCommit", "file", "noteId", "sha256Hash", "path", "absolutePath"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "skipCommit":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skipCommit"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SkipCommit = data
 		case "file":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("file"))
 			data, err := ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
@@ -34501,6 +34748,29 @@ func (ec *executionContext) _ClearBackgroundQueueOrErrorPayload(ctx context.Cont
 			return graphql.Null
 		}
 		return ec._ClearBackgroundQueuePayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _CommitNotesOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CommitNotesOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CommitNotesPayload:
+		return ec._CommitNotesPayload(ctx, sel, &obj)
+	case *model.CommitNotesPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CommitNotesPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -48769,6 +49039,45 @@ func (ec *executionContext) _ClearBackgroundQueuePayload(ctx context.Context, se
 	return out
 }
 
+var commitNotesPayloadImplementors = []string{"CommitNotesPayload", "CommitNotesOrErrorPayload"}
+
+func (ec *executionContext) _CommitNotesPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CommitNotesPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, commitNotesPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CommitNotesPayload")
+		case "success":
+			out.Values[i] = ec._CommitNotesPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createApiKeyPayloadImplementors = []string{"CreateApiKeyPayload", "CreateApiKeyOrErrorPayload"}
 
 func (ec *executionContext) _CreateApiKeyPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateAPIKeyPayload) graphql.Marshaler {
@@ -49672,7 +49981,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -50040,6 +50349,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "uploadNoteAsset":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_uploadNoteAsset(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "commitNotes":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_commitNotes(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -51193,13 +51509,64 @@ func (ec *executionContext) _PushedNoteAsset(ctx context.Context, sel ast.Select
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("PushedNoteAsset")
+		case "id":
+			out.Values[i] = ec._PushedNoteAsset_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "assetId":
+			out.Values[i] = ec._PushedNoteAsset_assetId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "path":
 			out.Values[i] = ec._PushedNoteAsset_path(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "sha256Hash":
 			out.Values[i] = ec._PushedNoteAsset_sha256Hash(ctx, field, obj)
+		case "absolutePath":
+			out.Values[i] = ec._PushedNoteAsset_absolutePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "url":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PushedNoteAsset_url(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -57264,6 +57631,16 @@ func (ec *executionContext) marshalNClearBackgroundQueueOrErrorPayload2trip2gᚋ
 		return graphql.Null
 	}
 	return ec._ClearBackgroundQueueOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCommitNotesOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCommitNotesOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CommitNotesOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CommitNotesOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNCreateApiKeyInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateAPIKeyInput(ctx context.Context, v any) (model.CreateAPIKeyInput, error) {

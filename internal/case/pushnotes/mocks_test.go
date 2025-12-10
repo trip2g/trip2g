@@ -30,6 +30,9 @@ var _ pushnotes.Env = &EnvMock{}
 //			InsertSubgraphFunc: func(ctx context.Context, name string) error {
 //				panic("mock out the InsertSubgraph method")
 //			},
+//			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+//				panic("mock out the LatestNoteViews method")
+//			},
 //			LayoutsFunc: func() *appmodel.Layouts {
 //				panic("mock out the Layouts method")
 //			},
@@ -54,6 +57,9 @@ type EnvMock struct {
 
 	// InsertSubgraphFunc mocks the InsertSubgraph method.
 	InsertSubgraphFunc func(ctx context.Context, name string) error
+
+	// LatestNoteViewsFunc mocks the LatestNoteViews method.
+	LatestNoteViewsFunc func() *appmodel.NoteViews
 
 	// LayoutsFunc mocks the Layouts method.
 	LayoutsFunc func() *appmodel.Layouts
@@ -87,6 +93,9 @@ type EnvMock struct {
 			// Name is the name argument value.
 			Name string
 		}
+		// LatestNoteViews holds details about calls to the LatestNoteViews method.
+		LatestNoteViews []struct {
+		}
 		// Layouts holds details about calls to the Layouts method.
 		Layouts []struct {
 		}
@@ -104,6 +113,7 @@ type EnvMock struct {
 	lockHandleLatestNotesAfterSave sync.RWMutex
 	lockInsertNote                 sync.RWMutex
 	lockInsertSubgraph             sync.RWMutex
+	lockLatestNoteViews            sync.RWMutex
 	lockLayouts                    sync.RWMutex
 	lockLogger                     sync.RWMutex
 	lockPrepareLatestNotes         sync.RWMutex
@@ -214,6 +224,33 @@ func (mock *EnvMock) InsertSubgraphCalls() []struct {
 	mock.lockInsertSubgraph.RLock()
 	calls = mock.calls.InsertSubgraph
 	mock.lockInsertSubgraph.RUnlock()
+	return calls
+}
+
+// LatestNoteViews calls LatestNoteViewsFunc.
+func (mock *EnvMock) LatestNoteViews() *appmodel.NoteViews {
+	if mock.LatestNoteViewsFunc == nil {
+		panic("EnvMock.LatestNoteViewsFunc: method is nil but Env.LatestNoteViews was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLatestNoteViews.Lock()
+	mock.calls.LatestNoteViews = append(mock.calls.LatestNoteViews, callInfo)
+	mock.lockLatestNoteViews.Unlock()
+	return mock.LatestNoteViewsFunc()
+}
+
+// LatestNoteViewsCalls gets all the calls that were made to LatestNoteViews.
+// Check the length with:
+//
+//	len(mockedEnv.LatestNoteViewsCalls())
+func (mock *EnvMock) LatestNoteViewsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLatestNoteViews.RLock()
+	calls = mock.calls.LatestNoteViews
+	mock.lockLatestNoteViews.RUnlock()
 	return calls
 }
 

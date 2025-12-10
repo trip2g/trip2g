@@ -58,6 +58,7 @@ type NoteWarning struct {
 }
 
 type NoteAssetReplace struct {
+	ID   int64
 	URL  string
 	Hash string
 

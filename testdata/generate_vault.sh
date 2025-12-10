@@ -734,6 +734,18 @@ EOF
 # Test 7: Custom layouts
 # ============================================================================
 
+cat > "$VAULT/_layouts/custom/styles.css" << 'EOF'
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+EOF
+
 cat > "$VAULT/_layouts/custom/blocks.html" << 'EOF'
 {{ block main_layout() }}
 
@@ -743,6 +755,7 @@ cat > "$VAULT/_layouts/custom/blocks.html" << 'EOF'
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ note.Title }}</title>
+    <link rel="stylesheet" href="{{ asset("styles.css") }}">
   </head>
   <body>
     <header>

@@ -122,6 +122,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		}
 
 		noteMap[asset.Path] = &model.NoteAssetReplace{
+			ID:   asset.NoteAsset.ID,
 			URL:  assetURL,
 			Hash: asset.NoteAsset.Sha256Hash,
 

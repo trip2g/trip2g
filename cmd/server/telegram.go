@@ -22,14 +22,14 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 	// Limited to 1 concurrent job to avoid rate limits
 	apiQueue := a.createQueue(ctx, "tg_api_jobs", jobs.NewRunnerOpts{
 		Limit:        1,
-		PollInterval: time.Second * 1,
+		PollInterval: time.Second * 5,
 	})
 	a.telegramAPIQueue = apiQueue
 
 	// Task queue - for telegram-related background tasks (processing posts, etc.)
 	taskQueue := a.createQueue(ctx, "tg_task_jobs", jobs.NewRunnerOpts{
 		Limit:        1,
-		PollInterval: time.Second * 1,
+		PollInterval: time.Second * 5,
 	})
 
 	a.telegramTaskQueue = taskQueue

@@ -319,7 +319,7 @@ func main() {
 
 	a.globalQueue = a.createQueue(ctx, "global_jobs", jobs.NewRunnerOpts{
 		Limit:        5,
-		PollInterval: time.Millisecond * 901,
+		PollInterval: time.Second * 3,
 	})
 
 	err = a.initTelegramDeps(ctx)
@@ -1774,13 +1774,14 @@ func (a *app) prepareGraphQLHandler() func(ctx *fasthttp.RequestCtx, path string
 	// graphql.
 	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
 	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(graph.NewHandler(a))
+	compressedGraphqlHandler := fasthttp.CompressHandler(graphqlHandler)
 
 	return func(ctx *fasthttp.RequestCtx, path string) bool {
 		if strings.HasPrefix(path, "/graphql") {
 			if string(ctx.Method()) == "GET" {
 				playgroundHandler(ctx)
 			} else {
-				graphqlHandler(ctx)
+				compressedGraphqlHandler(ctx)
 			}
 
 			return true

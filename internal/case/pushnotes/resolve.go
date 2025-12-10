@@ -19,6 +19,7 @@ type Env interface {
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
 	Layouts() *appmodel.Layouts
+	LatestNoteViews() *appmodel.NoteViews
 }
 
 var allowedExtensins = map[string]struct{}{ //nolint:gochecknoglobals // it's a constant
@@ -33,6 +34,14 @@ var allowedContentTypes = map[string]struct{}{ //nolint:gochecknoglobals // it's
 
 func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.PushNotesOrErrorPayload, error) {
 	log := logger.WithPrefix(env.Logger(), "pushNotes:")
+
+	// If no updates, just return current state without rebuilding
+	if len(input.Updates) == 0 {
+		nvs := env.LatestNoteViews()
+		pushedNotes := buildPushedNotes(nvs, env.Layouts())
+		return &model.PushNotesPayload{Notes: pushedNotes}, nil
+	}
+
 	changedPaths := map[string]struct{}{}
 
 	for _, update := range input.Updates {
@@ -110,15 +119,22 @@ func buildNoteAssets(note *appmodel.NoteView) []model.PushedNoteAsset {
 
 	for relativePath := range note.Assets {
 		var hash *string
+		var assetID int64
+		var absolutePath string
 
 		replace, ok := note.AssetReplaces[relativePath]
 		if ok && replace != nil {
 			hash = &replace.Hash
+			assetID = replace.ID
+			absolutePath = replace.AbsolutePath
 		}
 
 		assets = append(assets, model.PushedNoteAsset{
-			Path:       relativePath,
-			Sha256Hash: hash,
+			ID:           relativePath,
+			AssetID:      assetID,
+			Path:         relativePath,
+			Sha256Hash:   hash,
+			AbsolutePath: absolutePath,
 		})
 	}
 
@@ -130,15 +146,22 @@ func buildLayoutAssets(layout appmodel.Layout) []model.PushedNoteAsset {
 
 	for _, asset := range layout.Assets {
 		var hash *string
+		var assetID int64
+		var absolutePath string
 
 		replace, ok := layout.AssetReplaces[asset.Path]
-		if ok {
+		if ok && replace != nil {
 			hash = &replace.Hash
+			assetID = replace.ID
+			absolutePath = replace.AbsolutePath
 		}
 
 		assets = append(assets, model.PushedNoteAsset{
-			Path:       asset.Path,
-			Sha256Hash: hash,
+			ID:           asset.Path,
+			AssetID:      assetID,
+			Path:         asset.Path,
+			Sha256Hash:   hash,
+			AbsolutePath: absolutePath,
 		})
 	}
 

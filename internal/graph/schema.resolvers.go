@@ -1913,6 +1913,11 @@ func (r *mutationResolver) UploadNoteAsset(ctx context.Context, input model.Uplo
 	return uploadnoteasset.Resolve(ctx, r.env(ctx), input)
 }
 
+// CommitNotes is the resolver for the commitNotes field.
+func (r *mutationResolver) CommitNotes(ctx context.Context) (model.CommitNotesOrErrorPayload, error) {
+	panic(fmt.Errorf("not implemented: CommitNotes - commitNotes"))
+}
+
 // GenerateTgAttachCode is the resolver for the generateTgAttachCode field.
 func (r *mutationResolver) GenerateTgAttachCode(ctx context.Context, input model.GenerateTgAttachCodeInput) (model.GenerateTgAttachCodeOrErrorPayload, error) {
 	return generatetgattachcode.Resolve(ctx, r.env(ctx), input)
@@ -2112,6 +2117,20 @@ func (r *offerResolver) Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subg
 // Successful is the resolver for the successful field.
 func (r *purchaseResolver) Successful(ctx context.Context, obj *db.Purchase) (bool, error) {
 	return nowpayments.PaymentStatus(obj.Status).IsSuccessful(), nil
+}
+
+// URL is the resolver for the url field.
+func (r *pushedNoteAssetResolver) URL(ctx context.Context, obj *model.PushedNoteAsset) (string, error) {
+	if obj.AssetID == 0 {
+		return "", nil
+	}
+
+	asset, err := r.env(ctx).NoteAssetByID(ctx, obj.AssetID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get asset: %w", err)
+	}
+
+	return r.env(ctx).NoteAssetURL(ctx, asset)
 }
 
 // Viewer is the resolver for the viewer field.
@@ -2880,6 +2899,9 @@ func (r *Resolver) Offer() OfferResolver { return &offerResolver{r} }
 // Purchase returns PurchaseResolver implementation.
 func (r *Resolver) Purchase() PurchaseResolver { return &purchaseResolver{r} }
 
+// PushedNoteAsset returns PushedNoteAssetResolver implementation.
+func (r *Resolver) PushedNoteAsset() PushedNoteAssetResolver { return &pushedNoteAssetResolver{r} }
+
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
@@ -3027,6 +3049,7 @@ type noteViewResolver struct{ *Resolver }
 type noteWarningResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
 type purchaseResolver struct{ *Resolver }
+type pushedNoteAssetResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type refreshBoostyDataPayloadResolver struct{ *Resolver }
 type refreshPatreonDataPayloadResolver struct{ *Resolver }
