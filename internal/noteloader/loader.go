@@ -178,6 +178,10 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		Version: l.version,
 		Config:  l.config,
 
+		// NoteCache returns cached NoteView if content matches to skip parsing.
+		// NOTE: If AutoLowerWikilinks is enabled, old.Content is normalized but
+		// source.Content is not, causing cache misses. This is acceptable since
+		// AutoLowerWikilinks is deprecated and will be removed.
 		NoteCache: func(source mdloader.SourceFile) *model.NoteView {
 			if l.nvs == nil {
 				return nil

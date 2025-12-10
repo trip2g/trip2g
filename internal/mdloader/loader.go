@@ -57,8 +57,8 @@ type loader struct {
 }
 
 type Config struct {
-	AutoLowerWikilinks bool
-	FreeParagraphs     int // Default number of free paragraphs from config
+	AutoLowerWikilinks bool // Deprecated: will be removed
+	FreeParagraphs     int  // Default number of free paragraphs from config
 	SoftWraps          bool
 }
 
