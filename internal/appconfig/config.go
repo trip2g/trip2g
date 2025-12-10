@@ -45,8 +45,9 @@ func (a *ArrayFlags) Set(value string) error {
 // Config holds all application configuration.
 type Config struct {
 	// Server configuration
-	ListenAddr   string
-	DatabaseFile string
+	ListenAddr         string
+	DatabaseFile       string
+	MaxRequestBodySize int // in MB
 
 	LogQueries bool
 
@@ -377,6 +378,7 @@ func (c *Config) defineFlags() {
 func (c *Config) defineServerFlags() {
 	flag.StringVar(&c.ListenAddr, "listen-addr", c.ListenAddr, "Listen address")
 	flag.StringVar(&c.DatabaseFile, "db-file", c.DatabaseFile, "Database file")
+	flag.IntVar(&c.MaxRequestBodySize, "max-request-body-size", 10, "Max request body size in MB")
 	flag.BoolVar(&c.LogQueries, "log-queries", c.LogQueries, "Log database queries")
 	flag.StringVar(&c.AdminJSURL, "admin-js-url", c.AdminJSURL, "Admin JS URL")
 	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Log level")

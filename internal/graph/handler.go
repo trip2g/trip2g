@@ -46,11 +46,13 @@ func NewHandler(env Env) *handler.Server {
 
 	srv := handler.New(schema)
 
+	maxBodySize := int64(env.MaxRequestBodySize() * 1024 * 1024)
+
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
 	srv.AddTransport(transport.MultipartForm{
-		MaxUploadSize: 30 * 1024 * 1024,
+		MaxUploadSize: maxBodySize,
 		MaxMemory:     10 * 1024 * 1024,
 	})
 

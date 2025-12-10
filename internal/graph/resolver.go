@@ -107,6 +107,7 @@ func (r *Resolver) env(ctx context.Context) Env {
 type Env interface {
 	GitCommit() string
 	IsDevMode() bool
+	MaxRequestBodySize() int
 
 	ListAllUsers(ctx context.Context) ([]db.User, error)
 	ListAllUserSubgraphAccesses(ctx context.Context) ([]db.UserSubgraphAccess, error)

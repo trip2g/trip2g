@@ -1437,6 +1437,10 @@ func (a *app) IsDevMode() bool {
 	return a.config.DevMode
 }
 
+func (a *app) MaxRequestBodySize() int {
+	return a.config.MaxRequestBodySize
+}
+
 func (a *app) ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error) {
 	req, err := appreq.FromCtx(ctx)
 	if err != nil {
@@ -1740,7 +1744,8 @@ func (a *app) startServer() {
 	}
 
 	s := &fasthttp.Server{
-		Handler: fasthttp.TimeoutHandler(handler, time.Second*60, "timeout"),
+		Handler:            fasthttp.TimeoutHandler(handler, time.Second*60, "timeout"),
+		MaxRequestBodySize: a.config.MaxRequestBodySize * 1024 * 1024,
 	}
 
 	s.ReadTimeout = 60 * time.Second
