@@ -390,3 +390,20 @@ const data = response.arrayBuffer;
 - User B синхронизирует → pull (новый файл)
 - User B удаляет → hideNotes
 - User A синхронизирует → файл скрыт, но есть локально → `server_deleted` → спросит пользователя
+
+## Релиз новой версии
+
+```bash
+cd obsidian-sync
+
+# 1. Обновить версию в manifest.json
+# 2. Собрать плагин
+npm run build
+
+# 3. Создать релиз (без префикса v — BRAT не понимает v-префикс)
+gh release create 0.1.7 main.js manifest.json styles.css \
+  --title "0.1.7" \
+  --notes "Release notes here"
+```
+
+**Важно:** Имя тега должно быть без префикса `v` (например `0.1.7`, не `v0.1.7`), иначе BRAT не сможет найти релиз.
