@@ -51,7 +51,8 @@ type Loader struct {
 
 	layouts *model.Layouts
 
-	searchIndex bleve.Index
+	searchIndex   bleve.Index
+	contentHashes map[int64][32]byte // PathID -> content hash for incremental indexing
 
 	version string
 	config  mdloader.Config

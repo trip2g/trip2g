@@ -2,6 +2,7 @@ package noteloader
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"strings"
@@ -23,7 +24,7 @@ type noteContent struct {
 	Body  string
 }
 
-func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
+func (l *Loader) createSearchIndex() (bleve.Index, error) {
 	documentMapping := bleve.NewDocumentMapping()
 
 	titleFieldMapping := bleve.NewTextFieldMapping()
@@ -42,14 +43,53 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 	mapping.AddDocumentMapping("note", documentMapping)
 	mapping.DefaultAnalyzer = "ru"
 
-	index, err := bleve.NewMemOnly(mapping)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create bleve index: %w", err)
-	}
+	return bleve.NewMemOnly(mapping)
+}
 
+func contentHash(note *model.NoteView) [32]byte {
+	h := sha256.New()
+	h.Write([]byte(note.Title))
+	h.Write(note.Content)
+	var result [32]byte
+	copy(result[:], h.Sum(nil))
+	return result
+}
+
+func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 	startedAt := time.Now()
 
+	// Reuse existing index or create new one
+	index := l.searchIndex
+	if index == nil {
+		var err error
+		index, err = l.createSearchIndex()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create bleve index: %w", err)
+		}
+	}
+
+	// Initialize content hashes map if needed
+	if l.contentHashes == nil {
+		l.contentHashes = make(map[int64][32]byte)
+	}
+
+	// Track current PathIDs to detect deleted notes
+	currentPathIDs := make(map[int64]struct{})
+	indexed := 0
+	skipped := 0
+
 	for _, note := range notes.List {
+		currentPathIDs[note.PathID] = struct{}{}
+
+		hash := contentHash(note)
+		oldHash, exists := l.contentHashes[note.PathID]
+
+		// Skip if content hasn't changed
+		if exists && oldHash == hash {
+			skipped++
+			continue
+		}
+
 		content := noteContent{
 			Title: note.Title,
 			Body:  extractText(note.Ast(), note.Content),
@@ -59,9 +99,29 @@ func (l *Loader) buildSearchIndex(notes *model.NoteViews) (bleve.Index, error) {
 		if indexErr != nil {
 			return nil, fmt.Errorf("failed to index note %s: %w", note.Permalink, indexErr)
 		}
+
+		l.contentHashes[note.PathID] = hash
+		indexed++
 	}
 
-	l.log.Info("notes indexed", "count", len(notes.List), "took", time.Since(startedAt).Seconds())
+	// Remove deleted notes from index and hashes
+	deleted := 0
+	for pathID := range l.contentHashes {
+		if _, exists := currentPathIDs[pathID]; !exists {
+			// Note was deleted, but we don't have permalink to delete from index
+			// Just remove from hashes map
+			delete(l.contentHashes, pathID)
+			deleted++
+		}
+	}
+
+	l.log.Info("notes indexed",
+		"indexed", indexed,
+		"skipped", skipped,
+		"deleted", deleted,
+		"total", len(notes.List),
+		"took", time.Since(startedAt).Seconds(),
+	)
 
 	return index, nil
 }
