@@ -391,6 +391,18 @@ const data = response.arrayBuffer;
 - User B удаляет → hideNotes
 - User A синхронизирует → файл скрыт, но есть локально → `server_deleted` → спросит пользователя
 
+## Разработка
+
+### GraphQL генерация
+
+При изменении `operations.graphql` нужно перегенерировать типы:
+
+```bash
+cd obsidian-sync
+npm run codegen  # генерирует src/graphql.ts из operations.graphql
+npm run build    # билд плагина
+```
+
 ## Релиз новой версии
 
 ```bash
