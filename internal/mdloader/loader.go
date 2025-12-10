@@ -52,6 +52,8 @@ type loader struct {
 	// basenameIndex maps lowercase basename (without extension) to notes
 	// Used for O(1) lookup in extractInLinks instead of O(n) iteration
 	basenameIndex map[string][]*model.NoteView
+
+	noteCache func(source SourceFile) *model.NoteView
 }
 
 type Config struct {
@@ -65,6 +67,9 @@ type Options struct {
 	Log     logger.Logger
 	Version string
 	Config  Config
+
+	// NoteCache returns cached NoteView if content hasn't changed, nil otherwise
+	NoteCache func(source SourceFile) *model.NoteView
 }
 
 // Load transforms markdown files into pages.
@@ -73,7 +78,8 @@ func Load(options Options) (*model.NoteViews, error) {
 		log: options.Log,
 		nvs: model.NewNoteViews(),
 
-		config: options.Config,
+		config:    options.Config,
+		noteCache: options.NoteCache,
 
 		linkResolver: &myLinkResolver{
 			version: options.Version,
@@ -489,8 +495,6 @@ func (ldr *loader) extractInLinks() error {
 }
 
 func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
-	context := parser.NewContext()
-
 	content := src.Content
 
 	if ldr.config.AutoLowerWikilinks {
@@ -499,7 +503,23 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		content = NormalizeWikilinks(content)
 	}
 
-	doc := ldr.md.Parser().Parse(text.NewReader(content), parser.WithContext(context))
+	// Try to get cached AST and meta
+	var doc ast.Node
+	var rawMeta map[string]interface{}
+
+	if ldr.noteCache != nil {
+		if cached := ldr.noteCache(src); cached != nil {
+			doc = cached.Ast()
+			rawMeta = cached.RawMeta
+		}
+	}
+
+	// Parse if not cached
+	if doc == nil {
+		context := parser.NewContext()
+		doc = ldr.md.Parser().Parse(text.NewReader(content), parser.WithContext(context))
+		rawMeta = meta.Get(context)
+	}
 
 	pp := model.NoteView{
 		Path:      src.Path,
@@ -523,8 +543,8 @@ func (ldr *loader) parsePage(src SourceFile) (*model.NoteView, error) {
 		}
 	}
 
-	// Extract RawMeta first so slug is available for PreparePermalink
-	pp.RawMeta = meta.Get(context)
+	// Use cached or freshly parsed meta
+	pp.RawMeta = rawMeta
 
 	// Extract slug from metadata before preparing permalink
 	if slugI, ok := pp.RawMeta["slug"]; ok {

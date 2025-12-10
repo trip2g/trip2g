@@ -1266,3 +1266,55 @@ Link to [[software]]`),
 	require.Contains(t, string(otherPage.HTML), `href="/software?version=latest"`,
 		"Link to software should work correctly")
 }
+
+func TestNoteCacheReusesAST(t *testing.T) {
+	log := logger.TestLogger{}
+
+	// First load - no cache
+	sources1 := []mdloader.SourceFile{
+		{Path: "note1.md", Content: []byte("# Note 1\nContent 1")},
+		{Path: "note2.md", Content: []byte("# Note 2\nContent 2")},
+	}
+
+	pages1, err := mdloader.Load(mdloader.Options{
+		Sources: sources1,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	ast1Note1 := pages1.PathMap["note1.md"].Ast()
+	ast1Note2 := pages1.PathMap["note2.md"].Ast()
+	require.NotNil(t, ast1Note1)
+	require.NotNil(t, ast1Note2)
+
+	// Second load - note1 unchanged, note2 changed
+	sources2 := []mdloader.SourceFile{
+		{Path: "note1.md", Content: []byte("# Note 1\nContent 1")},       // same
+		{Path: "note2.md", Content: []byte("# Note 2\nContent CHANGED")}, // changed
+	}
+
+	pages2, err := mdloader.Load(mdloader.Options{
+		Sources: sources2,
+		Log:     &log,
+		NoteCache: func(source mdloader.SourceFile) *model.NoteView {
+			old, ok := pages1.PathMap[source.Path]
+			if !ok {
+				return nil
+			}
+			if string(old.Content) == string(source.Content) {
+				return old
+			}
+			return nil
+		},
+	})
+	require.NoError(t, err)
+
+	ast2Note1 := pages2.PathMap["note1.md"].Ast()
+	ast2Note2 := pages2.PathMap["note2.md"].Ast()
+
+	// note1 AST should be reused (same pointer)
+	require.Same(t, ast1Note1, ast2Note1, "unchanged note should reuse AST from cache")
+
+	// note2 AST should be different (re-parsed)
+	require.NotSame(t, ast1Note2, ast2Note2, "changed note should have new AST")
+}

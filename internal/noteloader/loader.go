@@ -1,6 +1,7 @@
 package noteloader
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"path/filepath"
@@ -176,6 +177,20 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		Log:     logger.WithPrefix(l.log, "mdloader:"),
 		Version: l.version,
 		Config:  l.config,
+
+		NoteCache: func(source mdloader.SourceFile) *model.NoteView {
+			if l.nvs == nil {
+				return nil
+			}
+			old, ok := l.nvs.PathMap[source.Path]
+			if !ok {
+				return nil
+			}
+			if bytes.Equal(old.Content, source.Content) {
+				return old
+			}
+			return nil
+		},
 	}
 
 	nvs, err := mdloader.Load(mdOptions)
