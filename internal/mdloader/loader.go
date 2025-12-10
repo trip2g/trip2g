@@ -89,6 +89,7 @@ func Load(options Options) (*model.NoteViews, error) {
 			resolver: ldr.linkResolver,
 			nvs:      ldr.nvs,
 		}, 198)),
+		renderer.WithNodeRenderers(util.Prioritized(newImageRenderer(ldr.linkResolver), 199)),
 	}
 
 	if !options.Config.SoftWraps {

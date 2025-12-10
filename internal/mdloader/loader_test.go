@@ -5,6 +5,7 @@ import (
 	"testing"
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
+	"trip2g/internal/model"
 
 	"github.com/bradleyjkemp/cupaloy"
 	"github.com/stretchr/testify/require"
@@ -1178,6 +1179,42 @@ Page with dot in name`),
 	// The link should have data-pid (proving page was found)
 	require.Contains(t, string(mainPage.HTML), `data-pid=`,
 		"Link should have data-pid since target page exists")
+}
+
+// TestMarkdownImageAssetReplace tests that standard markdown images ![alt](src)
+// get their src replaced with the URL from AssetReplaces.
+// Bug: Wikilinks ![[image.png]] work, but standard markdown images don't get replaced.
+func TestMarkdownImageAssetReplace(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path:    "note.md",
+		Content: []byte(`![1499_0.jpg](./assets/1499_0.jpg)`),
+		Assets: map[string]*model.NoteAssetReplace{
+			"./assets/1499_0.jpg": {
+				ID:           322,
+				URL:          "http://example.com/replaced-url.jpg",
+				Hash:         "abc123",
+				AbsolutePath: "vault/assets/1499_0.jpg",
+			},
+		},
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/note"].HTML)
+
+	// The image src should be replaced with the URL from AssetReplaces
+	require.Contains(t, html, `src="http://example.com/replaced-url.jpg"`,
+		"Markdown image src should be replaced with AssetReplaces URL")
+
+	// Should NOT contain the original relative path
+	require.NotContains(t, html, `src="./assets/1499_0.jpg"`,
+		"Original relative path should be replaced")
 }
 
 // TestImageWithSameNameAsNote tests that image embeds ![[note.png]] are NOT
