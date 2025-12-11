@@ -270,7 +270,13 @@ func convertText(msg *tg.Message) string {
 	// Close any remaining formats
 	writeCloseFormats(&result, currentFmt)
 
-	return result.String()
+	out := result.String()
+
+	// Fix nested format closing with trailing space: "** *" -> "*** "
+	out = strings.ReplaceAll(out, "** *\n", "*** \n")
+	out = strings.ReplaceAll(out, "* **\n", "*** \n")
+
+	return out
 }
 
 // trimSpacesFromEntities adjusts formatting entities to not start/end with spaces.

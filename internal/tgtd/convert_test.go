@@ -425,3 +425,23 @@ func TestConvert_EscapeMarkdown(t *testing.T) {
 
 	require.Equal(t, expected, res)
 }
+
+func TestConvert_NestedBoldItalicTrailingSpace(t *testing.T) {
+	// Bold inside Italic, bold ends with trailing space before newline
+	// Italic continues after bold ends
+	// Should close as *** not ** *
+	msg := &tg.Message{
+		Message: "intro bold \nmore italic",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityItalic{Offset: 0, Length: 23}, // whole string
+			&tg.MessageEntityBold{Offset: 6, Length: 6},    // "bold \n"
+		},
+	}
+
+	res := Convert(msg)
+	// Should be: *intro **bold*** \n*more italic*
+	// Not: *intro **bold** *\n*more italic*
+	expected := "*intro **bold*** \n*more italic*"
+
+	require.Equal(t, expected, res)
+}
