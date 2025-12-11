@@ -1294,6 +1294,94 @@ func (m *DownloadedMedia) Cleanup() {
 	}
 }
 
+// MediaInfo represents media metadata without downloading the file.
+type MediaInfo struct {
+	Filename string
+	MimeType string
+	IsImage  bool
+	IsVideo  bool
+}
+
+// GetMessageMediaInfo extracts media metadata from a message without downloading.
+// Returns nil if message has no media or media type is not supported.
+func GetMessageMediaInfo(msg *tg.Message) []MediaInfo {
+	if msg.Media == nil {
+		return nil
+	}
+
+	var result []MediaInfo
+
+	switch media := msg.Media.(type) {
+	case *tg.MessageMediaPhoto:
+		if media.Photo == nil {
+			return nil
+		}
+		photo, ok := media.Photo.(*tg.Photo)
+		if !ok {
+			return nil
+		}
+		result = append(result, MediaInfo{
+			Filename: fmt.Sprintf("%d.jpg", photo.ID),
+			MimeType: "image/jpeg",
+			IsImage:  true,
+		})
+
+	case *tg.MessageMediaDocument:
+		if media.Document == nil {
+			return nil
+		}
+		doc, ok := media.Document.(*tg.Document)
+		if !ok {
+			return nil
+		}
+
+		isImage := false
+		isVideo := false
+		var filename string
+
+		for _, attr := range doc.Attributes {
+			switch a := attr.(type) {
+			case *tg.DocumentAttributeFilename:
+				filename = a.FileName
+			case *tg.DocumentAttributeVideo:
+				isVideo = true
+			case *tg.DocumentAttributeImageSize:
+				isImage = true
+			}
+		}
+
+		if strings.HasPrefix(doc.MimeType, "image/") {
+			isImage = true
+		}
+		if strings.HasPrefix(doc.MimeType, "video/") {
+			isVideo = true
+		}
+
+		if !isImage && !isVideo {
+			return nil
+		}
+
+		if filename == "" {
+			ext := ".bin"
+			if isImage {
+				ext = ".jpg"
+			} else if isVideo {
+				ext = ".mp4"
+			}
+			filename = fmt.Sprintf("%d%s", doc.ID, ext)
+		}
+
+		result = append(result, MediaInfo{
+			Filename: filename,
+			MimeType: doc.MimeType,
+			IsImage:  isImage,
+			IsVideo:  isVideo,
+		})
+	}
+
+	return result
+}
+
 // DownloadMessageMedia downloads media from a message to temp files.
 // Returns nil if message has no media or media type is not supported.
 // IMPORTANT: Use this within RunWithAPI callback, not standalone!

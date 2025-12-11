@@ -411,19 +411,16 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			log.Info("processing", "progress", fmt.Sprintf("%d/%d", processedCount, toProcessCount), "msgID", msg.ID)
 		}
 
-		// Download media for this group (only if withMedia is enabled)
-		var groupMedia []tgtd.DownloadedMedia
-		hasMedia := false
-		if params.WithMedia {
-			for _, m := range info.group.allMsgs {
-				if m.Media != nil {
-					hasMedia = true
-					break
-				}
-			}
+		// Collect media info for all messages in the group
+		var groupMediaInfo []tgtd.MediaInfo
+		for _, m := range info.group.allMsgs {
+			mediaInfo := tgtd.GetMessageMediaInfo(m)
+			groupMediaInfo = append(groupMediaInfo, mediaInfo...)
 		}
 
-		if hasMedia && params.WithMedia {
+		// Download media if enabled
+		var groupMedia []tgtd.DownloadedMedia
+		if params.WithMedia && len(groupMediaInfo) > 0 {
 			downloadStart := time.Now()
 			var totalSize int64
 			downloadErr := tgClient.RunWithAPI(ctx, sessionData, func(ctx context.Context, api *tg.Client) error {
@@ -464,20 +461,32 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		var assetLinks []string
 		var assets []assetInfo
 
-		for idx, media := range groupMedia {
-			ext := filepath.Ext(media.Filename)
-			assetFilename := fmt.Sprintf("%d_%d%s", msg.ID, idx, ext)
-			relativePath := fmt.Sprintf("./assets/%s", assetFilename)
-			absolutePath := fmt.Sprintf("/%s/%s", assetsDir, assetFilename)
+		if params.WithMedia {
+			// Use downloaded media for links and uploads
+			for idx, media := range groupMedia {
+				ext := filepath.Ext(media.Filename)
+				assetFilename := fmt.Sprintf("%d_%d%s", msg.ID, idx, ext)
+				relativePath := fmt.Sprintf("./assets/%s", assetFilename)
+				absolutePath := fmt.Sprintf("/%s/%s", assetsDir, assetFilename)
 
-			assets = append(assets, assetInfo{
-				media:        &groupMedia[idx],
-				relativePath: relativePath,
-				absolutePath: absolutePath,
-				filename:     assetFilename,
-			})
+				assets = append(assets, assetInfo{
+					media:        &groupMedia[idx],
+					relativePath: relativePath,
+					absolutePath: absolutePath,
+					filename:     assetFilename,
+				})
 
-			assetLinks = append(assetLinks, fmt.Sprintf("![[%s]]", relativePath))
+				assetLinks = append(assetLinks, fmt.Sprintf("![[%s]]", relativePath))
+			}
+		} else {
+			// Use media info for links only (placeholder wikilinks without uploading)
+			for idx, mediaInfo := range groupMediaInfo {
+				ext := filepath.Ext(mediaInfo.Filename)
+				assetFilename := fmt.Sprintf("%d_%d%s", msg.ID, idx, ext)
+				relativePath := fmt.Sprintf("./assets/%s", assetFilename)
+
+				assetLinks = append(assetLinks, fmt.Sprintf("![[%s]]", relativePath))
+			}
 		}
 
 		// Prepend asset links to markdown
