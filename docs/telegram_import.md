@@ -1511,3 +1511,34 @@ func (r *adminMutationResolver) ImportTelegramAccountChannel(
 - Implementation should match existing asset handling pattern
 - Can use MinIO/S3 (like `UploadNoteAsset`) or git-based storage
 - Review `internal/gitapi/api.go` for git-based approach
+
+### Markdown Formatting Edge Cases
+
+#### Punctuation at Bold Boundaries
+
+CommonMark has strict rules for emphasis delimiters. Opening `**` must be a "left-flanking delimiter run":
+- NOT followed by whitespace
+- Either (a) NOT followed by punctuation, OR (b) preceded by whitespace/punctuation
+
+**Problem**: Telegram bold entities may include leading/trailing punctuation:
+```
+Telegram bold: ", но ментально вернулся к жизни только сегодня"
+Naive output:  вернулся в субботу**, но ... сегодня**
+```
+
+The `**,` sequence doesn't open bold because `**` is followed by punctuation (`,`) and preceded by a word character.
+
+**Solution**: `trimEntitySpaces` in `internal/tgtd/convert.go` trims:
+- Leading/trailing spaces (already implemented)
+- Leading/trailing punctuation (TODO: implement)
+
+**Expected output**:
+```
+вернулся в субботу, **но ментально вернулся к жизни только сегодня**
+```
+
+The comma moves outside the bold markers.
+
+**Affected punctuation**: `,`, `.`, `!`, `?`, `;`, `:` and similar.
+
+**Note**: 100% perfect import is not achievable. Some edge cases will require manual fixes.

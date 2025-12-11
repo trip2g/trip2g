@@ -310,8 +310,30 @@ type adjustedEntity struct {
 	length int
 }
 
-// trimEntitySpaces trims leading and trailing spaces from entity.
-// Returns nil if entity becomes empty (only whitespace).
+// shouldTrimLeading returns true if rune should be trimmed from start of formatting.
+// CommonMark: opening ** followed by punctuation doesn't work if preceded by word char.
+func shouldTrimLeading(r rune) bool {
+	switch r {
+	case ' ', ',', '.', '!', '?', ';', ':', '—', '–', '-':
+		return true
+	}
+	return false
+}
+
+// shouldTrimTrailing returns true if rune should be trimmed from end of formatting.
+// Trim spaces and mid-sentence punctuation (comma, semicolon, colon, dashes).
+// Keep sentence-ending punctuation (.!?) inside bold as it looks better.
+func shouldTrimTrailing(r rune) bool {
+	switch r {
+	case ' ', ',', ';', ':', '—', '–', '-':
+		return true
+	}
+	return false
+}
+
+// trimEntitySpaces trims leading and trailing spaces/punctuation from entity.
+// Returns nil if entity becomes empty.
+// This is needed because CommonMark requires ** to be adjacent to word characters.
 func trimEntitySpaces(source []rune, utf16Offset, utf16Length int) *adjustedEntity {
 	// Convert to rune positions
 	start := utf16OffsetToRune(string(source), utf16Offset)
@@ -322,19 +344,19 @@ func trimEntitySpaces(source []rune, utf16Offset, utf16Length int) *adjustedEnti
 		return nil
 	}
 
-	// Trim leading spaces (but not newlines)
+	// Trim leading spaces and punctuation (but not newlines)
 	newStart := start
-	for newStart < end && source[newStart] == ' ' {
+	for newStart < end && shouldTrimLeading(source[newStart]) {
 		newStart++
 	}
 
-	// Trim trailing spaces (but not newlines)
+	// Trim trailing spaces only (trailing punctuation is fine in CommonMark)
 	newEnd := end
-	for newEnd > newStart && source[newEnd-1] == ' ' {
+	for newEnd > newStart && shouldTrimTrailing(source[newEnd-1]) {
 		newEnd--
 	}
 
-	// If all spaces, skip this entity
+	// If all trimmed, skip this entity
 	if newStart >= newEnd {
 		return nil
 	}

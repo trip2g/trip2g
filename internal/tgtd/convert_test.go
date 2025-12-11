@@ -217,7 +217,7 @@ func TestConvert_CustomEmojiBold(t *testing.T) {
 ![](https://ce.trip2g.com/5460736117236048513.webp)[Обязан ли отец любить сына?](https://t.me/ryspaisensei/328)
 ![](https://ce.trip2g.com/5460736117236048513.webp)[Я покажу своему сыну путь](https://t.me/ryspaisensei/954)
 
-![](https://ce.trip2g.com/5463038705038007921.webp) **Фрагменты:** [Дай человеку власть, он станет животным](https://t.me/ryspaisensei/1054)
+![](https://ce.trip2g.com/5463038705038007921.webp) **Фрагменты**: [Дай человеку власть, он станет животным](https://t.me/ryspaisensei/1054)
 
 ![](https://ce.trip2g.com/5215478503788520683.webp) [Кино 23](https://t.me/ryspaisensei/1235) |  #кино #отец #сепарация`
 
@@ -359,6 +359,38 @@ func TestConvert_PollWithText(t *testing.T) {
 - [ ] 3
 - [x] 4
 - [ ] 5`
+
+	require.Equal(t, expected, res)
+}
+
+func TestConvert_BoldWithLeadingPunctuation(t *testing.T) {
+	// Telegram bold entity starts with punctuation - must be moved outside
+	// CommonMark: opening ** followed by punctuation doesn't work if preceded by word char
+	//
+	// Input text: "вернулся в субботу, но ментально вернулся к жизни только сегодня, после 2-х часовой сесии на ноги."
+	// Bold 1: ", но ментально вернулся к жизни только сегодня" (starts with comma!)
+	// Bold 2: "после 2-х часовой сесии на ноги." (control - should work fine)
+	//
+	// Naive output: "вернулся в субботу**, но ... сегодня**, **после...**"
+	// The **,  doesn't open bold because ** is followed by punctuation
+	//
+	// Expected: comma moves outside bold markers
+	msg := &tg.Message{
+		Message: "вернулся в субботу, но ментально вернулся к жизни только сегодня, после 2-х часовой сесии на ноги.",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityBold{
+				Offset: 18, // ", но ментально вернулся к жизни только сегодня" (UTF-16)
+				Length: 47,
+			},
+			&tg.MessageEntityBold{
+				Offset: 66, // "после 2-х часовой сесии на ноги."
+				Length: 32,
+			},
+		},
+	}
+
+	res := Convert(msg)
+	expected := "вернулся в субботу, **но ментально вернулся к жизни только сегодня**, **после 2-х часовой сесии на ноги.**"
 
 	require.Equal(t, expected, res)
 }
