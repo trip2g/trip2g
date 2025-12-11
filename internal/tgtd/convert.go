@@ -131,9 +131,16 @@ func convertText(msg *tg.Message) string {
 		var replText string
 		switch entity := e.(type) {
 		case *tg.MessageEntityTextURL:
-			linkText := strings.TrimRight(text, "\n")
-			trailingNewlines := text[len(linkText):]
-			replText = "[" + linkText + "](" + entity.URL + ")" + trailingNewlines
+			// Cut at first newline - content after stays outside link
+			linkText := text
+			var rest string
+			if idx := strings.Index(text, "\n"); idx != -1 {
+				linkText = text[:idx]
+				rest = text[idx:]
+			}
+			// Move leading emoji outside the link
+			prefix, linkText := extractLeadingEmoji(linkText)
+			replText = prefix + "[" + linkText + "](" + entity.URL + ")" + rest
 		case *tg.MessageEntityURL:
 			// Plain URL - keep as is, markdown will auto-link
 			continue
@@ -449,4 +456,40 @@ func utf16RuneLen(r rune) int {
 		return 2 // surrogate pair
 	}
 	return 1
+}
+
+// extractLeadingEmoji extracts leading emoji from link text.
+// Returns (prefix, remaining) where prefix should go outside the link.
+func extractLeadingEmoji(text string) (string, string) {
+	runes := []rune(text)
+	if len(runes) == 0 {
+		return "", text
+	}
+
+	first := runes[0]
+	if !isEmoji(first) {
+		return "", text
+	}
+
+	// Extract emoji + optional following space
+	if len(runes) > 1 && runes[1] == ' ' {
+		return string(runes[:2]), string(runes[2:])
+	}
+	return string(runes[:1]), string(runes[1:])
+}
+
+// isEmoji returns true if rune is likely an emoji.
+func isEmoji(r rune) bool {
+	// Emoji ranges
+	switch {
+	case r >= 0x2600 && r <= 0x26FF: // Misc Symbols
+		return true
+	case r >= 0x2700 && r <= 0x27BF: // Dingbats
+		return true
+	case r >= 0x1F300 && r <= 0x1F9FF: // Misc Symbols, Emoticons, etc.
+		return true
+	case r >= 0x1FA00 && r <= 0x1FAFF: // Extended-A
+		return true
+	}
+	return false
 }

@@ -445,3 +445,22 @@ func TestConvert_NestedBoldItalicTrailingSpace(t *testing.T) {
 
 	require.Equal(t, expected, res)
 }
+
+func TestConvert_TextURLWithNewline(t *testing.T) {
+	// TextURL entity incorrectly spans into next line (Telegram quirk)
+	// Cut at first newline, leading emoji moved outside link
+	msg := &tg.Message{
+		Message: "тут:\n➖ Природа стресса\n➖Три фазы",
+		Entities: []tg.MessageEntityClass{
+			// "➖ Природа стресса\n➖" - link grabbed emoji and next line
+			&tg.MessageEntityTextURL{Offset: 5, Length: 19, URL: "https://example.com/1"},
+			&tg.MessageEntityTextURL{Offset: 24, Length: 10, URL: "https://example.com/2"},
+		},
+	}
+
+	res := Convert(msg)
+	// Emoji outside link, newline preserved, rest stays outside
+	expected := "тут:\n➖ [Природа стресса](https://example.com/1)\n➖[Три фазы](https://example.com/2)"
+
+	require.Equal(t, expected, res)
+}
