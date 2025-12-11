@@ -413,15 +413,15 @@ func TestConvert_BoldWithTrailingColonSpaceNewline(t *testing.T) {
 	require.Equal(t, expected, res)
 }
 
-func TestConvert_EscapeAsterisks(t *testing.T) {
-	// Literal ** in text should be escaped to avoid markdown interpretation
+func TestConvert_EscapeMarkdown(t *testing.T) {
+	// Literal markdown chars in text should be escaped
 	msg := &tg.Message{
-		Message:  "Ну это же пи**ец ребят",
+		Message:  "пи**ец, переменная_имя, и `код`",
 		Entities: nil,
 	}
 
 	res := Convert(msg)
-	expected := `Ну это же пи\*\*ец ребят`
+	expected := "пи\\*\\*ец, переменная\\_имя, и \\`код\\`"
 
 	require.Equal(t, expected, res)
 }
