@@ -258,7 +258,7 @@ test.describe('Regression Tests', () => {
 
   test('pages with dots in names are accessible directly', async ({ page }) => {
     // Navigate to page with dot in name
-    await page.goto('/scenarij_ispoljzovaniya_yutubyer');
+    await page.goto('/scenarij_yutuber');
 
     await expect(page.locator('h1').first()).toContainText('Сценарий Ютубер');
     await expect(page.getByText('сценарием для ютуберов')).toBeVisible();

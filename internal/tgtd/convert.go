@@ -144,7 +144,7 @@ func convertText(msg *tg.Message) string {
 			// Mention with user ID - convert to link
 			replText = "[" + text + "](tg://user?id=" + strconv.FormatInt(entity.UserID, 10) + ")"
 		case *tg.MessageEntityCustomEmoji:
-			replText = fmt.Sprintf("![](https://ce.trip2g.com/%d.webp)", entity.DocumentID)
+			replText = fmt.Sprintf("![%s](https://ce.trip2g.com/%d.webp)", text, entity.DocumentID)
 		case *tg.MessageEntityCode:
 			replText = "`" + text + "`"
 		case *tg.MessageEntityPre:
