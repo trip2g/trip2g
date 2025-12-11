@@ -1529,8 +1529,9 @@ Naive output:  вернулся в субботу**, но ... сегодня**
 The `**,` sequence doesn't open bold because `**` is followed by punctuation (`,`) and preceded by a word character.
 
 **Solution**: `trimEntitySpaces` in `internal/tgtd/convert.go` trims:
-- Leading/trailing spaces (already implemented)
-- Leading/trailing punctuation (TODO: implement)
+- Leading spaces and punctuation (`,`, `.`, `!`, `?`, `;`, `:`, `—`, `–`, `-`)
+- Trailing spaces and mid-sentence punctuation (`,`, `;`, `:`, `—`, `–`, `-`)
+- Keeps sentence-ending punctuation (`.`, `!`, `?`) inside formatting
 
 **Expected output**:
 ```
