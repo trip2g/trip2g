@@ -254,7 +254,12 @@ func convertText(msg *tg.Message) string {
 			currentFmt = targetFmt
 		}
 
-		result.WriteRune(r)
+		// Escape asterisks to avoid markdown interpretation
+		if r == '*' {
+			result.WriteString(`\*`)
+		} else {
+			result.WriteRune(r)
+		}
 	}
 
 	// Close any remaining formats
