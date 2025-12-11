@@ -22,8 +22,9 @@ cleanup() {
   echo "🧹 Cleaning up..."
   docker compose -f docker-compose.test.yml down -v
 
-  # Remove temporary API key file
+  # Remove temporary files
   rm -f .test-api-key
+  rm -f testdata/vault/.sync-state.json
 
   echo -e "${GREEN}✓ Cleanup complete${NC}"
 }
@@ -69,7 +70,7 @@ echo ""
 echo "📤 Pushing test vault data..."
 echo ""
 
-API_KEY="$API_KEY" python3 scripts/push_notes.py testdata/vault || {
+API_KEY="$API_KEY" npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder testdata/vault || {
   echo -e "${RED}✗ Failed to push test data${NC}"
   exit 1
 }
@@ -89,7 +90,7 @@ if [ "$MANUAL" = "1" ] || [ "$MANUAL" = "true" ]; then
   echo "API Key: ${API_KEY}"
   echo ""
   echo "Push notes command:"
-  echo "  ENDPOINT=\"${ENDPOINT}\" API_KEY=\"${API_KEY}\" python3 scripts/push_notes.py testdata/vault"
+  echo "  ENDPOINT=\"${ENDPOINT}\" API_KEY=\"${API_KEY}\" npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder testdata/vault"
   echo ""
   echo "Press ENTER to stop services and cleanup..."
   read -r
