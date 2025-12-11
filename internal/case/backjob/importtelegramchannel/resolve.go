@@ -477,7 +477,7 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 				filename:     assetFilename,
 			})
 
-			assetLinks = append(assetLinks, fmt.Sprintf("![%s](%s)", assetFilename, relativePath))
+			assetLinks = append(assetLinks, fmt.Sprintf("![[%s]]", relativePath))
 		}
 
 		// Prepend asset links to markdown
