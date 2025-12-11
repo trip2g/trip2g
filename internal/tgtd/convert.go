@@ -321,11 +321,11 @@ func shouldTrimLeading(r rune) bool {
 }
 
 // shouldTrimTrailing returns true if rune should be trimmed from end of formatting.
-// Trim spaces and mid-sentence punctuation (comma, semicolon, colon, dashes).
+// Trim spaces, newlines, and mid-sentence punctuation (comma, semicolon, colon, dashes).
 // Keep sentence-ending punctuation (.!?) inside bold as it looks better.
 func shouldTrimTrailing(r rune) bool {
 	switch r {
-	case ' ', ',', ';', ':', '—', '–', '-':
+	case ' ', '\n', ',', ';', ':', '—', '–', '-':
 		return true
 	}
 	return false

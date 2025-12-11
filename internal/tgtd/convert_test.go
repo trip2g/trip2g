@@ -207,7 +207,7 @@ func TestConvert_CustomEmojiBold(t *testing.T) {
  - *Да, у меня уже все расписано. Мне передадут семейное дело. А вы?*
  - *А я солдат. Мой отец был офицером в этом полку. Участвовал в трех войнах при Бисмарке и все выиграл. В 71 - ом он пошел на Париж, вернулся в Германию героем. Я родился слишком поздно Бриксдорф. 50 лет без войны. А что же солдат без войны. *
  - *Вы были близки с отцом?*
- - *Может только в детстве. **Человек рождается один, живет один, один и умирает. ***
+ - *Может только в детстве. **Человек рождается один, живет один, один и умирает.*** 
 
 Сложный фильм. Мне понравился. Генерал яркая демонстрация человека который до конца не встал взрослым, и не отделился от фигуры отца чтобы идти своей дорогой. Но с другой стороны, фигура отца сделала его генералом. 
 
@@ -391,6 +391,24 @@ func TestConvert_BoldWithLeadingPunctuation(t *testing.T) {
 
 	res := Convert(msg)
 	expected := "вернулся в субботу, **но ментально вернулся к жизни только сегодня**, **после 2-х часовой сесии на ноги.**"
+
+	require.Equal(t, expected, res)
+}
+
+func TestConvert_BoldWithTrailingColonSpaceNewline(t *testing.T) {
+	// Bold entity ends with ": \n" - colon, space, and newline should all be trimmed
+	// Real case from Telegram message 1719
+	msg := &tg.Message{
+		Message: "➡️Что там есть  помимо этого: \n🟣Эфиры",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityCustomEmoji{Offset: 0, Length: 2, DocumentID: 5974249837439224721},
+			&tg.MessageEntityBold{Offset: 2, Length: 29}, // "Что там есть  помимо этого: \n" (29 UTF-16 units)
+			&tg.MessageEntityCustomEmoji{Offset: 31, Length: 2, DocumentID: 5404867479002426748},
+		},
+	}
+
+	res := Convert(msg)
+	expected := "![➡️](https://ce.trip2g.com/5974249837439224721.webp)**Что там есть  помимо этого**: \n![🟣](https://ce.trip2g.com/5404867479002426748.webp)Эфиры"
 
 	require.Equal(t, expected, res)
 }
