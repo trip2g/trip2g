@@ -127,7 +127,7 @@ func TestConvert_CustomEmoji(t *testing.T) {
 	}
 
 	res := Convert(msg)
-	expected := "Hello ![🔥](https://ce.trip2g.com/12345.webp) world"
+	expected := "Hello ![🔥|20x20](https://ce.trip2g.com/12345.webp) world"
 
 	if res != expected {
 		t.Errorf("expected:\n%s\ngot:\n%s", expected, res)
@@ -213,13 +213,13 @@ func TestConvert_CustomEmojiBold(t *testing.T) {
 
 Х/Ф "На западном фронте без перемен".
 
-![🟠](https://ce.trip2g.com/5460736117236048513.webp)[Отношения с отцом](https://t.me/ryspaisensei/883)
-![🟠](https://ce.trip2g.com/5460736117236048513.webp)[Обязан ли отец любить сына?](https://t.me/ryspaisensei/328)
-![🟠](https://ce.trip2g.com/5460736117236048513.webp)[Я покажу своему сыну путь](https://t.me/ryspaisensei/954)
+![🟠|20x20](https://ce.trip2g.com/5460736117236048513.webp)[Отношения с отцом](https://t.me/ryspaisensei/883)
+![🟠|20x20](https://ce.trip2g.com/5460736117236048513.webp)[Обязан ли отец любить сына?](https://t.me/ryspaisensei/328)
+![🟠|20x20](https://ce.trip2g.com/5460736117236048513.webp)[Я покажу своему сыну путь](https://t.me/ryspaisensei/954)
 
-![⚡️](https://ce.trip2g.com/5463038705038007921.webp) **Фрагменты**: [Дай человеку власть, он станет животным](https://t.me/ryspaisensei/1054)
+![⚡️|20x20](https://ce.trip2g.com/5463038705038007921.webp) **Фрагменты**: [Дай человеку власть, он станет животным](https://t.me/ryspaisensei/1054)
 
-![💎](https://ce.trip2g.com/5215478503788520683.webp) [Кино 23](https://t.me/ryspaisensei/1235) |  #кино #отец #сепарация`
+![💎|20x20](https://ce.trip2g.com/5215478503788520683.webp) [Кино 23](https://t.me/ryspaisensei/1235) |  #кино #отец #сепарация`
 
 	require.Equal(t, expected, res)
 }
@@ -408,7 +408,7 @@ func TestConvert_BoldWithTrailingColonSpaceNewline(t *testing.T) {
 	}
 
 	res := Convert(msg)
-	expected := "![➡️](https://ce.trip2g.com/5974249837439224721.webp)**Что там есть  помимо этого**: \n![🟣](https://ce.trip2g.com/5404867479002426748.webp)Эфиры"
+	expected := "![➡️|20x20](https://ce.trip2g.com/5974249837439224721.webp)**Что там есть  помимо этого**: \n![🟣|20x20](https://ce.trip2g.com/5404867479002426748.webp)Эфиры"
 
 	require.Equal(t, expected, res)
 }
