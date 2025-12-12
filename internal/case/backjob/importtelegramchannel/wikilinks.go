@@ -13,6 +13,8 @@ var (
 	tgLinkRegex = regexp.MustCompile(`\[([^\]]*)\]\(https?://t\.me/(?:[^/]+/)*(\d+)\)`)
 	// Custom emoji with tg://emoji?id=123
 	customEmojiReplaceRegex = regexp.MustCompile(`!\[([^\]]*)\]\(tg://emoji\?id=(\d+)\)`)
+	// ceEmojiURLRegex matches ![alt](https://ce.trip2g.com/{id}.webp) format.
+	ceEmojiURLRegex = regexp.MustCompile(`!\[([^\]]*)\]\(https://ce\.trip2g\.com/(\d+)\.webp\)`)
 )
 
 func replaceTelegramLinks(content string, postMap map[string]string) string {
@@ -51,4 +53,46 @@ func replaceTelegramLinks(content string, postMap map[string]string) string {
 	})
 
 	return result
+}
+
+// extractCustomEmojiIDs extracts unique custom emoji IDs from markdown content.
+// Returns a slice of unique emoji IDs found in ce.trip2g.com URLs.
+func extractCustomEmojiIDs(content string) []string {
+	matches := ceEmojiURLRegex.FindAllStringSubmatch(content, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	// Deduplicate
+	seen := make(map[string]bool)
+	var result []string
+	for _, match := range matches {
+		if len(match) >= 3 {
+			emojiID := match[2]
+			if !seen[emojiID] {
+				seen[emojiID] = true
+				result = append(result, emojiID)
+			}
+		}
+	}
+	return result
+}
+
+// replaceCustomEmojiURLs replaces ce.trip2g.com URLs with local asset paths.
+// downloadedEmojis maps emojiID -> local filename (e.g., "tg_ce_123.webp").
+func replaceCustomEmojiURLs(content string, downloadedEmojis map[string]string) string {
+	return ceEmojiURLRegex.ReplaceAllStringFunc(content, func(match string) string {
+		submatches := ceEmojiURLRegex.FindStringSubmatch(match)
+		if len(submatches) < 3 {
+			return match
+		}
+		altText := submatches[1]
+		emojiID := submatches[2]
+
+		if localFilename, ok := downloadedEmojis[emojiID]; ok {
+			return fmt.Sprintf("![%s](./assets/%s)", altText, localFilename)
+		}
+		// Not downloaded - keep original URL
+		return match
+	})
 }

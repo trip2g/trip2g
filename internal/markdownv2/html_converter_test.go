@@ -518,6 +518,43 @@ func TestHTMLCustomEmoji(t *testing.T) {
 			expected: ``,
 			warnings: 2, // Both Enclave and Image nodes are created
 		},
+		// Local asset tg_ce_*.webp format tests
+		{
+			name:     "local asset tg_ce format",
+			markdown: "Hello ![](assets/tg_ce_5460736117236048513.webp) world",
+			expected: `Hello <tg-emoji emoji-id="5460736117236048513"></tg-emoji> world`,
+			warnings: 0,
+		},
+		{
+			name:     "local asset tg_ce with alt text",
+			markdown: "![🔥](tg_ce_123456789.webp)",
+			expected: `<tg-emoji emoji-id="123456789">🔥</tg-emoji>`,
+			warnings: 0,
+		},
+		{
+			name:     "local asset tg_ce deep path",
+			markdown: "![](some/deep/path/tg_ce_999.webp)",
+			expected: `<tg-emoji emoji-id="999"></tg-emoji>`,
+			warnings: 0,
+		},
+		{
+			name:     "local asset tg_ce with size suffix",
+			markdown: "![emoji|20x20](assets/tg_ce_5460736117236048513.webp)",
+			expected: `<tg-emoji emoji-id="5460736117236048513">emoji</tg-emoji>`,
+			warnings: 0,
+		},
+		{
+			name:     "local asset tg_ce non-numeric id",
+			markdown: "![](assets/tg_ce_abc.webp)",
+			expected: ``,
+			warnings: 2,
+		},
+		{
+			name:     "local asset tg_ce wrong extension",
+			markdown: "![](assets/tg_ce_123.png)",
+			expected: ``,
+			warnings: 2,
+		},
 	}
 
 	for _, tt := range tests {

@@ -18,10 +18,20 @@ import (
 // ceEmojiURLPattern matches URLs like https://ce.trip2g.com/5460736117236048513.webp
 var ceEmojiURLPattern = regexp.MustCompile(`^https://ce\.trip2g\.com/(\d+)\.webp$`)
 
-// extractCustomEmojiID extracts emoji ID from ce.trip2g.com URL.
-// Returns empty string if URL doesn't match the pattern.
-func extractCustomEmojiID(url string) string {
-	matches := ceEmojiURLPattern.FindStringSubmatch(url)
+// localCustomEmojiPattern matches local files like tg_ce_5460736117236048513.webp
+// Matches at end of path to support any directory prefix (assets/tg_ce_*.webp, tg_ce_*.webp, etc.)
+var localCustomEmojiPattern = regexp.MustCompile(`tg_ce_(\d+)\.webp$`)
+
+// extractCustomEmojiID extracts emoji ID from ce.trip2g.com URL or local tg_ce_*.webp path.
+// Returns empty string if path doesn't match any pattern.
+func extractCustomEmojiID(path string) string {
+	// Try ce.trip2g.com URL pattern
+	matches := ceEmojiURLPattern.FindStringSubmatch(path)
+	if len(matches) == 2 {
+		return matches[1]
+	}
+	// Try local tg_ce_*.webp pattern
+	matches = localCustomEmojiPattern.FindStringSubmatch(path)
 	if len(matches) == 2 {
 		return matches[1]
 	}

@@ -262,6 +262,10 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 	// PHASE 3: Create notes with full postMap (wikilinks resolved) and upload assets
 	assetsDir := fmt.Sprintf("%s/assets", params.BasePath)
 
+	// Create emoji cache for this import session
+	emojiCache := NewEmojiCache()
+	defer emojiCache.Cleanup()
+
 	// Count items to process (for determining last batch)
 	toProcessCount := 0
 	for _, info := range messageInfos {
@@ -306,10 +310,12 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			errMsg := fmt.Sprintf("failed to push batch: %v", pushErr)
 			result.Errors = append(result.Errors, errMsg)
 			log.Warn(errMsg)
-			// Cleanup all media in batch
+			// Cleanup all media in batch (except cached emoji assets)
 			for _, note := range batch {
 				for _, asset := range note.assets {
-					asset.media.Cleanup()
+					if !asset.cached {
+						asset.media.Cleanup()
+					}
 				}
 			}
 			batch = nil
@@ -321,10 +327,12 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 			errMsg := fmt.Sprintf("push batch error: %s", p.Message)
 			result.Errors = append(result.Errors, errMsg)
 			log.Warn(errMsg)
-			// Cleanup all media in batch
+			// Cleanup all media in batch (except cached emoji assets)
 			for _, note := range batch {
 				for _, asset := range note.assets {
-					asset.media.Cleanup()
+					if !asset.cached {
+						asset.media.Cleanup()
+					}
 				}
 			}
 		case *graphmodel.PushNotesPayload:
@@ -346,7 +354,9 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 				if !ok {
 					log.Warn("note not found in response", "path", note.path)
 					for _, asset := range note.assets {
-						asset.media.Cleanup()
+						if !asset.cached {
+							asset.media.Cleanup()
+						}
 					}
 					continue
 				}
@@ -369,7 +379,9 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 				for _, job := range jobs {
 					g.Go(func() error {
 						uploadErr := uploadAsset(gctx, env, log, job.noteID, job.asset)
-						job.asset.media.Cleanup()
+						if !job.asset.cached {
+							job.asset.media.Cleanup()
+						}
 
 						mu.Lock()
 						defer mu.Unlock()
@@ -457,6 +469,29 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 		// Replace telegram links with wikilinks
 		markdown = replaceTelegramLinks(markdown, postMap)
 
+		// Download custom emojis and replace URLs with local paths (always, regardless of WithMedia)
+		var emojiAssets []assetInfo
+		emojiMap, emojiMediaList := downloadAllCustomEmojis(ctx, markdown, emojiCache)
+		if len(emojiMap) > 0 {
+			// Replace URLs in markdown
+			markdown = replaceCustomEmojiURLs(markdown, emojiMap)
+
+			// Prepare emoji assets for upload
+			for _, media := range emojiMediaList {
+				relativePath := fmt.Sprintf("./assets/%s", media.Filename)
+				absolutePath := fmt.Sprintf("/%s/%s", assetsDir, media.Filename)
+
+				emojiAssets = append(emojiAssets, assetInfo{
+					media:        media,
+					relativePath: relativePath,
+					absolutePath: absolutePath,
+					filename:     media.Filename,
+					cached:       true, // owned by emojiCache, don't cleanup individually
+				})
+			}
+			log.Debug("downloaded custom emojis", "msgID", msg.ID, "count", len(emojiMap))
+		}
+
 		// Build asset links and prepare filenames
 		var assetLinks []string
 		var assets []assetInfo
@@ -488,6 +523,9 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 				assetLinks = append(assetLinks, fmt.Sprintf("![[%s]]", relativePath))
 			}
 		}
+
+		// Add emoji assets to the upload list
+		assets = append(assets, emojiAssets...)
 
 		// Prepend asset links to markdown
 		if len(assetLinks) > 0 {
@@ -530,6 +568,7 @@ type assetInfo struct {
 	relativePath string // "./assets/filename"
 	absolutePath string
 	filename     string
+	cached       bool // if true, media is owned by cache and should not be cleaned up
 }
 
 // preparedNote holds all data needed to push a note and upload its assets.
