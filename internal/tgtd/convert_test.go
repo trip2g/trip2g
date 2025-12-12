@@ -554,3 +554,18 @@ func TestConvert_EscapeWikilinks(t *testing.T) {
 
 	require.Equal(t, expected, res)
 }
+
+func TestConvert_MultilineCodeAsBlock(t *testing.T) {
+	// MessageEntityCode with newlines should become a code block, not inline code
+	msg := &tg.Message{
+		Message: "Example:\n```dataview\nlist\nfrom \"\"\n```",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityCode{Offset: 9, Length: 29}, // the code block text including ```
+		},
+	}
+
+	res := Convert(msg)
+	expected := "Example:\n````\n```dataview\nlist\nfrom \"\"\n```\n````"
+
+	require.Equal(t, expected, res)
+}

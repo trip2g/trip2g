@@ -175,7 +175,13 @@ func convertText(msg *tg.Message) string {
 		case *tg.MessageEntityCustomEmoji:
 			replText = fmt.Sprintf("![%s|20x20](https://ce.trip2g.com/%d.webp)", text, entity.DocumentID)
 		case *tg.MessageEntityCode:
-			replText = "`" + text + "`"
+			// If code contains newlines, treat as code block instead of inline
+			if strings.Contains(text, "\n") {
+				fence := codeFence(text)
+				replText = fence + "\n" + text + "\n" + fence
+			} else {
+				replText = "`" + text + "`"
+			}
 		case *tg.MessageEntityPre:
 			// Code block - use enough backticks to avoid conflicts
 			fence := codeFence(text)
