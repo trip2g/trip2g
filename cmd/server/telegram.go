@@ -31,8 +31,16 @@ func (a *app) initTelegramDeps(ctx context.Context) error {
 		Limit:        1,
 		PollInterval: time.Second * 5,
 	})
-
 	a.telegramTaskQueue = taskQueue
+
+	// Long-running queue - for jobs that can take hours (channel imports, etc.)
+	// Higher Extend (60s) to reduce DB updates during long jobs
+	longRunningQueue := a.createQueue(ctx, "tg_long_jobs", jobs.NewRunnerOpts{
+		Limit:        1,
+		PollInterval: time.Second * 30,
+		Extend:       time.Minute * 1,
+	})
+	a.telegramLongRunningQueue = longRunningQueue
 
 	// Initialize telegram auth manager for MTProto user account authentication
 	a.telegramAuthManager = tgtd.NewAuthManager()

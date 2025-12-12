@@ -7,7 +7,7 @@ import (
 )
 
 const JobID = "import_telegram_channel"
-const QueueID = model.BackgroundTelegramJobQueue
+const QueueID = model.BackgroundTelegramLongRunningQueue
 const Priority = 10 // lower priority than regular posts
 
 type ImportTelegramChannelJob struct {

@@ -150,9 +150,10 @@ type app struct {
 
 	auditLogger logger.Logger
 
-	globalQueue       *appQueue
-	telegramAPIQueue  *appQueue
-	telegramTaskQueue *appQueue
+	globalQueue              *appQueue
+	telegramAPIQueue         *appQueue
+	telegramTaskQueue        *appQueue
+	telegramLongRunningQueue *appQueue
 
 	// mail *mailyak.MailYak
 
@@ -390,6 +391,7 @@ func main() {
 	a.globalQueue.start()
 	a.telegramTaskQueue.start()
 	a.telegramAPIQueue.start()
+	a.telegramLongRunningQueue.start()
 
 	a.startServer()
 }

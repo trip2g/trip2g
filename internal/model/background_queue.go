@@ -11,6 +11,7 @@ const (
 	BackgroundDefaultQueue BackgroundQueueID = iota
 	BackgroundTelegramJobQueue
 	BackgroundTelegramAPICallQueue
+	BackgroundTelegramLongRunningQueue
 )
 
 func (id BackgroundQueueID) String() string {
@@ -21,6 +22,8 @@ func (id BackgroundQueueID) String() string {
 		return "telegram_jobs"
 	case BackgroundTelegramAPICallQueue:
 		return "telegram_api_calls"
+	case BackgroundTelegramLongRunningQueue:
+		return "telegram_long_running"
 	}
 
 	return "unknown"
