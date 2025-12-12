@@ -573,10 +573,9 @@ main() {
     test_delete_vs_modify_conflict
     test_syncstate_reset_as_conflict
 
-    # Assets (disabled - CLI asset upload has a bug with Blob serialization)
-    # test_asset_upload
-    # test_asset_different_no_conflict
-    log_info "Asset tests skipped (known issue with CLI Blob upload)"
+    # Assets
+    test_asset_upload
+    test_asset_different_no_conflict
 
     # Other
     test_dry_run
