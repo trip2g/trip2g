@@ -230,6 +230,11 @@ func convertText(msg *tg.Message) string {
 			continue
 		}
 
+		// Add blank line before = at line start to avoid Setext header
+		if atLineStart && r == '=' {
+			result.WriteRune('\n')
+		}
+
 		atLineStart = false
 
 		// Transition formatting

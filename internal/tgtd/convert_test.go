@@ -494,3 +494,16 @@ func TestConvert_TextURLEscapeEquals(t *testing.T) {
 
 	require.Equal(t, expected, res)
 }
+
+func TestConvert_EqualsLineNeedsBlankBefore(t *testing.T) {
+	// Line of = after text needs blank line before to avoid Setext header
+	msg := &tg.Message{
+		Message:  "header\n====\ntext",
+		Entities: nil,
+	}
+
+	res := Convert(msg)
+	expected := "header\n\n====\ntext"
+
+	require.Equal(t, expected, res)
+}
