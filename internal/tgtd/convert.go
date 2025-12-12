@@ -92,6 +92,15 @@ func convertText(msg *tg.Message) string {
 	// Preprocess entities: trim leading/trailing spaces from formatting entities
 	entities := trimSpacesFromEntities(source, msg.Entities)
 
+	// Collect hashtag start positions (need space before them)
+	hashtagStarts := make(map[int]bool)
+	for _, e := range entities {
+		if _, ok := e.(*tg.MessageEntityHashtag); ok {
+			start := utf16OffsetToRune(msg.Message, e.GetOffset())
+			hashtagStarts[start] = true
+		}
+	}
+
 	// Build per-character format map
 	formats := make([]Format, len(source))
 	for _, e := range entities {
@@ -259,6 +268,14 @@ func convertText(msg *tg.Message) string {
 			}
 
 			currentFmt = targetFmt
+		}
+
+		// Add space before hashtag if needed
+		if hashtagStarts[i] && r == '#' && i > 0 {
+			prev := source[i-1]
+			if prev != ' ' && prev != '\n' {
+				result.WriteRune(' ')
+			}
 		}
 
 		// Escape markdown special chars to avoid interpretation

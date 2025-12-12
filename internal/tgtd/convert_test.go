@@ -464,3 +464,18 @@ func TestConvert_TextURLWithNewline(t *testing.T) {
 
 	require.Equal(t, expected, res)
 }
+
+func TestConvert_HashtagSpacing(t *testing.T) {
+	// Hashtag should have space before it if preceded by non-space
+	msg := &tg.Message{
+		Message: "text⚡️#дневник22",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityHashtag{Offset: 6, Length: 10},
+		},
+	}
+
+	res := Convert(msg)
+	expected := "text⚡️ #дневник22"
+
+	require.Equal(t, expected, res)
+}
