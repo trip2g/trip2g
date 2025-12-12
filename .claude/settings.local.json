@@ -39,7 +39,9 @@
       "Bash(chmod:*)",
       "Bash(docker-compose up:*)",
       "Bash(cat:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(./scripts/test-sync-cli.sh:*)",
+      "Bash(npm run test:*)"
     ],
     "deny": []
   },

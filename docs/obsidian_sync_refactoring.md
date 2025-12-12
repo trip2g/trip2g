@@ -107,9 +107,12 @@ export interface SyncEnv extends ClassifyEnv {
   // State
   saveSyncState(state: SyncState): Promise<void>;
 
-  // UI (можно мокать no-op в тестах)
-  showProgress(message: string): void;
-  showNotice(message: string): void;
+  // UI callbacks (можно мокать no-op в тестах)
+  onProgress(progress: Progress): void;
+  onConflict(conflicts: ConflictInfo[]): Promise<ConflictResolution[]>;
+  onAssetConflict(conflicts: AssetConflictInfo[]): Promise<AssetConflictResolution[]>;
+  onServerDeleted(paths: string[]): Promise<boolean>;
+  confirmPush(paths: string[]): Promise<boolean>;
 }
 ```
 
@@ -268,17 +271,20 @@ const createMockEnv = (
 
 ```
 obsidian-sync/src/
-├── sync/                 # Новый модуль (platform-agnostic)
+├── sync/                 # Platform-agnostic sync module
 │   ├── types.ts          # Interfaces (Env, SyncPlan, SyncAction)
 │   ├── classify.ts       # classifyFile, classifySync
+│   ├── filter.ts         # filterPlan
 │   ├── execute.ts        # executePlan
 │   ├── classify.test.ts  # Unit tests
+│   ├── filter.test.ts    # Unit tests
 │   ├── execute.test.ts   # Unit tests
 │   └── cli/
 │       ├── env.ts        # Node.js реализация Env (fs, fetch)
+│       ├── client.ts     # GraphQL client
 │       └── cmd.ts        # CLI runner (парсинг args, запуск)
-├── syncOld.ts            # Старый sync.ts (временно, до интеграции)
-├── main.ts               # Плагин (после интеграции использует sync/)
+├── env.ts                # ObsidianSyncEnv (Obsidian реализация Env)
+├── main.ts               # Плагин (использует sync/)
 └── ...
 ```
 
@@ -410,22 +416,31 @@ interface SyncEnv extends ClassifyEnv {
   // File operations
   writeFile(path: string, content: string): Promise<void>;
   writeBinaryFile(path: string, data: ArrayBuffer): Promise<void>;
+  readBinaryFile(path: string): Promise<ArrayBuffer>;
   deleteFile(path: string): Promise<void>;
   createFolder(path: string): Promise<void>;
+  fileExists(path: string): Promise<boolean>;
 
   // Server operations
-  pushNotes(updates: NoteUpdate[]): Promise<PushedNote[]>;
+  pushNotes(updates: NoteUpdate[], skipCommit: boolean): Promise<PushedNote[]>;
   hideNotes(paths: string[]): Promise<void>;
   fetchNoteContents(paths: string[]): Promise<NoteContent[]>;
+  fetchNoteAssets(paths: string[]): Promise<NoteAssetInfo[]>;
   uploadAsset(params: UploadAssetParams): Promise<boolean>;
+  downloadAsset(url: string): Promise<ArrayBuffer | null>;
   commitNotes(): Promise<void>;
+
+  // Asset operations
+  computeBinaryHash(data: ArrayBuffer): Promise<string>;
+  resolveAssetPath(assetPath: string, notePath: string): Promise<string | null>;
 
   // State
   saveSyncState(state: SyncState): Promise<void>;
 
   // UI callbacks
-  showProgress(message: string): void;
+  onProgress(progress: Progress): void;
   onConflict(conflicts: ConflictInfo[]): Promise<ConflictResolution[]>;
+  onAssetConflict(conflicts: AssetConflictInfo[]): Promise<AssetConflictResolution[]>;
   onServerDeleted(paths: string[]): Promise<boolean>;
   confirmPush(paths: string[]): Promise<boolean>;
 }
@@ -503,8 +518,8 @@ npx ts-node src/sync/cli/cmd.ts --folder ./test-vault --api-url https://... --ap
 | Story 1.5: filterPlan | A | DONE | twoWaySync, publishFields + 20 tests, 100% mutation |
 | Story 2: executePlan | A | DONE | executePlan + 31 tests, 100% mutation (126 mutants) |
 | Story 3: Node.js Env + CLI | B | DONE | NodeEnv + CLI runner (npm run sync) |
-| Story 4: Интеграция | C | TODO | |
-| Story 5: Cleanup | C | TODO | |
+| Story 4: Интеграция | C | DONE | ObsidianSyncEnv + main.ts refactor |
+| Story 5: Cleanup | C | DONE | syncOld.ts удалён, 101 tests pass |
 
 ## Mutation Testing Summary (Stryker)
 

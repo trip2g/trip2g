@@ -24,7 +24,7 @@ cleanup() {
 
   # Remove temporary files
   rm -f .test-api-key
-  rm -f testdata/vault/.sync-state.json
+  rm -rf tmp/testvault0 tmp/testvault1
 
   echo -e "${GREEN}✓ Cleanup complete${NC}"
 }
@@ -66,16 +66,17 @@ API_KEY=$(cat .test-api-key)
 echo -e "${GREEN}✓ API key created: ${API_KEY:0:20}...${NC}"
 echo ""
 
-# Push test vault data
-echo "📤 Pushing test vault data..."
+# Run CLI sync E2E tests (also pushes test data)
+echo "🔄 Running CLI sync E2E tests..."
 echo ""
 
-API_KEY="$API_KEY" npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder testdata/vault || {
-  echo -e "${RED}✗ Failed to push test data${NC}"
+./scripts/test-sync-cli.sh --api-key "$API_KEY" --endpoint "$ENDPOINT" || {
+  echo -e "${RED}✗ CLI sync tests failed${NC}"
   exit 1
 }
 
-echo -e "${GREEN}✓ Test data pushed successfully${NC}"
+echo ""
+echo -e "${GREEN}✓ CLI sync tests passed${NC}"
 echo ""
 
 # Check for MANUAL mode
@@ -118,7 +119,7 @@ if [ $TEST_EXIT_CODE -eq 0 ]; then
   echo -e "${GREEN}✅ All E2E tests passed!${NC}"
 else
   echo ""
-  echo -e "${RED}✗ Some tests failed${NC}"
+  echo -e "${RED}✗ Playwright tests failed${NC}"
   echo "Run with --ui for interactive debugging: ./scripts/test-e2e.sh --ui"
 fi
 
