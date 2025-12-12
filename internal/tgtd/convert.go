@@ -92,12 +92,17 @@ func convertText(msg *tg.Message) string {
 	// Preprocess entities: trim leading/trailing spaces from formatting entities
 	entities := trimSpacesFromEntities(source, msg.Entities)
 
-	// Collect hashtag start positions (need space before them)
+	// Collect hashtag positions (need space before them, and no bold/italic inside)
 	hashtagStarts := make(map[int]bool)
+	hashtagPositions := make(map[int]bool)
 	for _, e := range entities {
 		if _, ok := e.(*tg.MessageEntityHashtag); ok {
 			start := utf16OffsetToRune(msg.Message, e.GetOffset())
+			length := utf16LengthToRune(msg.Message, e.GetOffset(), e.GetLength())
 			hashtagStarts[start] = true
+			for i := start; i < start+length && i < len(source); i++ {
+				hashtagPositions[i] = true
+			}
 		}
 	}
 
@@ -110,9 +115,15 @@ func convertText(msg *tg.Message) string {
 		for i := start; i < end && i < len(formats); i++ {
 			switch e.(type) {
 			case *tg.MessageEntityBold:
-				formats[i].Bold = true
+				// Skip bold for hashtags - Obsidian doesn't support styled tags
+				if !hashtagPositions[i] {
+					formats[i].Bold = true
+				}
 			case *tg.MessageEntityItalic:
-				formats[i].Italic = true
+				// Skip italic for hashtags - Obsidian doesn't support styled tags
+				if !hashtagPositions[i] {
+					formats[i].Italic = true
+				}
 			case *tg.MessageEntityStrike:
 				formats[i].Strikethrough = true
 			case *tg.MessageEntityUnderline:

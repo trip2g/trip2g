@@ -522,3 +522,22 @@ func TestConvert_NestedCodeBlock(t *testing.T) {
 
 	require.Equal(t, expected, res)
 }
+
+func TestConvert_HashtagNoFormatting(t *testing.T) {
+	// Obsidian doesn't support styled tags - remove italic/bold around hashtags
+	msg := &tg.Message{
+		Message: "#ProObsidian #ДмитрийЛаухин #plain",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityItalic{Offset: 0, Length: 12},   // *#ProObsidian*
+			&tg.MessageEntityBold{Offset: 13, Length: 14},    // **#ДмитрийЛаухин**
+			&tg.MessageEntityHashtag{Offset: 0, Length: 12},  // #ProObsidian
+			&tg.MessageEntityHashtag{Offset: 13, Length: 14}, // #ДмитрийЛаухин
+			&tg.MessageEntityHashtag{Offset: 28, Length: 6},  // #plain (no formatting)
+		},
+	}
+
+	res := Convert(msg)
+	expected := "#ProObsidian #ДмитрийЛаухин #plain"
+
+	require.Equal(t, expected, res)
+}
