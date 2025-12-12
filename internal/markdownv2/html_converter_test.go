@@ -483,6 +483,12 @@ func TestHTMLCustomEmoji(t *testing.T) {
 			warnings: 0,
 		},
 		{
+			name:     "ce.trip2g.com with size suffix in alt",
+			markdown: "Hello ![🔥|20x20](https://ce.trip2g.com/5460736117236048513.webp) world",
+			expected: `Hello <tg-emoji emoji-id="5460736117236048513">🔥</tg-emoji> world`,
+			warnings: 0,
+		},
+		{
 			name:     "multiple ce.trip2g.com emojis",
 			markdown: "![](https://ce.trip2g.com/111.webp)![](https://ce.trip2g.com/222.webp)",
 			expected: `<tg-emoji emoji-id="111"></tg-emoji><tg-emoji emoji-id="222"></tg-emoji>`,

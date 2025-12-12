@@ -28,6 +28,14 @@ func extractCustomEmojiID(url string) string {
 	return ""
 }
 
+// stripSizeSuffix removes Obsidian size suffix from alt text (e.g., "🔥|20x20" -> "🔥").
+func stripSizeSuffix(alt string) string {
+	if idx := strings.Index(alt, "|"); idx != -1 {
+		return alt[:idx]
+	}
+	return alt
+}
+
 type LinkResolverResult struct {
 	URL       string
 	Label     string
@@ -218,8 +226,9 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 			if emojiID != "" {
 				if entering {
+					alt := stripSizeSuffix(node.Alt)
 					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">%s</tg-emoji>`,
-						html.EscapeString(emojiID), html.EscapeString(node.Alt)))
+						html.EscapeString(emojiID), html.EscapeString(alt)))
 					return ast.WalkSkipChildren, nil
 				}
 			} else {
@@ -240,9 +249,10 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 			if emojiID != "" {
 				if entering {
-					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">`, html.EscapeString(emojiID)))
-				} else {
-					c.Write("</tg-emoji>")
+					alt := stripSizeSuffix(string(node.Text(src)))
+					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">%s</tg-emoji>`,
+						html.EscapeString(emojiID), html.EscapeString(alt)))
+					return ast.WalkSkipChildren, nil
 				}
 			} else {
 				msg := fmt.Sprintf("unsupported image source: %s", dest)
