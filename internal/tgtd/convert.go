@@ -305,6 +305,10 @@ func convertText(msg *tg.Message) string {
 			result.WriteString(`\_`)
 		case '`':
 			result.WriteString("\\`")
+		case '[':
+			result.WriteString(`\[`)
+		case ']':
+			result.WriteString(`\]`)
 		default:
 			result.WriteRune(r)
 		}

@@ -541,3 +541,16 @@ func TestConvert_HashtagNoFormatting(t *testing.T) {
 
 	require.Equal(t, expected, res)
 }
+
+func TestConvert_EscapeWikilinks(t *testing.T) {
+	// Escape [[ and ]] to prevent Obsidian from interpreting as wikilinks
+	msg := &tg.Message{
+		Message:  "[[ Some Note Title ]]",
+		Entities: nil,
+	}
+
+	res := Convert(msg)
+	expected := `\[\[ Some Note Title \]\]`
+
+	require.Equal(t, expected, res)
+}
