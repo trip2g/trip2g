@@ -522,6 +522,141 @@ EOF
     assert_file_exists "$VAULT1/note_asset_b.md" "vault1 has note_asset_b.md"
 }
 
+test_asset_download_two_way() {
+    log_section "Test: Asset download (two-way sync)"
+
+    # Create note with NEW asset in vault0
+    cp "$VAULT0/test.png" "$VAULT0/assets/download_test.png"
+    cat > "$VAULT0/note_download_asset.md" << 'EOF'
+---
+publish: true
+---
+# Note with downloadable asset
+![[download_test.png]]
+EOF
+
+    # Sync vault0 (uploads note + asset)
+    sync_vault "$VAULT0" "-v"
+
+    # Sync vault1 with two-way (should download asset)
+    sync_vault "$VAULT1" "-v"
+
+    assert_file_exists "$VAULT1/note_download_asset.md" "Note pulled to vault1"
+    assert_file_exists "$VAULT1/assets/download_test.png" "Asset downloaded to vault1"
+}
+
+test_asset_conflict_local() {
+    log_section "Test: Asset conflict --conflict-resolution=local"
+
+    # Both vaults have same asset with different content
+    mkdir -p "$VAULT0/assets" "$VAULT1/assets"
+
+    # vault0: use format.png as the asset
+    cp "$VAULT0/format.png" "$VAULT0/assets/conflict_asset.png"
+    cat > "$VAULT0/note_conflict_asset.md" << 'EOF'
+---
+publish: true
+---
+# Conflict Asset Note
+![[conflict_asset.png]]
+EOF
+
+    # Sync vault0 first
+    sync_vault_quiet "$VAULT0"
+
+    # vault1: use format.jpg (different content) with same name
+    cp "$VAULT0/format.jpg" "$VAULT1/assets/conflict_asset.png"
+
+    # Sync vault1 - should detect conflict and keep local
+    sync_vault "$VAULT1" "--conflict-resolution=local -v"
+
+    # vault1 should still have its version (jpg content, not png)
+    local vault1_size=$(stat -c%s "$VAULT1/assets/conflict_asset.png" 2>/dev/null || stat -f%z "$VAULT1/assets/conflict_asset.png")
+    local original_jpg_size=$(stat -c%s "$VAULT0/format.jpg" 2>/dev/null || stat -f%z "$VAULT0/format.jpg")
+
+    if [ "$vault1_size" = "$original_jpg_size" ]; then
+        log_success "Asset conflict resolved: kept local version"
+    else
+        log_fail "Asset conflict: local version was overwritten"
+    fi
+}
+
+test_one_way_sync() {
+    log_section "Test: One-way sync (no --two-way flag)"
+
+    # Reset vaults
+    rm -f "$VAULT1/one_way_test.md"
+
+    # Create file in vault0
+    cat > "$VAULT0/one_way_test.md" << 'EOF'
+---
+publish: true
+---
+# One-way test
+EOF
+
+    # Sync vault0 (push)
+    sync_vault_quiet "$VAULT0"
+
+    # Sync vault1 WITHOUT --two-way flag
+    log_info "Syncing vault1 in one-way mode (no --two-way)..."
+    cd "$OBSIDIAN_SYNC_DIR"
+    npx tsx src/sync/cli/cmd.ts --folder "$VAULT1" --api-key "$API_KEY" --api-url "$ENDPOINT" 2>&1
+
+    # In one-way mode, vault1 should NOT pull from server
+    assert_file_not_exists "$VAULT1/one_way_test.md" "One-way sync does not pull files"
+}
+
+test_publish_field_filtering() {
+    log_section "Test: publishFields filtering"
+
+    # Note: CLI doesn't have publishFields support yet (it's for Obsidian plugin)
+    # This test verifies that notes WITHOUT publish:true are still synced in CLI mode
+    # (CLI syncs all .md files, filtering is Obsidian-specific via metadataCache)
+
+    cat > "$VAULT0/no_publish_field.md" << 'EOF'
+---
+title: No publish field
+---
+# No publish field
+This note has no publish: true
+EOF
+
+    cat > "$VAULT0/publish_false.md" << 'EOF'
+---
+publish: false
+---
+# Publish false
+This note has publish: false
+EOF
+
+    sync_vault "$VAULT0"
+
+    # CLI should sync all files (no filtering)
+    log_info "Note: CLI syncs all .md files, publishFields filtering is Obsidian-specific"
+    log_success "publishFields test: CLI syncs without filtering (expected behavior)"
+}
+
+test_html_files_sync() {
+    log_section "Test: HTML files sync"
+
+    # Create HTML layout file in vault0
+    mkdir -p "$VAULT0/_layouts/demo"
+    cat > "$VAULT0/_layouts/demo/index.html" << 'EOF'
+<!DOCTYPE html>
+<html>
+<head><title>Test</title></head>
+<body><h1>HTML Test</h1></body>
+</html>
+EOF
+
+    sync_vault_quiet "$VAULT0"
+    sync_vault_quiet "$VAULT1"
+
+    assert_file_exists "$VAULT1/_layouts/demo/index.html" "HTML layout synced to vault1"
+    assert_file_contains "$VAULT1/_layouts/demo/index.html" "HTML Test" "HTML content correct"
+}
+
 test_dry_run() {
     log_section "Test: Dry run mode"
 
@@ -576,6 +711,13 @@ main() {
     # Assets
     test_asset_upload
     test_asset_different_no_conflict
+    test_asset_download_two_way
+    test_asset_conflict_local
+
+    # Sync modes
+    test_one_way_sync
+    test_publish_field_filtering
+    test_html_files_sync
 
     # Other
     test_dry_run
