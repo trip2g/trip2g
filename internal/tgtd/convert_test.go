@@ -507,3 +507,18 @@ func TestConvert_EqualsLineNeedsBlankBefore(t *testing.T) {
 
 	require.Equal(t, expected, res)
 }
+
+func TestConvert_NestedCodeBlock(t *testing.T) {
+	// Code block containing ``` should use ```` for outer fence
+	msg := &tg.Message{
+		Message: "```dataviewjs\ncode\n```",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityPre{Offset: 0, Length: 22, Language: ""},
+		},
+	}
+
+	res := Convert(msg)
+	expected := "````\n```dataviewjs\ncode\n```\n````"
+
+	require.Equal(t, expected, res)
+}

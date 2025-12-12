@@ -166,11 +166,12 @@ func convertText(msg *tg.Message) string {
 		case *tg.MessageEntityCode:
 			replText = "`" + text + "`"
 		case *tg.MessageEntityPre:
-			// Code block with optional language
+			// Code block - use enough backticks to avoid conflicts
+			fence := codeFence(text)
 			if entity.Language != "" {
-				replText = "```" + entity.Language + "\n" + text + "\n```"
+				replText = fence + entity.Language + "\n" + text + "\n" + fence
 			} else {
-				replText = "```\n" + text + "\n```"
+				replText = fence + "\n" + text + "\n" + fence
 			}
 		default:
 			continue
@@ -516,4 +517,27 @@ func isEmoji(r rune) bool {
 		return true
 	}
 	return false
+}
+
+// codeFence returns the appropriate fence string for a code block.
+// Uses more backticks if the content contains backticks.
+func codeFence(content string) string {
+	maxBackticks := 0
+	current := 0
+	for _, r := range content {
+		if r == '`' {
+			current++
+			if current > maxBackticks {
+				maxBackticks = current
+			}
+		} else {
+			current = 0
+		}
+	}
+	// Use at least 3 backticks, or one more than the max found
+	fenceLen := 3
+	if maxBackticks >= 3 {
+		fenceLen = maxBackticks + 1
+	}
+	return strings.Repeat("`", fenceLen)
 }
