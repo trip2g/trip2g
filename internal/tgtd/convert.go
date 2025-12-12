@@ -149,6 +149,8 @@ func convertText(msg *tg.Message) string {
 			}
 			// Move leading emoji outside the link
 			prefix, linkText := extractLeadingEmoji(linkText)
+			// Escape = to avoid Setext header interpretation
+			linkText = strings.ReplaceAll(linkText, "=", `\=`)
 			replText = prefix + "[" + linkText + "](" + entity.URL + ")" + rest
 		case *tg.MessageEntityURL:
 			// Plain URL - keep as is, markdown will auto-link

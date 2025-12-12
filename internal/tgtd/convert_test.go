@@ -479,3 +479,18 @@ func TestConvert_HashtagSpacing(t *testing.T) {
 
 	require.Equal(t, expected, res)
 }
+
+func TestConvert_TextURLEscapeEquals(t *testing.T) {
+	// Equals signs in link text should be escaped to avoid Setext header interpretation
+	msg := &tg.Message{
+		Message: "text\n====\nmore",
+		Entities: []tg.MessageEntityClass{
+			&tg.MessageEntityTextURL{Offset: 5, Length: 4, URL: "https://example.com"},
+		},
+	}
+
+	res := Convert(msg)
+	expected := "text\n[\\=\\=\\=\\=](https://example.com)\nmore"
+
+	require.Equal(t, expected, res)
+}
