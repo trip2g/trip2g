@@ -22,6 +22,18 @@ var ceEmojiURLPattern = regexp.MustCompile(`^https://ce\.trip2g\.com/(\d+)\.webp
 // Matches at end of path to support any directory prefix (assets/tg_ce_*.webp, tg_ce_*.webp, etc.)
 var localCustomEmojiPattern = regexp.MustCompile(`tg_ce_(\d+)\.webp$`)
 
+// extractImageAltText extracts alt text from Image node's children.
+// This replaces the deprecated node.Text(src) method for ast.Image nodes.
+func extractImageAltText(node *ast.Image, src []byte) string {
+	var sb strings.Builder
+	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
+		if text, ok := child.(*ast.Text); ok {
+			sb.Write(text.Value(src))
+		}
+	}
+	return sb.String()
+}
+
 // extractCustomEmojiID extracts emoji ID from ce.trip2g.com URL or local tg_ce_*.webp path.
 // Returns empty string if path doesn't match any pattern.
 func extractCustomEmojiID(path string) string {
@@ -259,7 +271,7 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 
 			if emojiID != "" {
 				if entering {
-					alt := stripSizeSuffix(string(node.Text(src)))
+					alt := stripSizeSuffix(extractImageAltText(node, src))
 					c.Write(fmt.Sprintf(`<tg-emoji emoji-id="%s">%s</tg-emoji>`,
 						html.EscapeString(emojiID), html.EscapeString(alt)))
 					return ast.WalkSkipChildren, nil

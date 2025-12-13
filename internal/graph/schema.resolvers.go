@@ -1965,7 +1965,7 @@ func (r *notePathResolver) Content(ctx context.Context, obj *db.NotePath) (strin
 	// if the client push html files outside of _layouts folder,
 	// we may not have content for them
 	// TODO: fix this
-	return "", nil //errors.New("note content not found")
+	return "", nil // errors.New("note content not found")
 }
 
 // AssetReplaces is the resolver for the assetReplaces field.
