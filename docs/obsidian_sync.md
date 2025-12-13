@@ -39,6 +39,22 @@ publish: true
 | `conflict` | не показывать конфликт если локальный файл без поля |
 | `local_deleted` | hide на сервере только если файл был "публикуемый" |
 
+**Defense in Depth (дополнительная защита):**
+
+Помимо фильтрации на уровне `filterPlan`, в методе `pushNotes` есть дополнительная проверка. Перед отправкой на сервер каждая заметка проверяется на наличие publish field в frontmatter.
+
+Если заметка без publish field попытается отправиться — будет выброшено исключение:
+```
+[Security] Attempted to push note "private/secret.md" without publish field "publish".
+This is a bug in the sync logic - please report it.
+```
+
+**Зачем нужна двойная защита:**
+1. `filterPlan` — основная логика фильтрации, работает на уровне классификации файлов
+2. `pushNotes` validation — страховка на случай бага в filterPlan или обхода фильтра
+
+Это принцип "defense in depth" — даже если первый уровень защиты сломается, второй не даст приватным заметкам утечь на сервер.
+
 Подробнее: https://trip2g.com/docs/onboarding
 
 ### Two-way sync (Двусторонняя синхронизация)
