@@ -328,25 +328,7 @@ func main() {
 		panic(fmt.Errorf("failed to initialize telegram dependencies: %w", err))
 	}
 
-	a.SendTelegramMessageJob = sendtelegrammessage.New(a)
-	a.UpdateTelegramMessageJob = updatetelegrammessage.New(a)
-	a.SendTelegramAccountMessageJob = sendtelegramaccountmessage.New(a)
-	a.UpdateTelegramAccountMessageJob = updatetelegramaccountmessage.New(a)
-	a.SendTelegramAccountPostJob = sendtelegramaccountpost.New(a)
-	a.UpdateTelegramAccountPostJob = updatetelegramaccountpost.New(a)
-	a.ImportTelegramChannelJob = importtelegramchannel.New(a)
-
-	a.CronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
-	if err != nil {
-		panic(fmt.Errorf("failed to create cron jobs: %w", err))
-	}
-
-	a.SendSignInCodeJob = sendsignincode.New(a)
-	a.SendTelegramPostJob = sendtelegrampost.New(a)
-	a.UpdateTelegramPostJob = updatetelegrampost.New(a)
-	a.ExtractNotionPagesJob = extractnotionpages.New(a)
-	a.UpdateAllChatTelegramPublishPostsJob = updateallchattelegrampublishposts.New(a)
-	a.UpdateAllAccountTelegramPublishPostsJob = updateallaccounttelegrampublishposts.New(a)
+	a.initJobs(ctx)
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)
 	if err != nil {
@@ -421,6 +403,30 @@ func restoreBackup(log logger.Logger, config *appconfig.Config) {
 	if startupErr != nil {
 		log.Error("FATAL: failed to restore database", "error", startupErr)
 		panic(fmt.Errorf("failed to restore database: %w", startupErr))
+	}
+}
+
+func (a *app) initJobs(ctx context.Context) {
+	a.SendTelegramMessageJob = sendtelegrammessage.New(a)
+	a.UpdateTelegramMessageJob = updatetelegrammessage.New(a)
+	a.SendTelegramAccountMessageJob = sendtelegramaccountmessage.New(a)
+	a.UpdateTelegramAccountMessageJob = updatetelegramaccountmessage.New(a)
+	a.SendTelegramAccountPostJob = sendtelegramaccountpost.New(a)
+	a.UpdateTelegramAccountPostJob = updatetelegramaccountpost.New(a)
+	a.ImportTelegramChannelJob = importtelegramchannel.New(a)
+
+	a.SendSignInCodeJob = sendsignincode.New(a)
+	a.SendTelegramPostJob = sendtelegrampost.New(a)
+	a.UpdateTelegramPostJob = updatetelegrampost.New(a)
+	a.ExtractNotionPagesJob = extractnotionpages.New(a)
+	a.UpdateAllChatTelegramPublishPostsJob = updateallchattelegrampublishposts.New(a)
+	a.UpdateAllAccountTelegramPublishPostsJob = updateallaccounttelegrampublishposts.New(a)
+
+	var err error
+
+	a.CronJobs, err = cronjobs.New(ctx, a, getCronJobConfigs(a))
+	if err != nil {
+		panic(fmt.Errorf("failed to create cron jobs: %w", err))
 	}
 }
 
