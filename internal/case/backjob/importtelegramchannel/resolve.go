@@ -139,6 +139,13 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 	// Build map of existing imported notes
 	nvs := env.LatestNoteViews()
 	importedNotes := model.BuildImportedNotesMap(nvs)
+
+	// Build map of notes by path for override protection check
+	notesByPath := make(map[string]*model.NoteView)
+	for _, note := range nvs.List {
+		notesByPath[note.Path] = note
+	}
+
 	log.Info("loaded existing notes", "count", len(importedNotes))
 
 	// PHASE 1: Fetch ALL messages (metadata only, no media download)
@@ -230,6 +237,18 @@ func Resolve(ctx context.Context, env Env, params model.ImportTelegramChannelPar
 
 		// Skip if already imported and skipExists is enabled
 		shouldSkip := params.SkipExists && alreadyImportedSet[msg.ID]
+
+		// Check override protection: if note with this path exists, check if it allows override
+		if !shouldSkip {
+			notePath := fmt.Sprintf("%s/%s", params.BasePath, filename)
+			if existingNote, exists := notesByPath[notePath]; exists {
+				if !existingNote.ExtractTelegramImportAllowOverride() {
+					// Note exists and doesn't allow override - skip to protect user content
+					shouldSkip = true
+					log.Debug("skipping note - override not allowed", "path", notePath, "msgID", msg.ID)
+				}
+			}
+		}
 
 		messageInfos[i] = messageInfo{
 			group:    group,
@@ -629,6 +648,7 @@ func generateFrontmatter(channelID int64, msg *tg.Message) string {
 	sb.WriteString(fmt.Sprintf("telegram_publish_message_id: %d\n", msg.ID))
 	sb.WriteString(fmt.Sprintf("telegram_publish_message_link: %s\n", messageLink))
 	sb.WriteString(fmt.Sprintf("telegram_publish_at: %s\n", publishAt))
+	sb.WriteString("telegram_import_allow_override: true\n")
 	sb.WriteString("---\n\n")
 	return sb.String()
 }

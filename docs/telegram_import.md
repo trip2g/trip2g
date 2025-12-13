@@ -1483,6 +1483,39 @@ func (r *adminMutationResolver) ImportTelegramAccountChannel(
 - **Incremental import**: Only new posts (not in `LatestNoteViews()`) are fetched and saved
 - **Idempotent**: Running import multiple times is safe — existing notes are skipped
 
+### Override Protection (`telegram_import_allow_override`)
+
+Imported notes include `telegram_import_allow_override: true` in frontmatter to protect user-edited content from being overwritten during re-import.
+
+**Frontmatter example**:
+```yaml
+---
+telegram_publish_channel_id: "1234567890"
+telegram_publish_message_id: 123
+telegram_publish_at: 2024-01-15T10:30:00Z
+telegram_import_allow_override: true
+---
+```
+
+**Behavior**:
+1. **New imports**: All imported notes get `telegram_import_allow_override: true`
+2. **Re-import check**: Before overwriting an existing note, the importer checks for this flag:
+   - Flag is `true` → note can be overwritten (it's still "import-managed")
+   - Flag is `false` or missing → note is protected, skip overwrite
+3. **User protection**: If a user edits an imported note and wants to preserve changes:
+   - Set `telegram_import_allow_override: false` or remove the flag entirely
+   - Re-running import will skip this note
+
+**Use cases**:
+- **Safe re-import**: Run import multiple times to get new posts without losing edits
+- **Freeze a note**: Remove/set flag to `false` to prevent any future overwrites
+- **Selective updates**: Keep flag `true` on notes you want auto-updated, `false` on edited ones
+
+**Implementation notes**:
+- Flag check happens in Phase 1 (title generation) when building `messageInfos`
+- Uses `ExtractTelegramImportAllowOverride()` method on `NoteView`
+- Notes without the flag (pre-existing user notes with same filename) are never overwritten
+
 ### Filename Collisions
 - Tracks used filenames during import
 - Appends message ID if title collision occurs

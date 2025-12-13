@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const boolTrueStr = "true"
+
 func (note *NoteView) IsTelegramPublishPost() bool {
 	_, withPublishAt := note.ExtractTelegramPublishAt(time.UTC)
 	_, withPublishTags := note.ExtractTelegramPublishTags()
@@ -78,7 +80,25 @@ func (note *NoteView) ExtractTelegramPublishDisableWebPagePreview() bool {
 	case bool:
 		return v
 	case string:
-		return v == "true"
+		return v == boolTrueStr
+	}
+
+	return false
+}
+
+// ExtractTelegramImportAllowOverride returns true if the note can be overwritten during import.
+// Returns false if the flag is missing or explicitly set to false.
+func (note *NoteView) ExtractTelegramImportAllowOverride() bool {
+	val, ok := note.RawMeta["telegram_import_allow_override"]
+	if !ok {
+		return false
+	}
+
+	switch v := val.(type) {
+	case bool:
+		return v
+	case string:
+		return v == boolTrueStr
 	}
 
 	return false
