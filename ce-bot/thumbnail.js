@@ -65,6 +65,16 @@ export async function tgsToWebp(animation) {
 
       frameHandler = (event) => {
         try {
+          // Check if frame is blank (dotlottie-web bug: first frame event fires before render)
+          const imgData = ctx.getImageData(0, 0, width, height).data;
+          let hasContent = false;
+          for (let i = 3; i < imgData.length; i += 4) {
+            if (imgData[i] > 0) { hasContent = true; break; }
+          }
+          if (!hasContent) {
+            return; // Skip blank frames
+          }
+
           // Save frame as PNG
           const framePath = path.join(framesDir, `frame_${String(frameIndex).padStart(5, '0')}.png`);
           const buffer = canvas.toBuffer('image/png');

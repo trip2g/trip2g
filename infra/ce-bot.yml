@@ -4,7 +4,7 @@
   vars:
     ce_domain: ce.trip2g.com
     ce_port: 3000
-    ce_image: alexes/lottie:v0.3
+    ce_image: alexes/lottie:v0.4
     ce_cache_dir: /var/lib/ce-bot/cache
     docker_install_compose: false
 
