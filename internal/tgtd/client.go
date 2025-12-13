@@ -109,8 +109,8 @@ func safeCtx(ctx context.Context) (context.Context, context.CancelFunc) {
 		return context.WithTimeout(context.Background(), 5*time.Minute)
 	}
 
-	// For non-fasthttp contexts, add timeout for safety
-	return context.WithTimeout(ctx, 5*time.Minute)
+	// For non-fasthttp contexts, caller is responsible for timeouts
+	return ctx, func() {}
 }
 
 // ChatInfo contains information about a Telegram chat.
