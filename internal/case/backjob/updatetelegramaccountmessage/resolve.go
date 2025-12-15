@@ -162,16 +162,27 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 			Message:   content,
 		})
 	case db.TelegramPublishSentMessagePostTypePhoto:
-		// Edit photo with caption (can replace photo)
+		// Edit photo/video with caption
 		if len(post.Media) > 0 {
-			editErr = client.EditMessageWithPhoto(ctx, sessionData, tgtd.EditMessageWithPhotoParams{
-				ChatID:    params.TelegramChatID,
-				MessageID: params.MessageID,
-				PhotoURL:  post.Media[0],
-				Caption:   content,
-			})
+			mediaURL := post.Media[0]
+			if tgtd.IsVideoURL(mediaURL) {
+				// For video, only edit caption (cannot replace video via this API)
+				editErr = client.EditMessageCaption(ctx, sessionData, tgtd.EditMessageCaptionParams{
+					ChatID:    params.TelegramChatID,
+					MessageID: params.MessageID,
+					Caption:   content,
+				})
+			} else {
+				// For photo, can replace the image
+				editErr = client.EditMessageWithPhoto(ctx, sessionData, tgtd.EditMessageWithPhotoParams{
+					ChatID:    params.TelegramChatID,
+					MessageID: params.MessageID,
+					PhotoURL:  mediaURL,
+					Caption:   content,
+				})
+			}
 		} else {
-			// No photo in update, just edit caption
+			// No media in update, just edit caption
 			editErr = client.EditMessageCaption(ctx, sessionData, tgtd.EditMessageCaptionParams{
 				ChatID:    params.TelegramChatID,
 				MessageID: params.MessageID,

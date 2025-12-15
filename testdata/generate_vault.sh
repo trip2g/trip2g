@@ -223,7 +223,32 @@ Caption features:
 
 This tests single media attachment with caption.
 
-[[telegram_text]] | [[telegram_media_group]]
+[[telegram_text]] | [[telegram_one_video]] | [[telegram_media_group]]
+EOF
+
+cat > "$VAULT/telegram_one_video.md" << 'EOF'
+---
+telegram_publish_at: 2025-11-18T09:37:30
+telegram_publish_tags:
+  - test_channel
+free: true
+title: Single Video Telegram Post
+---
+
+This post contains **one video** and will be sent using `sendVideo` API method.
+
+The post type is: **photo** (same as single photo internally)
+
+![[telegram_single_video.mp4]]
+
+Caption features:
+- Maximum 1024 characters
+- HTML formatting
+- Can be edited later with `editMessageCaption` (not EditMessageWithPhoto!)
+
+This tests single video attachment with caption.
+
+[[telegram_text]] | [[telegram_one_photo]] | [[telegram_media_group]]
 EOF
 
 cat > "$VAULT/telegram_media_group.md" << 'EOF'
@@ -589,12 +614,13 @@ download_placeholder "projectA/format.jpg" "teal"
 download_placeholder "telegram_photo.png" "3498db"
 download_placeholder "telegram_photo2.jpg" "e74c3c"
 
-# Generate test video for media group (requires ffmpeg)
-echo "Creating telegram_video.mp4..."
+# Generate test videos (requires ffmpeg)
+echo "Creating test videos..."
 if ! command -v ffmpeg &> /dev/null; then
   echo "⚠️  ffmpeg not found. Install it with: sudo apt install ffmpeg"
   echo "Skipping video generation."
 else
+  # Video for media group (green)
   ffmpeg -f lavfi -i color=c=2ecc71:s=640x480:d=2 -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
     -c:v libx264 -preset ultrafast -crf 28 -t 2 -pix_fmt yuv420p \
     -c:a aac -b:a 64k -shortest \
@@ -605,6 +631,19 @@ else
     echo "✓ Created telegram_video.mp4 ($file_size)"
   else
     echo "⚠️  Failed to create telegram_video.mp4"
+  fi
+
+  # Video for single video post (blue)
+  ffmpeg -f lavfi -i color=c=3498db:s=640x480:d=3 -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+    -c:v libx264 -preset ultrafast -crf 28 -t 3 -pix_fmt yuv420p \
+    -c:a aac -b:a 64k -shortest \
+    -y "$VAULT/telegram_single_video.mp4" 2>/dev/null
+
+  if [ -f "$VAULT/telegram_single_video.mp4" ]; then
+    file_size=$(du -h "$VAULT/telegram_single_video.mp4" | cut -f1)
+    echo "✓ Created telegram_single_video.mp4 ($file_size)"
+  else
+    echo "⚠️  Failed to create telegram_single_video.mp4"
   fi
 fi
 
@@ -918,21 +957,22 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 11. [[toc_test]] - table of contents (auto/show/hide)
 12. [[telegram_text]] - Telegram text post (no media, type: text)
 13. [[telegram_one_photo]] - Telegram single photo post (type: photo)
-14. [[telegram_media_group]] - Telegram media group (2+ media, type: media_group)
-15. [[cyrillic_названия]] - Cyrillic in URLs and links
-16. [[File with spaces]] - spaces in filenames
-17. [[code_and_media]] - code blocks and media embeds
-18. [[complex_content]] - comprehensive markdown features
-19. [[redirect_test]] - page redirect functionality
-20. [[slug_relative]] - relative slug (replaces filename)
-21. [[slug_absolute]] - absolute slug (full path override)
-22. [[slug_with_subdir]] - slug with subdirectory
-23. [[slug_cyrillic]] - cyrillic slug (no transliteration)
-24. [[slug_spaces]] - slug with spaces (URL encoded)
+14. [[telegram_one_video]] - Telegram single video post (type: photo, uses sendVideo)
+15. [[telegram_media_group]] - Telegram media group (2+ media, type: media_group)
+16. [[cyrillic_названия]] - Cyrillic in URLs and links
+17. [[File with spaces]] - spaces in filenames
+18. [[code_and_media]] - code blocks and media embeds
+19. [[complex_content]] - comprehensive markdown features
+20. [[redirect_test]] - page redirect functionality
+21. [[slug_relative]] - relative slug (replaces filename)
+22. [[slug_absolute]] - absolute slug (full path override)
+23. [[slug_with_subdir]] - slug with subdirectory
+24. [[slug_cyrillic]] - cyrillic slug (no transliteration)
+25. [[slug_spaces]] - slug with spaces (URL encoded)
 
 ## Subgraph (Premium Course) Tests
-25. [[premium]] - premium subgraph home page
-26. Check sidebar: should show premium sidebar for premium pages
+26. [[premium]] - premium subgraph home page
+27. Check sidebar: should show premium sidebar for premium pages
 
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])
