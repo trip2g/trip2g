@@ -443,16 +443,10 @@ func (c *Client) sendMedia(ctx context.Context, sessionData []byte, chatID int64
 			return fmt.Errorf("failed to resolve peer: %w", peerErr)
 		}
 
-		// Download media from URL
-		mediaData, downloadErr := downloadMedia(ctx, mediaURL)
-		if downloadErr != nil {
-			return fmt.Errorf("failed to download media: %w", downloadErr)
-		}
-
-		// Upload media using uploader
+		// Stream media from URL directly to Telegram (no memory buffering)
 		up := uploader.NewUploader(api)
 		fileName := filenameFromURL(mediaURL)
-		uploaded, uploadErr := up.FromBytes(ctx, fileName, mediaData)
+		uploaded, uploadErr := streamUploadFromURL(ctx, up, mediaURL, fileName)
 		if uploadErr != nil {
 			return fmt.Errorf("failed to upload media: %w", uploadErr)
 		}
@@ -563,17 +557,11 @@ func uploadMediaFiles(ctx context.Context, up *uploader.Uploader, mediaURLs []st
 	var mediaInputs []message.MultiMediaOption
 
 	for i, mediaURL := range mediaURLs {
-		// Download media from URL
-		mediaData, downloadErr := downloadMedia(ctx, mediaURL)
-		if downloadErr != nil {
-			return nil, fmt.Errorf("failed to download media %s: %w", mediaURL, downloadErr)
-		}
-
-		// Upload media
+		// Stream upload media from URL (no memory buffering)
 		fileName := filenameFromURL(mediaURL)
-		uploaded, uploadErr := up.FromBytes(ctx, fileName, mediaData)
+		uploaded, uploadErr := streamUploadFromURL(ctx, up, mediaURL, fileName)
 		if uploadErr != nil {
-			return nil, fmt.Errorf("failed to upload media %s: %w", mediaURL, uploadErr)
+			return nil, fmt.Errorf("upload media option %d: %w", i, uploadErr)
 		}
 
 		// Only first media item gets caption
@@ -628,8 +616,9 @@ func createMultiMediaOption(uploaded tg.InputFileClass, mediaURL, caption string
 	return message.UploadedPhoto(uploaded)
 }
 
-// downloadMedia downloads media from URL and returns the bytes.
-func downloadMedia(ctx context.Context, mediaURL string) ([]byte, error) {
+// streamUploadFromURL streams media from URL directly to Telegram uploader.
+// This avoids loading entire file into memory.
+func streamUploadFromURL(ctx context.Context, up *uploader.Uploader, mediaURL, fileName string) (tg.InputFileClass, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, mediaURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -645,12 +634,8 @@ func downloadMedia(ctx context.Context, mediaURL string) ([]byte, error) {
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	return data, nil
+	// Stream directly to uploader without buffering in memory
+	return up.FromReader(ctx, fileName, resp.Body)
 }
 
 // isVideoExtension returns true if the extension is a video format.
@@ -784,16 +769,10 @@ func (c *Client) EditMessageWithPhoto(ctx context.Context, sessionData []byte, p
 			return fmt.Errorf("failed to resolve peer: %w", peerErr)
 		}
 
-		// Download photo from URL
-		photoData, downloadErr := downloadMedia(ctx, params.PhotoURL)
-		if downloadErr != nil {
-			return fmt.Errorf("failed to download photo: %w", downloadErr)
-		}
-
-		// Upload photo using uploader
+		// Stream upload photo from URL (no memory buffering)
 		up := uploader.NewUploader(api)
 		fileName := filenameFromURL(params.PhotoURL)
-		uploaded, uploadErr := up.FromBytes(ctx, fileName, photoData)
+		uploaded, uploadErr := streamUploadFromURL(ctx, up, params.PhotoURL, fileName)
 		if uploadErr != nil {
 			return fmt.Errorf("failed to upload photo: %w", uploadErr)
 		}
