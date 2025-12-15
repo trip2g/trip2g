@@ -19,5 +19,10 @@ namespace $.$$ {
 			this.$.$mol_state_arg.value('id', id?.toString() || '')
 			return id || 0
 		}
+
+		@$mol_mem
+		override phone(next?: string): string {
+			return this.$.$mol_state_local.value('telegram_account_phone', next) || ''
+		}
 	}
 }

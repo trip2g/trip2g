@@ -44,6 +44,16 @@ namespace $.$$ {
 			return ''
 		}
 
+		@$mol_mem
+		override api_id(next?: string): string {
+			return this.$.$mol_state_local.value('telegram_account_api_id', next) || ''
+		}
+
+		@$mol_mem
+		override api_hash(next?: string): string {
+			return this.$.$mol_state_local.value('telegram_account_api_hash', next) || ''
+		}
+
 		override submit() {
 			const res = mutate({
 				input: {
