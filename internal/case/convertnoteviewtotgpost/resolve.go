@@ -38,6 +38,7 @@ type Env interface {
 	TimeLocation() *time.Location
 	PublicURL() string
 	Now() time.Time
+	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
 }
 
 //nolint:gocognit,funlen // complex conversion logic
@@ -197,7 +198,11 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	// Telegram counts visible length (without HTML tags)
 	captionLimit := source.CaptionLengthLimit
 	if captionLimit == 0 {
-		captionLimit = 1024
+		var accountID *int64
+		if source.AccountID != 0 {
+			accountID = &source.AccountID
+		}
+		captionLimit = env.TelegramCaptionLengthLimit(ctx, accountID)
 	}
 
 	maxLength := 4096

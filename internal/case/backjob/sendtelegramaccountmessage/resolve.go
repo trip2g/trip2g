@@ -116,12 +116,21 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountSendPost
 			NoWebpage: post.DisableWebPagePreview,
 		})
 	case 1:
-		// Send as single photo
-		result, sendErr = client.SendPhoto(ctx, sessionData, tgtd.SendPhotoParams{
-			ChatID:   params.TelegramChatID,
-			PhotoURL: post.Media[0],
-			Caption:  content,
-		})
+		// Send as single photo or video
+		mediaURL := post.Media[0]
+		if tgtd.IsVideoURL(mediaURL) {
+			result, sendErr = client.SendVideo(ctx, sessionData, tgtd.SendVideoParams{
+				ChatID:   params.TelegramChatID,
+				VideoURL: mediaURL,
+				Caption:  content,
+			})
+		} else {
+			result, sendErr = client.SendPhoto(ctx, sessionData, tgtd.SendPhotoParams{
+				ChatID:   params.TelegramChatID,
+				PhotoURL: mediaURL,
+				Caption:  content,
+			})
+		}
 	default:
 		// Send as media group (2-10 media files)
 		result, sendErr = client.SendMediaGroup(ctx, sessionData, tgtd.SendMediaGroupParams{

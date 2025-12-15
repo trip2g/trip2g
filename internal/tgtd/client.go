@@ -309,6 +309,13 @@ type SendPhotoParams struct {
 	Caption  string
 }
 
+// SendVideoParams contains parameters for sending a video.
+type SendVideoParams struct {
+	ChatID   int64
+	VideoURL string
+	Caption  string
+}
+
 // SendMediaGroupParams contains parameters for sending a media group.
 type SendMediaGroupParams struct {
 	ChatID    int64
@@ -402,6 +409,16 @@ func (c *Client) SendMessage(ctx context.Context, sessionData []byte, params Sen
 
 // SendPhoto sends a photo to a chat with HTML formatted caption.
 func (c *Client) SendPhoto(ctx context.Context, sessionData []byte, params SendPhotoParams) (*SendMessageResult, error) {
+	return c.sendMedia(ctx, sessionData, params.ChatID, params.PhotoURL, params.Caption, false)
+}
+
+// SendVideo sends a video to a chat with HTML formatted caption.
+func (c *Client) SendVideo(ctx context.Context, sessionData []byte, params SendVideoParams) (*SendMessageResult, error) {
+	return c.sendMedia(ctx, sessionData, params.ChatID, params.VideoURL, params.Caption, true)
+}
+
+// sendMedia is a helper that sends either a photo or video to a chat.
+func (c *Client) sendMedia(ctx context.Context, sessionData []byte, chatID int64, mediaURL, caption string, isVideo bool) (*SendMessageResult, error) {
 	ctx, cancel := safeCtx(ctx)
 	defer cancel()
 
@@ -421,31 +438,43 @@ func (c *Client) SendPhoto(ctx context.Context, sessionData []byte, params SendP
 		api := client.API()
 
 		// Get peer for the chat
-		peer, peerErr := c.resolvePeer(ctx, api, params.ChatID)
+		peer, peerErr := c.resolvePeer(ctx, api, chatID)
 		if peerErr != nil {
 			return fmt.Errorf("failed to resolve peer: %w", peerErr)
 		}
 
-		// Download photo from URL
-		photoData, downloadErr := downloadMedia(ctx, params.PhotoURL)
+		// Download media from URL
+		mediaData, downloadErr := downloadMedia(ctx, mediaURL)
 		if downloadErr != nil {
-			return fmt.Errorf("failed to download photo: %w", downloadErr)
+			return fmt.Errorf("failed to download media: %w", downloadErr)
 		}
 
-		// Upload photo using uploader
+		// Upload media using uploader
 		up := uploader.NewUploader(api)
-		fileName := filenameFromURL(params.PhotoURL)
-		uploaded, uploadErr := up.FromBytes(ctx, fileName, photoData)
+		fileName := filenameFromURL(mediaURL)
+		uploaded, uploadErr := up.FromBytes(ctx, fileName, mediaData)
 		if uploadErr != nil {
-			return fmt.Errorf("failed to upload photo: %w", uploadErr)
+			return fmt.Errorf("failed to upload media: %w", uploadErr)
 		}
 
 		// Use message sender with HTML formatting for caption
 		sender := message.NewSender(api)
 
-		updates, sendErr := sender.To(peer).UploadedPhoto(ctx, uploaded, html.String(nil, params.Caption))
+		var updates tg.UpdatesClass
+		var sendErr error
+
+		if isVideo {
+			updates, sendErr = sender.To(peer).Video(ctx, uploaded, html.String(nil, caption))
+		} else {
+			updates, sendErr = sender.To(peer).UploadedPhoto(ctx, uploaded, html.String(nil, caption))
+		}
+
 		if sendErr != nil {
-			return fmt.Errorf("failed to send photo: %w", sendErr)
+			mediaType := "photo"
+			if isVideo {
+				mediaType = "video"
+			}
+			return fmt.Errorf("failed to send %s: %w", mediaType, sendErr)
 		}
 
 		// Extract message ID from updates
@@ -632,6 +661,13 @@ func isVideoExtension(ext string) bool {
 	default:
 		return false
 	}
+}
+
+// IsVideoURL returns true if the URL points to a video file based on extension.
+func IsVideoURL(mediaURL string) bool {
+	fileName := filenameFromURL(mediaURL)
+	ext := strings.ToLower(filepath.Ext(fileName))
+	return isVideoExtension(ext)
 }
 
 // videoMIMEType returns the MIME type for a video extension.

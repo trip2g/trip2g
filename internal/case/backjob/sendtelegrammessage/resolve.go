@@ -14,6 +14,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/telegram"
+	"trip2g/internal/tgtd"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -241,6 +242,15 @@ func sendPhoto(ctx context.Context, env Env, params model.TelegramSendPostParams
 			Name:   filepath.Base(mediaURL),
 			Reader: resp.Body,
 		}
+	}
+
+	// Check if it's a video or photo
+	if tgtd.IsVideoURL(mediaURL) {
+		video := tgbotapi.NewVideo(params.TelegramChatID, file)
+		video.Caption = params.Post.Content
+		video.ParseMode = parseMode
+		video.DisableNotification = params.DisableNotification
+		return env.SendTelegramMessage(ctx, params.DBChatID, video)
 	}
 
 	photo := tgbotapi.NewPhoto(params.TelegramChatID, file)

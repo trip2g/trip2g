@@ -56,6 +56,10 @@ func (e *testEnv) Now() time.Time {
 	return e.now
 }
 
+func (e *testEnv) TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int {
+	return 1024
+}
+
 func TestContent(t *testing.T) {
 	mdOptions := mdloader.Options{
 		Sources: []mdloader.SourceFile{{
