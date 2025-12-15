@@ -279,6 +279,48 @@ This tests media group functionality with mixed photo and video content.
 [[telegram_text]] | [[telegram_one_photo]]
 EOF
 
+cat > "$VAULT/telegram_image_with_emoji.md" << 'EOF'
+---
+telegram_publish_at: 2025-11-18T09:39:00
+telegram_publish_tags:
+  - test_channel
+free: true
+title: Image with Custom Emoji
+---
+
+This post has a **single photo** with custom emoji in caption.
+
+![[telegram_photo.png]]
+
+Custom emoji test: ![🔥](tg_ce_fire.webp) fire emoji and ![⭐](https://ce.trip2g.com/5368324170671202286.webp) star emoji.
+
+The custom emoji files should NOT be included as media attachments!
+Only `telegram_photo.png` should be the post media.
+
+[[telegram_text]] | [[telegram_video_with_emoji]]
+EOF
+
+cat > "$VAULT/telegram_video_with_emoji.md" << 'EOF'
+---
+telegram_publish_at: 2025-11-18T09:40:00
+telegram_publish_tags:
+  - test_channel
+free: true
+title: Video with Custom Emoji
+---
+
+This post has a **single video** with custom emoji in caption.
+
+![[telegram_single_video.mp4]]
+
+Custom emoji test: ![👍](tg_ce_thumbsup.webp) thumbs up and ![🎉](https://ce.trip2g.com/5368324170671202287.webp) party emoji.
+
+The custom emoji files should NOT be included as media attachments!
+Only `telegram_single_video.mp4` should be the post media.
+
+[[telegram_text]] | [[telegram_image_with_emoji]]
+EOF
+
 cat > "$VAULT/paid_with_preview.md" << 'EOF'
 ---
 free_paragraphs: 2
@@ -613,6 +655,11 @@ download_placeholder "projectA/format.jpg" "teal"
 # Telegram post media files
 download_placeholder "telegram_photo.png" "3498db"
 download_placeholder "telegram_photo2.jpg" "e74c3c"
+
+# Custom emoji files (should be excluded from post media)
+# Local tg_ce_* pattern
+download_placeholder "tg_ce_fire.webp" "ff4500"
+download_placeholder "tg_ce_thumbsup.webp" "1e90ff"
 
 # Generate test videos (requires ffmpeg)
 echo "Creating test videos..."
@@ -959,20 +1006,22 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 13. [[telegram_one_photo]] - Telegram single photo post (type: photo)
 14. [[telegram_one_video]] - Telegram single video post (type: photo, uses sendVideo)
 15. [[telegram_media_group]] - Telegram media group (2+ media, type: media_group)
-16. [[cyrillic_названия]] - Cyrillic in URLs and links
-17. [[File with spaces]] - spaces in filenames
-18. [[code_and_media]] - code blocks and media embeds
-19. [[complex_content]] - comprehensive markdown features
-20. [[redirect_test]] - page redirect functionality
-21. [[slug_relative]] - relative slug (replaces filename)
-22. [[slug_absolute]] - absolute slug (full path override)
-23. [[slug_with_subdir]] - slug with subdirectory
-24. [[slug_cyrillic]] - cyrillic slug (no transliteration)
-25. [[slug_spaces]] - slug with spaces (URL encoded)
+16. [[telegram_image_with_emoji]] - Image with custom emoji (tg_ce_* excluded from media)
+17. [[telegram_video_with_emoji]] - Video with custom emoji (ce.trip2g.com/* excluded from media)
+18. [[cyrillic_названия]] - Cyrillic in URLs and links
+19. [[File with spaces]] - spaces in filenames
+20. [[code_and_media]] - code blocks and media embeds
+21. [[complex_content]] - comprehensive markdown features
+22. [[redirect_test]] - page redirect functionality
+23. [[slug_relative]] - relative slug (replaces filename)
+24. [[slug_absolute]] - absolute slug (full path override)
+25. [[slug_with_subdir]] - slug with subdirectory
+26. [[slug_cyrillic]] - cyrillic slug (no transliteration)
+27. [[slug_spaces]] - slug with spaces (URL encoded)
 
 ## Subgraph (Premium Course) Tests
-26. [[premium]] - premium subgraph home page
-27. Check sidebar: should show premium sidebar for premium pages
+28. [[premium]] - premium subgraph home page
+29. Check sidebar: should show premium sidebar for premium pages
 
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])
