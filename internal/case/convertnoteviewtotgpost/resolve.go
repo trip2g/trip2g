@@ -3,6 +3,7 @@ package convertnoteviewtotgpost
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -241,6 +242,12 @@ func getAllMediaURLs(noteView *model.NoteView) ([]string, error) {
 			continue
 		}
 
+		// Skip custom emoji files - they're inline emojis, not post media
+		// Patterns: tg_ce_*, ce.trip2g.com/*
+		if isCustomEmojiAsset(path) {
+			continue
+		}
+
 		assetReplace, ok := noteView.AssetReplaces[path]
 		if !ok {
 			missingAssets = append(missingAssets, path)
@@ -260,6 +267,19 @@ func getAllMediaURLs(noteView *model.NoteView) ([]string, error) {
 	}
 
 	return mediaURLs, nil
+}
+
+// isCustomEmojiAsset checks if the path is a custom emoji asset that should be
+// excluded from post media. Patterns: tg_ce_*, ce.trip2g.com/*
+func isCustomEmojiAsset(path string) bool {
+	filename := filepath.Base(path)
+	if strings.HasPrefix(filename, "tg_ce_") {
+		return true
+	}
+	if strings.Contains(path, "ce.trip2g.com/") {
+		return true
+	}
+	return false
 }
 
 // normalizeTelegramChatID converts Telegram chat ID to channel ID format.
