@@ -31,20 +31,37 @@ type appQueue struct {
 	mu sync.Mutex
 }
 
-func (a *app) createQueue(ctx context.Context, name string, runnerOpts jobs.NewRunnerOpts) *appQueue {
-	q := goqite.New(goqite.NewOpts{
+// QueueOpts combines options for queue creation.
+type QueueOpts struct {
+	Limit        int           // Max concurrent jobs (default: 1)
+	PollInterval time.Duration // How often to poll for new jobs
+	Extend       time.Duration // How often to extend job timeout
+	MaxReceive   int           // Max receive count before message is dropped (default: 3)
+}
+
+func (a *app) createQueue(ctx context.Context, name string, opts QueueOpts) *appQueue {
+	queueOpts := goqite.NewOpts{
 		DB:   a.writeConn,
 		Name: name,
-	})
+	}
+	if opts.MaxReceive > 0 {
+		queueOpts.MaxReceive = opts.MaxReceive
+	}
+	q := goqite.New(queueOpts)
 
 	logger := logger.WithPrefix(a.log, name+":")
 
-	if runnerOpts.PollInterval < 50*time.Millisecond {
-		panic("too small pool internal. Are you sure?")
+	if opts.PollInterval < 50*time.Millisecond {
+		panic("too small poll interval. Are you sure?")
 	}
 
-	runnerOpts.Queue = q
-	runnerOpts.Log = logger
+	runnerOpts := jobs.NewRunnerOpts{
+		Limit:        opts.Limit,
+		PollInterval: opts.PollInterval,
+		Extend:       opts.Extend,
+		Queue:        q,
+		Log:          logger,
+	}
 
 	runner := jobs.NewRunner(runnerOpts)
 

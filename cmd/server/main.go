@@ -88,7 +88,6 @@ import (
 	"github.com/vektah/gqlparser/gqlerror"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
-	"maragu.dev/goqite/jobs"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/resend/resend-go/v2"
@@ -318,7 +317,7 @@ func main() {
 	a.initPatreon(ctx)
 	a.initBoosty(ctx)
 
-	a.globalQueue = a.createQueue(ctx, "global_jobs", jobs.NewRunnerOpts{
+	a.globalQueue = a.createQueue(ctx, "global_jobs", QueueOpts{
 		Limit:        5,
 		PollInterval: time.Second * 3,
 	})

@@ -14,33 +14,31 @@ import (
 	"trip2g/internal/tgtd"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"maragu.dev/goqite/jobs"
 )
 
 func (a *app) initTelegramDeps(ctx context.Context) error {
 	// API queue - for Telegram API calls (send messages, edit messages, etc.)
 	// Limited to 1 concurrent job to avoid rate limits
-	apiQueue := a.createQueue(ctx, "tg_api_jobs", jobs.NewRunnerOpts{
+	// MaxReceive=2: retry once on failure (default is 3)
+	a.telegramAPIQueue = a.createQueue(ctx, "tg_api_jobs", QueueOpts{
 		Limit:        1,
 		PollInterval: time.Second * 2,
+		MaxReceive:   2,
 	})
-	a.telegramAPIQueue = apiQueue
 
 	// Task queue - for telegram-related background tasks (processing posts, etc.)
-	taskQueue := a.createQueue(ctx, "tg_task_jobs", jobs.NewRunnerOpts{
+	a.telegramTaskQueue = a.createQueue(ctx, "tg_task_jobs", QueueOpts{
 		Limit:        1,
 		PollInterval: time.Second,
 	})
-	a.telegramTaskQueue = taskQueue
 
 	// Long-running queue - for jobs that can take hours (channel imports, etc.)
 	// Higher Extend (60s) to reduce DB updates during long jobs
-	longRunningQueue := a.createQueue(ctx, "tg_long_jobs", jobs.NewRunnerOpts{
+	a.telegramLongRunningQueue = a.createQueue(ctx, "tg_long_jobs", QueueOpts{
 		Limit:        1,
 		PollInterval: time.Second * 30,
-		Extend:       time.Minute * 1,
+		Extend:       time.Minute,
 	})
-	a.telegramLongRunningQueue = longRunningQueue
 
 	// Initialize telegram auth manager for MTProto user account authentication
 	a.telegramAuthManager = tgtd.NewAuthManager()
