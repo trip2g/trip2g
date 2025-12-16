@@ -36,7 +36,8 @@ type Env interface {
 }
 
 func Resolve(ctx context.Context, env Env, params model.TelegramSendPostParams) error {
-	jobTimeout := time.Minute
+	// 10 minutes timeout for large file uploads (videos can be 300MB+)
+	jobTimeout := 10 * time.Minute
 
 	jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
 	defer cancel()

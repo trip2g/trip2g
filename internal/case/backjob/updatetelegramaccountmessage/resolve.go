@@ -27,7 +27,8 @@ type Env interface {
 }
 
 func Resolve(ctx context.Context, env Env, params model.TelegramAccountUpdatePostParams) error {
-	jobTimeout := time.Minute
+	// 5 minutes timeout - updates mostly edit captions, but can replace photos
+	jobTimeout := 5 * time.Minute
 
 	jobCtx, cancel := context.WithTimeout(context.Background(), jobTimeout)
 	defer cancel()
