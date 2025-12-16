@@ -38,6 +38,10 @@ $trip2g_admin_telegrampublishnote_show $mol_page
 						sub /
 							<= Remaining $trip2g_time_remining
 								seconds <= seconds_until_publish 0
+				<= LastError_labeler $mol_labeler
+					title @ \Last Error
+					Content <= LastError $trip2g_admin_cell
+						content <= last_error @ \No Errors
 				<= Warnings_labeler $mol_labeler
 					title @ \Warnings
 					Content <= Warnings $trip2g_admin_cell

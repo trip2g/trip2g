@@ -1517,6 +1517,11 @@ func (r *adminTelegramPublishNoteResolver) Status(ctx context.Context, obj *db.T
 	return "Pending", nil
 }
 
+// LastError is the resolver for the lastError field.
+func (r *adminTelegramPublishNoteResolver) LastError(ctx context.Context, obj *db.TelegramPublishNote) (*string, error) {
+	return db.ToStringPtr(obj.LastError), nil
+}
+
 // NoteView is the resolver for the noteView field.
 func (r *adminTelegramPublishNoteResolver) NoteView(ctx context.Context, obj *db.TelegramPublishNote) (*appmodel.NoteView, error) {
 	if !obj.PublishedVersionID.Valid {
@@ -3057,26 +3062,3 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *pushedNoteAssetResolver) URL(ctx context.Context, obj *model.PushedNoteAsset) (string, error) {
-	if obj.AssetID == 0 {
-		return "", nil
-	}
-
-	asset, err := r.env(ctx).NoteAssetByID(ctx, obj.AssetID)
-	if err != nil {
-		return "", fmt.Errorf("failed to get asset: %w", err)
-	}
-
-	return r.env(ctx).NoteAssetURL(ctx, asset)
-}
-func (r *Resolver) PushedNoteAsset() PushedNoteAssetResolver { return &pushedNoteAssetResolver{r} }
-type pushedNoteAssetResolver struct{ *Resolver }
-*/

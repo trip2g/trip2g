@@ -9,6 +9,7 @@ namespace $.$$ {
 					secondsUntilPublish
 					publishedAt
 					status
+					lastError
 					tags {
 						label
 					}
@@ -76,6 +77,10 @@ namespace $.$$ {
 
 		override warnings(): string {
 			return this.data().post.warnings.join( '\n' ) || super.warnings()
+		}
+
+		override last_error(): string {
+			return this.data().lastError || super.last_error()
 		}
 
 		override content_text(): string {

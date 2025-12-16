@@ -10,5 +10,7 @@
 	"$trip2g_admin_telegrampublishnote_show_statuses_Pending": "В ожидании",
 	"$trip2g_admin_telegrampublishnote_show_statuses_Scheduled": "Запланировано",
 	"$trip2g_admin_telegrampublishnote_show_statuses_Outdated": "Устарело",
+	"$trip2g_admin_telegrampublishnote_show_last_error": "Все хорошо",
+	"$trip2g_admin_telegrampublishnote_show_LastError_labeler_title": "Последняя ошибка",
 	"$trip2g_admin_telegrampublishnote_show_statuses_Sent": "Отправлено"
 }

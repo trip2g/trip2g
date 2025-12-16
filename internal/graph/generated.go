@@ -681,6 +681,7 @@ type ComplexityRoot struct {
 		CreatedAt           func(childComplexity int) int
 		ErrorCount          func(childComplexity int) int
 		ID                  func(childComplexity int) int
+		LastError           func(childComplexity int) int
 		NoteView            func(childComplexity int) int
 		Post                func(childComplexity int) int
 		PublishAt           func(childComplexity int) int
@@ -1630,6 +1631,7 @@ type AdminTelegramPublishNoteResolver interface {
 	PublishedVersionID(ctx context.Context, obj *db.TelegramPublishNote) (*int64, error)
 	Status(ctx context.Context, obj *db.TelegramPublishNote) (string, error)
 
+	LastError(ctx context.Context, obj *db.TelegramPublishNote) (*string, error)
 	NoteView(ctx context.Context, obj *db.TelegramPublishNote) (*model1.NoteView, error)
 	Post(ctx context.Context, obj *db.TelegramPublishNote) (*model1.TelegramPost, error)
 	Tags(ctx context.Context, obj *db.TelegramPublishNote) ([]db.TelegramPublishTag, error)
@@ -4380,6 +4382,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminTelegramPublishNote.ID(childComplexity), true
+	case "AdminTelegramPublishNote.lastError":
+		if e.complexity.AdminTelegramPublishNote.LastError == nil {
+			break
+		}
+
+		return e.complexity.AdminTelegramPublishNote.LastError(childComplexity), true
 	case "AdminTelegramPublishNote.noteView":
 		if e.complexity.AdminTelegramPublishNote.NoteView == nil {
 			break
@@ -18029,6 +18037,8 @@ func (ec *executionContext) fieldContext_AdminQuery_telegramPublishNote(ctx cont
 				return ec.fieldContext_AdminTelegramPublishNote_status(ctx, field)
 			case "errorCount":
 				return ec.fieldContext_AdminTelegramPublishNote_errorCount(ctx, field)
+			case "lastError":
+				return ec.fieldContext_AdminTelegramPublishNote_lastError(ctx, field)
 			case "noteView":
 				return ec.fieldContext_AdminTelegramPublishNote_noteView(ctx, field)
 			case "post":
@@ -19922,6 +19932,35 @@ func (ec *executionContext) fieldContext_AdminTelegramPublishNote_errorCount(_ c
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminTelegramPublishNote_lastError(ctx context.Context, field graphql.CollectedField, obj *db.TelegramPublishNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminTelegramPublishNote_lastError,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminTelegramPublishNote().LastError(ctx, obj)
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminTelegramPublishNote_lastError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminTelegramPublishNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminTelegramPublishNote_noteView(ctx context.Context, field graphql.CollectedField, obj *db.TelegramPublishNote) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -20154,6 +20193,8 @@ func (ec *executionContext) fieldContext_AdminTelegramPublishNotesConnection_nod
 				return ec.fieldContext_AdminTelegramPublishNote_status(ctx, field)
 			case "errorCount":
 				return ec.fieldContext_AdminTelegramPublishNote_errorCount(ctx, field)
+			case "lastError":
+				return ec.fieldContext_AdminTelegramPublishNote_lastError(ctx, field)
 			case "noteView":
 				return ec.fieldContext_AdminTelegramPublishNote_noteView(ctx, field)
 			case "post":
@@ -27342,6 +27383,8 @@ func (ec *executionContext) fieldContext_ResetTelegramPublishNotePayload_publish
 				return ec.fieldContext_AdminTelegramPublishNote_status(ctx, field)
 			case "errorCount":
 				return ec.fieldContext_AdminTelegramPublishNote_errorCount(ctx, field)
+			case "lastError":
+				return ec.fieldContext_AdminTelegramPublishNote_lastError(ctx, field)
 			case "noteView":
 				return ec.fieldContext_AdminTelegramPublishNote_noteView(ctx, field)
 			case "post":
@@ -27730,6 +27773,8 @@ func (ec *executionContext) fieldContext_SendTelegramPublishNoteNowPayload_publi
 				return ec.fieldContext_AdminTelegramPublishNote_status(ctx, field)
 			case "errorCount":
 				return ec.fieldContext_AdminTelegramPublishNote_errorCount(ctx, field)
+			case "lastError":
+				return ec.fieldContext_AdminTelegramPublishNote_lastError(ctx, field)
 			case "noteView":
 				return ec.fieldContext_AdminTelegramPublishNote_noteView(ctx, field)
 			case "post":
@@ -46560,6 +46605,39 @@ func (ec *executionContext) _AdminTelegramPublishNote(ctx context.Context, sel a
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "lastError":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminTelegramPublishNote_lastError(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "noteView":
 			field := field
 

@@ -646,6 +646,7 @@ type AdminTelegramPublishNote @goModel(model: "trip2g/internal/db.TelegramPublis
   publishedVersionID: Int64
   status: String!
   errorCount: Int64!
+  lastError: String
   """
   latest or published NoteView depending on the status
   """
