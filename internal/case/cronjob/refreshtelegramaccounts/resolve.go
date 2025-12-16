@@ -2,7 +2,6 @@ package refreshtelegramaccounts
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -84,7 +83,7 @@ func Resolve(ctx context.Context, env Env) (*Result, error) {
 			if account.IsPremium != newPremium {
 				err = env.UpdateTelegramAccount(ctx, db.UpdateTelegramAccountParams{
 					ID:        account.ID,
-					IsPremium: sql.NullInt64{Int64: newPremium, Valid: true},
+					IsPremium: &newPremium,
 				})
 				if err != nil {
 					log.Error("failed to update premium status",

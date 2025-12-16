@@ -2,7 +2,6 @@ package revokeusersubgraphaccess
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"trip2g/internal/appresp"
@@ -50,7 +49,7 @@ func Resolve(ctx context.Context, env Env, request Request) (Response, error) {
 		TargetType: "user_subgraph_access",
 		TargetID:   request.SubgraphAccessID,
 		ByID:       int64(request.UserToken.ID),
-		Reason:     sql.NullString{String: request.Reason, Valid: true},
+		Reason:     &request.Reason,
 	}
 
 	// Create revoke record
@@ -60,7 +59,7 @@ func Resolve(ctx context.Context, env Env, request Request) (Response, error) {
 	}
 
 	revokeUSAParams := db.RevokeUserSubgraphAccessParams{
-		RevokeID: sql.NullInt64{Int64: revokeID, Valid: true},
+		RevokeID: &revokeID,
 		ID:       request.SubgraphAccessID,
 	}
 

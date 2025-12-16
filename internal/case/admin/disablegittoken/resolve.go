@@ -2,13 +2,13 @@ package disablegittoken
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 )
 
@@ -39,7 +39,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	params := db.DisableGitTokenParams{
 		ID:         input.ID,
-		DisabledBy: sql.NullInt64{Valid: true, Int64: int64(token.ID)},
+		DisabledBy: ptr.To(int64(token.ID)),
 	}
 
 	gitToken, err := env.DisableGitToken(ctx, params)

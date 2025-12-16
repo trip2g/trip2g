@@ -12,6 +12,8 @@ import (
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
+// Note: sql import is still used for sql.ErrNoRows
+
 type Env interface {
 	TgBot(ctx context.Context, id int64) (db.TgBot, error)
 	UpdateTgBot(ctx context.Context, arg db.UpdateTgBotParams) (db.TgBot, error)
@@ -40,8 +42,8 @@ func Resolve(ctx context.Context, env Env, input model.UpdateTgBotInput) (model.
 	// Update the bot
 	bot, err := env.UpdateTgBot(ctx, db.UpdateTgBotParams{
 		ID:          input.ID,
-		Description: nullableString(input.Description),
-		Enabled:     nullableBool(input.Enabled),
+		Description: input.Description,
+		Enabled:     input.Enabled,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update telegram bot: %w", err)
@@ -58,18 +60,4 @@ func Resolve(ctx context.Context, env Env, input model.UpdateTgBotInput) (model.
 	return &model.UpdateTgBotPayload{
 		TgBot: &bot,
 	}, nil
-}
-
-func nullableString(s *string) sql.NullString {
-	if s == nil {
-		return sql.NullString{}
-	}
-	return sql.NullString{String: *s, Valid: true}
-}
-
-func nullableBool(b *bool) sql.NullBool {
-	if b == nil {
-		return sql.NullBool{}
-	}
-	return sql.NullBool{Bool: *b, Valid: true}
 }

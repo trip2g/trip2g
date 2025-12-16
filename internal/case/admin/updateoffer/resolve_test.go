@@ -12,6 +12,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 
 	"github.com/kr/pretty"
@@ -59,7 +60,7 @@ func TestResolve(t *testing.T) {
 				OfferByIDFunc: func(ctx context.Context, id int64) (db.Offer, error) {
 					return db.Offer{
 						ID:       id,
-						PriceUsd: sql.NullFloat64{Float64: 9.99, Valid: true},
+						PriceUsd: ptr.To(9.99),
 					}, nil
 				},
 				SubgraphByIDFunc: func(ctx context.Context, id int64) (db.Subgraph, error) {
@@ -98,10 +99,10 @@ func TestResolve(t *testing.T) {
 			want: &model.UpdateOfferPayload{
 				Offer: &db.Offer{
 					ID:       123,
-					PriceUsd: sql.NullFloat64{Float64: priceUSD, Valid: true},
+					PriceUsd: ptr.To(priceUSD),
 					Lifetime: func() *appmodel.Lifetime { l := appmodel.Lifetime(lifetime); return &l }(),
-					StartsAt: sql.NullTime{Time: startsAt, Valid: true},
-					EndsAt:   sql.NullTime{Time: endsAt, Valid: true},
+					StartsAt: &startsAt,
+					EndsAt:   &endsAt,
 				},
 			},
 			wantErr: false,
@@ -123,8 +124,8 @@ func TestResolve(t *testing.T) {
 				// Verify update params
 				updateParams := mockEnv.UpdateOfferCalls()[0].Arg
 				require.Equal(t, int64(123), updateParams.ID)
-				require.InDelta(t, priceUSD, updateParams.PriceUsd.Float64, 0.001)
-				require.True(t, updateParams.PriceUsd.Valid)
+				require.NotNil(t, updateParams.PriceUsd)
+				require.InDelta(t, priceUSD, *updateParams.PriceUsd, 0.001)
 			},
 		},
 		{
@@ -136,7 +137,7 @@ func TestResolve(t *testing.T) {
 				OfferByIDFunc: func(ctx context.Context, id int64) (db.Offer, error) {
 					return db.Offer{
 						ID:       id,
-						PriceUsd: sql.NullFloat64{Float64: 9.99, Valid: true},
+						PriceUsd: ptr.To(9.99),
 					}, nil
 				},
 				UpdateOfferFunc: func(ctx context.Context, arg db.UpdateOfferParams) (db.Offer, error) {
@@ -156,7 +157,7 @@ func TestResolve(t *testing.T) {
 			want: &model.UpdateOfferPayload{
 				Offer: &db.Offer{
 					ID:       123,
-					PriceUsd: sql.NullFloat64{Float64: priceUSD, Valid: true},
+					PriceUsd: ptr.To(priceUSD),
 				},
 			},
 			wantErr: false,

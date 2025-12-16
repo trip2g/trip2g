@@ -29,7 +29,7 @@ func (input *Request) Resolve(ctx context.Context, env Env) (Payload, error) {
 	params := db.UpdateUserSubgraphAccessParams{
 		ID: input.ID,
 
-		ExpiresAt:  db.ToNullableTime(input.ExpiresAt),
+		ExpiresAt:  input.ExpiresAt,
 		SubgraphID: input.SubgraphID,
 	}
 

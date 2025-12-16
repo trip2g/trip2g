@@ -2,7 +2,6 @@ package graph
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"trip2g/internal/appreq"
@@ -155,7 +154,7 @@ type Env interface {
 	ListAPIKeyLogsByAPIKeyID(ctx context.Context, apiKeyID int64) ([]db.ListAPIKeyLogsByAPIKeyIDRow, error)
 
 	// activePurchases
-	ListActivePurchasesByUserID(ctx context.Context, userID sql.NullInt64) ([]db.Purchase, error)
+	ListActivePurchasesByUserID(ctx context.Context, userID *int64) ([]db.Purchase, error)
 	ListActivePurchasesByIDs(ctx context.Context, ids []string) ([]db.Purchase, error)
 	ExtractPurchaseTokenIDs(ctx context.Context) ([]string, error)
 

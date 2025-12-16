@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 
 	"github.com/kr/pretty"
@@ -52,7 +53,7 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    id,
-						Email: sql.NullString{String: "old@example.com", Valid: true},
+						Email: ptr.To("old@example.com"),
 					}, nil
 				},
 				UserByEmailFunc: func(ctx context.Context, lower string) (db.User, error) {
@@ -75,7 +76,7 @@ func TestResolve(t *testing.T) {
 			want: &model.UpdateUserPayload{
 				User: &db.User{
 					ID:    123,
-					Email: sql.NullString{String: newEmail, Valid: true},
+					Email: ptr.To(newEmail),
 				},
 			},
 			wantErr: false,
@@ -94,8 +95,8 @@ func TestResolve(t *testing.T) {
 				// Verify update params
 				updateParams := mockEnv.UpdateUserCalls()[0].Arg
 				require.Equal(t, int64(123), updateParams.ID)
-				require.Equal(t, newEmail, updateParams.Email.String)
-				require.True(t, updateParams.Email.Valid)
+				require.NotNil(t, updateParams.Email)
+				require.Equal(t, newEmail, *updateParams.Email)
 			},
 		},
 		{
@@ -107,13 +108,13 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    id,
-						Email: sql.NullString{String: "existing@example.com", Valid: true},
+						Email: ptr.To("existing@example.com"),
 					}, nil
 				},
 				UpdateUserFunc: func(ctx context.Context, arg db.UpdateUserParams) (db.User, error) {
 					return db.User{
 						ID:    arg.ID,
-						Email: sql.NullString{String: "existing@example.com", Valid: true},
+						Email: ptr.To("existing@example.com"),
 					}, nil
 				},
 			},
@@ -126,7 +127,7 @@ func TestResolve(t *testing.T) {
 			want: &model.UpdateUserPayload{
 				User: &db.User{
 					ID:    123,
-					Email: sql.NullString{String: "existing@example.com", Valid: true},
+					Email: ptr.To("existing@example.com"),
 				},
 			},
 			wantErr: false,
@@ -139,7 +140,7 @@ func TestResolve(t *testing.T) {
 				// Verify update params
 				updateParams := mockEnv.UpdateUserCalls()[0].Arg
 				require.Equal(t, int64(123), updateParams.ID)
-				require.False(t, updateParams.Email.Valid)
+				require.Nil(t, updateParams.Email)
 			},
 		},
 		{
@@ -274,13 +275,13 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    id,
-						Email: sql.NullString{String: "old@example.com", Valid: true},
+						Email: ptr.To("old@example.com"),
 					}, nil
 				},
 				UserByEmailFunc: func(ctx context.Context, lower string) (db.User, error) {
 					return db.User{
 						ID:    456, // Different user ID
-						Email: sql.NullString{String: lower, Valid: true},
+						Email: ptr.To(lower),
 					}, nil
 				},
 			},
@@ -311,13 +312,13 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    id,
-						Email: sql.NullString{String: "existing@example.com", Valid: true},
+						Email: ptr.To("existing@example.com"),
 					}, nil
 				},
 				UserByEmailFunc: func(ctx context.Context, lower string) (db.User, error) {
 					return db.User{
 						ID:    123, // Same user ID
-						Email: sql.NullString{String: lower, Valid: true},
+						Email: ptr.To(lower),
 					}, nil
 				},
 				UpdateUserFunc: func(ctx context.Context, arg db.UpdateUserParams) (db.User, error) {
@@ -337,7 +338,7 @@ func TestResolve(t *testing.T) {
 			want: &model.UpdateUserPayload{
 				User: &db.User{
 					ID:    123,
-					Email: sql.NullString{String: newEmail, Valid: true},
+					Email: ptr.To(newEmail),
 				},
 			},
 			wantErr: false,
@@ -357,7 +358,7 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    id,
-						Email: sql.NullString{String: "old@example.com", Valid: true},
+						Email: ptr.To("old@example.com"),
 					}, nil
 				},
 				UserByEmailFunc: func(ctx context.Context, lower string) (db.User, error) {
@@ -389,7 +390,7 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    id,
-						Email: sql.NullString{String: "old@example.com", Valid: true},
+						Email: ptr.To("old@example.com"),
 					}, nil
 				},
 				UserByEmailFunc: func(ctx context.Context, lower string) (db.User, error) {
@@ -424,7 +425,7 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    id,
-						Email: sql.NullString{String: "old@example.com", Valid: true},
+						Email: ptr.To("old@example.com"),
 					}, nil
 				},
 				UserByEmailFunc: func(ctx context.Context, lower string) (db.User, error) {

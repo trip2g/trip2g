@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 	"time"
 )
@@ -822,10 +821,10 @@ order by wler.created_at desc
 `
 
 type AllWaitListEmailRequestsRow struct {
-	Email     string         `json:"email"`
-	CreatedAt time.Time      `json:"created_at"`
-	Ip        sql.NullString `json:"ip"`
-	NotePath  string         `json:"note_path"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
+	Ip        *string   `json:"ip"`
+	NotePath  string    `json:"note_path"`
 }
 
 func (q *Queries) AllWaitListEmailRequests(ctx context.Context) ([]AllWaitListEmailRequestsRow, error) {
@@ -1030,7 +1029,7 @@ const countUserSubgraphAccessByPurchaseID = `-- name: CountUserSubgraphAccessByP
 select count(*) from user_subgraph_accesses where purchase_id = ?
 `
 
-func (q *Queries) CountUserSubgraphAccessByPurchaseID(ctx context.Context, purchaseID sql.NullString) (int64, error) {
+func (q *Queries) CountUserSubgraphAccessByPurchaseID(ctx context.Context, purchaseID *string) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countUserSubgraphAccessByPurchaseID, purchaseID)
 	var count int64
 	err := row.Scan(&count)
@@ -1082,9 +1081,9 @@ order by added_at desc
 `
 
 type FilteredTgBotChatsParams struct {
-	IncludeRemoved interface{}   `json:"include_removed"`
-	BotID          sql.NullInt64 `json:"bot_id"`
-	CanInvite      sql.NullBool  `json:"can_invite"`
+	IncludeRemoved interface{} `json:"include_removed"`
+	BotID          *int64      `json:"bot_id"`
+	CanInvite      *bool       `json:"can_invite"`
 }
 
 func (q *Queries) FilteredTgBotChats(ctx context.Context, arg FilteredTgBotChatsParams) ([]TgBotChat, error) {
@@ -2163,7 +2162,7 @@ select id, created_at, payment_provider, payment_data, status, offer_id, user_id
  order by created_at desc
 `
 
-func (q *Queries) ListActivePurchasesByUserID(ctx context.Context, userID sql.NullInt64) ([]Purchase, error) {
+func (q *Queries) ListActivePurchasesByUserID(ctx context.Context, userID *int64) ([]Purchase, error) {
 	rows, err := q.db.QueryContext(ctx, listActivePurchasesByUserID, userID)
 	if err != nil {
 		return nil, err
@@ -3029,10 +3028,10 @@ limit ?4 offset ?3
 `
 
 type ListAuditLogsParams struct {
-	CreatedAtGte sql.NullTime `json:"created_at_gte"`
-	CreatedAtLte sql.NullTime `json:"created_at_lte"`
-	Offset       int64        `json:"offset"`
-	Limit        int64        `json:"limit"`
+	CreatedAtGte *time.Time `json:"created_at_gte"`
+	CreatedAtLte *time.Time `json:"created_at_lte"`
+	Offset       int64      `json:"offset"`
+	Limit        int64      `json:"limit"`
 }
 
 func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error) {
@@ -4152,8 +4151,8 @@ select tg_bot_chat_subgraph_accesses.chat_id, tg_bot_chat_subgraph_accesses.user
 `
 
 type ListTgBotChatSubgraphAccessesParams struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	ChatID sql.NullInt64 `json:"chat_id"`
+	UserID *int64 `json:"user_id"`
+	ChatID *int64 `json:"chat_id"`
 }
 
 type ListTgBotChatSubgraphAccessesRow struct {
@@ -4538,8 +4537,8 @@ select graph_position_x as x, graph_position_y as y
 `
 
 type NoteGraphPositionByPathIDRow struct {
-	X sql.NullFloat64 `json:"x"`
-	Y sql.NullFloat64 `json:"y"`
+	X *float64 `json:"x"`
+	Y *float64 `json:"y"`
 }
 
 func (q *Queries) NoteGraphPositionByPathID(ctx context.Context, id int64) (NoteGraphPositionByPathIDRow, error) {
@@ -4841,10 +4840,10 @@ where tac.code = ?
 `
 
 type TgAttachCodeByCodeRow struct {
-	UserID          int64         `json:"user_id"`
-	BotID           int64         `json:"bot_id"`
-	CreatedAt       time.Time     `json:"created_at"`
-	CurrentTgUserID sql.NullInt64 `json:"current_tg_user_id"`
+	UserID          int64     `json:"user_id"`
+	BotID           int64     `json:"bot_id"`
+	CreatedAt       time.Time `json:"created_at"`
+	CurrentTgUserID *int64    `json:"current_tg_user_id"`
 }
 
 func (q *Queries) TgAttachCodeByCode(ctx context.Context, code string) (TgAttachCodeByCodeRow, error) {
@@ -5141,16 +5140,16 @@ order by m.created_at desc
 `
 
 type TgChatMembersByChatIDRow struct {
-	UserID      int64          `json:"user_id"`
-	ChatID      int64          `json:"chat_id"`
-	CreatedAt   time.Time      `json:"created_at"`
-	Sha256Hash  sql.NullString `json:"sha256_hash"`
-	ChatID_2    sql.NullInt64  `json:"chat_id_2"`
-	BotID       sql.NullInt64  `json:"bot_id"`
-	CreatedAt_2 sql.NullTime   `json:"created_at_2"`
-	FirstName   sql.NullString `json:"first_name"`
-	LastName    sql.NullString `json:"last_name"`
-	Username    sql.NullString `json:"username"`
+	UserID      int64      `json:"user_id"`
+	ChatID      int64      `json:"chat_id"`
+	CreatedAt   time.Time  `json:"created_at"`
+	Sha256Hash  *string    `json:"sha256_hash"`
+	ChatID_2    *int64     `json:"chat_id_2"`
+	BotID       *int64     `json:"bot_id"`
+	CreatedAt_2 *time.Time `json:"created_at_2"`
+	FirstName   *string    `json:"first_name"`
+	LastName    *string    `json:"last_name"`
+	Username    *string    `json:"username"`
 }
 
 func (q *Queries) TgChatMembersByChatID(ctx context.Context, chatID int64) ([]TgChatMembersByChatIDRow, error) {
@@ -5475,7 +5474,7 @@ select id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user
 limit 1
 `
 
-func (q *Queries) UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (User, error) {
+func (q *Queries) UserByTgUserID(ctx context.Context, tgUserID *int64) (User, error) {
 	row := q.db.QueryRowContext(ctx, userByTgUserID, tgUserID)
 	var i User
 	err := row.Scan(
@@ -5523,8 +5522,8 @@ select user_id
 `
 
 type VerifySignInCodeParams struct {
-	Email sql.NullString `json:"email"`
-	Code  string         `json:"code"`
+	Email *string `json:"email"`
+	Code  string  `json:"code"`
 }
 
 func (q *Queries) VerifySignInCode(ctx context.Context, arg VerifySignInCodeParams) (int64, error) {

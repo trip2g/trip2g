@@ -31,11 +31,11 @@ func Resolve(ctx context.Context, env Env, tokens []*model.PurchaseToken) (bool,
 		}
 
 		// not yet payed
-		if !purchase.UserID.Valid {
+		if purchase.UserID == nil {
 			continue
 		}
 
-		user, err := env.UserByID(ctx, purchase.UserID.Int64)
+		user, err := env.UserByID(ctx, *purchase.UserID)
 		if err != nil {
 			return false, fmt.Errorf("failed to find user by email: %w", err)
 		}

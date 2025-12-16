@@ -41,13 +41,13 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	}
 
 	// Check if webhook secret exists
-	if !credentials.WebhookSecret.Valid || credentials.WebhookSecret.String == "" {
+	if credentials.WebhookSecret == nil || *credentials.WebhookSecret == "" {
 		env.Logger().Error("webhook secret not configured for credential", "credential_id", request.CredentialID)
 		return nil, errors.New("webhook secret not configured")
 	}
 
 	// Verify webhook signature
-	if !verifyWebhookSignature(request.Body, credentials.WebhookSecret.String, request.Signature) {
+	if !verifyWebhookSignature(request.Body, *credentials.WebhookSecret, request.Signature) {
 		env.Logger().Error("invalid webhook signature", "credential_id", request.CredentialID)
 		return nil, errors.New("invalid webhook signature")
 	}

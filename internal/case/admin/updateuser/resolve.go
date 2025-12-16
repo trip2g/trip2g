@@ -2,7 +2,6 @@ package updateuser
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
@@ -69,7 +68,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	if input.Email != nil {
-		params.Email = sql.NullString{String: *input.Email, Valid: true}
+		params.Email = input.Email
 	}
 
 	updatedUser, err := env.UpdateUser(ctx, params)

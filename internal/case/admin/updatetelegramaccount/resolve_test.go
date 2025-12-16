@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Note: sql import is kept for sql.ErrNoRows usage
+
 //go:generate go tool github.com/matryer/moq -out mocks_test.go -pkg updatetelegramaccount_test . Env
 
 type Env = updatetelegramaccount.Env
@@ -38,8 +40,8 @@ func TestResolve(t *testing.T) {
 				},
 				UpdateTelegramAccountFunc: func(ctx context.Context, arg db.UpdateTelegramAccountParams) error {
 					require.Equal(t, int64(1), arg.ID)
-					require.Equal(t, "New Name", arg.DisplayName.String)
-					require.True(t, arg.DisplayName.Valid)
+					require.NotNil(t, arg.DisplayName)
+					require.Equal(t, "New Name", *arg.DisplayName)
 					return nil
 				},
 			},
@@ -57,8 +59,8 @@ func TestResolve(t *testing.T) {
 					return db.TelegramAccount{ID: id, Phone: "+1234567890", Enabled: 1}, nil
 				},
 				UpdateTelegramAccountFunc: func(ctx context.Context, arg db.UpdateTelegramAccountParams) error {
-					require.Equal(t, int64(1), arg.Enabled.Int64)
-					require.True(t, arg.Enabled.Valid)
+					require.NotNil(t, arg.Enabled)
+					require.Equal(t, int64(1), *arg.Enabled)
 					return nil
 				},
 			},

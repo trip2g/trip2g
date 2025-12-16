@@ -77,7 +77,6 @@ type ResolverRoot interface {
 	AdminNoteAsset() AdminNoteAssetResolver
 	AdminOffer() AdminOfferResolver
 	AdminOffersConnection() AdminOffersConnectionResolver
-	AdminPatreonCampaign() AdminPatreonCampaignResolver
 	AdminPatreonCredentials() AdminPatreonCredentialsResolver
 	AdminPatreonCredentialsConnection() AdminPatreonCredentialsConnectionResolver
 	AdminPatreonMember() AdminPatreonMemberResolver
@@ -89,7 +88,6 @@ type ResolverRoot interface {
 	AdminRedirectsConnection() AdminRedirectsConnectionResolver
 	AdminRelease() AdminReleaseResolver
 	AdminReleasesConnection() AdminReleasesConnectionResolver
-	AdminSubgraph() AdminSubgraphResolver
 	AdminSubgraphsConnection() AdminSubgraphsConnectionResolver
 	AdminTelegramAccount() AdminTelegramAccountResolver
 	AdminTelegramAccountDialog() AdminTelegramAccountDialogResolver
@@ -106,13 +104,11 @@ type ResolverRoot interface {
 	AdminTgChatMembersConnection() AdminTgChatMembersConnectionResolver
 	AdminTgChatSubgraphAccess() AdminTgChatSubgraphAccessResolver
 	AdminTgChatSubgraphAccessesConnection() AdminTgChatSubgraphAccessesConnectionResolver
-	AdminTgUserProfile() AdminTgUserProfileResolver
 	AdminUser() AdminUserResolver
 	AdminUserBansConnection() AdminUserBansConnectionResolver
 	AdminUserSubgraphAccess() AdminUserSubgraphAccessResolver
 	AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccessesConnectionResolver
 	AdminUsersConnection() AdminUsersConnectionResolver
-	AdminWaitListEmailRequest() AdminWaitListEmailRequestResolver
 	AdminWaitListEmailRequestsConnection() AdminWaitListEmailRequestsConnectionResolver
 	AdminWaitListTgBotRequestsConnection() AdminWaitListTgBotRequestsConnectionResolver
 	BanUserPayload() BanUserPayloadResolver
@@ -817,7 +813,7 @@ type ComplexityRoot struct {
 	AdminWaitListEmailRequest struct {
 		CreatedAt func(childComplexity int) int
 		Email     func(childComplexity int) int
-		IP        func(childComplexity int) int
+		Ip        func(childComplexity int) int
 		NotePath  func(childComplexity int) int
 	}
 
@@ -1315,7 +1311,6 @@ type AdminAdminsConnectionResolver interface {
 type AdminApiKeyResolver interface {
 	CreatedBy(ctx context.Context, obj *db.ApiKey) (*db.User, error)
 	DisabledBy(ctx context.Context, obj *db.ApiKey) (*db.User, error)
-	DisabledAt(ctx context.Context, obj *db.ApiKey) (*time.Time, error)
 }
 type AdminApiKeyLogsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminAPIKeyLogsConnection) ([]db.ListAPIKeyLogsByAPIKeyIDRow, error)
@@ -1341,7 +1336,7 @@ type AdminBackgroundQueuesConnectionResolver interface {
 }
 type AdminBoostyCredentialsResolver interface {
 	CreatedBy(ctx context.Context, obj *db.BoostyCredential) (*db.User, error)
-	DeletedAt(ctx context.Context, obj *db.BoostyCredential) (*time.Time, error)
+
 	DeletedBy(ctx context.Context, obj *db.BoostyCredential) (*db.User, error)
 
 	State(ctx context.Context, obj *db.BoostyCredential) (model.BoostyCredentialsStateEnum, error)
@@ -1352,16 +1347,12 @@ type AdminBoostyCredentialsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminBoostyCredentialsConnection) ([]db.BoostyCredential, error)
 }
 type AdminBoostyMemberResolver interface {
-	MissedAt(ctx context.Context, obj *db.BoostyMember) (*time.Time, error)
-
 	CurrentTier(ctx context.Context, obj *db.BoostyMember) (*db.BoostyTier, error)
 }
 type AdminBoostyMembersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminBoostyMembersConnection) ([]db.BoostyMember, error)
 }
 type AdminBoostyTierResolver interface {
-	MissedAt(ctx context.Context, obj *db.BoostyTier) (*time.Time, error)
-
 	Subgraphs(ctx context.Context, obj *db.BoostyTier) ([]db.Subgraph, error)
 }
 type AdminBoostyTiersConnectionResolver interface {
@@ -1374,33 +1365,24 @@ type AdminConfigVersionsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminConfigVersionsConnection) ([]db.ConfigVersion, error)
 }
 type AdminCronJobResolver interface {
-	LastExecAt(ctx context.Context, obj *db.CronJob) (*time.Time, error)
 	Executions(ctx context.Context, obj *db.CronJob) ([]db.CronJobExecution, error)
 }
 type AdminCronJobExecutionResolver interface {
-	FinishedAt(ctx context.Context, obj *db.CronJobExecution) (*time.Time, error)
 	Status(ctx context.Context, obj *db.CronJobExecution) (model.CronJobExecutionStatus, error)
-	ReportData(ctx context.Context, obj *db.CronJobExecution) (*string, error)
-	ErrorMessage(ctx context.Context, obj *db.CronJobExecution) (*string, error)
+
 	Job(ctx context.Context, obj *db.CronJobExecution) (*db.CronJob, error)
 }
 type AdminCronJobsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminCronJobsConnection) ([]db.CronJob, error)
 }
 type AdminGitTokenResolver interface {
-	CanPull(ctx context.Context, obj *db.GitToken) (bool, error)
-	CanPush(ctx context.Context, obj *db.GitToken) (bool, error)
 	CreatedBy(ctx context.Context, obj *db.GitToken) (*db.User, error)
 	DisabledBy(ctx context.Context, obj *db.GitToken) (*db.User, error)
-	DisabledAt(ctx context.Context, obj *db.GitToken) (*time.Time, error)
 }
 type AdminGitTokensConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminGitTokensConnection) ([]db.GitToken, error)
 }
 type AdminHtmlInjectionResolver interface {
-	ActiveFrom(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error)
-	ActiveTo(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error)
-
 	Position(ctx context.Context, obj *db.HtmlInjection) (int32, error)
 }
 type AdminHtmlInjectionsConnectionResolver interface {
@@ -1487,23 +1469,18 @@ type AdminNoteAssetResolver interface {
 }
 type AdminOfferResolver interface {
 	Lifetime(ctx context.Context, obj *db.Offer) (*string, error)
-	PriceUsd(ctx context.Context, obj *db.Offer) (float64, error)
-	StartsAt(ctx context.Context, obj *db.Offer) (*time.Time, error)
-	EndsAt(ctx context.Context, obj *db.Offer) (*time.Time, error)
+
 	SubgraphIds(ctx context.Context, obj *db.Offer) ([]int64, error)
 	Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subgraph, error)
 }
 type AdminOffersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminOffersConnection) ([]db.Offer, error)
 }
-type AdminPatreonCampaignResolver interface {
-	MissedAt(ctx context.Context, obj *db.PatreonCampaign) (*time.Time, error)
-}
 type AdminPatreonCredentialsResolver interface {
 	CreatedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error)
-	DeletedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error)
+
 	DeletedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error)
-	SyncedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error)
+
 	CreatorAccessToken(ctx context.Context, obj *db.PatreonCredential) (string, error)
 	State(ctx context.Context, obj *db.PatreonCredential) (model.PatreonCredentialsStateEnum, error)
 	Tiers(ctx context.Context, obj *db.PatreonCredential) (*model.AdminPatreonTiersConnection, error)
@@ -1513,19 +1490,14 @@ type AdminPatreonCredentialsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminPatreonCredentialsConnection) ([]db.PatreonCredential, error)
 }
 type AdminPatreonMemberResolver interface {
-	CurrentTierID(ctx context.Context, obj *db.PatreonMember) (*int64, error)
-
 	CurrentTier(ctx context.Context, obj *db.PatreonMember) (*db.PatreonTier, error)
 }
 type AdminPatreonTierResolver interface {
-	MissedAt(ctx context.Context, obj *db.PatreonTier) (*time.Time, error)
-
 	Subgraphs(ctx context.Context, obj *db.PatreonTier) ([]db.Subgraph, error)
 }
 type AdminPurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
 
-	UserID(ctx context.Context, obj *db.Purchase) (*int64, error)
 	Offer(ctx context.Context, obj *db.Purchase) (*db.Offer, error)
 	User(ctx context.Context, obj *db.Purchase) (*db.User, error)
 }
@@ -1594,16 +1566,12 @@ type AdminRedirectsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminRedirectsConnection) ([]db.Redirect, error)
 }
 type AdminReleaseResolver interface {
-	HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int64, error)
 	CreatedBy(ctx context.Context, obj *db.Release) (*db.User, error)
 
 	HomeNote(ctx context.Context, obj *db.Release) (*model1.NoteView, error)
 }
 type AdminReleasesConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminReleasesConnection) ([]db.Release, error)
-}
-type AdminSubgraphResolver interface {
-	Color(ctx context.Context, obj *db.Subgraph) (*string, error)
 }
 type AdminSubgraphsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminSubgraphsConnection) ([]db.Subgraph, error)
@@ -1627,11 +1595,9 @@ type AdminTelegramPublishNoteResolver interface {
 	ID(ctx context.Context, obj *db.TelegramPublishNote) (int64, error)
 
 	SecondsUntilPublish(ctx context.Context, obj *db.TelegramPublishNote) (int64, error)
-	PublishedAt(ctx context.Context, obj *db.TelegramPublishNote) (*time.Time, error)
-	PublishedVersionID(ctx context.Context, obj *db.TelegramPublishNote) (*int64, error)
+
 	Status(ctx context.Context, obj *db.TelegramPublishNote) (string, error)
 
-	LastError(ctx context.Context, obj *db.TelegramPublishNote) (*string, error)
 	NoteView(ctx context.Context, obj *db.TelegramPublishNote) (*model1.NoteView, error)
 	Post(ctx context.Context, obj *db.TelegramPublishNote) (*model1.TelegramPost, error)
 	Tags(ctx context.Context, obj *db.TelegramPublishNote) ([]db.TelegramPublishTag, error)
@@ -1681,21 +1647,13 @@ type AdminTgChatSubgraphAccessResolver interface {
 type AdminTgChatSubgraphAccessesConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminTgChatSubgraphAccessesConnection) ([]db.TgChatSubgraphAccess, error)
 }
-type AdminTgUserProfileResolver interface {
-	FirstName(ctx context.Context, obj *db.TgUserProfile) (*string, error)
-	LastName(ctx context.Context, obj *db.TgUserProfile) (*string, error)
-	Username(ctx context.Context, obj *db.TgUserProfile) (*string, error)
-}
 type AdminUserResolver interface {
-	Email(ctx context.Context, obj *db.User) (*string, error)
-
 	Ban(ctx context.Context, obj *db.User) (*db.UserBan, error)
 }
 type AdminUserBansConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminUserBansConnection) ([]db.UserBan, error)
 }
 type AdminUserSubgraphAccessResolver interface {
-	ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error)
 	User(ctx context.Context, obj *db.UserSubgraphAccess) (*db.User, error)
 	Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error)
 }
@@ -1704,9 +1662,6 @@ type AdminUserSubgraphAccessesConnectionResolver interface {
 }
 type AdminUsersConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error)
-}
-type AdminWaitListEmailRequestResolver interface {
-	IP(ctx context.Context, obj *db.AllWaitListEmailRequestsRow) (*string, error)
 }
 type AdminWaitListEmailRequestsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminWaitListEmailRequestsConnection) ([]db.AllWaitListEmailRequestsRow, error)
@@ -1762,7 +1717,7 @@ type NoteWarningResolver interface {
 }
 type OfferResolver interface {
 	ID(ctx context.Context, obj *db.Offer) (string, error)
-	PriceUsd(ctx context.Context, obj *db.Offer) (float64, error)
+
 	Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subgraph, error)
 }
 type PurchaseResolver interface {
@@ -1810,7 +1765,6 @@ type UpdateNoteGraphPositionsPayloadResolver interface {
 	UpdatedNoteViews(ctx context.Context, obj *model.UpdateNoteGraphPositionsPayload) ([]model1.NoteView, error)
 }
 type UserResolver interface {
-	Email(ctx context.Context, obj *db.User) (*string, error)
 	SubgraphAccesses(ctx context.Context, obj *db.User) ([]db.UserSubgraphAccess, error)
 	FavoriteNotes(ctx context.Context, obj *db.User) ([]model.PublicNote, error)
 }
@@ -1822,7 +1776,6 @@ type UserBanResolver interface {
 type UserSubgraphAccessResolver interface {
 	ID(ctx context.Context, obj *db.UserSubgraphAccess) (string, error)
 
-	ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error)
 	Subgraph(ctx context.Context, obj *db.UserSubgraphAccess) (*db.Subgraph, error)
 }
 type ViewerResolver interface {
@@ -4859,11 +4812,11 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminWaitListEmailRequest.Email(childComplexity), true
 	case "AdminWaitListEmailRequest.ip":
-		if e.complexity.AdminWaitListEmailRequest.IP == nil {
+		if e.complexity.AdminWaitListEmailRequest.Ip == nil {
 			break
 		}
 
-		return e.complexity.AdminWaitListEmailRequest.IP(childComplexity), true
+		return e.complexity.AdminWaitListEmailRequest.Ip(childComplexity), true
 	case "AdminWaitListEmailRequest.notePath":
 		if e.complexity.AdminWaitListEmailRequest.NotePath == nil {
 			break
@@ -8008,7 +7961,7 @@ func (ec *executionContext) _AdminApiKey_disabledAt(ctx context.Context, field g
 		field,
 		ec.fieldContext_AdminApiKey_disabledAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminApiKey().DisabledAt(ctx, obj)
+			return obj.DisabledAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -8021,8 +7974,8 @@ func (ec *executionContext) fieldContext_AdminApiKey_disabledAt(_ context.Contex
 	fc = &graphql.FieldContext{
 		Object:     "AdminApiKey",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -8830,7 +8783,7 @@ func (ec *executionContext) _AdminBoostyCredentials_deletedAt(ctx context.Contex
 		field,
 		ec.fieldContext_AdminBoostyCredentials_deletedAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminBoostyCredentials().DeletedAt(ctx, obj)
+			return obj.DeletedAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -8843,8 +8796,8 @@ func (ec *executionContext) fieldContext_AdminBoostyCredentials_deletedAt(_ cont
 	fc = &graphql.FieldContext{
 		Object:     "AdminBoostyCredentials",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -9189,7 +9142,7 @@ func (ec *executionContext) _AdminBoostyMember_missedAt(ctx context.Context, fie
 		field,
 		ec.fieldContext_AdminBoostyMember_missedAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminBoostyMember().MissedAt(ctx, obj)
+			return obj.MissedAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -9202,8 +9155,8 @@ func (ec *executionContext) fieldContext_AdminBoostyMember_missedAt(_ context.Co
 	fc = &graphql.FieldContext{
 		Object:     "AdminBoostyMember",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -9484,7 +9437,7 @@ func (ec *executionContext) _AdminBoostyTier_missedAt(ctx context.Context, field
 		field,
 		ec.fieldContext_AdminBoostyTier_missedAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminBoostyTier().MissedAt(ctx, obj)
+			return obj.MissedAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -9497,8 +9450,8 @@ func (ec *executionContext) fieldContext_AdminBoostyTier_missedAt(_ context.Cont
 	fc = &graphql.FieldContext{
 		Object:     "AdminBoostyTier",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -10107,7 +10060,7 @@ func (ec *executionContext) _AdminCronJob_lastExecAt(ctx context.Context, field 
 		field,
 		ec.fieldContext_AdminCronJob_lastExecAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminCronJob().LastExecAt(ctx, obj)
+			return obj.LastExecAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -10120,8 +10073,8 @@ func (ec *executionContext) fieldContext_AdminCronJob_lastExecAt(_ context.Conte
 	fc = &graphql.FieldContext{
 		Object:     "AdminCronJob",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -10270,7 +10223,7 @@ func (ec *executionContext) _AdminCronJobExecution_finishedAt(ctx context.Contex
 		field,
 		ec.fieldContext_AdminCronJobExecution_finishedAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminCronJobExecution().FinishedAt(ctx, obj)
+			return obj.FinishedAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -10283,8 +10236,8 @@ func (ec *executionContext) fieldContext_AdminCronJobExecution_finishedAt(_ cont
 	fc = &graphql.FieldContext{
 		Object:     "AdminCronJobExecution",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -10328,7 +10281,7 @@ func (ec *executionContext) _AdminCronJobExecution_reportData(ctx context.Contex
 		field,
 		ec.fieldContext_AdminCronJobExecution_reportData,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminCronJobExecution().ReportData(ctx, obj)
+			return obj.ReportData, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -10341,8 +10294,8 @@ func (ec *executionContext) fieldContext_AdminCronJobExecution_reportData(_ cont
 	fc = &graphql.FieldContext{
 		Object:     "AdminCronJobExecution",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -10357,7 +10310,7 @@ func (ec *executionContext) _AdminCronJobExecution_errorMessage(ctx context.Cont
 		field,
 		ec.fieldContext_AdminCronJobExecution_errorMessage,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminCronJobExecution().ErrorMessage(ctx, obj)
+			return obj.ErrorMessage, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -10370,8 +10323,8 @@ func (ec *executionContext) fieldContext_AdminCronJobExecution_errorMessage(_ co
 	fc = &graphql.FieldContext{
 		Object:     "AdminCronJobExecution",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -10559,10 +10512,10 @@ func (ec *executionContext) _AdminGitToken_canPull(ctx context.Context, field gr
 		field,
 		ec.fieldContext_AdminGitToken_canPull,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminGitToken().CanPull(ctx, obj)
+			return obj.CanPull, nil
 		},
 		nil,
-		ec.marshalNBoolean2bool,
+		ec.marshalNBoolean2ᚖbool,
 		true,
 		true,
 	)
@@ -10572,8 +10525,8 @@ func (ec *executionContext) fieldContext_AdminGitToken_canPull(_ context.Context
 	fc = &graphql.FieldContext{
 		Object:     "AdminGitToken",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
 		},
@@ -10588,10 +10541,10 @@ func (ec *executionContext) _AdminGitToken_canPush(ctx context.Context, field gr
 		field,
 		ec.fieldContext_AdminGitToken_canPush,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminGitToken().CanPush(ctx, obj)
+			return obj.CanPush, nil
 		},
 		nil,
-		ec.marshalNBoolean2bool,
+		ec.marshalNBoolean2ᚖbool,
 		true,
 		true,
 	)
@@ -10601,8 +10554,8 @@ func (ec *executionContext) fieldContext_AdminGitToken_canPush(_ context.Context
 	fc = &graphql.FieldContext{
 		Object:     "AdminGitToken",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
 		},
@@ -10695,7 +10648,7 @@ func (ec *executionContext) _AdminGitToken_disabledAt(ctx context.Context, field
 		field,
 		ec.fieldContext_AdminGitToken_disabledAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminGitToken().DisabledAt(ctx, obj)
+			return obj.DisabledAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -10708,8 +10661,8 @@ func (ec *executionContext) fieldContext_AdminGitToken_disabledAt(_ context.Cont
 	fc = &graphql.FieldContext{
 		Object:     "AdminGitToken",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -10829,7 +10782,7 @@ func (ec *executionContext) _AdminHtmlInjection_activeFrom(ctx context.Context, 
 		field,
 		ec.fieldContext_AdminHtmlInjection_activeFrom,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminHtmlInjection().ActiveFrom(ctx, obj)
+			return obj.ActiveFrom, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -10842,8 +10795,8 @@ func (ec *executionContext) fieldContext_AdminHtmlInjection_activeFrom(_ context
 	fc = &graphql.FieldContext{
 		Object:     "AdminHtmlInjection",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -10858,7 +10811,7 @@ func (ec *executionContext) _AdminHtmlInjection_activeTo(ctx context.Context, fi
 		field,
 		ec.fieldContext_AdminHtmlInjection_activeTo,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminHtmlInjection().ActiveTo(ctx, obj)
+			return obj.ActiveTo, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -10871,8 +10824,8 @@ func (ec *executionContext) fieldContext_AdminHtmlInjection_activeTo(_ context.C
 	fc = &graphql.FieldContext{
 		Object:     "AdminHtmlInjection",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -14218,10 +14171,10 @@ func (ec *executionContext) _AdminOffer_priceUSD(ctx context.Context, field grap
 		field,
 		ec.fieldContext_AdminOffer_priceUSD,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminOffer().PriceUsd(ctx, obj)
+			return obj.PriceUsd, nil
 		},
 		nil,
-		ec.marshalNFloat2float64,
+		ec.marshalNFloat2ᚖfloat64,
 		true,
 		true,
 	)
@@ -14231,8 +14184,8 @@ func (ec *executionContext) fieldContext_AdminOffer_priceUSD(_ context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "AdminOffer",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
 		},
@@ -14247,7 +14200,7 @@ func (ec *executionContext) _AdminOffer_startsAt(ctx context.Context, field grap
 		field,
 		ec.fieldContext_AdminOffer_startsAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminOffer().StartsAt(ctx, obj)
+			return obj.StartsAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -14260,8 +14213,8 @@ func (ec *executionContext) fieldContext_AdminOffer_startsAt(_ context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "AdminOffer",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -14276,7 +14229,7 @@ func (ec *executionContext) _AdminOffer_endsAt(ctx context.Context, field graphq
 		field,
 		ec.fieldContext_AdminOffer_endsAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminOffer().EndsAt(ctx, obj)
+			return obj.EndsAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -14289,8 +14242,8 @@ func (ec *executionContext) fieldContext_AdminOffer_endsAt(_ context.Context, fi
 	fc = &graphql.FieldContext{
 		Object:     "AdminOffer",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -14511,7 +14464,7 @@ func (ec *executionContext) _AdminPatreonCampaign_missedAt(ctx context.Context, 
 		field,
 		ec.fieldContext_AdminPatreonCampaign_missedAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminPatreonCampaign().MissedAt(ctx, obj)
+			return obj.MissedAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -14524,8 +14477,8 @@ func (ec *executionContext) fieldContext_AdminPatreonCampaign_missedAt(_ context
 	fc = &graphql.FieldContext{
 		Object:     "AdminPatreonCampaign",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -14695,7 +14648,7 @@ func (ec *executionContext) _AdminPatreonCredentials_deletedAt(ctx context.Conte
 		field,
 		ec.fieldContext_AdminPatreonCredentials_deletedAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminPatreonCredentials().DeletedAt(ctx, obj)
+			return obj.DeletedAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -14708,8 +14661,8 @@ func (ec *executionContext) fieldContext_AdminPatreonCredentials_deletedAt(_ con
 	fc = &graphql.FieldContext{
 		Object:     "AdminPatreonCredentials",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -14763,7 +14716,7 @@ func (ec *executionContext) _AdminPatreonCredentials_syncedAt(ctx context.Contex
 		field,
 		ec.fieldContext_AdminPatreonCredentials_syncedAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminPatreonCredentials().SyncedAt(ctx, obj)
+			return obj.SyncedAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -14776,8 +14729,8 @@ func (ec *executionContext) fieldContext_AdminPatreonCredentials_syncedAt(_ cont
 	fc = &graphql.FieldContext{
 		Object:     "AdminPatreonCredentials",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -15054,7 +15007,7 @@ func (ec *executionContext) _AdminPatreonMember_currentTierID(ctx context.Contex
 		field,
 		ec.fieldContext_AdminPatreonMember_currentTierID,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminPatreonMember().CurrentTierID(ctx, obj)
+			return obj.CurrentTierID, nil
 		},
 		nil,
 		ec.marshalOInt642ᚖint64,
@@ -15067,8 +15020,8 @@ func (ec *executionContext) fieldContext_AdminPatreonMember_currentTierID(_ cont
 	fc = &graphql.FieldContext{
 		Object:     "AdminPatreonMember",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
 		},
@@ -15322,7 +15275,7 @@ func (ec *executionContext) _AdminPatreonTier_missedAt(ctx context.Context, fiel
 		field,
 		ec.fieldContext_AdminPatreonTier_missedAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminPatreonTier().MissedAt(ctx, obj)
+			return obj.MissedAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -15335,8 +15288,8 @@ func (ec *executionContext) fieldContext_AdminPatreonTier_missedAt(_ context.Con
 	fc = &graphql.FieldContext{
 		Object:     "AdminPatreonTier",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -15760,7 +15713,7 @@ func (ec *executionContext) _AdminPurchase_userId(ctx context.Context, field gra
 		field,
 		ec.fieldContext_AdminPurchase_userId,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminPurchase().UserID(ctx, obj)
+			return obj.UserID, nil
 		},
 		nil,
 		ec.marshalOInt642ᚖint64,
@@ -15773,8 +15726,8 @@ func (ec *executionContext) fieldContext_AdminPurchase_userId(_ context.Context,
 	fc = &graphql.FieldContext{
 		Object:     "AdminPurchase",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
 		},
@@ -18581,7 +18534,7 @@ func (ec *executionContext) _AdminRelease_homeNoteVersionId(ctx context.Context,
 		field,
 		ec.fieldContext_AdminRelease_homeNoteVersionId,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminRelease().HomeNoteVersionID(ctx, obj)
+			return obj.HomeNoteVersionID, nil
 		},
 		nil,
 		ec.marshalOInt642ᚖint64,
@@ -18594,8 +18547,8 @@ func (ec *executionContext) fieldContext_AdminRelease_homeNoteVersionId(_ contex
 	fc = &graphql.FieldContext{
 		Object:     "AdminRelease",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
 		},
@@ -19001,7 +18954,7 @@ func (ec *executionContext) _AdminSubgraph_color(ctx context.Context, field grap
 		field,
 		ec.fieldContext_AdminSubgraph_color,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminSubgraph().Color(ctx, obj)
+			return obj.Color, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -19014,8 +18967,8 @@ func (ec *executionContext) fieldContext_AdminSubgraph_color(_ context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "AdminSubgraph",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -19823,7 +19776,7 @@ func (ec *executionContext) _AdminTelegramPublishNote_publishedAt(ctx context.Co
 		field,
 		ec.fieldContext_AdminTelegramPublishNote_publishedAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminTelegramPublishNote().PublishedAt(ctx, obj)
+			return obj.PublishedAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -19836,8 +19789,8 @@ func (ec *executionContext) fieldContext_AdminTelegramPublishNote_publishedAt(_ 
 	fc = &graphql.FieldContext{
 		Object:     "AdminTelegramPublishNote",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -19852,7 +19805,7 @@ func (ec *executionContext) _AdminTelegramPublishNote_publishedVersionID(ctx con
 		field,
 		ec.fieldContext_AdminTelegramPublishNote_publishedVersionID,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminTelegramPublishNote().PublishedVersionID(ctx, obj)
+			return obj.PublishedVersionID, nil
 		},
 		nil,
 		ec.marshalOInt642ᚖint64,
@@ -19865,8 +19818,8 @@ func (ec *executionContext) fieldContext_AdminTelegramPublishNote_publishedVersi
 	fc = &graphql.FieldContext{
 		Object:     "AdminTelegramPublishNote",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int64 does not have child fields")
 		},
@@ -19939,7 +19892,7 @@ func (ec *executionContext) _AdminTelegramPublishNote_lastError(ctx context.Cont
 		field,
 		ec.fieldContext_AdminTelegramPublishNote_lastError,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminTelegramPublishNote().LastError(ctx, obj)
+			return obj.LastError, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -19952,8 +19905,8 @@ func (ec *executionContext) fieldContext_AdminTelegramPublishNote_lastError(_ co
 	fc = &graphql.FieldContext{
 		Object:     "AdminTelegramPublishNote",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -21763,7 +21716,7 @@ func (ec *executionContext) _AdminTgUserProfile_firstName(ctx context.Context, f
 		field,
 		ec.fieldContext_AdminTgUserProfile_firstName,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminTgUserProfile().FirstName(ctx, obj)
+			return obj.FirstName, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -21776,8 +21729,8 @@ func (ec *executionContext) fieldContext_AdminTgUserProfile_firstName(_ context.
 	fc = &graphql.FieldContext{
 		Object:     "AdminTgUserProfile",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -21792,7 +21745,7 @@ func (ec *executionContext) _AdminTgUserProfile_lastName(ctx context.Context, fi
 		field,
 		ec.fieldContext_AdminTgUserProfile_lastName,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminTgUserProfile().LastName(ctx, obj)
+			return obj.LastName, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -21805,8 +21758,8 @@ func (ec *executionContext) fieldContext_AdminTgUserProfile_lastName(_ context.C
 	fc = &graphql.FieldContext{
 		Object:     "AdminTgUserProfile",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -21821,7 +21774,7 @@ func (ec *executionContext) _AdminTgUserProfile_username(ctx context.Context, fi
 		field,
 		ec.fieldContext_AdminTgUserProfile_username,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminTgUserProfile().Username(ctx, obj)
+			return obj.Username, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -21834,8 +21787,8 @@ func (ec *executionContext) fieldContext_AdminTgUserProfile_username(_ context.C
 	fc = &graphql.FieldContext{
 		Object:     "AdminTgUserProfile",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -21926,7 +21879,7 @@ func (ec *executionContext) _AdminUser_email(ctx context.Context, field graphql.
 		field,
 		ec.fieldContext_AdminUser_email,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminUser().Email(ctx, obj)
+			return obj.Email, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -21939,8 +21892,8 @@ func (ec *executionContext) fieldContext_AdminUser_email(_ context.Context, fiel
 	fc = &graphql.FieldContext{
 		Object:     "AdminUser",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -22182,7 +22135,7 @@ func (ec *executionContext) _AdminUserSubgraphAccess_expiresAt(ctx context.Conte
 		field,
 		ec.fieldContext_AdminUserSubgraphAccess_expiresAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminUserSubgraphAccess().ExpiresAt(ctx, obj)
+			return obj.ExpiresAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -22195,8 +22148,8 @@ func (ec *executionContext) fieldContext_AdminUserSubgraphAccess_expiresAt(_ con
 	fc = &graphql.FieldContext{
 		Object:     "AdminUserSubgraphAccess",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -22433,7 +22386,7 @@ func (ec *executionContext) _AdminWaitListEmailRequest_ip(ctx context.Context, f
 		field,
 		ec.fieldContext_AdminWaitListEmailRequest_ip,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminWaitListEmailRequest().IP(ctx, obj)
+			return obj.Ip, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -22446,8 +22399,8 @@ func (ec *executionContext) fieldContext_AdminWaitListEmailRequest_ip(_ context.
 	fc = &graphql.FieldContext{
 		Object:     "AdminWaitListEmailRequest",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -25976,10 +25929,10 @@ func (ec *executionContext) _Offer_priceUSD(ctx context.Context, field graphql.C
 		field,
 		ec.fieldContext_Offer_priceUSD,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Offer().PriceUsd(ctx, obj)
+			return obj.PriceUsd, nil
 		},
 		nil,
-		ec.marshalNFloat2float64,
+		ec.marshalNFloat2ᚖfloat64,
 		true,
 		true,
 	)
@@ -25989,8 +25942,8 @@ func (ec *executionContext) fieldContext_Offer_priceUSD(_ context.Context, field
 	fc = &graphql.FieldContext{
 		Object:     "Offer",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
 		},
@@ -29444,7 +29397,7 @@ func (ec *executionContext) _User_email(ctx context.Context, field graphql.Colle
 		field,
 		ec.fieldContext_User_email,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.User().Email(ctx, obj)
+			return obj.Email, nil
 		},
 		nil,
 		ec.marshalOString2ᚖstring,
@@ -29457,8 +29410,8 @@ func (ec *executionContext) fieldContext_User_email(_ context.Context, field gra
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -29774,7 +29727,7 @@ func (ec *executionContext) _UserSubgraphAccess_expiresAt(ctx context.Context, f
 		field,
 		ec.fieldContext_UserSubgraphAccess_expiresAt,
 		func(ctx context.Context) (any, error) {
-			return ec.resolvers.UserSubgraphAccess().ExpiresAt(ctx, obj)
+			return obj.ExpiresAt, nil
 		},
 		nil,
 		ec.marshalOTime2ᚖtimeᚐTime,
@@ -29787,8 +29740,8 @@ func (ec *executionContext) fieldContext_UserSubgraphAccess_expiresAt(_ context.
 	fc = &graphql.FieldContext{
 		Object:     "UserSubgraphAccess",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Time does not have child fields")
 		},
@@ -36566,38 +36519,7 @@ func (ec *executionContext) _AdminApiKey(ctx context.Context, sel ast.SelectionS
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "disabledAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminApiKey_disabledAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminApiKey_disabledAt(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -37340,38 +37262,7 @@ func (ec *executionContext) _AdminBoostyCredentials(ctx context.Context, sel ast
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "deletedAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminBoostyCredentials_deletedAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminBoostyCredentials_deletedAt(ctx, field, obj)
 		case "deletedBy":
 			field := field
 
@@ -37643,38 +37534,7 @@ func (ec *executionContext) _AdminBoostyMember(ctx context.Context, sel ast.Sele
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "missedAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminBoostyMember_missedAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminBoostyMember_missedAt(ctx, field, obj)
 		case "email":
 			out.Values[i] = ec._AdminBoostyMember_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -37843,38 +37703,7 @@ func (ec *executionContext) _AdminBoostyTier(ctx context.Context, sel ast.Select
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "missedAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminBoostyTier_missedAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminBoostyTier_missedAt(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._AdminBoostyTier_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -38294,38 +38123,7 @@ func (ec *executionContext) _AdminCronJob(ctx context.Context, sel ast.Selection
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "lastExecAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminCronJob_lastExecAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminCronJob_lastExecAt(ctx, field, obj)
 		case "executions":
 			field := field
 
@@ -38412,38 +38210,7 @@ func (ec *executionContext) _AdminCronJobExecution(ctx context.Context, sel ast.
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "finishedAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminCronJobExecution_finishedAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminCronJobExecution_finishedAt(ctx, field, obj)
 		case "status":
 			field := field
 
@@ -38481,71 +38248,9 @@ func (ec *executionContext) _AdminCronJobExecution(ctx context.Context, sel ast.
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "reportData":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminCronJobExecution_reportData(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminCronJobExecution_reportData(ctx, field, obj)
 		case "errorMessage":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminCronJobExecution_errorMessage(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminCronJobExecution_errorMessage(ctx, field, obj)
 		case "job":
 			field := field
 
@@ -38702,77 +38407,15 @@ func (ec *executionContext) _AdminGitToken(ctx context.Context, sel ast.Selectio
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "canPull":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminGitToken_canPull(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._AdminGitToken_canPull(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "canPush":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminGitToken_canPush(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._AdminGitToken_canPush(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "createdBy":
 			field := field
 
@@ -38843,38 +38486,7 @@ func (ec *executionContext) _AdminGitToken(ctx context.Context, sel ast.Selectio
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "disabledAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminGitToken_disabledAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminGitToken_disabledAt(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -38990,71 +38602,9 @@ func (ec *executionContext) _AdminHtmlInjection(ctx context.Context, sel ast.Sel
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "activeFrom":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminHtmlInjection_activeFrom(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminHtmlInjection_activeFrom(ctx, field, obj)
 		case "activeTo":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminHtmlInjection_activeTo(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminHtmlInjection_activeTo(ctx, field, obj)
 		case "description":
 			out.Values[i] = ec._AdminHtmlInjection_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -41970,107 +41520,14 @@ func (ec *executionContext) _AdminOffer(ctx context.Context, sel ast.SelectionSe
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "priceUSD":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminOffer_priceUSD(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._AdminOffer_priceUSD(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "startsAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminOffer_startsAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminOffer_startsAt(ctx, field, obj)
 		case "endsAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminOffer_endsAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminOffer_endsAt(ctx, field, obj)
 		case "subgraphIds":
 			field := field
 
@@ -42250,60 +41707,29 @@ func (ec *executionContext) _AdminPatreonCampaign(ctx context.Context, sel ast.S
 		case "id":
 			out.Values[i] = ec._AdminPatreonCampaign_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "credentialsID":
 			out.Values[i] = ec._AdminPatreonCampaign_credentialsID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "createdAt":
 			out.Values[i] = ec._AdminPatreonCampaign_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "missedAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminPatreonCampaign_missedAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminPatreonCampaign_missedAt(ctx, field, obj)
 		case "campaignID":
 			out.Values[i] = ec._AdminPatreonCampaign_campaignID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "attributes":
 			out.Values[i] = ec._AdminPatreonCampaign_attributes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -42386,38 +41812,7 @@ func (ec *executionContext) _AdminPatreonCredentials(ctx context.Context, sel as
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "deletedAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminPatreonCredentials_deletedAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminPatreonCredentials_deletedAt(ctx, field, obj)
 		case "deletedBy":
 			field := field
 
@@ -42452,38 +41847,7 @@ func (ec *executionContext) _AdminPatreonCredentials(ctx context.Context, sel as
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "syncedAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminPatreonCredentials_syncedAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminPatreonCredentials_syncedAt(ctx, field, obj)
 		case "creatorAccessToken":
 			field := field
 
@@ -42748,38 +42112,7 @@ func (ec *executionContext) _AdminPatreonMember(ctx context.Context, sel ast.Sel
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "currentTierID":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminPatreonMember_currentTierID(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminPatreonMember_currentTierID(ctx, field, obj)
 		case "status":
 			out.Values[i] = ec._AdminPatreonMember_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -42912,38 +42245,7 @@ func (ec *executionContext) _AdminPatreonTier(ctx context.Context, sel ast.Selec
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "missedAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminPatreonTier_missedAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminPatreonTier_missedAt(ctx, field, obj)
 		case "tierID":
 			out.Values[i] = ec._AdminPatreonTier_tierID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -43140,38 +42442,7 @@ func (ec *executionContext) _AdminPurchase(ctx context.Context, sel ast.Selectio
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "userId":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminPurchase_userId(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminPurchase_userId(ctx, field, obj)
 		case "offer":
 			field := field
 
@@ -45420,38 +44691,7 @@ func (ec *executionContext) _AdminRelease(ctx context.Context, sel ast.Selection
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "homeNoteVersionId":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminRelease_homeNoteVersionId(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminRelease_homeNoteVersionId(ctx, field, obj)
 		case "createdBy":
 			field := field
 
@@ -45794,55 +45034,24 @@ func (ec *executionContext) _AdminSubgraph(ctx context.Context, sel ast.Selectio
 		case "id":
 			out.Values[i] = ec._AdminSubgraph_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "name":
 			out.Values[i] = ec._AdminSubgraph_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "color":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminSubgraph_color(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminSubgraph_color(ctx, field, obj)
 		case "hidden":
 			out.Values[i] = ec._AdminSubgraph_hidden(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "createdAt":
 			out.Values[i] = ec._AdminSubgraph_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -46499,71 +45708,9 @@ func (ec *executionContext) _AdminTelegramPublishNote(ctx context.Context, sel a
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "publishedAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminTelegramPublishNote_publishedAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminTelegramPublishNote_publishedAt(ctx, field, obj)
 		case "publishedVersionID":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminTelegramPublishNote_publishedVersionID(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminTelegramPublishNote_publishedVersionID(ctx, field, obj)
 		case "status":
 			field := field
 
@@ -46606,38 +45753,7 @@ func (ec *executionContext) _AdminTelegramPublishNote(ctx context.Context, sel a
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "lastError":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminTelegramPublishNote_lastError(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminTelegramPublishNote_lastError(ctx, field, obj)
 		case "noteView":
 			field := field
 
@@ -48056,122 +47172,29 @@ func (ec *executionContext) _AdminTgUserProfile(ctx context.Context, sel ast.Sel
 		case "sha256Hash":
 			out.Values[i] = ec._AdminTgUserProfile_sha256Hash(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "chatId":
 			out.Values[i] = ec._AdminTgUserProfile_chatId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "botId":
 			out.Values[i] = ec._AdminTgUserProfile_botId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "createdAt":
 			out.Values[i] = ec._AdminTgUserProfile_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "firstName":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminTgUserProfile_firstName(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminTgUserProfile_firstName(ctx, field, obj)
 		case "lastName":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminTgUserProfile_lastName(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminTgUserProfile_lastName(ctx, field, obj)
 		case "username":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminTgUserProfile_username(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminTgUserProfile_username(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -48251,38 +47274,7 @@ func (ec *executionContext) _AdminUser(ctx context.Context, sel ast.SelectionSet
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "email":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminUser_email(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminUser_email(ctx, field, obj)
 		case "createdAt":
 			out.Values[i] = ec._AdminUser_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -48446,38 +47438,7 @@ func (ec *executionContext) _AdminUserSubgraphAccess(ctx context.Context, sel as
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "expiresAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminUserSubgraphAccess_expiresAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminUserSubgraphAccess_expiresAt(ctx, field, obj)
 		case "user":
 			field := field
 
@@ -48727,50 +47688,19 @@ func (ec *executionContext) _AdminWaitListEmailRequest(ctx context.Context, sel 
 		case "email":
 			out.Values[i] = ec._AdminWaitListEmailRequest_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "createdAt":
 			out.Values[i] = ec._AdminWaitListEmailRequest_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		case "ip":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminWaitListEmailRequest_ip(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._AdminWaitListEmailRequest_ip(ctx, field, obj)
 		case "notePath":
 			out.Values[i] = ec._AdminWaitListEmailRequest_notePath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -51256,41 +50186,10 @@ func (ec *executionContext) _Offer(ctx context.Context, sel ast.SelectionSet, ob
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "priceUSD":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Offer_priceUSD(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
+			out.Values[i] = ec._Offer_priceUSD(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "subgraphs":
 			field := field
 
@@ -53845,38 +52744,7 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("User")
 		case "email":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_email(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._User_email(ctx, field, obj)
 		case "subgraphAccesses":
 			field := field
 
@@ -54143,38 +53011,7 @@ func (ec *executionContext) _UserSubgraphAccess(ctx context.Context, sel ast.Sel
 				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "expiresAt":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._UserSubgraphAccess_expiresAt(ctx, field, obj)
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			out.Values[i] = ec._UserSubgraphAccess_expiresAt(ctx, field, obj)
 		case "subgraph":
 			field := field
 
@@ -57651,6 +56488,28 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNBoolean2ᚖbool(ctx context.Context, v any) (*bool, error) {
+	res, err := graphql.UnmarshalBoolean(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNBoolean2ᚖbool(ctx context.Context, sel ast.SelectionSet, v *bool) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	_ = sel
+	res := graphql.MarshalBoolean(*v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNBoostyCredentialsStateEnum2trip2gᚋinternalᚋgraphᚋmodelᚐBoostyCredentialsStateEnum(ctx context.Context, v any) (model.BoostyCredentialsStateEnum, error) {
 	var res model.BoostyCredentialsStateEnum
 	err := res.UnmarshalGQL(v)
@@ -58067,6 +56926,28 @@ func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) 
 func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
 	_ = sel
 	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalNFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	_ = sel
+	res := graphql.MarshalFloatContext(*v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

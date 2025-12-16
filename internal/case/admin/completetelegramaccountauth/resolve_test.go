@@ -183,7 +183,8 @@ func TestResolve(t *testing.T) {
 				UpdateTelegramAccountFunc: func(ctx context.Context, arg db.UpdateTelegramAccountParams) error {
 					require.Equal(t, int64(5), arg.ID)
 					require.Equal(t, []byte("encrypted_new_session"), arg.SessionData)
-					require.Equal(t, int64(1), arg.Enabled.Int64)
+					require.NotNil(t, arg.Enabled)
+					require.Equal(t, int64(1), *arg.Enabled)
 					return nil
 				},
 				TelegramAccountGetAppConfigFunc: func(ctx context.Context, accountID int64) (string, error) {

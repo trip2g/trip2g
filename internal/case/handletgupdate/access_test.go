@@ -458,9 +458,9 @@ func TestHandleChatMember(t *testing.T) {
 					require.Equal(t, int64(456), arg.ChatID) // Now expects autoincrement ID
 					return nil
 				}
-				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
-					require.Equal(t, int64(7828312136), tgUserID.Int64)
-					require.True(t, tgUserID.Valid)
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
+					require.Equal(t, int64(7828312136), *tgUserID)
+					require.NotNil(t, tgUserID)
 					return db.User{
 						ID:       123,
 						TgUserID: tgUserID,

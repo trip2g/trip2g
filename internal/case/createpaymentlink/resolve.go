@@ -51,8 +51,8 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 
-		if user.Email.Valid {
-			input.Email = &user.Email.String
+		if user.Email != nil {
+			input.Email = user.Email
 		}
 
 		isAuthenticated = true
@@ -76,7 +76,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		return nil, fmt.Errorf("failed to get offer: %w", err)
 	}
 
-	if !offer.PriceUsd.Valid {
+	if offer.PriceUsd == nil {
 		return &model.ErrorPayload{Message: "offer_not_found"}, nil
 	}
 
@@ -84,7 +84,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		OfferID: offer.ID,
 		Email:   *input.Email,
 
-		PriceUsd:        offer.PriceUsd.Float64,
+		PriceUsd:        *offer.PriceUsd,
 		PaymentProvider: "nowpayments",
 		PaymentData:     "[]", // empty array
 		Status:          "pending",
@@ -101,7 +101,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	invoiceParams := nowpayments.CreateInvoiceParams{
-		PriceAmount:      offer.PriceUsd.Float64,
+		PriceAmount:      *offer.PriceUsd,
 		PriceCurrency:    "usd",
 		OrderID:          purchaseParams.ID,
 		OrderDescription: "Second brain course",

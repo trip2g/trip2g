@@ -5,32 +5,31 @@
 package db
 
 import (
-	"database/sql"
 	"time"
 
 	"trip2g/internal/model"
 )
 
 type AcmeCert struct {
-	Key       string       `json:"key"`
-	Value     []byte       `json:"value"`
-	UpdatedAt sql.NullTime `json:"updated_at"`
+	Key       string     `json:"key"`
+	Value     []byte     `json:"value"`
+	UpdatedAt *time.Time `json:"updated_at"`
 }
 
 type Admin struct {
-	UserID    int64         `json:"user_id"`
-	GrantedAt time.Time     `json:"granted_at"`
-	GrantedBy sql.NullInt64 `json:"granted_by"`
+	UserID    int64     `json:"user_id"`
+	GrantedAt time.Time `json:"granted_at"`
+	GrantedBy *int64    `json:"granted_by"`
 }
 
 type ApiKey struct {
-	ID          int64         `json:"id"`
-	Value       string        `json:"value"`
-	CreatedAt   time.Time     `json:"created_at"`
-	CreatedBy   int64         `json:"created_by"`
-	DisabledAt  sql.NullTime  `json:"disabled_at"`
-	DisabledBy  sql.NullInt64 `json:"disabled_by"`
-	Description string        `json:"description"`
+	ID          int64      `json:"id"`
+	Value       string     `json:"value"`
+	CreatedAt   time.Time  `json:"created_at"`
+	CreatedBy   int64      `json:"created_by"`
+	DisabledAt  *time.Time `json:"disabled_at"`
+	DisabledBy  *int64     `json:"disabled_by"`
+	Description string     `json:"description"`
 }
 
 type ApiKeyLog struct {
@@ -60,63 +59,63 @@ type AuditLog struct {
 }
 
 type BackliteTask struct {
-	ID             string        `json:"id"`
-	CreatedAt      int64         `json:"created_at"`
-	Queue          string        `json:"queue"`
-	Task           []byte        `json:"task"`
-	WaitUntil      sql.NullInt64 `json:"wait_until"`
-	ClaimedAt      sql.NullInt64 `json:"claimed_at"`
-	LastExecutedAt sql.NullInt64 `json:"last_executed_at"`
-	Attempts       int64         `json:"attempts"`
+	ID             string `json:"id"`
+	CreatedAt      int64  `json:"created_at"`
+	Queue          string `json:"queue"`
+	Task           []byte `json:"task"`
+	WaitUntil      *int64 `json:"wait_until"`
+	ClaimedAt      *int64 `json:"claimed_at"`
+	LastExecutedAt *int64 `json:"last_executed_at"`
+	Attempts       int64  `json:"attempts"`
 }
 
 type BackliteTasksCompleted struct {
-	ID                string         `json:"id"`
-	CreatedAt         int64          `json:"created_at"`
-	Queue             string         `json:"queue"`
-	LastExecutedAt    sql.NullInt64  `json:"last_executed_at"`
-	Attempts          int64          `json:"attempts"`
-	LastDurationMicro sql.NullInt64  `json:"last_duration_micro"`
-	Succeeded         sql.NullInt64  `json:"succeeded"`
-	Task              []byte         `json:"task"`
-	ExpiresAt         sql.NullInt64  `json:"expires_at"`
-	Error             sql.NullString `json:"error"`
+	ID                string  `json:"id"`
+	CreatedAt         int64   `json:"created_at"`
+	Queue             string  `json:"queue"`
+	LastExecutedAt    *int64  `json:"last_executed_at"`
+	Attempts          int64   `json:"attempts"`
+	LastDurationMicro *int64  `json:"last_duration_micro"`
+	Succeeded         *int64  `json:"succeeded"`
+	Task              []byte  `json:"task"`
+	ExpiresAt         *int64  `json:"expires_at"`
+	Error             *string `json:"error"`
 }
 
 type BoostyCredential struct {
-	ID        int64         `json:"id"`
-	CreatedAt time.Time     `json:"created_at"`
-	CreatedBy int64         `json:"created_by"`
-	DeletedAt sql.NullTime  `json:"deleted_at"`
-	DeletedBy sql.NullInt64 `json:"deleted_by"`
-	AuthData  string        `json:"auth_data"`
-	DeviceID  string        `json:"device_id"`
-	BlogName  string        `json:"blog_name"`
-	ExpiresAt sql.NullTime  `json:"expires_at"`
-	SyncedAt  sql.NullTime  `json:"synced_at"`
+	ID        int64      `json:"id"`
+	CreatedAt time.Time  `json:"created_at"`
+	CreatedBy int64      `json:"created_by"`
+	DeletedAt *time.Time `json:"deleted_at"`
+	DeletedBy *int64     `json:"deleted_by"`
+	AuthData  string     `json:"auth_data"`
+	DeviceID  string     `json:"device_id"`
+	BlogName  string     `json:"blog_name"`
+	ExpiresAt *time.Time `json:"expires_at"`
+	SyncedAt  *time.Time `json:"synced_at"`
 }
 
 type BoostyMember struct {
-	ID            int64         `json:"id"`
-	CredentialsID int64         `json:"credentials_id"`
-	BoostyID      int64         `json:"boosty_id"`
-	CreatedAt     time.Time     `json:"created_at"`
-	MissedAt      sql.NullTime  `json:"missed_at"`
-	Email         string        `json:"email"`
-	Status        string        `json:"status"`
-	Data          string        `json:"data"`
-	CurrentTierID sql.NullInt64 `json:"current_tier_id"`
-	UserID        sql.NullInt64 `json:"user_id"`
+	ID            int64      `json:"id"`
+	CredentialsID int64      `json:"credentials_id"`
+	BoostyID      int64      `json:"boosty_id"`
+	CreatedAt     time.Time  `json:"created_at"`
+	MissedAt      *time.Time `json:"missed_at"`
+	Email         string     `json:"email"`
+	Status        string     `json:"status"`
+	Data          string     `json:"data"`
+	CurrentTierID *int64     `json:"current_tier_id"`
+	UserID        *int64     `json:"user_id"`
 }
 
 type BoostyTier struct {
-	ID            int64        `json:"id"`
-	CredentialsID int64        `json:"credentials_id"`
-	BoostyID      int64        `json:"boosty_id"`
-	CreatedAt     time.Time    `json:"created_at"`
-	MissedAt      sql.NullTime `json:"missed_at"`
-	Name          string       `json:"name"`
-	Data          string       `json:"data"`
+	ID            int64      `json:"id"`
+	CredentialsID int64      `json:"credentials_id"`
+	BoostyID      int64      `json:"boosty_id"`
+	CreatedAt     time.Time  `json:"created_at"`
+	MissedAt      *time.Time `json:"missed_at"`
+	Name          string     `json:"name"`
+	Data          string     `json:"data"`
 }
 
 type BoostyTierSubgraph struct {
@@ -137,35 +136,35 @@ type ConfigVersion struct {
 }
 
 type CronJob struct {
-	ID         int64        `json:"id"`
-	Name       string       `json:"name"`
-	Enabled    bool         `json:"enabled"`
-	Expression string       `json:"expression"`
-	LastExecAt sql.NullTime `json:"last_exec_at"`
+	ID         int64      `json:"id"`
+	Name       string     `json:"name"`
+	Enabled    bool       `json:"enabled"`
+	Expression string     `json:"expression"`
+	LastExecAt *time.Time `json:"last_exec_at"`
 }
 
 type CronJobExecution struct {
-	ID           int64          `json:"id"`
-	JobID        int64          `json:"job_id"`
-	StartedAt    time.Time      `json:"started_at"`
-	FinishedAt   sql.NullTime   `json:"finished_at"`
-	Status       int64          `json:"status"`
-	ReportData   sql.NullString `json:"report_data"`
-	ErrorMessage sql.NullString `json:"error_message"`
+	ID           int64      `json:"id"`
+	JobID        int64      `json:"job_id"`
+	StartedAt    time.Time  `json:"started_at"`
+	FinishedAt   *time.Time `json:"finished_at"`
+	Status       int64      `json:"status"`
+	ReportData   *string    `json:"report_data"`
+	ErrorMessage *string    `json:"error_message"`
 }
 
 type GitToken struct {
-	ID          int64         `json:"id"`
-	CreatedAt   time.Time     `json:"created_at"`
-	LastUsedAt  time.Time     `json:"last_used_at"`
-	AdminID     sql.NullInt64 `json:"admin_id"`
-	ValueSha256 string        `json:"value_sha256"`
-	Description string        `json:"description"`
-	CanPull     sql.NullBool  `json:"can_pull"`
-	CanPush     sql.NullBool  `json:"can_push"`
-	UsageCount  sql.NullInt64 `json:"usage_count"`
-	DisabledAt  sql.NullTime  `json:"disabled_at"`
-	DisabledBy  sql.NullInt64 `json:"disabled_by"`
+	ID          int64      `json:"id"`
+	CreatedAt   time.Time  `json:"created_at"`
+	LastUsedAt  time.Time  `json:"last_used_at"`
+	AdminID     *int64     `json:"admin_id"`
+	ValueSha256 string     `json:"value_sha256"`
+	Description string     `json:"description"`
+	CanPull     *bool      `json:"can_pull"`
+	CanPush     *bool      `json:"can_push"`
+	UsageCount  *int64     `json:"usage_count"`
+	DisabledAt  *time.Time `json:"disabled_at"`
+	DisabledBy  *int64     `json:"disabled_by"`
 }
 
 type Goqite struct {
@@ -180,14 +179,14 @@ type Goqite struct {
 }
 
 type HtmlInjection struct {
-	ID          int64        `json:"id"`
-	CreatedAt   time.Time    `json:"created_at"`
-	ActiveFrom  sql.NullTime `json:"active_from"`
-	ActiveTo    sql.NullTime `json:"active_to"`
-	Description string       `json:"description"`
-	Position    int64        `json:"position"`
-	Placement   string       `json:"placement"`
-	Content     string       `json:"content"`
+	ID          int64      `json:"id"`
+	CreatedAt   time.Time  `json:"created_at"`
+	ActiveFrom  *time.Time `json:"active_from"`
+	ActiveTo    *time.Time `json:"active_to"`
+	Description string     `json:"description"`
+	Position    int64      `json:"position"`
+	Placement   string     `json:"placement"`
+	Content     string     `json:"content"`
 }
 
 type NotFoundIgnoredPattern struct {
@@ -220,16 +219,16 @@ type NoteAsset struct {
 }
 
 type NotePath struct {
-	ID                int64           `json:"id"`
-	Value             string          `json:"value"`
-	ValueHash         string          `json:"value_hash"`
-	LatestContentHash string          `json:"latest_content_hash"`
-	CreatedAt         time.Time       `json:"created_at"`
-	VersionCount      int64           `json:"version_count"`
-	GraphPositionX    sql.NullFloat64 `json:"graph_position_x"`
-	GraphPositionY    sql.NullFloat64 `json:"graph_position_y"`
-	HiddenBy          sql.NullInt64   `json:"hidden_by"`
-	HiddenAt          sql.NullTime    `json:"hidden_at"`
+	ID                int64      `json:"id"`
+	Value             string     `json:"value"`
+	ValueHash         string     `json:"value_hash"`
+	LatestContentHash string     `json:"latest_content_hash"`
+	CreatedAt         time.Time  `json:"created_at"`
+	VersionCount      int64      `json:"version_count"`
+	GraphPositionX    *float64   `json:"graph_position_x"`
+	GraphPositionY    *float64   `json:"graph_position_y"`
+	HiddenBy          *int64     `json:"hidden_by"`
+	HiddenAt          *time.Time `json:"hidden_at"`
 }
 
 type NoteVersion struct {
@@ -248,13 +247,13 @@ type NoteVersionAsset struct {
 }
 
 type NotionIntegration struct {
-	ID                int64          `json:"id"`
-	CreatedAt         time.Time      `json:"created_at"`
-	CreatedBy         int64          `json:"created_by"`
-	Enabled           bool           `json:"enabled"`
-	SecretToken       string         `json:"secret_token"`
-	VerificationToken sql.NullString `json:"verification_token"`
-	BasePath          string         `json:"base_path"`
+	ID                int64     `json:"id"`
+	CreatedAt         time.Time `json:"created_at"`
+	CreatedBy         int64     `json:"created_by"`
+	Enabled           bool      `json:"enabled"`
+	SecretToken       string    `json:"secret_token"`
+	VerificationToken *string   `json:"verification_token"`
+	BasePath          string    `json:"base_path"`
 }
 
 type Offer struct {
@@ -262,9 +261,9 @@ type Offer struct {
 	PublicID  string          `json:"public_id"`
 	CreatedAt time.Time       `json:"created_at"`
 	Lifetime  *model.Lifetime `json:"lifetime"`
-	PriceUsd  sql.NullFloat64 `json:"price_usd"`
-	StartsAt  sql.NullTime    `json:"starts_at"`
-	EndsAt    sql.NullTime    `json:"ends_at"`
+	PriceUsd  *float64        `json:"price_usd"`
+	StartsAt  *time.Time      `json:"starts_at"`
+	EndsAt    *time.Time      `json:"ends_at"`
 }
 
 type OfferSubgraph struct {
@@ -273,44 +272,44 @@ type OfferSubgraph struct {
 }
 
 type PatreonCampaign struct {
-	ID            int64        `json:"id"`
-	CredentialsID int64        `json:"credentials_id"`
-	CreatedAt     time.Time    `json:"created_at"`
-	MissedAt      sql.NullTime `json:"missed_at"`
-	CampaignID    string       `json:"campaign_id"`
-	Attributes    string       `json:"attributes"`
+	ID            int64      `json:"id"`
+	CredentialsID int64      `json:"credentials_id"`
+	CreatedAt     time.Time  `json:"created_at"`
+	MissedAt      *time.Time `json:"missed_at"`
+	CampaignID    string     `json:"campaign_id"`
+	Attributes    string     `json:"attributes"`
 }
 
 type PatreonCredential struct {
-	ID                 int64          `json:"id"`
-	CreatedAt          time.Time      `json:"created_at"`
-	CreatedBy          int64          `json:"created_by"`
-	DeletedAt          sql.NullTime   `json:"deleted_at"`
-	DeletedBy          sql.NullInt64  `json:"deleted_by"`
-	CreatorAccessToken string         `json:"creator_access_token"`
-	SyncedAt           sql.NullTime   `json:"synced_at"`
-	WebhookSecret      sql.NullString `json:"webhook_secret"`
+	ID                 int64      `json:"id"`
+	CreatedAt          time.Time  `json:"created_at"`
+	CreatedBy          int64      `json:"created_by"`
+	DeletedAt          *time.Time `json:"deleted_at"`
+	DeletedBy          *int64     `json:"deleted_by"`
+	CreatorAccessToken string     `json:"creator_access_token"`
+	SyncedAt           *time.Time `json:"synced_at"`
+	WebhookSecret      *string    `json:"webhook_secret"`
 }
 
 type PatreonMember struct {
-	ID            int64         `json:"id"`
-	PatreonID     string        `json:"patreon_id"`
-	CampaignID    int64         `json:"campaign_id"`
-	CurrentTierID sql.NullInt64 `json:"current_tier_id"`
-	Status        string        `json:"status"`
-	Email         string        `json:"email"`
-	UserID        sql.NullInt64 `json:"user_id"`
+	ID            int64  `json:"id"`
+	PatreonID     string `json:"patreon_id"`
+	CampaignID    int64  `json:"campaign_id"`
+	CurrentTierID *int64 `json:"current_tier_id"`
+	Status        string `json:"status"`
+	Email         string `json:"email"`
+	UserID        *int64 `json:"user_id"`
 }
 
 type PatreonTier struct {
-	ID          int64        `json:"id"`
-	CampaignID  int64        `json:"campaign_id"`
-	CreatedAt   time.Time    `json:"created_at"`
-	MissedAt    sql.NullTime `json:"missed_at"`
-	TierID      string       `json:"tier_id"`
-	Title       string       `json:"title"`
-	AmountCents int64        `json:"amount_cents"`
-	Attributes  string       `json:"attributes"`
+	ID          int64      `json:"id"`
+	CampaignID  int64      `json:"campaign_id"`
+	CreatedAt   time.Time  `json:"created_at"`
+	MissedAt    *time.Time `json:"missed_at"`
+	TierID      string     `json:"tier_id"`
+	Title       string     `json:"title"`
+	AmountCents int64      `json:"amount_cents"`
+	Attributes  string     `json:"attributes"`
 }
 
 type PatreonTierSubgraph struct {
@@ -321,15 +320,15 @@ type PatreonTierSubgraph struct {
 }
 
 type Purchase struct {
-	ID              string        `json:"id"`
-	CreatedAt       time.Time     `json:"created_at"`
-	PaymentProvider string        `json:"payment_provider"`
-	PaymentData     string        `json:"payment_data"`
-	Status          string        `json:"status"`
-	OfferID         int64         `json:"offer_id"`
-	UserID          sql.NullInt64 `json:"user_id"`
-	Email           string        `json:"email"`
-	PriceUsd        float64       `json:"price_usd"`
+	ID              string    `json:"id"`
+	CreatedAt       time.Time `json:"created_at"`
+	PaymentProvider string    `json:"payment_provider"`
+	PaymentData     string    `json:"payment_data"`
+	Status          string    `json:"status"`
+	OfferID         int64     `json:"offer_id"`
+	UserID          *int64    `json:"user_id"`
+	Email           string    `json:"email"`
+	PriceUsd        float64   `json:"price_usd"`
 }
 
 type Redirect struct {
@@ -343,12 +342,12 @@ type Redirect struct {
 }
 
 type Release struct {
-	ID                int64         `json:"id"`
-	CreatedAt         time.Time     `json:"created_at"`
-	CreatedBy         int64         `json:"created_by"`
-	Title             string        `json:"title"`
-	HomeNoteVersionID sql.NullInt64 `json:"home_note_version_id"`
-	IsLive            bool          `json:"is_live"`
+	ID                int64     `json:"id"`
+	CreatedAt         time.Time `json:"created_at"`
+	CreatedBy         int64     `json:"created_by"`
+	Title             string    `json:"title"`
+	HomeNoteVersionID *int64    `json:"home_note_version_id"`
+	IsLive            bool      `json:"is_live"`
 }
 
 type ReleaseNoteVersion struct {
@@ -357,12 +356,12 @@ type ReleaseNoteVersion struct {
 }
 
 type Revoke struct {
-	ID         int64          `json:"id"`
-	TargetType string         `json:"target_type"`
-	TargetID   int64          `json:"target_id"`
-	CreatedAt  time.Time      `json:"created_at"`
-	ByID       int64          `json:"by_id"`
-	Reason     sql.NullString `json:"reason"`
+	ID         int64     `json:"id"`
+	TargetType string    `json:"target_type"`
+	TargetID   int64     `json:"target_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	ByID       int64     `json:"by_id"`
+	Reason     *string   `json:"reason"`
 }
 
 type SchemaMigration struct {
@@ -376,12 +375,12 @@ type SignInCode struct {
 }
 
 type Subgraph struct {
-	ID                              int64          `json:"id"`
-	Name                            string         `json:"name"`
-	Color                           sql.NullString `json:"color"`
-	CreatedAt                       time.Time      `json:"created_at"`
-	Hidden                          bool           `json:"hidden"`
-	ShowUnsubgraphNotesForPaidUsers sql.NullBool   `json:"show_unsubgraph_notes_for_paid_users"`
+	ID                              int64     `json:"id"`
+	Name                            string    `json:"name"`
+	Color                           *string   `json:"color"`
+	CreatedAt                       time.Time `json:"created_at"`
+	Hidden                          bool      `json:"hidden"`
+	ShowUnsubgraphNotesForPaidUsers *bool     `json:"show_unsubgraph_notes_for_paid_users"`
 }
 
 type TelegramAccount struct {
@@ -429,13 +428,13 @@ type TelegramPublishInstantChat struct {
 }
 
 type TelegramPublishNote struct {
-	NotePathID         int64          `json:"note_path_id"`
-	CreatedAt          time.Time      `json:"created_at"`
-	PublishAt          time.Time      `json:"publish_at"`
-	PublishedVersionID sql.NullInt64  `json:"published_version_id"`
-	PublishedAt        sql.NullTime   `json:"published_at"`
-	ErrorCount         int64          `json:"error_count"`
-	LastError          sql.NullString `json:"last_error"`
+	NotePathID         int64      `json:"note_path_id"`
+	CreatedAt          time.Time  `json:"created_at"`
+	PublishAt          time.Time  `json:"publish_at"`
+	PublishedVersionID *int64     `json:"published_version_id"`
+	PublishedAt        *time.Time `json:"published_at"`
+	ErrorCount         int64      `json:"error_count"`
+	LastError          *string    `json:"last_error"`
 }
 
 type TelegramPublishNoteTag struct {
@@ -502,11 +501,11 @@ type TgBotChat struct {
 }
 
 type TgBotChatSubgraphAccess struct {
-	ChatID     int64        `json:"chat_id"`
-	UserID     int64        `json:"user_id"`
-	SubgraphID int64        `json:"subgraph_id"`
-	CreatedAt  time.Time    `json:"created_at"`
-	JoinedAt   sql.NullTime `json:"joined_at"`
+	ChatID     int64      `json:"chat_id"`
+	UserID     int64      `json:"user_id"`
+	SubgraphID int64      `json:"subgraph_id"`
+	CreatedAt  time.Time  `json:"created_at"`
+	JoinedAt   *time.Time `json:"joined_at"`
 }
 
 type TgBotChatSubgraphInvite struct {
@@ -530,41 +529,41 @@ type TgChatSubgraphAccess struct {
 }
 
 type TgUserProfile struct {
-	Sha256Hash string         `json:"sha256_hash"`
-	ChatID     int64          `json:"chat_id"`
-	BotID      int64          `json:"bot_id"`
-	CreatedAt  time.Time      `json:"created_at"`
-	FirstName  sql.NullString `json:"first_name"`
-	LastName   sql.NullString `json:"last_name"`
-	Username   sql.NullString `json:"username"`
+	Sha256Hash string    `json:"sha256_hash"`
+	ChatID     int64     `json:"chat_id"`
+	BotID      int64     `json:"bot_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	FirstName  *string   `json:"first_name"`
+	LastName   *string   `json:"last_name"`
+	Username   *string   `json:"username"`
 }
 
 type TgUserState struct {
-	ChatID      int64         `json:"chat_id"`
-	BotID       int64         `json:"bot_id"`
-	UserID      sql.NullInt64 `json:"user_id"`
-	CreatedAt   time.Time     `json:"created_at"`
-	UpdatedAt   time.Time     `json:"updated_at"`
-	UpdateCount int64         `json:"update_count"`
-	Value       string        `json:"value"`
-	Data        string        `json:"data"`
+	ChatID      int64     `json:"chat_id"`
+	BotID       int64     `json:"bot_id"`
+	UserID      *int64    `json:"user_id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	UpdateCount int64     `json:"update_count"`
+	Value       string    `json:"value"`
+	Data        string    `json:"data"`
 }
 
 type User struct {
-	ID                   int64          `json:"id"`
-	Email                sql.NullString `json:"email"`
-	CreatedAt            time.Time      `json:"created_at"`
-	LastSigninCodeSentAt sql.NullTime   `json:"last_signin_code_sent_at"`
-	NoteViewCount        sql.NullInt64  `json:"note_view_count"`
-	TgUserID             sql.NullInt64  `json:"tg_user_id"`
-	CreatedVia           string         `json:"created_via"`
+	ID                   int64      `json:"id"`
+	Email                *string    `json:"email"`
+	CreatedAt            time.Time  `json:"created_at"`
+	LastSigninCodeSentAt *time.Time `json:"last_signin_code_sent_at"`
+	NoteViewCount        *int64     `json:"note_view_count"`
+	TgUserID             *int64     `json:"tg_user_id"`
+	CreatedVia           string     `json:"created_via"`
 }
 
 type UserBan struct {
-	UserID    int64         `json:"user_id"`
-	CreatedAt time.Time     `json:"created_at"`
-	BannedBy  sql.NullInt64 `json:"banned_by"`
-	Reason    string        `json:"reason"`
+	UserID    int64     `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+	BannedBy  *int64    `json:"banned_by"`
+	Reason    string    `json:"reason"`
 }
 
 type UserFavoriteNote struct {
@@ -581,28 +580,28 @@ type UserNoteDailyViewCount struct {
 }
 
 type UserNoteView struct {
-	UserID           int64         `json:"user_id"`
-	VersionID        int64         `json:"version_id"`
-	RefererVersionID sql.NullInt64 `json:"referer_version_id"`
-	CreatedAt        time.Time     `json:"created_at"`
+	UserID           int64     `json:"user_id"`
+	VersionID        int64     `json:"version_id"`
+	RefererVersionID *int64    `json:"referer_version_id"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 type UserSubgraphAccess struct {
-	ID         int64          `json:"id"`
-	UserID     int64          `json:"user_id"`
-	SubgraphID int64          `json:"subgraph_id"`
-	CreatedAt  time.Time      `json:"created_at"`
-	ExpiresAt  sql.NullTime   `json:"expires_at"`
-	RevokeID   sql.NullInt64  `json:"revoke_id"`
-	PurchaseID sql.NullString `json:"purchase_id"`
-	CreatedBy  sql.NullInt64  `json:"created_by"`
+	ID         int64      `json:"id"`
+	UserID     int64      `json:"user_id"`
+	SubgraphID int64      `json:"subgraph_id"`
+	CreatedAt  time.Time  `json:"created_at"`
+	ExpiresAt  *time.Time `json:"expires_at"`
+	RevokeID   *int64     `json:"revoke_id"`
+	PurchaseID *string    `json:"purchase_id"`
+	CreatedBy  *int64     `json:"created_by"`
 }
 
 type WaitListEmailRequest struct {
-	Email      string         `json:"email"`
-	CreatedAt  time.Time      `json:"created_at"`
-	NotePathID int64          `json:"note_path_id"`
-	Ip         sql.NullString `json:"ip"`
+	Email      string    `json:"email"`
+	CreatedAt  time.Time `json:"created_at"`
+	NotePathID int64     `json:"note_path_id"`
+	Ip         *string   `json:"ip"`
 }
 
 type WaitListTgBotRequest struct {

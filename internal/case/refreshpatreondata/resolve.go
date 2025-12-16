@@ -2,7 +2,6 @@ package refreshpatreondata
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 
@@ -180,12 +179,11 @@ func extractPatronStatus(patron patreon.Patron) string {
 	return "unknown"
 }
 
-func processPatronTier(ctx context.Context, env Env, patron patreon.Patron, dbCampaignID int64) sql.NullInt64 {
+func processPatronTier(ctx context.Context, env Env, patron patreon.Patron, dbCampaignID int64) *int64 {
 	tierData, _ := patron.GetCurrentlyEntitledTiers()
-	var currentTierID sql.NullInt64
 
 	if len(tierData) == 0 {
-		return currentTierID
+		return nil
 	}
 
 	tierID := tierData[0].ID
@@ -194,14 +192,14 @@ func processPatronTier(ctx context.Context, env Env, patron patreon.Patron, dbCa
 		TierID:     tierID,
 	})
 	if err == nil {
-		currentTierID = sql.NullInt64{Int64: dbTier.ID, Valid: true}
+		return &dbTier.ID
 	}
 
-	return currentTierID
+	return nil
 }
 
-func updatePatronMemberTier(ctx context.Context, env Env, patron patreon.Patron, dbCampaignID int64, currentTierID sql.NullInt64) {
-	if !currentTierID.Valid {
+func updatePatronMemberTier(ctx context.Context, env Env, patron patreon.Patron, dbCampaignID int64, currentTierID *int64) {
+	if currentTierID == nil {
 		return
 	}
 

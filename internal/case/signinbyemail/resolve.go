@@ -15,6 +15,8 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
+// keeping database/sql import for sql.ErrNoRows check
+
 type Env interface {
 	VerifySignInCode(ctx context.Context, arg db.VerifySignInCodeParams) (int64, error)
 	DeleteSignInCodesByUserID(ctx context.Context, userID int64) error
@@ -41,7 +43,7 @@ func Resolve(ctx context.Context, env Env, req gmodel.SignInByEmailInput) (gmode
 	}
 
 	codeParams := db.VerifySignInCodeParams{
-		Email: sql.NullString{String: req.Email, Valid: true},
+		Email: &req.Email,
 		Code:  req.Code,
 	}
 

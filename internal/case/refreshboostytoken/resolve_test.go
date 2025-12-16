@@ -73,8 +73,8 @@ func TestResolve(t *testing.T) {
 					require.NoError(t, err)
 					require.Equal(t, "new-access-token", updatedAuthData.AccessToken)
 					require.Equal(t, "new-refresh-token", updatedAuthData.RefreshToken)
-					require.True(t, arg.ExpiresAt.Valid)
-					require.True(t, arg.ExpiresAt.Time.After(time.Now()))
+					require.NotNil(t, arg.ExpiresAt)
+					require.True(t, arg.ExpiresAt.After(time.Now()))
 					return db.BoostyCredential{}, nil
 				}
 			},

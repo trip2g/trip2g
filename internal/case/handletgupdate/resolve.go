@@ -15,6 +15,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// database/sql kept for sql.ErrNoRows
+
 const (
 	parseMarkdown = "Markdown"
 )
@@ -52,8 +54,8 @@ type Env interface {
 	TgAttachCodeByCode(ctx context.Context, code string) (db.TgAttachCodeByCodeRow, error)
 	DeleteTgAttachCode(ctx context.Context, code string) error
 	UpdateUserTgID(ctx context.Context, arg db.UpdateUserTgIDParams) error
-	ClearTgUserIDByTgUserID(ctx context.Context, tgUserID sql.NullInt64) error
-	UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
+	ClearTgUserIDByTgUserID(ctx context.Context, tgUserID *int64) error
+	UserByTgUserID(ctx context.Context, tgUserID *int64) (db.User, error)
 	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
 	TgBotChatsWithSubgraphInvites(ctx context.Context, subgraphNames []string) ([]db.TgBotChatsWithSubgraphInvitesRow, error)
 	InsertTgBotChatSubgraphAccess(ctx context.Context, arg db.InsertTgBotChatSubgraphAccessParams) error
@@ -117,9 +119,9 @@ func Resolve(ctx context.Context, env Env, update tgbotapi.Update) error {
 			ChatID:     update.Message.Chat.ID,
 			BotID:      env.BotID(),
 			Sha256Hash: hash,
-			FirstName:  toNullString(user.FirstName),
-			LastName:   toNullString(user.LastName),
-			Username:   toNullString(user.UserName),
+			FirstName:  toStringPtr(user.FirstName),
+			LastName:   toStringPtr(user.LastName),
+			Username:   toStringPtr(user.UserName),
 		})
 		if err != nil {
 			env.Logger().Error("failed to insert user profile", "error", err)
@@ -387,8 +389,11 @@ func (req *request) updateUserState(ctx context.Context) error {
 	return nil
 }
 
-func toNullString(s string) sql.NullString {
-	return sql.NullString{String: s, Valid: s != ""}
+func toStringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func (req *request) handleWaitListRequest(ctx context.Context, args string) error {
@@ -446,9 +451,9 @@ func (req *request) handleAttachCode(ctx context.Context, args string) error {
 	telegramUserID := req.update.Message.From.ID
 
 	// If the account already has a different Telegram user attached, notify the old user
-	if attachCode.CurrentTgUserID.Valid && attachCode.CurrentTgUserID.Int64 != telegramUserID {
+	if attachCode.CurrentTgUserID != nil && *attachCode.CurrentTgUserID != telegramUserID {
 		// Send notification to the old Telegram user
-		oldUserMsg := tgbotapi.NewMessage(attachCode.CurrentTgUserID.Int64,
+		oldUserMsg := tgbotapi.NewMessage(*attachCode.CurrentTgUserID,
 			"⚠️ Ваш аккаунт был привязан к другому Telegram пользователю.\n\n"+
 				"Если это были не вы, обратитесь в поддержку.")
 		// Try to send but don't fail if we can't reach the old user
@@ -456,7 +461,7 @@ func (req *request) handleAttachCode(ctx context.Context, args string) error {
 	}
 
 	// Clear this Telegram ID from any other users first
-	err = req.env.ClearTgUserIDByTgUserID(ctx, sql.NullInt64{Int64: telegramUserID, Valid: true})
+	err = req.env.ClearTgUserIDByTgUserID(ctx, &telegramUserID)
 	if err != nil {
 		req.env.Logger().Error("failed to clear telegram ID from other users", "error", err, "telegramUserID", telegramUserID)
 		return req.SendMessage("❌ Не удалось очистить предыдущие привязки. Попробуйте снова.")
@@ -464,7 +469,7 @@ func (req *request) handleAttachCode(ctx context.Context, args string) error {
 
 	// Update the user's telegram ID
 	err = req.env.UpdateUserTgID(ctx, db.UpdateUserTgIDParams{
-		TgUserID: sql.NullInt64{Int64: telegramUserID, Valid: true},
+		TgUserID: &telegramUserID,
 		ID:       attachCode.UserID,
 	})
 	if err != nil {
@@ -489,7 +494,8 @@ func (req *request) sendAvailableChats(ctx context.Context) error {
 	}
 
 	// Get user by Telegram ID
-	user, err := req.env.UserByTgUserID(ctx, sql.NullInt64{Int64: req.update.Message.From.ID, Valid: true})
+	tgID := req.update.Message.From.ID
+	user, err := req.env.UserByTgUserID(ctx, &tgID)
 	if err != nil {
 		if db.IsNoFound(err) {
 			return req.SendMessage("❌ Ваш Telegram аккаунт не привязан. Используйте команду в веб-интерфейсе для привязки.")
@@ -584,7 +590,7 @@ func (req *request) handleJoinChat(ctx context.Context, actionParts []string) er
 	telegramUserID := req.update.CallbackQuery.From.ID
 
 	// Get user by Telegram ID
-	user, err := req.env.UserByTgUserID(ctx, sql.NullInt64{Int64: telegramUserID, Valid: true})
+	user, err := req.env.UserByTgUserID(ctx, &telegramUserID)
 	if err != nil {
 		if db.IsNoFound(err) {
 			return req.SendCallbackMessage("❌ Ваш Telegram аккаунт не привязан. Используйте команду в веб-интерфейсе для привязки.")
@@ -658,7 +664,7 @@ func (req *request) sendUserInfo(ctx context.Context) error {
 	telegramUserID := req.update.Message.From.ID
 
 	// Get user by Telegram ID
-	user, err := req.env.UserByTgUserID(ctx, sql.NullInt64{Int64: telegramUserID, Valid: true})
+	user, err := req.env.UserByTgUserID(ctx, &telegramUserID)
 	if err != nil {
 		if db.IsNoFound(err) {
 			return req.SendMessage("❌ Ваш Telegram аккаунт не привязан к системе.\n\nИспользуйте веб-интерфейс для привязки аккаунта.")
@@ -672,8 +678,8 @@ func (req *request) sendUserInfo(ctx context.Context) error {
 	message.WriteString("👤 *Информация о пользователе:*\n\n")
 	message.WriteString(fmt.Sprintf("🆔 ID: `%d`\n", user.ID))
 
-	if user.Email.Valid && user.Email.String != "" {
-		message.WriteString(fmt.Sprintf("📧 Email: `%s`\n", user.Email.String))
+	if user.Email != nil && *user.Email != "" {
+		message.WriteString(fmt.Sprintf("📧 Email: `%s`\n", *user.Email))
 	} else {
 		message.WriteString("📧 Email: не указан\n")
 	}

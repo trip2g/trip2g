@@ -2,11 +2,11 @@ package deleteboostycredentials
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 )
 
@@ -30,7 +30,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	// Define params as separate variable for cleaner code
 	params := db.SoftDeleteBoostyCredentialsParams{
-		DeletedBy: sql.NullInt64{Int64: int64(token.ID), Valid: true},
+		DeletedBy: ptr.To(int64(token.ID)),
 		ID:        input.ID,
 	}
 

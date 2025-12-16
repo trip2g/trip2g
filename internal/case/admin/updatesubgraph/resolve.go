@@ -32,7 +32,7 @@ func (input *Request) Resolve(ctx context.Context, env Env) (Payload, error) {
 	}
 
 	if input.Color != "" {
-		params.Color = db.ToNullableString(&input.Color)
+		params.Color = &input.Color
 	}
 
 	subgraph, err := env.UpdateAdminSubgraph(ctx, params)

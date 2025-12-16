@@ -47,7 +47,7 @@ func TestRequest_Resolve(t *testing.T) {
 				UpdateAdminSubgraphFunc: func(ctx context.Context, arg db.UpdateAdminSubgraphParams) (db.Subgraph, error) {
 					return db.Subgraph{
 						ID:    123,
-						Color: db.ToNullableString(stringPtr("#ff0000")),
+						Color: stringPtr("#ff0000"),
 					}, nil
 				},
 			},
@@ -57,7 +57,7 @@ func TestRequest_Resolve(t *testing.T) {
 			want: &model.UpdateSubgraphPayload{
 				Subgraph: &db.Subgraph{
 					ID:    123,
-					Color: db.ToNullableString(stringPtr("#ff0000")),
+					Color: stringPtr("#ff0000"),
 				},
 			},
 		},
@@ -125,10 +125,10 @@ func TestRequest_Resolve(t *testing.T) {
 				require.Equal(t, tt.fields.ID, call.Arg.ID)
 
 				if tt.fields.Color != "" {
-					require.True(t, call.Arg.Color.Valid)
-					require.Equal(t, tt.fields.Color, call.Arg.Color.String)
+					require.NotNil(t, call.Arg.Color)
+					require.Equal(t, tt.fields.Color, *call.Arg.Color)
 				} else {
-					require.False(t, call.Arg.Color.Valid)
+					require.Nil(t, call.Arg.Color)
 				}
 			}
 		})

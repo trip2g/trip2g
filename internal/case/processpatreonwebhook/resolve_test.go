@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/patreon"
+	"trip2g/internal/ptr"
 
 	"github.com/stretchr/testify/require"
 )
@@ -52,7 +53,7 @@ func TestResolve_Success(t *testing.T) {
 		ID:                 123,
 		CreatorAccessToken: "test_token",
 		CreatedBy:          1,
-		WebhookSecret:      sql.NullString{String: webhookSecret, Valid: true},
+		WebhookSecret:      ptr.To(webhookSecret),
 	}
 
 	env := &EnvMock{
@@ -141,7 +142,7 @@ func TestResolve_RefreshDataError(t *testing.T) {
 		ID:                 123,
 		CreatorAccessToken: "test_token",
 		CreatedBy:          1,
-		WebhookSecret:      sql.NullString{String: webhookSecret, Valid: true},
+		WebhookSecret:      ptr.To(webhookSecret),
 	}
 
 	env := &EnvMock{
@@ -216,7 +217,7 @@ func TestResolve_InvalidSignature(t *testing.T) {
 		ID:                 123,
 		CreatorAccessToken: "test_token",
 		CreatedBy:          1,
-		WebhookSecret:      sql.NullString{String: webhookSecret, Valid: true},
+		WebhookSecret:      ptr.To(webhookSecret),
 	}
 
 	env := &EnvMock{
@@ -251,7 +252,7 @@ func TestResolve_MissingWebhookSecret(t *testing.T) {
 		ID:                 123,
 		CreatorAccessToken: "test_token",
 		CreatedBy:          1,
-		WebhookSecret:      sql.NullString{Valid: false}, // No webhook secret
+		WebhookSecret:      nil, // No webhook secret
 	}
 
 	env := &EnvMock{

@@ -2,13 +2,13 @@ package disableapikey_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"testing"
 
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 
 	"github.com/stretchr/testify/require"
@@ -48,7 +48,7 @@ func TestResolve(t *testing.T) {
 						ID:         1,
 						Value:      "api-key-12345",
 						CreatedBy:  456,
-						DisabledBy: sql.NullInt64{Valid: true, Int64: 123},
+						DisabledBy: ptr.To(int64(123)),
 					}, nil
 				},
 			},
@@ -61,7 +61,7 @@ func TestResolve(t *testing.T) {
 					ID:         1,
 					Value:      "api-key-12345",
 					CreatedBy:  456,
-					DisabledBy: sql.NullInt64{Valid: true, Int64: 123},
+					DisabledBy: ptr.To(int64(123)),
 				},
 			},
 			wantCallCount: 1,
@@ -131,8 +131,8 @@ func TestResolve(t *testing.T) {
 				require.Len(t, env.DisableApiKeyCalls(), tt.wantCallCount)
 				call := env.DisableApiKeyCalls()[0]
 				require.Equal(t, int64(1), call.Params.ID)
-				require.True(t, call.Params.DisabledBy.Valid)
-				require.Equal(t, int64(123), call.Params.DisabledBy.Int64)
+				require.NotNil(t, call.Params.DisabledBy)
+				require.Equal(t, int64(123), *call.Params.DisabledBy)
 			}
 		})
 	}

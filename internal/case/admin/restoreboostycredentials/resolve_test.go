@@ -49,8 +49,8 @@ func TestResolve(t *testing.T) {
 						AuthData:  "test-auth-data",
 						DeviceID:  "device-123",
 						BlogName:  "testblog",
-						DeletedAt: sql.NullTime{Valid: false},
-						DeletedBy: sql.NullInt64{Valid: false},
+						DeletedAt: nil,
+						DeletedBy: nil,
 					}, nil
 				}
 				mock.StartBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64, immediately bool) error {

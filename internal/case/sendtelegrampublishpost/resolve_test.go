@@ -107,8 +107,8 @@ func TestResolve(t *testing.T) {
 					},
 					UpdateTelegramPublishNoteAsPublishedFunc: func(ctx context.Context, arg db.UpdateTelegramPublishNoteAsPublishedParams) error {
 						require.Equal(t, int64(123), arg.NotePathID)
-						require.True(t, arg.PublishedVersionID.Valid)
-						require.Equal(t, int64(456), arg.PublishedVersionID.Int64)
+						require.NotNil(t, arg.PublishedVersionID)
+						require.Equal(t, int64(456), *arg.PublishedVersionID)
 						return nil
 					},
 				}

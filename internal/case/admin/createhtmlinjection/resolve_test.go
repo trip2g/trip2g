@@ -2,7 +2,6 @@ package createhtmlinjection_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -74,8 +73,8 @@ func TestResolve(t *testing.T) {
 				HTMLInjection: &db.HtmlInjection{
 					ID:          123,
 					CreatedAt:   time.Time{}, // Will be set by InsertHTMLInjectionFunc
-					ActiveFrom:  sql.NullTime{Time: activeFrom, Valid: true},
-					ActiveTo:    sql.NullTime{Time: activeTo, Valid: true},
+					ActiveFrom:  &activeFrom,
+					ActiveTo:    &activeTo,
 					Description: "Test injection",
 					Position:    0,
 					Placement:   "head",

@@ -1158,7 +1158,7 @@ func (a *app) recordUserNoteViewTx(
 		viewParams := db.InsertUserNoteViewParams{
 			UserID:           userID,
 			VersionID:        note.VersionID,
-			RefererVersionID: db.ToNullableInt64(referrerVersionID),
+			RefererVersionID: referrerVersionID,
 		}
 
 		err = queries.InsertUserNoteView(ctx, viewParams)

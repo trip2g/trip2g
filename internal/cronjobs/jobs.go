@@ -2,13 +2,13 @@ package cronjobs
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sync"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/ptr"
 
 	"github.com/robfig/cron/v3"
 )
@@ -203,12 +203,9 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 	}()
 
 	updateErr := cj.env.UpdateRunningCronJobExecutions(cj.ctx, db.UpdateRunningCronJobExecutionsParams{
-		JobID:  jobID,
-		Status: JobStatusRunning,
-		ErrorMessage: sql.NullString{
-			Valid:  true,
-			String: "died",
-		},
+		JobID:        jobID,
+		Status:       JobStatusRunning,
+		ErrorMessage: ptr.To("died"),
 	})
 	if updateErr != nil {
 		cj.log.Error("failed to update running cron job executions", "job_id", jobID, "error", updateErr)
@@ -235,24 +232,22 @@ func (cj *CronJobs) executeJob(jobID int64) (*db.CronJobExecution, error) {
 	status := JobStatusCompleted
 
 	var (
-		errorMessage sql.NullString
-		reportData   sql.NullString
+		errorMessage *string
+		reportData   *string
 	)
 
 	if jobErr != nil {
 		status = JobStatusFailed
-		errorMessage = sql.NullString{
-			String: jobErr.Error(),
-			Valid:  true,
-		}
+		errMsg := jobErr.Error()
+		errorMessage = &errMsg
 	} else {
 		reportDataRaw, marshalErr := json.Marshal(report)
 		if marshalErr != nil {
 			return nil, fmt.Errorf("failed to marshal report data for job %d: %w", jobID, marshalErr)
 		}
 
-		reportData.String = string(reportDataRaw)
-		reportData.Valid = true
+		reportDataStr := string(reportDataRaw)
+		reportData = &reportDataStr
 	}
 
 	execution, err := cj.env.UpdateCronJobExecution(cj.ctx, db.UpdateCronJobExecutionParams{

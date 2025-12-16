@@ -3,7 +3,6 @@ package sendtelegramaccountmessage
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"time"
@@ -145,10 +144,7 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountSendPost
 		// Store error message
 		errMsg := sendErr.Error()
 		setErr := env.SetTelegramPublishNoteLastError(ctx, db.SetTelegramPublishNoteLastErrorParams{
-			LastError: sql.NullString{
-				String: errMsg,
-				Valid:  true,
-			},
+			LastError:  &errMsg,
 			NotePathID: params.NotePathID,
 		})
 		if setErr != nil {

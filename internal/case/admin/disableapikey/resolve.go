@@ -2,10 +2,10 @@ package disableapikey
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 )
 
@@ -25,7 +25,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	params := db.DisableApiKeyParams{
 		ID:         input.ID,
-		DisabledBy: sql.NullInt64{Valid: true, Int64: int64(token.ID)},
+		DisabledBy: ptr.To(int64(token.ID)),
 	}
 
 	apiKey, err := env.DisableApiKey(ctx, params)

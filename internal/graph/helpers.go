@@ -26,6 +26,18 @@ func resolveOne[T any, K any](
 	return &row, nil
 }
 
+func resolveOnePtr[T any, K any](
+	ctx context.Context,
+	id *K,
+	fetch func(context.Context, K) (T, error),
+) (*T, error) {
+	if id == nil {
+		return nil, nil
+	}
+
+	return resolveOne(ctx, *id, fetch)
+}
+
 var errUnauthorized = errors.New("unauthorized")
 
 func checkAdmin(ctx context.Context) error {

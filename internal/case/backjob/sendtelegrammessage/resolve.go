@@ -3,7 +3,6 @@ package sendtelegrammessage
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -124,10 +123,7 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramSendPostParams)
 		// Store error message - post will not be retried
 		errMsg := err.Error()
 		setErr := env.SetTelegramPublishNoteLastError(ctx, db.SetTelegramPublishNoteLastErrorParams{
-			LastError: sql.NullString{
-				String: errMsg,
-				Valid:  true,
-			},
+			LastError:  &errMsg,
 			NotePathID: params.NotePathID,
 		})
 		if setErr != nil {

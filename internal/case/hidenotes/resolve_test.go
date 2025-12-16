@@ -54,8 +54,8 @@ func TestResolve(t *testing.T) {
 
 				hideParams := mockEnv.HideNotePathCalls()[0].Params
 				require.Equal(t, "/test/note.md", hideParams.Value)
-				require.True(t, hideParams.HiddenBy.Valid)
-				require.Equal(t, int64(123), hideParams.HiddenBy.Int64)
+				require.NotNil(t, hideParams.HiddenBy)
+				require.Equal(t, int64(123), *hideParams.HiddenBy)
 			},
 		},
 		{
@@ -84,8 +84,8 @@ func TestResolve(t *testing.T) {
 				expectedPaths := []string{"/test/note1.md", "/test/note2.md", "/folder/note3.md"}
 				for i, call := range mockEnv.HideNotePathCalls() {
 					require.Equal(t, expectedPaths[i], call.Params.Value)
-					require.True(t, call.Params.HiddenBy.Valid)
-					require.Equal(t, int64(456), call.Params.HiddenBy.Int64)
+					require.NotNil(t, call.Params.HiddenBy)
+					require.Equal(t, int64(456), *call.Params.HiddenBy)
 				}
 			},
 		},
@@ -112,8 +112,8 @@ func TestResolve(t *testing.T) {
 
 				hideParams := mockEnv.HideNotePathCalls()[0].Params
 				require.Equal(t, "/another/note.md", hideParams.Value)
-				require.True(t, hideParams.HiddenBy.Valid)
-				require.Equal(t, int64(789), hideParams.HiddenBy.Int64)
+				require.NotNil(t, hideParams.HiddenBy)
+				require.Equal(t, int64(789), *hideParams.HiddenBy)
 			},
 		},
 		{
@@ -166,8 +166,8 @@ func TestResolve(t *testing.T) {
 				expectedPaths := []string{"/folder with spaces/note-with-dashes.md", "/unicode/файл.md"}
 				for i, call := range mockEnv.HideNotePathCalls() {
 					require.Equal(t, expectedPaths[i], call.Params.Value)
-					require.True(t, call.Params.HiddenBy.Valid)
-					require.Equal(t, int64(111), call.Params.HiddenBy.Int64)
+					require.NotNil(t, call.Params.HiddenBy)
+					require.Equal(t, int64(111), *call.Params.HiddenBy)
 				}
 			},
 		},

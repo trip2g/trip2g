@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/case/signinbyhat"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
+	"trip2g/internal/ptr"
 
 	"github.com/stretchr/testify/require"
 )
@@ -47,7 +48,7 @@ func TestResolve(t *testing.T) {
 				UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 					return db.User{
 						ID:    123,
-						Email: sql.NullString{String: "user@example.com", Valid: true},
+						Email: ptr.To("user@example.com"),
 					}, nil
 				},
 				SetupUserTokenFunc: func(ctx context.Context, userID int64) (string, error) {
@@ -126,7 +127,7 @@ func TestResolve(t *testing.T) {
 				UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 					return db.User{
 						ID:    456,
-						Email: sql.NullString{String: "user@example.com", Valid: true},
+						Email: ptr.To("user@example.com"),
 					}, nil
 				},
 				SetupUserTokenFunc: func(ctx context.Context, userID int64) (string, error) {

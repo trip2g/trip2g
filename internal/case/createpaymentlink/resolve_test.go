@@ -12,6 +12,7 @@ import (
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
 	"trip2g/internal/nowpayments"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 
 	"github.com/kr/pretty"
@@ -59,13 +60,13 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    123,
-						Email: sql.NullString{String: "user@example.com", Valid: true},
+						Email: ptr.To("user@example.com"),
 					}, nil
 				},
 				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
 					return db.Offer{
 						ID:       1,
-						PriceUsd: sql.NullFloat64{Float64: 9.99, Valid: true},
+						PriceUsd: ptr.To(9.99),
 					}, nil
 				},
 				InsertPurchaseFunc: func(ctx context.Context, arg db.InsertPurchaseParams) error {
@@ -134,7 +135,7 @@ func TestResolve(t *testing.T) {
 				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
 					return db.Offer{
 						ID:       1,
-						PriceUsd: sql.NullFloat64{Float64: 19.99, Valid: true},
+						PriceUsd: ptr.To(19.99),
 					}, nil
 				},
 				InsertPurchaseFunc: func(ctx context.Context, arg db.InsertPurchaseParams) error {
@@ -221,7 +222,7 @@ func TestResolve(t *testing.T) {
 				UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
 					return db.User{
 						ID:    999,
-						Email: sql.NullString{String: "existing@example.com", Valid: true},
+						Email: ptr.To("existing@example.com"),
 					}, nil // user exists
 				},
 			},
@@ -249,7 +250,7 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    123,
-						Email: sql.NullString{String: "user@example.com", Valid: true},
+						Email: ptr.To("user@example.com"),
 					}, nil
 				},
 				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
@@ -279,13 +280,13 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    123,
-						Email: sql.NullString{String: "user@example.com", Valid: true},
+						Email: ptr.To("user@example.com"),
 					}, nil
 				},
 				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
 					return db.Offer{
 						ID:       1,
-						PriceUsd: sql.NullFloat64{Valid: false}, // no price
+						PriceUsd: nil, // no price
 					}, nil
 				},
 			},
@@ -355,13 +356,13 @@ func TestResolve(t *testing.T) {
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:    123,
-						Email: sql.NullString{String: "user@example.com", Valid: true},
+						Email: ptr.To("user@example.com"),
 					}, nil
 				},
 				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
 					return db.Offer{
 						ID:       1,
-						PriceUsd: sql.NullFloat64{Float64: 9.99, Valid: true},
+						PriceUsd: ptr.To(9.99),
 					}, nil
 				},
 				InsertPurchaseFunc: func(ctx context.Context, arg db.InsertPurchaseParams) error {
@@ -397,12 +398,12 @@ func TestResolve(t *testing.T) {
 					return &usertoken.Data{ID: 1}, nil
 				},
 				UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
-					return db.User{ID: 1, Email: sql.NullString{String: "test@example.com", Valid: true}}, nil
+					return db.User{ID: 1, Email: ptr.To("test@example.com")}, nil
 				},
 				ActiveOfferByPublicIDFunc: func(ctx context.Context, id string) (db.Offer, error) {
 					return db.Offer{
 						ID:       1,
-						PriceUsd: sql.NullFloat64{Valid: true, Float64: 10.0},
+						PriceUsd: ptr.To(10.0),
 					}, nil
 				},
 				InsertPurchaseFunc: func(ctx context.Context, arg db.InsertPurchaseParams) error {

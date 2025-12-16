@@ -2,12 +2,12 @@ package removeexpiredtgchatmembers
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"testing"
 	"time"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
+	"trip2g/internal/ptr"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/stretchr/testify/require"
@@ -26,7 +26,7 @@ func TestResolve(t *testing.T) {
 		{
 			name: "success - remove expired access for user",
 			filter: Filter{
-				UserID: ptr(int64(123)),
+				UserID: ptr.To(int64(123)),
 			},
 			setup: func(env *EnvMock) {
 				// Mock data: user has access to chat but no active subgraph subscription
@@ -37,12 +37,12 @@ func TestResolve(t *testing.T) {
 							UserID:     123,
 							SubgraphID: 10,
 							CreatedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
-							JoinedAt:   sql.NullTime{Time: time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC), Valid: true},
+							JoinedAt:   ptr.To(time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC)),
 						},
 						Subgraph: db.Subgraph{
 							ID:     10,
 							Name:   "premium",
-							Color:  sql.NullString{String: "blue", Valid: true},
+							Color:  ptr.To("blue"),
 							Hidden: false,
 						},
 						TgBotChat: db.TgBotChat{
@@ -68,7 +68,7 @@ func TestResolve(t *testing.T) {
 					require.Equal(t, int64(123), id)
 					return db.User{
 						ID:       123,
-						TgUserID: sql.NullInt64{Int64: 987654321, Valid: true},
+						TgUserID: ptr.To(int64(987654321)),
 					}, nil
 				}
 
@@ -112,7 +112,7 @@ func TestResolve(t *testing.T) {
 		{
 			name: "success - user has active subscription, no removal needed",
 			filter: Filter{
-				UserID: ptr(int64(123)),
+				UserID: ptr.To(int64(123)),
 			},
 			setup: func(env *EnvMock) {
 				accesses := []db.ListTgBotChatSubgraphAccessesRow{
@@ -145,7 +145,7 @@ func TestResolve(t *testing.T) {
 				env.UserByIDFunc = func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:       123,
-						TgUserID: sql.NullInt64{Int64: 987654321, Valid: true},
+						TgUserID: ptr.To(int64(987654321)),
 					}, nil
 				}
 
@@ -165,11 +165,11 @@ func TestResolve(t *testing.T) {
 		{
 			name: "success - filter by chat ID",
 			filter: Filter{
-				ChatID: ptr(int64(1)),
+				ChatID: ptr.To(int64(1)),
 			},
 			setup: func(env *EnvMock) {
 				env.ListTgBotChatSubgraphAccessesFunc = func(ctx context.Context, filter db.ListTgBotChatSubgraphAccessesParams) ([]db.ListTgBotChatSubgraphAccessesRow, error) {
-					require.Equal(t, sql.NullInt64{Int64: 1, Valid: true}, filter.ChatID)
+					require.Equal(t, ptr.To(int64(1)), filter.ChatID)
 					return []db.ListTgBotChatSubgraphAccessesRow{}, nil
 				}
 
@@ -189,7 +189,7 @@ func TestResolve(t *testing.T) {
 		{
 			name: "error - failed to list accesses",
 			filter: Filter{
-				UserID: ptr(int64(123)),
+				UserID: ptr.To(int64(123)),
 			},
 			setup: func(env *EnvMock) {
 				env.ListTgBotChatSubgraphAccessesFunc = func(ctx context.Context, filter db.ListTgBotChatSubgraphAccessesParams) ([]db.ListTgBotChatSubgraphAccessesRow, error) {
@@ -209,7 +209,7 @@ func TestResolve(t *testing.T) {
 		{
 			name: "error - failed to get user",
 			filter: Filter{
-				UserID: ptr(int64(123)),
+				UserID: ptr.To(int64(123)),
 			},
 			setup: func(env *EnvMock) {
 				accesses := []db.ListTgBotChatSubgraphAccessesRow{
@@ -251,7 +251,7 @@ func TestResolve(t *testing.T) {
 		{
 			name: "error - failed to remove chat member",
 			filter: Filter{
-				UserID: ptr(int64(123)),
+				UserID: ptr.To(int64(123)),
 			},
 			setup: func(env *EnvMock) {
 				accesses := []db.ListTgBotChatSubgraphAccessesRow{
@@ -284,7 +284,7 @@ func TestResolve(t *testing.T) {
 				env.UserByIDFunc = func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:       123,
-						TgUserID: sql.NullInt64{Int64: 987654321, Valid: true},
+						TgUserID: ptr.To(int64(987654321)),
 					}, nil
 				}
 
@@ -381,7 +381,7 @@ func TestProcessUser(t *testing.T) {
 				env.UserByIDFunc = func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:       123,
-						TgUserID: sql.NullInt64{Int64: 987654321, Valid: true},
+						TgUserID: ptr.To(int64(987654321)),
 					}, nil
 				}
 
@@ -434,7 +434,7 @@ func TestProcessUser(t *testing.T) {
 				env.UserByIDFunc = func(ctx context.Context, id int64) (db.User, error) {
 					return db.User{
 						ID:       123,
-						TgUserID: sql.NullInt64{Int64: 987654321, Valid: true},
+						TgUserID: ptr.To(int64(987654321)),
 					}, nil
 				}
 
@@ -530,7 +530,7 @@ func TestProcessExpiredAccess(t *testing.T) {
 			name: "success - complete removal process",
 			user: &db.User{
 				ID:       123,
-				TgUserID: sql.NullInt64{Int64: 987654321, Valid: true},
+				TgUserID: ptr.To(int64(987654321)),
 			},
 			access: &db.ListTgBotChatSubgraphAccessesRow{
 				TgBotChatSubgraphAccess: db.TgBotChatSubgraphAccess{
@@ -577,7 +577,7 @@ func TestProcessExpiredAccess(t *testing.T) {
 			name: "success - user without telegram ID",
 			user: &db.User{
 				ID:       123,
-				TgUserID: sql.NullInt64{Valid: false}, // No telegram ID
+				TgUserID: nil, // No telegram ID
 			},
 			access: &db.ListTgBotChatSubgraphAccessesRow{
 				TgBotChatSubgraphAccess: db.TgBotChatSubgraphAccess{
@@ -614,7 +614,7 @@ func TestProcessExpiredAccess(t *testing.T) {
 			name: "error - failed to remove chat member",
 			user: &db.User{
 				ID:       123,
-				TgUserID: sql.NullInt64{Int64: 987654321, Valid: true},
+				TgUserID: ptr.To(int64(987654321)),
 			},
 			access: &db.ListTgBotChatSubgraphAccessesRow{
 				TgBotChatSubgraphAccess: db.TgBotChatSubgraphAccess{
@@ -644,7 +644,7 @@ func TestProcessExpiredAccess(t *testing.T) {
 			name: "error - failed to send notification",
 			user: &db.User{
 				ID:       123,
-				TgUserID: sql.NullInt64{Int64: 987654321, Valid: true},
+				TgUserID: ptr.To(int64(987654321)),
 			},
 			access: &db.ListTgBotChatSubgraphAccessesRow{
 				TgBotChatSubgraphAccess: db.TgBotChatSubgraphAccess{
@@ -682,7 +682,7 @@ func TestProcessExpiredAccess(t *testing.T) {
 			name: "error - failed to delete access record",
 			user: &db.User{
 				ID:       123,
-				TgUserID: sql.NullInt64{Int64: 987654321, Valid: true},
+				TgUserID: ptr.To(int64(987654321)),
 			},
 			access: &db.ListTgBotChatSubgraphAccessesRow{
 				TgBotChatSubgraphAccess: db.TgBotChatSubgraphAccess{
@@ -865,9 +865,4 @@ func TestSendExpirationNotification(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Helper function to create a pointer to int64.
-func ptr(v int64) *int64 {
-	return &v
 }

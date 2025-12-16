@@ -2,7 +2,6 @@ package createoffer
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"trip2g/internal/db"
@@ -80,9 +79,9 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	offerParams := db.InsertOfferParams{
 		PublicID: publicID,
-		PriceUsd: sql.NullFloat64{Float64: input.PriceUsd, Valid: true},
-		StartsAt: db.ToNullableTime(input.StartsAt),
-		EndsAt:   db.ToNullableTime(input.EndsAt),
+		PriceUsd: &input.PriceUsd,
+		StartsAt: input.StartsAt,
+		EndsAt:   input.EndsAt,
 	}
 
 	if input.Lifetime != nil {

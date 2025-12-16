@@ -20,9 +20,9 @@ values (?, ?, ?)
 `
 
 type BanUserParams struct {
-	UserID   int64         `json:"user_id"`
-	BannedBy sql.NullInt64 `json:"banned_by"`
-	Reason   string        `json:"reason"`
+	UserID   int64  `json:"user_id"`
+	BannedBy *int64 `json:"banned_by"`
+	Reason   string `json:"reason"`
 }
 
 func (q *WriteQueries) BanUser(ctx context.Context, arg BanUserParams) error {
@@ -65,7 +65,7 @@ const clearTgUserIDByTgUserID = `-- name: ClearTgUserIDByTgUserID :exec
 update users set tg_user_id = null where tg_user_id = ?
 `
 
-func (q *WriteQueries) ClearTgUserIDByTgUserID(ctx context.Context, tgUserID sql.NullInt64) error {
+func (q *WriteQueries) ClearTgUserIDByTgUserID(ctx context.Context, tgUserID *int64) error {
 	_, err := q.db.ExecContext(ctx, clearTgUserIDByTgUserID, tgUserID)
 	return err
 }
@@ -77,10 +77,10 @@ returning id
 `
 
 type CreateRevokeParams struct {
-	TargetType string         `json:"target_type"`
-	TargetID   int64          `json:"target_id"`
-	ByID       int64          `json:"by_id"`
-	Reason     sql.NullString `json:"reason"`
+	TargetType string  `json:"target_type"`
+	TargetID   int64   `json:"target_id"`
+	ByID       int64   `json:"by_id"`
+	Reason     *string `json:"reason"`
 }
 
 func (q *WriteQueries) CreateRevoke(ctx context.Context, arg CreateRevokeParams) (int64, error) {
@@ -102,10 +102,10 @@ returning id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_
 `
 
 type CreateUserSubgraphAccessParams struct {
-	UserID     int64          `json:"user_id"`
-	SubgraphID int64          `json:"subgraph_id"`
-	PurchaseID sql.NullString `json:"purchase_id"`
-	ExpiresAt  sql.NullTime   `json:"expires_at"`
+	UserID     int64      `json:"user_id"`
+	SubgraphID int64      `json:"subgraph_id"`
+	PurchaseID *string    `json:"purchase_id"`
+	ExpiresAt  *time.Time `json:"expires_at"`
 }
 
 func (q *WriteQueries) CreateUserSubgraphAccess(ctx context.Context, arg CreateUserSubgraphAccessParams) (UserSubgraphAccess, error) {
@@ -429,8 +429,8 @@ returning id, value, created_at, created_by, disabled_at, disabled_by, descripti
 `
 
 type DisableApiKeyParams struct {
-	DisabledBy sql.NullInt64 `json:"disabled_by"`
-	ID         int64         `json:"id"`
+	DisabledBy *int64 `json:"disabled_by"`
+	ID         int64  `json:"id"`
 }
 
 func (q *WriteQueries) DisableApiKey(ctx context.Context, arg DisableApiKeyParams) (ApiKey, error) {
@@ -456,8 +456,8 @@ returning id, created_at, last_used_at, admin_id, value_sha256, description, can
 `
 
 type DisableGitTokenParams struct {
-	DisabledBy sql.NullInt64 `json:"disabled_by"`
-	ID         int64         `json:"id"`
+	DisabledBy *int64 `json:"disabled_by"`
+	ID         int64  `json:"id"`
 }
 
 func (q *WriteQueries) DisableGitToken(ctx context.Context, arg DisableGitTokenParams) (GitToken, error) {
@@ -487,8 +487,8 @@ update note_paths
 `
 
 type HideNotePathParams struct {
-	HiddenBy sql.NullInt64 `json:"hidden_by"`
-	Value    string        `json:"value"`
+	HiddenBy *int64 `json:"hidden_by"`
+	Value    string `json:"value"`
 }
 
 func (q *WriteQueries) HideNotePath(ctx context.Context, arg HideNotePathParams) error {
@@ -594,8 +594,8 @@ returning user_id, granted_at, granted_by
 `
 
 type InsertAdminParams struct {
-	UserID    int64         `json:"user_id"`
-	GrantedBy sql.NullInt64 `json:"granted_by"`
+	UserID    int64  `json:"user_id"`
+	GrantedBy *int64 `json:"granted_by"`
 }
 
 func (q *WriteQueries) InsertAdmin(ctx context.Context, arg InsertAdminParams) (Admin, error) {
@@ -785,11 +785,11 @@ returning id, created_at, last_used_at, admin_id, value_sha256, description, can
 `
 
 type InsertGitTokenParams struct {
-	ValueSha256 string        `json:"value_sha256"`
-	AdminID     sql.NullInt64 `json:"admin_id"`
-	Description string        `json:"description"`
-	CanPull     sql.NullBool  `json:"can_pull"`
-	CanPush     sql.NullBool  `json:"can_push"`
+	ValueSha256 string `json:"value_sha256"`
+	AdminID     *int64 `json:"admin_id"`
+	Description string `json:"description"`
+	CanPull     *bool  `json:"can_pull"`
+	CanPush     *bool  `json:"can_push"`
 }
 
 func (q *WriteQueries) InsertGitToken(ctx context.Context, arg InsertGitTokenParams) (GitToken, error) {
@@ -830,12 +830,12 @@ returning id, created_at, active_from, active_to, description, position, placeme
 `
 
 type InsertHTMLInjectionParams struct {
-	Description string       `json:"description"`
-	Position    int64        `json:"position"`
-	Placement   string       `json:"placement"`
-	Content     string       `json:"content"`
-	ActiveFrom  sql.NullTime `json:"active_from"`
-	ActiveTo    sql.NullTime `json:"active_to"`
+	Description string     `json:"description"`
+	Position    int64      `json:"position"`
+	Placement   string     `json:"placement"`
+	Content     string     `json:"content"`
+	ActiveFrom  *time.Time `json:"active_from"`
+	ActiveTo    *time.Time `json:"active_to"`
 }
 
 func (q *WriteQueries) InsertHTMLInjection(ctx context.Context, arg InsertHTMLInjectionParams) (HtmlInjection, error) {
@@ -967,9 +967,9 @@ returning id, public_id, created_at, lifetime, price_usd, starts_at, ends_at
 type InsertOfferParams struct {
 	PublicID string          `json:"public_id"`
 	Lifetime *model.Lifetime `json:"lifetime"`
-	PriceUsd sql.NullFloat64 `json:"price_usd"`
-	StartsAt sql.NullTime    `json:"starts_at"`
-	EndsAt   sql.NullTime    `json:"ends_at"`
+	PriceUsd *float64        `json:"price_usd"`
+	StartsAt *time.Time      `json:"starts_at"`
+	EndsAt   *time.Time      `json:"ends_at"`
 }
 
 func (q *WriteQueries) InsertOffer(ctx context.Context, arg InsertOfferParams) (Offer, error) {
@@ -1137,10 +1137,10 @@ returning id, created_at, created_by, title, home_note_version_id, is_live
 `
 
 type InsertReleaseParams struct {
-	CreatedBy         int64         `json:"created_by"`
-	Title             string        `json:"title"`
-	HomeNoteVersionID sql.NullInt64 `json:"home_note_version_id"`
-	IsLive            bool          `json:"is_live"`
+	CreatedBy         int64  `json:"created_by"`
+	Title             string `json:"title"`
+	HomeNoteVersionID *int64 `json:"home_note_version_id"`
+	IsLive            bool   `json:"is_live"`
 }
 
 func (q *WriteQueries) InsertRelease(ctx context.Context, arg InsertReleaseParams) (Release, error) {
@@ -1533,12 +1533,12 @@ on conflict(sha256_hash) do nothing
 `
 
 type InsertTgUserProfileParams struct {
-	ChatID     int64          `json:"chat_id"`
-	BotID      int64          `json:"bot_id"`
-	FirstName  sql.NullString `json:"first_name"`
-	LastName   sql.NullString `json:"last_name"`
-	Username   sql.NullString `json:"username"`
-	Sha256Hash string         `json:"sha256_hash"`
+	ChatID     int64   `json:"chat_id"`
+	BotID      int64   `json:"bot_id"`
+	FirstName  *string `json:"first_name"`
+	LastName   *string `json:"last_name"`
+	Username   *string `json:"username"`
+	Sha256Hash string  `json:"sha256_hash"`
 }
 
 func (q *WriteQueries) InsertTgUserProfile(ctx context.Context, arg InsertTgUserProfileParams) error {
@@ -1573,9 +1573,9 @@ insert into user_note_views (user_id, version_id, referer_version_id) values (?,
 `
 
 type InsertUserNoteViewParams struct {
-	UserID           int64         `json:"user_id"`
-	VersionID        int64         `json:"version_id"`
-	RefererVersionID sql.NullInt64 `json:"referer_version_id"`
+	UserID           int64  `json:"user_id"`
+	VersionID        int64  `json:"version_id"`
+	RefererVersionID *int64 `json:"referer_version_id"`
 }
 
 func (q *WriteQueries) InsertUserNoteView(ctx context.Context, arg InsertUserNoteViewParams) error {
@@ -1614,7 +1614,7 @@ values (?, 'telegram')
 returning id, email, created_at, last_signin_code_sent_at, note_view_count, tg_user_id, created_via
 `
 
-func (q *WriteQueries) InsertUserWithTgUserID(ctx context.Context, tgUserID sql.NullInt64) (User, error) {
+func (q *WriteQueries) InsertUserWithTgUserID(ctx context.Context, tgUserID *int64) (User, error) {
 	row := q.db.QueryRowContext(ctx, insertUserWithTgUserID, tgUserID)
 	var i User
 	err := row.Scan(
@@ -1635,9 +1635,9 @@ values (?, ?, ?)
 `
 
 type InsertWaitListEmailRequestParams struct {
-	Email      string         `json:"email"`
-	NotePathID int64          `json:"note_path_id"`
-	Ip         sql.NullString `json:"ip"`
+	Email      string  `json:"email"`
+	NotePathID int64   `json:"note_path_id"`
+	Ip         *string `json:"ip"`
 }
 
 func (q *WriteQueries) InsertWaitListEmailRequest(ctx context.Context, arg InsertWaitListEmailRequestParams) error {
@@ -1839,8 +1839,8 @@ update user_subgraph_accesses
 `
 
 type RevokeUserSubgraphAccessParams struct {
-	RevokeID sql.NullInt64 `json:"revoke_id"`
-	ID       int64         `json:"id"`
+	RevokeID *int64 `json:"revoke_id"`
+	ID       int64  `json:"id"`
 }
 
 func (q *WriteQueries) RevokeUserSubgraphAccess(ctx context.Context, arg RevokeUserSubgraphAccessParams) error {
@@ -1855,8 +1855,8 @@ where id = ?
 `
 
 type SetPatreonMemberCurrentTierParams struct {
-	CurrentTierID sql.NullInt64 `json:"current_tier_id"`
-	ID            int64         `json:"id"`
+	CurrentTierID *int64 `json:"current_tier_id"`
+	ID            int64  `json:"id"`
 }
 
 func (q *WriteQueries) SetPatreonMemberCurrentTier(ctx context.Context, arg SetPatreonMemberCurrentTierParams) error {
@@ -1871,8 +1871,8 @@ update telegram_publish_notes
 `
 
 type SetTelegramPublishNoteLastErrorParams struct {
-	LastError  sql.NullString `json:"last_error"`
-	NotePathID int64          `json:"note_path_id"`
+	LastError  *string `json:"last_error"`
+	NotePathID int64   `json:"note_path_id"`
 }
 
 func (q *WriteQueries) SetTelegramPublishNoteLastError(ctx context.Context, arg SetTelegramPublishNoteLastErrorParams) error {
@@ -1888,8 +1888,8 @@ returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_
 `
 
 type SoftDeleteBoostyCredentialsParams struct {
-	DeletedBy sql.NullInt64 `json:"deleted_by"`
-	ID        int64         `json:"id"`
+	DeletedBy *int64 `json:"deleted_by"`
+	ID        int64  `json:"id"`
 }
 
 func (q *WriteQueries) SoftDeleteBoostyCredentials(ctx context.Context, arg SoftDeleteBoostyCredentialsParams) (BoostyCredential, error) {
@@ -1918,8 +1918,8 @@ returning id, created_at, created_by, deleted_at, deleted_by, creator_access_tok
 `
 
 type SoftDeletePatreonCredentialsParams struct {
-	DeletedBy sql.NullInt64 `json:"deleted_by"`
-	ID        int64         `json:"id"`
+	DeletedBy *int64 `json:"deleted_by"`
+	ID        int64  `json:"id"`
 }
 
 func (q *WriteQueries) SoftDeletePatreonCredentials(ctx context.Context, arg SoftDeletePatreonCredentialsParams) (PatreonCredential, error) {
@@ -1967,10 +1967,10 @@ returning id, name, color, created_at, hidden, show_unsubgraph_notes_for_paid_us
 `
 
 type UpdateAdminSubgraphParams struct {
-	Color                           sql.NullString `json:"color"`
-	Hidden                          bool           `json:"hidden"`
-	ShowUnsubgraphNotesForPaidUsers sql.NullBool   `json:"show_unsubgraph_notes_for_paid_users"`
-	ID                              int64          `json:"id"`
+	Color                           *string `json:"color"`
+	Hidden                          bool    `json:"hidden"`
+	ShowUnsubgraphNotesForPaidUsers *bool   `json:"show_unsubgraph_notes_for_paid_users"`
+	ID                              int64   `json:"id"`
 }
 
 func (q *WriteQueries) UpdateAdminSubgraph(ctx context.Context, arg UpdateAdminSubgraphParams) (Subgraph, error) {
@@ -2048,9 +2048,9 @@ returning id, created_at, created_by, deleted_at, deleted_by, auth_data, device_
 `
 
 type UpdateBoostyCredentialsTokensParams struct {
-	AuthData  string       `json:"auth_data"`
-	ExpiresAt sql.NullTime `json:"expires_at"`
-	ID        int64        `json:"id"`
+	AuthData  string     `json:"auth_data"`
+	ExpiresAt *time.Time `json:"expires_at"`
+	ID        int64      `json:"id"`
 }
 
 func (q *WriteQueries) UpdateBoostyCredentialsTokens(ctx context.Context, arg UpdateBoostyCredentialsTokensParams) (BoostyCredential, error) {
@@ -2078,8 +2078,8 @@ where id = ?
 `
 
 type UpdateBoostyMemberUserIDParams struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	ID     int64         `json:"id"`
+	UserID *int64 `json:"user_id"`
+	ID     int64  `json:"id"`
 }
 
 func (q *WriteQueries) UpdateBoostyMemberUserID(ctx context.Context, arg UpdateBoostyMemberUserIDParams) error {
@@ -2124,10 +2124,10 @@ returning id, job_id, started_at, finished_at, status, report_data, error_messag
 `
 
 type UpdateCronJobExecutionParams struct {
-	Status       int64          `json:"status"`
-	ReportData   sql.NullString `json:"report_data"`
-	ErrorMessage sql.NullString `json:"error_message"`
-	ID           int64          `json:"id"`
+	Status       int64   `json:"status"`
+	ReportData   *string `json:"report_data"`
+	ErrorMessage *string `json:"error_message"`
+	ID           int64   `json:"id"`
 }
 
 func (q *WriteQueries) UpdateCronJobExecution(ctx context.Context, arg UpdateCronJobExecutionParams) (CronJobExecution, error) {
@@ -2174,13 +2174,13 @@ returning id, created_at, active_from, active_to, description, position, placeme
 `
 
 type UpdateHTMLInjectionParams struct {
-	Description string       `json:"description"`
-	Position    int64        `json:"position"`
-	Placement   string       `json:"placement"`
-	Content     string       `json:"content"`
-	ActiveFrom  sql.NullTime `json:"active_from"`
-	ActiveTo    sql.NullTime `json:"active_to"`
-	ID          int64        `json:"id"`
+	Description string     `json:"description"`
+	Position    int64      `json:"position"`
+	Placement   string     `json:"placement"`
+	Content     string     `json:"content"`
+	ActiveFrom  *time.Time `json:"active_from"`
+	ActiveTo    *time.Time `json:"active_to"`
+	ID          int64      `json:"id"`
 }
 
 func (q *WriteQueries) UpdateHTMLInjection(ctx context.Context, arg UpdateHTMLInjectionParams) (HtmlInjection, error) {
@@ -2239,9 +2239,9 @@ update note_paths
 `
 
 type UpdateNoteGraphPositionByPathIDParams struct {
-	GraphPositionX sql.NullFloat64 `json:"graph_position_x"`
-	GraphPositionY sql.NullFloat64 `json:"graph_position_y"`
-	ID             int64           `json:"id"`
+	GraphPositionX *float64 `json:"graph_position_x"`
+	GraphPositionY *float64 `json:"graph_position_y"`
+	ID             int64    `json:"id"`
 }
 
 func (q *WriteQueries) UpdateNoteGraphPositionByPathID(ctx context.Context, arg UpdateNoteGraphPositionByPathIDParams) error {
@@ -2256,8 +2256,8 @@ update notion_integrations
 `
 
 type UpdateNotionIntegrationVerificationTokenParams struct {
-	VerificationToken sql.NullString `json:"verification_token"`
-	ID                int64          `json:"id"`
+	VerificationToken *string `json:"verification_token"`
+	ID                int64   `json:"id"`
 }
 
 func (q *WriteQueries) UpdateNotionIntegrationVerificationToken(ctx context.Context, arg UpdateNotionIntegrationVerificationTokenParams) error {
@@ -2277,9 +2277,9 @@ returning id, public_id, created_at, lifetime, price_usd, starts_at, ends_at
 
 type UpdateOfferParams struct {
 	Lifetime *model.Lifetime `json:"lifetime"`
-	PriceUsd sql.NullFloat64 `json:"price_usd"`
-	StartsAt sql.NullTime    `json:"starts_at"`
-	EndsAt   sql.NullTime    `json:"ends_at"`
+	PriceUsd *float64        `json:"price_usd"`
+	StartsAt *time.Time      `json:"starts_at"`
+	EndsAt   *time.Time      `json:"ends_at"`
 	ID       int64           `json:"id"`
 }
 
@@ -2322,8 +2322,8 @@ where id = ?
 `
 
 type UpdatePatreonCredentialsWebhookSecretParams struct {
-	WebhookSecret sql.NullString `json:"webhook_secret"`
-	ID            int64          `json:"id"`
+	WebhookSecret *string `json:"webhook_secret"`
+	ID            int64   `json:"id"`
 }
 
 func (q *WriteQueries) UpdatePatreonCredentialsWebhookSecret(ctx context.Context, arg UpdatePatreonCredentialsWebhookSecretParams) error {
@@ -2338,8 +2338,8 @@ update patreon_members
 `
 
 type UpdatePatreonMemberUserIDParams struct {
-	UserID sql.NullInt64 `json:"user_id"`
-	ID     int64         `json:"id"`
+	UserID *int64 `json:"user_id"`
+	ID     int64  `json:"id"`
 }
 
 func (q *WriteQueries) UpdatePatreonMemberUserID(ctx context.Context, arg UpdatePatreonMemberUserIDParams) error {
@@ -2412,9 +2412,9 @@ where job_id = ?
 `
 
 type UpdateRunningCronJobExecutionsParams struct {
-	Status       int64          `json:"status"`
-	ErrorMessage sql.NullString `json:"error_message"`
-	JobID        int64          `json:"job_id"`
+	Status       int64   `json:"status"`
+	ErrorMessage *string `json:"error_message"`
+	JobID        int64   `json:"job_id"`
 }
 
 func (q *WriteQueries) UpdateRunningCronJobExecutions(ctx context.Context, arg UpdateRunningCronJobExecutionsParams) error {
@@ -2434,13 +2434,13 @@ update telegram_accounts
 `
 
 type UpdateTelegramAccountParams struct {
-	ID          int64          `json:"id"`
-	DisplayName sql.NullString `json:"display_name"`
-	Enabled     sql.NullInt64  `json:"enabled"`
-	IsPremium   sql.NullInt64  `json:"is_premium"`
-	SessionData []byte         `json:"session_data"`
-	ApiID       sql.NullInt64  `json:"api_id"`
-	ApiHash     sql.NullString `json:"api_hash"`
+	ID          int64   `json:"id"`
+	DisplayName *string `json:"display_name"`
+	Enabled     *int64  `json:"enabled"`
+	IsPremium   *int64  `json:"is_premium"`
+	SessionData []byte  `json:"session_data"`
+	ApiID       *int64  `json:"api_id"`
+	ApiHash     *string `json:"api_hash"`
 }
 
 func (q *WriteQueries) UpdateTelegramAccount(ctx context.Context, arg UpdateTelegramAccountParams) error {
@@ -2480,8 +2480,8 @@ update telegram_publish_notes
 `
 
 type UpdateTelegramPublishNoteAsPublishedParams struct {
-	PublishedVersionID sql.NullInt64 `json:"published_version_id"`
-	NotePathID         int64         `json:"note_path_id"`
+	PublishedVersionID *int64 `json:"published_version_id"`
+	NotePathID         int64  `json:"note_path_id"`
 }
 
 func (q *WriteQueries) UpdateTelegramPublishNoteAsPublished(ctx context.Context, arg UpdateTelegramPublishNoteAsPublishedParams) error {
@@ -2560,9 +2560,9 @@ returning id, token, enabled, description, created_at, created_by, name
 `
 
 type UpdateTgBotParams struct {
-	Description sql.NullString `json:"description"`
-	Enabled     sql.NullBool   `json:"enabled"`
-	ID          int64          `json:"id"`
+	Description *string `json:"description"`
+	Enabled     *bool   `json:"enabled"`
+	ID          int64   `json:"id"`
 }
 
 func (q *WriteQueries) UpdateTgBot(ctx context.Context, arg UpdateTgBotParams) (TgBot, error) {
@@ -2618,8 +2618,8 @@ update users set email = coalesce(?1, email) where id = ?2 returning id, email, 
 `
 
 type UpdateUserParams struct {
-	Email sql.NullString `json:"email"`
-	ID    int64          `json:"id"`
+	Email *string `json:"email"`
+	ID    int64   `json:"id"`
 }
 
 func (q *WriteQueries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
@@ -2646,9 +2646,9 @@ returning id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_
 `
 
 type UpdateUserSubgraphAccessParams struct {
-	ExpiresAt  sql.NullTime `json:"expires_at"`
-	SubgraphID int64        `json:"subgraph_id"`
-	ID         int64        `json:"id"`
+	ExpiresAt  *time.Time `json:"expires_at"`
+	SubgraphID int64      `json:"subgraph_id"`
+	ID         int64      `json:"id"`
 }
 
 func (q *WriteQueries) UpdateUserSubgraphAccess(ctx context.Context, arg UpdateUserSubgraphAccessParams) (UserSubgraphAccess, error) {
@@ -2672,8 +2672,8 @@ update users set tg_user_id = ? where id = ?
 `
 
 type UpdateUserTgIDParams struct {
-	TgUserID sql.NullInt64 `json:"tg_user_id"`
-	ID       int64         `json:"id"`
+	TgUserID *int64 `json:"tg_user_id"`
+	ID       int64  `json:"id"`
 }
 
 func (q *WriteQueries) UpdateUserTgID(ctx context.Context, arg UpdateUserTgIDParams) error {
@@ -2715,12 +2715,12 @@ on conflict(credentials_id, boosty_id) do update set
 `
 
 type UpsertBoostyMemberParams struct {
-	CredentialsID int64         `json:"credentials_id"`
-	BoostyID      int64         `json:"boosty_id"`
-	Email         string        `json:"email"`
-	Status        string        `json:"status"`
-	Data          string        `json:"data"`
-	CurrentTierID sql.NullInt64 `json:"current_tier_id"`
+	CredentialsID int64  `json:"credentials_id"`
+	BoostyID      int64  `json:"boosty_id"`
+	Email         string `json:"email"`
+	Status        string `json:"status"`
+	Data          string `json:"data"`
+	CurrentTierID *int64 `json:"current_tier_id"`
 }
 
 func (q *WriteQueries) UpsertBoostyMember(ctx context.Context, arg UpsertBoostyMemberParams) error {

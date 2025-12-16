@@ -70,7 +70,7 @@ func TestWithTransaction(t *testing.T) {
 
 	selectedUser, err := env.UserByID(fctx, user.ID)
 	require.NoError(t, err)
-	require.Equal(t, "test@test.com", selectedUser.Email.String)
+	require.Equal(t, "test@test.com", *selectedUser.Email)
 
 	err = a.ReleaseTxEnvInRequest(fctx, false)
 	require.NoError(t, err)
@@ -93,12 +93,12 @@ func TestWithTransaction(t *testing.T) {
 
 	selectedUser, err = env.UserByID(fctx, user.ID)
 	require.NoError(t, err)
-	require.Equal(t, "test@test.com", selectedUser.Email.String)
+	require.Equal(t, "test@test.com", *selectedUser.Email)
 
 	err = a.ReleaseTxEnvInRequest(fctx, true)
 	require.NoError(t, err)
 
 	selectedUser, err = a.UserByID(fctx, user.ID)
 	require.NoError(t, err)
-	require.Equal(t, "test@test.com", selectedUser.Email.String)
+	require.Equal(t, "test@test.com", *selectedUser.Email)
 }

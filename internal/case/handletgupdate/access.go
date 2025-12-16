@@ -2,7 +2,6 @@ package handletgupdate
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
@@ -227,7 +226,7 @@ func (req *request) handleChatMember(ctx context.Context) error { //nolint:unpar
 
 		// Update joined_at timestamp for tg_bot_chat_subgraph_accesses if user has system account
 		log.Info("attempting to update access records for user", "tg_user_id", userID)
-		user, userErr := req.env.UserByTgUserID(ctx, sql.NullInt64{Int64: userID, Valid: true})
+		user, userErr := req.env.UserByTgUserID(ctx, &userID)
 		if userErr != nil {
 			if !db.IsNoFound(userErr) {
 				log.Error("failed to get user by telegram ID", "error", userErr, "tg_user_id", userID)
@@ -447,7 +446,7 @@ func (req *request) handleUserJoined(ctx context.Context, userID int64, chatID i
 
 	// Update joined_at timestamp for tg_bot_chat_subgraph_accesses if user has system account
 	log.Info("attempting to update access records for user", "tg_user_id", userID)
-	user, userErr := req.env.UserByTgUserID(ctx, sql.NullInt64{Int64: userID, Valid: true})
+	user, userErr := req.env.UserByTgUserID(ctx, &userID)
 	if userErr != nil {
 		if !db.IsNoFound(userErr) {
 			log.Error("failed to get user by telegram ID", "error", userErr, "tg_user_id", userID)

@@ -2,10 +2,10 @@ package updatenotegraphpositions
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 )
 
@@ -27,8 +27,8 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	for _, position := range input.Positions {
 		params := db.UpdateNoteGraphPositionByPathIDParams{
-			GraphPositionX: sql.NullFloat64{Valid: true, Float64: position.X},
-			GraphPositionY: sql.NullFloat64{Valid: true, Float64: position.Y},
+			GraphPositionX: ptr.To(position.X),
+			GraphPositionY: ptr.To(position.Y),
 			ID:             position.PathID,
 		}
 

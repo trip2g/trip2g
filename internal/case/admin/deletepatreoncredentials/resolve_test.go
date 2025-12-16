@@ -2,7 +2,6 @@ package deletepatreoncredentials_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"reflect"
 	"testing"
@@ -11,6 +10,7 @@ import (
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 
 	"github.com/kr/pretty"
@@ -62,8 +62,8 @@ func TestResolve(t *testing.T) {
 						ID:                 1,
 						CreatedAt:          time.Now(),
 						CreatedBy:          1,
-						DeletedAt:          sql.NullTime{Time: deletedAt, Valid: true},
-						DeletedBy:          sql.NullInt64{Int64: 1, Valid: true},
+						DeletedAt:          &deletedAt,
+						DeletedBy:          ptr.To(int64(1)),
 						CreatorAccessToken: "test-token",
 					}, nil
 				}
@@ -145,8 +145,8 @@ func TestResolve(t *testing.T) {
 						ID:                 1,
 						CreatedAt:          time.Now(),
 						CreatedBy:          1,
-						DeletedAt:          sql.NullTime{Time: deletedAt, Valid: true},
-						DeletedBy:          sql.NullInt64{Int64: 1, Valid: true},
+						DeletedAt:          &deletedAt,
+						DeletedBy:          ptr.To(int64(1)),
 						CreatorAccessToken: "test-token",
 					}, nil
 				}

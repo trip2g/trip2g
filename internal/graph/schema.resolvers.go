@@ -109,11 +109,7 @@ func (r *adminResolver) User(ctx context.Context, obj *db.Admin) (*db.User, erro
 
 // GrantedBy is the resolver for the grantedBy field.
 func (r *adminResolver) GrantedBy(ctx context.Context, obj *db.Admin) (*db.User, error) {
-	if !obj.GrantedBy.Valid {
-		return nil, nil
-	}
-
-	return resolveOne[db.User](ctx, obj.GrantedBy.Int64, r.env(ctx).UserByID)
+	return resolveOnePtr[db.User](ctx, obj.GrantedBy, r.env(ctx).UserByID)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -128,16 +124,7 @@ func (r *adminApiKeyResolver) CreatedBy(ctx context.Context, obj *db.ApiKey) (*d
 
 // DisabledBy is the resolver for the disabledBy field.
 func (r *adminApiKeyResolver) DisabledBy(ctx context.Context, obj *db.ApiKey) (*db.User, error) {
-	if !obj.DisabledBy.Valid {
-		return nil, nil
-	}
-
-	return resolveOne[db.User](ctx, obj.DisabledBy.Int64, r.env(ctx).UserByID)
-}
-
-// DisabledAt is the resolver for the disabledAt field.
-func (r *adminApiKeyResolver) DisabledAt(ctx context.Context, obj *db.ApiKey) (*time.Time, error) {
-	return db.ToTimePtr(obj.DisabledAt), nil
+	return resolveOnePtr[db.User](ctx, obj.DisabledBy, r.env(ctx).UserByID)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -177,8 +164,8 @@ func (r *adminAuditLogsConnectionResolver) Nodes(ctx context.Context, obj *model
 
 	if obj.Filter != nil {
 		if obj.Filter.CreatedAt != nil {
-			params.CreatedAtGte = db.ToNullableTime(obj.Filter.CreatedAt.Gte)
-			params.CreatedAtLte = db.ToNullableTime(obj.Filter.CreatedAt.Lte)
+			params.CreatedAtGte = obj.Filter.CreatedAt.Gte
+			params.CreatedAtLte = obj.Filter.CreatedAt.Lte
 		}
 
 		if obj.Filter.Offset != nil {
@@ -265,22 +252,14 @@ func (r *adminBoostyCredentialsResolver) CreatedBy(ctx context.Context, obj *db.
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
 }
 
-// DeletedAt is the resolver for the deletedAt field.
-func (r *adminBoostyCredentialsResolver) DeletedAt(ctx context.Context, obj *db.BoostyCredential) (*time.Time, error) {
-	return db.ToTimePtr(obj.DeletedAt), nil
-}
-
 // DeletedBy is the resolver for the deletedBy field.
 func (r *adminBoostyCredentialsResolver) DeletedBy(ctx context.Context, obj *db.BoostyCredential) (*db.User, error) {
-	if !obj.DeletedBy.Valid {
-		return nil, nil
-	}
-	return resolveOne[db.User](ctx, obj.DeletedBy.Int64, r.env(ctx).UserByID)
+	return resolveOnePtr[db.User](ctx, obj.DeletedBy, r.env(ctx).UserByID)
 }
 
 // State is the resolver for the state field.
 func (r *adminBoostyCredentialsResolver) State(ctx context.Context, obj *db.BoostyCredential) (model.BoostyCredentialsStateEnum, error) {
-	if obj.DeletedAt.Valid {
+	if obj.DeletedAt != nil {
 		return model.BoostyCredentialsStateEnumDeleted, nil
 	}
 	return model.BoostyCredentialsStateEnumActive, nil
@@ -309,28 +288,18 @@ func (r *adminBoostyCredentialsConnectionResolver) Nodes(ctx context.Context, ob
 	return r.env(ctx).AllBoostyCredentials(ctx)
 }
 
-// MissedAt is the resolver for the missedAt field.
-func (r *adminBoostyMemberResolver) MissedAt(ctx context.Context, obj *db.BoostyMember) (*time.Time, error) {
-	return db.ToTimePtr(obj.MissedAt), nil
-}
-
 // CurrentTier is the resolver for the currentTier field.
 func (r *adminBoostyMemberResolver) CurrentTier(ctx context.Context, obj *db.BoostyMember) (*db.BoostyTier, error) {
-	if !obj.CurrentTierID.Valid {
+	if obj.CurrentTierID == nil {
 		return nil, nil
 	}
 
-	return resolveOne[db.BoostyTier](ctx, obj.CurrentTierID.Int64, r.env(ctx).BoostyTierByID)
+	return resolveOne[db.BoostyTier](ctx, *obj.CurrentTierID, r.env(ctx).BoostyTierByID)
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *adminBoostyMembersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminBoostyMembersConnection) ([]db.BoostyMember, error) {
 	return r.env(ctx).GetBoostyMembers(ctx)
-}
-
-// MissedAt is the resolver for the missedAt field.
-func (r *adminBoostyTierResolver) MissedAt(ctx context.Context, obj *db.BoostyTier) (*time.Time, error) {
-	return db.ToTimePtr(obj.MissedAt), nil
 }
 
 // Subgraphs is the resolver for the subgraphs field.
@@ -353,22 +322,9 @@ func (r *adminConfigVersionsConnectionResolver) Nodes(ctx context.Context, obj *
 	return r.env(ctx).ListAllConfigVersions(ctx)
 }
 
-// LastExecAt is the resolver for the lastExecAt field.
-func (r *adminCronJobResolver) LastExecAt(ctx context.Context, obj *db.CronJob) (*time.Time, error) {
-	if obj.LastExecAt.Valid {
-		return &obj.LastExecAt.Time, nil
-	}
-	return nil, nil
-}
-
 // Executions is the resolver for the executions field.
 func (r *adminCronJobResolver) Executions(ctx context.Context, obj *db.CronJob) ([]db.CronJobExecution, error) {
 	return r.env(ctx).ListCronJobExecutionsByJobID(ctx, obj.ID)
-}
-
-// FinishedAt is the resolver for the finishedAt field.
-func (r *adminCronJobExecutionResolver) FinishedAt(ctx context.Context, obj *db.CronJobExecution) (*time.Time, error) {
-	return db.ToTimePtr(obj.FinishedAt), nil
 }
 
 // Status is the resolver for the status field.
@@ -387,16 +343,6 @@ func (r *adminCronJobExecutionResolver) Status(ctx context.Context, obj *db.Cron
 	}
 }
 
-// ReportData is the resolver for the reportData field.
-func (r *adminCronJobExecutionResolver) ReportData(ctx context.Context, obj *db.CronJobExecution) (*string, error) {
-	return db.ToStringPtr(obj.ReportData), nil
-}
-
-// ErrorMessage is the resolver for the errorMessage field.
-func (r *adminCronJobExecutionResolver) ErrorMessage(ctx context.Context, obj *db.CronJobExecution) (*string, error) {
-	return db.ToStringPtr(obj.ErrorMessage), nil
-}
-
 // Job is the resolver for the job field.
 func (r *adminCronJobExecutionResolver) Job(ctx context.Context, obj *db.CronJobExecution) (*db.CronJob, error) {
 	return resolveOne[db.CronJob](ctx, obj.JobID, r.env(ctx).CronJobByID)
@@ -407,52 +353,19 @@ func (r *adminCronJobsConnectionResolver) Nodes(ctx context.Context, obj *model.
 	return r.env(ctx).ListAllCronJobs(ctx)
 }
 
-// CanPull is the resolver for the canPull field.
-func (r *adminGitTokenResolver) CanPull(ctx context.Context, obj *db.GitToken) (bool, error) {
-	return obj.CanPull.Bool, nil
-}
-
-// CanPush is the resolver for the canPush field.
-func (r *adminGitTokenResolver) CanPush(ctx context.Context, obj *db.GitToken) (bool, error) {
-	return obj.CanPush.Bool, nil
-}
-
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminGitTokenResolver) CreatedBy(ctx context.Context, obj *db.GitToken) (*db.User, error) {
-	if !obj.AdminID.Valid {
-		return nil, nil
-	}
-
-	return resolveOne[db.User](ctx, obj.AdminID.Int64, r.env(ctx).UserByID)
+	return resolveOnePtr[db.User](ctx, obj.AdminID, r.env(ctx).UserByID)
 }
 
 // DisabledBy is the resolver for the disabledBy field.
 func (r *adminGitTokenResolver) DisabledBy(ctx context.Context, obj *db.GitToken) (*db.User, error) {
-	if !obj.DisabledBy.Valid {
-		return nil, nil
-	}
-
-	return resolveOne[db.User](ctx, obj.DisabledBy.Int64, r.env(ctx).UserByID)
-}
-
-// DisabledAt is the resolver for the disabledAt field.
-func (r *adminGitTokenResolver) DisabledAt(ctx context.Context, obj *db.GitToken) (*time.Time, error) {
-	return db.ToTimePtr(obj.DisabledAt), nil
+	return resolveOnePtr[db.User](ctx, obj.DisabledBy, r.env(ctx).UserByID)
 }
 
 // Nodes is the resolver for the nodes field.
 func (r *adminGitTokensConnectionResolver) Nodes(ctx context.Context, obj *model.AdminGitTokensConnection) ([]db.GitToken, error) {
 	return r.env(ctx).ListAllGitTokens(ctx)
-}
-
-// ActiveFrom is the resolver for the activeFrom field.
-func (r *adminHtmlInjectionResolver) ActiveFrom(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
-	return db.ToTimePtr(obj.ActiveFrom), nil
-}
-
-// ActiveTo is the resolver for the activeTo field.
-func (r *adminHtmlInjectionResolver) ActiveTo(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
-	return db.ToTimePtr(obj.ActiveTo), nil
 }
 
 // Position is the resolver for the position field.
@@ -886,25 +799,6 @@ func (r *adminOfferResolver) Lifetime(ctx context.Context, obj *db.Offer) (*stri
 	return nil, nil
 }
 
-// PriceUsd is the resolver for the priceUSD field.
-func (r *adminOfferResolver) PriceUsd(ctx context.Context, obj *db.Offer) (float64, error) {
-	if !obj.PriceUsd.Valid {
-		return -1, nil
-	}
-
-	return obj.PriceUsd.Float64, nil
-}
-
-// StartsAt is the resolver for the startsAt field.
-func (r *adminOfferResolver) StartsAt(ctx context.Context, obj *db.Offer) (*time.Time, error) {
-	return db.ToTimePtr(obj.StartsAt), nil
-}
-
-// EndsAt is the resolver for the endsAt field.
-func (r *adminOfferResolver) EndsAt(ctx context.Context, obj *db.Offer) (*time.Time, error) {
-	return db.ToTimePtr(obj.EndsAt), nil
-}
-
 // SubgraphIds is the resolver for the subgraphIds field.
 func (r *adminOfferResolver) SubgraphIds(ctx context.Context, obj *db.Offer) ([]int64, error) {
 	return r.env(ctx).ListSubgraphIDsByOfferID(ctx, obj.ID)
@@ -920,35 +814,14 @@ func (r *adminOffersConnectionResolver) Nodes(ctx context.Context, obj *model.Ad
 	return r.env(ctx).ListAllOffers(ctx)
 }
 
-// MissedAt is the resolver for the missedAt field.
-func (r *adminPatreonCampaignResolver) MissedAt(ctx context.Context, obj *db.PatreonCampaign) (*time.Time, error) {
-	if obj.MissedAt.Valid {
-		return &obj.MissedAt.Time, nil
-	}
-	return nil, nil
-}
-
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminPatreonCredentialsResolver) CreatedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
 }
 
-// DeletedAt is the resolver for the deletedAt field.
-func (r *adminPatreonCredentialsResolver) DeletedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error) {
-	return db.ToTimePtr(obj.DeletedAt), nil
-}
-
 // DeletedBy is the resolver for the deletedBy field.
 func (r *adminPatreonCredentialsResolver) DeletedBy(ctx context.Context, obj *db.PatreonCredential) (*db.User, error) {
-	if !obj.DeletedBy.Valid {
-		return nil, nil
-	}
-	return resolveOne[db.User](ctx, obj.DeletedBy.Int64, r.env(ctx).UserByID)
-}
-
-// SyncedAt is the resolver for the syncedAt field.
-func (r *adminPatreonCredentialsResolver) SyncedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error) {
-	return db.ToTimePtr(obj.SyncedAt), nil
+	return resolveOnePtr[db.User](ctx, obj.DeletedBy, r.env(ctx).UserByID)
 }
 
 // CreatorAccessToken is the resolver for the creatorAccessToken field.
@@ -963,7 +836,7 @@ func (r *adminPatreonCredentialsResolver) CreatorAccessToken(ctx context.Context
 
 // State is the resolver for the state field.
 func (r *adminPatreonCredentialsResolver) State(ctx context.Context, obj *db.PatreonCredential) (model.PatreonCredentialsStateEnum, error) {
-	if obj.DeletedAt.Valid {
+	if obj.DeletedAt != nil {
 		return model.PatreonCredentialsStateEnumDeleted, nil
 	}
 
@@ -1025,17 +898,9 @@ func (r *adminPatreonCredentialsConnectionResolver) Nodes(ctx context.Context, o
 	return r.env(ctx).AllPatreonCredentials(ctx)
 }
 
-// CurrentTierID is the resolver for the currentTierID field.
-func (r *adminPatreonMemberResolver) CurrentTierID(ctx context.Context, obj *db.PatreonMember) (*int64, error) {
-	if obj.CurrentTierID.Valid {
-		return &obj.CurrentTierID.Int64, nil
-	}
-	return nil, nil
-}
-
 // CurrentTier is the resolver for the currentTier field.
 func (r *adminPatreonMemberResolver) CurrentTier(ctx context.Context, obj *db.PatreonMember) (*db.PatreonTier, error) {
-	if !obj.CurrentTierID.Valid {
+	if obj.CurrentTierID == nil {
 		return nil, nil
 	}
 
@@ -1046,19 +911,11 @@ func (r *adminPatreonMemberResolver) CurrentTier(ctx context.Context, obj *db.Pa
 	}
 
 	for _, tier := range tiers {
-		if tier.ID == obj.CurrentTierID.Int64 {
+		if tier.ID == *obj.CurrentTierID {
 			return &tier, nil
 		}
 	}
 
-	return nil, nil
-}
-
-// MissedAt is the resolver for the missedAt field.
-func (r *adminPatreonTierResolver) MissedAt(ctx context.Context, obj *db.PatreonTier) (*time.Time, error) {
-	if obj.MissedAt.Valid {
-		return &obj.MissedAt.Time, nil
-	}
 	return nil, nil
 }
 
@@ -1072,11 +929,6 @@ func (r *adminPurchaseResolver) Successful(ctx context.Context, obj *db.Purchase
 	return nowpayments.PaymentStatus(obj.Status).IsSuccessful(), nil
 }
 
-// UserID is the resolver for the userId field.
-func (r *adminPurchaseResolver) UserID(ctx context.Context, obj *db.Purchase) (*int64, error) {
-	return db.ToInt64Ptr(obj.UserID), nil
-}
-
 // Offer is the resolver for the offer field.
 func (r *adminPurchaseResolver) Offer(ctx context.Context, obj *db.Purchase) (*db.Offer, error) {
 	return resolveOne[db.Offer](ctx, obj.OfferID, r.env(ctx).OfferByID)
@@ -1084,11 +936,7 @@ func (r *adminPurchaseResolver) Offer(ctx context.Context, obj *db.Purchase) (*d
 
 // User is the resolver for the user field.
 func (r *adminPurchaseResolver) User(ctx context.Context, obj *db.Purchase) (*db.User, error) {
-	if !obj.UserID.Valid {
-		return nil, nil
-	}
-
-	return resolveOne[db.User](ctx, obj.UserID.Int64, r.env(ctx).UserByID)
+	return resolveOnePtr[db.User](ctx, obj.UserID, r.env(ctx).UserByID)
 }
 
 // Nodes is the resolver for the nodes field.
@@ -1397,15 +1245,6 @@ func (r *adminRedirectsConnectionResolver) Nodes(ctx context.Context, obj *model
 	return r.env(ctx).ListAllRedirects(ctx)
 }
 
-// HomeNoteVersionID is the resolver for the homeNoteVersionId field.
-func (r *adminReleaseResolver) HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int64, error) {
-	if obj.HomeNoteVersionID.Valid {
-		return &obj.HomeNoteVersionID.Int64, nil
-	}
-
-	return nil, nil
-}
-
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminReleaseResolver) CreatedBy(ctx context.Context, obj *db.Release) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -1419,11 +1258,6 @@ func (r *adminReleaseResolver) HomeNote(ctx context.Context, obj *db.Release) (*
 // Nodes is the resolver for the nodes field.
 func (r *adminReleasesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminReleasesConnection) ([]db.Release, error) {
 	return r.env(ctx).ListAllReleases(ctx)
-}
-
-// Color is the resolver for the color field.
-func (r *adminSubgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*string, error) {
-	return db.ToStringPtr(obj.Color), nil
 }
 
 // Nodes is the resolver for the nodes field.
@@ -1481,19 +1315,9 @@ func (r *adminTelegramPublishNoteResolver) SecondsUntilPublish(ctx context.Conte
 	return int64(obj.PublishAt.Sub(r.env(ctx).Now()).Seconds()), nil
 }
 
-// PublishedAt is the resolver for the publishedAt field.
-func (r *adminTelegramPublishNoteResolver) PublishedAt(ctx context.Context, obj *db.TelegramPublishNote) (*time.Time, error) {
-	return db.ToTimePtr(obj.PublishedAt), nil
-}
-
-// PublishedVersionID is the resolver for the publishedVersionID field.
-func (r *adminTelegramPublishNoteResolver) PublishedVersionID(ctx context.Context, obj *db.TelegramPublishNote) (*int64, error) {
-	return db.ToInt64Ptr(obj.PublishedVersionID), nil
-}
-
 // Status is the resolver for the status field.
 func (r *adminTelegramPublishNoteResolver) Status(ctx context.Context, obj *db.TelegramPublishNote) (string, error) {
-	if obj.PublishedAt.Valid {
+	if obj.PublishedAt != nil {
 		return "Sent", nil
 	}
 
@@ -1517,14 +1341,9 @@ func (r *adminTelegramPublishNoteResolver) Status(ctx context.Context, obj *db.T
 	return "Pending", nil
 }
 
-// LastError is the resolver for the lastError field.
-func (r *adminTelegramPublishNoteResolver) LastError(ctx context.Context, obj *db.TelegramPublishNote) (*string, error) {
-	return db.ToStringPtr(obj.LastError), nil
-}
-
 // NoteView is the resolver for the noteView field.
 func (r *adminTelegramPublishNoteResolver) NoteView(ctx context.Context, obj *db.TelegramPublishNote) (*appmodel.NoteView, error) {
-	if !obj.PublishedVersionID.Valid {
+	if obj.PublishedVersionID == nil {
 		nvs := r.env(ctx).LatestNoteViews()
 
 		for _, note := range nvs.List {
@@ -1536,7 +1355,7 @@ func (r *adminTelegramPublishNoteResolver) NoteView(ctx context.Context, obj *db
 		return nil, fmt.Errorf("note view not found for note path ID %d", obj.NotePathID)
 	}
 
-	return r.env(ctx).LoadNoteViewByVersionID(ctx, obj.PublishedVersionID.Int64)
+	return r.env(ctx).LoadNoteViewByVersionID(ctx, *obj.PublishedVersionID)
 }
 
 // Post is the resolver for the post field.
@@ -1695,11 +1514,11 @@ func (r *adminTgBotChatsConnectionResolver) Nodes(ctx context.Context, obj *mode
 	}
 
 	if filter.BotID != nil {
-		params.BotID = sql.NullInt64{Int64: *filter.BotID, Valid: true}
+		params.BotID = filter.BotID
 	}
 
 	if filter.CanInvite != nil {
-		params.CanInvite = sql.NullBool{Bool: *filter.CanInvite, Valid: true}
+		params.CanInvite = filter.CanInvite
 	}
 
 	return r.env(ctx).FilteredTgBotChats(ctx, params)
@@ -1737,35 +1556,6 @@ func (r *adminTgChatSubgraphAccessesConnectionResolver) Nodes(ctx context.Contex
 	return r.env(ctx).AllTgChatSubgraphAccesses(ctx)
 }
 
-// FirstName is the resolver for the firstName field.
-func (r *adminTgUserProfileResolver) FirstName(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
-	if obj.FirstName.Valid {
-		return &obj.FirstName.String, nil
-	}
-	return nil, nil
-}
-
-// LastName is the resolver for the lastName field.
-func (r *adminTgUserProfileResolver) LastName(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
-	if obj.LastName.Valid {
-		return &obj.LastName.String, nil
-	}
-	return nil, nil
-}
-
-// Username is the resolver for the username field.
-func (r *adminTgUserProfileResolver) Username(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
-	if obj.Username.Valid {
-		return &obj.Username.String, nil
-	}
-	return nil, nil
-}
-
-// Email is the resolver for the email field.
-func (r *adminUserResolver) Email(ctx context.Context, obj *db.User) (*string, error) {
-	return db.ToStringPtr(obj.Email), nil
-}
-
 // Ban is the resolver for the ban field.
 func (r *adminUserResolver) Ban(ctx context.Context, obj *db.User) (*db.UserBan, error) {
 	return r.env(ctx).UserBanByUserID(ctx, obj.ID)
@@ -1774,11 +1564,6 @@ func (r *adminUserResolver) Ban(ctx context.Context, obj *db.User) (*db.UserBan,
 // Nodes is the resolver for the nodes field.
 func (r *adminUserBansConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUserBansConnection) ([]db.UserBan, error) {
 	return r.env(ctx).ListAllUserBans(ctx)
-}
-
-// ExpiresAt is the resolver for the expiresAt field.
-func (r *adminUserSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
-	return db.ToTimePtr(obj.ExpiresAt), nil
 }
 
 // User is the resolver for the user field.
@@ -1799,14 +1584,6 @@ func (r *adminUserSubgraphAccessesConnectionResolver) Nodes(ctx context.Context,
 // Nodes is the resolver for the nodes field.
 func (r *adminUsersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminUsersConnection) ([]db.User, error) {
 	return r.env(ctx).ListAllUsers(ctx)
-}
-
-// IP is the resolver for the ip field.
-func (r *adminWaitListEmailRequestResolver) IP(ctx context.Context, obj *db.AllWaitListEmailRequestsRow) (*string, error) {
-	if obj.Ip.Valid {
-		return &obj.Ip.String, nil
-	}
-	return nil, nil
 }
 
 // Nodes is the resolver for the nodes field.
@@ -2047,13 +1824,13 @@ func (r *noteViewResolver) GraphPosition(ctx context.Context, obj *appmodel.Note
 		return nil, err
 	}
 
-	if !data.X.Valid || !data.Y.Valid {
+	if data.X == nil || data.Y == nil {
 		return nil, nil
 	}
 
 	pos := model.Vector2{
-		X: data.X.Float64,
-		Y: data.Y.Float64,
+		X: *data.X,
+		Y: *data.Y,
 	}
 
 	return &pos, nil
@@ -2112,15 +1889,6 @@ func (r *noteWarningResolver) Level(ctx context.Context, obj *appmodel.NoteWarni
 // ID is the resolver for the id field.
 func (r *offerResolver) ID(ctx context.Context, obj *db.Offer) (string, error) {
 	return obj.PublicID, nil
-}
-
-// PriceUsd is the resolver for the priceUSD field.
-func (r *offerResolver) PriceUsd(ctx context.Context, obj *db.Offer) (float64, error) {
-	if obj.PriceUsd.Valid {
-		return obj.PriceUsd.Float64, nil
-	}
-
-	return -1, nil
 }
 
 // Subgraphs is the resolver for the subgraphs field.
@@ -2322,11 +2090,6 @@ func (r *updateNoteGraphPositionsPayloadResolver) UpdatedNoteViews(ctx context.C
 	return noteViews, nil
 }
 
-// Email is the resolver for the email field.
-func (r *userResolver) Email(ctx context.Context, obj *db.User) (*string, error) {
-	return db.ToStringPtr(obj.Email), nil
-}
-
 // SubgraphAccesses is the resolver for the subgraphAccesses field.
 func (r *userResolver) SubgraphAccesses(ctx context.Context, obj *db.User) ([]db.UserSubgraphAccess, error) {
 	return r.env(ctx).ListActiveUserSubgraphAccessesByUserID(ctx, obj.ID)
@@ -2365,21 +2128,16 @@ func (r *userBanResolver) User(ctx context.Context, obj *db.UserBan) (*db.User, 
 
 // BannedBy is the resolver for the bannedBy field.
 func (r *userBanResolver) BannedBy(ctx context.Context, obj *db.UserBan) (*db.Admin, error) {
-	if !obj.BannedBy.Valid {
+	if obj.BannedBy == nil {
 		return nil, nil
 	}
 
-	return resolveOne[db.Admin](ctx, obj.BannedBy.Int64, r.env(ctx).AdminByUserID)
+	return resolveOne[db.Admin](ctx, *obj.BannedBy, r.env(ctx).AdminByUserID)
 }
 
 // ID is the resolver for the id field.
 func (r *userSubgraphAccessResolver) ID(ctx context.Context, obj *db.UserSubgraphAccess) (string, error) {
 	return r.env(ctx).IDHash("usa", obj.ID), nil
-}
-
-// ExpiresAt is the resolver for the expiresAt field.
-func (r *userSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
-	return db.ToTimePtr(obj.ExpiresAt), nil
 }
 
 // Subgraph is the resolver for the subgraph field.
@@ -2500,7 +2258,7 @@ func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, filte
 // ActivePurchases is the resolver for the activePurchases field.
 func (r *viewerResolver) ActivePurchases(ctx context.Context, obj *appmodel.Viewer) ([]db.Purchase, error) {
 	if obj.UserID != nil {
-		return r.env(ctx).ListActivePurchasesByUserID(ctx, sql.NullInt64{Valid: true, Int64: *obj.UserID})
+		return r.env(ctx).ListActivePurchasesByUserID(ctx, obj.UserID)
 	}
 
 	ids, err := r.env(ctx).ExtractPurchaseTokenIDs(ctx)
@@ -2693,11 +2451,6 @@ func (r *Resolver) AdminOffersConnection() AdminOffersConnectionResolver {
 	return &adminOffersConnectionResolver{r}
 }
 
-// AdminPatreonCampaign returns AdminPatreonCampaignResolver implementation.
-func (r *Resolver) AdminPatreonCampaign() AdminPatreonCampaignResolver {
-	return &adminPatreonCampaignResolver{r}
-}
-
 // AdminPatreonCredentials returns AdminPatreonCredentialsResolver implementation.
 func (r *Resolver) AdminPatreonCredentials() AdminPatreonCredentialsResolver {
 	return &adminPatreonCredentialsResolver{r}
@@ -2742,9 +2495,6 @@ func (r *Resolver) AdminRelease() AdminReleaseResolver { return &adminReleaseRes
 func (r *Resolver) AdminReleasesConnection() AdminReleasesConnectionResolver {
 	return &adminReleasesConnectionResolver{r}
 }
-
-// AdminSubgraph returns AdminSubgraphResolver implementation.
-func (r *Resolver) AdminSubgraph() AdminSubgraphResolver { return &adminSubgraphResolver{r} }
 
 // AdminSubgraphsConnection returns AdminSubgraphsConnectionResolver implementation.
 func (r *Resolver) AdminSubgraphsConnection() AdminSubgraphsConnectionResolver {
@@ -2822,11 +2572,6 @@ func (r *Resolver) AdminTgChatSubgraphAccessesConnection() AdminTgChatSubgraphAc
 	return &adminTgChatSubgraphAccessesConnectionResolver{r}
 }
 
-// AdminTgUserProfile returns AdminTgUserProfileResolver implementation.
-func (r *Resolver) AdminTgUserProfile() AdminTgUserProfileResolver {
-	return &adminTgUserProfileResolver{r}
-}
-
 // AdminUser returns AdminUserResolver implementation.
 func (r *Resolver) AdminUser() AdminUserResolver { return &adminUserResolver{r} }
 
@@ -2848,11 +2593,6 @@ func (r *Resolver) AdminUserSubgraphAccessesConnection() AdminUserSubgraphAccess
 // AdminUsersConnection returns AdminUsersConnectionResolver implementation.
 func (r *Resolver) AdminUsersConnection() AdminUsersConnectionResolver {
 	return &adminUsersConnectionResolver{r}
-}
-
-// AdminWaitListEmailRequest returns AdminWaitListEmailRequestResolver implementation.
-func (r *Resolver) AdminWaitListEmailRequest() AdminWaitListEmailRequestResolver {
-	return &adminWaitListEmailRequestResolver{r}
 }
 
 // AdminWaitListEmailRequestsConnection returns AdminWaitListEmailRequestsConnectionResolver implementation.
@@ -2998,7 +2738,6 @@ type adminNotFoundPathsConnectionResolver struct{ *Resolver }
 type adminNoteAssetResolver struct{ *Resolver }
 type adminOfferResolver struct{ *Resolver }
 type adminOffersConnectionResolver struct{ *Resolver }
-type adminPatreonCampaignResolver struct{ *Resolver }
 type adminPatreonCredentialsResolver struct{ *Resolver }
 type adminPatreonCredentialsConnectionResolver struct{ *Resolver }
 type adminPatreonMemberResolver struct{ *Resolver }
@@ -3010,7 +2749,6 @@ type adminRedirectResolver struct{ *Resolver }
 type adminRedirectsConnectionResolver struct{ *Resolver }
 type adminReleaseResolver struct{ *Resolver }
 type adminReleasesConnectionResolver struct{ *Resolver }
-type adminSubgraphResolver struct{ *Resolver }
 type adminSubgraphsConnectionResolver struct{ *Resolver }
 type adminTelegramAccountResolver struct{ *Resolver }
 type adminTelegramAccountDialogResolver struct{ *Resolver }
@@ -3027,13 +2765,11 @@ type adminTgChatMemberResolver struct{ *Resolver }
 type adminTgChatMembersConnectionResolver struct{ *Resolver }
 type adminTgChatSubgraphAccessResolver struct{ *Resolver }
 type adminTgChatSubgraphAccessesConnectionResolver struct{ *Resolver }
-type adminTgUserProfileResolver struct{ *Resolver }
 type adminUserResolver struct{ *Resolver }
 type adminUserBansConnectionResolver struct{ *Resolver }
 type adminUserSubgraphAccessResolver struct{ *Resolver }
 type adminUserSubgraphAccessesConnectionResolver struct{ *Resolver }
 type adminUsersConnectionResolver struct{ *Resolver }
-type adminWaitListEmailRequestResolver struct{ *Resolver }
 type adminWaitListEmailRequestsConnectionResolver struct{ *Resolver }
 type adminWaitListTgBotRequestsConnectionResolver struct{ *Resolver }
 type banUserPayloadResolver struct{ *Resolver }
@@ -3062,3 +2798,170 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *adminApiKeyResolver) DisabledAt(ctx context.Context, obj *db.ApiKey) (*time.Time, error) {
+	return db.ToTimePtr(obj.DisabledAt), nil
+}
+func (r *adminBoostyCredentialsResolver) DeletedAt(ctx context.Context, obj *db.BoostyCredential) (*time.Time, error) {
+	return db.ToTimePtr(obj.DeletedAt), nil
+}
+func (r *adminBoostyMemberResolver) MissedAt(ctx context.Context, obj *db.BoostyMember) (*time.Time, error) {
+	return db.ToTimePtr(obj.MissedAt), nil
+}
+func (r *adminBoostyTierResolver) MissedAt(ctx context.Context, obj *db.BoostyTier) (*time.Time, error) {
+	return db.ToTimePtr(obj.MissedAt), nil
+}
+func (r *adminCronJobResolver) LastExecAt(ctx context.Context, obj *db.CronJob) (*time.Time, error) {
+	if obj.LastExecAt.Valid {
+		return &obj.LastExecAt.Time, nil
+	}
+	return nil, nil
+}
+func (r *adminCronJobExecutionResolver) FinishedAt(ctx context.Context, obj *db.CronJobExecution) (*time.Time, error) {
+	return db.ToTimePtr(obj.FinishedAt), nil
+}
+func (r *adminCronJobExecutionResolver) ReportData(ctx context.Context, obj *db.CronJobExecution) (*string, error) {
+	return db.ToStringPtr(obj.ReportData), nil
+}
+func (r *adminCronJobExecutionResolver) ErrorMessage(ctx context.Context, obj *db.CronJobExecution) (*string, error) {
+	return db.ToStringPtr(obj.ErrorMessage), nil
+}
+func (r *adminGitTokenResolver) CanPull(ctx context.Context, obj *db.GitToken) (bool, error) {
+	return obj.CanPull.Bool, nil
+}
+func (r *adminGitTokenResolver) CanPush(ctx context.Context, obj *db.GitToken) (bool, error) {
+	return obj.CanPush.Bool, nil
+}
+func (r *adminGitTokenResolver) DisabledAt(ctx context.Context, obj *db.GitToken) (*time.Time, error) {
+	return db.ToTimePtr(obj.DisabledAt), nil
+}
+func (r *adminHtmlInjectionResolver) ActiveFrom(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
+	return db.ToTimePtr(obj.ActiveFrom), nil
+}
+func (r *adminHtmlInjectionResolver) ActiveTo(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
+	return db.ToTimePtr(obj.ActiveTo), nil
+}
+func (r *adminOfferResolver) PriceUsd(ctx context.Context, obj *db.Offer) (float64, error) {
+	if !obj.PriceUsd.Valid {
+		return -1, nil
+	}
+
+	return obj.PriceUsd.Float64, nil
+}
+func (r *adminOfferResolver) StartsAt(ctx context.Context, obj *db.Offer) (*time.Time, error) {
+	return db.ToTimePtr(obj.StartsAt), nil
+}
+func (r *adminOfferResolver) EndsAt(ctx context.Context, obj *db.Offer) (*time.Time, error) {
+	return db.ToTimePtr(obj.EndsAt), nil
+}
+func (r *adminPatreonCampaignResolver) MissedAt(ctx context.Context, obj *db.PatreonCampaign) (*time.Time, error) {
+	if obj.MissedAt.Valid {
+		return &obj.MissedAt.Time, nil
+	}
+	return nil, nil
+}
+func (r *adminPatreonCredentialsResolver) DeletedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error) {
+	return db.ToTimePtr(obj.DeletedAt), nil
+}
+func (r *adminPatreonCredentialsResolver) SyncedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error) {
+	return db.ToTimePtr(obj.SyncedAt), nil
+}
+func (r *adminPatreonMemberResolver) CurrentTierID(ctx context.Context, obj *db.PatreonMember) (*int64, error) {
+	if obj.CurrentTierID.Valid {
+		return &obj.CurrentTierID.Int64, nil
+	}
+	return nil, nil
+}
+func (r *adminPatreonTierResolver) MissedAt(ctx context.Context, obj *db.PatreonTier) (*time.Time, error) {
+	if obj.MissedAt.Valid {
+		return &obj.MissedAt.Time, nil
+	}
+	return nil, nil
+}
+func (r *adminPurchaseResolver) UserID(ctx context.Context, obj *db.Purchase) (*int64, error) {
+	return db.ToInt64Ptr(obj.UserID), nil
+}
+func (r *adminReleaseResolver) HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int64, error) {
+	if obj.HomeNoteVersionID.Valid {
+		return &obj.HomeNoteVersionID.Int64, nil
+	}
+
+	return nil, nil
+}
+func (r *adminSubgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*string, error) {
+	return db.ToStringPtr(obj.Color), nil
+}
+func (r *adminTelegramPublishNoteResolver) PublishedAt(ctx context.Context, obj *db.TelegramPublishNote) (*time.Time, error) {
+	return db.ToTimePtr(obj.PublishedAt), nil
+}
+func (r *adminTelegramPublishNoteResolver) PublishedVersionID(ctx context.Context, obj *db.TelegramPublishNote) (*int64, error) {
+	return db.ToInt64Ptr(obj.PublishedVersionID), nil
+}
+func (r *adminTelegramPublishNoteResolver) LastError(ctx context.Context, obj *db.TelegramPublishNote) (*string, error) {
+	return db.ToStringPtr(obj.LastError), nil
+}
+func (r *adminTgUserProfileResolver) FirstName(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
+	if obj.FirstName.Valid {
+		return &obj.FirstName.String, nil
+	}
+	return nil, nil
+}
+func (r *adminTgUserProfileResolver) LastName(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
+	if obj.LastName.Valid {
+		return &obj.LastName.String, nil
+	}
+	return nil, nil
+}
+func (r *adminTgUserProfileResolver) Username(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
+	if obj.Username.Valid {
+		return &obj.Username.String, nil
+	}
+	return nil, nil
+}
+func (r *adminUserResolver) Email(ctx context.Context, obj *db.User) (*string, error) {
+	return db.ToStringPtr(obj.Email), nil
+}
+func (r *adminUserSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
+	return db.ToTimePtr(obj.ExpiresAt), nil
+}
+func (r *adminWaitListEmailRequestResolver) IP(ctx context.Context, obj *db.AllWaitListEmailRequestsRow) (*string, error) {
+	if obj.Ip.Valid {
+		return &obj.Ip.String, nil
+	}
+	return nil, nil
+}
+func (r *offerResolver) PriceUsd(ctx context.Context, obj *db.Offer) (float64, error) {
+	if obj.PriceUsd.Valid {
+		return obj.PriceUsd.Float64, nil
+	}
+
+	return -1, nil
+}
+func (r *userResolver) Email(ctx context.Context, obj *db.User) (*string, error) {
+	return db.ToStringPtr(obj.Email), nil
+}
+func (r *userSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
+	return db.ToTimePtr(obj.ExpiresAt), nil
+}
+func (r *Resolver) AdminPatreonCampaign() AdminPatreonCampaignResolver {
+	return &adminPatreonCampaignResolver{r}
+}
+func (r *Resolver) AdminSubgraph() AdminSubgraphResolver { return &adminSubgraphResolver{r} }
+func (r *Resolver) AdminTgUserProfile() AdminTgUserProfileResolver {
+	return &adminTgUserProfileResolver{r}
+}
+func (r *Resolver) AdminWaitListEmailRequest() AdminWaitListEmailRequestResolver {
+	return &adminWaitListEmailRequestResolver{r}
+}
+type adminPatreonCampaignResolver struct{ *Resolver }
+type adminSubgraphResolver struct{ *Resolver }
+type adminTgUserProfileResolver struct{ *Resolver }
+type adminWaitListEmailRequestResolver struct{ *Resolver }
+*/

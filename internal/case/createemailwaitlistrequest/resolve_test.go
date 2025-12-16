@@ -36,7 +36,8 @@ func TestResolve(t *testing.T) {
 				env.InsertWaitListEmailRequestFunc = func(ctx context.Context, arg db.InsertWaitListEmailRequestParams) error {
 					require.Equal(t, "test@example.com", arg.Email)
 					require.Equal(t, int64(123), arg.NotePathID)
-					require.Equal(t, sql.NullString{String: "192.168.1.1", Valid: true}, arg.Ip)
+					require.NotNil(t, arg.Ip)
+					require.Equal(t, "192.168.1.1", *arg.Ip)
 					return nil
 				}
 			},
@@ -83,7 +84,7 @@ func TestResolve(t *testing.T) {
 					return ""
 				}
 				env.InsertWaitListEmailRequestFunc = func(ctx context.Context, arg db.InsertWaitListEmailRequestParams) error {
-					require.Equal(t, sql.NullString{String: "", Valid: false}, arg.Ip)
+					require.Nil(t, arg.Ip)
 					return nil
 				}
 			},

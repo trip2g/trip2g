@@ -2,7 +2,6 @@ package sendtelegramaccountpublishpost
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -72,7 +71,7 @@ func Resolve(ctx context.Context, env Env, params model.SendTelegramPublishPostP
 	// Mark as published for non-instant posts
 	if !params.Instant {
 		updateParams := db.UpdateTelegramPublishNoteAsPublishedParams{
-			PublishedVersionID: sql.NullInt64{Int64: noteView.VersionID, Valid: true},
+			PublishedVersionID: &noteView.VersionID,
 			NotePathID:         params.NotePathID,
 		}
 

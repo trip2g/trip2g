@@ -12,6 +12,18 @@ import (
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
+// boolToInt64Ptr converts *bool to *int64 (1 for true, 0 for false, nil for nil)
+func boolToInt64Ptr(b *bool) *int64 {
+	if b == nil {
+		return nil
+	}
+	v := int64(0)
+	if *b {
+		v = 1
+	}
+	return &v
+}
+
 type Env interface {
 	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)
 	UpdateTelegramAccount(ctx context.Context, arg db.UpdateTelegramAccountParams) error
@@ -40,8 +52,8 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	// Update the account
 	params := db.UpdateTelegramAccountParams{
 		ID:          input.ID,
-		DisplayName: nullableString(input.DisplayName),
-		Enabled:     nullableBoolToInt64(input.Enabled),
+		DisplayName: input.DisplayName,
+		Enabled:     boolToInt64Ptr(input.Enabled),
 	}
 
 	err = env.UpdateTelegramAccount(ctx, params)
@@ -60,22 +72,4 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	return &payload, nil
-}
-
-func nullableString(s *string) sql.NullString {
-	if s == nil {
-		return sql.NullString{}
-	}
-	return sql.NullString{String: *s, Valid: true}
-}
-
-func nullableBoolToInt64(b *bool) sql.NullInt64 {
-	if b == nil {
-		return sql.NullInt64{}
-	}
-	v := int64(0)
-	if *b {
-		v = 1
-	}
-	return sql.NullInt64{Int64: v, Valid: true}
 }

@@ -5,7 +5,6 @@ package handletgupdate
 
 import (
 	"context"
-	"database/sql"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"sync"
 	"trip2g/internal/db"
@@ -32,7 +31,7 @@ var _ Env = &EnvMock{}
 //			CalculateSha256Func: func(s string) string {
 //				panic("mock out the CalculateSha256 method")
 //			},
-//			ClearTgUserIDByTgUserIDFunc: func(ctx context.Context, tgUserID sql.NullInt64) error {
+//			ClearTgUserIDByTgUserIDFunc: func(ctx context.Context, tgUserID *int64) error {
 //				panic("mock out the ClearTgUserIDByTgUserID method")
 //			},
 //			DeleteTgAttachCodeFunc: func(ctx context.Context, code string) error {
@@ -116,7 +115,7 @@ var _ Env = &EnvMock{}
 //			UpsertTgUserStateFunc: func(ctx context.Context, arg db.UpsertTgUserStateParams) error {
 //				panic("mock out the UpsertTgUserState method")
 //			},
-//			UserByTgUserIDFunc: func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+//			UserByTgUserIDFunc: func(ctx context.Context, tgUserID *int64) (db.User, error) {
 //				panic("mock out the UserByTgUserID method")
 //			},
 //		}
@@ -136,7 +135,7 @@ type EnvMock struct {
 	CalculateSha256Func func(s string) string
 
 	// ClearTgUserIDByTgUserIDFunc mocks the ClearTgUserIDByTgUserID method.
-	ClearTgUserIDByTgUserIDFunc func(ctx context.Context, tgUserID sql.NullInt64) error
+	ClearTgUserIDByTgUserIDFunc func(ctx context.Context, tgUserID *int64) error
 
 	// DeleteTgAttachCodeFunc mocks the DeleteTgAttachCode method.
 	DeleteTgAttachCodeFunc func(ctx context.Context, code string) error
@@ -220,7 +219,7 @@ type EnvMock struct {
 	UpsertTgUserStateFunc func(ctx context.Context, arg db.UpsertTgUserStateParams) error
 
 	// UserByTgUserIDFunc mocks the UserByTgUserID method.
-	UserByTgUserIDFunc func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
+	UserByTgUserIDFunc func(ctx context.Context, tgUserID *int64) (db.User, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -240,7 +239,7 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// TgUserID is the tgUserID argument value.
-			TgUserID sql.NullInt64
+			TgUserID *int64
 		}
 		// DeleteTgAttachCode holds details about calls to the DeleteTgAttachCode method.
 		DeleteTgAttachCode []struct {
@@ -426,7 +425,7 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// TgUserID is the tgUserID argument value.
-			TgUserID sql.NullInt64
+			TgUserID *int64
 		}
 	}
 	lockBotID                                 sync.RWMutex
@@ -550,13 +549,13 @@ func (mock *EnvMock) CalculateSha256Calls() []struct {
 }
 
 // ClearTgUserIDByTgUserID calls ClearTgUserIDByTgUserIDFunc.
-func (mock *EnvMock) ClearTgUserIDByTgUserID(ctx context.Context, tgUserID sql.NullInt64) error {
+func (mock *EnvMock) ClearTgUserIDByTgUserID(ctx context.Context, tgUserID *int64) error {
 	if mock.ClearTgUserIDByTgUserIDFunc == nil {
 		panic("EnvMock.ClearTgUserIDByTgUserIDFunc: method is nil but Env.ClearTgUserIDByTgUserID was just called")
 	}
 	callInfo := struct {
 		Ctx      context.Context
-		TgUserID sql.NullInt64
+		TgUserID *int64
 	}{
 		Ctx:      ctx,
 		TgUserID: tgUserID,
@@ -573,11 +572,11 @@ func (mock *EnvMock) ClearTgUserIDByTgUserID(ctx context.Context, tgUserID sql.N
 //	len(mockedEnv.ClearTgUserIDByTgUserIDCalls())
 func (mock *EnvMock) ClearTgUserIDByTgUserIDCalls() []struct {
 	Ctx      context.Context
-	TgUserID sql.NullInt64
+	TgUserID *int64
 } {
 	var calls []struct {
 		Ctx      context.Context
-		TgUserID sql.NullInt64
+		TgUserID *int64
 	}
 	mock.lockClearTgUserIDByTgUserID.RLock()
 	calls = mock.calls.ClearTgUserIDByTgUserID
@@ -1535,13 +1534,13 @@ func (mock *EnvMock) UpsertTgUserStateCalls() []struct {
 }
 
 // UserByTgUserID calls UserByTgUserIDFunc.
-func (mock *EnvMock) UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+func (mock *EnvMock) UserByTgUserID(ctx context.Context, tgUserID *int64) (db.User, error) {
 	if mock.UserByTgUserIDFunc == nil {
 		panic("EnvMock.UserByTgUserIDFunc: method is nil but Env.UserByTgUserID was just called")
 	}
 	callInfo := struct {
 		Ctx      context.Context
-		TgUserID sql.NullInt64
+		TgUserID *int64
 	}{
 		Ctx:      ctx,
 		TgUserID: tgUserID,
@@ -1558,11 +1557,11 @@ func (mock *EnvMock) UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64)
 //	len(mockedEnv.UserByTgUserIDCalls())
 func (mock *EnvMock) UserByTgUserIDCalls() []struct {
 	Ctx      context.Context
-	TgUserID sql.NullInt64
+	TgUserID *int64
 } {
 	var calls []struct {
 		Ctx      context.Context
-		TgUserID sql.NullInt64
+		TgUserID *int64
 	}
 	mock.lockUserByTgUserID.RLock()
 	calls = mock.calls.UserByTgUserID

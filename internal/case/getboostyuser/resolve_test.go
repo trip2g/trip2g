@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"trip2g/internal/db"
+	"trip2g/internal/ptr"
 )
 
 //go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
@@ -44,20 +45,20 @@ func TestResolve(t *testing.T) {
 					return db.BoostyMember{
 						ID:     1,
 						Email:  "existing@example.com",
-						UserID: sql.NullInt64{Valid: true, Int64: 123},
+						UserID: ptr.To(int64(123)),
 					}, nil
 				}
 				env.UserByIDFunc = func(ctx context.Context, id int64) (db.User, error) {
 					require.Equal(t, int64(123), id)
 					return db.User{
 						ID:    123,
-						Email: sql.NullString{Valid: true, String: "existing@example.com"},
+						Email: ptr.To("existing@example.com"),
 					}, nil
 				}
 			},
 			wantUser: &db.User{
 				ID:    123,
-				Email: sql.NullString{Valid: true, String: "existing@example.com"},
+				Email: ptr.To("existing@example.com"),
 			},
 			wantErr: false,
 		},
@@ -69,26 +70,26 @@ func TestResolve(t *testing.T) {
 					return db.BoostyMember{
 						ID:     2,
 						Email:  "nolink@example.com",
-						UserID: sql.NullInt64{Valid: false},
+						UserID: nil,
 					}, nil
 				}
 				env.UserByEmailFunc = func(ctx context.Context, email string) (db.User, error) {
 					require.Equal(t, "nolink@example.com", email)
 					return db.User{
 						ID:    456,
-						Email: sql.NullString{Valid: true, String: "nolink@example.com"},
+						Email: ptr.To("nolink@example.com"),
 					}, nil
 				}
 				env.UpdateBoostyMemberUserIDFunc = func(ctx context.Context, arg db.UpdateBoostyMemberUserIDParams) error {
 					require.Equal(t, int64(2), arg.ID)
-					require.Equal(t, int64(456), arg.UserID.Int64)
-					require.True(t, arg.UserID.Valid)
+					require.NotNil(t, arg.UserID)
+					require.Equal(t, int64(456), *arg.UserID)
 					return nil
 				}
 			},
 			wantUser: &db.User{
 				ID:    456,
-				Email: sql.NullString{Valid: true, String: "nolink@example.com"},
+				Email: ptr.To("nolink@example.com"),
 			},
 			wantErr: false,
 		},
@@ -100,7 +101,7 @@ func TestResolve(t *testing.T) {
 					return db.BoostyMember{
 						ID:     3,
 						Email:  "newuser@example.com",
-						UserID: sql.NullInt64{Valid: false},
+						UserID: nil,
 					}, nil
 				}
 				env.UserByEmailFunc = func(ctx context.Context, email string) (db.User, error) {
@@ -111,18 +112,19 @@ func TestResolve(t *testing.T) {
 					require.Equal(t, "boosty", args.CreatedVia)
 					return db.User{
 						ID:    789,
-						Email: sql.NullString{Valid: true, String: "newuser@example.com"},
+						Email: ptr.To("newuser@example.com"),
 					}, nil
 				}
 				env.UpdateBoostyMemberUserIDFunc = func(ctx context.Context, arg db.UpdateBoostyMemberUserIDParams) error {
 					require.Equal(t, int64(3), arg.ID)
-					require.Equal(t, int64(789), arg.UserID.Int64)
+					require.NotNil(t, arg.UserID)
+					require.Equal(t, int64(789), *arg.UserID)
 					return nil
 				}
 			},
 			wantUser: &db.User{
 				ID:    789,
-				Email: sql.NullString{Valid: true, String: "newuser@example.com"},
+				Email: ptr.To("newuser@example.com"),
 			},
 			wantErr: false,
 		},
@@ -145,7 +147,7 @@ func TestResolve(t *testing.T) {
 					return db.BoostyMember{
 						ID:     4,
 						Email:  "updateerror@example.com",
-						UserID: sql.NullInt64{Valid: false},
+						UserID: nil,
 					}, nil
 				}
 				env.UserByEmailFunc = func(ctx context.Context, email string) (db.User, error) {

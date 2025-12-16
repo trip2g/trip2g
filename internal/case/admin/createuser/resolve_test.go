@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/case/admin/createuser"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 
 	"github.com/kr/pretty"
@@ -52,7 +53,7 @@ func TestResolve(t *testing.T) {
 				InsertUserWithEmailFunc: func(ctx context.Context, arg db.InsertUserWithEmailParams) (db.User, error) {
 					return db.User{
 						ID:         123,
-						Email:      sql.NullString{String: arg.Email, Valid: true},
+						Email:      ptr.To(arg.Email),
 						CreatedVia: arg.CreatedVia,
 					}, nil
 				},
@@ -66,7 +67,7 @@ func TestResolve(t *testing.T) {
 			want: &model.CreateUserPayload{
 				User: &db.User{
 					ID:         123,
-					Email:      sql.NullString{String: "test@example.com", Valid: true},
+					Email:      ptr.To("test@example.com"),
 					CreatedVia: "admin",
 				},
 			},
@@ -161,7 +162,7 @@ func TestResolve(t *testing.T) {
 				UserByEmailFunc: func(ctx context.Context, lower string) (db.User, error) {
 					return db.User{
 						ID:    456,
-						Email: sql.NullString{String: lower, Valid: true},
+						Email: ptr.To(lower),
 					}, nil
 				},
 			},

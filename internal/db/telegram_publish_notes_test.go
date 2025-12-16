@@ -109,8 +109,8 @@ func TestListAllTelegramPublishNotes(t *testing.T) {
 		require.Equal(t, path3, notes[1].NotePathID) // path3 has later publish_at (+1 day)
 
 		// Verify no published notes are included
-		require.False(t, notes[0].PublishedAt.Valid)
-		require.False(t, notes[1].PublishedAt.Valid)
+		require.Nil(t, notes[0].PublishedAt)
+		require.Nil(t, notes[1].PublishedAt)
 	})
 
 	t.Run("ListAllTelegramPublishNotes_show_all", func(t *testing.T) {
@@ -131,9 +131,9 @@ func TestListAllTelegramPublishNotes(t *testing.T) {
 		require.Equal(t, path3, notes[2].NotePathID) // future note (latest publish_at: +1 day)
 
 		// Verify published status
-		require.True(t, notes[0].PublishedAt.Valid)  // path2 is published
-		require.False(t, notes[1].PublishedAt.Valid) // path1 is not published
-		require.False(t, notes[2].PublishedAt.Valid) // path3 is not published
+		require.NotNil(t, notes[0].PublishedAt) // path2 is published
+		require.Nil(t, notes[1].PublishedAt)    // path1 is not published
+		require.Nil(t, notes[2].PublishedAt)    // path3 is not published
 	})
 
 	t.Run("ListScheduledTelegramPublishNoteIDs_critical_bug_test", func(t *testing.T) {

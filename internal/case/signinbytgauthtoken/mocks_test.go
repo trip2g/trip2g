@@ -5,7 +5,6 @@ package signinbytgauthtoken
 
 import (
 	"context"
-	"database/sql"
 	"sync"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -22,7 +21,7 @@ var _ Env = &EnvMock{}
 //
 //		// make and configure a mocked Env
 //		mockedEnv := &EnvMock{
-//			InsertUserWithTgUserIDFunc: func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+//			InsertUserWithTgUserIDFunc: func(ctx context.Context, tgUserID *int64) (db.User, error) {
 //				panic("mock out the InsertUserWithTgUserID method")
 //			},
 //			LoggerFunc: func() logger.Logger {
@@ -40,7 +39,7 @@ var _ Env = &EnvMock{}
 //			TrustedDomainsFunc: func() []string {
 //				panic("mock out the TrustedDomains method")
 //			},
-//			UserByTgUserIDFunc: func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+//			UserByTgUserIDFunc: func(ctx context.Context, tgUserID *int64) (db.User, error) {
 //				panic("mock out the UserByTgUserID method")
 //			},
 //		}
@@ -51,7 +50,7 @@ var _ Env = &EnvMock{}
 //	}
 type EnvMock struct {
 	// InsertUserWithTgUserIDFunc mocks the InsertUserWithTgUserID method.
-	InsertUserWithTgUserIDFunc func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
+	InsertUserWithTgUserIDFunc func(ctx context.Context, tgUserID *int64) (db.User, error)
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
@@ -69,7 +68,7 @@ type EnvMock struct {
 	TrustedDomainsFunc func() []string
 
 	// UserByTgUserIDFunc mocks the UserByTgUserID method.
-	UserByTgUserIDFunc func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
+	UserByTgUserIDFunc func(ctx context.Context, tgUserID *int64) (db.User, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -78,7 +77,7 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// TgUserID is the tgUserID argument value.
-			TgUserID sql.NullInt64
+			TgUserID *int64
 		}
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
@@ -112,7 +111,7 @@ type EnvMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// TgUserID is the tgUserID argument value.
-			TgUserID sql.NullInt64
+			TgUserID *int64
 		}
 	}
 	lockInsertUserWithTgUserID        sync.RWMutex
@@ -125,13 +124,13 @@ type EnvMock struct {
 }
 
 // InsertUserWithTgUserID calls InsertUserWithTgUserIDFunc.
-func (mock *EnvMock) InsertUserWithTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+func (mock *EnvMock) InsertUserWithTgUserID(ctx context.Context, tgUserID *int64) (db.User, error) {
 	if mock.InsertUserWithTgUserIDFunc == nil {
 		panic("EnvMock.InsertUserWithTgUserIDFunc: method is nil but Env.InsertUserWithTgUserID was just called")
 	}
 	callInfo := struct {
 		Ctx      context.Context
-		TgUserID sql.NullInt64
+		TgUserID *int64
 	}{
 		Ctx:      ctx,
 		TgUserID: tgUserID,
@@ -148,11 +147,11 @@ func (mock *EnvMock) InsertUserWithTgUserID(ctx context.Context, tgUserID sql.Nu
 //	len(mockedEnv.InsertUserWithTgUserIDCalls())
 func (mock *EnvMock) InsertUserWithTgUserIDCalls() []struct {
 	Ctx      context.Context
-	TgUserID sql.NullInt64
+	TgUserID *int64
 } {
 	var calls []struct {
 		Ctx      context.Context
-		TgUserID sql.NullInt64
+		TgUserID *int64
 	}
 	mock.lockInsertUserWithTgUserID.RLock()
 	calls = mock.calls.InsertUserWithTgUserID
@@ -323,13 +322,13 @@ func (mock *EnvMock) TrustedDomainsCalls() []struct {
 }
 
 // UserByTgUserID calls UserByTgUserIDFunc.
-func (mock *EnvMock) UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+func (mock *EnvMock) UserByTgUserID(ctx context.Context, tgUserID *int64) (db.User, error) {
 	if mock.UserByTgUserIDFunc == nil {
 		panic("EnvMock.UserByTgUserIDFunc: method is nil but Env.UserByTgUserID was just called")
 	}
 	callInfo := struct {
 		Ctx      context.Context
-		TgUserID sql.NullInt64
+		TgUserID *int64
 	}{
 		Ctx:      ctx,
 		TgUserID: tgUserID,
@@ -346,11 +345,11 @@ func (mock *EnvMock) UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64)
 //	len(mockedEnv.UserByTgUserIDCalls())
 func (mock *EnvMock) UserByTgUserIDCalls() []struct {
 	Ctx      context.Context
-	TgUserID sql.NullInt64
+	TgUserID *int64
 } {
 	var calls []struct {
 		Ctx      context.Context
-		TgUserID sql.NullInt64
+		TgUserID *int64
 	}
 	mock.lockUserByTgUserID.RLock()
 	calls = mock.calls.UserByTgUserID

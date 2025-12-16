@@ -38,8 +38,8 @@ func Resolve(ctx context.Context, env Env, filter Filter) (*Result, error) {
 	accesses := map[int64][]*accessRow{}
 
 	filterParams := db.ListTgBotChatSubgraphAccessesParams{
-		UserID: db.ToNullableInt64(filter.UserID),
-		ChatID: db.ToNullableInt64(filter.ChatID),
+		UserID: filter.UserID,
+		ChatID: filter.ChatID,
 	}
 
 	rows, err := env.ListTgBotChatSubgraphAccesses(ctx, filterParams)
@@ -121,7 +121,7 @@ func processExpiredAccess(ctx context.Context, env Env, user *db.User, access *d
 
 	// First, permanently ban the user from the actual Telegram chat if they have a telegram ID
 	// They will be unbanned when they request new access via /chats command
-	if user.TgUserID.Valid {
+	if user.TgUserID != nil {
 		err := env.KickTelegramChatMember(ctx, chat.ID, user.ID)
 		if err != nil {
 			return fmt.Errorf("failed to ban user from Telegram chat (userID: %d, chatID: %d): %w",
@@ -130,23 +130,27 @@ func processExpiredAccess(ctx context.Context, env Env, user *db.User, access *d
 	}
 
 	// Remove user from the chat database record
+	var tgUserID int64
+	if user.TgUserID != nil {
+		tgUserID = *user.TgUserID
+	}
 	err := env.RemoveTgChatMember(ctx, db.RemoveTgChatMemberParams{
-		UserID: user.TgUserID.Int64,
+		UserID: tgUserID,
 		ChatID: chat.TelegramID,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to remove chat member from database (telegramUserID: %d, chatID: %d): %w",
-			user.TgUserID.Int64, chat.TelegramID, err)
+			tgUserID, chat.TelegramID, err)
 	}
 
 	// Send notification to user if we have their telegram ID
-	if user != nil && user.TgUserID.Valid {
-		notifyErr := sendExpirationNotification(ctx, env, chat.ID, user.TgUserID.Int64, chat.ChatTitle, access.Subgraph.Name)
+	if user != nil && user.TgUserID != nil {
+		notifyErr := sendExpirationNotification(ctx, env, chat.ID, *user.TgUserID, chat.ChatTitle, access.Subgraph.Name)
 		if notifyErr != nil {
 			// Don't fail the whole operation if notification fails
 			// Just wrap the error for context
 			return fmt.Errorf("failed to send expiration notification to telegram user %d: %w",
-				user.TgUserID.Int64, notifyErr)
+				*user.TgUserID, notifyErr)
 		}
 	}
 

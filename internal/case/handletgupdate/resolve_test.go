@@ -11,6 +11,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/ptr"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/stretchr/testify/require"
@@ -380,14 +381,14 @@ func TestResolve(t *testing.T) {
 				env.UpsertTgUserStateFunc = func(ctx context.Context, arg db.UpsertTgUserStateParams) error {
 					return nil
 				}
-				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
-					require.Equal(t, int64(7828312136), tgUserID.Int64)
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
+					require.Equal(t, int64(7828312136), *tgUserID)
 					return db.User{
 						ID:         123,
-						Email:      sql.NullString{String: "test@example.com", Valid: true},
+						Email:      ptr.To("test@example.com"),
 						CreatedAt:  time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 						CreatedVia: "telegram",
-						TgUserID:   sql.NullInt64{Int64: 7828312136, Valid: true},
+						TgUserID:   ptr.To(int64(7828312136)),
 					}, nil
 				}
 				env.ListActiveUserSubgraphsFunc = func(ctx context.Context, userID int64) ([]string, error) {
@@ -434,7 +435,7 @@ func TestResolve(t *testing.T) {
 				env.UpsertTgUserStateFunc = func(ctx context.Context, arg db.UpsertTgUserStateParams) error {
 					return nil
 				}
-				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
 					return db.User{}, sql.ErrNoRows
 				}
 				env.SendFunc = func(msg tgbotapi.Chattable) (tgbotapi.Message, error) {

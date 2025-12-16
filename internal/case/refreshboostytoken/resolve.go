@@ -2,7 +2,6 @@ package refreshboostytoken
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -57,12 +56,9 @@ func Resolve(ctx context.Context, env Env, credentialID int64) error {
 
 	// Update credentials in database
 	_, err = env.UpdateBoostyCredentialsTokens(ctx, db.UpdateBoostyCredentialsTokensParams{
-		AuthData: string(updatedAuthData),
-		ExpiresAt: sql.NullTime{
-			Time:  expiresAt,
-			Valid: true,
-		},
-		ID: credentialID,
+		AuthData:  string(updatedAuthData),
+		ExpiresAt: &expiresAt,
+		ID:        credentialID,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to update boosty credentials: %w", err)

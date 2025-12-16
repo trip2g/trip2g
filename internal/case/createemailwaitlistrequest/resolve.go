@@ -2,7 +2,6 @@ package createemailwaitlistrequest
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -35,10 +34,15 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	ip := env.RequestIP(ctx)
 
+	var ipPtr *string
+	if ip != "" {
+		ipPtr = &ip
+	}
+
 	params := db.InsertWaitListEmailRequestParams{
 		Email:      input.Email,
 		NotePathID: input.PathID,
-		Ip:         sql.NullString{String: ip, Valid: ip != ""},
+		Ip:         ipPtr,
 	}
 
 	err := env.InsertWaitListEmailRequest(ctx, params)

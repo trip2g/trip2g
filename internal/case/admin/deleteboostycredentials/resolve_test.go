@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/case/admin/deleteboostycredentials"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 
 	"github.com/stretchr/testify/require"
@@ -47,13 +48,14 @@ func TestResolve(t *testing.T) {
 				}
 				mock.SoftDeleteBoostyCredentialsFunc = func(ctx context.Context, arg db.SoftDeleteBoostyCredentialsParams) (db.BoostyCredential, error) {
 					require.Equal(t, int64(1), arg.ID)
-					require.Equal(t, sql.NullInt64{Int64: 1, Valid: true}, arg.DeletedBy)
+					require.NotNil(t, arg.DeletedBy)
+					require.Equal(t, int64(1), *arg.DeletedBy)
 					return db.BoostyCredential{
 						ID:        1,
 						CreatedAt: time.Now(),
 						CreatedBy: 1,
-						DeletedAt: sql.NullTime{Time: time.Now(), Valid: true},
-						DeletedBy: sql.NullInt64{Int64: 1, Valid: true},
+						DeletedAt: ptr.To(time.Now()),
+						DeletedBy: ptr.To(int64(1)),
 					}, nil
 				}
 				mock.StopBoostyRefreshBackgroundJobFunc = func(ctx context.Context, credentialsID int64) error {

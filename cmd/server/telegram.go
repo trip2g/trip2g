@@ -290,7 +290,7 @@ func (a *app) KickTelegramChatMember(ctx context.Context, chatID, userID int64) 
 		return fmt.Errorf("failed to get user by ID %d: %w", userID, err)
 	}
 
-	if !user.TgUserID.Valid {
+	if user.TgUserID == nil {
 		return fmt.Errorf("user %d does not have a Telegram ID", userID)
 	}
 
@@ -305,7 +305,7 @@ func (a *app) KickTelegramChatMember(ctx context.Context, chatID, userID int64) 
 		return fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
 	}
 
-	err = handlerIO.KickChatMember(ctx, chat.TelegramID, user.TgUserID.Int64, chat.ChatType)
+	err = handlerIO.KickChatMember(ctx, chat.TelegramID, *user.TgUserID, chat.ChatType)
 	if err != nil {
 		return fmt.Errorf("failed to kick Telegram chat member: %w", err)
 	}
@@ -320,7 +320,7 @@ func (a *app) UnbanTelegramChatMember(ctx context.Context, chatID, userID int64)
 		return fmt.Errorf("failed to get user by ID %d: %w", userID, err)
 	}
 
-	if !user.TgUserID.Valid {
+	if user.TgUserID == nil {
 		return fmt.Errorf("user %d does not have a Telegram ID", userID)
 	}
 
@@ -335,7 +335,7 @@ func (a *app) UnbanTelegramChatMember(ctx context.Context, chatID, userID int64)
 		return fmt.Errorf("telegram bot handler IO not found for chat ID %d", chatID)
 	}
 
-	err = handlerIO.UnbanChatMember(ctx, chat.TelegramID, user.TgUserID.Int64)
+	err = handlerIO.UnbanChatMember(ctx, chat.TelegramID, *user.TgUserID)
 	if err != nil {
 		return fmt.Errorf("failed to unban Telegram chat member: %w", err)
 	}

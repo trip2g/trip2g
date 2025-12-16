@@ -2,7 +2,6 @@ package createrelease_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"reflect"
 	"testing"
@@ -12,6 +11,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 
 	"github.com/kr/pretty"
@@ -113,7 +113,7 @@ func TestResolve(t *testing.T) {
 					ID:                1,
 					Title:             "test release", // normalized
 					CreatedBy:         123,
-					HomeNoteVersionID: sql.NullInt64{Valid: false},
+					HomeNoteVersionID: nil,
 					CreatedAt:         time.Time{}, // will be set by test
 					IsLive:            true,
 				},
@@ -131,7 +131,7 @@ func TestResolve(t *testing.T) {
 				releaseParams := mockEnv.InsertReleaseCalls()[0].Arg
 				require.Equal(t, "test release", releaseParams.Title)
 				require.Equal(t, int64(123), releaseParams.CreatedBy)
-				require.False(t, releaseParams.HomeNoteVersionID.Valid)
+				require.Nil(t, releaseParams.HomeNoteVersionID)
 
 				// Verify live release change
 				require.Equal(t, int64(1), mockEnv.ChangeLiveReleaseCalls()[0].ID)
@@ -189,7 +189,7 @@ func TestResolve(t *testing.T) {
 					ID:                2,
 					Title:             "release with home",
 					CreatedBy:         456,
-					HomeNoteVersionID: sql.NullInt64{Int64: 10, Valid: true},
+					HomeNoteVersionID: ptr.To(int64(10)),
 					CreatedAt:         time.Time{},
 					IsLive:            true,
 				},
@@ -197,8 +197,8 @@ func TestResolve(t *testing.T) {
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
 				releaseParams := mockEnv.InsertReleaseCalls()[0].Arg
-				require.True(t, releaseParams.HomeNoteVersionID.Valid)
-				require.Equal(t, int64(10), releaseParams.HomeNoteVersionID.Int64)
+				require.NotNil(t, releaseParams.HomeNoteVersionID)
+				require.Equal(t, int64(10), *releaseParams.HomeNoteVersionID)
 			},
 		},
 		{

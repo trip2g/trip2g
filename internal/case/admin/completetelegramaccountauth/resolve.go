@@ -10,6 +10,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
@@ -113,11 +114,11 @@ func upsertAccount(ctx context.Context, env Env, phone string, result *appmodel.
 		updateErr := env.UpdateTelegramAccount(ctx, db.UpdateTelegramAccountParams{
 			ID:          existingAccount.ID,
 			SessionData: encryptedSession,
-			DisplayName: sql.NullString{String: result.DisplayName, Valid: true},
-			IsPremium:   sql.NullInt64{Int64: isPremium, Valid: true},
-			ApiID:       sql.NullInt64{Int64: int64(result.APIID), Valid: true},
-			ApiHash:     sql.NullString{String: result.APIHash, Valid: true},
-			Enabled:     sql.NullInt64{Int64: enabled, Valid: true},
+			DisplayName: &result.DisplayName,
+			IsPremium:   &isPremium,
+			ApiID:       ptr.To(int64(result.APIID)),
+			ApiHash:     &result.APIHash,
+			Enabled:     &enabled,
 		})
 		if updateErr != nil {
 			return db.TelegramAccount{}, fmt.Errorf("failed to update telegram account: %w", updateErr)

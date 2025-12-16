@@ -52,7 +52,7 @@ func TestRequest_Resolve(t *testing.T) {
 				UpdateUserSubgraphAccessFunc: func(ctx context.Context, arg db.UpdateUserSubgraphAccessParams) (db.UserSubgraphAccess, error) {
 					return db.UserSubgraphAccess{
 						ID:         123,
-						ExpiresAt:  db.ToNullableTime(&expiresAt),
+						ExpiresAt:  &expiresAt,
 						SubgraphID: 456,
 						UserID:     789,
 					}, nil
@@ -64,7 +64,7 @@ func TestRequest_Resolve(t *testing.T) {
 			want: &model.UpdateUserSubgraphAccessPayload{
 				UserSubgraphAccess: &db.UserSubgraphAccess{
 					ID:         123,
-					ExpiresAt:  db.ToNullableTime(&expiresAt),
+					ExpiresAt:  &expiresAt,
 					SubgraphID: 456,
 					UserID:     789,
 				},
@@ -81,7 +81,7 @@ func TestRequest_Resolve(t *testing.T) {
 				UpdateUserSubgraphAccessFunc: func(ctx context.Context, arg db.UpdateUserSubgraphAccessParams) (db.UserSubgraphAccess, error) {
 					return db.UserSubgraphAccess{
 						ID:         456,
-						ExpiresAt:  db.ToNullableTime(nil),
+						ExpiresAt:  nil,
 						SubgraphID: 789,
 						UserID:     123,
 					}, nil
@@ -93,7 +93,7 @@ func TestRequest_Resolve(t *testing.T) {
 			want: &model.UpdateUserSubgraphAccessPayload{
 				UserSubgraphAccess: &db.UserSubgraphAccess{
 					ID:         456,
-					ExpiresAt:  db.ToNullableTime(nil),
+					ExpiresAt:  nil,
 					SubgraphID: 789,
 					UserID:     123,
 				},
@@ -144,10 +144,10 @@ func TestRequest_Resolve(t *testing.T) {
 				require.Equal(t, tt.fields.SubgraphID, call.Arg.SubgraphID)
 
 				if tt.fields.ExpiresAt != nil {
-					require.True(t, call.Arg.ExpiresAt.Valid)
-					require.Equal(t, *tt.fields.ExpiresAt, call.Arg.ExpiresAt.Time)
+					require.NotNil(t, call.Arg.ExpiresAt)
+					require.Equal(t, *tt.fields.ExpiresAt, *call.Arg.ExpiresAt)
 				} else {
-					require.False(t, call.Arg.ExpiresAt.Valid)
+					require.Nil(t, call.Arg.ExpiresAt)
 				}
 			}
 		})

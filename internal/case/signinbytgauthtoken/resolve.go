@@ -2,7 +2,6 @@ package signinbytgauthtoken
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"trip2g/internal/db"
@@ -14,8 +13,8 @@ type Env interface {
 	Logger() logger.Logger
 	SetupUserToken(ctx context.Context, userID int64) (string, error)
 	TgUserProfileByChatIDAndBotID(ctx context.Context, arg db.TgUserProfileByChatIDAndBotIDParams) (db.TgUserProfile, error)
-	InsertUserWithTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
-	UserByTgUserID(ctx context.Context, tgUserID sql.NullInt64) (db.User, error)
+	InsertUserWithTgUserID(ctx context.Context, tgUserID *int64) (db.User, error)
+	UserByTgUserID(ctx context.Context, tgUserID *int64) (db.User, error)
 	ParseTgAuthToken(ctx context.Context, token string) (*model.TgAuthToken, error)
 	TrustedDomains() []string
 }
@@ -40,13 +39,13 @@ func Resolve(ctx context.Context, env Env, rawToken string) error {
 		return fmt.Errorf("failed to get profile by chat ID and bot ID: %w", err)
 	}
 
-	sqlID := sql.NullInt64{Valid: true, Int64: token.ChatID}
+	tgUserID := &token.ChatID
 
 	// select or create user by chat id
-	user, err := env.UserByTgUserID(ctx, sqlID)
+	user, err := env.UserByTgUserID(ctx, tgUserID)
 	if err != nil {
 		if db.IsNoFound(err) {
-			user, err = env.InsertUserWithTgUserID(ctx, sqlID)
+			user, err = env.InsertUserWithTgUserID(ctx, tgUserID)
 			if err != nil {
 				return fmt.Errorf("failed to insert user with TG user ID: %w", err)
 			}

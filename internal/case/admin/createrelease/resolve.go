@@ -2,7 +2,6 @@ package createrelease
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"trip2g/internal/db"
@@ -82,16 +81,16 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	return &payload, nil
 }
 
-func getHomeID(nvs *appmodel.NoteViews, input Input) (sql.NullInt64, Payload) {
+func getHomeID(nvs *appmodel.NoteViews, input Input) (*int64, Payload) {
 	if input.HomeNoteVersionID != nil {
 		for _, view := range nvs.List {
 			if view.VersionID == *input.HomeNoteVersionID {
-				return sql.NullInt64{Int64: view.VersionID, Valid: true}, nil
+				return &view.VersionID, nil
 			}
 		}
 
-		return sql.NullInt64{}, &model.ErrorPayload{Message: "home note version ID does not exist in latest note views"}
+		return nil, &model.ErrorPayload{Message: "home note version ID does not exist in latest note views"}
 	}
 
-	return sql.NullInt64{}, nil
+	return nil, nil
 }

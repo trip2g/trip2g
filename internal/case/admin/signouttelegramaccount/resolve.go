@@ -2,11 +2,11 @@ package signouttelegramaccount
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
 )
 
 type Env interface {
@@ -20,7 +20,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	// Set enabled = false and clear session_data
 	err := env.UpdateTelegramAccount(ctx, db.UpdateTelegramAccountParams{
 		ID:          input.ID,
-		Enabled:     sql.NullInt64{Int64: 0, Valid: true},
+		Enabled:     ptr.To(int64(0)),
 		SessionData: []byte{}, // Clear encrypted session data
 	})
 	if err != nil {

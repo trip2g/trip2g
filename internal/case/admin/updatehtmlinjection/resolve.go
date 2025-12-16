@@ -2,7 +2,6 @@ package updatehtmlinjection
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -54,23 +53,8 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		Position:    int64(input.Position),
 		Placement:   input.Placement,
 		Content:     input.Content,
-		ActiveFrom:  sql.NullTime{},
-		ActiveTo:    sql.NullTime{},
-	}
-
-	// Handle optional dates
-	if input.ActiveFrom != nil {
-		params.ActiveFrom = sql.NullTime{
-			Time:  *input.ActiveFrom,
-			Valid: true,
-		}
-	}
-
-	if input.ActiveTo != nil {
-		params.ActiveTo = sql.NullTime{
-			Time:  *input.ActiveTo,
-			Valid: true,
-		}
+		ActiveFrom:  input.ActiveFrom,
+		ActiveTo:    input.ActiveTo,
 	}
 
 	// Execute database operation

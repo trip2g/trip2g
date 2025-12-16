@@ -8,6 +8,7 @@ import (
 	"testing"
 	"trip2g/internal/db"
 	"trip2g/internal/model"
+	"trip2g/internal/ptr"
 
 	"github.com/stretchr/testify/require"
 )
@@ -36,7 +37,7 @@ func TestResolve(t *testing.T) {
 				}
 				user := db.User{
 					ID:       1,
-					TgUserID: sql.NullInt64{Valid: true, Int64: 123456789},
+					TgUserID: ptr.To(int64(123456789)),
 				}
 
 				env.ParseTgAuthTokenFunc = func(ctx context.Context, tokenStr string) (*model.TgAuthToken, error) {
@@ -45,7 +46,7 @@ func TestResolve(t *testing.T) {
 				env.TgUserProfileByChatIDAndBotIDFunc = func(ctx context.Context, arg db.TgUserProfileByChatIDAndBotIDParams) (db.TgUserProfile, error) {
 					return profile, nil
 				}
-				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
 					return user, nil
 				}
 				env.SetupUserTokenFunc = func(ctx context.Context, userID int64) (string, error) {
@@ -68,7 +69,7 @@ func TestResolve(t *testing.T) {
 				}
 				user := db.User{
 					ID:       2,
-					TgUserID: sql.NullInt64{Valid: true, Int64: 123456789},
+					TgUserID: ptr.To(int64(123456789)),
 				}
 
 				env.ParseTgAuthTokenFunc = func(ctx context.Context, tokenStr string) (*model.TgAuthToken, error) {
@@ -77,10 +78,10 @@ func TestResolve(t *testing.T) {
 				env.TgUserProfileByChatIDAndBotIDFunc = func(ctx context.Context, arg db.TgUserProfileByChatIDAndBotIDParams) (db.TgUserProfile, error) {
 					return profile, nil
 				}
-				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
 					return db.User{}, sql.ErrNoRows
 				}
-				env.InsertUserWithTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+				env.InsertUserWithTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
 					return user, nil
 				}
 				env.SetupUserTokenFunc = func(ctx context.Context, userID int64) (string, error) {
@@ -157,7 +158,7 @@ func TestResolve(t *testing.T) {
 				env.TgUserProfileByChatIDAndBotIDFunc = func(ctx context.Context, arg db.TgUserProfileByChatIDAndBotIDParams) (db.TgUserProfile, error) {
 					return profile, nil
 				}
-				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
 					return db.User{}, errors.New("database connection error")
 				}
 			},
@@ -183,10 +184,10 @@ func TestResolve(t *testing.T) {
 				env.TgUserProfileByChatIDAndBotIDFunc = func(ctx context.Context, arg db.TgUserProfileByChatIDAndBotIDParams) (db.TgUserProfile, error) {
 					return profile, nil
 				}
-				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
 					return db.User{}, sql.ErrNoRows
 				}
-				env.InsertUserWithTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+				env.InsertUserWithTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
 					return db.User{}, errors.New("failed to insert user")
 				}
 			},
@@ -207,7 +208,7 @@ func TestResolve(t *testing.T) {
 				}
 				user := db.User{
 					ID:       1,
-					TgUserID: sql.NullInt64{Valid: true, Int64: 123456789},
+					TgUserID: ptr.To(int64(123456789)),
 				}
 
 				env.ParseTgAuthTokenFunc = func(ctx context.Context, tokenStr string) (*model.TgAuthToken, error) {
@@ -216,7 +217,7 @@ func TestResolve(t *testing.T) {
 				env.TgUserProfileByChatIDAndBotIDFunc = func(ctx context.Context, arg db.TgUserProfileByChatIDAndBotIDParams) (db.TgUserProfile, error) {
 					return profile, nil
 				}
-				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID sql.NullInt64) (db.User, error) {
+				env.UserByTgUserIDFunc = func(ctx context.Context, tgUserID *int64) (db.User, error) {
 					return user, nil
 				}
 				env.SetupUserTokenFunc = func(ctx context.Context, userID int64) (string, error) {

@@ -17,17 +17,21 @@ import (
 	"trip2g/internal/usertoken"
 )
 
+func ptr[T any](v T) *T {
+	return &v
+}
+
 func assertResetPayloadEquals(
 	t *testing.T,
 	got, want *model.ResetTelegramPublishNotePayload,
 ) {
 	t.Helper()
 	require.Equal(t, want.PublishNote.NotePathID, got.PublishNote.NotePathID)
-	require.Equal(t, want.PublishNote.PublishedAt.Valid, got.PublishNote.PublishedAt.Valid)
+	require.Equal(t, want.PublishNote.PublishedAt != nil, got.PublishNote.PublishedAt != nil)
 	require.Equal(
 		t,
-		want.PublishNote.PublishedVersionID.Valid,
-		got.PublishNote.PublishedVersionID.Valid,
+		want.PublishNote.PublishedVersionID != nil,
+		got.PublishNote.PublishedVersionID != nil,
 	)
 }
 
@@ -72,16 +76,16 @@ func TestResolve(t *testing.T) {
 		NotePathID:         123,
 		CreatedAt:          time.Now().Add(-3 * time.Hour),
 		PublishAt:          publishTime,
-		PublishedAt:        sql.NullTime{Time: publishedTime, Valid: true},
-		PublishedVersionID: sql.NullInt64{Int64: 456, Valid: true},
+		PublishedAt:        &publishedTime,
+		PublishedVersionID: ptr(int64(456)),
 	}
 
 	resetPublishNote := db.TelegramPublishNote{
 		NotePathID:         123,
 		CreatedAt:          time.Now().Add(-3 * time.Hour),
 		PublishAt:          publishTime,
-		PublishedAt:        sql.NullTime{},
-		PublishedVersionID: sql.NullInt64{},
+		PublishedAt:        nil,
+		PublishedVersionID: nil,
 	}
 
 	sentMessages := []db.ListTelegramPublishSentMessagesByNotePathIDRow{

@@ -2,7 +2,6 @@ package processnotionwebhook
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,12 +60,8 @@ func updateVerificationToken(ctx context.Context, env Env, req Request, ni *db.N
 
 	if data.VerificationToken != "" {
 		params := db.UpdateNotionIntegrationVerificationTokenParams{
-			ID: ni.ID,
-
-			VerificationToken: sql.NullString{
-				Valid:  true,
-				String: data.VerificationToken,
-			},
+			ID:                ni.ID,
+			VerificationToken: &data.VerificationToken,
 		}
 
 		err = env.UpdateNotionIntegrationVerificationToken(ctx, params)

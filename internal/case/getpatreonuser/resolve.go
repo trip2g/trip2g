@@ -2,7 +2,6 @@ package getpatreonuser
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"trip2g/internal/db"
 )
@@ -26,8 +25,8 @@ func Resolve(ctx context.Context, env Env, email string) (*db.User, error) {
 		return nil, fmt.Errorf("failed to get patreon member by email: %w", err)
 	}
 
-	if member.UserID.Valid {
-		user, userErr := env.UserByID(ctx, member.UserID.Int64)
+	if member.UserID != nil {
+		user, userErr := env.UserByID(ctx, *member.UserID)
 		if userErr != nil {
 			return nil, fmt.Errorf("failed to get user by ID: %w", userErr)
 		}
@@ -54,7 +53,7 @@ func Resolve(ctx context.Context, env Env, email string) (*db.User, error) {
 
 	updateParams := db.UpdatePatreonMemberUserIDParams{
 		ID:     member.ID,
-		UserID: sql.NullInt64{Valid: true, Int64: user.ID},
+		UserID: &user.ID,
 	}
 
 	err = env.UpdatePatreonMemberUserID(ctx, updateParams)

@@ -2,7 +2,6 @@ package updateoffer
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"trip2g/internal/db"
@@ -98,15 +97,15 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	if input.PriceUsd != nil {
-		updateParams.PriceUsd = sql.NullFloat64{Float64: *input.PriceUsd, Valid: true}
+		updateParams.PriceUsd = input.PriceUsd
 	}
 
 	if input.StartsAt != nil {
-		updateParams.StartsAt = sql.NullTime{Time: *input.StartsAt, Valid: true}
+		updateParams.StartsAt = input.StartsAt
 	}
 
 	if input.EndsAt != nil {
-		updateParams.EndsAt = sql.NullTime{Time: *input.EndsAt, Valid: true}
+		updateParams.EndsAt = input.EndsAt
 	}
 
 	offer, err := env.UpdateOffer(ctx, updateParams)

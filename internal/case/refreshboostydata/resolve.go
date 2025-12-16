@@ -2,7 +2,6 @@ package refreshboostydata
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"trip2g/internal/boosty"
@@ -98,7 +97,7 @@ func processBoostyMember(ctx context.Context, env Env, credentialsID int64, subs
 			// If tier not found, log but continue without setting current_tier_id
 			env.Logger().Debug("tier not found for member", "member_id", subscriber.ID, "tier_boosty_id", subscriber.Level.ID, "error", tierErr)
 		} else {
-			memberParams.CurrentTierID = sql.NullInt64{Int64: tierID, Valid: true}
+			memberParams.CurrentTierID = &tierID
 		}
 	}
 

@@ -8,6 +8,7 @@ import (
 
 	"trip2g/internal/case/getpatreonuser"
 	"trip2g/internal/db"
+	"trip2g/internal/ptr"
 
 	"github.com/stretchr/testify/require"
 )
@@ -39,7 +40,7 @@ func TestResolve_PatreonMemberWithExistingUser(t *testing.T) {
 	// Setup
 	expectedUser := db.User{
 		ID:    123,
-		Email: sql.NullString{String: "test@example.com", Valid: true},
+		Email: ptr.To("test@example.com"),
 	}
 
 	env := &EnvMock{
@@ -48,7 +49,7 @@ func TestResolve_PatreonMemberWithExistingUser(t *testing.T) {
 			return db.PatreonMember{
 				ID:     1,
 				Email:  "test@example.com",
-				UserID: sql.NullInt64{Int64: 123, Valid: true},
+				UserID: ptr.To(int64(123)),
 			}, nil
 		},
 		UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {
@@ -72,7 +73,7 @@ func TestResolve_PatreonMemberWithoutUser_UserExists(t *testing.T) {
 	// Setup
 	expectedUser := db.User{
 		ID:    456,
-		Email: sql.NullString{String: "test@example.com", Valid: true},
+		Email: ptr.To("test@example.com"),
 	}
 
 	env := &EnvMock{
@@ -80,7 +81,7 @@ func TestResolve_PatreonMemberWithoutUser_UserExists(t *testing.T) {
 			return db.PatreonMember{
 				ID:     1,
 				Email:  "test@example.com",
-				UserID: sql.NullInt64{Valid: false}, // No user linked
+				UserID: nil, // No user linked
 			}, nil
 		},
 		UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
@@ -89,8 +90,8 @@ func TestResolve_PatreonMemberWithoutUser_UserExists(t *testing.T) {
 		},
 		UpdatePatreonMemberUserIDFunc: func(ctx context.Context, args db.UpdatePatreonMemberUserIDParams) error {
 			require.Equal(t, int64(1), args.ID)
-			require.Equal(t, int64(456), args.UserID.Int64)
-			require.True(t, args.UserID.Valid)
+			require.NotNil(t, args.UserID)
+			require.Equal(t, int64(456), *args.UserID)
 			return nil
 		},
 	}
@@ -111,7 +112,7 @@ func TestResolve_PatreonMemberWithoutUser_CreateNewUser(t *testing.T) {
 	// Setup
 	newUser := db.User{
 		ID:    789,
-		Email: sql.NullString{String: "test@example.com", Valid: true},
+		Email: ptr.To("test@example.com"),
 	}
 
 	env := &EnvMock{
@@ -119,7 +120,7 @@ func TestResolve_PatreonMemberWithoutUser_CreateNewUser(t *testing.T) {
 			return db.PatreonMember{
 				ID:     1,
 				Email:  "test@example.com",
-				UserID: sql.NullInt64{Valid: false}, // No user linked
+				UserID: nil, // No user linked
 			}, nil
 		},
 		UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
@@ -132,8 +133,8 @@ func TestResolve_PatreonMemberWithoutUser_CreateNewUser(t *testing.T) {
 		},
 		UpdatePatreonMemberUserIDFunc: func(ctx context.Context, args db.UpdatePatreonMemberUserIDParams) error {
 			require.Equal(t, int64(1), args.ID)
-			require.Equal(t, int64(789), args.UserID.Int64)
-			require.True(t, args.UserID.Valid)
+			require.NotNil(t, args.UserID)
+			require.Equal(t, int64(789), *args.UserID)
 			return nil
 		},
 	}
@@ -175,7 +176,7 @@ func TestResolve_UserByEmailError(t *testing.T) {
 			return db.PatreonMember{
 				ID:     1,
 				Email:  "test@example.com",
-				UserID: sql.NullInt64{Valid: false},
+				UserID: nil,
 			}, nil
 		},
 		UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
@@ -199,7 +200,7 @@ func TestResolve_InsertUserError(t *testing.T) {
 			return db.PatreonMember{
 				ID:     1,
 				Email:  "test@example.com",
-				UserID: sql.NullInt64{Valid: false},
+				UserID: nil,
 			}, nil
 		},
 		UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
@@ -226,7 +227,7 @@ func TestResolve_UpdatePatreonMemberError(t *testing.T) {
 			return db.PatreonMember{
 				ID:     1,
 				Email:  "test@example.com",
-				UserID: sql.NullInt64{Valid: false},
+				UserID: nil,
 			}, nil
 		},
 		UserByEmailFunc: func(ctx context.Context, email string) (db.User, error) {
@@ -253,7 +254,7 @@ func TestResolve_UserByIDError(t *testing.T) {
 			return db.PatreonMember{
 				ID:     1,
 				Email:  "test@example.com",
-				UserID: sql.NullInt64{Int64: 123, Valid: true},
+				UserID: ptr.To(int64(123)),
 			}, nil
 		},
 		UserByIDFunc: func(ctx context.Context, id int64) (db.User, error) {

@@ -2,7 +2,6 @@ package patreonjobs
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"sync"
 	"time"
@@ -67,9 +66,13 @@ func New(ctx context.Context, env Env, config Config) (*PatreonJobs, error) {
 
 		// Check if credentials need immediate refresh based on config
 		immediately := false
-		if !cred.SyncedAt.Valid || time.Since(cred.SyncedAt.Time) > io.config.ImmediatelyGap {
+		if cred.SyncedAt == nil || time.Since(*cred.SyncedAt) > io.config.ImmediatelyGap {
 			immediately = true
-			io.logger.Info("credentials need immediate refresh", "credentialsID", cred.ID, "lastSync", cred.SyncedAt.Time, "gap", io.config.ImmediatelyGap)
+			var lastSync time.Time
+			if cred.SyncedAt != nil {
+				lastSync = *cred.SyncedAt
+			}
+			io.logger.Info("credentials need immediate refresh", "credentialsID", cred.ID, "lastSync", lastSync, "gap", io.config.ImmediatelyGap)
 		}
 
 		startErr := io.StartPatreonRefreshBackgroundJob(ctx, cred.ID, immediately)
@@ -191,7 +194,7 @@ func (io *PatreonJobs) RegisterWebhook(ctx context.Context, credentialsID int64)
 	}
 
 	for _, cred := range credentials {
-		if cred.WebhookSecret.Valid && cred.WebhookSecret.String != "" {
+		if cred.WebhookSecret != nil && *cred.WebhookSecret != "" {
 			io.logger.Info("webhook already registered for credentials", "credentialsID", cred.ID)
 			continue
 		}
@@ -234,7 +237,7 @@ func (io *PatreonJobs) registerWebhookForCredentials(ctx context.Context, credID
 
 	// Save the webhook secret to the database
 	params := db.UpdatePatreonCredentialsWebhookSecretParams{
-		WebhookSecret: sql.NullString{String: webhook.Attributes.Secret, Valid: true},
+		WebhookSecret: &webhook.Attributes.Secret,
 		ID:            credID,
 	}
 
@@ -296,7 +299,7 @@ func (io *PatreonJobs) UnregisterWebhook(ctx context.Context, credentialsID int6
 	}
 
 	for _, cred := range credentials {
-		if cred.WebhookSecret.Valid && cred.WebhookSecret.String != "" {
+		if cred.WebhookSecret != nil && *cred.WebhookSecret != "" {
 			clearErr := io.env.ClearPatreonCredentialsWebhookSecret(ctx, cred.ID)
 			if clearErr != nil {
 				io.logger.Error("failed to clear webhook secret", "credentialsID", cred.ID, "error", clearErr)
@@ -335,7 +338,7 @@ func (io *PatreonJobs) registerWebhookForCredentialID(ctx context.Context, crede
 			io.logger.Info("webhook already exists for credential", "credentialID", credentialID, "webhookID", webhook.ID)
 
 			params := db.UpdatePatreonCredentialsWebhookSecretParams{
-				WebhookSecret: sql.NullString{String: webhook.Attributes.Secret, Valid: true},
+				WebhookSecret: &webhook.Attributes.Secret,
 				ID:            credentialID,
 			}
 

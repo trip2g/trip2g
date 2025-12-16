@@ -3,13 +3,13 @@ package creategittoken
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
 	"fmt"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 )
 
@@ -44,10 +44,10 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 	params := db.InsertGitTokenParams{
 		ValueSha256: tokenHash,
-		AdminID:     sql.NullInt64{Valid: true, Int64: int64(token.ID)},
+		AdminID:     ptr.To(int64(token.ID)),
 		Description: input.Description,
-		CanPull:     sql.NullBool{Valid: true, Bool: input.CanPull},
-		CanPush:     sql.NullBool{Valid: true, Bool: input.CanPush},
+		CanPull:     ptr.To(input.CanPull),
+		CanPush:     ptr.To(input.CanPush),
 	}
 
 	createdToken, err := env.InsertGitToken(ctx, params)

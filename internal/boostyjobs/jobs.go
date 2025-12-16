@@ -55,9 +55,13 @@ func New(ctx context.Context, env Env, config Config) (*BoostyJobs, error) {
 	for _, cred := range credentials {
 		// Check if credentials need immediate refresh based on config
 		immediately := false
-		if !cred.SyncedAt.Valid || time.Since(cred.SyncedAt.Time) > io.config.ImmediatelyGap {
+		if cred.SyncedAt == nil || time.Since(*cred.SyncedAt) > io.config.ImmediatelyGap {
 			immediately = true
-			io.logger.Info("credentials need immediate refresh", "credentialsID", cred.ID, "lastSync", cred.SyncedAt.Time, "gap", io.config.ImmediatelyGap)
+			var lastSync time.Time
+			if cred.SyncedAt != nil {
+				lastSync = *cred.SyncedAt
+			}
+			io.logger.Info("credentials need immediate refresh", "credentialsID", cred.ID, "lastSync", lastSync, "gap", io.config.ImmediatelyGap)
 		}
 
 		startErr := io.StartBoostyRefreshBackgroundJob(ctx, cred.ID, immediately)

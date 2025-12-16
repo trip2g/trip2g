@@ -12,6 +12,7 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
+	"trip2g/internal/ptr"
 	"trip2g/internal/usertoken"
 
 	"github.com/kr/pretty"
@@ -91,10 +92,10 @@ func TestResolve(t *testing.T) {
 				Offer: &db.Offer{
 					ID:       123,
 					PublicID: "generated-offer-id",
-					PriceUsd: sql.NullFloat64{Float64: 9.99, Valid: true},
+					PriceUsd: ptr.To(9.99),
 					Lifetime: func() *appmodel.Lifetime { l := appmodel.Lifetime(lifetime); return &l }(),
-					StartsAt: sql.NullTime{Time: startsAt, Valid: true},
-					EndsAt:   sql.NullTime{Time: endsAt, Valid: true},
+					StartsAt: &startsAt,
+					EndsAt:   &endsAt,
 				},
 			},
 			wantErr: false,
@@ -112,8 +113,8 @@ func TestResolve(t *testing.T) {
 				// Verify offer params
 				offerParams := mockEnv.InsertOfferCalls()[0].Arg
 				require.Equal(t, "generated-offer-id", offerParams.PublicID)
-				require.InDelta(t, 9.99, offerParams.PriceUsd.Float64, 0.001)
-				require.True(t, offerParams.PriceUsd.Valid)
+				require.NotNil(t, offerParams.PriceUsd)
+				require.InDelta(t, 9.99, *offerParams.PriceUsd, 0.001)
 				require.NotNil(t, offerParams.Lifetime)
 				require.Equal(t, lifetime, string(*offerParams.Lifetime))
 

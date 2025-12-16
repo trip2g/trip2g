@@ -2,7 +2,6 @@ package sendtelegrampublishpost
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"trip2g/internal/db"
 	"trip2g/internal/logger"
@@ -100,7 +99,7 @@ func Resolve(ctx context.Context, env Env, params model.SendTelegramPublishPostP
 	if !params.Instant {
 		// Mark the note as published
 		updateParams := db.UpdateTelegramPublishNoteAsPublishedParams{
-			PublishedVersionID: sql.NullInt64{Int64: noteView.VersionID, Valid: true},
+			PublishedVersionID: &noteView.VersionID,
 			NotePathID:         params.NotePathID,
 		}
 

@@ -2,7 +2,6 @@ package updatehtmlinjection_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"testing"
 	"time"
@@ -75,8 +74,8 @@ func TestResolve(t *testing.T) {
 				HTMLInjection: &db.HtmlInjection{
 					ID:          123,
 					CreatedAt:   time.Time{}, // Will be set by UpdateHTMLInjectionFunc
-					ActiveFrom:  sql.NullTime{Time: activeFrom, Valid: true},
-					ActiveTo:    sql.NullTime{Time: activeTo, Valid: true},
+					ActiveFrom:  &activeFrom,
+					ActiveTo:    &activeTo,
 					Description: "Updated injection",
 					Position:    1,
 					Placement:   "body_end",
@@ -211,8 +210,8 @@ func TestResolve(t *testing.T) {
 				HTMLInjection: &db.HtmlInjection{
 					ID:          123,
 					CreatedAt:   time.Time{}, // Will be set by UpdateHTMLInjectionFunc
-					ActiveFrom:  sql.NullTime{Valid: false},
-					ActiveTo:    sql.NullTime{Valid: false},
+					ActiveFrom:  nil,
+					ActiveTo:    nil,
 					Description: "Updated injection",
 					Position:    1,
 					Placement:   "body_end",
