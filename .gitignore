@@ -26,6 +26,8 @@ demo/.obsidian
 
 # Telegram session
 session.json
+.tgsession.*
+.tgbottoken.*
 
 testdata/client
 testdata/vault/ryspaisensei

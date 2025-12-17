@@ -19,4 +19,4 @@ Caption features:
 
 This tests single media attachment with caption.
 
-[[telegram_text]] | [[telegram_media_group]]
+[[telegram_text]] | [[telegram_one_video]] | [[telegram_media_group]]

@@ -25,21 +25,24 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 11. [[toc_test]] - table of contents (auto/show/hide)
 12. [[telegram_text]] - Telegram text post (no media, type: text)
 13. [[telegram_one_photo]] - Telegram single photo post (type: photo)
-14. [[telegram_media_group]] - Telegram media group (2+ media, type: media_group)
-15. [[cyrillic_названия]] - Cyrillic in URLs and links
-16. [[File with spaces]] - spaces in filenames
-17. [[code_and_media]] - code blocks and media embeds
-18. [[complex_content]] - comprehensive markdown features
-19. [[redirect_test]] - page redirect functionality
-20. [[slug_relative]] - relative slug (replaces filename)
-21. [[slug_absolute]] - absolute slug (full path override)
-22. [[slug_with_subdir]] - slug with subdirectory
-23. [[slug_cyrillic]] - cyrillic slug (no transliteration)
-24. [[slug_spaces]] - slug with spaces (URL encoded)
+14. [[telegram_one_video]] - Telegram single video post (type: photo, uses sendVideo)
+15. [[telegram_media_group]] - Telegram media group (2+ media, type: media_group)
+16. [[telegram_image_with_emoji]] - Image with custom emoji (tg_ce_* excluded from media)
+17. [[telegram_video_with_emoji]] - Video with custom emoji (ce.trip2g.com/* excluded from media)
+18. [[cyrillic_названия]] - Cyrillic in URLs and links
+19. [[File with spaces]] - spaces in filenames
+20. [[code_and_media]] - code blocks and media embeds
+21. [[complex_content]] - comprehensive markdown features
+22. [[redirect_test]] - page redirect functionality
+23. [[slug_relative]] - relative slug (replaces filename)
+24. [[slug_absolute]] - absolute slug (full path override)
+25. [[slug_with_subdir]] - slug with subdirectory
+26. [[slug_cyrillic]] - cyrillic slug (no transliteration)
+27. [[slug_spaces]] - slug with spaces (URL encoded)
 
 ## Subgraph (Premium Course) Tests
-25. [[premium]] - premium subgraph home page
-26. Check sidebar: should show premium sidebar for premium pages
+28. [[premium]] - premium subgraph home page
+29. Check sidebar: should show premium sidebar for premium pages
 
 ## Special Files Tests
 - `_banner.md` - banner embed (try ![[_banner]])

@@ -42,7 +42,8 @@
       "Bash(npm run build:*)",
       "Bash(./scripts/test-sync-cli.sh:*)",
       "Bash(npm run test:*)",
-      "Bash(npm run build:all:*)"
+      "Bash(npm run build:all:*)",
+      "Bash(go get:*)"
     ],
     "deny": []
   },
