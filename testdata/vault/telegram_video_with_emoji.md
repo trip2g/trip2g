@@ -10,7 +10,7 @@ This post has a **single video** with custom emoji in caption.
 
 ![[telegram_single_video.mp4]]
 
-Custom emoji test: ![👍](tg_ce_thumbsup.webp) thumbs up and ![🎉](https://ce.trip2g.com/5368324170671202287.webp) party emoji.
+Custom emoji test: ![➡️|20x20](tg_ce_5974249837439224721.webp) and ![😅](https://ce.trip2g.com/5384209107215456745.webp).
 
 The custom emoji files should NOT be included as media attachments!
 Only `telegram_single_video.mp4` should be the post media.

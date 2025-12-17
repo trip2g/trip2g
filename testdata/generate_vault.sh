@@ -292,7 +292,7 @@ This post has a **single photo** with custom emoji in caption.
 
 ![[telegram_photo.png]]
 
-Custom emoji test: ![🔥](tg_ce_fire.webp) fire emoji and ![⭐](https://ce.trip2g.com/5368324170671202286.webp) star emoji.
+Custom emoji test: ![➡️|20x20](tg_ce_5974249837439224721.webp) and ![😅](https://ce.trip2g.com/5384209107215456745.webp).
 
 The custom emoji files should NOT be included as media attachments!
 Only `telegram_photo.png` should be the post media.
@@ -313,7 +313,7 @@ This post has a **single video** with custom emoji in caption.
 
 ![[telegram_single_video.mp4]]
 
-Custom emoji test: ![👍](tg_ce_thumbsup.webp) thumbs up and ![🎉](https://ce.trip2g.com/5368324170671202287.webp) party emoji.
+Custom emoji test: ![➡️|20x20](tg_ce_5974249837439224721.webp) and ![😅](https://ce.trip2g.com/5384209107215456745.webp).
 
 The custom emoji files should NOT be included as media attachments!
 Only `telegram_single_video.mp4` should be the post media.
@@ -658,8 +658,9 @@ download_placeholder "telegram_photo2.jpg" "e74c3c"
 
 # Custom emoji files (should be excluded from post media)
 # Local tg_ce_* pattern
-download_placeholder "tg_ce_fire.webp" "ff4500"
-download_placeholder "tg_ce_thumbsup.webp" "1e90ff"
+# download_placeholder "tg_ce_fire.webp" "ff4500"
+# download_placeholder "tg_ce_thumbsup.webp" "1e90ff"
+curl -sL "https://ce.trip2g.com/5974249837439224721.webp" -o "$VAULT/tg_ce_5974249837439224721.webp"
 
 # Generate test videos (requires ffmpeg)
 echo "Creating test videos..."
