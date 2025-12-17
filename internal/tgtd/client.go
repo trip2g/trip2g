@@ -443,10 +443,10 @@ func (c *Client) sendMedia(ctx context.Context, sessionData []byte, chatID int64
 			return fmt.Errorf("failed to resolve peer: %w", peerErr)
 		}
 
-		// Stream media from URL directly to Telegram (no memory buffering)
+		// Upload media from URL
 		up := uploader.NewUploader(api)
 		fileName := filenameFromURL(mediaURL)
-		uploaded, uploadErr := streamUploadFromURL(ctx, up, mediaURL, fileName)
+		uploaded, uploadErr := uploadFromURL(ctx, up, mediaURL, fileName)
 		if uploadErr != nil {
 			return fmt.Errorf("failed to upload media: %w", uploadErr)
 		}
@@ -557,9 +557,9 @@ func uploadMediaFiles(ctx context.Context, up *uploader.Uploader, mediaURLs []st
 	var mediaInputs []message.MultiMediaOption
 
 	for i, mediaURL := range mediaURLs {
-		// Stream upload media from URL (no memory buffering)
+		// Upload media from URL
 		fileName := filenameFromURL(mediaURL)
-		uploaded, uploadErr := streamUploadFromURL(ctx, up, mediaURL, fileName)
+		uploaded, uploadErr := uploadFromURL(ctx, up, mediaURL, fileName)
 		if uploadErr != nil {
 			return nil, fmt.Errorf("upload media option %d: %w", i, uploadErr)
 		}
@@ -616,9 +616,9 @@ func createMultiMediaOption(uploaded tg.InputFileClass, mediaURL, caption string
 	return message.UploadedPhoto(uploaded)
 }
 
-// streamUploadFromURL streams media from URL directly to Telegram uploader.
-// This avoids loading entire file into memory.
-func streamUploadFromURL(ctx context.Context, up *uploader.Uploader, mediaURL, fileName string) (tg.InputFileClass, error) {
+// uploadFromURL downloads media from URL and uploads to Telegram.
+// Uses streaming when Content-Length is known, otherwise buffers in memory.
+func uploadFromURL(ctx context.Context, up *uploader.Uploader, mediaURL, fileName string) (tg.InputFileClass, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, mediaURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -634,8 +634,19 @@ func streamUploadFromURL(ctx context.Context, up *uploader.Uploader, mediaURL, f
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	// Stream directly to uploader without buffering in memory
-	return up.FromReader(ctx, fileName, resp.Body)
+	// If Content-Length is known, stream with size hint
+	if resp.ContentLength > 0 {
+		upload := uploader.NewUpload(fileName, resp.Body, resp.ContentLength)
+		return up.Upload(ctx, upload)
+	}
+
+	// Otherwise read into memory
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	return up.FromBytes(ctx, fileName, data)
 }
 
 // isVideoExtension returns true if the extension is a video format.
@@ -769,10 +780,10 @@ func (c *Client) EditMessageWithPhoto(ctx context.Context, sessionData []byte, p
 			return fmt.Errorf("failed to resolve peer: %w", peerErr)
 		}
 
-		// Stream upload photo from URL (no memory buffering)
+		// Upload photo from URL
 		up := uploader.NewUploader(api)
 		fileName := filenameFromURL(params.PhotoURL)
-		uploaded, uploadErr := streamUploadFromURL(ctx, up, params.PhotoURL, fileName)
+		uploaded, uploadErr := uploadFromURL(ctx, up, params.PhotoURL, fileName)
 		if uploadErr != nil {
 			return fmt.Errorf("failed to upload photo: %w", uploadErr)
 		}
