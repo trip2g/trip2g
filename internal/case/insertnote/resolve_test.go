@@ -50,8 +50,9 @@ func TestUnhideCalledEvenWhenContentUnchanged(t *testing.T) {
 		Content: "test content",
 	}
 
-	err := insertnote.Resolve(ctx, env, note)
+	pathID, err := insertnote.Resolve(ctx, env, note)
 	require.NoError(t, err)
+	require.Equal(t, int64(1), pathID)
 
 	// UnhideNotePath MUST be called even when content hasn't changed
 	require.True(t, unhideCalled, "UnhideNotePath should be called even when content is unchanged")
@@ -93,8 +94,9 @@ func TestUnhideCalledWhenContentChanged(t *testing.T) {
 		Content: "new content",
 	}
 
-	err := insertnote.Resolve(ctx, env, note)
+	pathID, err := insertnote.Resolve(ctx, env, note)
 	require.NoError(t, err)
+	require.Equal(t, int64(1), pathID)
 
 	require.True(t, unhideCalled, "UnhideNotePath should be called")
 	require.True(t, versionCreated, "New version should be created when content changed")
@@ -135,8 +137,9 @@ func TestNewNoteUnhideAndVersionCreated(t *testing.T) {
 		Content: "brand new content",
 	}
 
-	err := insertnote.Resolve(ctx, env, note)
+	pathID, err := insertnote.Resolve(ctx, env, note)
 	require.NoError(t, err)
+	require.Equal(t, int64(1), pathID)
 
 	require.True(t, unhideCalled, "UnhideNotePath should be called for new note")
 	require.True(t, versionCreated, "Version should be created for new note")

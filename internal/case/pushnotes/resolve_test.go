@@ -17,11 +17,12 @@ import (
 
 type Env interface {
 	Logger() logger.Logger
-	InsertNote(ctx context.Context, update appmodel.RawNote) error
-	InsertSubgraph(ctx context.Context, name string) error
+	InsertNote(ctx context.Context, update appmodel.RawNote) (int64, error)
+	InsertUncommittedPath(ctx context.Context, notePathID int64) error
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
 	Layouts() *appmodel.Layouts
+	LatestNoteViews() *appmodel.NoteViews
 }
 
 func TestResolve(t *testing.T) {
@@ -68,8 +69,8 @@ func TestResolve(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return mockLogger
 					},
-					InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) error {
-						return nil
+					InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) (int64, error) {
+						return 1, nil
 					},
 					PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 						return &appmodel.NoteViews{
@@ -112,8 +113,8 @@ func TestResolve(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return mockLogger
 					},
-					InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) error {
-						return errors.New("database error")
+					InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) (int64, error) {
+						return 0, errors.New("database error")
 					},
 				}
 			},
@@ -131,8 +132,8 @@ func TestResolve(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return mockLogger
 					},
-					InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) error {
-						return nil
+					InsertNoteFunc: func(ctx context.Context, note appmodel.RawNote) (int64, error) {
+						return 1, nil
 					},
 					PrepareLatestNotesFunc: func(ctx context.Context, partial bool) (*appmodel.NoteViews, error) {
 						return nil, errors.New("prepare error")

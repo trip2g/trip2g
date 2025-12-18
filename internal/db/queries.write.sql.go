@@ -70,6 +70,15 @@ func (q *WriteQueries) ClearTgUserIDByTgUserID(ctx context.Context, tgUserID *in
 	return err
 }
 
+const clearUncommittedPaths = `-- name: ClearUncommittedPaths :exec
+delete from note_uncommitted_paths
+`
+
+func (q *WriteQueries) ClearUncommittedPaths(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, clearUncommittedPaths)
+	return err
+}
+
 const createRevoke = `-- name: CreateRevoke :one
 insert into revokes (target_type, target_id, by_id, reason)
 values (?, ?, ?, ?)
@@ -1550,6 +1559,17 @@ func (q *WriteQueries) InsertTgUserProfile(ctx context.Context, arg InsertTgUser
 		arg.Username,
 		arg.Sha256Hash,
 	)
+	return err
+}
+
+const insertUncommittedPath = `-- name: InsertUncommittedPath :exec
+insert into note_uncommitted_paths (note_path_id)
+values (?)
+on conflict do nothing
+`
+
+func (q *WriteQueries) InsertUncommittedPath(ctx context.Context, notePathID int64) error {
+	_, err := q.db.ExecContext(ctx, insertUncommittedPath, notePathID)
 	return err
 }
 

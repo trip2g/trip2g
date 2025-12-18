@@ -1056,3 +1056,6 @@ select v.id
   join note_paths p on v.path_id = p.id
  where p.hidden_by is null
  order by v.created_at desc limit 20;
+
+-- name: ListUncommittedPaths :many
+select note_path_id from note_uncommitted_paths;

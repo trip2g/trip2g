@@ -23,7 +23,7 @@ type Env interface {
 	UnhideNotePath(ctx context.Context, value string) error
 }
 
-func Resolve(ctx context.Context, env Env, arg model.RawNote) error {
+func Resolve(ctx context.Context, env Env, arg model.RawNote) (int64, error) {
 	sha := sha256.New()
 
 	sha.Write([]byte(arg.Path))
@@ -50,7 +50,7 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) error {
 				continue
 			}
 
-			return fmt.Errorf("failed to InsertNotePath: %w", insertErr)
+			return 0, fmt.Errorf("failed to InsertNotePath: %w", insertErr)
 		}
 
 		notePath = &insertedRow
@@ -59,18 +59,18 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) error {
 	}
 
 	if notePath == nil {
-		return ErrNotePathHashUnresolvedCollision
+		return 0, ErrNotePathHashUnresolvedCollision
 	}
 
 	// Always unhide note when pushed (even if content hasn't changed)
 	err := env.UnhideNotePath(ctx, arg.Path)
 	if err != nil {
-		return fmt.Errorf("failed to unhide note path: %w", err)
+		return 0, fmt.Errorf("failed to unhide note path: %w", err)
 	}
 
 	if notePath.VersionCount > 0 && notePath.LatestContentHash == contentHash {
 		// Content hasn't changed, no need to create new version
-		return nil
+		return notePath.ID, nil
 	}
 
 	increaseParams := db.IncrementNoteVersionCountParams{
@@ -81,7 +81,7 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) error {
 
 	version, err := env.IncrementNoteVersionCount(ctx, increaseParams)
 	if err != nil {
-		return fmt.Errorf("failed to IncrementNoteVersionCount: %w", err)
+		return 0, fmt.Errorf("failed to IncrementNoteVersionCount: %w", err)
 	}
 
 	noteVersion := db.InsertNoteVersionParams{
@@ -92,8 +92,8 @@ func Resolve(ctx context.Context, env Env, arg model.RawNote) error {
 
 	err = env.InsertNoteVersion(ctx, noteVersion)
 	if err != nil {
-		return fmt.Errorf("failed to InsertNoteVersion: %w", err)
+		return 0, fmt.Errorf("failed to InsertNoteVersion: %w", err)
 	}
 
-	return nil
+	return notePath.ID, nil
 }

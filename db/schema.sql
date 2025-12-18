@@ -562,6 +562,9 @@ CREATE INDEX idx_telegram_publish_sent_account_messages_account_id
 CREATE INDEX idx_telegram_publish_sent_account_messages_note_path_id
   on telegram_publish_sent_account_messages(note_path_id);
 CREATE INDEX idx_note_paths_hidden_by on note_paths(hidden_by);
+CREATE TABLE note_uncommitted_paths (
+    note_path_id integer primary key references note_paths(id) on delete cascade
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -659,4 +662,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251203061651'),
   ('20251203062401'),
   ('20251204121052'),
-  ('20251210042103');
+  ('20251210042103'),
+  ('20251218090744');

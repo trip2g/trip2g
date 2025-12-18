@@ -4323,6 +4323,33 @@ func (q *Queries) ListTgBots(ctx context.Context) ([]TgBot, error) {
 	return items, nil
 }
 
+const listUncommittedPaths = `-- name: ListUncommittedPaths :many
+select note_path_id from note_uncommitted_paths
+`
+
+func (q *Queries) ListUncommittedPaths(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, listUncommittedPaths)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var note_path_id int64
+		if err := rows.Scan(&note_path_id); err != nil {
+			return nil, err
+		}
+		items = append(items, note_path_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUserFavoriteNotes = `-- name: ListUserFavoriteNotes :many
 select nv.path_id, nv.id as version_id
   from user_favorite_notes ufn

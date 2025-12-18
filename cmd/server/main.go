@@ -55,6 +55,7 @@ import (
 	"trip2g/internal/case/pushnotes"
 	"trip2g/internal/case/signinbypurchasetoken"
 	"trip2g/internal/case/signinbytgauthtoken"
+	"trip2g/internal/case/updatesubgraphs"
 	"trip2g/internal/case/uploadnoteasset"
 	"trip2g/internal/cronjobs"
 	"trip2g/internal/dataencryption"
@@ -561,8 +562,20 @@ func (a *app) UploadNoteAsset(ctx context.Context, input graphmodel.UploadNoteAs
 	return uploadnoteasset.Resolve(ctx, a, input)
 }
 
-func (a *app) InsertNote(ctx context.Context, note model.RawNote) error {
+func (a *app) InsertNote(ctx context.Context, note model.RawNote) (int64, error) {
 	return insertnote.Resolve(ctx, a, note)
+}
+
+func (a *app) InsertUncommittedPath(ctx context.Context, notePathID int64) error {
+	return a.WriteQueries.InsertUncommittedPath(ctx, notePathID)
+}
+
+func (a *app) ListUncommittedPaths(ctx context.Context) ([]int64, error) {
+	return a.Queries.ListUncommittedPaths(ctx)
+}
+
+func (a *app) ClearUncommittedPaths(ctx context.Context) error {
+	return a.WriteQueries.ClearUncommittedPaths(ctx)
 }
 
 func (a *app) createOwnerIfNotExists(ctx context.Context) error {
@@ -938,7 +951,12 @@ func (a *app) IDHash(entity string, id int64) string {
 }
 
 func (a *app) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error {
-	err := handletgpublishviews.Resolve(ctx, a, changedPathIDs)
+	err := updatesubgraphs.Resolve(ctx, a)
+	if err != nil {
+		return fmt.Errorf("failed to update subgraphs: %w", err)
+	}
+
+	err = handletgpublishviews.Resolve(ctx, a, changedPathIDs)
 	if err != nil {
 		return fmt.Errorf("failed to handle Telegram publish views: %w", err)
 	}

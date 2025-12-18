@@ -231,6 +231,10 @@ type NotePath struct {
 	HiddenAt          *time.Time `json:"hidden_at"`
 }
 
+type NoteUncommittedPath struct {
+	NotePathID int64 `json:"note_path_id"`
+}
+
 type NoteVersion struct {
 	ID        int64     `json:"id"`
 	PathID    int64     `json:"path_id"`

@@ -14,8 +14,8 @@ import (
 
 type Env interface {
 	Logger() logger.Logger
-	InsertNote(ctx context.Context, update appmodel.RawNote) error
-	InsertSubgraph(ctx context.Context, name string) error
+	InsertNote(ctx context.Context, update appmodel.RawNote) (int64, error)
+	InsertUncommittedPath(ctx context.Context, notePathID int64) error
 	PrepareLatestNotes(ctx context.Context, partial bool) (*appmodel.NoteViews, error)
 	HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []int64) error
 	Layouts() *appmodel.Layouts
@@ -42,7 +42,8 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		return &model.PushNotesPayload{Notes: pushedNotes}, nil
 	}
 
-	changedPaths := map[string]struct{}{}
+	skipCommit := input.SkipCommit != nil && *input.SkipCommit
+	pathIDs := []int64{}
 
 	for _, update := range input.Updates {
 		if errPayload := validateUpdate(log, update); errPayload != nil {
@@ -56,12 +57,12 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 
 		log.Info("insert note", "path", update.Path)
 
-		err := env.InsertNote(ctx, note)
+		pathID, err := env.InsertNote(ctx, note)
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert note: %w", err)
 		}
 
-		changedPaths[update.Path] = struct{}{}
+		pathIDs = append(pathIDs, pathID)
 	}
 
 	nvs, err := env.PrepareLatestNotes(ctx, input.Partial)
@@ -69,26 +70,19 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 		return nil, fmt.Errorf("failed to prepare notes: %w", err)
 	}
 
-	pathIDs := []int64{}
-
-	for _, note := range nvs.List {
-		_, changed := changedPaths[note.Path]
-		if changed {
-			pathIDs = append(pathIDs, note.PathID)
+	// If skipCommit, save path IDs to uncommitted table and skip HandleLatestNotesAfterSave
+	if skipCommit {
+		for _, pathID := range pathIDs {
+			insertErr := env.InsertUncommittedPath(ctx, pathID)
+			if insertErr != nil {
+				return nil, fmt.Errorf("failed to insert uncommitted path: %w", insertErr)
+			}
 		}
-	}
-
-	// TODO: mv to HandleLatestNotesAfterSave
-	for _, subgraph := range nvs.Subgraphs {
-		insertErr := env.InsertSubgraph(ctx, subgraph.Name)
-		if insertErr != nil {
-			return nil, fmt.Errorf("failed to insert subgraph: %w", insertErr)
+	} else {
+		err = env.HandleLatestNotesAfterSave(ctx, pathIDs)
+		if err != nil {
+			return nil, fmt.Errorf("failed to handle latest notes after save: %w", err)
 		}
-	}
-
-	err = env.HandleLatestNotesAfterSave(ctx, pathIDs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to handle latest notes after save: %w", err)
 	}
 
 	pushedNotes := buildPushedNotes(nvs, env.Layouts())

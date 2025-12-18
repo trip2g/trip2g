@@ -24,7 +24,7 @@ type Env interface {
 	Logger() logger.Logger
 	NotionClientByIntegrationID(integrationID int64) notiontypes.Client
 	AllNotionIntegrations(ctx context.Context) ([]db.NotionIntegration, error)
-	InsertNote(ctx context.Context, update model.RawNote) error
+	InsertNote(ctx context.Context, update model.RawNote) (int64, error)
 }
 
 func Resolve(ctx context.Context, env Env, task Params) error {
@@ -75,7 +75,7 @@ func Resolve(ctx context.Context, env Env, task Params) error {
 				return fmt.Errorf("failed to extract raw note for page %s: %w", pageID, pErr)
 			}
 
-			insertErr := env.InsertNote(ctx, *rawNote)
+			_, insertErr := env.InsertNote(ctx, *rawNote)
 			if insertErr != nil {
 				log.Warn("failed to insert note", "error", insertErr)
 				// return fmt.Errorf("failed to insert note for page %s: %w", pageID, insertErr)

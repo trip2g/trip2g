@@ -24,11 +24,11 @@ var _ pushnotes.Env = &EnvMock{}
 //			HandleLatestNotesAfterSaveFunc: func(ctx context.Context, changedPathIDs []int64) error {
 //				panic("mock out the HandleLatestNotesAfterSave method")
 //			},
-//			InsertNoteFunc: func(ctx context.Context, update appmodel.RawNote) error {
+//			InsertNoteFunc: func(ctx context.Context, update appmodel.RawNote) (int64, error) {
 //				panic("mock out the InsertNote method")
 //			},
-//			InsertSubgraphFunc: func(ctx context.Context, name string) error {
-//				panic("mock out the InsertSubgraph method")
+//			InsertUncommittedPathFunc: func(ctx context.Context, notePathID int64) error {
+//				panic("mock out the InsertUncommittedPath method")
 //			},
 //			LatestNoteViewsFunc: func() *appmodel.NoteViews {
 //				panic("mock out the LatestNoteViews method")
@@ -53,10 +53,10 @@ type EnvMock struct {
 	HandleLatestNotesAfterSaveFunc func(ctx context.Context, changedPathIDs []int64) error
 
 	// InsertNoteFunc mocks the InsertNote method.
-	InsertNoteFunc func(ctx context.Context, update appmodel.RawNote) error
+	InsertNoteFunc func(ctx context.Context, update appmodel.RawNote) (int64, error)
 
-	// InsertSubgraphFunc mocks the InsertSubgraph method.
-	InsertSubgraphFunc func(ctx context.Context, name string) error
+	// InsertUncommittedPathFunc mocks the InsertUncommittedPath method.
+	InsertUncommittedPathFunc func(ctx context.Context, notePathID int64) error
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *appmodel.NoteViews
@@ -86,12 +86,12 @@ type EnvMock struct {
 			// Update is the update argument value.
 			Update appmodel.RawNote
 		}
-		// InsertSubgraph holds details about calls to the InsertSubgraph method.
-		InsertSubgraph []struct {
+		// InsertUncommittedPath holds details about calls to the InsertUncommittedPath method.
+		InsertUncommittedPath []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// Name is the name argument value.
-			Name string
+			// NotePathID is the notePathID argument value.
+			NotePathID int64
 		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
@@ -112,7 +112,7 @@ type EnvMock struct {
 	}
 	lockHandleLatestNotesAfterSave sync.RWMutex
 	lockInsertNote                 sync.RWMutex
-	lockInsertSubgraph             sync.RWMutex
+	lockInsertUncommittedPath      sync.RWMutex
 	lockLatestNoteViews            sync.RWMutex
 	lockLayouts                    sync.RWMutex
 	lockLogger                     sync.RWMutex
@@ -156,7 +156,7 @@ func (mock *EnvMock) HandleLatestNotesAfterSaveCalls() []struct {
 }
 
 // InsertNote calls InsertNoteFunc.
-func (mock *EnvMock) InsertNote(ctx context.Context, update appmodel.RawNote) error {
+func (mock *EnvMock) InsertNote(ctx context.Context, update appmodel.RawNote) (int64, error) {
 	if mock.InsertNoteFunc == nil {
 		panic("EnvMock.InsertNoteFunc: method is nil but Env.InsertNote was just called")
 	}
@@ -191,39 +191,39 @@ func (mock *EnvMock) InsertNoteCalls() []struct {
 	return calls
 }
 
-// InsertSubgraph calls InsertSubgraphFunc.
-func (mock *EnvMock) InsertSubgraph(ctx context.Context, name string) error {
-	if mock.InsertSubgraphFunc == nil {
-		panic("EnvMock.InsertSubgraphFunc: method is nil but Env.InsertSubgraph was just called")
+// InsertUncommittedPath calls InsertUncommittedPathFunc.
+func (mock *EnvMock) InsertUncommittedPath(ctx context.Context, notePathID int64) error {
+	if mock.InsertUncommittedPathFunc == nil {
+		panic("EnvMock.InsertUncommittedPathFunc: method is nil but Env.InsertUncommittedPath was just called")
 	}
 	callInfo := struct {
-		Ctx  context.Context
-		Name string
+		Ctx        context.Context
+		NotePathID int64
 	}{
-		Ctx:  ctx,
-		Name: name,
+		Ctx:        ctx,
+		NotePathID: notePathID,
 	}
-	mock.lockInsertSubgraph.Lock()
-	mock.calls.InsertSubgraph = append(mock.calls.InsertSubgraph, callInfo)
-	mock.lockInsertSubgraph.Unlock()
-	return mock.InsertSubgraphFunc(ctx, name)
+	mock.lockInsertUncommittedPath.Lock()
+	mock.calls.InsertUncommittedPath = append(mock.calls.InsertUncommittedPath, callInfo)
+	mock.lockInsertUncommittedPath.Unlock()
+	return mock.InsertUncommittedPathFunc(ctx, notePathID)
 }
 
-// InsertSubgraphCalls gets all the calls that were made to InsertSubgraph.
+// InsertUncommittedPathCalls gets all the calls that were made to InsertUncommittedPath.
 // Check the length with:
 //
-//	len(mockedEnv.InsertSubgraphCalls())
-func (mock *EnvMock) InsertSubgraphCalls() []struct {
-	Ctx  context.Context
-	Name string
+//	len(mockedEnv.InsertUncommittedPathCalls())
+func (mock *EnvMock) InsertUncommittedPathCalls() []struct {
+	Ctx        context.Context
+	NotePathID int64
 } {
 	var calls []struct {
-		Ctx  context.Context
-		Name string
+		Ctx        context.Context
+		NotePathID int64
 	}
-	mock.lockInsertSubgraph.RLock()
-	calls = mock.calls.InsertSubgraph
-	mock.lockInsertSubgraph.RUnlock()
+	mock.lockInsertUncommittedPath.RLock()
+	calls = mock.calls.InsertUncommittedPath
+	mock.lockInsertUncommittedPath.RUnlock()
 	return calls
 }
 

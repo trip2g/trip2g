@@ -780,3 +780,11 @@ update telegram_publish_sent_account_messages
 
 -- name: DeleteTelegramPublishSentAccountMessagesByNotePathID :exec
 delete from telegram_publish_sent_account_messages where note_path_id = ?;
+
+-- name: InsertUncommittedPath :exec
+insert into note_uncommitted_paths (note_path_id)
+values (?)
+on conflict do nothing;
+
+-- name: ClearUncommittedPaths :exec
+delete from note_uncommitted_paths;
