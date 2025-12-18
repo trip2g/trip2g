@@ -281,8 +281,10 @@ func (a *app) EnqueueJob(ctx context.Context, job model.BackgroundTask) error {
 		return a.enqueueJobToQ(ctx, a.globalQueue, job)
 	case model.BackgroundTelegramJobQueue:
 		return a.enqueueJobToQ(ctx, a.telegramTaskQueue, job)
-	case model.BackgroundTelegramAPICallQueue:
-		return a.enqueueJobToQ(ctx, a.telegramAPIQueue, job)
+	case model.BackgroundTelegramBotAPIQueue:
+		return a.enqueueJobToQ(ctx, a.telegramBotAPIQueue, job)
+	case model.BackgroundTelegramAccountAPIQueue:
+		return a.enqueueJobToQ(ctx, a.telegramAccountAPIQueue, job)
 	case model.BackgroundTelegramLongRunningQueue:
 		return a.enqueueJobToQ(ctx, a.telegramLongRunningQueue, job)
 	}
@@ -298,8 +300,10 @@ func (a *app) RegisterJob(qID model.BackgroundQueueID, id string, handler func(c
 		a.globalQueue.runner.Register(id, handler)
 	case model.BackgroundTelegramJobQueue:
 		a.telegramTaskQueue.runner.Register(id, handler)
-	case model.BackgroundTelegramAPICallQueue:
-		a.telegramAPIQueue.runner.Register(id, handler)
+	case model.BackgroundTelegramBotAPIQueue:
+		a.telegramBotAPIQueue.runner.Register(id, handler)
+	case model.BackgroundTelegramAccountAPIQueue:
+		a.telegramAccountAPIQueue.runner.Register(id, handler)
 	case model.BackgroundTelegramLongRunningQueue:
 		a.telegramLongRunningQueue.runner.Register(id, handler)
 	default:

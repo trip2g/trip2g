@@ -17,10 +17,19 @@ import (
 )
 
 func (a *app) initTelegramDeps(ctx context.Context) error {
-	// API queue - for Telegram API calls (send messages, edit messages, etc.)
+	// Bot API queue - for Telegram Bot API calls (send messages via bots)
 	// Limited to 1 concurrent job to avoid rate limits
 	// MaxReceive=2: retry once on failure (default is 3)
-	a.telegramAPIQueue = a.createQueue(ctx, "tg_api_jobs", QueueOpts{
+	a.telegramBotAPIQueue = a.createQueue(ctx, "tg_bot_api_jobs", QueueOpts{
+		Limit:        1,
+		PollInterval: time.Second * 2,
+		MaxReceive:   2,
+	})
+
+	// Account API queue - for Telegram Account API calls via MTProto (send messages via user accounts)
+	// Limited to 1 concurrent job to avoid rate limits
+	// MaxReceive=2: retry once on failure (default is 3)
+	a.telegramAccountAPIQueue = a.createQueue(ctx, "tg_account_api_jobs", QueueOpts{
 		Limit:        1,
 		PollInterval: time.Second * 2,
 		MaxReceive:   2,

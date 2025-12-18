@@ -10,7 +10,8 @@ type BackgroundQueueID int
 const (
 	BackgroundDefaultQueue BackgroundQueueID = iota
 	BackgroundTelegramJobQueue
-	BackgroundTelegramAPICallQueue
+	BackgroundTelegramBotAPIQueue     // Bot API calls (telegram-bot-api)
+	BackgroundTelegramAccountAPIQueue // Account API calls (MTProto/tgtd)
 	BackgroundTelegramLongRunningQueue
 )
 
@@ -20,8 +21,10 @@ func (id BackgroundQueueID) String() string {
 		return "default"
 	case BackgroundTelegramJobQueue:
 		return "telegram_jobs"
-	case BackgroundTelegramAPICallQueue:
-		return "telegram_api_calls"
+	case BackgroundTelegramBotAPIQueue:
+		return "telegram_bot_api"
+	case BackgroundTelegramAccountAPIQueue:
+		return "telegram_account_api"
 	case BackgroundTelegramLongRunningQueue:
 		return "telegram_long_running"
 	}

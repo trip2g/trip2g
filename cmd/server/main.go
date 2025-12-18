@@ -150,7 +150,8 @@ type app struct {
 	auditLogger logger.Logger
 
 	globalQueue              *appQueue
-	telegramAPIQueue         *appQueue
+	telegramBotAPIQueue      *appQueue
+	telegramAccountAPIQueue  *appQueue
 	telegramTaskQueue        *appQueue
 	telegramLongRunningQueue *appQueue
 
@@ -371,7 +372,8 @@ func main() {
 
 	a.globalQueue.start()
 	a.telegramTaskQueue.start()
-	a.telegramAPIQueue.start()
+	a.telegramBotAPIQueue.start()
+	a.telegramAccountAPIQueue.start()
 	a.telegramLongRunningQueue.start()
 
 	a.startServer()

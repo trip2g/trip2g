@@ -8,7 +8,7 @@ import (
 )
 
 const JobID = "update_account_message"
-const QueueID = model.BackgroundTelegramAPICallQueue
+const QueueID = model.BackgroundTelegramAccountAPIQueue
 const Priority = updatetelegramaccountpost.Priority + 1
 
 type UpdateTelegramAccountMessageJob struct {
