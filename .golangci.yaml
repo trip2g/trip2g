@@ -489,3 +489,5 @@ linters:
       # One-off CLI tools for channel export/conversion
       - cmd/channelexport/
       - cmd/tgconvert/
+      # E2E test environment setup tool
+      - cmd/tge2e/
