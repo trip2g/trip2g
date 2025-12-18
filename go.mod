@@ -10,6 +10,7 @@ require (
 	github.com/amacneil/dbmate/v2 v2.27.0
 	github.com/blevesearch/bleve/v2 v2.5.3
 	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible
+	github.com/go-faster/errors v0.7.1
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.2-0.20221020003552-4126fa611266
 	github.com/golang-jwt/jwt/v5 v5.2.2
@@ -145,7 +146,6 @@ require (
 	github.com/ghostiam/protogetter v0.3.15 // indirect
 	github.com/go-critic/go-critic v0.13.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
-	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/go-faster/jx v1.1.0 // indirect
 	github.com/go-faster/xor v1.0.0 // indirect
 	github.com/go-faster/yaml v0.4.6 // indirect

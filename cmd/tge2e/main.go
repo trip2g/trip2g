@@ -34,6 +34,10 @@ func main() {
 		err = runCleanup()
 	case "verify":
 		err = runVerify()
+	case "dump":
+		err = runDump()
+	case "check":
+		err = runCheck()
 	case "help", "-h", "--help":
 		printUsage()
 		return
@@ -55,7 +59,7 @@ func printUsage() {
 Usage: tge2e <command>
 
 Commands:
-  setup     Authenticate account, find test channels, clear them
+  setup     Authenticate account, find test channels, verify bot, clear channels
             Interactive, run once to initialize test environment
 
   cleanup   Clear all messages from test channels
@@ -63,6 +67,12 @@ Commands:
 
   verify    Check that test environment is properly configured
             Returns exit code 0 if ready, 1 if not
+
+  dump      Save current channel messages to testdata/telegram/snapshots/
+            Run after publishing to capture expected state
+
+  check     Compare current channel messages with saved snapshots
+            Returns exit code 0 if match, 1 if different
 
 Environment:
   TELEGRAM_API_ID      Your Telegram API ID (from my.telegram.org)
@@ -75,5 +85,6 @@ Required channels (create manually before setup):
   - Trip2G Test Account Instant
 
 Output:
-  Credentials are saved to .tg_e2e_session`)
+  Credentials: .tg_e2e_session
+  Snapshots:   testdata/telegram/snapshots/`)
 }
