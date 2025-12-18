@@ -33,7 +33,7 @@ services:
       - INTERNAL_LISTEN_ADDR=:20082
       - DB_FILE=/data/test.sqlite3
       - DEV=true # sign in code 000000
-      - LOG_LEVEL=debug
+      - LOG_LEVEL=info
       - OWNER_EMAIL=hello@example.com
       - SHUTDOWN_GRACE_PERIOD=1ms
       - SHUTDOWN_TIMEOUT=1ms
@@ -60,7 +60,7 @@ services:
       - RESEND_API_KEY=test-key
       - MAIL_FROM=test@example.com
     volumes:
-      - test-data:/data
+      - ./tmp/data:/data
       - ./testdata/vault:/app/testdata/vault:ro
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:20082/health"]

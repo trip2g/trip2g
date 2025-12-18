@@ -13,12 +13,25 @@ NC='\033[0m'
 export APP_URL="${APP_URL:-http://localhost:20081}"
 export ENDPOINT="${APP_URL}/graphql" # for push_notes.py
 
+# Success flag - set to 1 at the very end if all tests pass
+SUCCESS=0
+
 echo "🧪 Starting E2E tests..."
 echo ""
 
 # Cleanup function
 cleanup() {
   echo ""
+
+  # Show logs if tests didn't complete successfully
+  if [ $SUCCESS -eq 0 ]; then
+    echo "📋 Container logs (due to error):"
+    echo "================================="
+    docker compose -f docker-compose.test.yml logs
+    echo "================================="
+    echo ""
+  fi
+
   echo "🧹 Cleaning up..."
   docker compose -f docker-compose.test.yml down -v
 
@@ -36,6 +49,19 @@ trap cleanup EXIT INT TERM
 echo "🧹 Cleaning up existing test containers..."
 docker compose -f docker-compose.test.yml down -v 2>/dev/null || true
 
+# Prepare database
+export DB_PATH="tmp/data/test.sqlite3"
+echo "🗄️  Preparing test database $DB_PATH"
+
+mkdir -p tmp/data
+rm -f "$DB_PATH"
+sqlite3 "$DB_PATH" < testdata/e2e_seed.sql
+go run ./cmd/tge2e patch-db "$DB_PATH"
+
+# Cleanup telegram channels
+echo "🧹 Cleaning up Telegram channels..."
+go run ./cmd/tge2e cleanup
+
 # Start services
 echo "🚀 Starting services..."
 docker compose -f docker-compose.test.yml up -d --build
@@ -43,9 +69,12 @@ docker compose -f docker-compose.test.yml up -d --build
 # Wait for services
 ./scripts/waitfor localhost:20081 || {
   echo -e "${RED}✗ Services failed to start${NC}"
-  docker compose -f docker-compose.test.yml logs
   exit 1
 }
+
+# Wait send_scheduled_telegram_publishposts job
+echo "⏳ Waiting for scheduled Telegram publish posts job to complete..."
+curl -f "$APP_URL/debug/run_cron_job?name=send_scheduled_telegram_publishposts"
 
 # Run setup test to create API key
 echo "🔑 Running setup test (create API key)..."
@@ -114,13 +143,40 @@ fi
 
 TEST_EXIT_CODE=$?
 
-if [ $TEST_EXIT_CODE -eq 0 ]; then
-  echo ""
-  echo -e "${GREEN}✅ All E2E tests passed!${NC}"
-else
+if [ $TEST_EXIT_CODE -ne 0 ]; then
   echo ""
   echo -e "${RED}✗ Playwright tests failed${NC}"
   echo "Run with --ui for interactive debugging: ./scripts/test-e2e.sh --ui"
+  exit $TEST_EXIT_CODE
 fi
 
-exit $TEST_EXIT_CODE
+# Wait for telegram messages to be sent
+EXPECTED=12
+echo "⏳ Waiting for $EXPECTED telegram messages to be sent..."
+
+while true; do
+  sleep 5
+
+  # Check for errors first
+  ERRORS=$(sqlite3 "$DB_PATH" "select count(*) from telegram_publish_notes where last_error is not null")
+  if [ "$ERRORS" -gt 0 ]; then
+    echo -e "${RED}✗ $ERRORS posts failed with errors:${NC}"
+    sqlite3 "$DB_PATH" "select note_path_id, last_error from telegram_publish_notes where last_error is not null"
+    exit 1
+  fi
+
+  # Check sent count (bot + account messages)
+  SENT=$(sqlite3 "$DB_PATH" "select (select count(*) from telegram_publish_sent_messages) + (select count(*) from telegram_publish_sent_account_messages)")
+  echo "  Sent: $SENT / $EXPECTED"
+
+  if [ "$SENT" -ge "$EXPECTED" ]; then
+    break
+  fi
+done
+
+echo ""
+echo -e "${GREEN}✅ All E2E tests passed!${NC}"
+
+SUCCESS=1
+
+exit 0
