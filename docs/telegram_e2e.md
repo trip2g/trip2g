@@ -22,6 +22,8 @@ The `tge2e` tool manages the test environment for verifying that notes are corre
 
 3. **Test bot** created via @BotFather, added as admin to bot channels
 
+4. **E2E seed database** with configured account, bot and publish tags (see [e2e_seed.md](e2e_seed.md))
+
 ## Installation
 
 ```bash
@@ -30,26 +32,35 @@ go build ./cmd/tge2e
 
 ## Commands
 
-### setup
+### extract
 
-Initialize the test environment. Run once after creating channels.
+Extract credentials from database to `.tg_e2e_session`.
 
 ```bash
-./tge2e setup
+./tge2e extract <path/to/database.sqlite>
 ```
 
 Steps performed:
-1. Authenticate with Telegram (or use existing session)
-2. Find test channels by title
-3. Configure bot token and username
-4. Verify bot is admin in bot channels
-5. Clear all channel messages
+1. Extract telegram account session (decrypts with dev key)
+2. Extract bot token
+3. Connect to Telegram and find test channels by title
+4. Save to `.tg_e2e_session`
 
-Session is saved to `.tg_e2e_session`.
+### patch-db
+
+Update database with credentials from `.tg_e2e_session`.
+
+```bash
+./tge2e patch-db <path/to/database.sqlite>
+```
+
+Updates:
+- `telegram_accounts` (phone, session_data, display_name)
+- `tg_bots` (token, name)
 
 ### cleanup
 
-Clear all messages from test channels. Run before each test.
+Clear all messages from test channels.
 
 ```bash
 ./tge2e cleanup
@@ -57,7 +68,7 @@ Clear all messages from test channels. Run before each test.
 
 ### verify
 
-Check that the test environment is properly configured.
+Check that `.tg_e2e_session` is valid and test environment is configured.
 
 ```bash
 ./tge2e verify
@@ -119,52 +130,43 @@ Comparison ignores message IDs and timestamps, only comparing:
 
 ## Test Workflow
 
-1. **Initial setup** (one time):
+### Initial setup (one time)
+
+1. Create 4 test channels in Telegram
+2. Create bot via @BotFather, add as admin to bot channels
+3. Create E2E seed database (see [e2e_seed.md](e2e_seed.md))
+4. Extract credentials:
    ```bash
-   # Create 4 channels in Telegram
-   # Create bot via @BotFather
-   # Add bot as admin to bot channels
-   ./tge2e setup
+   ./tge2e extract data.sqlite3
    ```
 
-2. **Before test run**:
-   ```bash
-   ./tge2e cleanup
-   ```
-
-3. **Run tests** that publish to channels
-
-4. **Capture expected state** (first time or after intentional changes):
-   ```bash
-   ./tge2e dump
-   git add testdata/telegram/snapshots/
-   ```
-
-5. **Verify published content**:
-   ```bash
-   ./tge2e check
-   ```
-
-## CI Integration
+### Running E2E tests
 
 ```bash
-#!/bin/bash
-set -e
+# 1. Prepare test database from seed
+sqlite3 test.db < testdata/e2e_seed.sql
+./tge2e patch-db test.db
 
-# Verify environment
-./tge2e verify
-
-# Clean channels
+# 2. Clean channels
 ./tge2e cleanup
 
-# Run publishing tests
+# 3. Start server with test database
+go run ./cmd/server -db-file=test.db -dev
+
+# 4. Run tests that publish to channels
 go test ./... -run TestTelegramPublish
 
-# Trigger cron job or wait for scheduled publish
-# ...
-
-# Verify results
+# 5. Verify results
 ./tge2e check
+```
+
+### Updating snapshots
+
+After intentional changes to publishing:
+
+```bash
+./tge2e dump
+git add testdata/telegram/snapshots/
 ```
 
 ## Files
@@ -172,6 +174,7 @@ go test ./... -run TestTelegramPublish
 | Path | Description |
 |------|-------------|
 | `.tg_e2e_session` | Telegram session and channel config (gitignored) |
+| `testdata/e2e_seed.sql` | Database seed with placeholders |
 | `testdata/telegram/snapshots/*.json` | Expected channel state |
 | `cmd/tge2e/` | Tool source code |
 
@@ -189,11 +192,11 @@ Ensure channels exist with exact titles:
 
 Add the bot as admin to `Trip2G Test Bot` and `Trip2G Test Bot Instant` channels with posting permissions.
 
-### "session expired"
+### "failed to decrypt session"
 
-Delete `.tg_e2e_session` and run `./tge2e setup` again.
+Ensure the database was created with dev encryption key (`please-change-me-to-32-byte-key!`).
 
-# Reset sent messages in the db
+### Reset sent messages
 
 ```sql
 delete from telegram_publish_sent_messages;

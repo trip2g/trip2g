@@ -20,10 +20,10 @@ const (
 
 // MessageSnapshot represents a message for snapshot comparison.
 type MessageSnapshot struct {
-	ID       int    `json:"id"`
-	Text     string `json:"text,omitempty"`
-	Caption  string `json:"caption,omitempty"`
-	HasMedia bool   `json:"has_media,omitempty"`
+	ID        int    `json:"id"`
+	Text      string `json:"text,omitempty"`
+	Caption   string `json:"caption,omitempty"`
+	HasMedia  bool   `json:"has_media,omitempty"`
 	MediaType string `json:"media_type,omitempty"`
 }
 
