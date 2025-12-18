@@ -825,7 +825,8 @@ select n.note_path_id
   where p.hidden_by is null
    and publish_at <= datetime('now')
    and published_at is null
-   and last_error is null;
+   and last_error is null
+ order by n.publish_at, n.note_path_id;
 
 -- name: ListSheduledTelegarmAccountPublishNoteIDs :many
 select distinct n.note_path_id
@@ -839,7 +840,8 @@ select distinct n.note_path_id
    and publish_at <= datetime('now')
    and published_at is null
    and last_error is null
-   and a.enabled = 1;
+   and a.enabled = 1
+ order by n.publish_at, n.note_path_id;
 
 -- name: ListTgBotChatsByTelegramPublishNotePathID :many
 select c.*

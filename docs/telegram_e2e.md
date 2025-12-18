@@ -192,3 +192,11 @@ Add the bot as admin to `Trip2G Test Bot` and `Trip2G Test Bot Instant` channels
 ### "session expired"
 
 Delete `.tg_e2e_session` and run `./tge2e setup` again.
+
+# Reset sent messages in the db
+
+```sql
+delete from telegram_publish_sent_messages;
+delete from telegram_publish_sent_account_messages;
+update telegram_publish_notes set published_at = null, published_version_id = null, error_count = 0, last_error = null;
+```

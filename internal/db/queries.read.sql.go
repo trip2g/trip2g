@@ -3441,6 +3441,7 @@ select distinct n.note_path_id
    and published_at is null
    and last_error is null
    and a.enabled = 1
+ order by n.publish_at, n.note_path_id
 `
 
 func (q *Queries) ListSheduledTelegarmAccountPublishNoteIDs(ctx context.Context) ([]int64, error) {
@@ -3477,6 +3478,7 @@ select n.note_path_id
    and publish_at <= datetime('now')
    and published_at is null
    and last_error is null
+ order by n.publish_at, n.note_path_id
 `
 
 func (q *Queries) ListSheduledTelegarmPublishNoteIDs(ctx context.Context) ([]int64, error) {
