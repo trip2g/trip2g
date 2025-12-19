@@ -51,6 +51,7 @@ services:
 
       # JWT (test secret - НЕ использовать в продакшене!)
       - JWT_SECRET=test-secret-key-for-testing-only-do-not-use-in-production
+      - USER_TOKEN_COOKIE_NAME=trip2g_e2e # avoid conflicts with dev cookies
 
       # Git API (using test vault)
       - GIT_API_REPO_PATH=/app/testdata/vault
