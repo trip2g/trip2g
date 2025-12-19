@@ -270,7 +270,7 @@ func getAllMediaURLs(noteView *model.NoteView) ([]string, error) {
 }
 
 // isCustomEmojiAsset checks if the path is a custom emoji asset that should be
-// excluded from post media. Patterns: tg_ce_*, ce.trip2g.com/*
+// excluded from post media. Patterns: tg_ce_*, ce.trip2g.com/*.
 func isCustomEmojiAsset(path string) bool {
 	filename := filepath.Base(path)
 	if strings.HasPrefix(filename, "tg_ce_") {

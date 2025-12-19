@@ -166,7 +166,7 @@ while true; do
   fi
 
   # Check sent count (bot + account messages)
-  SENT=$(sqlite3 "$DB_PATH" "select (select count(*) from telegram_publish_sent_messages) + (select count(*) from telegram_publish_sent_account_messages)")
+  SENT=$(sqlite3 "$DB_PATH" "select (select count(*) from telegram_publish_sent_messages where instant = 0) + (select count(*) from telegram_publish_sent_account_messages where instant = 0)")
   echo "  Sent: $SENT / $EXPECTED"
 
   if [ "$SENT" -ge "$EXPECTED" ]; then

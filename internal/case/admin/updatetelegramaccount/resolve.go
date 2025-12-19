@@ -12,7 +12,7 @@ import (
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 )
 
-// boolToInt64Ptr converts *bool to *int64 (1 for true, 0 for false, nil for nil)
+// boolToInt64Ptr converts *bool to *int64 (1 for true, 0 for false, nil for nil).
 func boolToInt64Ptr(b *bool) *int64 {
 	if b == nil {
 		return nil

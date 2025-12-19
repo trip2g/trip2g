@@ -1,0 +1,41 @@
+{
+  "channel_name": "trip2g_test_account",
+  "channel_title": "Trip2G Test Account",
+  "messages": [
+    {
+      "id": 70,
+      "text": "\n\nThis post contains one photo and will be sent using sendPhoto API method.\n\nThe post type is: photo\n\nCaption features:\n- Maximum 1024 characters\n- HTML formatting\n- Can be edited later with editMessageCaption\n\nThis tests single media attachment with caption.\n\nText-only Telegram Post | Single Video Telegram Post | Media Group Telegram Post",
+      "has_media": true,
+      "media_type": "photo"
+    },
+    {
+      "id": 71,
+      "text": "\n\nThis post contains one video and will be sent using sendVideo API method.\n\nThe post type is: photo (same as single photo internally)\n\nCaption features:\n- Maximum 1024 characters\n- HTML formatting\n- Can be edited later with editMessageCaption (not EditMessageWithPhoto!)\n\nThis tests single video attachment with caption.\n\nText-only Telegram Post | Single Photo Telegram Post | Media Group Telegram Post",
+      "has_media": true,
+      "media_type": "video"
+    },
+    {
+      "id": 72,
+      "text": "\n\nThis post contains multiple media files (2-10) and will be sent using sendMediaGroup API method.\n\nThe post type is: media_group\n\nFeatures:\n- Multiple photos and videos (up to 10)\n- Only first media gets the caption\n- Caption can be edited with editMessageCaption\n- Media files cannot be changed after sending\n\nThis tests media group functionality with mixed photo and video content.\n\nText-only Telegram Post | Single Photo Telegram Post",
+      "has_media": true,
+      "media_type": "photo"
+    },
+    {
+      "id": 73,
+      "has_media": true,
+      "media_type": "photo"
+    },
+    {
+      "id": 74,
+      "has_media": true,
+      "media_type": "video"
+    },
+    {
+      "id": 75,
+      "text": "\n\nThis post has a single photo with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_photo.png should be the post media.\n\nText-only Telegram Post | Video with Custom Emoji",
+      "has_media": true,
+      "media_type": "photo"
+    }
+  ],
+  "captured_at": "2025-12-18T13:56:56Z"
+}

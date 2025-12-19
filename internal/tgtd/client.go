@@ -923,42 +923,7 @@ func (c *Client) DeleteMessage(ctx context.Context, sessionData []byte, params D
 }
 
 func (c *Client) resolvePeer(ctx context.Context, api *tg.Client, chatID int64) (tg.InputPeerClass, error) {
-	// Try to get channel/chat from dialogs
-	dialogs, err := api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
-		OffsetPeer: &tg.InputPeerEmpty{},
-		Limit:      100,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get dialogs: %w", err)
-	}
-
-	var chatList []tg.ChatClass
-	switch d := dialogs.(type) {
-	case *tg.MessagesDialogs:
-		chatList = d.Chats
-	case *tg.MessagesDialogsSlice:
-		chatList = d.Chats
-	}
-
-	for _, chat := range chatList {
-		switch ch := chat.(type) {
-		case *tg.Channel:
-			if ch.ID == chatID {
-				return &tg.InputPeerChannel{
-					ChannelID:  ch.ID,
-					AccessHash: ch.AccessHash,
-				}, nil
-			}
-		case *tg.Chat:
-			if ch.ID == chatID {
-				return &tg.InputPeerChat{
-					ChatID: ch.ID,
-				}, nil
-			}
-		}
-	}
-
-	return nil, fmt.Errorf("chat with ID %d not found in dialogs", chatID)
+	return c.resolvePeerWithAPI(ctx, api, chatID)
 }
 
 func extractMessageID(updates tg.UpdatesClass) (int64, error) {
