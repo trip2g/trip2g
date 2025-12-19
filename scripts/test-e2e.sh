@@ -16,6 +16,18 @@ export ENDPOINT="${APP_URL}/graphql" # for push_notes.py
 # Success flag - set to 1 at the very end if all tests pass
 SUCCESS=0
 
+# Helper function to run cron job
+run_telegram_cron() {
+  echo "⏳ Running Telegram publish posts cron job..."
+  curl -f "$APP_URL/debug/run_cron_job?name=send_scheduled_telegram_publishposts"
+}
+
+# Helper function to wait for all background jobs
+wait_all_jobs() {
+  echo "⏳ Waiting for all background jobs to complete..."
+  curl -s --max-time 300 "$APP_URL/debug/wait_all_jobs" | tee /dev/stderr | grep -q "^ok:" || exit 1
+}
+
 echo "🧪 Starting E2E tests..."
 echo ""
 
@@ -37,7 +49,7 @@ cleanup() {
 
   # Remove temporary files
   rm -f .test-api-key
-  rm -rf tmp/testvault0 tmp/testvault1
+  # rm -rf tmp/testvault0 tmp/testvault1
 
   echo -e "${GREEN}✓ Cleanup complete${NC}"
 }
@@ -101,8 +113,7 @@ echo ""
 }
 
 # Schedule send_scheduled_telegram_publishposts job
-echo "⏳ Scheduled Telegram publish posts job to complete..."
-curl -f "$APP_URL/debug/run_cron_job?name=send_scheduled_telegram_publishposts"
+run_telegram_cron
 
 echo ""
 echo -e "${GREEN}✓ CLI sync tests passed${NC}"
@@ -151,12 +162,33 @@ if [ $TEST_EXIT_CODE -ne 0 ]; then
 fi
 
 # Wait for telegram messages to be sent
-echo "⏳ Waiting for all background jobs to complete..."
-curl -s --max-time 300 "$APP_URL/debug/wait_all_jobs" | tee /dev/stderr | grep -q "^ok:" || exit 1
+wait_all_jobs
 
 # Check channel snapshots
 echo "📷 Checking Telegram channel snapshots..."
 go run ./cmd/tge2e -db tmp/data/test.sqlite3 -snapshots testdata/telegram/step0 check
+
+# Update posts and re-sync
+echo "📝 Updating Telegram posts..."
+
+# Add "Updated!" to all telegram posts
+for f in tmp/testvault0/telegram_*.md; do
+  echo -e "\n\nUpdated!" >> "$f"
+done
+
+# Add photo embed to text post (account posting adds image)
+echo -e "\n![[telegram_photo.png]]" >> tmp/testvault0/telegram_text.md
+
+# Replace photo in one_photo post to test photo replacement
+sed -i 's/telegram_photo\.png/test.png/' tmp/testvault0/telegram_one_photo.md
+
+# Sync updated files
+echo "🔄 Syncing updated posts..."
+npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder tmp/testvault0 --api-key "$API_KEY" --api-url "$ENDPOINT"
+
+# Send updated posts
+run_telegram_cron
+wait_all_jobs
 
 echo ""
 echo -e "${GREEN}✅ All E2E tests passed!${NC}"

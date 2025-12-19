@@ -214,7 +214,8 @@ setup() {
 
 cleanup() {
     log_section "Cleanup"
-    rm -rf "$VAULT0" "$VAULT1"
+    # this files will be used for telegram testing
+    # rm -rf "$VAULT0" "$VAULT1"
     log_info "Test vaults removed"
 }
 
