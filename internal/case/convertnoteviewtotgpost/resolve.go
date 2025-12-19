@@ -129,7 +129,13 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 	tr.SetLinkResolver(func(target string) (*markdownv2.LinkResolverResult, error) {
 		post.LinkCount++
 
-		linkedNV, ok := nvs.Map[target]
+		// Try to resolve target using ResolvedLinks (since AST is no longer mutated)
+		resolvedTarget := target
+		if resolved, found := source.NoteView.ResolvedLinks[target]; found {
+			resolvedTarget = resolved
+		}
+
+		linkedNV, ok := nvs.Map[resolvedTarget]
 		if !ok {
 			post.UnresolvedLinkCount++
 			return &markdownv2.LinkResolverResult{URL: publicURL}, nil
