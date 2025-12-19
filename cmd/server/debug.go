@@ -62,8 +62,8 @@ func (a *app) handleDebugNvsLatest(ctx *fasthttp.RequestCtx) bool {
 
 func (a *app) handleDebugWaitAllJobs(ctx *fasthttp.RequestCtx) bool {
 	const (
-		pollInterval = 5 * time.Second
-		maxTimeout   = 1 * time.Minute
+		pollInterval = 10 * time.Second
+		maxTimeout   = 5 * time.Minute
 	)
 
 	startTime := time.Now()

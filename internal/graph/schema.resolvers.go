@@ -1775,6 +1775,7 @@ func (r *notePathResolver) AssetReplaces(ctx context.Context, obj *db.NotePath) 
 		if replace == nil {
 			continue
 		}
+
 		res = append(res, model.NoteAssetReplaceT{
 			ID:           id,
 			URL:          replace.URL,

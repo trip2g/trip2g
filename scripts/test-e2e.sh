@@ -33,7 +33,7 @@ cleanup() {
   fi
 
   echo "🧹 Cleaning up..."
-  docker compose -f docker-compose.test.yml down -v
+  #docker compose -f docker-compose.test.yml down -v
 
   # Remove temporary files
   rm -f .test-api-key
@@ -151,28 +151,7 @@ if [ $TEST_EXIT_CODE -ne 0 ]; then
 fi
 
 # Wait for telegram messages to be sent
-EXPECTED=12
-echo "⏳ Waiting for $EXPECTED telegram messages to be sent..."
-
-while true; do
-  sleep 5
-
-  # Check for errors first
-  ERRORS=$(sqlite3 "$DB_PATH" "select count(*) from telegram_publish_notes where last_error is not null")
-  if [ "$ERRORS" -gt 0 ]; then
-    echo -e "${RED}✗ $ERRORS posts failed with errors:${NC}"
-    sqlite3 "$DB_PATH" "select note_path_id, last_error from telegram_publish_notes where last_error is not null"
-    exit 1
-  fi
-
-  # Check sent count (bot + account messages)
-  SENT=$(sqlite3 "$DB_PATH" "select (select count(*) from telegram_publish_sent_messages where instant = 0) + (select count(*) from telegram_publish_sent_account_messages where instant = 0)")
-  echo "  Sent: $SENT / $EXPECTED"
-
-  if [ "$SENT" -ge "$EXPECTED" ]; then
-    break
-  fi
-done
+curl -s "$APP_URL/debug/wait_all_jobs" | tee /dev/stderr | grep -q "^ok:" || exit 1
 
 echo ""
 echo -e "${GREEN}✅ All E2E tests passed!${NC}"

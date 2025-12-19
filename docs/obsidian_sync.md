@@ -529,3 +529,50 @@ return result.pushNotes.notes.filter((n) => pushedPaths.has(n.path));
 2. **Фильтруй на клиенте** — если сервер возвращает слишком много данных, фильтруй до обработки
 3. **Избегай дублирования** — одна операция должна выполняться в одном месте
 4. **Кэшируй с умом** — mtime дешёвая проверка; если файл не изменился физически, хеш тоже не изменился
+
+### Дедупликация ассетов
+
+Ассеты дедуплицируются по ключу `(noteId, localPath)`, а не просто по `localPath`. Это важно потому что:
+
+- Один и тот же файл (например `image.png`) может использоваться в нескольких заметках
+- Сервер создаёт связь `note_asset` для каждой пары (заметка, ассет)
+- `uploadAsset` мутация должна быть вызвана для каждой заметки, даже если файл уже загружен
+
+```typescript
+// Правильно: дедупликация по (noteId, localPath)
+const key = `${item.noteId}:${item.localPath}`;
+
+// Неправильно: только по localPath
+// const key = item.localPath;
+```
+
+### Загрузка missing ассетов для unchanged заметок
+
+**Проблема**: Если загрузка ассета не удалась при первом sync (ошибка сети, 422, и т.д.), при повторном sync заметка помечена как `unchanged` → `syncAssets` не вызывается → ассеты никогда не загружаются.
+
+**Решение**: После sync pushed заметок, проверяем unchanged заметки на missing assets:
+
+```
+executePlan flow:
+1. Pull files from server
+2. Handle conflicts
+3. Push files to server
+4. syncAssets for pushed notes
+5. uploadMissingAssetsForNotes for UNCHANGED notes  ← NEW
+6. Commit changes
+```
+
+`uploadMissingAssetsForNotes`:
+1. Вызывает `fetchNoteAssets` для unchanged заметок
+2. Находит ассеты где `sha256Hash === null` (не загружены)
+3. Загружает их через `uploadAsset`
+
+### twoWaySync и ассеты
+
+| Режим | Download assets | Upload missing assets |
+|-------|-----------------|----------------------|
+| `twoWaySync: false` | ❌ Нет | ✅ Да |
+| `twoWaySync: true` | ✅ Да | ✅ Да |
+
+- При `twoWaySync: false` ассеты **не скачиваются** с сервера
+- Но missing assets всегда **загружаются** на сервер (независимо от twoWaySync)
