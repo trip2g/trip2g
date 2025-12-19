@@ -44,6 +44,8 @@ func main() {
 
 	var err error
 	switch cmd {
+	case "extract":
+		err = runExtract()
 	case "patch-db":
 		err = runPatchDB()
 	case "verify":
@@ -75,8 +77,11 @@ func printUsage() {
 Usage: tge2e -db <database.sqlite> <command>
 
 Commands:
+  extract   Extract credentials from database to .tg_e2e_session
+            (session, bot token, and discovered channels)
+
   patch-db  Update database with credentials from .tg_e2e_session
-            (for migrating from old workflow)
+            (reverse of extract)
 
   verify    Check that database credentials are valid
             Returns exit code 0 if ready, 1 if not

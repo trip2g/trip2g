@@ -93,6 +93,14 @@ go run ./cmd/server -db-file=test.db -dev
 Утилита `tge2e` работает с базой данных напрямую (флаг `-db` обязателен).
 
 ```bash
+# Извлечь credentials из базы в .tg_e2e_session
+# (сессия, bot token, найденные каналы)
+go run ./cmd/tge2e -db test.db extract
+
+# Записать credentials из .tg_e2e_session в базу
+# (обратная операция к extract)
+go run ./cmd/tge2e -db test.db patch-db
+
 # Проверить credentials в базе и подключение к Telegram
 go run ./cmd/tge2e -db test.db verify
 
@@ -104,9 +112,6 @@ go run ./cmd/tge2e -db test.db dump
 
 # Сравнить текущее состояние каналов с эталоном
 go run ./cmd/tge2e -db test.db check
-
-# Миграция из старого формата (.tg_e2e_session → database)
-go run ./cmd/tge2e -db test.db patch-db
 ```
 
 Снапшоты сохраняются в `testdata/telegram/snapshots/` в формате JSON.
