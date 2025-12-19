@@ -24,6 +24,11 @@ type Env interface {
 	GetTelegramAccountByID(ctx context.Context, id int64) (db.TelegramAccount, error)
 	DecryptData(ciphertext []byte) ([]byte, error)
 	TelegramCaptionLengthLimit(ctx context.Context, accountID *int64) int
+	// Access hash cache (tgtd.ClientEnv)
+	GetTelegramPublishAccountChatAccessHash(ctx context.Context, arg db.GetTelegramPublishAccountChatAccessHashParams) (*string, error)
+	GetTelegramPublishAccountInstantChatAccessHash(ctx context.Context, arg db.GetTelegramPublishAccountInstantChatAccessHashParams) (*string, error)
+	UpdateTelegramPublishAccountChatAccessHash(ctx context.Context, arg db.UpdateTelegramPublishAccountChatAccessHashParams) error
+	UpdateTelegramPublishAccountInstantChatAccessHash(ctx context.Context, arg db.UpdateTelegramPublishAccountInstantChatAccessHashParams) error
 }
 
 func Resolve(ctx context.Context, env Env, params model.TelegramAccountUpdatePostParams) error {
@@ -138,7 +143,7 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	}
 
 	// Create tgtd client
-	client := tgtd.NewClient(env, int(account.ApiID), account.ApiHash)
+	client := tgtd.NewClient(env, account.ID, int(account.ApiID), account.ApiHash)
 
 	logger.Info("updating message",
 		"note_path_id", params.NotePathID,

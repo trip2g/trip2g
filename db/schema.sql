@@ -511,7 +511,7 @@ CREATE TABLE telegram_publish_account_chats (
   telegram_chat_id integer not null,
   tag_id integer not null references telegram_publish_tags(id) on delete cascade,
   created_at datetime not null default current_timestamp,
-  created_by integer not null references admins(user_id) on delete restrict,
+  created_by integer not null references admins(user_id) on delete restrict, access_hash text,
   primary key (account_id, telegram_chat_id, tag_id)
 );
 CREATE TABLE telegram_publish_account_instant_chats (
@@ -519,7 +519,7 @@ CREATE TABLE telegram_publish_account_instant_chats (
   telegram_chat_id integer not null,
   tag_id integer not null references telegram_publish_tags(id) on delete cascade,
   created_at datetime not null default current_timestamp,
-  created_by integer not null references admins(user_id) on delete restrict,
+  created_by integer not null references admins(user_id) on delete restrict, access_hash text,
   primary key (account_id, telegram_chat_id, tag_id)
 );
 CREATE TABLE telegram_publish_sent_account_messages (
@@ -663,4 +663,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251203062401'),
   ('20251204121052'),
   ('20251210042103'),
-  ('20251218090744');
+  ('20251218090744'),
+  ('20251219021352');

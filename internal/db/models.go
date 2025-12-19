@@ -407,6 +407,7 @@ type TelegramPublishAccountChat struct {
 	TagID          int64     `json:"tag_id"`
 	CreatedAt      time.Time `json:"created_at"`
 	CreatedBy      int64     `json:"created_by"`
+	AccessHash     *string   `json:"access_hash"`
 }
 
 type TelegramPublishAccountInstantChat struct {
@@ -415,6 +416,7 @@ type TelegramPublishAccountInstantChat struct {
 	TagID          int64     `json:"tag_id"`
 	CreatedAt      time.Time `json:"created_at"`
 	CreatedBy      int64     `json:"created_by"`
+	AccessHash     *string   `json:"access_hash"`
 }
 
 type TelegramPublishChat struct {

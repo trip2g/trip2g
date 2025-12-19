@@ -1261,7 +1261,7 @@ const getGoqiteQueueStats = `-- name: GetGoqiteQueueStats :one
 select queue
      , count(*) as total_jobs
      , count(case when received = 0 then 1 end) as pending_count
-     , count(case when received > 0 then 1 end) as retry_count
+     , count(case when received > 1 then 1 end) as retry_count
   from goqite
  where queue = ?
  group by queue
@@ -1638,6 +1638,48 @@ func (q *Queries) GetTelegramAccountByPhone(ctx context.Context, phone string) (
 		&i.AppConfig,
 	)
 	return i, err
+}
+
+const getTelegramPublishAccountChatAccessHash = `-- name: GetTelegramPublishAccountChatAccessHash :one
+select access_hash
+  from telegram_publish_account_chats
+ where account_id = ?
+   and telegram_chat_id = ?
+   and access_hash is not null
+ limit 1
+`
+
+type GetTelegramPublishAccountChatAccessHashParams struct {
+	AccountID      int64 `json:"account_id"`
+	TelegramChatID int64 `json:"telegram_chat_id"`
+}
+
+func (q *Queries) GetTelegramPublishAccountChatAccessHash(ctx context.Context, arg GetTelegramPublishAccountChatAccessHashParams) (*string, error) {
+	row := q.db.QueryRowContext(ctx, getTelegramPublishAccountChatAccessHash, arg.AccountID, arg.TelegramChatID)
+	var access_hash *string
+	err := row.Scan(&access_hash)
+	return access_hash, err
+}
+
+const getTelegramPublishAccountInstantChatAccessHash = `-- name: GetTelegramPublishAccountInstantChatAccessHash :one
+select access_hash
+  from telegram_publish_account_instant_chats
+ where account_id = ?
+   and telegram_chat_id = ?
+   and access_hash is not null
+ limit 1
+`
+
+type GetTelegramPublishAccountInstantChatAccessHashParams struct {
+	AccountID      int64 `json:"account_id"`
+	TelegramChatID int64 `json:"telegram_chat_id"`
+}
+
+func (q *Queries) GetTelegramPublishAccountInstantChatAccessHash(ctx context.Context, arg GetTelegramPublishAccountInstantChatAccessHashParams) (*string, error) {
+	row := q.db.QueryRowContext(ctx, getTelegramPublishAccountInstantChatAccessHash, arg.AccountID, arg.TelegramChatID)
+	var access_hash *string
+	err := row.Scan(&access_hash)
+	return access_hash, err
 }
 
 const getTelegramPublishNoteByNotePathID = `-- name: GetTelegramPublishNoteByNotePathID :one
@@ -3203,7 +3245,7 @@ const listGoqiteAllQueueStats = `-- name: ListGoqiteAllQueueStats :many
 select queue
      , count(*) as total_jobs
      , count(case when received = 0 then 1 end) as pending_count
-     , count(case when received > 0 then 1 end) as retry_count
+     , count(case when received > 1 then 1 end) as retry_count
   from goqite
  group by queue
  order by queue
@@ -3649,7 +3691,7 @@ func (q *Queries) ListTelegramAccountInstantChatsByNotePathID(ctx context.Contex
 }
 
 const listTelegramPublishAccountChatsByAccountID = `-- name: ListTelegramPublishAccountChatsByAccountID :many
-select account_id, telegram_chat_id, tag_id, created_at, created_by from telegram_publish_account_chats
+select account_id, telegram_chat_id, tag_id, created_at, created_by, access_hash from telegram_publish_account_chats
  where account_id = ?
 `
 
@@ -3668,6 +3710,7 @@ func (q *Queries) ListTelegramPublishAccountChatsByAccountID(ctx context.Context
 			&i.TagID,
 			&i.CreatedAt,
 			&i.CreatedBy,
+			&i.AccessHash,
 		); err != nil {
 			return nil, err
 		}
@@ -3683,7 +3726,7 @@ func (q *Queries) ListTelegramPublishAccountChatsByAccountID(ctx context.Context
 }
 
 const listTelegramPublishAccountInstantChatsByAccountID = `-- name: ListTelegramPublishAccountInstantChatsByAccountID :many
-select account_id, telegram_chat_id, tag_id, created_at, created_by from telegram_publish_account_instant_chats
+select account_id, telegram_chat_id, tag_id, created_at, created_by, access_hash from telegram_publish_account_instant_chats
  where account_id = ?
 `
 
@@ -3702,6 +3745,7 @@ func (q *Queries) ListTelegramPublishAccountInstantChatsByAccountID(ctx context.
 			&i.TagID,
 			&i.CreatedAt,
 			&i.CreatedBy,
+			&i.AccessHash,
 		); err != nil {
 			return nil, err
 		}

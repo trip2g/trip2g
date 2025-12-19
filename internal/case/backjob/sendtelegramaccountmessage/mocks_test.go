@@ -34,6 +34,12 @@ var _ sendtelegramaccountmessage.Env = &EnvMock{}
 //			GetTelegramAccountByIDFunc: func(ctx context.Context, id int64) (db.TelegramAccount, error) {
 //				panic("mock out the GetTelegramAccountByID method")
 //			},
+//			GetTelegramPublishAccountChatAccessHashFunc: func(ctx context.Context, arg db.GetTelegramPublishAccountChatAccessHashParams) (*string, error) {
+//				panic("mock out the GetTelegramPublishAccountChatAccessHash method")
+//			},
+//			GetTelegramPublishAccountInstantChatAccessHashFunc: func(ctx context.Context, arg db.GetTelegramPublishAccountInstantChatAccessHashParams) (*string, error) {
+//				panic("mock out the GetTelegramPublishAccountInstantChatAccessHash method")
+//			},
 //			InsertTelegramPublishSentAccountMessageFunc: func(ctx context.Context, arg db.InsertTelegramPublishSentAccountMessageParams) error {
 //				panic("mock out the InsertTelegramPublishSentAccountMessage method")
 //			},
@@ -51,6 +57,12 @@ var _ sendtelegramaccountmessage.Env = &EnvMock{}
 //			},
 //			UpdateTelegramAccountPublishPostFunc: func(ctx context.Context, notePathID int64) error {
 //				panic("mock out the UpdateTelegramAccountPublishPost method")
+//			},
+//			UpdateTelegramPublishAccountChatAccessHashFunc: func(ctx context.Context, arg db.UpdateTelegramPublishAccountChatAccessHashParams) error {
+//				panic("mock out the UpdateTelegramPublishAccountChatAccessHash method")
+//			},
+//			UpdateTelegramPublishAccountInstantChatAccessHashFunc: func(ctx context.Context, arg db.UpdateTelegramPublishAccountInstantChatAccessHashParams) error {
+//				panic("mock out the UpdateTelegramPublishAccountInstantChatAccessHash method")
 //			},
 //		}
 //
@@ -71,6 +83,12 @@ type EnvMock struct {
 	// GetTelegramAccountByIDFunc mocks the GetTelegramAccountByID method.
 	GetTelegramAccountByIDFunc func(ctx context.Context, id int64) (db.TelegramAccount, error)
 
+	// GetTelegramPublishAccountChatAccessHashFunc mocks the GetTelegramPublishAccountChatAccessHash method.
+	GetTelegramPublishAccountChatAccessHashFunc func(ctx context.Context, arg db.GetTelegramPublishAccountChatAccessHashParams) (*string, error)
+
+	// GetTelegramPublishAccountInstantChatAccessHashFunc mocks the GetTelegramPublishAccountInstantChatAccessHash method.
+	GetTelegramPublishAccountInstantChatAccessHashFunc func(ctx context.Context, arg db.GetTelegramPublishAccountInstantChatAccessHashParams) (*string, error)
+
 	// InsertTelegramPublishSentAccountMessageFunc mocks the InsertTelegramPublishSentAccountMessage method.
 	InsertTelegramPublishSentAccountMessageFunc func(ctx context.Context, arg db.InsertTelegramPublishSentAccountMessageParams) error
 
@@ -88,6 +106,12 @@ type EnvMock struct {
 
 	// UpdateTelegramAccountPublishPostFunc mocks the UpdateTelegramAccountPublishPost method.
 	UpdateTelegramAccountPublishPostFunc func(ctx context.Context, notePathID int64) error
+
+	// UpdateTelegramPublishAccountChatAccessHashFunc mocks the UpdateTelegramPublishAccountChatAccessHash method.
+	UpdateTelegramPublishAccountChatAccessHashFunc func(ctx context.Context, arg db.UpdateTelegramPublishAccountChatAccessHashParams) error
+
+	// UpdateTelegramPublishAccountInstantChatAccessHashFunc mocks the UpdateTelegramPublishAccountInstantChatAccessHash method.
+	UpdateTelegramPublishAccountInstantChatAccessHashFunc func(ctx context.Context, arg db.UpdateTelegramPublishAccountInstantChatAccessHashParams) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -116,6 +140,20 @@ type EnvMock struct {
 			Ctx context.Context
 			// ID is the id argument value.
 			ID int64
+		}
+		// GetTelegramPublishAccountChatAccessHash holds details about calls to the GetTelegramPublishAccountChatAccessHash method.
+		GetTelegramPublishAccountChatAccessHash []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetTelegramPublishAccountChatAccessHashParams
+		}
+		// GetTelegramPublishAccountInstantChatAccessHash holds details about calls to the GetTelegramPublishAccountInstantChatAccessHash method.
+		GetTelegramPublishAccountInstantChatAccessHash []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.GetTelegramPublishAccountInstantChatAccessHashParams
 		}
 		// InsertTelegramPublishSentAccountMessage holds details about calls to the InsertTelegramPublishSentAccountMessage method.
 		InsertTelegramPublishSentAccountMessage []struct {
@@ -151,17 +189,35 @@ type EnvMock struct {
 			// NotePathID is the notePathID argument value.
 			NotePathID int64
 		}
+		// UpdateTelegramPublishAccountChatAccessHash holds details about calls to the UpdateTelegramPublishAccountChatAccessHash method.
+		UpdateTelegramPublishAccountChatAccessHash []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpdateTelegramPublishAccountChatAccessHashParams
+		}
+		// UpdateTelegramPublishAccountInstantChatAccessHash holds details about calls to the UpdateTelegramPublishAccountInstantChatAccessHash method.
+		UpdateTelegramPublishAccountInstantChatAccessHash []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Arg is the arg argument value.
+			Arg db.UpdateTelegramPublishAccountInstantChatAccessHashParams
+		}
 	}
-	lockCheckTelegramPublishSentAccountMessageExists sync.RWMutex
-	lockClearTelegramPublishNoteLastError            sync.RWMutex
-	lockDecryptData                                  sync.RWMutex
-	lockGetTelegramAccountByID                       sync.RWMutex
-	lockInsertTelegramPublishSentAccountMessage      sync.RWMutex
-	lockLatestNoteViews                              sync.RWMutex
-	lockLogger                                       sync.RWMutex
-	lockSetTelegramPublishNoteLastError              sync.RWMutex
-	lockTelegramCaptionLengthLimit                   sync.RWMutex
-	lockUpdateTelegramAccountPublishPost             sync.RWMutex
+	lockCheckTelegramPublishSentAccountMessageExists      sync.RWMutex
+	lockClearTelegramPublishNoteLastError                 sync.RWMutex
+	lockDecryptData                                       sync.RWMutex
+	lockGetTelegramAccountByID                            sync.RWMutex
+	lockGetTelegramPublishAccountChatAccessHash           sync.RWMutex
+	lockGetTelegramPublishAccountInstantChatAccessHash    sync.RWMutex
+	lockInsertTelegramPublishSentAccountMessage           sync.RWMutex
+	lockLatestNoteViews                                   sync.RWMutex
+	lockLogger                                            sync.RWMutex
+	lockSetTelegramPublishNoteLastError                   sync.RWMutex
+	lockTelegramCaptionLengthLimit                        sync.RWMutex
+	lockUpdateTelegramAccountPublishPost                  sync.RWMutex
+	lockUpdateTelegramPublishAccountChatAccessHash        sync.RWMutex
+	lockUpdateTelegramPublishAccountInstantChatAccessHash sync.RWMutex
 }
 
 // CheckTelegramPublishSentAccountMessageExists calls CheckTelegramPublishSentAccountMessageExistsFunc.
@@ -301,6 +357,78 @@ func (mock *EnvMock) GetTelegramAccountByIDCalls() []struct {
 	mock.lockGetTelegramAccountByID.RLock()
 	calls = mock.calls.GetTelegramAccountByID
 	mock.lockGetTelegramAccountByID.RUnlock()
+	return calls
+}
+
+// GetTelegramPublishAccountChatAccessHash calls GetTelegramPublishAccountChatAccessHashFunc.
+func (mock *EnvMock) GetTelegramPublishAccountChatAccessHash(ctx context.Context, arg db.GetTelegramPublishAccountChatAccessHashParams) (*string, error) {
+	if mock.GetTelegramPublishAccountChatAccessHashFunc == nil {
+		panic("EnvMock.GetTelegramPublishAccountChatAccessHashFunc: method is nil but Env.GetTelegramPublishAccountChatAccessHash was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetTelegramPublishAccountChatAccessHashParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetTelegramPublishAccountChatAccessHash.Lock()
+	mock.calls.GetTelegramPublishAccountChatAccessHash = append(mock.calls.GetTelegramPublishAccountChatAccessHash, callInfo)
+	mock.lockGetTelegramPublishAccountChatAccessHash.Unlock()
+	return mock.GetTelegramPublishAccountChatAccessHashFunc(ctx, arg)
+}
+
+// GetTelegramPublishAccountChatAccessHashCalls gets all the calls that were made to GetTelegramPublishAccountChatAccessHash.
+// Check the length with:
+//
+//	len(mockedEnv.GetTelegramPublishAccountChatAccessHashCalls())
+func (mock *EnvMock) GetTelegramPublishAccountChatAccessHashCalls() []struct {
+	Ctx context.Context
+	Arg db.GetTelegramPublishAccountChatAccessHashParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetTelegramPublishAccountChatAccessHashParams
+	}
+	mock.lockGetTelegramPublishAccountChatAccessHash.RLock()
+	calls = mock.calls.GetTelegramPublishAccountChatAccessHash
+	mock.lockGetTelegramPublishAccountChatAccessHash.RUnlock()
+	return calls
+}
+
+// GetTelegramPublishAccountInstantChatAccessHash calls GetTelegramPublishAccountInstantChatAccessHashFunc.
+func (mock *EnvMock) GetTelegramPublishAccountInstantChatAccessHash(ctx context.Context, arg db.GetTelegramPublishAccountInstantChatAccessHashParams) (*string, error) {
+	if mock.GetTelegramPublishAccountInstantChatAccessHashFunc == nil {
+		panic("EnvMock.GetTelegramPublishAccountInstantChatAccessHashFunc: method is nil but Env.GetTelegramPublishAccountInstantChatAccessHash was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.GetTelegramPublishAccountInstantChatAccessHashParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockGetTelegramPublishAccountInstantChatAccessHash.Lock()
+	mock.calls.GetTelegramPublishAccountInstantChatAccessHash = append(mock.calls.GetTelegramPublishAccountInstantChatAccessHash, callInfo)
+	mock.lockGetTelegramPublishAccountInstantChatAccessHash.Unlock()
+	return mock.GetTelegramPublishAccountInstantChatAccessHashFunc(ctx, arg)
+}
+
+// GetTelegramPublishAccountInstantChatAccessHashCalls gets all the calls that were made to GetTelegramPublishAccountInstantChatAccessHash.
+// Check the length with:
+//
+//	len(mockedEnv.GetTelegramPublishAccountInstantChatAccessHashCalls())
+func (mock *EnvMock) GetTelegramPublishAccountInstantChatAccessHashCalls() []struct {
+	Ctx context.Context
+	Arg db.GetTelegramPublishAccountInstantChatAccessHashParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.GetTelegramPublishAccountInstantChatAccessHashParams
+	}
+	mock.lockGetTelegramPublishAccountInstantChatAccessHash.RLock()
+	calls = mock.calls.GetTelegramPublishAccountInstantChatAccessHash
+	mock.lockGetTelegramPublishAccountInstantChatAccessHash.RUnlock()
 	return calls
 }
 
@@ -499,5 +627,77 @@ func (mock *EnvMock) UpdateTelegramAccountPublishPostCalls() []struct {
 	mock.lockUpdateTelegramAccountPublishPost.RLock()
 	calls = mock.calls.UpdateTelegramAccountPublishPost
 	mock.lockUpdateTelegramAccountPublishPost.RUnlock()
+	return calls
+}
+
+// UpdateTelegramPublishAccountChatAccessHash calls UpdateTelegramPublishAccountChatAccessHashFunc.
+func (mock *EnvMock) UpdateTelegramPublishAccountChatAccessHash(ctx context.Context, arg db.UpdateTelegramPublishAccountChatAccessHashParams) error {
+	if mock.UpdateTelegramPublishAccountChatAccessHashFunc == nil {
+		panic("EnvMock.UpdateTelegramPublishAccountChatAccessHashFunc: method is nil but Env.UpdateTelegramPublishAccountChatAccessHash was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpdateTelegramPublishAccountChatAccessHashParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpdateTelegramPublishAccountChatAccessHash.Lock()
+	mock.calls.UpdateTelegramPublishAccountChatAccessHash = append(mock.calls.UpdateTelegramPublishAccountChatAccessHash, callInfo)
+	mock.lockUpdateTelegramPublishAccountChatAccessHash.Unlock()
+	return mock.UpdateTelegramPublishAccountChatAccessHashFunc(ctx, arg)
+}
+
+// UpdateTelegramPublishAccountChatAccessHashCalls gets all the calls that were made to UpdateTelegramPublishAccountChatAccessHash.
+// Check the length with:
+//
+//	len(mockedEnv.UpdateTelegramPublishAccountChatAccessHashCalls())
+func (mock *EnvMock) UpdateTelegramPublishAccountChatAccessHashCalls() []struct {
+	Ctx context.Context
+	Arg db.UpdateTelegramPublishAccountChatAccessHashParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpdateTelegramPublishAccountChatAccessHashParams
+	}
+	mock.lockUpdateTelegramPublishAccountChatAccessHash.RLock()
+	calls = mock.calls.UpdateTelegramPublishAccountChatAccessHash
+	mock.lockUpdateTelegramPublishAccountChatAccessHash.RUnlock()
+	return calls
+}
+
+// UpdateTelegramPublishAccountInstantChatAccessHash calls UpdateTelegramPublishAccountInstantChatAccessHashFunc.
+func (mock *EnvMock) UpdateTelegramPublishAccountInstantChatAccessHash(ctx context.Context, arg db.UpdateTelegramPublishAccountInstantChatAccessHashParams) error {
+	if mock.UpdateTelegramPublishAccountInstantChatAccessHashFunc == nil {
+		panic("EnvMock.UpdateTelegramPublishAccountInstantChatAccessHashFunc: method is nil but Env.UpdateTelegramPublishAccountInstantChatAccessHash was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		Arg db.UpdateTelegramPublishAccountInstantChatAccessHashParams
+	}{
+		Ctx: ctx,
+		Arg: arg,
+	}
+	mock.lockUpdateTelegramPublishAccountInstantChatAccessHash.Lock()
+	mock.calls.UpdateTelegramPublishAccountInstantChatAccessHash = append(mock.calls.UpdateTelegramPublishAccountInstantChatAccessHash, callInfo)
+	mock.lockUpdateTelegramPublishAccountInstantChatAccessHash.Unlock()
+	return mock.UpdateTelegramPublishAccountInstantChatAccessHashFunc(ctx, arg)
+}
+
+// UpdateTelegramPublishAccountInstantChatAccessHashCalls gets all the calls that were made to UpdateTelegramPublishAccountInstantChatAccessHash.
+// Check the length with:
+//
+//	len(mockedEnv.UpdateTelegramPublishAccountInstantChatAccessHashCalls())
+func (mock *EnvMock) UpdateTelegramPublishAccountInstantChatAccessHashCalls() []struct {
+	Ctx context.Context
+	Arg db.UpdateTelegramPublishAccountInstantChatAccessHashParams
+} {
+	var calls []struct {
+		Ctx context.Context
+		Arg db.UpdateTelegramPublishAccountInstantChatAccessHashParams
+	}
+	mock.lockUpdateTelegramPublishAccountInstantChatAccessHash.RLock()
+	calls = mock.calls.UpdateTelegramPublishAccountInstantChatAccessHash
+	mock.lockUpdateTelegramPublishAccountInstantChatAccessHash.RUnlock()
 	return calls
 }

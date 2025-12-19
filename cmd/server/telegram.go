@@ -117,7 +117,7 @@ func (a *app) TelegramAccountGetAppConfig(ctx context.Context, accountID int64) 
 		return "", fmt.Errorf("failed to decrypt session data: %w", err)
 	}
 
-	client := tgtd.NewClient(a, int(account.ApiID), account.ApiHash)
+	client := tgtd.NewClient(a, account.ID, int(account.ApiID), account.ApiHash)
 	config, err := client.GetAppConfig(ctx, sessionData)
 	if err != nil {
 		return "", err
@@ -137,7 +137,7 @@ func (a *app) TelegramAccountGetUserInfo(ctx context.Context, accountID int64) (
 		return nil, fmt.Errorf("failed to decrypt session data: %w", err)
 	}
 
-	client := tgtd.NewClient(a, int(account.ApiID), account.ApiHash)
+	client := tgtd.NewClient(a, account.ID, int(account.ApiID), account.ApiHash)
 	return client.GetUserInfo(ctx, sessionData)
 }
 
@@ -374,7 +374,7 @@ func (a *app) ListTelegramAccountDialogs(ctx context.Context, accountID int64) (
 	}
 
 	// Create tgtd client
-	client := tgtd.NewClient(a, int(account.ApiID), account.ApiHash)
+	client := tgtd.NewClient(a, account.ID, int(account.ApiID), account.ApiHash)
 
 	// List dialogs from Telegram
 	dialogs, err := client.ListDialogs(ctx, sessionData)
@@ -420,7 +420,7 @@ func (a *app) DeleteTelegramAccountMessage(ctx context.Context, account db.Teleg
 		return fmt.Errorf("failed to decrypt session data: %w", err)
 	}
 
-	client := tgtd.NewClient(a, int(account.ApiID), account.ApiHash)
+	client := tgtd.NewClient(a, account.ID, int(account.ApiID), account.ApiHash)
 	return client.DeleteMessage(ctx, sessionData, tgtd.DeleteMessageParams{
 		ChatID:    chatID,
 		MessageID: messageID,
@@ -432,12 +432,12 @@ func (a *app) DeleteTelegramAccountMessage(ctx context.Context, account db.Teleg
 func (a *app) TelegramClient() *tgtd.Client {
 	// Return a client with placeholder credentials - actual credentials
 	// come from the account when RunWithAPI is called
-	return tgtd.NewClient(a, 0, "")
+	return tgtd.NewClient(a, 0, 0, "")
 }
 
 // TelegramClientForAccount creates a tgtd.Client for a specific account.
 func (a *app) TelegramClientForAccount(account db.TelegramAccount) *tgtd.Client {
-	return tgtd.NewClient(a, int(account.ApiID), account.ApiHash)
+	return tgtd.NewClient(a, account.ID, int(account.ApiID), account.ApiHash)
 }
 
 // DecryptSessionData decrypts the encrypted session data from a telegram account.

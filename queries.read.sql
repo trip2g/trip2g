@@ -928,7 +928,7 @@ select distinct chat_id
 select queue
      , count(*) as total_jobs
      , count(case when received = 0 then 1 end) as pending_count
-     , count(case when received > 0 then 1 end) as retry_count
+     , count(case when received > 1 then 1 end) as retry_count
   from goqite
  where queue = ?
  group by queue;
@@ -937,7 +937,7 @@ select queue
 select queue
      , count(*) as total_jobs
      , count(case when received = 0 then 1 end) as pending_count
-     , count(case when received > 0 then 1 end) as retry_count
+     , count(case when received > 1 then 1 end) as retry_count
   from goqite
  group by queue
  order by queue;
@@ -1059,3 +1059,19 @@ select v.id
 
 -- name: ListUncommittedPaths :many
 select note_path_id from note_uncommitted_paths;
+
+-- name: GetTelegramPublishAccountChatAccessHash :one
+select access_hash
+  from telegram_publish_account_chats
+ where account_id = ?
+   and telegram_chat_id = ?
+   and access_hash is not null
+ limit 1;
+
+-- name: GetTelegramPublishAccountInstantChatAccessHash :one
+select access_hash
+  from telegram_publish_account_instant_chats
+ where account_id = ?
+   and telegram_chat_id = ?
+   and access_hash is not null
+ limit 1;

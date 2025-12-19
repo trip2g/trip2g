@@ -2492,6 +2492,42 @@ func (q *WriteQueries) UpdateTelegramAccountAppConfig(ctx context.Context, arg U
 	return err
 }
 
+const updateTelegramPublishAccountChatAccessHash = `-- name: UpdateTelegramPublishAccountChatAccessHash :exec
+update telegram_publish_account_chats
+   set access_hash = ?
+ where account_id = ?
+   and telegram_chat_id = ?
+`
+
+type UpdateTelegramPublishAccountChatAccessHashParams struct {
+	AccessHash     *string `json:"access_hash"`
+	AccountID      int64   `json:"account_id"`
+	TelegramChatID int64   `json:"telegram_chat_id"`
+}
+
+func (q *WriteQueries) UpdateTelegramPublishAccountChatAccessHash(ctx context.Context, arg UpdateTelegramPublishAccountChatAccessHashParams) error {
+	_, err := q.db.ExecContext(ctx, updateTelegramPublishAccountChatAccessHash, arg.AccessHash, arg.AccountID, arg.TelegramChatID)
+	return err
+}
+
+const updateTelegramPublishAccountInstantChatAccessHash = `-- name: UpdateTelegramPublishAccountInstantChatAccessHash :exec
+update telegram_publish_account_instant_chats
+   set access_hash = ?
+ where account_id = ?
+   and telegram_chat_id = ?
+`
+
+type UpdateTelegramPublishAccountInstantChatAccessHashParams struct {
+	AccessHash     *string `json:"access_hash"`
+	AccountID      int64   `json:"account_id"`
+	TelegramChatID int64   `json:"telegram_chat_id"`
+}
+
+func (q *WriteQueries) UpdateTelegramPublishAccountInstantChatAccessHash(ctx context.Context, arg UpdateTelegramPublishAccountInstantChatAccessHashParams) error {
+	_, err := q.db.ExecContext(ctx, updateTelegramPublishAccountInstantChatAccessHash, arg.AccessHash, arg.AccountID, arg.TelegramChatID)
+	return err
+}
+
 const updateTelegramPublishNoteAsPublished = `-- name: UpdateTelegramPublishNoteAsPublished :exec
 update telegram_publish_notes
    set published_at = datetime('now')

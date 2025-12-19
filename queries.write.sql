@@ -788,3 +788,15 @@ on conflict do nothing;
 
 -- name: ClearUncommittedPaths :exec
 delete from note_uncommitted_paths;
+
+-- name: UpdateTelegramPublishAccountChatAccessHash :exec
+update telegram_publish_account_chats
+   set access_hash = ?
+ where account_id = ?
+   and telegram_chat_id = ?;
+
+-- name: UpdateTelegramPublishAccountInstantChatAccessHash :exec
+update telegram_publish_account_instant_chats
+   set access_hash = ?
+ where account_id = ?
+   and telegram_chat_id = ?;

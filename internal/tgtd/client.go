@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/gotd/td/tgerr"
 	"github.com/valyala/fasthttp"
 
+	"trip2g/internal/db"
 	"trip2g/internal/logger"
 )
 
@@ -46,6 +48,11 @@ const (
 type ClientEnv interface {
 	Logger() logger.Logger
 	DecryptData(ciphertext []byte) ([]byte, error)
+	// Access hash cache methods
+	GetTelegramPublishAccountChatAccessHash(ctx context.Context, arg db.GetTelegramPublishAccountChatAccessHashParams) (*string, error)
+	GetTelegramPublishAccountInstantChatAccessHash(ctx context.Context, arg db.GetTelegramPublishAccountInstantChatAccessHashParams) (*string, error)
+	UpdateTelegramPublishAccountChatAccessHash(ctx context.Context, arg db.UpdateTelegramPublishAccountChatAccessHashParams) error
+	UpdateTelegramPublishAccountInstantChatAccessHash(ctx context.Context, arg db.UpdateTelegramPublishAccountInstantChatAccessHashParams) error
 }
 
 // retryOnFloodWait executes fn and retries on FLOOD_WAIT errors.
@@ -74,17 +81,21 @@ func retryOnFloodWait[T any](ctx context.Context, log logger.Logger, fn func() (
 
 // Client wraps the gotd/td Telegram client for user account operations.
 type Client struct {
-	apiID   int
-	apiHash string
-	log     logger.Logger
+	apiID     int
+	apiHash   string
+	accountID int64
+	env       ClientEnv
+	log       logger.Logger
 }
 
 // NewClient creates a new Client.
-func NewClient(env ClientEnv, apiID int, apiHash string) *Client {
+func NewClient(env ClientEnv, accountID int64, apiID int, apiHash string) *Client {
 	return &Client{
-		apiID:   apiID,
-		apiHash: apiHash,
-		log:     logger.WithPrefix(env.Logger(), "tgtd:client:"),
+		apiID:     apiID,
+		apiHash:   apiHash,
+		accountID: accountID,
+		env:       env,
+		log:       logger.WithPrefix(env.Logger(), "tgtd:client:"),
 	}
 }
 
@@ -923,7 +934,122 @@ func (c *Client) DeleteMessage(ctx context.Context, sessionData []byte, params D
 }
 
 func (c *Client) resolvePeer(ctx context.Context, api *tg.Client, chatID int64) (tg.InputPeerClass, error) {
-	return c.resolvePeerWithAPI(ctx, api, chatID)
+	// Try to get access_hash from cache first
+	if c.env != nil && c.accountID != 0 {
+		accessHash, err := c.getCachedAccessHash(ctx, chatID)
+		if err == nil && accessHash != 0 {
+			c.log.Debug("using cached access_hash", "chat_id", chatID, "access_hash", accessHash)
+			return &tg.InputPeerChannel{
+				ChannelID:  chatID,
+				AccessHash: accessHash,
+			}, nil
+		}
+	}
+
+	// Fallback to dialogs API
+	peer, err := c.resolvePeerFromDialogs(ctx, api, chatID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache the access_hash for channels
+	if channel, ok := peer.(*tg.InputPeerChannel); ok && c.env != nil && c.accountID != 0 {
+		c.cacheAccessHash(ctx, chatID, channel.AccessHash)
+	}
+
+	return peer, nil
+}
+
+func (c *Client) getCachedAccessHash(ctx context.Context, chatID int64) (int64, error) {
+	params := db.GetTelegramPublishAccountChatAccessHashParams{
+		AccountID:      c.accountID,
+		TelegramChatID: chatID,
+	}
+
+	// Try regular chats first
+	hashStr, err := c.env.GetTelegramPublishAccountChatAccessHash(ctx, params)
+	if err == nil && hashStr != nil {
+		var hash int64
+		_, parseErr := fmt.Sscanf(*hashStr, "%d", &hash)
+		if parseErr == nil {
+			return hash, nil
+		}
+	}
+
+	// Try instant chats
+	instantParams := db.GetTelegramPublishAccountInstantChatAccessHashParams{
+		AccountID:      c.accountID,
+		TelegramChatID: chatID,
+	}
+	hashStr, err = c.env.GetTelegramPublishAccountInstantChatAccessHash(ctx, instantParams)
+	if err == nil && hashStr != nil {
+		var hash int64
+		_, parseErr := fmt.Sscanf(*hashStr, "%d", &hash)
+		if parseErr == nil {
+			return hash, nil
+		}
+	}
+
+	return 0, errors.New("access_hash not found in cache")
+}
+
+func (c *Client) cacheAccessHash(ctx context.Context, chatID int64, accessHash int64) {
+	hashStr := strconv.FormatInt(accessHash, 10)
+
+	// Update both tables (ignore errors - cache is best-effort)
+	_ = c.env.UpdateTelegramPublishAccountChatAccessHash(ctx, db.UpdateTelegramPublishAccountChatAccessHashParams{
+		AccessHash:     &hashStr,
+		AccountID:      c.accountID,
+		TelegramChatID: chatID,
+	})
+	_ = c.env.UpdateTelegramPublishAccountInstantChatAccessHash(ctx, db.UpdateTelegramPublishAccountInstantChatAccessHashParams{
+		AccessHash:     &hashStr,
+		AccountID:      c.accountID,
+		TelegramChatID: chatID,
+	})
+
+	c.log.Debug("cached access_hash", "chat_id", chatID, "access_hash", accessHash)
+}
+
+func (c *Client) resolvePeerFromDialogs(ctx context.Context, api *tg.Client, chatID int64) (tg.InputPeerClass, error) {
+	// Try to get channel/chat from dialogs with retry on FLOOD_WAIT
+	dialogs, err := retryOnFloodWait(ctx, c.log, func() (tg.MessagesDialogsClass, error) {
+		return api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
+			OffsetPeer: &tg.InputPeerEmpty{},
+			Limit:      100,
+		})
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dialogs: %w", err)
+	}
+
+	var chatList []tg.ChatClass
+	switch d := dialogs.(type) {
+	case *tg.MessagesDialogs:
+		chatList = d.Chats
+	case *tg.MessagesDialogsSlice:
+		chatList = d.Chats
+	}
+
+	for _, chat := range chatList {
+		switch ch := chat.(type) {
+		case *tg.Channel:
+			if ch.ID == chatID {
+				return &tg.InputPeerChannel{
+					ChannelID:  ch.ID,
+					AccessHash: ch.AccessHash,
+				}, nil
+			}
+		case *tg.Chat:
+			if ch.ID == chatID {
+				return &tg.InputPeerChat{
+					ChatID: ch.ID,
+				}, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("chat with ID %d not found in dialogs", chatID)
 }
 
 func extractMessageID(updates tg.UpdatesClass) (int64, error) {
@@ -1220,44 +1346,7 @@ func (c *Client) GetChannelMessagesWithAPI(ctx context.Context, api *tg.Client, 
 }
 
 func (c *Client) resolvePeerWithAPI(ctx context.Context, api *tg.Client, chatID int64) (tg.InputPeerClass, error) {
-	// Try to get channel/chat from dialogs with retry on FLOOD_WAIT
-	dialogs, err := retryOnFloodWait(ctx, c.log, func() (tg.MessagesDialogsClass, error) {
-		return api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
-			OffsetPeer: &tg.InputPeerEmpty{},
-			Limit:      100,
-		})
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get dialogs: %w", err)
-	}
-
-	var chatList []tg.ChatClass
-	switch d := dialogs.(type) {
-	case *tg.MessagesDialogs:
-		chatList = d.Chats
-	case *tg.MessagesDialogsSlice:
-		chatList = d.Chats
-	}
-
-	for _, chat := range chatList {
-		switch ch := chat.(type) {
-		case *tg.Channel:
-			if ch.ID == chatID {
-				return &tg.InputPeerChannel{
-					ChannelID:  ch.ID,
-					AccessHash: ch.AccessHash,
-				}, nil
-			}
-		case *tg.Chat:
-			if ch.ID == chatID {
-				return &tg.InputPeerChat{
-					ChatID: ch.ID,
-				}, nil
-			}
-		}
-	}
-
-	return nil, fmt.Errorf("chat with ID %d not found in dialogs", chatID)
+	return c.resolvePeer(ctx, api, chatID)
 }
 
 // DownloadedMedia represents downloaded media stored in temp file.
