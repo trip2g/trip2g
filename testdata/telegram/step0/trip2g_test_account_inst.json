@@ -3,12 +3,12 @@
   "channel_title": "Trip2G Test Account Instant",
   "messages": [
     {
-      "text": "\n\nThis post has a single photo with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_photo.png should be the post media.\n\ntelegram_text | telegram_video_with_emoji",
+      "text": "\n\nThis post has a single photo with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_photo.png should be the post media.\n\nText-only Telegram Post | Video with Custom Emoji",
       "has_media": true,
       "media_type": "photo"
     },
     {
-      "text": "\n\nThis post contains multiple media files (2-10) and will be sent using sendMediaGroup API method.\n\nThe post type is: media_group\n\nFeatures:\n- Multiple photos and videos (up to 10)\n- Only first media gets the caption\n- Caption can be edited with editMessageCaption\n- Media files cannot be changed after sending\n\nThis tests media group functionality with mixed photo and video content.\n\ntelegram_text | telegram_one_photo",
+      "text": "\n\nThis post contains multiple media files (2-10) and will be sent using sendMediaGroup API method.\n\nThe post type is: media_group\n\nFeatures:\n- Multiple photos and videos (up to 10)\n- Only first media gets the caption\n- Caption can be edited with editMessageCaption\n- Media files cannot be changed after sending\n\nThis tests media group functionality with mixed photo and video content.\n\nText-only Telegram Post | Single Photo Telegram Post",
       "has_media": true,
       "media_type": "photo"
     },
@@ -21,17 +21,19 @@
       "media_type": "video"
     },
     {
-      "text": "\n\nThis post contains one photo and will be sent using sendPhoto API method.\n\nThe post type is: photo\n\nCaption features:\n- Maximum 1024 characters\n- HTML formatting\n- Can be edited later with editMessageCaption\n\nThis tests single media attachment with caption.\n\ntelegram_text | telegram_one_video | telegram_media_group",
+      "text": "\n\nThis post contains one photo and will be sent using sendPhoto API method.\n\nThe post type is: photo\n\nCaption features:\n- Maximum 1024 characters\n- HTML formatting\n- Can be edited later with editMessageCaption\n\nThis tests single media attachment with caption.\n\nText-only Telegram Post | Single Video Telegram Post | Media Group Telegram Post",
       "has_media": true,
       "media_type": "photo"
     },
     {
-      "text": "\n\nThis post contains one video and will be sent using sendVideo API method.\n\nThe post type is: photo (same as single photo internally)\n\nCaption features:\n- Maximum 1024 characters\n- HTML formatting\n- Can be edited later with editMessageCaption (not EditMessageWithPhoto!)\n\nThis tests single video attachment with caption.\n\ntelegram_text | telegram_one_photo | telegram_media_group",
+      "text": "\n\nThis post contains one video and will be sent using sendVideo API method.\n\nThe post type is: photo (same as single photo internally)\n\nCaption features:\n- Maximum 1024 characters\n- HTML formatting\n- Can be edited later with editMessageCaption (not EditMessageWithPhoto!)\n\nThis tests single video attachment with caption.\n\nText-only Telegram Post | telegram_one_photo | telegram_media_group",
       "has_media": true,
       "media_type": "video"
     },
     {
-      "text": "\n\nThis is a text-only Telegram post with no media attachments. It will be sent using sendMessage API method.\n\nText formatting examples:\n\nBold text, italic text, and bold italic formatting.\n\nStrikethrough is also supported.\n\nInline code and underlined text.\n\nCode block with syntax highlighting:\ndef hello():\n    print(\"Hello, world!\")\n\nLinks to other posts:\n\nCheck out these posts:\n- Cool media group with photos and video\n- telegram_one_photo single photo example\n- Главная link to website (not published to Telegram)\n\nLists:\n\nUnordered list:\n- First item\n- Second item\n- Third item\n\nNumbered list:\n1. First step\n2. Second step\n3. Third step\n\nBlockquote:\n\nThis is a blockquote\nMultiple lines supported\n\nCustom emoji: 2️⃣\n\nThis tests comprehensive Telegram text formatting with all supported markdown features.\n\ntelegram_one_photo | telegram_media_group"
+      "text": "\n\nThis is a text-only Telegram post with no media attachments. It will be sent using sendMessage API method.\n\nText formatting examples:\n\nBold text, italic text, and bold italic formatting.\n\nStrikethrough is also supported.\n\nInline code and underlined text.\n\nCode block with syntax highlighting:\ndef hello():\n    print(\"Hello, world!\")\n\nLinks to other posts:\n\nCheck out these posts:\n- Cool media group with photos and video\n- telegram_one_photo single photo example\n- Главная link to website (not published to Telegram)\n\nLists:\n\nUnordered list:\n- First item\n- Second item\n- Third item\n\nNumbered list:\n1. First step\n2. Second step\n3. Third step\n\nBlockquote:\n\nThis is a blockquote\nMultiple lines supported\n\nCustom emoji: 2️⃣\n\nThis tests comprehensive Telegram text formatting with all supported markdown features.\n\ntelegram_one_photo | telegram_media_group",
+      "has_media": true,
+      "media_type": "webpage"
     },
     {
       "text": "\n\nThis post has a single video with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_single_video.mp4 should be the post media.\n\ntelegram_text | telegram_image_with_emoji",
