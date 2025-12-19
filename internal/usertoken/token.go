@@ -102,21 +102,25 @@ func (e *Manager) Extract(ctx *fasthttp.RequestCtx) (*Data, error) {
 		return e.secret, nil
 	}, jwt.WithLeeway(10*time.Second))
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			deleteErr := e.Delete(ctx)
-			if deleteErr != nil {
-				return nil, fmt.Errorf("failed to delete expired token: %w", deleteErr)
-			}
-
-			return nil, nil
+		// Any JWT parsing error (expired, invalid signature, malformed, etc.)
+		// should clear the cookie and treat as anonymous user
+		deleteErr := e.Delete(ctx)
+		if deleteErr != nil {
+			return nil, fmt.Errorf("failed to delete invalid token: %w", deleteErr)
 		}
 
-		return nil, ErrInvalidToken
+		return nil, nil
 	}
 
 	claims, ok := parsed.Claims.(*fullData)
 	if !ok || !parsed.Valid {
-		return nil, ErrInvalidToken
+		// Invalid claims - clear cookie and treat as anonymous
+		deleteErr := e.Delete(ctx)
+		if deleteErr != nil {
+			return nil, fmt.Errorf("failed to delete invalid token: %w", deleteErr)
+		}
+
+		return nil, nil
 	}
 
 	token := Data{
