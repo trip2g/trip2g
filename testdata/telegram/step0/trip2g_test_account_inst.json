@@ -4,11 +4,75 @@
   "messages": [
     {
       "text": "\n\nThis post has a single photo with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_photo.png should be the post media.\n\nText-only Telegram Post | Video with Custom Emoji",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 18,
+          "length": 12
+        },
+        {
+          "type": "custom_emoji",
+          "offset": 81,
+          "length": 2
+        },
+        {
+          "type": "custom_emoji",
+          "offset": 88,
+          "length": 2
+        },
+        {
+          "type": "code",
+          "offset": 166,
+          "length": 18
+        },
+        {
+          "type": "underline",
+          "offset": 212,
+          "length": 23
+        },
+        {
+          "type": "underline",
+          "offset": 238,
+          "length": 23
+        }
+      ],
       "has_media": true,
       "media_type": "photo"
     },
     {
       "text": "\n\nThis post contains multiple media files (2-10) and will be sent using sendMediaGroup API method.\n\nThe post type is: media_group\n\nFeatures:\n- Multiple photos and videos (up to 10)\n- Only first media gets the caption\n- Caption can be edited with editMessageCaption\n- Media files cannot be changed after sending\n\nThis tests media group functionality with mixed photo and video content.\n\nText-only Telegram Post | Single Photo Telegram Post",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 21,
+          "length": 20
+        },
+        {
+          "type": "code",
+          "offset": 72,
+          "length": 14
+        },
+        {
+          "type": "bold",
+          "offset": 118,
+          "length": 11
+        },
+        {
+          "type": "code",
+          "offset": 246,
+          "length": 18
+        },
+        {
+          "type": "underline",
+          "offset": 386,
+          "length": 23
+        },
+        {
+          "type": "underline",
+          "offset": 412,
+          "length": 26
+        }
+      ],
       "has_media": true,
       "media_type": "photo"
     },
@@ -22,21 +86,246 @@
     },
     {
       "text": "\n\nThis post contains one photo and will be sent using sendPhoto API method.\n\nThe post type is: photo\n\nCaption features:\n- Maximum 1024 characters\n- HTML formatting\n- Can be edited later with editMessageCaption\n\nThis tests single media attachment with caption.\n\nText-only Telegram Post | Single Video Telegram Post | Media Group Telegram Post",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 21,
+          "length": 9
+        },
+        {
+          "type": "code",
+          "offset": 54,
+          "length": 9
+        },
+        {
+          "type": "bold",
+          "offset": 95,
+          "length": 5
+        },
+        {
+          "type": "code",
+          "offset": 191,
+          "length": 18
+        },
+        {
+          "type": "underline",
+          "offset": 261,
+          "length": 23
+        },
+        {
+          "type": "underline",
+          "offset": 287,
+          "length": 26
+        },
+        {
+          "type": "underline",
+          "offset": 316,
+          "length": 25
+        }
+      ],
       "has_media": true,
       "media_type": "photo"
     },
     {
-      "text": "\n\nThis post contains one video and will be sent using sendVideo API method.\n\nThe post type is: photo (same as single photo internally)\n\nCaption features:\n- Maximum 1024 characters\n- HTML formatting\n- Can be edited later with editMessageCaption (not EditMessageWithPhoto!)\n\nThis tests single video attachment with caption.\n\nText-only Telegram Post | telegram_one_photo | telegram_media_group",
+      "text": "\n\nThis post contains one video and will be sent using sendVideo API method.\n\nThe post type is: photo (same as single photo internally)\n\nCaption features:\n- Maximum 1024 characters\n- HTML formatting\n- Can be edited later with editMessageCaption (not EditMessageWithPhoto!)\n\nThis tests single video attachment with caption.\n\nText-only Telegram Post | Single Photo Telegram Post | telegram_media_group",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 21,
+          "length": 9
+        },
+        {
+          "type": "code",
+          "offset": 54,
+          "length": 9
+        },
+        {
+          "type": "bold",
+          "offset": 95,
+          "length": 5
+        },
+        {
+          "type": "code",
+          "offset": 225,
+          "length": 18
+        },
+        {
+          "type": "underline",
+          "offset": 323,
+          "length": 23
+        },
+        {
+          "type": "underline",
+          "offset": 349,
+          "length": 26
+        },
+        {
+          "type": "text_url",
+          "offset": 378,
+          "length": 20,
+          "url": "https://t.me/c/3641822634/300"
+        }
+      ],
       "has_media": true,
       "media_type": "video"
     },
     {
       "text": "\n\nThis is a text-only Telegram post with no media attachments. It will be sent using sendMessage API method.\n\nText formatting examples:\n\nBold text, italic text, and bold italic formatting.\n\nStrikethrough is also supported.\n\nInline code and underlined text.\n\nCode block with syntax highlighting:\ndef hello():\n    print(\"Hello, world!\")\n\nLinks to other posts:\n\nCheck out these posts:\n- Cool media group with photos and video\n- telegram_one_photo single photo example\n- Главная link to website (not published to Telegram)\n\nLists:\n\nUnordered list:\n- First item\n- Second item\n- Third item\n\nNumbered list:\n1. First step\n2. Second step\n3. Third step\n\nBlockquote:\n\nThis is a blockquote\nMultiple lines supported\n\nCustom emoji: 2️⃣\n\nThis tests comprehensive Telegram text formatting with all supported markdown features.\n\ntelegram_one_photo | telegram_media_group",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 12,
+          "length": 9
+        },
+        {
+          "type": "code",
+          "offset": 85,
+          "length": 11
+        },
+        {
+          "type": "bold",
+          "offset": 110,
+          "length": 25
+        },
+        {
+          "type": "bold",
+          "offset": 137,
+          "length": 9
+        },
+        {
+          "type": "italic",
+          "offset": 148,
+          "length": 11
+        },
+        {
+          "type": "bold",
+          "offset": 165,
+          "length": 11
+        },
+        {
+          "type": "italic",
+          "offset": 165,
+          "length": 11
+        },
+        {
+          "type": "strikethrough",
+          "offset": 190,
+          "length": 13
+        },
+        {
+          "type": "code",
+          "offset": 224,
+          "length": 11
+        },
+        {
+          "type": "underline",
+          "offset": 240,
+          "length": 15
+        },
+        {
+          "type": "pre",
+          "offset": 295,
+          "length": 39
+        },
+        {
+          "type": "bold",
+          "offset": 336,
+          "length": 21
+        },
+        {
+          "type": "text_url",
+          "offset": 384,
+          "length": 16,
+          "url": "https://t.me/c/3641822634/300"
+        },
+        {
+          "type": "text_url",
+          "offset": 425,
+          "length": 18,
+          "url": "https://t.me/c/3641822634/303"
+        },
+        {
+          "type": "text_url",
+          "offset": 467,
+          "length": 7,
+          "url": "https://trip2g.com/"
+        },
+        {
+          "type": "bold",
+          "offset": 520,
+          "length": 6
+        },
+        {
+          "type": "bold",
+          "offset": 644,
+          "length": 11
+        },
+        {
+          "type": "blockquote",
+          "offset": 657,
+          "length": 45
+        },
+        {
+          "type": "bold",
+          "offset": 704,
+          "length": 13
+        },
+        {
+          "type": "custom_emoji",
+          "offset": 718,
+          "length": 3
+        },
+        {
+          "type": "text_url",
+          "offset": 812,
+          "length": 18,
+          "url": "https://t.me/c/3641822634/303"
+        },
+        {
+          "type": "text_url",
+          "offset": 833,
+          "length": 20,
+          "url": "https://t.me/c/3641822634/300"
+        }
+      ],
       "has_media": true,
       "media_type": "webpage"
     },
     {
-      "text": "\n\nThis post has a single video with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_single_video.mp4 should be the post media.\n\ntelegram_text | telegram_image_with_emoji",
+      "text": "\n\nThis post has a single video with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_single_video.mp4 should be the post media.\n\nText-only Telegram Post | telegram_image_with_emoji",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 18,
+          "length": 12
+        },
+        {
+          "type": "custom_emoji",
+          "offset": 81,
+          "length": 2
+        },
+        {
+          "type": "custom_emoji",
+          "offset": 88,
+          "length": 2
+        },
+        {
+          "type": "code",
+          "offset": 166,
+          "length": 25
+        },
+        {
+          "type": "underline",
+          "offset": 219,
+          "length": 23
+        },
+        {
+          "type": "text_url",
+          "offset": 245,
+          "length": 25,
+          "url": "https://t.me/c/3641822634/299"
+        }
+      ],
       "has_media": true,
       "media_type": "video"
     }

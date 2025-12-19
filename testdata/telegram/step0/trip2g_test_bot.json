@@ -4,16 +4,98 @@
   "messages": [
     {
       "text": "This post has a single photo with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_photo.png should be the post media.\n\ntelegram_text | telegram_video_with_emoji",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 16,
+          "length": 12
+        },
+        {
+          "type": "code",
+          "offset": 164,
+          "length": 18
+        },
+        {
+          "type": "text_url",
+          "offset": 210,
+          "length": 13,
+          "url": "https://t.me/c/3329836407/273"
+        },
+        {
+          "type": "text_url",
+          "offset": 226,
+          "length": 25,
+          "url": "https://t.me/c/3329836407/269"
+        }
+      ],
       "has_media": true,
       "media_type": "photo"
     },
     {
       "text": "This post has a single video with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_single_video.mp4 should be the post media.\n\ntelegram_text | telegram_image_with_emoji",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 16,
+          "length": 12
+        },
+        {
+          "type": "code",
+          "offset": 164,
+          "length": 25
+        },
+        {
+          "type": "text_url",
+          "offset": 217,
+          "length": 13,
+          "url": "https://t.me/c/3329836407/273"
+        },
+        {
+          "type": "text_url",
+          "offset": 233,
+          "length": 25,
+          "url": "https://t.me/c/3329836407/268"
+        }
+      ],
       "has_media": true,
       "media_type": "video"
     },
     {
       "text": "This post contains multiple media files (2-10) and will be sent using sendMediaGroup API method.\n\nThe post type is: media_group\n\nFeatures:\n- Multiple photos and videos (up to 10)\n- Only first media gets the caption\n- Caption can be edited with editMessageCaption\n- Media files cannot be changed after sending\n\nThis tests media group functionality with mixed photo and video content.\n\ntelegram_text | telegram_one_photo",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 19,
+          "length": 20
+        },
+        {
+          "type": "code",
+          "offset": 70,
+          "length": 14
+        },
+        {
+          "type": "bold",
+          "offset": 116,
+          "length": 11
+        },
+        {
+          "type": "code",
+          "offset": 244,
+          "length": 18
+        },
+        {
+          "type": "text_url",
+          "offset": 384,
+          "length": 13,
+          "url": "https://t.me/c/3329836407/273"
+        },
+        {
+          "type": "text_url",
+          "offset": 400,
+          "length": 18,
+          "url": "https://t.me/c/3329836407/274"
+        }
+      ],
       "has_media": true,
       "media_type": "photo"
     },
@@ -27,16 +109,208 @@
     },
     {
       "text": "This is a text-only Telegram post with no media attachments. It will be sent using sendMessage API method.\n\nText formatting examples:\n\nBold text, italic text, and bold italic formatting.\n\nStrikethrough is also supported.\n\nInline code and underlined text.\n\nCode block with syntax highlighting:\ndef hello():\n    print(\"Hello, world!\")\n\nLinks to other posts:\n\nCheck out these posts:\n- Cool media group with photos and video\n- telegram_one_photo single photo example\n- Главная link to website (not published to Telegram)\n\nLists:\n\nUnordered list:\n- First item\n- Second item\n- Third item\n\nNumbered list:\n1. First step\n2. Second step\n3. Third step\n\nBlockquote:\n\nThis is a blockquote\nMultiple lines supported\n\nCustom emoji: 2️⃣\n\nThis tests comprehensive Telegram text formatting with all supported markdown features.\n\ntelegram_one_photo | telegram_media_group",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 10,
+          "length": 9
+        },
+        {
+          "type": "code",
+          "offset": 83,
+          "length": 11
+        },
+        {
+          "type": "bold",
+          "offset": 108,
+          "length": 25
+        },
+        {
+          "type": "bold",
+          "offset": 135,
+          "length": 9
+        },
+        {
+          "type": "italic",
+          "offset": 146,
+          "length": 11
+        },
+        {
+          "type": "bold",
+          "offset": 163,
+          "length": 11
+        },
+        {
+          "type": "italic",
+          "offset": 163,
+          "length": 11
+        },
+        {
+          "type": "strikethrough",
+          "offset": 188,
+          "length": 13
+        },
+        {
+          "type": "code",
+          "offset": 222,
+          "length": 11
+        },
+        {
+          "type": "underline",
+          "offset": 238,
+          "length": 15
+        },
+        {
+          "type": "pre",
+          "offset": 293,
+          "length": 39
+        },
+        {
+          "type": "bold",
+          "offset": 334,
+          "length": 21
+        },
+        {
+          "type": "text_url",
+          "offset": 382,
+          "length": 16,
+          "url": "https://t.me/c/3329836407/270"
+        },
+        {
+          "type": "text_url",
+          "offset": 423,
+          "length": 18,
+          "url": "https://t.me/c/3329836407/274"
+        },
+        {
+          "type": "text_url",
+          "offset": 465,
+          "length": 7,
+          "url": "https://trip2g.com/"
+        },
+        {
+          "type": "bold",
+          "offset": 518,
+          "length": 6
+        },
+        {
+          "type": "bold",
+          "offset": 642,
+          "length": 11
+        },
+        {
+          "type": "blockquote",
+          "offset": 655,
+          "length": 45
+        },
+        {
+          "type": "bold",
+          "offset": 702,
+          "length": 13
+        },
+        {
+          "type": "text_url",
+          "offset": 810,
+          "length": 18,
+          "url": "https://t.me/c/3329836407/274"
+        },
+        {
+          "type": "text_url",
+          "offset": 831,
+          "length": 20,
+          "url": "https://t.me/c/3329836407/270"
+        }
+      ],
       "has_media": true,
       "media_type": "webpage"
     },
     {
       "text": "This post contains one photo and will be sent using sendPhoto API method.\n\nThe post type is: photo\n\nCaption features:\n- Maximum 1024 characters\n- HTML formatting\n- Can be edited later with editMessageCaption\n\nThis tests single media attachment with caption.\n\ntelegram_text | telegram_one_video | telegram_media_group",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 19,
+          "length": 9
+        },
+        {
+          "type": "code",
+          "offset": 52,
+          "length": 9
+        },
+        {
+          "type": "bold",
+          "offset": 93,
+          "length": 5
+        },
+        {
+          "type": "code",
+          "offset": 189,
+          "length": 18
+        },
+        {
+          "type": "text_url",
+          "offset": 259,
+          "length": 13,
+          "url": "https://t.me/c/3329836407/273"
+        },
+        {
+          "type": "text_url",
+          "offset": 275,
+          "length": 18,
+          "url": "https://t.me/c/3329836407/275"
+        },
+        {
+          "type": "text_url",
+          "offset": 296,
+          "length": 20,
+          "url": "https://t.me/c/3329836407/270"
+        }
+      ],
       "has_media": true,
       "media_type": "photo"
     },
     {
       "text": "This post contains one video and will be sent using sendVideo API method.\n\nThe post type is: photo (same as single photo internally)\n\nCaption features:\n- Maximum 1024 characters\n- HTML formatting\n- Can be edited later with editMessageCaption (not EditMessageWithPhoto!)\n\nThis tests single video attachment with caption.\n\ntelegram_text | telegram_one_photo | telegram_media_group",
+      "entities": [
+        {
+          "type": "bold",
+          "offset": 19,
+          "length": 9
+        },
+        {
+          "type": "code",
+          "offset": 52,
+          "length": 9
+        },
+        {
+          "type": "bold",
+          "offset": 93,
+          "length": 5
+        },
+        {
+          "type": "code",
+          "offset": 223,
+          "length": 18
+        },
+        {
+          "type": "text_url",
+          "offset": 321,
+          "length": 13,
+          "url": "https://t.me/c/3329836407/273"
+        },
+        {
+          "type": "text_url",
+          "offset": 337,
+          "length": 18,
+          "url": "https://t.me/c/3329836407/274"
+        },
+        {
+          "type": "text_url",
+          "offset": 358,
+          "length": 20,
+          "url": "https://t.me/c/3329836407/270"
+        }
+      ],
       "has_media": true,
       "media_type": "video"
     }

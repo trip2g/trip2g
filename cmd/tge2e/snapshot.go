@@ -14,12 +14,20 @@ import (
 	"github.com/kr/pretty"
 )
 
+// EntitySnapshot represents a message entity for snapshot comparison.
+type EntitySnapshot struct {
+	Type   string `json:"type"`
+	Offset int    `json:"offset"`
+	Length int    `json:"length"`
+	URL    string `json:"url,omitempty"`
+}
+
 // MessageSnapshot represents a message for snapshot comparison.
 type MessageSnapshot struct {
-	Text      string `json:"text,omitempty"`
-	Caption   string `json:"caption,omitempty"`
-	HasMedia  bool   `json:"has_media,omitempty"`
-	MediaType string `json:"media_type,omitempty"`
+	Text      string           `json:"text,omitempty"`
+	Entities  []EntitySnapshot `json:"entities,omitempty"`
+	HasMedia  bool             `json:"has_media,omitempty"`
+	MediaType string           `json:"media_type,omitempty"`
 }
 
 // ChannelSnapshot represents a channel's messages for snapshot comparison.
@@ -125,7 +133,9 @@ func runCheck() error {
 			}
 
 			// Compare messages (ignore timestamps and IDs)
-			// For instant channels, also normalize link footers (order is non-deterministic)
+			// For instant channels, normalize links (text_url/underline -> <u>)
+			// because post order is non-deterministic: if post A links to post B,
+			// the link resolves only if B was sent before A, otherwise it stays underlined
 			isInstant := strings.Contains(name, "inst")
 			if !compareSnapshots(&expected, current, isInstant) {
 				fmt.Println("FAIL")
@@ -170,6 +180,50 @@ func dumpChannel(ctx context.Context, api *tg.Client, name string, ch ChannelCon
 			Text: msg.Message,
 		}
 
+		// Extract entities
+		if entities, ok := msg.GetEntities(); ok {
+			for _, e := range entities {
+				es := EntitySnapshot{
+					Type: getEntityType(e),
+				}
+				// Get offset and length based on entity type
+				switch ent := e.(type) {
+				case *tg.MessageEntityTextURL:
+					es.Offset = ent.Offset
+					es.Length = ent.Length
+					es.URL = ent.URL
+				case *tg.MessageEntityURL:
+					es.Offset = ent.Offset
+					es.Length = ent.Length
+				case *tg.MessageEntityBold:
+					es.Offset = ent.Offset
+					es.Length = ent.Length
+				case *tg.MessageEntityItalic:
+					es.Offset = ent.Offset
+					es.Length = ent.Length
+				case *tg.MessageEntityUnderline:
+					es.Offset = ent.Offset
+					es.Length = ent.Length
+				case *tg.MessageEntityStrike:
+					es.Offset = ent.Offset
+					es.Length = ent.Length
+				case *tg.MessageEntityCode:
+					es.Offset = ent.Offset
+					es.Length = ent.Length
+				case *tg.MessageEntityPre:
+					es.Offset = ent.Offset
+					es.Length = ent.Length
+				case *tg.MessageEntityCustomEmoji:
+					es.Offset = ent.Offset
+					es.Length = ent.Length
+				case *tg.MessageEntityBlockquote:
+					es.Offset = ent.Offset
+					es.Length = ent.Length
+				}
+				ms.Entities = append(ms.Entities, es)
+			}
+		}
+
 		// Check for media
 		if msg.Media != nil {
 			ms.HasMedia = true
@@ -180,6 +234,33 @@ func dumpChannel(ctx context.Context, api *tg.Client, name string, ch ChannelCon
 	}
 
 	return snapshot, nil
+}
+
+func getEntityType(entity tg.MessageEntityClass) string {
+	switch entity.(type) {
+	case *tg.MessageEntityTextURL:
+		return "text_url"
+	case *tg.MessageEntityURL:
+		return "url"
+	case *tg.MessageEntityBold:
+		return "bold"
+	case *tg.MessageEntityItalic:
+		return "italic"
+	case *tg.MessageEntityUnderline:
+		return "underline"
+	case *tg.MessageEntityStrike:
+		return "strikethrough"
+	case *tg.MessageEntityCode:
+		return "code"
+	case *tg.MessageEntityPre:
+		return "pre"
+	case *tg.MessageEntityCustomEmoji:
+		return "custom_emoji"
+	case *tg.MessageEntityBlockquote:
+		return "blockquote"
+	default:
+		return "unknown"
+	}
 }
 
 func getMediaType(media tg.MessageMediaClass) string {
@@ -217,22 +298,55 @@ func getMediaType(media tg.MessageMediaClass) string {
 	}
 }
 
-// normalizeLinksFooter strips the link footer (e.g., "Title1 | Title2 | Title3") from text.
-// For instant channels, link resolution order is non-deterministic, so we normalize it.
-func normalizeLinksFooter(text string) string {
-	// Find last paragraph (after \n\n)
-	idx := strings.LastIndex(text, "\n\n")
-	if idx == -1 {
+// normalizeTextWithEntities replaces link text and underline text with placeholders.
+// For instant channels, link resolution order is non-deterministic.
+// Uses entities to precisely identify and replace link/underline spans.
+func normalizeTextWithEntities(text string, entities []EntitySnapshot) string {
+	if len(entities) == 0 {
 		return text
 	}
 
-	footer := text[idx+2:]
-	// Check if footer looks like links (contains | separator)
-	if strings.Contains(footer, " | ") {
-		return text[:idx+2] + "[LINKS]"
+	// Convert to runes for proper Unicode handling
+	runes := []rune(text)
+
+	// Collect replacements (text_url -> <a>, underline -> <u>)
+	// Sort by offset descending to replace from end to start
+	type replacement struct {
+		offset int
+		length int
+		tag    string
+	}
+	var replacements []replacement
+
+	for _, e := range entities {
+		switch e.Type {
+		case "text_url", "underline":
+			// Both resolved (text_url) and unresolved (underline) links become <u>
+			replacements = append(replacements, replacement{e.Offset, e.Length, "<u>"})
+		}
 	}
 
-	return text
+	// Sort by offset descending
+	for i := 0; i < len(replacements)-1; i++ {
+		for j := i + 1; j < len(replacements); j++ {
+			if replacements[j].offset > replacements[i].offset {
+				replacements[i], replacements[j] = replacements[j], replacements[i]
+			}
+		}
+	}
+
+	// Apply replacements from end to start
+	for _, r := range replacements {
+		if r.offset >= 0 && r.offset+r.length <= len(runes) {
+			newRunes := make([]rune, 0, len(runes))
+			newRunes = append(newRunes, runes[:r.offset]...)
+			newRunes = append(newRunes, []rune(r.tag)...)
+			newRunes = append(newRunes, runes[r.offset+r.length:]...)
+			runes = newRunes
+		}
+	}
+
+	return string(runes)
 }
 
 // messageKey creates a comparable key for a message (order-independent comparison).
@@ -240,9 +354,9 @@ func messageKey(m MessageSnapshot) string {
 	return fmt.Sprintf("%s|%v|%s", strings.TrimSpace(m.Text), m.HasMedia, m.MediaType)
 }
 
-// messageKeyNormalized creates a key with normalized link footer for instant channels.
+// messageKeyNormalized creates a key with normalized links/underlines for instant channels.
 func messageKeyNormalized(m MessageSnapshot) string {
-	text := normalizeLinksFooter(m.Text)
+	text := normalizeTextWithEntities(m.Text, m.Entities)
 	return fmt.Sprintf("%s|%v|%s", strings.TrimSpace(text), m.HasMedia, m.MediaType)
 }
 
