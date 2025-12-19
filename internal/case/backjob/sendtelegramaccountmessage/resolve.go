@@ -148,6 +148,11 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountSendPost
 	if sendErr != nil {
 		// Store error message
 		errMsg := sendErr.Error()
+		env.Logger().Warn("telegram account send failed",
+			"note_path_id", params.NotePathID,
+			"account_id", params.AccountID,
+			"error", errMsg,
+		)
 		setErr := env.SetTelegramPublishNoteLastError(ctx, db.SetTelegramPublishNoteLastErrorParams{
 			LastError:  &errMsg,
 			NotePathID: params.NotePathID,

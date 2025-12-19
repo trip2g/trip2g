@@ -10,12 +10,14 @@ import (
 )
 
 var (
-	dbPath string
+	dbPath      string
+	snapshotDir string
 )
 
 func main() {
 	// Global flags
 	flag.StringVar(&dbPath, "db", "", "Path to database file (required)")
+	flag.StringVar(&snapshotDir, "snapshots", "testdata/telegram/snapshots", "Path to snapshots directory")
 
 	// Custom usage
 	flag.Usage = func() {
@@ -87,13 +89,12 @@ Commands:
             Returns exit code 0 if match, 1 if different
 
 Flags:
-  -db       Path to database file (required for all commands)
+  -db         Path to database file (required for all commands)
+  -snapshots  Path to snapshots directory (default: testdata/telegram/snapshots)
 
 Environment:
   TELEGRAM_API_ID      Your Telegram API ID (from my.telegram.org)
-  TELEGRAM_API_HASH    Your Telegram API hash (from my.telegram.org)
-
-Snapshots: testdata/telegram/snapshots/*.json`)
+  TELEGRAM_API_HASH    Your Telegram API hash (from my.telegram.org)`)
 }
 
 // loadCredentials loads credentials from database with channel discovery.

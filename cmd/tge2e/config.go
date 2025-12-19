@@ -24,9 +24,6 @@ const (
 	ChannelBotInstant       = "trip2g_test_bot_instant"
 	ChannelAccountScheduled = "trip2g_test_account"
 	ChannelAccountInstant   = "trip2g_test_account_inst"
-
-	// Default output path for snapshots
-	SnapshotDir = "testdata/telegram/snapshots"
 )
 
 // ChannelConfig holds info about a test channel.

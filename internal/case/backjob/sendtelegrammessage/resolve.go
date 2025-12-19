@@ -122,6 +122,11 @@ func Resolve1(ctx context.Context, env Env, params model.TelegramSendPostParams)
 	if err != nil {
 		// Store error message - post will not be retried
 		errMsg := err.Error()
+		env.Logger().Warn("telegram bot send failed",
+			"note_path_id", params.NotePathID,
+			"chat_id", params.DBChatID,
+			"error", errMsg,
+		)
 		setErr := env.SetTelegramPublishNoteLastError(ctx, db.SetTelegramPublishNoteLastErrorParams{
 			LastError:  &errMsg,
 			NotePathID: params.NotePathID,

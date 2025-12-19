@@ -44,7 +44,7 @@ func runDump() error {
 	defer cancel()
 
 	// Ensure snapshot directory exists
-	err = os.MkdirAll(SnapshotDir, 0755)
+	err = os.MkdirAll(snapshotDir, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create snapshot directory: %w", err)
 	}
@@ -59,7 +59,7 @@ func runDump() error {
 			}
 
 			// Save to file as JSON
-			filename := filepath.Join(SnapshotDir, name+".json")
+			filename := filepath.Join(snapshotDir, name+".json")
 			data, marshalErr := json.MarshalIndent(snapshot, "", "  ")
 			if marshalErr != nil {
 				return fmt.Errorf("failed to marshal snapshot: %w", marshalErr)
@@ -79,7 +79,7 @@ func runDump() error {
 	}
 
 	fmt.Println()
-	fmt.Println("Snapshots saved to", SnapshotDir)
+	fmt.Println("Snapshots saved to", snapshotDir)
 	return nil
 }
 
@@ -103,7 +103,7 @@ func runCheck() error {
 			fmt.Printf("Checking %s... ", ch.Title)
 
 			// Load expected snapshot
-			filename := filepath.Join(SnapshotDir, name+".json")
+			filename := filepath.Join(snapshotDir, name+".json")
 			expectedData, readErr := os.ReadFile(filename)
 			if readErr != nil {
 				if os.IsNotExist(readErr) {
