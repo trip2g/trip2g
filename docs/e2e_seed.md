@@ -99,7 +99,7 @@ go run ./cmd/tge2e -db test.db verify
 # Очистить тестовые каналы от сообщений
 go run ./cmd/tge2e -db test.db cleanup
 
-# Сохранить текущее состояние каналов как эталон (YAML)
+# Сохранить текущее состояние каналов как эталон
 go run ./cmd/tge2e -db test.db dump
 
 # Сравнить текущее состояние каналов с эталоном
@@ -109,7 +109,7 @@ go run ./cmd/tge2e -db test.db check
 go run ./cmd/tge2e -db test.db patch-db
 ```
 
-Снапшоты сохраняются в `testdata/telegram/snapshots/` в формате YAML.
+Снапшоты сохраняются в `testdata/telegram/snapshots/` в формате JSON.
 
 ## Структура данных в seed
 

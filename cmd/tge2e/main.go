@@ -93,7 +93,7 @@ Environment:
   TELEGRAM_API_ID      Your Telegram API ID (from my.telegram.org)
   TELEGRAM_API_HASH    Your Telegram API hash (from my.telegram.org)
 
-Snapshots: testdata/telegram/snapshots/*.yaml`)
+Snapshots: testdata/telegram/snapshots/*.json`)
 }
 
 // loadCredentials loads credentials from database with channel discovery.

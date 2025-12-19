@@ -2,11 +2,37 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/gotd/td/tg"
+	"github.com/gotd/td/tgerr"
 )
+
+const maxFloodWaitRetries = 3
+
+// retryOnFloodWait executes fn and retries on FLOOD_WAIT errors.
+func retryOnFloodWait[T any](ctx context.Context, fn func() (T, error)) (T, error) {
+	var zero T
+	for i := range maxFloodWaitRetries {
+		result, err := fn()
+		if err == nil {
+			return result, nil
+		}
+
+		waited, waitErr := tgerr.FloodWait(ctx, err)
+		if !waited {
+			return zero, waitErr
+		}
+
+		if d, ok := tgerr.AsFloodWait(err); ok {
+			fmt.Printf("FLOOD_WAIT: waiting %v (attempt %d/%d)\n", d, i+1, maxFloodWaitRetries)
+		}
+	}
+
+	return zero, errors.New("max retries exceeded for FLOOD_WAIT")
+}
 
 // FindTestChannels finds existing test channels by title.
 func FindTestChannels(ctx context.Context, api *tg.Client) (map[string]ChannelConfig, error) {
@@ -73,10 +99,12 @@ func ClearChannelMessages(ctx context.Context, api *tg.Client, channelID, access
 	offsetID := 0
 
 	for {
-		history, err := api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
-			Peer:     peer,
-			Limit:    100,
-			OffsetID: offsetID,
+		history, err := retryOnFloodWait(ctx, func() (tg.MessagesMessagesClass, error) {
+			return api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
+				Peer:     peer,
+				Limit:    100,
+				OffsetID: offsetID,
+			})
 		})
 		if err != nil {
 			return fmt.Errorf("failed to get history: %w", err)
@@ -159,9 +187,11 @@ func ClearAllTestChannels(ctx context.Context, api *tg.Client, channels map[stri
 }
 
 func findChannelByTitle(ctx context.Context, api *tg.Client, title string) (*tg.Channel, error) {
-	dialogs, err := api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
-		OffsetPeer: &tg.InputPeerEmpty{},
-		Limit:      100,
+	dialogs, err := retryOnFloodWait(ctx, func() (tg.MessagesDialogsClass, error) {
+		return api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
+			OffsetPeer: &tg.InputPeerEmpty{},
+			Limit:      100,
+		})
 	})
 	if err != nil {
 		return nil, err
@@ -192,8 +222,10 @@ func VerifyBotInChannels(ctx context.Context, api *tg.Client, channels map[strin
 	botChannelNames := []string{ChannelBotScheduled, ChannelBotInstant}
 
 	// Resolve bot user
-	resolved, err := api.ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{
-		Username: botUsername,
+	resolved, err := retryOnFloodWait(ctx, func() (*tg.ContactsResolvedPeer, error) {
+		return api.ContactsResolveUsername(ctx, &tg.ContactsResolveUsernameRequest{
+			Username: botUsername,
+		})
 	})
 	if err != nil {
 		return fmt.Errorf("failed to resolve bot @%s: %w", botUsername, err)
@@ -225,15 +257,17 @@ func VerifyBotInChannels(ctx context.Context, api *tg.Client, channels map[strin
 		fmt.Printf("Checking %s... ", ch.Title)
 
 		// Get channel participants to check if bot is admin
-		participants, err := api.ChannelsGetParticipant(ctx, &tg.ChannelsGetParticipantRequest{
-			Channel: &tg.InputChannel{
-				ChannelID:  ch.ID,
-				AccessHash: ch.AccessHash,
-			},
-			Participant: &tg.InputPeerUser{
-				UserID:     botUser.ID,
-				AccessHash: botUser.AccessHash,
-			},
+		participants, err := retryOnFloodWait(ctx, func() (*tg.ChannelsChannelParticipant, error) {
+			return api.ChannelsGetParticipant(ctx, &tg.ChannelsGetParticipantRequest{
+				Channel: &tg.InputChannel{
+					ChannelID:  ch.ID,
+					AccessHash: ch.AccessHash,
+				},
+				Participant: &tg.InputPeerUser{
+					UserID:     botUser.ID,
+					AccessHash: botUser.AccessHash,
+				},
+			})
 		})
 		if err != nil {
 			fmt.Println("NOT FOUND")
@@ -270,9 +304,11 @@ func GetChannelMessages(ctx context.Context, api *tg.Client, channelID, accessHa
 		AccessHash: accessHash,
 	}
 
-	history, err := api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
-		Peer:  peer,
-		Limit: limit,
+	history, err := retryOnFloodWait(ctx, func() (tg.MessagesMessagesClass, error) {
+		return api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
+			Peer:  peer,
+			Limit: limit,
+		})
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get history: %w", err)
