@@ -56,11 +56,11 @@ echo "🗄️  Preparing test database $DB_PATH"
 mkdir -p tmp/data
 rm -f "$DB_PATH"
 sqlite3 "$DB_PATH" < testdata/e2e_seed.sql
-go run ./cmd/tge2e patch-db "$DB_PATH"
+go run ./cmd/tge2e -db "$DB_PATH" patch-db
 
 # Cleanup telegram channels
 echo "🧹 Cleaning up Telegram channels..."
-go run ./cmd/tge2e cleanup
+go run ./cmd/tge2e -db "$DB_PATH" cleanup
 
 # Start services
 echo "🚀 Starting services..."

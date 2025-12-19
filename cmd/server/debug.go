@@ -2,10 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/valyala/fasthttp"
+
+	"trip2g/internal/case/backjob/importtelegramchannel"
+	"trip2g/internal/model"
 )
 
 func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
@@ -27,6 +31,9 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 
 	case strings.HasPrefix(path, "/debug/run_cron_job"):
 		return a.handleDebugRunCronJob(ctx)
+
+	case strings.HasPrefix(path, "/debug/telegram_import"):
+		return a.handleDebugTelegramImport(ctx)
 	}
 
 	return false
@@ -167,5 +174,55 @@ func (a *app) handleDebugRunCronJob(ctx *fasthttp.RequestCtx) bool {
 	}
 
 	ctx.SetBody(data)
+	return true
+}
+
+func (a *app) handleDebugTelegramImport(ctx *fasthttp.RequestCtx) bool {
+	chatIDStr := string(ctx.QueryArgs().Peek("chat_id"))
+	if chatIDStr == "" {
+		ctx.SetStatusCode(fasthttp.StatusBadRequest)
+		ctx.SetBodyString("missing 'chat_id' query parameter")
+		return true
+	}
+
+	chatID, err := strconv.ParseInt(chatIDStr, 10, 64)
+	if err != nil {
+		ctx.SetStatusCode(fasthttp.StatusBadRequest)
+		ctx.SetBodyString("invalid 'chat_id' query parameter: " + err.Error())
+		return true
+	}
+
+	// Get first telegram account
+	accounts, err := a.Queries.ListAllTelegramAccounts(a.ctx)
+	if err != nil {
+		a.log.Error("failed to list telegram accounts", "error", err)
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+		ctx.SetBodyString("failed to list telegram accounts: " + err.Error())
+		return true
+	}
+
+	if len(accounts) == 0 {
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		ctx.SetBodyString("no telegram accounts found")
+		return true
+	}
+
+	params := model.ImportTelegramChannelParams{
+		AccountID: accounts[0].ID,
+		ChannelID: chatID,
+		BasePath:  "import",
+		WithMedia: true,
+	}
+
+	err = importtelegramchannel.Resolve(a.ctx, a, params)
+	if err != nil {
+		a.log.Error("failed to import telegram channel", "error", err)
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+		ctx.SetBodyString("failed to import telegram channel: " + err.Error())
+		return true
+	}
+
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	ctx.SetBodyString("ok: telegram channel imported")
 	return true
 }

@@ -15,7 +15,7 @@ func runCleanup() error {
 	fmt.Println("=== Clearing Test Channels ===")
 	fmt.Println()
 
-	creds, err := LoadCredentials("")
+	creds, err := loadCredentials()
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func runVerify() error {
 	fmt.Println("=== Verifying Test Environment ===")
 	fmt.Println()
 
-	creds, err := LoadCredentials("")
+	creds, err := loadCredentials()
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func runVerify() error {
 
 	fmt.Println()
 	if issues > 0 {
-		fmt.Printf("Found %d issue(s). Run 'tge2e setup' to fix.\n", issues)
+		fmt.Printf("Found %d issue(s).\n", issues)
 		os.Exit(1)
 	}
 
@@ -116,4 +116,27 @@ func runVerify() error {
 // runWithClient is a helper that runs a function with an authenticated client.
 func runWithClient(ctx context.Context, creds *Credentials, fn func(ctx context.Context, client *telegram.Client, api *tg.Client) error) error {
 	return RunWithClient(ctx, creds, fn)
+}
+
+// findChannelsWithSession finds test channels using account session.
+func findChannelsWithSession(ctx context.Context, creds *Credentials) error {
+	sessionData, err := creds.AccountSession()
+	if err != nil {
+		return fmt.Errorf("failed to decode session: %w", err)
+	}
+
+	storage := &MemorySessionStorage{Data: sessionData}
+
+	client := telegram.NewClient(creds.APIID, creds.APIHash, telegram.Options{
+		SessionStorage: storage,
+	})
+
+	return client.Run(ctx, func(ctx context.Context) error {
+		channels, err := FindTestChannels(ctx, client.API())
+		if err != nil {
+			return err
+		}
+		creds.Channels = channels
+		return nil
+	})
 }

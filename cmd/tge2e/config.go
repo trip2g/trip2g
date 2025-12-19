@@ -1,13 +1,22 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
+
+	_ "github.com/mattn/go-sqlite3"
+	"trip2g/internal/appconfig"
+	"trip2g/internal/dataencryption"
 )
+
+func init() {
+	// Load .env file if it exists
+	_ = appconfig.LoadDotEnvFromPath(".env")
+}
 
 const (
 	// Channel names for E2E testing
@@ -16,35 +25,35 @@ const (
 	ChannelAccountScheduled = "trip2g_test_account"
 	ChannelAccountInstant   = "trip2g_test_account_inst"
 
-	// Default output path
-	DefaultCredentialsPath = ".tg_e2e_session"
+	// Default output path for snapshots
+	SnapshotDir = "testdata/telegram/snapshots"
 )
 
 // ChannelConfig holds info about a test channel.
 type ChannelConfig struct {
-	Title      string `json:"title"`
-	Username   string `json:"username"`
-	ID         int64  `json:"id"`
-	AccessHash int64  `json:"access_hash"`
+	Title      string `yaml:"title"`
+	Username   string `yaml:"username"`
+	ID         int64  `yaml:"id"`
+	AccessHash int64  `yaml:"access_hash"`
 }
 
 // Credentials holds all test environment credentials.
 type Credentials struct {
 	// API credentials
-	APIID   int    `json:"api_id"`
-	APIHash string `json:"api_hash"`
+	APIID   int    `yaml:"api_id"`
+	APIHash string `yaml:"api_hash"`
 
 	// Test account
-	AccountPhone       string `json:"account_phone"`
-	AccountSessionB64  string `json:"account_session_b64"` // base64 encoded session
-	AccountDisplayName string `json:"account_display_name"`
+	AccountPhone       string `yaml:"account_phone"`
+	AccountSessionB64  string `yaml:"account_session_b64"` // base64 encoded session
+	AccountDisplayName string `yaml:"account_display_name"`
 
 	// Test bot
-	BotToken    string `json:"bot_token"`
-	BotUsername string `json:"bot_username"`
+	BotToken    string `yaml:"bot_token"`
+	BotUsername string `yaml:"bot_username"`
 
 	// Test channels
-	Channels map[string]ChannelConfig `json:"channels"`
+	Channels map[string]ChannelConfig `yaml:"channels"`
 }
 
 // AccountSession returns decoded session data.
@@ -63,53 +72,78 @@ func (c *Credentials) GetChannel(name string) (ChannelConfig, bool) {
 	return ch, ok
 }
 
-// LoadCredentials loads credentials from file.
-func LoadCredentials(path string) (*Credentials, error) {
-	if path == "" {
-		path = DefaultCredentialsPath
+// LoadCredentialsFromDB loads credentials directly from the database.
+func LoadCredentialsFromDB(ctx context.Context, dbPath string) (*Credentials, error) {
+	// Load API credentials from environment
+	apiID, apiHash, err := LoadAPICredentials()
+	if err != nil {
+		return nil, err
 	}
 
-	data, err := os.ReadFile(path)
+	// Open database
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("credentials file not found: %s (run 'tge2e setup' first)", path)
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+	defer db.Close()
+
+	// Create decryption manager with default dev key
+	decryptor, err := dataencryption.NewManager(dataencryption.DefaultConfig())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create decryptor: %w", err)
+	}
+
+	creds := &Credentials{
+		APIID:    apiID,
+		APIHash:  apiHash,
+		Channels: make(map[string]ChannelConfig),
+	}
+
+	// Extract telegram_accounts
+	var phone, displayName string
+	var encryptedSession []byte
+	err = db.QueryRow(`
+		select phone, session_data, display_name
+		from telegram_accounts
+		where id = 1
+	`).Scan(&phone, &encryptedSession, &displayName)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("telegram_accounts: not found (id=1)")
 		}
-		return nil, fmt.Errorf("failed to read credentials: %w", err)
+		return nil, fmt.Errorf("failed to query telegram_accounts: %w", err)
 	}
 
-	var creds Credentials
-	err = json.Unmarshal(data, &creds)
+	// Decrypt session
+	sessionData, err := decryptor.DecryptData(encryptedSession)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse credentials: %w", err)
+		return nil, fmt.Errorf("failed to decrypt session: %w", err)
 	}
 
-	return &creds, nil
-}
+	creds.AccountPhone = phone
+	creds.AccountDisplayName = displayName
+	creds.SetAccountSession(sessionData)
+	fmt.Printf("Loaded account: %s (%s)\n", displayName, phone)
 
-// SaveCredentials saves credentials to file.
-func SaveCredentials(creds *Credentials, path string) error {
-	if path == "" {
-		path = DefaultCredentialsPath
-	}
-
-	// Ensure directory exists
-	dir := filepath.Dir(path)
-	err := os.MkdirAll(dir, 0755)
+	// Extract tg_bots
+	var token, name string
+	err = db.QueryRow(`
+		select token, name
+		from tg_bots
+		where id = 1
+	`).Scan(&token, &name)
 	if err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("tg_bots: not found (id=1)")
+		}
+		return nil, fmt.Errorf("failed to query tg_bots: %w", err)
 	}
 
-	data, err := json.MarshalIndent(creds, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal credentials: %w", err)
-	}
+	creds.BotToken = token
+	creds.BotUsername = name
+	fmt.Printf("Loaded bot: @%s\n", name)
 
-	err = os.WriteFile(path, data, 0600) // restricted permissions
-	if err != nil {
-		return fmt.Errorf("failed to write credentials: %w", err)
-	}
-
-	return nil
+	return creds, nil
 }
 
 // LoadAPICredentials loads API ID and hash from environment.

@@ -4,7 +4,11 @@
 
 ## Предварительные требования
 
-- Telegram API credentials (`TELEGRAM_API_ID`, `TELEGRAM_API_HASH`)
+- Telegram API credentials в `.env` файле:
+  ```
+  TELEGRAM_API_ID=12345678
+  TELEGRAM_API_HASH=abc123...
+  ```
 - Тестовый бот (создан через @BotFather)
 - 4 тестовых канала в Telegram (см. [telegram_e2e.md](telegram_e2e.md))
 
@@ -71,26 +75,41 @@ INSERT INTO tg_bots VALUES(1,'123456:ABC...',1,'real_bot_name',...);
 INSERT INTO tg_bots VALUES(1,'TOKEN_PLACEHOLDER',1,'BOT_PLACEHOLDER','',1,'2025-01-01 00:00:00',1);
 ```
 
-### 9. Извлечь credentials для .tg_e2e_session
-
-```bash
-./tge2e extract e2e_test.db
-```
-
-Теперь `.tg_e2e_session` содержит реальные credentials, а `testdata/e2e_seed.sql` — placeholders.
-
 ## Использование seed в тестах
 
 ```bash
 # 1. Создать базу из seed
 sqlite3 test.db < testdata/e2e_seed.sql
 
-# 2. Подставить реальные credentials из .tg_e2e_session
-./tge2e patch-db test.db
+# 2. Подставить реальные credentials (если есть legacy .tg_e2e_session файл)
+go run ./cmd/tge2e -db test.db patch-db
 
 # 3. Запустить сервер
 go run ./cmd/server -db-file=test.db -dev
 ```
+
+## tge2e команды
+
+Утилита `tge2e` работает с базой данных напрямую (флаг `-db` обязателен).
+
+```bash
+# Проверить credentials в базе и подключение к Telegram
+go run ./cmd/tge2e -db test.db verify
+
+# Очистить тестовые каналы от сообщений
+go run ./cmd/tge2e -db test.db cleanup
+
+# Сохранить текущее состояние каналов как эталон (YAML)
+go run ./cmd/tge2e -db test.db dump
+
+# Сравнить текущее состояние каналов с эталоном
+go run ./cmd/tge2e -db test.db check
+
+# Миграция из старого формата (.tg_e2e_session → database)
+go run ./cmd/tge2e -db test.db patch-db
+```
+
+Снапшоты сохраняются в `testdata/telegram/snapshots/` в формате YAML.
 
 ## Структура данных в seed
 

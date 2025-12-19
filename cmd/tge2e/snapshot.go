@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,27 +11,24 @@ import (
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
 	"github.com/kr/pretty"
-)
-
-const (
-	SnapshotDir = "testdata/telegram/snapshots"
+	"gopkg.in/yaml.v3"
 )
 
 // MessageSnapshot represents a message for snapshot comparison.
 type MessageSnapshot struct {
-	ID        int    `json:"id"`
-	Text      string `json:"text,omitempty"`
-	Caption   string `json:"caption,omitempty"`
-	HasMedia  bool   `json:"has_media,omitempty"`
-	MediaType string `json:"media_type,omitempty"`
+	ID        int    `yaml:"id"`
+	Text      string `yaml:"text,omitempty"`
+	Caption   string `yaml:"caption,omitempty"`
+	HasMedia  bool   `yaml:"has_media,omitempty"`
+	MediaType string `yaml:"media_type,omitempty"`
 }
 
 // ChannelSnapshot represents a channel's messages for snapshot comparison.
 type ChannelSnapshot struct {
-	ChannelName  string            `json:"channel_name"`
-	ChannelTitle string            `json:"channel_title"`
-	Messages     []MessageSnapshot `json:"messages"`
-	CapturedAt   string            `json:"captured_at"`
+	ChannelName  string            `yaml:"channel_name"`
+	ChannelTitle string            `yaml:"channel_title"`
+	Messages     []MessageSnapshot `yaml:"messages"`
+	CapturedAt   string            `yaml:"captured_at"`
 }
 
 // runDump saves current channel messages to snapshot files.
@@ -40,7 +36,7 @@ func runDump() error {
 	fmt.Println("=== Dumping Channel Messages ===")
 	fmt.Println()
 
-	creds, err := LoadCredentials("")
+	creds, err := loadCredentials()
 	if err != nil {
 		return err
 	}
@@ -63,9 +59,9 @@ func runDump() error {
 				return fmt.Errorf("failed to dump %s: %w", name, dumpErr)
 			}
 
-			// Save to file
-			filename := filepath.Join(SnapshotDir, name+".json")
-			data, marshalErr := json.MarshalIndent(snapshot, "", "  ")
+			// Save to file as YAML
+			filename := filepath.Join(SnapshotDir, name+".yaml")
+			data, marshalErr := yaml.Marshal(snapshot)
 			if marshalErr != nil {
 				return fmt.Errorf("failed to marshal snapshot: %w", marshalErr)
 			}
@@ -93,7 +89,7 @@ func runCheck() error {
 	fmt.Println("=== Checking Channel Messages ===")
 	fmt.Println()
 
-	creds, err := LoadCredentials("")
+	creds, err := loadCredentials()
 	if err != nil {
 		return err
 	}
@@ -108,7 +104,7 @@ func runCheck() error {
 			fmt.Printf("Checking %s... ", ch.Title)
 
 			// Load expected snapshot
-			filename := filepath.Join(SnapshotDir, name+".json")
+			filename := filepath.Join(SnapshotDir, name+".yaml")
 			expectedData, readErr := os.ReadFile(filename)
 			if readErr != nil {
 				if os.IsNotExist(readErr) {
@@ -119,7 +115,7 @@ func runCheck() error {
 			}
 
 			var expected ChannelSnapshot
-			unmarshalErr := json.Unmarshal(expectedData, &expected)
+			unmarshalErr := yaml.Unmarshal(expectedData, &expected)
 			if unmarshalErr != nil {
 				return fmt.Errorf("failed to parse snapshot: %w", unmarshalErr)
 			}

@@ -180,7 +180,7 @@ func GetWithLogger(log logger.Logger) (*Config, error) {
 	}
 
 	// Load .env file (or custom file if specified)
-	err := loadDotEnvFromPath(envFile)
+	err := LoadDotEnvFromPath(envFile)
 	if err != nil {
 		if log != nil {
 			log.Debug("failed to load env file", "file", envFile, "error", err)
@@ -451,9 +451,9 @@ func (c *Config) validate() error {
 	)
 }
 
-// loadDotEnvFromPath loads environment variables from a specific .env file path.
+// LoadDotEnvFromPath loads environment variables from a specific .env file path.
 // It doesn't override existing environment variables.
-func loadDotEnvFromPath(path string) error {
+func LoadDotEnvFromPath(path string) error {
 	// Check if file exists
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
