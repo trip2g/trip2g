@@ -125,7 +125,9 @@ func runCheck() error {
 			}
 
 			// Compare messages (ignore timestamps and IDs)
-			if !compareSnapshots(&expected, current) {
+			// For instant channels, also normalize link footers (order is non-deterministic)
+			isInstant := strings.Contains(name, "inst")
+			if !compareSnapshots(&expected, current, isInstant) {
 				fmt.Println("FAIL")
 				failures = append(failures, name)
 				printDiff(&expected, current)
@@ -215,26 +217,56 @@ func getMediaType(media tg.MessageMediaClass) string {
 	}
 }
 
+// normalizeLinksFooter strips the link footer (e.g., "Title1 | Title2 | Title3") from text.
+// For instant channels, link resolution order is non-deterministic, so we normalize it.
+func normalizeLinksFooter(text string) string {
+	// Find last paragraph (after \n\n)
+	idx := strings.LastIndex(text, "\n\n")
+	if idx == -1 {
+		return text
+	}
+
+	footer := text[idx+2:]
+	// Check if footer looks like links (contains | separator)
+	if strings.Contains(footer, " | ") {
+		return text[:idx+2] + "[LINKS]"
+	}
+
+	return text
+}
+
 // messageKey creates a comparable key for a message (order-independent comparison).
 func messageKey(m MessageSnapshot) string {
 	return fmt.Sprintf("%s|%v|%s", strings.TrimSpace(m.Text), m.HasMedia, m.MediaType)
 }
 
-func compareSnapshots(expected, actual *ChannelSnapshot) bool {
+// messageKeyNormalized creates a key with normalized link footer for instant channels.
+func messageKeyNormalized(m MessageSnapshot) string {
+	text := normalizeLinksFooter(m.Text)
+	return fmt.Sprintf("%s|%v|%s", strings.TrimSpace(text), m.HasMedia, m.MediaType)
+}
+
+func compareSnapshots(expected, actual *ChannelSnapshot, instant bool) bool {
 	if len(expected.Messages) != len(actual.Messages) {
 		return false
+	}
+
+	// Choose key function based on channel type
+	keyFunc := messageKey
+	if instant {
+		keyFunc = messageKeyNormalized
 	}
 
 	// Count expected messages
 	expectedCounts := make(map[string]int)
 	for _, m := range expected.Messages {
-		expectedCounts[messageKey(m)]++
+		expectedCounts[keyFunc(m)]++
 	}
 
 	// Count actual messages
 	actualCounts := make(map[string]int)
 	for _, m := range actual.Messages {
-		actualCounts[messageKey(m)]++
+		actualCounts[keyFunc(m)]++
 	}
 
 	// Compare counts
