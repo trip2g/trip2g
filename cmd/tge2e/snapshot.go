@@ -208,6 +208,8 @@ func getMediaType(media tg.MessageMediaClass) string {
 		return "contact"
 	case *tg.MessageMediaPoll:
 		return "poll"
+	case *tg.MessageMediaWebPage:
+		return "webpage"
 	default:
 		return "unknown"
 	}

@@ -78,18 +78,30 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	mediaCount := len(post.Media)
 	newPostType := db.TelegramPublishSentMessagePostTypeFromMediaCount(mediaCount)
 
-	// Check if post type changed - we cannot change post type after publishing
+	// Check if post type changed
+	// Supported transitions: text→photo (add media)
+	// Not supported: photo→text, any→media_group, media_group→any
 	postTypeChanged := currentPostType != newPostType
 	if postTypeChanged {
-		logger.Warn("post type change detected, ignoring media changes",
-			"current_type", currentPostType,
-			"new_type", newPostType,
-			"note_path_id", params.NotePathID,
-		)
+		canConvert := currentPostType == db.TelegramPublishSentMessagePostTypeText &&
+			newPostType == db.TelegramPublishSentMessagePostTypePhoto
+		if !canConvert {
+			logger.Warn("unsupported post type change, ignoring media changes",
+				"current_type", currentPostType,
+				"new_type", newPostType,
+				"note_path_id", params.NotePathID,
+			)
+		}
 	}
 
-	// Use current post type for determining content length limit (like bot does)
-	hasMedia := currentPostType == db.TelegramPublishSentMessagePostTypePhoto || currentPostType == db.TelegramPublishSentMessagePostTypeMediaGroup
+	// Use target post type for determining content length limit
+	// When converting text→photo, we need caption limit (1024) not text limit (4096)
+	targetType := currentPostType
+	if postTypeChanged && currentPostType == db.TelegramPublishSentMessagePostTypeText &&
+		newPostType == db.TelegramPublishSentMessagePostTypePhoto {
+		targetType = newPostType
+	}
+	hasMedia := targetType == db.TelegramPublishSentMessagePostTypePhoto || targetType == db.TelegramPublishSentMessagePostTypeMediaGroup
 
 	// Truncate content to telegram limits
 	maxLength := 4096
@@ -99,10 +111,10 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 	content := telegram.TruncateContent(post.Content, maxLength)
 
 	// Calculate content hash for new content
-	// For photo: include media URL (can be changed)
+	// For photo (including text→photo conversion): include media URL (can be changed)
 	// For media_group: only text (can't change media, only caption)
 	hashInput := content
-	if currentPostType == db.TelegramPublishSentMessagePostTypePhoto && len(post.Media) > 0 {
+	if targetType == db.TelegramPublishSentMessagePostTypePhoto && len(post.Media) > 0 {
 		hashInput += "|" + post.Media[0]
 	}
 	hash := sha256.Sum256([]byte(hashInput))
@@ -157,16 +169,29 @@ func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePo
 
 	var editErr error
 
-	// Determine which edit method to use based on CURRENT post type (saved in DB)
-	// We cannot change post type after publishing, so always use current type
+	// Determine which edit method to use
+	// For text→photo: use EditMessageWithPhoto to add media
+	// For photo→text: not supported (would need to delete and resend)
+	// Otherwise: use method based on current type
 	switch currentPostType {
 	case db.TelegramPublishSentMessagePostTypeText:
-		// Edit text message
-		editErr = client.EditMessage(ctx, sessionData, tgtd.EditMessageParams{
-			ChatID:    params.TelegramChatID,
-			MessageID: params.MessageID,
-			Message:   content,
-		})
+		if newPostType == db.TelegramPublishSentMessagePostTypePhoto && len(post.Media) > 0 {
+			// Convert text message to photo by adding media
+			mediaURL := post.Media[0]
+			editErr = client.EditMessageWithPhoto(ctx, sessionData, tgtd.EditMessageWithPhotoParams{
+				ChatID:    params.TelegramChatID,
+				MessageID: params.MessageID,
+				PhotoURL:  mediaURL,
+				Caption:   content,
+			})
+		} else {
+			// Edit text message
+			editErr = client.EditMessage(ctx, sessionData, tgtd.EditMessageParams{
+				ChatID:    params.TelegramChatID,
+				MessageID: params.MessageID,
+				Message:   content,
+			})
+		}
 	case db.TelegramPublishSentMessagePostTypePhoto:
 		// Edit photo/video with caption
 		if len(post.Media) > 0 {
