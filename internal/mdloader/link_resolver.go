@@ -41,8 +41,14 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 		return []byte(assetReplace.URL), nil
 	}
 
-	// Remove .html extension if present in the target
+	// Check if this link was resolved in extractInLinks
+	// This allows us to avoid mutating the AST, which breaks caching
 	target := n.Target
+	if resolved, found := r.currentPage.ResolvedLinks[string(n.Target)]; found {
+		target = []byte(resolved)
+	}
+
+	// Remove .html extension if present in the target
 	if bytes.HasSuffix(target, []byte(_html)) {
 		target = target[:len(target)-len(_html)]
 	}

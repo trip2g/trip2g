@@ -128,16 +128,38 @@ func enqueueJobs(ctx context.Context, env Env, cfg jobConfig) ([]ResultPost, err
 
 		noteView := nvs.GetByPathID(id)
 		if noteView != nil {
+			log.Info("checking inLinks",
+				"note_path_id", id,
+				"permalink", noteView.Permalink,
+				"inLinks_count", len(noteView.InLinks),
+			)
 			for inLink := range noteView.InLinks {
 				inNote, ok := nvs.Map[inLink]
-				if ok && inNote.IsTelegramPublishPost() {
-					updateIDs[inNote.PathID] = struct{}{}
+				if !ok {
+					log.Info("inLink not found in nvs.Map", "inLink", inLink)
+					continue
 				}
+				if !inNote.IsTelegramPublishPost() {
+					log.Info("inLink is not a telegram publish post",
+						"inLink", inLink,
+						"inNote_path_id", inNote.PathID,
+					)
+					continue
+				}
+				log.Info("adding to updateIDs",
+					"inLink", inLink,
+					"inNote_path_id", inNote.PathID,
+				)
+				updateIDs[inNote.PathID] = struct{}{}
 			}
+		} else {
+			log.Info("noteView not found", "note_path_id", id)
 		}
 	}
 
+	log.Info("enqueuing updates", "updateIDs_count", len(updateIDs))
 	for updateID := range updateIDs {
+		log.Info("enqueuing update", "updateID", updateID)
 		err = cfg.enqueueUpdate(ctx, updateID)
 		if err != nil {
 			return posts, fmt.Errorf("failed to enqueue update %s post for note_path_id %d: %w", cfg.postType, updateID, err)

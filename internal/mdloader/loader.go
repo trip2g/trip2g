@@ -307,7 +307,6 @@ func (ldr *loader) buildBasenameIndex() {
 	}
 }
 
-//nolint:funlen // complex link resolution with multiple cases
 func (ldr *loader) extractInLinks() error {
 	for _, p := range ldr.nvs.PathMap {
 		err := ast.Walk(p.Ast(), func(n ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -347,15 +346,15 @@ func (ldr *loader) extractInLinks() error {
 				}
 
 				if found {
-					p.ResolvedLinks[string(link.Target)] = pp.Permalink
-					pp.InLinks[p.Permalink] = struct{}{}
 					// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
 					// Use Permalink for regular pages (already transliterated)
+					// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
 					if pp.Slug != "" {
-						link.Target = []byte(pp.PermalinkOriginal)
+						p.ResolvedLinks[string(link.Target)] = pp.PermalinkOriginal
 					} else {
-						link.Target = []byte(pp.Permalink)
+						p.ResolvedLinks[string(link.Target)] = pp.Permalink
 					}
+					pp.InLinks[p.Permalink] = struct{}{}
 
 					return ast.WalkContinue, nil
 				}
@@ -389,15 +388,15 @@ func (ldr *loader) extractInLinks() error {
 				// If we found exactly one match, use it
 				if len(candidates) == 1 {
 					pp := candidates[0]
-					p.ResolvedLinks[string(link.Target)] = pp.Permalink
-					pp.InLinks[p.Permalink] = struct{}{}
 					// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
 					// Use Permalink for regular pages (already transliterated)
+					// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
 					if pp.Slug != "" {
-						link.Target = []byte(pp.PermalinkOriginal)
+						p.ResolvedLinks[string(link.Target)] = pp.PermalinkOriginal
 					} else {
-						link.Target = []byte(pp.Permalink)
+						p.ResolvedLinks[string(link.Target)] = pp.Permalink
 					}
+					pp.InLinks[p.Permalink] = struct{}{}
 
 					return ast.WalkContinue, nil
 				}
@@ -415,15 +414,15 @@ func (ldr *loader) extractInLinks() error {
 						}
 					}
 
-					p.ResolvedLinks[string(link.Target)] = shortest.Permalink
-					shortest.InLinks[p.Permalink] = struct{}{}
 					// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
 					// Use Permalink for regular pages (already transliterated)
+					// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
 					if shortest.Slug != "" {
-						link.Target = []byte(shortest.PermalinkOriginal)
+						p.ResolvedLinks[string(link.Target)] = shortest.PermalinkOriginal
 					} else {
-						link.Target = []byte(shortest.Permalink)
+						p.ResolvedLinks[string(link.Target)] = shortest.Permalink
 					}
+					shortest.InLinks[p.Permalink] = struct{}{}
 
 					return ast.WalkContinue, nil
 				}
@@ -459,15 +458,15 @@ func (ldr *loader) extractInLinks() error {
 					// }
 
 					if found {
-						p.ResolvedLinks[string(link.Target)] = pp.Permalink
-						pp.InLinks[p.Permalink] = struct{}{}
 						// Use PermalinkOriginal for pages with custom slug (to avoid double encoding)
 						// Use Permalink for regular pages (already transliterated)
+						// Store in ResolvedLinks for rendering (do NOT mutate AST - breaks caching)
 						if pp.Slug != "" {
-							link.Target = []byte(pp.PermalinkOriginal)
+							p.ResolvedLinks[string(link.Target)] = pp.PermalinkOriginal
 						} else {
-							link.Target = []byte(pp.Permalink)
+							p.ResolvedLinks[string(link.Target)] = pp.Permalink
 						}
+						pp.InLinks[p.Permalink] = struct{}{}
 
 						return ast.WalkContinue, nil
 					}

@@ -1318,3 +1318,68 @@ func TestNoteCacheReusesAST(t *testing.T) {
 	// note2 AST should be different (re-parsed)
 	require.NotSame(t, ast1Note2, ast2Note2, "changed note should have new AST")
 }
+
+// TestInLinksWithCachedAST tests that InLinks are correctly populated when
+// notes are loaded with cached AST. This reproduces a bug where AST mutation
+// in extractInLinks (changing link.Target from "note" to "/note") breaks
+// subsequent reloads because the cached AST has already-resolved targets.
+//
+// Bug scenario:
+// 1. First load: note_a and note_b exist, note_b links to note_a via [[note_a]]
+// 2. extractInLinks resolves [[note_a]] and mutates AST: link.Target = "/note_a"
+// 3. Second load with cache: note_c is added (also links to note_a)
+// 4. For note_b, cached AST is reused with link.Target = "/note_a"
+// 5. extractInLinks sees "/note_a", checks isSimpleFilename (has "/") = false
+// 6. Falls through to path-based resolution, fails to find match
+// 7. Result: note_a.InLinks is missing note_b.
+func TestInLinksWithCachedAST(t *testing.T) {
+	log := logger.TestLogger{}
+
+	// First load - note_a and note_b, where note_b links to note_a
+	sources1 := []mdloader.SourceFile{
+		{Path: "note_a.md", Content: []byte("# Note A\nThis is note A")},
+		{Path: "note_b.md", Content: []byte("# Note B\nLink to [[note_a]]")},
+	}
+
+	pages1, err := mdloader.Load(mdloader.Options{
+		Sources: sources1,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	// Verify InLinks work correctly after first load
+	require.Equal(t, map[string]struct{}{"/note_b": {}}, pages1.Map["/note_a"].InLinks,
+		"note_a should have InLink from note_b after first load")
+
+	// Second load with cache - add note_c that also links to note_a
+	// note_a and note_b are unchanged (will use cached AST)
+	sources2 := []mdloader.SourceFile{
+		{Path: "note_a.md", Content: []byte("# Note A\nThis is note A")},             // unchanged
+		{Path: "note_b.md", Content: []byte("# Note B\nLink to [[note_a]]")},         // unchanged
+		{Path: "note_c.md", Content: []byte("# Note C\nAnother link to [[note_a]]")}, // new
+	}
+
+	pages2, err := mdloader.Load(mdloader.Options{
+		Sources: sources2,
+		Log:     &log,
+		NoteCache: func(source mdloader.SourceFile) *model.NoteView {
+			old, ok := pages1.PathMap[source.Path]
+			if !ok {
+				return nil
+			}
+			if string(old.Content) == string(source.Content) {
+				return old // Return cached note (with mutated AST)
+			}
+			return nil
+		},
+	})
+	require.NoError(t, err)
+
+	// After second load, note_a should have InLinks from BOTH note_b and note_c
+	expectedInLinks := map[string]struct{}{
+		"/note_b": {},
+		"/note_c": {},
+	}
+	require.Equal(t, expectedInLinks, pages2.Map["/note_a"].InLinks,
+		"note_a should have InLinks from both note_b and note_c after cached reload")
+}
