@@ -73,6 +73,12 @@ func (a *app) handleDebugWaitAllJobs(ctx *fasthttp.RequestCtx) bool {
 		maxTimeout   = 5 * time.Minute
 	)
 
+	// Extend write deadline to allow long polling
+	err := ctx.Conn().SetWriteDeadline(time.Now().Add(maxTimeout + time.Minute))
+	if err != nil {
+		a.log.Error("failed to set write deadline", "error", err)
+	}
+
 	startTime := time.Now()
 
 	for {
@@ -82,7 +88,7 @@ func (a *app) handleDebugWaitAllJobs(ctx *fasthttp.RequestCtx) bool {
 		// Check timeout
 		if time.Since(startTime) > maxTimeout {
 			ctx.SetStatusCode(fasthttp.StatusGatewayTimeout)
-			ctx.SetBodyString("timeout: jobs still pending after 1 minute")
+			ctx.SetBodyString("timeout: jobs still pending after 5 minutes")
 			return true
 		}
 

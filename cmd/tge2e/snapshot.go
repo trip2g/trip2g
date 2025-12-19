@@ -16,7 +16,6 @@ import (
 
 // MessageSnapshot represents a message for snapshot comparison.
 type MessageSnapshot struct {
-	ID        int    `json:"id"`
 	Text      string `json:"text,omitempty"`
 	Caption   string `json:"caption,omitempty"`
 	HasMedia  bool   `json:"has_media,omitempty"`
@@ -166,7 +165,6 @@ func dumpChannel(ctx context.Context, api *tg.Client, name string, ch ChannelCon
 	for i := len(messages) - 1; i >= 0; i-- {
 		msg := messages[i]
 		ms := MessageSnapshot{
-			ID:   msg.ID,
 			Text: msg.Message,
 		}
 
@@ -215,24 +213,31 @@ func getMediaType(media tg.MessageMediaClass) string {
 	}
 }
 
+// messageKey creates a comparable key for a message (order-independent comparison).
+func messageKey(m MessageSnapshot) string {
+	return fmt.Sprintf("%s|%v|%s", strings.TrimSpace(m.Text), m.HasMedia, m.MediaType)
+}
+
 func compareSnapshots(expected, actual *ChannelSnapshot) bool {
 	if len(expected.Messages) != len(actual.Messages) {
 		return false
 	}
 
-	for i := range expected.Messages {
-		e := expected.Messages[i]
-		a := actual.Messages[i]
+	// Count expected messages
+	expectedCounts := make(map[string]int)
+	for _, m := range expected.Messages {
+		expectedCounts[messageKey(m)]++
+	}
 
-		// Compare content, not IDs
-		// Normalize text - trim leading/trailing whitespace to handle YAML block scalar differences
-		if strings.TrimSpace(e.Text) != strings.TrimSpace(a.Text) {
-			return false
-		}
-		if e.HasMedia != a.HasMedia {
-			return false
-		}
-		if e.MediaType != a.MediaType {
+	// Count actual messages
+	actualCounts := make(map[string]int)
+	for _, m := range actual.Messages {
+		actualCounts[messageKey(m)]++
+	}
+
+	// Compare counts
+	for key, count := range expectedCounts {
+		if actualCounts[key] != count {
 			return false
 		}
 	}

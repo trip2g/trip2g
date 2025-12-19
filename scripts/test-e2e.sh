@@ -72,10 +72,6 @@ docker compose -f docker-compose.test.yml up -d --build
   exit 1
 }
 
-# Wait send_scheduled_telegram_publishposts job
-echo "⏳ Waiting for scheduled Telegram publish posts job to complete..."
-curl -f "$APP_URL/debug/run_cron_job?name=send_scheduled_telegram_publishposts"
-
 # Run setup test to create API key
 echo "🔑 Running setup test (create API key)..."
 echo ""
@@ -103,6 +99,10 @@ echo ""
   echo -e "${RED}✗ CLI sync tests failed${NC}"
   exit 1
 }
+
+# Schedule send_scheduled_telegram_publishposts job
+echo "⏳ Scheduled Telegram publish posts job to complete..."
+curl -f "$APP_URL/debug/run_cron_job?name=send_scheduled_telegram_publishposts"
 
 echo ""
 echo -e "${GREEN}✓ CLI sync tests passed${NC}"
@@ -151,7 +151,12 @@ if [ $TEST_EXIT_CODE -ne 0 ]; then
 fi
 
 # Wait for telegram messages to be sent
-curl -s "$APP_URL/debug/wait_all_jobs" | tee /dev/stderr | grep -q "^ok:" || exit 1
+echo "⏳ Waiting for all background jobs to complete..."
+curl -s --max-time 300 "$APP_URL/debug/wait_all_jobs" | tee /dev/stderr | grep -q "^ok:" || exit 1
+
+# Check channel snapshots
+echo "📷 Checking Telegram channel snapshots..."
+go run ./cmd/tge2e -db tmp/data/test.sqlite3 -snapshots testdata/telegram/step0 check
 
 echo ""
 echo -e "${GREEN}✅ All E2E tests passed!${NC}"

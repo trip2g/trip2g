@@ -1730,14 +1730,18 @@ func (a *app) startServer() {
 		ctx.SetBodyString("404 Not Found")
 	}
 
-	s := &fasthttp.Server{
-		Handler:            fasthttp.TimeoutHandler(handler, time.Second*60, "timeout"),
-		MaxRequestBodySize: a.config.MaxRequestBodySize * 1024 * 1024,
+	handlerTimeout := 60 * time.Second
+	if a.config.DevMode {
+		handlerTimeout = 10 * time.Minute
 	}
 
-	s.ReadTimeout = 60 * time.Second
-	s.WriteTimeout = 60 * time.Second
-	s.IdleTimeout = 120 * time.Second
+	s := &fasthttp.Server{
+		Handler:            fasthttp.TimeoutHandler(handler, handlerTimeout, "timeout"),
+		MaxRequestBodySize: a.config.MaxRequestBodySize * 1024 * 1024,
+		ReadTimeout:        handlerTimeout,
+		WriteTimeout:       handlerTimeout,
+		IdleTimeout:        handlerTimeout,
+	}
 
 	runServer := func() {
 		if len(a.config.AcmeDomains) == 0 {
