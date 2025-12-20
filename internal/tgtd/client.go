@@ -33,7 +33,9 @@ import (
 )
 
 const (
-	maxFloodWaitRetries = 3
+	maxFloodWaitRetries    = 3
+	maxTransientRetries    = 3
+	transientRetryBaseWait = 5 * time.Second
 
 	// Video file extensions.
 	extMP4  = ".mp4"
@@ -77,6 +79,46 @@ func retryOnFloodWait[T any](ctx context.Context, log logger.Logger, fn func() (
 	}
 
 	return zero, errors.New("max retries exceeded for FLOOD_WAIT")
+}
+
+// isTransientError checks if error is a transient error that should be retried.
+// Covers: 403 status code, connection reset by peer.
+func isTransientError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return strings.Contains(errStr, "unexpected status code: 403") ||
+		strings.Contains(errStr, "connection reset by peer")
+}
+
+// retryOnTransientError executes fn and retries on transient network errors.
+func retryOnTransientError[T any](ctx context.Context, log logger.Logger, fn func() (T, error)) (T, error) {
+	var zero T
+	var lastErr error
+
+	for i := range maxTransientRetries {
+		result, err := fn()
+		if err == nil {
+			return result, nil
+		}
+
+		if !isTransientError(err) {
+			return zero, err
+		}
+
+		lastErr = err
+		wait := transientRetryBaseWait * time.Duration(i+1)
+		log.Info("transient error, retrying", "error", err, "wait", wait, "attempt", i+1)
+
+		select {
+		case <-ctx.Done():
+			return zero, ctx.Err()
+		case <-time.After(wait):
+		}
+	}
+
+	return zero, fmt.Errorf("max retries exceeded for transient error: %w", lastErr)
 }
 
 // Client wraps the gotd/td Telegram client for user account operations.
@@ -454,10 +496,12 @@ func (c *Client) sendMedia(ctx context.Context, sessionData []byte, chatID int64
 			return fmt.Errorf("failed to resolve peer: %w", peerErr)
 		}
 
-		// Upload media from URL
+		// Upload media from URL with retry on transient errors
 		up := uploader.NewUploader(api)
 		fileName := filenameFromURL(mediaURL)
-		uploaded, uploadErr := uploadFromURL(ctx, up, mediaURL, fileName)
+		uploaded, uploadErr := retryOnTransientError(ctx, c.log, func() (tg.InputFileClass, error) {
+			return uploadFromURL(ctx, up, mediaURL, fileName)
+		})
 		if uploadErr != nil {
 			return fmt.Errorf("failed to upload media: %w", uploadErr)
 		}
@@ -465,15 +509,13 @@ func (c *Client) sendMedia(ctx context.Context, sessionData []byte, chatID int64
 		// Use message sender with HTML formatting for caption
 		sender := message.NewSender(api)
 
-		var updates tg.UpdatesClass
-		var sendErr error
-
-		if isVideo {
-			updates, sendErr = sender.To(peer).Video(ctx, uploaded, html.String(nil, caption))
-		} else {
-			updates, sendErr = sender.To(peer).UploadedPhoto(ctx, uploaded, html.String(nil, caption))
-		}
-
+		// Send with retry on transient errors
+		updates, sendErr := retryOnTransientError(ctx, c.log, func() (tg.UpdatesClass, error) {
+			if isVideo {
+				return sender.To(peer).Video(ctx, uploaded, html.String(nil, caption))
+			}
+			return sender.To(peer).UploadedPhoto(ctx, uploaded, html.String(nil, caption))
+		})
 		if sendErr != nil {
 			mediaType := "photo"
 			if isVideo {
@@ -528,17 +570,19 @@ func (c *Client) SendMediaGroup(ctx context.Context, sessionData []byte, params 
 			return fmt.Errorf("failed to resolve peer: %w", peerErr)
 		}
 
-		// Upload all media files
+		// Upload all media files with retry on transient errors
 		up := uploader.NewUploader(api)
-		mediaInputs, uploadErr := uploadMediaFiles(ctx, up, params.MediaURLs, params.Caption)
+		mediaInputs, uploadErr := uploadMediaFiles(ctx, c.log, up, params.MediaURLs, params.Caption)
 		if uploadErr != nil {
 			return uploadErr
 		}
 
-		// Use message sender to send media group
+		// Use message sender to send media group with retry on transient errors
 		sender := message.NewSender(api)
 
-		updates, sendErr := sender.To(peer).Album(ctx, mediaInputs[0], mediaInputs[1:]...)
+		updates, sendErr := retryOnTransientError(ctx, c.log, func() (tg.UpdatesClass, error) {
+			return sender.To(peer).Album(ctx, mediaInputs[0], mediaInputs[1:]...)
+		})
 		if sendErr != nil {
 			return fmt.Errorf("failed to send media group: %w", sendErr)
 		}
@@ -564,13 +608,15 @@ func (c *Client) SendMediaGroup(ctx context.Context, sessionData []byte, params 
 }
 
 // uploadMediaFiles downloads and uploads multiple media files, returning MultiMediaOptions.
-func uploadMediaFiles(ctx context.Context, up *uploader.Uploader, mediaURLs []string, caption string) ([]message.MultiMediaOption, error) {
+func uploadMediaFiles(ctx context.Context, log logger.Logger, up *uploader.Uploader, mediaURLs []string, caption string) ([]message.MultiMediaOption, error) {
 	var mediaInputs []message.MultiMediaOption
 
 	for i, mediaURL := range mediaURLs {
-		// Upload media from URL
+		// Upload media from URL with retry on transient errors
 		fileName := filenameFromURL(mediaURL)
-		uploaded, uploadErr := uploadFromURL(ctx, up, mediaURL, fileName)
+		uploaded, uploadErr := retryOnTransientError(ctx, log, func() (tg.InputFileClass, error) {
+			return uploadFromURL(ctx, up, mediaURL, fileName)
+		})
 		if uploadErr != nil {
 			return nil, fmt.Errorf("upload media option %d: %w", i, uploadErr)
 		}
@@ -791,10 +837,12 @@ func (c *Client) EditMessageWithPhoto(ctx context.Context, sessionData []byte, p
 			return fmt.Errorf("failed to resolve peer: %w", peerErr)
 		}
 
-		// Upload photo from URL
+		// Upload photo from URL with retry on transient errors
 		up := uploader.NewUploader(api)
 		fileName := filenameFromURL(params.PhotoURL)
-		uploaded, uploadErr := uploadFromURL(ctx, up, params.PhotoURL, fileName)
+		uploaded, uploadErr := retryOnTransientError(ctx, c.log, func() (tg.InputFileClass, error) {
+			return uploadFromURL(ctx, up, params.PhotoURL, fileName)
+		})
 		if uploadErr != nil {
 			return fmt.Errorf("failed to upload photo: %w", uploadErr)
 		}
@@ -806,15 +854,17 @@ func (c *Client) EditMessageWithPhoto(ctx context.Context, sessionData []byte, p
 		}
 		captionText, entities := eb.Complete()
 
-		// Edit message with photo
-		_, editErr := api.MessagesEditMessage(ctx, &tg.MessagesEditMessageRequest{
-			Peer:     peer,
-			ID:       int(params.MessageID),
-			Message:  captionText,
-			Entities: entities,
-			Media: &tg.InputMediaUploadedPhoto{
-				File: uploaded,
-			},
+		// Edit message with photo with retry on transient errors
+		_, editErr := retryOnTransientError(ctx, c.log, func() (tg.UpdatesClass, error) {
+			return api.MessagesEditMessage(ctx, &tg.MessagesEditMessageRequest{
+				Peer:     peer,
+				ID:       int(params.MessageID),
+				Message:  captionText,
+				Entities: entities,
+				Media: &tg.InputMediaUploadedPhoto{
+					File: uploaded,
+				},
+			})
 		})
 		if editErr != nil {
 			return fmt.Errorf("failed to edit message with photo: %w", editErr)
