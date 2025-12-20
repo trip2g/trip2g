@@ -6,6 +6,7 @@ telegram_publish_tags:
 free: true
 title: Text-only Telegram Post
 ---
+id: telegram_text
 
 This is a **text-only** Telegram post with no media attachments. It will be sent using `sendMessage` API method.
 

@@ -5,6 +5,7 @@ telegram_publish_tags:
 free: true
 title: Media Group Telegram Post
 ---
+id: telegram_media_group
 
 This post contains **multiple media files** (2-10) and will be sent using `sendMediaGroup` API method.
 

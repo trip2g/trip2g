@@ -5,6 +5,7 @@ telegram_publish_tags:
 free: true
 title: Video with Custom Emoji
 ---
+id: telegram_video_with_emoji
 
 This post has a **single video** with custom emoji in caption.
 

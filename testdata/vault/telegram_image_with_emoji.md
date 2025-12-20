@@ -5,6 +5,7 @@ telegram_publish_tags:
 free: true
 title: Image with Custom Emoji
 ---
+id: telegram_image_with_emoji
 
 This post has a **single photo** with custom emoji in caption.
 

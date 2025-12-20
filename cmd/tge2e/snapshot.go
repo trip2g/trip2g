@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -13,6 +14,33 @@ import (
 	"github.com/gotd/td/tg"
 	"github.com/kr/pretty"
 )
+
+// noteIDPattern matches "id: note_name" on first line of message text
+var noteIDPattern = regexp.MustCompile(`^id: (\S+)`)
+
+// extractNoteID extracts note ID from message text (first line: "id: note_name")
+func extractNoteID(text string) string {
+	matches := noteIDPattern.FindStringSubmatch(text)
+	if len(matches) == 2 {
+		return matches[1]
+	}
+	return ""
+}
+
+// MessageIDMap maps message_id -> note_id
+type MessageIDMap map[int64]string
+
+// buildMessageIDMap builds a map of message_id -> note_id from fetched messages
+func buildMessageIDMap(messages []*tg.Message) MessageIDMap {
+	result := make(MessageIDMap)
+	for _, msg := range messages {
+		noteID := extractNoteID(msg.Message)
+		if noteID != "" {
+			result[int64(msg.ID)] = noteID
+		}
+	}
+	return result
+}
 
 // EntitySnapshot represents a message entity for snapshot comparison.
 type EntitySnapshot struct {
@@ -167,6 +195,9 @@ func dumpChannel(ctx context.Context, api *tg.Client, name string, ch ChannelCon
 		return nil, err
 	}
 
+	// Build message_id -> note_id map from message texts (first line: "id: note_name")
+	msgMap := buildMessageIDMap(messages)
+
 	snapshot := &ChannelSnapshot{
 		ChannelName:  name,
 		ChannelTitle: ch.Title,
@@ -222,6 +253,8 @@ func dumpChannel(ctx context.Context, api *tg.Client, name string, ch ChannelCon
 				}
 				ms.Entities = append(ms.Entities, es)
 			}
+			// Normalize URLs in entities (replace message IDs with note IDs)
+			ms.Entities = normalizeEntityURLs(ms.Entities, msgMap)
 		}
 
 		// Check for media
@@ -296,6 +329,36 @@ func getMediaType(media tg.MessageMediaClass) string {
 	default:
 		return "unknown"
 	}
+}
+
+// urlPattern matches Telegram channel message URLs like https://t.me/c/123456/789
+var urlPattern = regexp.MustCompile(`https://t\.me/c/(\d+)/(\d+)`)
+
+// normalizeEntityURLs replaces message IDs in URLs with note IDs.
+// Changes https://t.me/c/123456/789 to https://t.me/c/{note_id}
+// Extracts message ID from URL and looks up in msgMap built from message texts.
+func normalizeEntityURLs(entities []EntitySnapshot, msgMap MessageIDMap) []EntitySnapshot {
+	if msgMap == nil {
+		return entities
+	}
+
+	result := make([]EntitySnapshot, len(entities))
+	for i, e := range entities {
+		result[i] = e
+		if e.Type == "text_url" && e.URL != "" {
+			matches := urlPattern.FindStringSubmatch(e.URL)
+			if len(matches) == 3 {
+				// matches[2] is the message ID
+				var msgID int64
+				fmt.Sscanf(matches[2], "%d", &msgID)
+
+				if noteID, ok := msgMap[msgID]; ok {
+					result[i].URL = fmt.Sprintf("https://t.me/c/{%s}", noteID)
+				}
+			}
+		}
+	}
+	return result
 }
 
 // normalizeTextWithEntities replaces link text and underline text with placeholders.

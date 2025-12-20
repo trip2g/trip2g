@@ -5,6 +5,7 @@ telegram_publish_tags:
 free: true
 title: Single Video Telegram Post
 ---
+id: telegram_one_video
 
 This post contains **one video** and will be sent using `sendVideo` API method.
 

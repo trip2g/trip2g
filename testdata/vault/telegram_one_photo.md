@@ -5,6 +5,7 @@ telegram_publish_tags:
 free: true
 title: Single Photo Telegram Post
 ---
+id: telegram_one_photo
 
 This post contains **one photo** and will be sent using `sendPhoto` API method.
 
