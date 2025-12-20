@@ -186,13 +186,12 @@ sed -i 's/telegram_photo\.png/test.png/' tmp/testvault0/telegram_one_photo.md
 echo "🔄 Syncing updated posts..."
 npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder tmp/testvault0 --api-key "$API_KEY" --api-url "$ENDPOINT"
 
+# Wait for telegram messages to be sent
+wait_all_jobs
+
 # Check channel snapshots after update
 echo "📷 Checking Telegram channel snapshots after update..."
 go run ./cmd/tge2e -db tmp/data/test.sqlite3 -snapshots testdata/telegram/step1 check
-
-# Send updated posts
-run_telegram_cron
-wait_all_jobs
 
 echo ""
 echo -e "${GREEN}✅ All E2E tests passed!${NC}"
