@@ -1,5 +1,11 @@
-// Package enclavefix is a temporary fork of goldmark-enclave with bug fixes
-// TODO: Remove this package once https://github.com/quailyquaily/goldmark-enclave/issues/XX is fixed
+// Package enclavefix is a fork of goldmark-enclave with bug fixes.
+//
+// Known bugs fixed here:
+// - transformer.go: Use ReplaceChild instead of AppendChild to preserve node order
+// - render.go: EnclaveProviderQuailImage was not rendering images correctly
+//
+// These bugs are likely fixed in newer versions of goldmark-enclave (v0.2.2+),
+// but the library is not very stable, so it's easier to maintain this internal fork.
 package enclavefix
 
 import (

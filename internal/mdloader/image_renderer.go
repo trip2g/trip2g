@@ -2,12 +2,56 @@ package mdloader
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	enclavecore "github.com/quailyquaily/goldmark-enclave/core"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
 )
+
+// imageSizeRegex matches size specifications like "20x20" or "100".
+var imageSizeRegex = regexp.MustCompile(`^(\d+)(?:x(\d+))?$`)
+
+// imageSize represents parsed image dimensions.
+type imageSize struct {
+	Width  string
+	Height string
+}
+
+// parseImageSize extracts size specification from the end of alt text.
+// Supports formats: "alt|20x20", "alt|100", "|20x20", "20x20".
+// Returns the clean alt text and size if found.
+func parseImageSize(alt string) (string, *imageSize) {
+	if alt == "" {
+		return "", nil
+	}
+
+	// Check if alt contains a pipe - size should be after the last pipe
+	lastPipe := strings.LastIndex(alt, "|")
+	if lastPipe == -1 {
+		// No pipe, check if the entire alt is a size spec
+		if match := imageSizeRegex.FindStringSubmatch(alt); match != nil {
+			return "", &imageSize{Width: match[1], Height: match[2]}
+		}
+		return alt, nil
+	}
+
+	// Extract potential size part after the last pipe
+	beforePipe := alt[:lastPipe]
+	afterPipe := strings.TrimSpace(alt[lastPipe+1:])
+
+	// Check if the part after pipe is a valid size
+	match := imageSizeRegex.FindStringSubmatch(afterPipe)
+	if match == nil {
+		// Not a size specification, return original alt
+		return alt, nil
+	}
+
+	// Valid size found
+	return strings.TrimSpace(beforePipe), &imageSize{Width: match[1], Height: match[2]}
+}
 
 // imageRenderer renders Enclave image nodes with AssetReplaces URL substitution.
 type imageRenderer struct {
@@ -34,14 +78,17 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		return ast.WalkContinue, nil
 	}
 
-	// Only handle regular images
-	if enc.Provider != enclavecore.EnclaveRegularImage {
+	// Handle regular images and quail images (images with size/title/align)
+	if enc.Provider != enclavecore.EnclaveRegularImage && enc.Provider != enclavecore.EnclaveProviderQuailImage {
 		// Let the default enclave renderer handle other providers
 		return ast.WalkContinue, nil
 	}
 
-	// Get the original URL
+	// Get the original URL - ObjectID contains the clean URL for QuailImage
 	originalURL := enc.URL.String()
+	if enc.Provider == enclavecore.EnclaveProviderQuailImage && enc.ObjectID != "" {
+		originalURL = enc.ObjectID
+	}
 
 	// Try to resolve from AssetReplaces
 	resolvedURL := originalURL
@@ -52,16 +99,46 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 		}
 	}
 
-	// Build alt text
-	var alt string
-	if enc.Alt == "" && len(enc.Title) != 0 {
-		alt = fmt.Sprintf("An image to describe %s", enc.Title)
-	}
-	if alt == "" {
-		alt = "An image to describe post"
+	// Get size - first check Params (set by enclave transformer), then parse from alt
+	var size *imageSize
+	if enc.Provider == enclavecore.EnclaveProviderQuailImage {
+		// Size is in Params for QuailImage
+		width := enc.Params["width"]
+		height := enc.Params["height"]
+		if width != "" {
+			size = &imageSize{Width: width, Height: height}
+		}
 	}
 
-	html := fmt.Sprintf(`<img src="%s" alt="%s" />`, resolvedURL, alt)
+	// Parse size from alt text (for RegularImage or fallback)
+	alt := enc.Alt
+	cleanAlt, altSize := parseImageSize(alt)
+	if size == nil && altSize != nil {
+		size = altSize
+	}
+	if cleanAlt == "" {
+		cleanAlt = alt
+	}
+
+	// Build alt text fallback
+	if cleanAlt == "" && len(enc.Title) != 0 {
+		cleanAlt = fmt.Sprintf("An image to describe %s", enc.Title)
+	}
+	if cleanAlt == "" {
+		cleanAlt = "An image to describe post"
+	}
+
+	// Build HTML with optional size attributes
+	var html string
+	if size != nil {
+		if size.Height != "" {
+			html = fmt.Sprintf(`<img src="%s" alt="%s" width="%s" height="%s" />`, resolvedURL, cleanAlt, size.Width, size.Height)
+		} else {
+			html = fmt.Sprintf(`<img src="%s" alt="%s" width="%s" />`, resolvedURL, cleanAlt, size.Width)
+		}
+	} else {
+		html = fmt.Sprintf(`<img src="%s" alt="%s" />`, resolvedURL, cleanAlt)
+	}
 	_, _ = w.Write([]byte(html))
 
 	return ast.WalkSkipChildren, nil

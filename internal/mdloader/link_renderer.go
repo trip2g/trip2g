@@ -150,17 +150,35 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 	// Render as <img> tag for images
 	_, _ = w.WriteString(`<img src="`)
 	_, _ = w.Write(util.URLEscape(dest, true /* resolve references */))
+
 	// The label portion of the link becomes the alt text
 	// only if it isn't the same as the target.
 	// This way, [[foo.jpg]] does not become alt="foo.jpg",
 	// but [[foo.jpg|bar]] does become alt="bar".
+	// Also parse size from label: ![[foo.jpg|20x20]] or ![[foo.jpg|alt|20x20]]
+	var size *imageSize
 	if n.ChildCount() == 1 {
 		label := nodeText(src, n.FirstChild())
 		if !bytes.Equal(label, n.Target) {
-			_, _ = w.WriteString(`" alt="`)
-			_, _ = w.Write(util.EscapeHTML(label))
+			cleanAlt, parsedSize := parseImageSize(string(label))
+			size = parsedSize
+			if cleanAlt != "" {
+				_, _ = w.WriteString(`" alt="`)
+				_, _ = w.Write(util.EscapeHTML([]byte(cleanAlt)))
+			}
 		}
 	}
+
+	// Add size attributes if present
+	if size != nil {
+		_, _ = w.WriteString(`" width="`)
+		_, _ = w.WriteString(size.Width)
+		if size.Height != "" {
+			_, _ = w.WriteString(`" height="`)
+			_, _ = w.WriteString(size.Height)
+		}
+	}
+
 	_, _ = w.WriteString(`">`)
 	return ast.WalkSkipChildren, nil
 }
