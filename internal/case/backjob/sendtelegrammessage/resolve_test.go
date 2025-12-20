@@ -193,6 +193,9 @@ func TestResolve_Error_SendMessage(t *testing.T) {
 	expectedErr := errors.New("telegram API error")
 
 	env := &EnvMock{
+		LoggerFunc: func() logger.Logger {
+			return &logger.TestLogger{}
+		},
 		CheckTelegramPublishSentMessageExistsFunc: func(ctx context.Context, arg db.CheckTelegramPublishSentMessageExistsParams) (int64, error) {
 			return 0, nil
 		},
