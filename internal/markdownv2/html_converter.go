@@ -329,6 +329,14 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 					case link.URL != "":
 						// Regular link with URL
 						c.Write(fmt.Sprintf(`<a href="%s">`, html.EscapeString(link.URL)))
+
+						// If Label is provided, use it instead of node children
+						if link.Label != "" {
+							c.Write(html.EscapeString(link.Label))
+							c.Write("</a>")
+							c.skipClosingTag[n] = true
+							return ast.WalkSkipChildren, nil
+						}
 					case link.Label != "":
 						// Unpublished link with label (with or without PublishAt)
 						label := link.Label

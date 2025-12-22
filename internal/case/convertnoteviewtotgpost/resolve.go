@@ -147,7 +147,7 @@ func Resolve(ctx context.Context, env Env, source model.TelegramPostSource) (*mo
 			// Already published - return telegram link
 			chatID := strings.TrimPrefix(strconv.FormatInt(msg.TelegramChatID, 10), "-100")
 			url := fmt.Sprintf("https://t.me/c/%s/%d", chatID, msg.MessageID)
-			return &markdownv2.LinkResolverResult{URL: url}, nil
+			return &markdownv2.LinkResolverResult{URL: url, Label: linkedNV.Title}, nil
 		}
 
 		// Not published yet
