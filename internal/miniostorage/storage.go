@@ -173,7 +173,7 @@ func (a *FileStorage) NoteAssetExists(ctx context.Context, asset db.NoteAsset) (
 	return stats.Size > 0, nil
 }
 
-func (a *FileStorage) NoteAssetURL(ctx context.Context, asset db.NoteAsset) (string, error) {
+func (a *FileStorage) NoteAssetURL(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error) {
 	safeCtx, cancel := a.ctx(ctx)
 	defer cancel()
 
@@ -186,10 +186,13 @@ func (a *FileStorage) NoteAssetURL(ctx context.Context, asset db.NoteAsset) (str
 	)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to generate presigned URL: %w", err)
+		return model.PresignedURL{}, fmt.Errorf("failed to generate presigned URL: %w", err)
 	}
 
-	return presignedURL.String(), nil
+	return model.PresignedURL{
+		Value:     presignedURL.String(),
+		ExpiresAt: time.Now().Add(a.config.URLExpiresIn),
+	}, nil
 }
 
 func (a *FileStorage) DeleteAssetObject(ctx context.Context, asset db.NoteAsset) error {

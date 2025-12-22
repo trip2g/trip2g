@@ -12,3 +12,8 @@ type PrivateObject struct {
 	LastModified time.Time // Last modification timestamp
 	ETag         string    // Entity tag for integrity verification
 }
+
+type PresignedURL struct {
+	Value     string // The presigned URL
+	ExpiresAt time.Time
+}

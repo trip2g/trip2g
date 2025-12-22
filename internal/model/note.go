@@ -49,6 +49,8 @@ type NoteAssetReplace struct {
 	Hash string
 
 	AbsolutePath string
+
+	ExpiresAt time.Time
 }
 
 type NoteViewHeadingBlock struct {
@@ -185,8 +187,7 @@ func normalizeURLPart(s string) string {
 	}
 
 	res = b.String()
-	reMultiUnderscore := regexp.MustCompile(`_+`)
-	res = reMultiUnderscore.ReplaceAllString(res, "_")
+	res = multiUnderscoreRE.ReplaceAllString(res, "_")
 	res = strings.Trim(res, "_")
 
 	if s[0] == '_' {
@@ -386,6 +387,7 @@ func (n *NoteView) extractLayout() {
 }
 
 var classRE = regexp.MustCompile(`[^a-zA-Z0-9_-]+`)
+var multiUnderscoreRE = regexp.MustCompile(`_+`)
 
 func (n *NoteView) extractEmbededClass() {
 	valueI, ok := n.RawMeta["embed_class"]

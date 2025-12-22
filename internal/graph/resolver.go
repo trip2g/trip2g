@@ -259,7 +259,7 @@ type Env interface {
 	ListUserFavoriteNotes(ctx context.Context, userID int64) ([]db.ListUserFavoriteNotesRow, error)
 
 	AllLatestNoteAssets(ctx context.Context) ([]db.AllLatestNoteAssetsRow, error)
-	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (string, error)
+	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error)
 	NoteAssetByID(ctx context.Context, id int64) (db.NoteAsset, error)
 
 	// Patreon tier queries

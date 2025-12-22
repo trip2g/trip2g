@@ -37,7 +37,7 @@ type Env interface {
 	RawNotes(ctx context.Context) ([]RawNote, error)
 	RawAssets(ctx context.Context) ([]RawAsset, error)
 	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
-	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (string, error)
+	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error)
 	NoteAssetPath(asset db.NoteAsset) string
 	Logger() logger.Logger
 
@@ -88,6 +88,23 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 
 	l.log.Debug("check assets")
 
+	// Build cache of existing assets by hash for URL reuse
+	cachedAssets := make(map[string]*model.NoteAssetReplace)
+	if l.nvs != nil {
+		for _, nv := range l.nvs.List {
+			for _, ar := range nv.AssetReplaces {
+				if ar.Hash == "" {
+					continue
+				}
+
+				cachedAssets[ar.Hash] = ar
+			}
+		}
+	}
+
+	minValidExpiry := time.Now().Add(time.Minute)
+	var cachedCount, generatedCount int
+
 	for _, asset := range assets {
 		noteMap, ok := assetMap[asset.VersionID]
 		if !ok {
@@ -95,44 +112,37 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 			assetMap[asset.VersionID] = noteMap
 		}
 
-		// TODO: re-enable after fixing startup timeout with many assets
-		// Disabled because NoteAssetExists makes HEAD request for each asset,
-		// which causes timeout on startup when there are many files.
-		//
-		// exists, existsErr := l.env.NoteAssetExists(ctx, asset.NoteAsset)
-		// if existsErr != nil {
-		// 	return fmt.Errorf("failed to check if note asset exists: %w", existsErr)
-		// }
-		//
-		// if !exists {
-		// 	l.log.Warn("note asset not exists", "asset", asset, "object_id", l.env.NoteAssetPath(asset.NoteAsset))
-		//
-		// 	// is not always image... TODO: fix it
-		// 	noteMap[asset.Path] = &model.NoteAssetReplace{
-		// 		URL:  "/assets/missed_image.png",
-		// 		Hash: fmt.Sprintf("%+v", asset),
-		//
-		// 		AbsolutePath: asset.AbsolutePath,
-		// 	}
-		//
-		// 	continue
-		// }
+		// Try to reuse cached presigned URL if hash matches and URL is still valid
+		cached, found := cachedAssets[asset.NoteAsset.Sha256Hash]
+		if found && cached.ExpiresAt.After(minValidExpiry) {
+			noteMap[asset.Path] = &model.NoteAssetReplace{
+				ID:           asset.NoteAsset.ID,
+				URL:          cached.URL,
+				Hash:         asset.NoteAsset.Sha256Hash,
+				ExpiresAt:    cached.ExpiresAt,
+				AbsolutePath: asset.AbsolutePath,
+			}
+			cachedCount++
+			continue
+		}
 
-		assetURL, assetErr := l.env.NoteAssetURL(ctx, asset.NoteAsset)
+		presignedURL, assetErr := l.env.NoteAssetURL(ctx, asset.NoteAsset)
 		if assetErr != nil {
 			return fmt.Errorf("failed to get note asset URL: %w", assetErr)
 		}
 
 		noteMap[asset.Path] = &model.NoteAssetReplace{
-			ID:   asset.NoteAsset.ID,
-			URL:  assetURL,
-			Hash: asset.NoteAsset.Sha256Hash,
-
+			ID:           asset.NoteAsset.ID,
+			URL:          presignedURL.Value,
+			Hash:         asset.NoteAsset.Sha256Hash,
+			ExpiresAt:    presignedURL.ExpiresAt,
 			AbsolutePath: asset.AbsolutePath,
 		}
+
+		generatedCount++
 	}
 
-	l.log.Debug("load markdown files")
+	l.log.Debug("assets processed", "cached", cachedCount, "generated", generatedCount)
 
 	mdSources := []mdloader.SourceFile{}
 	templateSources := []layoutloader.SourceFile{}

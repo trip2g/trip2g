@@ -786,7 +786,11 @@ func (r *adminNotFoundPathsConnectionResolver) Nodes(ctx context.Context, obj *m
 
 // URL is the resolver for the url field.
 func (r *adminNoteAssetResolver) URL(ctx context.Context, obj *db.NoteAsset) (string, error) {
-	return r.env(ctx).NoteAssetURL(ctx, *obj)
+	presignedURL, err := r.env(ctx).NoteAssetURL(ctx, *obj)
+	if err != nil {
+		return "", err
+	}
+	return presignedURL.Value, nil
 }
 
 // LifeTime is the resolver for the lifetime field.
