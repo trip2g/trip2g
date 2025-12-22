@@ -270,7 +270,7 @@
       ]
     },
     {
-      "text": "id: telegram_video_with_emoji\n\nThis post has a single video with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_single_video.mp4 should be the post media.\n\nText-only Telegram Post | telegram_image_with_emoji",
+      "text": "id: telegram_video_with_emoji\n\nThis post has a single video with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_single_video.mp4 should be the post media.\n\nText-only Telegram Post | Image with Custom Emoji",
       "entities": [
         {
           "type": "bold",
@@ -290,7 +290,7 @@
         {
           "type": "text_url",
           "offset": 274,
-          "length": 25,
+          "length": 23,
           "url": "https://t.me/c/{telegram_image_with_emoji}"
         }
       ],
