@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"trip2g/internal/model"
 
 	"github.com/blevesearch/bleve/v2"
+	"golang.org/x/sync/errgroup"
 )
 
 type RawNote struct {
@@ -85,8 +87,6 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		return fmt.Errorf("failed to get note assets: %w", err)
 	}
 
-	assetMap := make(map[int64]map[string]*model.NoteAssetReplace)
-
 	l.log.Debug("check assets")
 
 	// Build cache of existing assets by hash for URL reuse
@@ -103,48 +103,10 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		}
 	}
 
-	minValidExpiry := l.env.Now().Add(time.Minute)
-
-	var cachedCount, generatedCount int
-
-	for _, asset := range assets {
-		noteMap, ok := assetMap[asset.VersionID]
-		if !ok {
-			noteMap = make(map[string]*model.NoteAssetReplace)
-			assetMap[asset.VersionID] = noteMap
-		}
-
-		// Try to reuse cached presigned URL if hash matches and URL is still valid
-		cached, found := cachedAssets[asset.NoteAsset.Sha256Hash]
-		if found && cached.ExpiresAt.After(minValidExpiry) {
-			noteMap[asset.Path] = &model.NoteAssetReplace{
-				ID:           asset.NoteAsset.ID,
-				URL:          cached.URL,
-				Hash:         asset.NoteAsset.Sha256Hash,
-				ExpiresAt:    cached.ExpiresAt,
-				AbsolutePath: asset.AbsolutePath,
-			}
-			cachedCount++
-			continue
-		}
-
-		presignedURL, assetErr := l.env.NoteAssetURL(ctx, asset.NoteAsset)
-		if assetErr != nil {
-			return fmt.Errorf("failed to get note asset URL: %w", assetErr)
-		}
-
-		noteMap[asset.Path] = &model.NoteAssetReplace{
-			ID:           asset.NoteAsset.ID,
-			URL:          presignedURL.Value,
-			Hash:         asset.NoteAsset.Sha256Hash,
-			ExpiresAt:    presignedURL.ExpiresAt,
-			AbsolutePath: asset.AbsolutePath,
-		}
-
-		generatedCount++
+	assetMap, err := l.buildAssetMap(ctx, assets, cachedAssets)
+	if err != nil {
+		return fmt.Errorf("failed to build asset map: %w", err)
 	}
-
-	l.log.Debug("assets processed", "cached", cachedCount, "generated", generatedCount)
 
 	mdSources := []mdloader.SourceFile{}
 	templateSources := []layoutloader.SourceFile{}
@@ -245,6 +207,94 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	l.Unlock()
 
 	return nil
+}
+
+func (l *Loader) buildAssetMap(
+	ctx context.Context,
+	assets []RawAsset,
+	cachedAssets map[string]*model.NoteAssetReplace,
+) (map[int64]map[string]*model.NoteAssetReplace, error) {
+	assetMap := make(map[int64]map[string]*model.NoteAssetReplace)
+	minValidExpiry := l.env.Now().Add(time.Minute)
+
+	var cachedCount int
+
+	// Collect assets that need presigned URL generation
+	var toGenerate []RawAsset
+
+	for _, asset := range assets {
+		noteMap, ok := assetMap[asset.VersionID]
+		if !ok {
+			noteMap = make(map[string]*model.NoteAssetReplace)
+			assetMap[asset.VersionID] = noteMap
+		}
+
+		// Try to reuse cached presigned URL if hash matches and URL is still valid
+		cached, found := cachedAssets[asset.NoteAsset.Sha256Hash]
+		if found && cached.ExpiresAt.After(minValidExpiry) {
+			noteMap[asset.Path] = &model.NoteAssetReplace{
+				ID:           asset.NoteAsset.ID,
+				URL:          cached.URL,
+				Hash:         asset.NoteAsset.Sha256Hash,
+				ExpiresAt:    cached.ExpiresAt,
+				AbsolutePath: asset.AbsolutePath,
+			}
+			cachedCount++
+			continue
+		}
+
+		toGenerate = append(toGenerate, asset)
+	}
+
+	generatedCount := len(toGenerate)
+	if generatedCount > 0 {
+		// Generate presigned URLs in parallel using errgroup
+		numWorkers := runtime.NumCPU() * 2
+		if numWorkers > generatedCount {
+			numWorkers = generatedCount
+		}
+
+		type result struct {
+			asset        RawAsset
+			presignedURL model.PresignedURL
+		}
+
+		results := make([]result, generatedCount)
+		g, gCtx := errgroup.WithContext(ctx)
+		g.SetLimit(numWorkers)
+
+		for i, asset := range toGenerate {
+			g.Go(func() error {
+				url, err := l.env.NoteAssetURL(gCtx, asset.NoteAsset)
+				if err != nil {
+					return fmt.Errorf("asset %s: %w", asset.Path, err)
+				}
+				results[i] = result{asset: asset, presignedURL: url}
+				return nil
+			})
+		}
+
+		err := g.Wait()
+		if err != nil {
+			return nil, err
+		}
+
+		// Apply results to assetMap
+		for _, r := range results {
+			noteMap := assetMap[r.asset.VersionID]
+			noteMap[r.asset.Path] = &model.NoteAssetReplace{
+				ID:           r.asset.NoteAsset.ID,
+				URL:          r.presignedURL.Value,
+				Hash:         r.asset.NoteAsset.Sha256Hash,
+				ExpiresAt:    r.presignedURL.ExpiresAt,
+				AbsolutePath: r.asset.AbsolutePath,
+			}
+		}
+	}
+
+	l.log.Debug("assets processed", "cached", cachedCount, "generated", generatedCount)
+
+	return assetMap, nil
 }
 
 func (l *Loader) NoteViews() *model.NoteViews {
