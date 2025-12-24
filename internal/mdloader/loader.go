@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -82,7 +83,8 @@ func Load(options Options) (*model.NoteViews, error) {
 		noteCache: options.NoteCache,
 
 		linkResolver: &myLinkResolver{
-			version: options.Version,
+			version:        options.Version,
+			versionEscaped: url.QueryEscape(options.Version),
 		},
 	}
 

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/url"
+	"strings"
 	"sync"
 	"trip2g/internal/image"
 	"trip2g/internal/model"
@@ -183,18 +183,13 @@ func (r *linkRenderer) enter(w util.BufWriter, n *wikilink.Node, src []byte) (as
 	return ast.WalkSkipChildren, nil
 }
 
-// TODO: find a better way to handle this.
+// removeVersion strips ?version=... from URL without full URL parsing.
 func removeVersion(originalURL string) string {
-	u, err := url.Parse(originalURL)
-	if err != nil {
+	idx := strings.Index(originalURL, "?version=")
+	if idx == -1 {
 		return originalURL
 	}
-
-	q := u.Query()
-	q.Del("version")
-	u.RawQuery = q.Encode()
-
-	return u.String()
+	return originalURL[:idx]
 }
 
 var errNoHTML = errors.New("note has no HTML content")

@@ -26,7 +26,8 @@ type myLinkResolver struct {
 
 	currentPage *model.NoteView
 
-	version string
+	version        string
+	versionEscaped string // cached url.QueryEscape(version)
 }
 
 const _html = ".html"
@@ -67,7 +68,7 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 	if len(r.version) > 0 && r.version != DefaultVersion && !resolveAsImage(n) {
 		// Add ?version= to the end
 		destStr := string(dest[:i])
-		encoded := escapePathPreserveSlashes(destStr) + "?version=" + url.QueryEscape(r.version)
+		encoded := escapePathPreserveSlashes(destStr) + "?version=" + r.versionEscaped
 
 		return []byte(encoded), nil
 	}
