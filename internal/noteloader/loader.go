@@ -40,6 +40,7 @@ type Env interface {
 	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error)
 	NoteAssetPath(asset db.NoteAsset) string
 	Logger() logger.Logger
+	Now() time.Time
 
 	layoutloader.Env
 }
@@ -102,7 +103,8 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		}
 	}
 
-	minValidExpiry := time.Now().Add(time.Minute)
+	minValidExpiry := l.env.Now().Add(time.Minute)
+
 	var cachedCount, generatedCount int
 
 	for _, asset := range assets {
