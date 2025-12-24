@@ -368,7 +368,7 @@ func main() {
 
 	a.setupAssets()
 	a.setTokenValidator()
-	a.setFileStorageExpiringCallback(ctx)
+	a.setFileStorageExpiringCallback()
 
 	a.globalQueue.start()
 	a.telegramTaskQueue.start()
@@ -468,14 +468,18 @@ func (a *app) setTokenValidator() {
 	})
 }
 
-func (a *app) setFileStorageExpiringCallback(ctx context.Context) {
+func (a *app) setFileStorageExpiringCallback() {
 	a.FileStorage.OnURLExpiring(func() {
-		reloadCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		a.log.Info("presigned URLs expiring, reloading notes")
+
+		reloadCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 
 		loadErr := a.loadAllNotes(reloadCtx)
 		if loadErr != nil {
 			a.log.Error("failed to reload all notes", "error", loadErr)
+		} else {
+			a.log.Info("notes reloaded successfully")
 		}
 	})
 }
