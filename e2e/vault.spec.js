@@ -33,6 +33,9 @@ test.describe('Test Vault', () => {
 
     // Check navigation links in custom layout
     await expect(page.locator('a[href="/"]')).toContainText('Home');
+
+    // Check that custom CSS is loaded (text should be green)
+    await expect(page.locator('body')).toHaveCSS('color', 'rgb(0, 255, 0)');
   });
 
   test('premium content preview works', async ({ page }) => {

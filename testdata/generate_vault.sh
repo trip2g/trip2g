@@ -153,6 +153,7 @@ telegram_publish_tags:
 free: true
 title: Text-only Telegram Post
 ---
+id: telegram_text
 
 This is a **text-only** Telegram post with no media attachments. It will be sent using `sendMessage` API method.
 
@@ -210,6 +211,7 @@ telegram_publish_tags:
 free: true
 title: Single Photo Telegram Post
 ---
+id: telegram_one_photo
 
 This post contains **one photo** and will be sent using `sendPhoto` API method.
 
@@ -235,6 +237,7 @@ telegram_publish_tags:
 free: true
 title: Single Video Telegram Post
 ---
+id: telegram_one_video
 
 This post contains **one video** and will be sent using `sendVideo` API method.
 
@@ -260,6 +263,7 @@ telegram_publish_tags:
 free: true
 title: Media Group Telegram Post
 ---
+id: telegram_media_group
 
 This post contains **multiple media files** (2-10) and will be sent using `sendMediaGroup` API method.
 
@@ -288,6 +292,7 @@ telegram_publish_tags:
 free: true
 title: Image with Custom Emoji
 ---
+id: telegram_image_with_emoji
 
 This post has a **single photo** with custom emoji in caption.
 
@@ -309,6 +314,7 @@ telegram_publish_tags:
 free: true
 title: Video with Custom Emoji
 ---
+id: telegram_video_with_emoji
 
 This post has a **single video** with custom emoji in caption.
 
@@ -825,6 +831,7 @@ EOF
 cat > "$VAULT/_layouts/custom/styles.css" << 'EOF'
 body {
   font-family: system-ui, -apple-system, sans-serif;
+  color: #0f0;
 }
 
 main {
@@ -868,6 +875,8 @@ EOF
 
 cat > "$VAULT/_layouts/custom/page.html" << 'EOF'
 {{ import "blocks" }}
+
+<!-- {{ asset("styles.css") }} -->
 
 {{ yield main_layout() content }}
 

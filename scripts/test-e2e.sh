@@ -28,6 +28,12 @@ wait_all_jobs() {
   curl -s --max-time 300 "$APP_URL/debug/wait_all_jobs" | tee /dev/stderr | grep -q "^ok:" || exit 1
 }
 
+# Helper function to sync vault
+sync_vault() {
+  echo "🔄 Syncing vault..."
+  npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder tmp/testvault0 --api-key "$API_KEY" --api-url "$ENDPOINT"
+}
+
 echo "🧪 Starting E2E tests..."
 echo ""
 
@@ -143,13 +149,13 @@ echo "🎭 Running main Playwright tests..."
 echo ""
 
 if [ "$1" = "--headed" ]; then
-  npx playwright test --grep-invert "Setup" --headed
+  npx playwright test --grep-invert "Setup" --ignore="**/layoutcss.spec.js" --headed
 elif [ "$1" = "--debug" ]; then
-  npx playwright test --grep-invert "Setup" --debug
+  npx playwright test --grep-invert "Setup" --ignore="**/layoutcss.spec.js" --debug
 elif [ "$1" = "--ui" ]; then
-  npx playwright test --grep-invert "Setup" --ui
+  npx playwright test --grep-invert "Setup" --ignore="**/layoutcss.spec.js" --ui
 else
-  npx playwright test --grep-invert "Setup"
+  npx playwright test --grep-invert "Setup" --ignore="**/layoutcss.spec.js"
 fi
 
 TEST_EXIT_CODE=$?
@@ -160,6 +166,20 @@ if [ $TEST_EXIT_CODE -ne 0 ]; then
   echo "Run with --ui for interactive debugging: ./scripts/test-e2e.sh --ui"
   exit $TEST_EXIT_CODE
 fi
+
+# Test CSS hot-reload: update layout CSS and verify change
+echo ""
+echo "🎨 Testing CSS hot-reload..."
+echo "body { color: #f00; }" >> tmp/testvault0/_layouts/custom/styles.css
+sync_vault
+
+echo "🎭 Running layout CSS tests..."
+npx playwright test e2e/layoutcss.spec.js || {
+  echo -e "${RED}✗ Layout CSS tests failed${NC}"
+  exit 1
+}
+echo -e "${GREEN}✓ Layout CSS tests passed${NC}"
+echo ""
 
 # Wait for telegram messages to be sent
 wait_all_jobs
@@ -183,8 +203,7 @@ echo -e "\n![[telegram_photo.png]]" >> tmp/testvault0/telegram_text.md
 sed -i 's/telegram_photo\.png/test.png/' tmp/testvault0/telegram_one_photo.md
 
 # Sync updated files
-echo "🔄 Syncing updated posts..."
-npx tsx obsidian-sync/src/sync/cli/cmd.ts --folder tmp/testvault0 --api-key "$API_KEY" --api-url "$ENDPOINT"
+sync_vault
 
 # Wait for telegram messages to be sent
 wait_all_jobs
