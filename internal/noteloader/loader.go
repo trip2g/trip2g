@@ -73,7 +73,8 @@ func New(version string, env Env, config mdloader.Config) *Loader {
 }
 
 type LoadOptions struct {
-	SkipSearchIndex bool
+	SkipSearchIndex  bool
+	ForceRefreshURLs bool // bypass URL cache, regenerate all presigned URLs
 }
 
 func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
@@ -103,7 +104,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		}
 	}
 
-	assetMap, err := l.buildAssetMap(ctx, assets, cachedAssets)
+	assetMap, err := l.buildAssetMap(ctx, assets, cachedAssets, options.ForceRefreshURLs)
 	if err != nil {
 		return fmt.Errorf("failed to build asset map: %w", err)
 	}
@@ -213,6 +214,7 @@ func (l *Loader) buildAssetMap(
 	ctx context.Context,
 	assets []RawAsset,
 	cachedAssets map[string]*model.NoteAssetReplace,
+	forceRefresh bool,
 ) (map[int64]map[string]*model.NoteAssetReplace, error) {
 	assetMap := make(map[int64]map[string]*model.NoteAssetReplace)
 	minValidExpiry := l.env.Now().Add(time.Minute)
@@ -230,8 +232,9 @@ func (l *Loader) buildAssetMap(
 		}
 
 		// Try to reuse cached presigned URL if hash matches and URL is still valid
+		// Skip cache entirely when forceRefresh is true
 		cached, found := cachedAssets[asset.NoteAsset.Sha256Hash]
-		if found && cached.ExpiresAt.After(minValidExpiry) {
+		if !forceRefresh && found && cached.ExpiresAt.After(minValidExpiry) {
 			noteMap[asset.Path] = &model.NoteAssetReplace{
 				ID:           asset.NoteAsset.ID,
 				URL:          cached.URL,

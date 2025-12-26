@@ -361,7 +361,7 @@ func main() {
 		panic(err)
 	}
 
-	err = a.loadAllNotes(ctx)
+	err = a.loadAllNotes(ctx, noteloader.LoadOptions{})
 	if err != nil {
 		panic(err)
 	}
@@ -475,7 +475,8 @@ func (a *app) setFileStorageExpiringCallback() {
 		reloadCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 
-		loadErr := a.loadAllNotes(reloadCtx)
+		options := noteloader.LoadOptions{ForceRefreshURLs: true}
+		loadErr := a.loadAllNotes(reloadCtx, options)
 		if loadErr != nil {
 			a.log.Error("failed to reload all notes", "error", loadErr)
 		} else {
@@ -682,18 +683,18 @@ func (a *app) CalculateSha256(s string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func (a *app) loadAllNotes(ctx context.Context) error {
+func (a *app) loadAllNotes(ctx context.Context, options noteloader.LoadOptions) error {
 	startCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	err := a.liveNoteLoader.Load(startCtx, noteloader.LoadOptions{})
+	err := a.liveNoteLoader.Load(startCtx, options)
 	if err != nil {
 		return fmt.Errorf("failed to load live notes: %w", err)
 	}
 
 	a.log.Info("loaded live notes", "count", len(a.liveNoteLoader.NoteViews().List))
 
-	err = a.latestNoteLoader.Load(startCtx, noteloader.LoadOptions{})
+	err = a.latestNoteLoader.Load(startCtx, options)
 	if err != nil {
 		return fmt.Errorf("failed to load latest notes: %w", err)
 	}
