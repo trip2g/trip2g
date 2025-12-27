@@ -2,8 +2,9 @@ $trip2g_admin_admin_catalog $trip2g_admin_catalog
 	menu_title @ \Admins
 	param \id
 	Empty $mol_status
-	Content* $trip2g_admin_admin_show
+	ShowPage* $trip2g_admin_admin_show
 		admin_id <= row_id* 0
+	CreateForm $trip2g_admin_admin_create
 	menu_link_content* / <= AdminItem* $mol_view
 		sub /
 			<= Rows* $mol_row

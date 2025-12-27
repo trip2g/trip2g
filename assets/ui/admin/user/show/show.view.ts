@@ -6,6 +6,9 @@ namespace $.$$ {
 					id
 					email
 					createdAt
+					admin {
+						grantedAt
+					}
 				}
 			}
 		}
@@ -23,6 +26,17 @@ namespace $.$$ {
 
 			return super.body()
 		}
+
+		override tools() {
+			const items = [...super.tools()]
+
+			if (!this.data().admin) {
+				items.unshift( this.CreateAdminLink() )
+			}
+
+			return items
+		}
+
 		@$mol_mem
 		data() {
 			const res = request({

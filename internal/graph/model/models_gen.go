@@ -58,6 +58,10 @@ type CommitNotesOrErrorPayload interface {
 	IsCommitNotesOrErrorPayload()
 }
 
+type CreateAdminOrErrorPayload interface {
+	IsCreateAdminOrErrorPayload()
+}
+
 type CreateAPIKeyOrErrorPayload interface {
 	IsCreateAPIKeyOrErrorPayload()
 }
@@ -112,6 +116,14 @@ type CreateTgBotOrErrorPayload interface {
 
 type CreateUserOrErrorPayload interface {
 	IsCreateUserOrErrorPayload()
+}
+
+type CreateUserSubgraphAccessOrErrorPayload interface {
+	IsCreateUserSubgraphAccessOrErrorPayload()
+}
+
+type DeleteAdminOrErrorPayload interface {
+	IsDeleteAdminOrErrorPayload()
 }
 
 type DeleteBoostyCredentialsOrErrorPayload interface {
@@ -646,6 +658,16 @@ type CommitNotesPayload struct {
 
 func (CommitNotesPayload) IsCommitNotesOrErrorPayload() {}
 
+type CreateAdminInput struct {
+	UserID int64 `json:"userId"`
+}
+
+type CreateAdminPayload struct {
+	Admin *db.Admin `json:"admin"`
+}
+
+func (CreateAdminPayload) IsCreateAdminOrErrorPayload() {}
+
 type CreateAPIKeyInput struct {
 	Description string `json:"description"`
 }
@@ -814,6 +836,28 @@ type CreateUserPayload struct {
 
 func (CreateUserPayload) IsCreateUserOrErrorPayload() {}
 
+type CreateUserSubgraphAccessInput struct {
+	UserID      int64      `json:"userId"`
+	SubgraphIds []int64    `json:"subgraphIds"`
+	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
+}
+
+type CreateUserSubgraphAccessPayload struct {
+	Accesses []db.UserSubgraphAccess `json:"accesses"`
+}
+
+func (CreateUserSubgraphAccessPayload) IsCreateUserSubgraphAccessOrErrorPayload() {}
+
+type DeleteAdminInput struct {
+	UserID int64 `json:"userId"`
+}
+
+type DeleteAdminPayload struct {
+	Success bool `json:"success"`
+}
+
+func (DeleteAdminPayload) IsDeleteAdminOrErrorPayload() {}
+
 type DeleteBoostyCredentialsInput struct {
 	ID int64 `json:"id"`
 }
@@ -933,9 +977,15 @@ func (ErrorPayload) IsUpdateSubgraphOrErrorPayload() {}
 
 func (ErrorPayload) IsUpdateUserSubgraphAccessOrErrorPayload() {}
 
+func (ErrorPayload) IsCreateUserSubgraphAccessOrErrorPayload() {}
+
 func (ErrorPayload) IsUnbanUserOrErrorPayload() {}
 
 func (ErrorPayload) IsBanUserOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateAdminOrErrorPayload() {}
+
+func (ErrorPayload) IsDeleteAdminOrErrorPayload() {}
 
 func (ErrorPayload) IsCreateAPIKeyOrErrorPayload() {}
 

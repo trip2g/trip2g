@@ -20,6 +20,7 @@ import (
 	"trip2g/internal/case/admin/canceltelegramaccountauth"
 	"trip2g/internal/case/admin/checkhealth"
 	"trip2g/internal/case/admin/completetelegramaccountauth"
+	"trip2g/internal/case/admin/createadmin"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createconfigversion"
@@ -32,6 +33,8 @@ import (
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/createuser"
+	"trip2g/internal/case/admin/createusersubgraphaccess"
+	"trip2g/internal/case/admin/deleteadmin"
 	"trip2g/internal/case/admin/deleteboostycredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
@@ -444,6 +447,11 @@ func (r *adminMutationResolver) UpdateUserSubgraphAccess(ctx context.Context, ob
 	return input.Resolve(ctx, r.env(ctx))
 }
 
+// CreateUserSubgraphAccess is the resolver for the createUserSubgraphAccess field.
+func (r *adminMutationResolver) CreateUserSubgraphAccess(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateUserSubgraphAccessInput) (model.CreateUserSubgraphAccessOrErrorPayload, error) {
+	return createusersubgraphaccess.Resolve(ctx, r.env(ctx), input)
+}
+
 // CreateOffer is the resolver for the createOffer field.
 func (r *adminMutationResolver) CreateOffer(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateOfferInput) (model.CreateOfferOrErrorPayload, error) {
 	return createoffer.Resolve(ctx, r.env(ctx), input)
@@ -497,6 +505,16 @@ func (r *adminMutationResolver) UnbanUser(ctx context.Context, obj *appmodel.Adm
 // BanUser is the resolver for the banUser field.
 func (r *adminMutationResolver) BanUser(ctx context.Context, obj *appmodel.AdminMutation, input model.BanUserInput) (model.BanUserOrErrorPayload, error) {
 	return banuser.Resolve(ctx, r.env(ctx), input)
+}
+
+// CreateAdmin is the resolver for the createAdmin field.
+func (r *adminMutationResolver) CreateAdmin(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateAdminInput) (model.CreateAdminOrErrorPayload, error) {
+	return createadmin.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteAdmin is the resolver for the deleteAdmin field.
+func (r *adminMutationResolver) DeleteAdmin(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteAdminInput) (model.DeleteAdminOrErrorPayload, error) {
+	return deleteadmin.Resolve(ctx, r.env(ctx), input)
 }
 
 // CreateAPIKey is the resolver for the createApiKey field.
@@ -1563,6 +1581,20 @@ func (r *adminTgChatSubgraphAccessesConnectionResolver) Nodes(ctx context.Contex
 // Ban is the resolver for the ban field.
 func (r *adminUserResolver) Ban(ctx context.Context, obj *db.User) (*db.UserBan, error) {
 	return r.env(ctx).UserBanByUserID(ctx, obj.ID)
+}
+
+// Admin is the resolver for the admin field.
+func (r *adminUserResolver) Admin(ctx context.Context, obj *db.User) (*db.Admin, error) {
+	admin, err := r.env(ctx).AdminByUserID(ctx, obj.ID)
+	if err == nil {
+		return &admin, nil
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+
+	return nil, err
 }
 
 // Nodes is the resolver for the nodes field.
@@ -2803,170 +2835,3 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *adminApiKeyResolver) DisabledAt(ctx context.Context, obj *db.ApiKey) (*time.Time, error) {
-	return db.ToTimePtr(obj.DisabledAt), nil
-}
-func (r *adminBoostyCredentialsResolver) DeletedAt(ctx context.Context, obj *db.BoostyCredential) (*time.Time, error) {
-	return db.ToTimePtr(obj.DeletedAt), nil
-}
-func (r *adminBoostyMemberResolver) MissedAt(ctx context.Context, obj *db.BoostyMember) (*time.Time, error) {
-	return db.ToTimePtr(obj.MissedAt), nil
-}
-func (r *adminBoostyTierResolver) MissedAt(ctx context.Context, obj *db.BoostyTier) (*time.Time, error) {
-	return db.ToTimePtr(obj.MissedAt), nil
-}
-func (r *adminCronJobResolver) LastExecAt(ctx context.Context, obj *db.CronJob) (*time.Time, error) {
-	if obj.LastExecAt.Valid {
-		return &obj.LastExecAt.Time, nil
-	}
-	return nil, nil
-}
-func (r *adminCronJobExecutionResolver) FinishedAt(ctx context.Context, obj *db.CronJobExecution) (*time.Time, error) {
-	return db.ToTimePtr(obj.FinishedAt), nil
-}
-func (r *adminCronJobExecutionResolver) ReportData(ctx context.Context, obj *db.CronJobExecution) (*string, error) {
-	return db.ToStringPtr(obj.ReportData), nil
-}
-func (r *adminCronJobExecutionResolver) ErrorMessage(ctx context.Context, obj *db.CronJobExecution) (*string, error) {
-	return db.ToStringPtr(obj.ErrorMessage), nil
-}
-func (r *adminGitTokenResolver) CanPull(ctx context.Context, obj *db.GitToken) (bool, error) {
-	return obj.CanPull.Bool, nil
-}
-func (r *adminGitTokenResolver) CanPush(ctx context.Context, obj *db.GitToken) (bool, error) {
-	return obj.CanPush.Bool, nil
-}
-func (r *adminGitTokenResolver) DisabledAt(ctx context.Context, obj *db.GitToken) (*time.Time, error) {
-	return db.ToTimePtr(obj.DisabledAt), nil
-}
-func (r *adminHtmlInjectionResolver) ActiveFrom(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
-	return db.ToTimePtr(obj.ActiveFrom), nil
-}
-func (r *adminHtmlInjectionResolver) ActiveTo(ctx context.Context, obj *db.HtmlInjection) (*time.Time, error) {
-	return db.ToTimePtr(obj.ActiveTo), nil
-}
-func (r *adminOfferResolver) PriceUsd(ctx context.Context, obj *db.Offer) (float64, error) {
-	if !obj.PriceUsd.Valid {
-		return -1, nil
-	}
-
-	return obj.PriceUsd.Float64, nil
-}
-func (r *adminOfferResolver) StartsAt(ctx context.Context, obj *db.Offer) (*time.Time, error) {
-	return db.ToTimePtr(obj.StartsAt), nil
-}
-func (r *adminOfferResolver) EndsAt(ctx context.Context, obj *db.Offer) (*time.Time, error) {
-	return db.ToTimePtr(obj.EndsAt), nil
-}
-func (r *adminPatreonCampaignResolver) MissedAt(ctx context.Context, obj *db.PatreonCampaign) (*time.Time, error) {
-	if obj.MissedAt.Valid {
-		return &obj.MissedAt.Time, nil
-	}
-	return nil, nil
-}
-func (r *adminPatreonCredentialsResolver) DeletedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error) {
-	return db.ToTimePtr(obj.DeletedAt), nil
-}
-func (r *adminPatreonCredentialsResolver) SyncedAt(ctx context.Context, obj *db.PatreonCredential) (*time.Time, error) {
-	return db.ToTimePtr(obj.SyncedAt), nil
-}
-func (r *adminPatreonMemberResolver) CurrentTierID(ctx context.Context, obj *db.PatreonMember) (*int64, error) {
-	if obj.CurrentTierID.Valid {
-		return &obj.CurrentTierID.Int64, nil
-	}
-	return nil, nil
-}
-func (r *adminPatreonTierResolver) MissedAt(ctx context.Context, obj *db.PatreonTier) (*time.Time, error) {
-	if obj.MissedAt.Valid {
-		return &obj.MissedAt.Time, nil
-	}
-	return nil, nil
-}
-func (r *adminPurchaseResolver) UserID(ctx context.Context, obj *db.Purchase) (*int64, error) {
-	return db.ToInt64Ptr(obj.UserID), nil
-}
-func (r *adminReleaseResolver) HomeNoteVersionID(ctx context.Context, obj *db.Release) (*int64, error) {
-	if obj.HomeNoteVersionID.Valid {
-		return &obj.HomeNoteVersionID.Int64, nil
-	}
-
-	return nil, nil
-}
-func (r *adminSubgraphResolver) Color(ctx context.Context, obj *db.Subgraph) (*string, error) {
-	return db.ToStringPtr(obj.Color), nil
-}
-func (r *adminTelegramPublishNoteResolver) PublishedAt(ctx context.Context, obj *db.TelegramPublishNote) (*time.Time, error) {
-	return db.ToTimePtr(obj.PublishedAt), nil
-}
-func (r *adminTelegramPublishNoteResolver) PublishedVersionID(ctx context.Context, obj *db.TelegramPublishNote) (*int64, error) {
-	return db.ToInt64Ptr(obj.PublishedVersionID), nil
-}
-func (r *adminTelegramPublishNoteResolver) LastError(ctx context.Context, obj *db.TelegramPublishNote) (*string, error) {
-	return db.ToStringPtr(obj.LastError), nil
-}
-func (r *adminTgUserProfileResolver) FirstName(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
-	if obj.FirstName.Valid {
-		return &obj.FirstName.String, nil
-	}
-	return nil, nil
-}
-func (r *adminTgUserProfileResolver) LastName(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
-	if obj.LastName.Valid {
-		return &obj.LastName.String, nil
-	}
-	return nil, nil
-}
-func (r *adminTgUserProfileResolver) Username(ctx context.Context, obj *db.TgUserProfile) (*string, error) {
-	if obj.Username.Valid {
-		return &obj.Username.String, nil
-	}
-	return nil, nil
-}
-func (r *adminUserResolver) Email(ctx context.Context, obj *db.User) (*string, error) {
-	return db.ToStringPtr(obj.Email), nil
-}
-func (r *adminUserSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
-	return db.ToTimePtr(obj.ExpiresAt), nil
-}
-func (r *adminWaitListEmailRequestResolver) IP(ctx context.Context, obj *db.AllWaitListEmailRequestsRow) (*string, error) {
-	if obj.Ip.Valid {
-		return &obj.Ip.String, nil
-	}
-	return nil, nil
-}
-func (r *offerResolver) PriceUsd(ctx context.Context, obj *db.Offer) (float64, error) {
-	if obj.PriceUsd.Valid {
-		return obj.PriceUsd.Float64, nil
-	}
-
-	return -1, nil
-}
-func (r *userResolver) Email(ctx context.Context, obj *db.User) (*string, error) {
-	return db.ToStringPtr(obj.Email), nil
-}
-func (r *userSubgraphAccessResolver) ExpiresAt(ctx context.Context, obj *db.UserSubgraphAccess) (*time.Time, error) {
-	return db.ToTimePtr(obj.ExpiresAt), nil
-}
-func (r *Resolver) AdminPatreonCampaign() AdminPatreonCampaignResolver {
-	return &adminPatreonCampaignResolver{r}
-}
-func (r *Resolver) AdminSubgraph() AdminSubgraphResolver { return &adminSubgraphResolver{r} }
-func (r *Resolver) AdminTgUserProfile() AdminTgUserProfileResolver {
-	return &adminTgUserProfileResolver{r}
-}
-func (r *Resolver) AdminWaitListEmailRequest() AdminWaitListEmailRequestResolver {
-	return &adminWaitListEmailRequestResolver{r}
-}
-type adminPatreonCampaignResolver struct{ *Resolver }
-type adminSubgraphResolver struct{ *Resolver }
-type adminTgUserProfileResolver struct{ *Resolver }
-type adminWaitListEmailRequestResolver struct{ *Resolver }
-*/

@@ -62,6 +62,7 @@ type AdminUser @goModel(model: "trip2g/internal/db.User") {
   email: String
   createdAt: Time!
   ban: UserBan @goField(forceResolver: true)
+  admin: Admin @goField(forceResolver: true)
 }
 
 type AdminUsersConnection {
@@ -1341,6 +1342,22 @@ type UpdateUserSubgraphAccessPayload {
 union UpdateUserSubgraphAccessOrErrorPayload = UpdateUserSubgraphAccessPayload | ErrorPayload
 
 #
+# createUserSubgraphAccess
+#
+
+input CreateUserSubgraphAccessInput {
+  userId: Int64!
+  subgraphIds: [Int64!]!
+  expiresAt: Time
+}
+
+type CreateUserSubgraphAccessPayload {
+  accesses: [AdminUserSubgraphAccess!]!
+}
+
+union CreateUserSubgraphAccessOrErrorPayload = CreateUserSubgraphAccessPayload | ErrorPayload
+
+#
 # unbanUser
 #
 
@@ -1370,6 +1387,34 @@ type BanUserPayload {
 }
 
 union BanUserOrErrorPayload = BanUserPayload | ErrorPayload
+
+#
+# createAdmin
+#
+
+input CreateAdminInput {
+  userId: Int64!
+}
+
+type CreateAdminPayload {
+  admin: Admin!
+}
+
+union CreateAdminOrErrorPayload = CreateAdminPayload | ErrorPayload
+
+#
+# deleteAdmin
+#
+
+input DeleteAdminInput {
+  userId: Int64!
+}
+
+type DeleteAdminPayload {
+  success: Boolean!
+}
+
+union DeleteAdminOrErrorPayload = DeleteAdminPayload | ErrorPayload
 
 #
 # createApiKey
@@ -2108,6 +2153,7 @@ type AdminMutation {
 
   updateSubgraph(input: UpdateSubgraphInput!): UpdateSubgraphOrErrorPayload!
   updateUserSubgraphAccess(input: UpdateUserSubgraphAccessInput!): UpdateUserSubgraphAccessOrErrorPayload!
+  createUserSubgraphAccess(input: CreateUserSubgraphAccessInput!): CreateUserSubgraphAccessOrErrorPayload!
 
   createOffer(input: CreateOfferInput!): CreateOfferOrErrorPayload!
   updateOffer(input: UpdateOfferInput!): UpdateOfferOrErrorPayload!
@@ -2123,6 +2169,9 @@ type AdminMutation {
 
   unbanUser(input: UnbanUserInput!): UnbanUserOrErrorPayload!
   banUser(input: BanUserInput!): BanUserOrErrorPayload!
+
+  createAdmin(input: CreateAdminInput!): CreateAdminOrErrorPayload!
+  deleteAdmin(input: DeleteAdminInput!): DeleteAdminOrErrorPayload!
 
   createApiKey(input: CreateApiKeyInput!): CreateApiKeyOrErrorPayload!
   disableApiKey(input: DisableApiKeyInput!): DisableApiKeyOrErrorPayload!

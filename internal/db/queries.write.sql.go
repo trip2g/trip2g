@@ -14,6 +14,40 @@ import (
 	"trip2g/internal/model"
 )
 
+const adminCreateUserSubgraphAccess = `-- name: AdminCreateUserSubgraphAccess :one
+insert into user_subgraph_accesses (user_id, subgraph_id, expires_at, created_by)
+values (?, ?, ?, ?)
+returning id, user_id, subgraph_id, created_at, expires_at, revoke_id, purchase_id, created_by
+`
+
+type AdminCreateUserSubgraphAccessParams struct {
+	UserID     int64      `json:"user_id"`
+	SubgraphID int64      `json:"subgraph_id"`
+	ExpiresAt  *time.Time `json:"expires_at"`
+	CreatedBy  *int64     `json:"created_by"`
+}
+
+func (q *WriteQueries) AdminCreateUserSubgraphAccess(ctx context.Context, arg AdminCreateUserSubgraphAccessParams) (UserSubgraphAccess, error) {
+	row := q.db.QueryRowContext(ctx, adminCreateUserSubgraphAccess,
+		arg.UserID,
+		arg.SubgraphID,
+		arg.ExpiresAt,
+		arg.CreatedBy,
+	)
+	var i UserSubgraphAccess
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.SubgraphID,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.RevokeID,
+		&i.PurchaseID,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
 const banUser = `-- name: BanUser :exec
 insert into user_bans (user_id, banned_by, reason)
 values (?, ?, ?)
@@ -144,6 +178,15 @@ delete from acme_certs where key = ?
 
 func (q *WriteQueries) DeleteAcmeCert(ctx context.Context, key string) error {
 	_, err := q.db.ExecContext(ctx, deleteAcmeCert, key)
+	return err
+}
+
+const deleteAdmin = `-- name: DeleteAdmin :exec
+delete from admins where user_id = ?
+`
+
+func (q *WriteQueries) DeleteAdmin(ctx context.Context, userID int64) error {
+	_, err := q.db.ExecContext(ctx, deleteAdmin, userID)
 	return err
 }
 

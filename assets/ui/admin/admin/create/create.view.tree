@@ -1,0 +1,20 @@
+$trip2g_admin_admin_create $mol_page
+	title \Create Admin
+	user_id 0
+	body /
+		<= Form $mol_form
+			body /
+				<= Warning $mol_form_field
+					name \Warning
+					Content <= Warning_content $trip2g_admin_cell
+						content @ \Creating an admin will grant this user full access to the admin panel.
+				<= UserId_field $mol_form_field
+					name \User ID
+					Content <= UserId $trip2g_admin_cell
+						content <= user_id_string \
+			buttons /
+				<= Submit $mol_button_major
+					title \Make Admin
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \

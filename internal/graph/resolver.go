@@ -9,6 +9,7 @@ import (
 	"trip2g/internal/case/admin/canceltelegramaccountauth"
 	"trip2g/internal/case/admin/checkhealth"
 	"trip2g/internal/case/admin/completetelegramaccountauth"
+	"trip2g/internal/case/admin/createadmin"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createconfigversion"
@@ -21,6 +22,8 @@ import (
 	"trip2g/internal/case/admin/createrelease"
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/createuser"
+	"trip2g/internal/case/admin/createusersubgraphaccess"
+	"trip2g/internal/case/admin/deleteadmin"
 	"trip2g/internal/case/admin/deleteboostycredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
@@ -201,6 +204,9 @@ type Env interface {
 	updatenotegraphpositions.Env
 	createoffer.Env
 	createuser.Env
+	createadmin.Env
+	createusersubgraphaccess.Env
+	deleteadmin.Env
 	updateoffer.Env
 	updateuser.Env
 	createredirect.Env

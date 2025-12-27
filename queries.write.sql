@@ -54,6 +54,11 @@ insert into user_subgraph_accesses (user_id, subgraph_id, purchase_id, expires_a
 values (?, ?, ?, ?)
 returning *;
 
+-- name: AdminCreateUserSubgraphAccess :one
+insert into user_subgraph_accesses (user_id, subgraph_id, expires_at, created_by)
+values (?, ?, ?, ?)
+returning *;
+
 -- name: UpdateUserSubgraphAccess :one
 update user_subgraph_accesses
    set expires_at = ?
@@ -200,6 +205,9 @@ delete from offer_subgraphs where offer_id = ?;
 insert into admins (user_id, granted_by)
 values (?, ?)
 returning *;
+
+-- name: DeleteAdmin :exec
+delete from admins where user_id = ?;
 
 -- name: HideNotePath :exec
 update note_paths

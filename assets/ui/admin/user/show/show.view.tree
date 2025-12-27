@@ -2,6 +2,12 @@ $trip2g_admin_user_show $mol_page
 	user_id? 0
 	title \User
 	close_icon null $mol_view
+	CreateAdminLink $mol_link
+		arg *
+			nav \admins
+			id \add
+			user_id <= user_id_string
+		title \Make Admin
 	tools /
 		<= EditLink $mol_link
 			arg * action \update
