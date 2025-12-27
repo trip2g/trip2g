@@ -43,7 +43,7 @@ $trip2g_admin_app $trip2g_admin_catalog
 			close_icon <= Spread_close
 		userbans <= ListUserBans $trip2g_admin_user_bans
 			close_icon <= Spread_close
-		user_subgraph_accesses <= ListUsersSubgraphAccesses $trip2g_admin_user_subgraphaccesses
+		usersubgraphaccesses <= ListUsersSubgraphAccesses $trip2g_admin_usersubgraphaccesses_catalog
 			close_icon <= Spread_close
 		subgraphs <= ListSubgraphs $trip2g_admin_subgraph_catalog
 			close_icon <= Spread_close

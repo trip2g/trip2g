@@ -21,7 +21,7 @@ namespace $.$$ {
 		}
 	`)
 
-	export class $trip2g_admin_user_subgraphaccesses extends $.$trip2g_admin_user_subgraphaccesses {
+	export class $trip2g_admin_usersubgraphaccesses_catalog extends $.$trip2g_admin_usersubgraphaccesses_catalog {
 		@$mol_mem
 		data(reset?: null) {
 			const res = request()
@@ -31,7 +31,15 @@ namespace $.$$ {
 
 		@$mol_mem
 		spreads(): any {
-			return this.data().mapKeys(key => this.Content(key))
+			return {
+				add: this.CreateForm(),
+				...this.data().mapKeys(key => this.ShowPage(key))
+			}
+		}
+
+		@$mol_mem
+		override spread_ids_filtered() {
+			return this.spread_ids().filter(id => id !== 'add')
 		}
 
 		row(id: any) {
@@ -39,7 +47,7 @@ namespace $.$$ {
 		}
 
 		row_id(id: any): number {
-			return this.row(id).id;
+			return this.row(id).id
 		}
 
 		row_id_string(id: any): string {
@@ -71,7 +79,7 @@ namespace $.$$ {
 		row_user_uri(id: any): string {
 			return this.$.$mol_state_arg.link({
 				nav: 'users',
-				user_id: this.row(id).user.id,
+				id: this.row(id).user.id,
 			})
 		}
 	}

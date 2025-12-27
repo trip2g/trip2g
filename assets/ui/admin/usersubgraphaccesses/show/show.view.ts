@@ -36,12 +36,12 @@ namespace $.$$ {
 		}
 	`)
 
-	export class $trip2g_admin_user_subgraphaccess extends $.$trip2g_admin_user_subgraphaccess {
+	export class $trip2g_admin_usersubgraphaccesses_show extends $.$trip2g_admin_usersubgraphaccesses_show {
 		@$mol_mem
 		all_data(reset?: null) {
 			const res = request({ id: this.access_id() })
 
-			return res.admin;
+			return res.admin
 		}
 
 		data() {
@@ -50,7 +50,7 @@ namespace $.$$ {
 				throw new Error('UserSubgraphAccess not found')
 			}
 
-			return data.userSubgraphAccess;
+			return data.userSubgraphAccess
 		}
 
 		@$mol_mem
@@ -66,14 +66,14 @@ namespace $.$$ {
 			}
 
 			if (next) {
-				next = new $mol_time_moment().merge(next);
+				next = new $mol_time_moment().merge(next)
 			}
 
 			return next
 		}
 
 		@$mol_mem
-		subgraph_id( next?: number ): number {
+		subgraph_id(next?: number): number {
 			return next === undefined ? this.data().subgraphId : next
 		}
 

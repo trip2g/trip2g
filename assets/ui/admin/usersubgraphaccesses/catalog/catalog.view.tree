@@ -1,11 +1,15 @@
-$trip2g_admin_user_subgraphaccesses $trip2g_admin_catalog
-	menu_title @ \Subgraph accesses
-	param \access_id
+$trip2g_admin_usersubgraphaccesses_catalog $trip2g_admin_catalog
+	menu_title @ \Subgraph Accesses
+	param \id
 	Empty $mol_status
-	Content* $trip2g_admin_user_subgraphaccess
+	actions /
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+	ShowPage* $trip2g_admin_usersubgraphaccesses_show
 		access_id <= row_id* 0
-		tools / <= Spread_close
-	menu_link_content* / <= NoteItem* $mol_view
+	CreateForm $trip2g_admin_usersubgraphaccesses_create
+	menu_link_content* / <= AccessItem* $mol_view
 		sub /
 			<= Row* $mol_row
 				minimal_height 24

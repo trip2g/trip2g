@@ -1,9 +1,14 @@
-$trip2g_admin_user_subgraphaccess $mol_page
-	access_id 0
-	minimal_width 400
+$trip2g_admin_usersubgraphaccesses_create $mol_page
+	title \Create Subgraph Access
+	user_id 0
 	body /
 		<= Form $mol_form
 			body /
+				<= UserId_field $mol_form_field
+					name \User
+					bid <= user_id_bid \
+					Content <= user_id_control $trip2g_admin_user_select
+						number_value? <=> user_id? 0
 				<= Subgraph_field $mol_form_field
 					name \Subgraph
 					bid <= subgraph_id_bid \
@@ -16,8 +21,7 @@ $trip2g_admin_user_subgraphaccess $mol_page
 						value_moment? <=> expires_at_moment? null
 			buttons /
 				<= Submit $mol_button_major
-					title \Submit
+					title \Create
 					click? <=> submit? null
 				<= Result $mol_status
 					message <= result? \
-

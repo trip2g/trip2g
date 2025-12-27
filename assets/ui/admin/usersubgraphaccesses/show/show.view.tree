@@ -1,0 +1,23 @@
+$trip2g_admin_usersubgraphaccesses_show $mol_page
+	access_id 0
+	title \Subgraph Access
+	minimal_width 400
+	body /
+		<= Form $mol_form
+			body /
+				<= Subgraph_field $mol_form_field
+					name \Subgraph
+					bid <= subgraph_id_bid \
+					Content <= subgraph_id_control $trip2g_admin_subgraph_select
+						number_value? <=> subgraph_id? 0
+				<= ExpiresAt_field $mol_form_field
+					name \Expires At
+					bid <= expires_at_bid \
+					Content <= expires_at_control $mol_date
+						value_moment? <=> expires_at_moment? null
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \
