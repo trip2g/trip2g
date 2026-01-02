@@ -13,14 +13,17 @@ import (
 	onboardingvault "trip2g/onboarding-vault"
 
 	"trip2g/internal/db"
+	"trip2g/internal/model"
 )
 
 type Env interface {
 	GenerateAPIKey() string
 	InsertAPIKey(ctx context.Context, params db.InsertAPIKeyParams) (db.ApiKey, error)
+	LatestNoteViews() *model.NoteViews
 }
 
 const dataJSONPath = "onboarding-vault/.obsidian/plugins/trip2g/data.json"
+const indexMDPath = "onboarding-vault/_index.md"
 
 type pluginData struct {
 	SyncDirs             []syncDir `json:"syncDirs"`
@@ -69,8 +72,22 @@ func Resolve(ctx context.Context, env Env, userID int, siteURL string) ([]byte, 
 		return nil, fmt.Errorf("failed to marshal plugin data: %w", err)
 	}
 
-	// Read embedded ZIP and modify data.json
-	modifiedZip, err := modifyZipFile(onboardingvault.ZipData, dataJSONPath, newDataJSON)
+	// Prepare file replacements
+	replacements := map[string][]byte{
+		dataJSONPath: newDataJSON,
+	}
+
+	// Check if /_index note exists, use its content instead of template
+	notes := env.LatestNoteViews()
+	if notes != nil {
+		indexNote := notes.GetByPath("/_index")
+		if indexNote != nil && len(indexNote.Content) > 0 {
+			replacements[indexMDPath] = indexNote.Content
+		}
+	}
+
+	// Read embedded ZIP and modify files
+	modifiedZip, err := modifyZipFiles(onboardingvault.ZipData, replacements)
 	if err != nil {
 		return nil, fmt.Errorf("failed to modify zip: %w", err)
 	}
@@ -78,7 +95,7 @@ func Resolve(ctx context.Context, env Env, userID int, siteURL string) ([]byte, 
 	return modifiedZip, nil
 }
 
-func modifyZipFile(zipData []byte, targetPath string, newContent []byte) ([]byte, error) {
+func modifyZipFiles(zipData []byte, replacements map[string][]byte) ([]byte, error) {
 	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read zip: %w", err)
@@ -88,7 +105,7 @@ func modifyZipFile(zipData []byte, targetPath string, newContent []byte) ([]byte
 	writer := zip.NewWriter(&buf)
 
 	for _, file := range reader.File {
-		if file.Name == targetPath {
+		if newContent, ok := replacements[file.Name]; ok {
 			// Replace with new content
 			w, createErr := writer.Create(file.Name)
 			if createErr != nil {
