@@ -21,14 +21,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
-	// Get site URL from request
-	scheme := "https"
-	if string(ctx.Request.URI().Scheme()) == "http" {
-		scheme = "http"
-	}
-	siteURL := scheme + "://" + string(ctx.Host())
-
-	zipData, err := Resolve(ctx, env, token.ID, siteURL)
+	zipData, err := Resolve(ctx, env, token.ID)
 	if err != nil {
 		return nil, err
 	}

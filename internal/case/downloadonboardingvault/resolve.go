@@ -20,6 +20,7 @@ type Env interface {
 	GenerateAPIKey() string
 	InsertAPIKey(ctx context.Context, params db.InsertAPIKeyParams) (db.ApiKey, error)
 	LatestNoteViews() *model.NoteViews
+	PublicURL() string
 }
 
 const dataJSONPath = "onboarding-vault/.obsidian/plugins/trip2g/data.json"
@@ -36,7 +37,7 @@ type syncDir struct {
 	APIURL string `json:"apiUrl"`
 }
 
-func Resolve(ctx context.Context, env Env, userID int, siteURL string) ([]byte, error) {
+func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 	// Generate new API key
 	apiKey := env.GenerateAPIKey()
 
@@ -61,7 +62,7 @@ func Resolve(ctx context.Context, env Env, userID int, siteURL string) ([]byte, 
 			{
 				Path:   "/",
 				APIKey: apiKey,
-				APIURL: siteURL,
+				APIURL: env.PublicURL(),
 			},
 		},
 		SkipPushConfirmation: false,
