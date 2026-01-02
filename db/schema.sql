@@ -17,7 +17,6 @@ CREATE TABLE sign_in_codes (
   code text not null,
   created_at datetime not null default current_timestamp
 );
-CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
 CREATE TABLE backlite_tasks (
     id text PRIMARY KEY,
     created_at integer NOT NULL,
@@ -40,7 +39,6 @@ CREATE TABLE backlite_tasks_completed (
     expires_at integer,
     error text
 ) STRICT;
-CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
 CREATE TABLE subgraphs (
   id integer primary key autoincrement,
   name text not null unique,
@@ -135,7 +133,6 @@ CREATE TABLE releases (
   home_note_version_id integer references note_versions(id) on delete restrict,
   is_live boolean not null default false
 );
-CREATE INDEX idx_releases_is_live on releases(is_live);
 CREATE TABLE release_note_versions (
   release_id integer not null references releases(id) on delete cascade,
   note_version_id integer not null references note_versions(id) on delete cascade,
@@ -212,7 +209,6 @@ CREATE TABLE tg_user_profiles (
   last_name text,
   username text
 );
-CREATE INDEX tg_user_profiles_chat_id_idx on tg_user_profiles(chat_id);
 CREATE TABLE IF NOT EXISTS "users" (
     id integer primary key,
     email text unique, -- nullable but unique for linked accounts
@@ -271,7 +267,6 @@ CREATE TABLE patreon_tiers (
   attributes text not null,
   unique(campaign_id, tier_id)
 );
-CREATE UNIQUE INDEX unique_patreon_member on patreon_members(patreon_id, campaign_id);
 CREATE TABLE patreon_tier_subgraphs (
   tier_id integer not null references patreon_tiers(id) on delete cascade,
   subgraph_id integer not null references subgraphs(id) on delete restrict,
@@ -322,8 +317,6 @@ CREATE TABLE boosty_members (
 
   unique (credentials_id, boosty_id)
 );
-CREATE INDEX idx_boosty_members_email on boosty_members(email);
-CREATE INDEX idx_patreon_members_email on patreon_members(email);
 CREATE TABLE user_favorite_notes (
   user_id integer not null references users(id) on delete cascade,
   note_version_id integer not null references note_versions(id) on delete restrict,
@@ -350,9 +343,6 @@ CREATE TABLE IF NOT EXISTS "tg_chat_members" (
   created_at datetime not null default current_timestamp,
   primary key (user_id, chat_id)
 );
-CREATE INDEX idx_tg_chat_subgraph_accesses_chat_id on tg_chat_subgraph_accesses(chat_id);
-CREATE INDEX idx_tg_bot_chat_subgraph_invites_chat_id on tg_bot_chat_subgraph_invites(chat_id);
-CREATE INDEX idx_tg_chat_members_chat_id on tg_chat_members(chat_id);
 CREATE TABLE tg_attach_codes (
   user_id integer not null references users(id) on delete cascade,
   bot_id integer not null references tg_bots(id) on delete restrict,
@@ -385,7 +375,6 @@ CREATE TABLE audit_logs (
   message text not null,
   params text not null
 );
-CREATE INDEX idx_audit_logs_created_at on audit_logs (created_at);
 CREATE TABLE IF NOT EXISTS "tg_bot_chats" (
   id integer primary key autoincrement,
   telegram_id integer not null unique,
@@ -396,7 +385,6 @@ CREATE TABLE IF NOT EXISTS "tg_bot_chats" (
   can_invite boolean not null default false,
   bot_id integer not null
 );
-CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
 CREATE TABLE html_injections (
   id integer primary key autoincrement,
   created_at datetime not null default current_timestamp,
@@ -433,10 +421,6 @@ CREATE TABLE goqite (
   received integer not null default 0,
   priority integer not null default 0
 ) strict;
-CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
-  update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
-end;
-CREATE INDEX goqite_queue_priority_created_idx on goqite (queue, priority desc, created);
 CREATE TABLE git_tokens (
   id integer primary key autoincrement,
   created_at datetime not null default current_timestamp,
@@ -512,11 +496,6 @@ CREATE TABLE IF NOT EXISTS "telegram_publish_sent_messages" (
   content_hash text not null default '',
   content text not null default ''
 , post_type text not null default 'text');
-CREATE UNIQUE INDEX idx_telegram_publish_sent_messages_unique_scheduled
-on telegram_publish_sent_messages(chat_id, note_path_id)
-where instant = 0;
-CREATE INDEX idx_telegram_publish_sent_messages_chat_id on telegram_publish_sent_messages(chat_id);
-CREATE INDEX idx_telegram_publish_sent_messages_note_path_id on telegram_publish_sent_messages(note_path_id);
 CREATE TABLE telegram_accounts (
   id integer primary key autoincrement,
   phone text not null unique,
@@ -554,6 +533,27 @@ CREATE TABLE telegram_publish_sent_account_messages (
   content text not null default '',
   post_type text not null default 'text'
 );
+CREATE TABLE note_uncommitted_paths (
+    note_path_id integer primary key references note_paths(id) on delete cascade
+);
+CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
+CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
+CREATE INDEX idx_releases_is_live on releases(is_live);
+CREATE INDEX tg_user_profiles_chat_id_idx on tg_user_profiles(chat_id);
+CREATE UNIQUE INDEX unique_patreon_member on patreon_members(patreon_id, campaign_id);
+CREATE INDEX idx_boosty_members_email on boosty_members(email);
+CREATE INDEX idx_patreon_members_email on patreon_members(email);
+CREATE INDEX idx_tg_chat_subgraph_accesses_chat_id on tg_chat_subgraph_accesses(chat_id);
+CREATE INDEX idx_tg_bot_chat_subgraph_invites_chat_id on tg_bot_chat_subgraph_invites(chat_id);
+CREATE INDEX idx_tg_chat_members_chat_id on tg_chat_members(chat_id);
+CREATE INDEX idx_audit_logs_created_at on audit_logs (created_at);
+CREATE INDEX idx_tg_bot_chats_telegram_id on tg_bot_chats(telegram_id);
+CREATE INDEX goqite_queue_priority_created_idx on goqite (queue, priority desc, created);
+CREATE UNIQUE INDEX idx_telegram_publish_sent_messages_unique_scheduled
+on telegram_publish_sent_messages(chat_id, note_path_id)
+where instant = 0;
+CREATE INDEX idx_telegram_publish_sent_messages_chat_id on telegram_publish_sent_messages(chat_id);
+CREATE INDEX idx_telegram_publish_sent_messages_note_path_id on telegram_publish_sent_messages(note_path_id);
 CREATE UNIQUE INDEX idx_telegram_publish_sent_account_messages_unique
   on telegram_publish_sent_account_messages(note_path_id, account_id, telegram_chat_id)
   where instant = 0;
@@ -562,10 +562,10 @@ CREATE INDEX idx_telegram_publish_sent_account_messages_account_id
 CREATE INDEX idx_telegram_publish_sent_account_messages_note_path_id
   on telegram_publish_sent_account_messages(note_path_id);
 CREATE INDEX idx_note_paths_hidden_by on note_paths(hidden_by);
-CREATE TABLE note_uncommitted_paths (
-    note_path_id integer primary key references note_paths(id) on delete cascade
-);
 CREATE INDEX idx_note_version_assets_version_id on note_version_assets(version_id);
+CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
+  update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
+end;
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),

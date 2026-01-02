@@ -1,0 +1,11 @@
+{
+  "syncDirs": [
+    {
+      "path": "/",
+      "apiKey": "PLACEHOLDER",
+      "apiUrl": "PLACEHOLDER",
+      "twoWaySync": true
+    }
+  ],
+  "skipPushConfirmation": false
+}

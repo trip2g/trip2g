@@ -35,3 +35,7 @@ testdata/vault/Docker_Ninja
 testdata/vault/hodljusthodl
 .tg_e2e_session
 /tge2e
+
+# Onboarding vault
+onboarding-vault/.obsidian/workspace.json
+onboarding-vault/vault.zip
