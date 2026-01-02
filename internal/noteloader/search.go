@@ -156,10 +156,10 @@ func (l *Loader) Search(queryString string) ([]model.SearchResult, error) {
 			continue
 		}
 
-		// Debug output for search results has been removed
 		result := model.SearchResult{
 			NoteView: note,
 			URL:      note.Permalink,
+			Score:    hit.Score,
 		}
 
 		for field, fragments := range hit.Fragments {

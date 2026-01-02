@@ -67,6 +67,7 @@ type SearchResult struct {
 	HighlightedTitle   *string
 	HighlightedContent []string
 	URL                string
+	Score              float64 // Combined score for ranking (higher is better)
 
 	NoteView *NoteView
 }
