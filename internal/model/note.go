@@ -129,6 +129,9 @@ type NoteView struct {
 	Layout string
 
 	Slug string // custom URL override from YAML metadata
+
+	// Vector embedding for semantic search (loaded separately)
+	Embedding []float32 `json:"-"`
 }
 
 type NoteSubgraph struct {

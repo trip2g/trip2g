@@ -33,7 +33,14 @@ func (e *liveNoteLoaderEnv) RawNotes(ctx context.Context) ([]noteloader.RawNote,
 
 	res := make([]noteloader.RawNote, len(notes))
 	for i, note := range notes {
-		res[i] = noteloader.RawNote(note)
+		res[i] = noteloader.RawNote{
+			Path:      note.Path,
+			PathID:    note.PathID,
+			VersionID: note.VersionID,
+			Content:   note.Content,
+			CreatedAt: note.CreatedAt,
+			Embedding: note.Embedding,
+		}
 	}
 
 	return res, nil
@@ -89,7 +96,14 @@ func (e *latestNoteLoaderEnv) RawNotes(ctx context.Context) ([]noteloader.RawNot
 
 	res := make([]noteloader.RawNote, len(notes))
 	for i, note := range notes {
-		res[i] = noteloader.RawNote(note)
+		res[i] = noteloader.RawNote{
+			Path:      note.Path,
+			PathID:    note.PathID,
+			VersionID: note.VersionID,
+			Content:   note.Content,
+			CreatedAt: note.CreatedAt,
+			Embedding: note.Embedding,
+		}
 	}
 
 	return res, nil

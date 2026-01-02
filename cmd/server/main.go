@@ -33,6 +33,7 @@ import (
 	"trip2g/internal/boosty"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/case/backjob/extractnotionpages"
+	"trip2g/internal/case/backjob/generatenoteversionembedding"
 	"trip2g/internal/case/backjob/importtelegramchannel"
 	"trip2g/internal/case/backjob/sendsignincode"
 	"trip2g/internal/case/backjob/sendtelegramaccountmessage"
@@ -59,7 +60,9 @@ import (
 	"trip2g/internal/cronjobs"
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/db"
+	"trip2g/internal/features"
 	"trip2g/internal/gitapi"
+	"trip2g/internal/openai"
 	"trip2g/internal/graph"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/hotauthtoken"
@@ -130,6 +133,9 @@ type app struct {
 	*extractnotionpages.ExtractNotionPagesJob
 	*updateallchattelegrampublishposts.UpdateAllChatTelegramPublishPostsJob
 	*updateallaccounttelegrampublishposts.UpdateAllAccountTelegramPublishPostsJob
+	GenerateNoteVersionEmbeddingJob *generatenoteversionembedding.Job
+
+	openaiClient *openai.Client
 
 	sigChan     chan os.Signal
 	shutdownCtx context.Context
@@ -328,6 +334,14 @@ func main() {
 		panic(fmt.Errorf("failed to initialize telegram dependencies: %w", err))
 	}
 
+	// Initialize OpenAI client if vector search is enabled
+	if a.config.Features.VectorSearch.Enabled {
+		a.openaiClient = openai.New(
+			os.Getenv("OPENAI_API_KEY"),
+			a.config.Features.VectorSearch.Model,
+		)
+	}
+
 	a.initJobs(ctx)
 
 	a.redirectManager, err = redirectmanager.New(ctx, a)
@@ -422,6 +436,7 @@ func (a *app) initJobs(ctx context.Context) {
 	a.ExtractNotionPagesJob = extractnotionpages.New(a)
 	a.UpdateAllChatTelegramPublishPostsJob = updateallchattelegrampublishposts.New(a)
 	a.UpdateAllAccountTelegramPublishPostsJob = updateallaccounttelegrampublishposts.New(a)
+	a.GenerateNoteVersionEmbeddingJob = generatenoteversionembedding.New(a)
 
 	var err error
 
@@ -965,6 +980,20 @@ func (a *app) HandleLatestNotesAfterSave(ctx context.Context, changedPathIDs []i
 		return fmt.Errorf("failed to handle Telegram publish views: %w", err)
 	}
 
+	// Enqueue embedding generation for changed notes (if vector search enabled)
+	if a.config.Features.VectorSearch.Enabled {
+		nvs := a.LatestNoteViews()
+		for _, pathID := range changedPathIDs {
+			noteView := nvs.GetByPathID(pathID)
+			if noteView != nil {
+				enqueueErr := a.GenerateNoteVersionEmbeddingJob.Enqueue(ctx, noteView.VersionID)
+				if enqueueErr != nil {
+					a.log.Error("failed to enqueue embedding generation", "version_id", noteView.VersionID, "error", enqueueErr)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -1102,6 +1131,18 @@ func (a *app) AllNotePaths(ctx context.Context) ([]db.NotePath, error) {
 
 func (a *app) Logger() logger.Logger {
 	return a.log
+}
+
+func (a *app) Features() features.Features {
+	return a.config.Features
+}
+
+func (a *app) EnqueueGenerateNoteVersionEmbedding(ctx context.Context, versionID int64) error {
+	return a.GenerateNoteVersionEmbeddingJob.Enqueue(ctx, versionID)
+}
+
+func (a *app) OpenAI() *openai.Client {
+	return a.openaiClient
 }
 
 func (a *app) AuditLogger() logger.Logger {

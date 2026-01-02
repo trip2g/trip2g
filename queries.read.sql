@@ -15,9 +15,10 @@ select * from note_versions
  order by version desc;
 
 -- name: AllLatestNotes :many
-select value as path, p.id as path_id, v.id as version_id, content, v.created_at
+select value as path, p.id as path_id, v.id as version_id, content, v.created_at, e.embedding
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version
+  left join note_version_embeddings e on v.id = e.version_id
  where p.hidden_by is null;
 
 -- name: AllLatestNoteAssets :many
@@ -301,11 +302,12 @@ select *
  where id = ?;
 
 -- name: AllLiveNotes :many
-select value as path, p.id as path_id, v.id as version_id, content, v.created_at
+select value as path, p.id as path_id, v.id as version_id, content, v.created_at, e.embedding
   from note_paths p
   join note_versions v on p.id = v.path_id
   join release_note_versions rnv on v.id = rnv.note_version_id
   join releases r on rnv.release_id = r.id
+  left join note_version_embeddings e on v.id = e.version_id
  where r.is_live = true;
 
 -- name: AllLiveNoteAssets :many
@@ -1075,3 +1077,9 @@ select access_hash
    and telegram_chat_id = ?
    and access_hash is not null
  limit 1;
+
+-- name: GetNoteVersionEmbedding :one
+select * from note_version_embeddings where version_id = ?;
+
+-- name: GetNoteVersionEmbeddingsByVersionIDs :many
+select * from note_version_embeddings where version_id in (sqlc.slice('version_ids'));

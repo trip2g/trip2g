@@ -26,6 +26,7 @@ require (
 	github.com/resend/resend-go/v2 v2.28.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.33.0
+	github.com/sashabaranov/go-openai v1.41.2
 	github.com/simukti/sqldb-logger v0.0.0-20230108155151-646c1a075551
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.14.2

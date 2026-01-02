@@ -91,6 +91,7 @@ import (
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
+	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/case/sitesearch"
 	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/uploadnoteasset"
@@ -2013,6 +2014,11 @@ func (r *queryResolver) Note(ctx context.Context, input model.NoteInput) (*model
 // Search is the resolver for the search field.
 func (r *queryResolver) Search(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error) {
 	return sitesearch.Resolve(ctx, r.env(ctx), input)
+}
+
+// SimilarNotes is the resolver for the similarNotes field.
+func (r *queryResolver) SimilarNotes(ctx context.Context, input model.SimilarNotesInput) ([]model.SimilarNote, error) {
+	return similarnotes.Resolve(ctx, r.env(ctx), input)
 }
 
 // NotePaths is the resolver for the notePaths field.

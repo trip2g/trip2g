@@ -566,6 +566,15 @@ CREATE INDEX idx_note_version_assets_version_id on note_version_assets(version_i
 CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
   update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
 end;
+CREATE TABLE note_version_embeddings (
+    version_id integer primary key references note_versions(id) on delete cascade,
+    embedding blob not null,
+    model_id integer not null,
+    content_hash blob not null,
+    tokens integer not null,
+    created_at datetime not null default (datetime('now'))
+);
+CREATE INDEX idx_note_version_embeddings_model_id on note_version_embeddings(model_id);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -666,4 +675,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251210042103'),
   ('20251218090744'),
   ('20251219021352'),
-  ('20251224090437');
+  ('20251224090437'),
+  ('20260102093534');

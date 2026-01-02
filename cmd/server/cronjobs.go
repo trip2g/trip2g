@@ -4,6 +4,7 @@ import (
 	"trip2g/internal/case/cronjob/applygitchanges"
 	"trip2g/internal/case/cronjob/clearcronjobexecutionhistory"
 	"trip2g/internal/case/cronjob/refreshtelegramaccounts"
+	"trip2g/internal/case/cronjob/regeneratenoteembeddings"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/cronjob/sendscheduledtelegrampublishposts"
 	"trip2g/internal/case/cronjob/simplebackup"
@@ -25,6 +26,8 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		_ sendscheduledtelegrampublishposts.Env = app
 		_ updatetelegrampublishposts.Env        = app
 		_ refreshtelegramaccounts.Env           = app
+
+		_ regeneratenoteembeddings.Env = app
 	)
 
 	jobs := []cronjobs.Job{
@@ -35,6 +38,7 @@ func getCronJobConfigs(app *app) []cronjobs.Job {
 		&updatetelegrampublishposts.Job{},
 		&refreshtelegramaccounts.Job{},
 		&vacuumdatabase.Job{},
+		&regeneratenoteembeddings.Job{},
 	}
 
 	// Conditionally add simple backup job if enabled

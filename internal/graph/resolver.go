@@ -80,6 +80,7 @@ import (
 	"trip2g/internal/case/requestemailsignin"
 	"trip2g/internal/case/signinbyemail"
 	"trip2g/internal/case/signout"
+	"trip2g/internal/case/similarnotes"
 	"trip2g/internal/case/sitesearch"
 	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/uploadnoteasset"
@@ -232,6 +233,7 @@ type Env interface {
 	updatecronjob.Env
 	runcronjob.Env
 	sitesearch.Env
+	similarnotes.Env
 	settgchatpublishtags.Env
 	settgchatpublishinstanttags.Env
 	resettelegrampublishnote.Env

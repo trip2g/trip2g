@@ -2921,6 +2921,36 @@ func (q *WriteQueries) UpsertNoteVersionAsset(ctx context.Context, arg UpsertNot
 	return err
 }
 
+const upsertNoteVersionEmbedding = `-- name: UpsertNoteVersionEmbedding :exec
+insert into note_version_embeddings (version_id, embedding, model_id, content_hash, tokens)
+values (?, ?, ?, ?, ?)
+on conflict (version_id) do update set
+    embedding = excluded.embedding,
+    model_id = excluded.model_id,
+    content_hash = excluded.content_hash,
+    tokens = excluded.tokens,
+    created_at = datetime('now')
+`
+
+type UpsertNoteVersionEmbeddingParams struct {
+	VersionID   int64  `json:"version_id"`
+	Embedding   []byte `json:"embedding"`
+	ModelID     int64  `json:"model_id"`
+	ContentHash []byte `json:"content_hash"`
+	Tokens      int64  `json:"tokens"`
+}
+
+func (q *WriteQueries) UpsertNoteVersionEmbedding(ctx context.Context, arg UpsertNoteVersionEmbeddingParams) error {
+	_, err := q.db.ExecContext(ctx, upsertNoteVersionEmbedding,
+		arg.VersionID,
+		arg.Embedding,
+		arg.ModelID,
+		arg.ContentHash,
+		arg.Tokens,
+	)
+	return err
+}
+
 const upsertPatreonCampaign = `-- name: UpsertPatreonCampaign :exec
 insert into patreon_campaigns (credentials_id, campaign_id, attributes)
 values (?, ?, ?)

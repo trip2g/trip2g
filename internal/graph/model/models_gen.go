@@ -1167,6 +1167,7 @@ type NoteViewMeta struct {
 
 type PublicNote struct {
 	PathID   int64           `json:"pathId"`
+	Path     string          `json:"path"`
 	Title    string          `json:"title"`
 	HTML     string          `json:"html"`
 	Toc      []NoteTocItem   `json:"toc"`
@@ -1420,6 +1421,19 @@ type SignOutPayload struct {
 }
 
 func (SignOutPayload) IsSignOutOrErrorPayload() {}
+
+type SimilarNote struct {
+	// Similarity score (0-1, higher is more similar).
+	Score float64     `json:"score"`
+	Note  *PublicNote `json:"note"`
+}
+
+type SimilarNotesInput struct {
+	// Note path (permalink) to find similar notes for.
+	Path string `json:"path"`
+	// Maximum number of similar notes to return (default: 5, max: 20).
+	Limit *int32 `json:"limit,omitempty"`
+}
 
 type StartBackgroundQueueInput struct {
 	ID string `json:"id"`

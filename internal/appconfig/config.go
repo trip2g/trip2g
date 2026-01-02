@@ -13,6 +13,7 @@ import (
 	"trip2g/internal/auditlogger"
 	"trip2g/internal/boostyjobs"
 	"trip2g/internal/dataencryption"
+	"trip2g/internal/features"
 	"trip2g/internal/gitapi"
 	"trip2g/internal/hotauthtoken"
 	"trip2g/internal/logger"
@@ -108,6 +109,10 @@ type Config struct {
 	DataEncryption dataencryption.Config
 
 	SimpleBackup SimpleBackupConfig
+
+	// Features configuration (parsed from JSON)
+	FeaturesJSON string           // Raw JSON from flag/env
+	Features     features.Features // Parsed features
 }
 
 // SimpleBackupConfig holds simple backup system configuration.
@@ -388,6 +393,9 @@ func (c *Config) defineServerFlags() {
 	flag.DurationVar(&c.ShutdownTimeout, "shutdown-timeout", 1*time.Second, "Shutdown timeout")
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")
 	flag.BoolVar(&c.SimpleBackup.Enabled, "simple-backup", false, "Enable simple backup system (hourly backups to S3-compatible storage)")
+
+	// Features configuration
+	flag.StringVar(&c.FeaturesJSON, "features", "{}", "Features configuration as JSON")
 }
 
 func (c *Config) defineMinioFlags() {
@@ -416,6 +424,9 @@ func (c *Config) Prepare() {
 	c.PurchaseToken.Secret = c.UserToken.Secret
 	c.HotAuthToken.Secret = c.UserToken.Secret
 	c.TgAuthToken.Secret = c.UserToken.Secret
+
+	// Parse and validate features (panics on error)
+	c.Features = features.Parse(c.FeaturesJSON)
 }
 
 // validate checks if the configuration is valid using ozzo validation.

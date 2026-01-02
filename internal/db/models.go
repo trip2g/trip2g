@@ -250,6 +250,15 @@ type NoteVersionAsset struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type NoteVersionEmbedding struct {
+	VersionID   int64     `json:"version_id"`
+	Embedding   []byte    `json:"embedding"`
+	ModelID     int64     `json:"model_id"`
+	ContentHash []byte    `json:"content_hash"`
+	Tokens      int64     `json:"tokens"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type NotionIntegration struct {
 	ID                int64     `json:"id"`
 	CreatedAt         time.Time `json:"created_at"`

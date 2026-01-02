@@ -3,7 +3,9 @@ package noteloader
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
+	"math"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -25,6 +27,7 @@ type RawNote struct {
 	VersionID int64
 	Content   string
 	CreatedAt time.Time
+	Embedding []byte // raw embedding bytes, converted to []float32 later
 }
 
 type RawAsset struct {
@@ -111,6 +114,7 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 
 	mdSources := []mdloader.SourceFile{}
 	templateSources := []layoutloader.SourceFile{}
+	embeddingMap := make(map[int64][]byte) // version_id -> raw embedding bytes
 
 	const layoutBasePath = "_layouts"
 
@@ -127,6 +131,10 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 				Assets:    assetMap[note.VersionID],
 				CreatedAt: note.CreatedAt,
 			})
+
+			if len(note.Embedding) > 0 {
+				embeddingMap[note.VersionID] = note.Embedding
+			}
 
 		case ".html":
 			path := strings.Trim(note.Path, "/")
@@ -198,6 +206,16 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 			return fmt.Errorf("failed to build search index: %w", err)
 		}
 	}
+
+	// Assign embeddings to notes
+	embeddingCount := 0
+	for _, nv := range nvs.List {
+		if rawEmb, ok := embeddingMap[nv.VersionID]; ok {
+			nv.Embedding = bytesToFloat32Slice(rawEmb)
+			embeddingCount++
+		}
+	}
+	l.log.Debug("embeddings loaded", "count", embeddingCount, "total_notes", len(nvs.List))
 
 	l.log.Debug("done")
 
@@ -317,4 +335,16 @@ func (l *Loader) NoteByPath(path string) *model.NoteView {
 	defer l.Unlock()
 
 	return l.nvs.Map[path]
+}
+
+// bytesToFloat32Slice converts []byte back to []float32.
+func bytesToFloat32Slice(data []byte) []float32 {
+	if len(data) == 0 {
+		return nil
+	}
+	floats := make([]float32, len(data)/4)
+	for i := range floats {
+		floats[i] = math.Float32frombits(binary.LittleEndian.Uint32(data[i*4:]))
+	}
+	return floats
 }

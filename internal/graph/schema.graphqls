@@ -1027,6 +1027,7 @@ type NoteTocItem {
 
 type PublicNote @goExtraField(name: "NoteView", type: "*trip2g/internal/model.NoteView") {
   pathId: Int64!
+  path: String!
   title: String!
   html: String!
 
@@ -1070,11 +1071,37 @@ input NotePathsFilter {
   paths: [String!]
 }
 
+input SimilarNotesInput {
+  """
+  Note path (permalink) to find similar notes for.
+  """
+  path: String!
+
+  """
+  Maximum number of similar notes to return (default: 5, max: 20).
+  """
+  limit: Int
+}
+
+type SimilarNote {
+  """
+  Similarity score (0-1, higher is more similar).
+  """
+  score: Float!
+  note: PublicNote!
+}
+
 type Query {
   viewer: Viewer!
   admin: AdminQuery!
   note(input: NoteInput!): PublicNote
   search(input: SearchInput!): SearchConnection!
+
+  """
+  Find notes semantically similar to the given note using vector embeddings.
+  Returns empty list if vector search is disabled or note has no embedding.
+  """
+  similarNotes(input: SimilarNotesInput!): [SimilarNote!]!
 
   """
   X-Api-Key header must be set.

@@ -808,3 +808,13 @@ update telegram_publish_account_instant_chats
    set access_hash = ?
  where account_id = ?
    and telegram_chat_id = ?;
+
+-- name: UpsertNoteVersionEmbedding :exec
+insert into note_version_embeddings (version_id, embedding, model_id, content_hash, tokens)
+values (?, ?, ?, ?, ?)
+on conflict (version_id) do update set
+    embedding = excluded.embedding,
+    model_id = excluded.model_id,
+    content_hash = excluded.content_hash,
+    tokens = excluded.tokens,
+    created_at = datetime('now');

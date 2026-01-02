@@ -362,9 +362,10 @@ func (q *Queries) AllLatestNoteAssets(ctx context.Context) ([]AllLatestNoteAsset
 }
 
 const allLatestNotes = `-- name: AllLatestNotes :many
-select value as path, p.id as path_id, v.id as version_id, content, v.created_at
+select value as path, p.id as path_id, v.id as version_id, content, v.created_at, e.embedding
   from note_paths p
   join note_versions v on p.id = v.path_id and p.version_count = v.version
+  left join note_version_embeddings e on v.id = e.version_id
  where p.hidden_by is null
 `
 
@@ -374,6 +375,7 @@ type AllLatestNotesRow struct {
 	VersionID int64     `json:"version_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
+	Embedding []byte    `json:"embedding"`
 }
 
 func (q *Queries) AllLatestNotes(ctx context.Context) ([]AllLatestNotesRow, error) {
@@ -391,6 +393,7 @@ func (q *Queries) AllLatestNotes(ctx context.Context) ([]AllLatestNotesRow, erro
 			&i.VersionID,
 			&i.Content,
 			&i.CreatedAt,
+			&i.Embedding,
 		); err != nil {
 			return nil, err
 		}
@@ -477,11 +480,12 @@ func (q *Queries) AllLiveNoteAssets(ctx context.Context) ([]AllLiveNoteAssetsRow
 }
 
 const allLiveNotes = `-- name: AllLiveNotes :many
-select value as path, p.id as path_id, v.id as version_id, content, v.created_at
+select value as path, p.id as path_id, v.id as version_id, content, v.created_at, e.embedding
   from note_paths p
   join note_versions v on p.id = v.path_id
   join release_note_versions rnv on v.id = rnv.note_version_id
   join releases r on rnv.release_id = r.id
+  left join note_version_embeddings e on v.id = e.version_id
  where r.is_live = true
 `
 
@@ -491,6 +495,7 @@ type AllLiveNotesRow struct {
 	VersionID int64     `json:"version_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
+	Embedding []byte    `json:"embedding"`
 }
 
 func (q *Queries) AllLiveNotes(ctx context.Context) ([]AllLiveNotesRow, error) {
@@ -508,6 +513,7 @@ func (q *Queries) AllLiveNotes(ctx context.Context) ([]AllLiveNotesRow, error) {
 			&i.VersionID,
 			&i.Content,
 			&i.CreatedAt,
+			&i.Embedding,
 		); err != nil {
 			return nil, err
 		}
@@ -1327,6 +1333,68 @@ func (q *Queries) GetLatestConfig(ctx context.Context) (ConfigVersion, error) {
 		&i.RobotsTxt,
 	)
 	return i, err
+}
+
+const getNoteVersionEmbedding = `-- name: GetNoteVersionEmbedding :one
+select version_id, embedding, model_id, content_hash, tokens, created_at from note_version_embeddings where version_id = ?
+`
+
+func (q *Queries) GetNoteVersionEmbedding(ctx context.Context, versionID int64) (NoteVersionEmbedding, error) {
+	row := q.db.QueryRowContext(ctx, getNoteVersionEmbedding, versionID)
+	var i NoteVersionEmbedding
+	err := row.Scan(
+		&i.VersionID,
+		&i.Embedding,
+		&i.ModelID,
+		&i.ContentHash,
+		&i.Tokens,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getNoteVersionEmbeddingsByVersionIDs = `-- name: GetNoteVersionEmbeddingsByVersionIDs :many
+select version_id, embedding, model_id, content_hash, tokens, created_at from note_version_embeddings where version_id in (/*SLICE:version_ids*/?)
+`
+
+func (q *Queries) GetNoteVersionEmbeddingsByVersionIDs(ctx context.Context, versionIds []int64) ([]NoteVersionEmbedding, error) {
+	query := getNoteVersionEmbeddingsByVersionIDs
+	var queryParams []interface{}
+	if len(versionIds) > 0 {
+		for _, v := range versionIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:version_ids*/?", strings.Repeat(",?", len(versionIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:version_ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NoteVersionEmbedding
+	for rows.Next() {
+		var i NoteVersionEmbedding
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.Embedding,
+			&i.ModelID,
+			&i.ContentHash,
+			&i.Tokens,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getPatreonCampaignsByCredentialsID = `-- name: GetPatreonCampaignsByCredentialsID :many
