@@ -956,6 +956,80 @@ Expected URL: /page%20with%20spaces (URL encoded)
 EOF
 
 # ============================================================================
+# MCP (Model Context Protocol) test notes
+# ============================================================================
+
+cat > "$VAULT/_mcp_initialize.md" << 'EOF'
+---
+mcp_method: initialize
+---
+
+# Knowledge Base
+
+Personal knowledge base with notes on programming, projects, and ideas.
+
+## Tools
+
+- **search** — keyword search across all notes
+- **similar** — find semantically related notes
+- **instructions** — detailed usage guide
+
+## Tips
+
+1. Use search for specific topics
+2. Use similar to explore related content
+3. Notes link to each other via [[wikilinks]]
+EOF
+
+cat > "$VAULT/_mcp_instructions.md" << 'EOF'
+---
+mcp_method: instructions
+mcp_description: Detailed instructions for using this knowledge base
+---
+
+# Detailed Knowledge Base Instructions
+
+This is a comprehensive guide for working with this knowledge base.
+
+## Available Tools
+
+### search
+Search notes by keyword or phrase.
+
+**When to use:**
+- Looking for specific topic
+- Finding notes by title or content
+- Keyword-based queries
+
+**Example queries:**
+- "golang error handling"
+- "project architecture"
+- "API design"
+
+### similar
+Find semantically similar notes using vector search.
+
+**When to use:**
+- Exploring related topics
+- Finding notes with similar concepts
+- When keyword search returns too few results
+
+## Content Organization
+
+Notes are organized hierarchically:
+- Top-level folders for major topics
+- Subfolders for specific areas
+- `_` prefix for system/hidden notes
+
+## Best Practices
+
+1. Start broad, then narrow down
+2. Combine search + similar for comprehensive results
+3. Follow [[wikilinks]] to discover connections
+4. Check related notes for context
+EOF
+
+# ============================================================================
 # Main page and sidebar
 # ============================================================================
 

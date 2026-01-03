@@ -6,6 +6,7 @@ package router
 
 import (
 	downloadonboardingvaultdownloadonboardingvault "trip2g/internal/case/downloadonboardingvault"
+	mcpmcp "trip2g/internal/case/mcp"
 	processnotionwebookprocessnotionwebook "trip2g/internal/case/processnotionwebook"
 	processnowpaymentsipnprocessnowpaymentsipn "trip2g/internal/case/processnowpaymentsipn"
 	processpatreonwebhookprocesspatreonwebhook "trip2g/internal/case/processpatreonwebhook"
@@ -18,6 +19,7 @@ import (
 
 var endpoints = []Endpoint{
 	&downloadonboardingvaultdownloadonboardingvault.Endpoint{},
+	&mcpmcp.Endpoint{},
 	&processnotionwebookprocessnotionwebook.Endpoint{},
 	&processnowpaymentsipnprocessnowpaymentsipn.Endpoint{},
 	&processpatreonwebhookprocesspatreonwebhook.Endpoint{},
@@ -30,6 +32,7 @@ var endpoints = []Endpoint{
 
 type RoutesEnv interface {
 	downloadonboardingvaultdownloadonboardingvault.Env
+	mcpmcp.Env
 	processnotionwebookprocessnotionwebook.Env
 	processnowpaymentsipnprocessnowpaymentsipn.Env
 	processpatreonwebhookprocesspatreonwebhook.Env

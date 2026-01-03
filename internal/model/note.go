@@ -131,6 +131,10 @@ type NoteView struct {
 
 	Slug string // custom URL override from YAML metadata
 
+	// MCP (Model Context Protocol) fields
+	MCPMethod      string // method name for MCP tools/list
+	MCPDescription string // description for MCP tools/list
+
 	// Vector embedding for semantic search (loaded separately)
 	Embedding []float32 `json:"-"`
 }
@@ -372,7 +376,18 @@ func (n *NoteView) ExtractMetaData() error {
 
 	n.extractLayout()
 
+	n.extractMCPFields()
+
 	return nil
+}
+
+func (n *NoteView) extractMCPFields() {
+	if method, ok := n.RawMeta["mcp_method"].(string); ok {
+		n.MCPMethod = method
+	}
+	if desc, ok := n.RawMeta["mcp_description"].(string); ok {
+		n.MCPDescription = desc
+	}
 }
 
 func (n *NoteView) extractLayout() {
