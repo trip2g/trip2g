@@ -1319,6 +1319,72 @@ func TestNoteCacheReusesAST(t *testing.T) {
 	require.NotSame(t, ast1Note2, ast2Note2, "changed note should have new AST")
 }
 
+// TestSlugMutualLinks tests that two notes with custom slugs can link to each
+// other correctly. Links should resolve to the slug URL, not the original filename.
+// Bug: When note_a (slug: /new/address) links to note_b and note_b links back,
+// the links should use slug URLs, not the original filenames.
+func TestSlugMutualLinks(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "note_a.md",
+		Content: []byte(`---
+free: true
+slug: /new/address
+title: Note A
+---
+Link to B: [[note_b]]`),
+	}, {
+		Path: "note_b.md",
+		Content: []byte(`---
+free: true
+slug: /other/place
+title: Note B
+---
+Link to A: [[note_a]]`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	// Note A should be accessible by its slug
+	noteA := pages.Map["/new/address"]
+	require.NotNil(t, noteA, "Note A should be accessible by slug /new/address")
+	require.Equal(t, "/new/address", noteA.Permalink, "Note A permalink should be the slug")
+
+	// Note B should be accessible by its slug
+	noteB := pages.Map["/other/place"]
+	require.NotNil(t, noteB, "Note B should be accessible by slug /other/place")
+	require.Equal(t, "/other/place", noteB.Permalink, "Note B permalink should be the slug")
+
+	// Note A's HTML should link to Note B's slug URL
+	htmlA := string(noteA.HTML)
+	require.Contains(t, htmlA, `href="/other/place"`,
+		"Note A should link to Note B's slug URL, not original filename")
+	require.NotContains(t, htmlA, `href="/note_b"`,
+		"Note A should NOT link to Note B's original filename")
+
+	// Note B's HTML should link to Note A's slug URL
+	htmlB := string(noteB.HTML)
+	require.Contains(t, htmlB, `href="/new/address"`,
+		"Note B should link to Note A's slug URL, not original filename")
+	require.NotContains(t, htmlB, `href="/note_a"`,
+		"Note B should NOT link to Note A's original filename")
+
+	// InLinks should use slug URLs, not original filenames
+	require.Equal(t, map[string]struct{}{"/other/place": {}}, noteA.InLinks,
+		"Note A's InLinks should contain Note B's slug URL")
+	require.Equal(t, map[string]struct{}{"/new/address": {}}, noteB.InLinks,
+		"Note B's InLinks should contain Note A's slug URL")
+
+	// Neither note should have broken link warnings
+	require.Empty(t, noteA.Warnings, "Note A should not have any warnings")
+	require.Empty(t, noteB.Warnings, "Note B should not have any warnings")
+}
+
 // TestInLinksWithCachedAST tests that InLinks are correctly populated when
 // notes are loaded with cached AST. This reproduces a bug where AST mutation
 // in extractInLinks (changing link.Target from "note" to "/note") breaks
