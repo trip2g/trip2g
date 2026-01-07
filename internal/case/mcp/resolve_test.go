@@ -13,8 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg mcp_test . Env
-
 type Env interface {
 	mcp.Env
 }
@@ -392,6 +390,45 @@ func TestStripFrontmatter(t *testing.T) {
 		require.Nil(t, resp.Error)
 		result := resp.Result.(mcp.CallToolResult)
 		require.Equal(t, "Windows content", result.Content[0].Text)
+	})
+
+	t.Run("handles --- inside YAML frontmatter", func(t *testing.T) {
+		// Edge case: YAML value contains --- which should not be treated as frontmatter end
+		note := &appmodel.NoteView{
+			MCPMethod: "yaml-edge-case",
+			Content:   []byte("---\nmcp_method: yaml-edge-case\ndescription: \"This has --- in value\"\n---\n\nActual content after frontmatter"),
+		}
+
+		env := &EnvMock{
+			LatestNoteViewsFunc: func() *appmodel.NoteViews {
+				return &appmodel.NoteViews{
+					List: []*appmodel.NoteView{note},
+				}
+			},
+			LoggerFunc: func() logger.Logger {
+				return &logger.DummyLogger{}
+			},
+		}
+
+		params := mcp.CallToolParams{
+			Name:      "yaml-edge-case",
+			Arguments: json.RawMessage(`{}`),
+		}
+		paramsJSON, _ := json.Marshal(params)
+
+		req := mcp.Request{
+			JSONRPC: "2.0",
+			Method:  "tools/call",
+			Params:  paramsJSON,
+			ID:      4,
+		}
+
+		resp := mcp.Resolve(context.Background(), env, req)
+
+		require.Nil(t, resp.Error)
+		result := resp.Result.(mcp.CallToolResult)
+		// Our current implementation looks for \n--- which should work correctly here
+		require.Equal(t, "Actual content after frontmatter", result.Content[0].Text)
 	})
 }
 

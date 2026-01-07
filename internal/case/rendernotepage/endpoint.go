@@ -97,6 +97,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	if layout != "" {
+
 		processed, layoutErr := renderLayout(ctx, env, resp, layout)
 		if layoutErr != nil {
 			return nil, layoutErr

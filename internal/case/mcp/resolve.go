@@ -1,5 +1,7 @@
 package mcp
 
+//go:generate go run github.com/matryer/moq -out mocks_test.go -pkg mcp_test . Env
+
 import (
 	"context"
 	"encoding/json"
@@ -235,7 +237,7 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		}
 	}
 
-	log.Info("search completed", "query", args.Query, "results", len(results))
+	log.Debug("search completed", "query", args.Query, "results", len(results))
 
 	return successResponse(id, textToolResult(sb.String()))
 }
@@ -283,7 +285,7 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		}
 	}
 
-	log.Info("similar search completed", "path", args.Path, "results", len(results))
+	log.Debug("similar search completed", "path", args.Path, "results", len(results))
 
 	return successResponse(id, textToolResult(sb.String()))
 }
@@ -307,7 +309,7 @@ func handleNoteHTML(env Env, id any, argsRaw json.RawMessage) Response {
 		return errorResponse(id, ErrCodeInvalidParams, "Note not found: "+args.Path)
 	}
 
-	log.Info("note html retrieved", "path", args.Path)
+	log.Debug("note html retrieved", "path", args.Path)
 
 	return successResponse(id, textToolResult(string(note.HTML)))
 }
@@ -320,7 +322,7 @@ func handleDynamicMethod(env Env, id any, methodName string) Response {
 			content := string(note.Content)
 			content = stripFrontmatter(content)
 
-			log.Info("dynamic method executed", "method", methodName, "note_path", note.Path)
+			log.Debug("dynamic method executed", "method", methodName, "note_path", note.Path)
 
 			return successResponse(id, textToolResult(content))
 		}
