@@ -73,7 +73,7 @@ type SimilarArguments struct {
 	Limit int    `json:"limit,omitempty"`
 }
 
-type NoteHtmlArguments struct {
+type NoteHTMLArguments struct {
 	Path string `json:"path"`
 }
 

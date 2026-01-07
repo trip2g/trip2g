@@ -10,9 +10,26 @@ import (
 
 	"trip2g/internal/case/similarnotes"
 	graphmodel "trip2g/internal/graph/model"
+	"trip2g/internal/logger"
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
 	"trip2g/internal/ptr"
+)
+
+const (
+	// Search and display limits.
+	DefaultVectorSearchLimit = 10
+	DefaultDisplayLimit      = 10
+	DefaultSimilarLimit      = 10
+	MaxSimilarLimit          = 100
+	MaxMergedResults         = 20
+
+	// Hybrid search weights.
+	TextSearchWeight   = 0.6
+	VectorSearchWeight = 0.4
+
+	// MCP method names.
+	MCPMethodInitialize = "initialize"
 )
 
 type Env interface {
@@ -20,11 +37,40 @@ type Env interface {
 	SearchLatestNotes(query string) ([]model.SearchResult, error)
 	OpenAI() *openai.Client
 	PublicURL() string
+	Logger() logger.Logger
+}
+
+// unmarshalArgs unmarshals JSON arguments into the target type.
+// Returns error response if unmarshaling fails.
+func unmarshalArgs[T any](argsRaw json.RawMessage, id any, toolName string) (*T, *Response) {
+	var args T
+	err := json.Unmarshal(argsRaw, &args)
+	if err != nil {
+		resp := errorResponse(id, ErrCodeInvalidParams, fmt.Sprintf("Invalid %s arguments: %v", toolName, err))
+		return nil, &resp
+	}
+	return &args, nil
+}
+
+// successResponse creates a successful JSON-RPC response.
+func successResponse(id any, result any) Response {
+	return Response{
+		JSONRPC: "2.0",
+		ID:      id,
+		Result:  result,
+	}
+}
+
+// textToolResult creates a CallToolResult with text content.
+func textToolResult(text string) CallToolResult {
+	return CallToolResult{
+		Content: []Content{{Type: "text", Text: text}},
+	}
 }
 
 func Resolve(ctx context.Context, env Env, req Request) Response {
 	switch req.Method {
-	case "initialize":
+	case MCPMethodInitialize:
 		return handleInitialize(env, req.ID)
 	case "notifications/initialized":
 		// Client notification, no response needed
@@ -52,7 +98,7 @@ func handleInitialize(env Env, id any) Response {
 
 	// Look for note with mcp_method: initialize
 	for _, note := range env.LatestNoteViews().List {
-		if note.MCPMethod == "initialize" {
+		if note.MCPMethod == MCPMethodInitialize {
 			content := string(note.Content)
 			content = stripFrontmatter(content)
 			result["instructions"] = content
@@ -60,11 +106,7 @@ func handleInitialize(env Env, id any) Response {
 		}
 	}
 
-	return Response{
-		JSONRPC: "2.0",
-		ID:      id,
-		Result:  result,
-	}
+	return successResponse(id, result)
 }
 
 func handleToolsList(env Env, id any) Response {
@@ -107,7 +149,7 @@ func handleToolsList(env Env, id any) Response {
 
 	// Add dynamic methods from notes with mcp_method
 	for _, note := range env.LatestNoteViews().List {
-		if note.MCPMethod != "" && note.MCPMethod != "initialize" {
+		if note.MCPMethod != "" && note.MCPMethod != MCPMethodInitialize {
 			tools = append(tools, Tool{
 				Name:        note.MCPMethod,
 				Description: note.MCPDescription,
@@ -119,11 +161,7 @@ func handleToolsList(env Env, id any) Response {
 		}
 	}
 
-	return Response{
-		JSONRPC: "2.0",
-		ID:      id,
-		Result:  ListToolsResult{Tools: tools},
-	}
+	return successResponse(id, ListToolsResult{Tools: tools})
 }
 
 func handleToolsCall(ctx context.Context, env Env, req Request) Response {
@@ -139,17 +177,18 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 	case "similar":
 		return handleSimilar(ctx, env, req.ID, params.Arguments)
 	case "note_html":
-		return handleNoteHtml(env, req.ID, params.Arguments)
+		return handleNoteHTML(env, req.ID, params.Arguments)
 	default:
 		return handleDynamicMethod(env, req.ID, params.Name)
 	}
 }
 
 func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
-	var args SearchArguments
-	err := json.Unmarshal(argsRaw, &args)
-	if err != nil {
-		return errorResponse(id, ErrCodeInvalidParams, "Invalid search arguments: "+err.Error())
+	log := logger.WithPrefix(env.Logger(), "mcp:handleSearch")
+
+	args, errResp := unmarshalArgs[SearchArguments](argsRaw, id, "search")
+	if errResp != nil {
+		return *errResp
 	}
 
 	if args.Query == "" {
@@ -159,14 +198,17 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	// Text search
 	results, err := env.SearchLatestNotes(args.Query)
 	if err != nil {
+		log.Error("text search failed", "error", err, "query", args.Query)
 		return errorResponse(id, ErrCodeInternal, "Search failed: "+err.Error())
 	}
 
 	// Add vector search results if enabled
 	if env.Features().VectorSearch.Enabled && env.OpenAI() != nil {
-		vectorResults, vecErr := vectorSearch(ctx, env, args.Query, 10)
+		vectorResults, vecErr := vectorSearch(ctx, env, args.Query, DefaultVectorSearchLimit)
 		if vecErr == nil {
 			results = mergeResults(results, vectorResults)
+		} else {
+			log.Warn("vector search failed", "error", vecErr, "query", args.Query)
 		}
 	}
 
@@ -177,8 +219,8 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 	} else {
 		sb.WriteString(fmt.Sprintf("Found %d notes:\n\n", len(results)))
 		for i, r := range results {
-			if i >= 10 {
-				sb.WriteString(fmt.Sprintf("\n... and %d more", len(results)-10))
+			if i >= DefaultDisplayLimit {
+				sb.WriteString(fmt.Sprintf("\n... and %d more", len(results)-DefaultDisplayLimit))
 				break
 			}
 			title := r.NoteView.Title
@@ -193,29 +235,30 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 		}
 	}
 
-	return Response{
-		JSONRPC: "2.0",
-		ID:      id,
-		Result: CallToolResult{
-			Content: []Content{{Type: "text", Text: sb.String()}},
-		},
-	}
+	log.Info("search completed", "query", args.Query, "results", len(results))
+
+	return successResponse(id, textToolResult(sb.String()))
 }
 
 func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage) Response {
-	var args SimilarArguments
-	err := json.Unmarshal(argsRaw, &args)
-	if err != nil {
-		return errorResponse(id, ErrCodeInvalidParams, "Invalid similar arguments: "+err.Error())
+	log := logger.WithPrefix(env.Logger(), "mcp:handleSimilar")
+
+	args, errResp := unmarshalArgs[SimilarArguments](argsRaw, id, "similar")
+	if errResp != nil {
+		return *errResp
 	}
 
 	if args.Path == "" {
 		return errorResponse(id, ErrCodeInvalidParams, "path is required")
 	}
 
+	// Validate and normalize limit
 	limit := args.Limit
 	if limit <= 0 {
-		limit = 10
+		limit = DefaultSimilarLimit
+	} else if limit > MaxSimilarLimit {
+		log.Warn("limit exceeds maximum, capping", "requested", limit, "max", MaxSimilarLimit)
+		limit = MaxSimilarLimit
 	}
 
 	input := graphmodel.SimilarNotesInput{
@@ -225,6 +268,7 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 
 	results, err := similarnotes.Resolve(ctx, env, input)
 	if err != nil {
+		log.Error("similar search failed", "error", err, "path", args.Path)
 		return errorResponse(id, ErrCodeInternal, "Similar search failed: "+err.Error())
 	}
 
@@ -239,20 +283,17 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		}
 	}
 
-	return Response{
-		JSONRPC: "2.0",
-		ID:      id,
-		Result: CallToolResult{
-			Content: []Content{{Type: "text", Text: sb.String()}},
-		},
-	}
+	log.Info("similar search completed", "path", args.Path, "results", len(results))
+
+	return successResponse(id, textToolResult(sb.String()))
 }
 
-func handleNoteHtml(env Env, id any, argsRaw json.RawMessage) Response {
-	var args NoteHtmlArguments
-	err := json.Unmarshal(argsRaw, &args)
-	if err != nil {
-		return errorResponse(id, ErrCodeInvalidParams, "Invalid note_html arguments: "+err.Error())
+func handleNoteHTML(env Env, id any, argsRaw json.RawMessage) Response {
+	log := logger.WithPrefix(env.Logger(), "mcp:handleNoteHTML")
+
+	args, errResp := unmarshalArgs[NoteHTMLArguments](argsRaw, id, "note_html")
+	if errResp != nil {
+		return *errResp
 	}
 
 	if args.Path == "" {
@@ -262,56 +303,78 @@ func handleNoteHtml(env Env, id any, argsRaw json.RawMessage) Response {
 	noteViews := env.LatestNoteViews()
 	note := noteViews.PathMap[args.Path]
 	if note == nil {
+		log.Warn("note not found", "path", args.Path)
 		return errorResponse(id, ErrCodeInvalidParams, "Note not found: "+args.Path)
 	}
 
-	return Response{
-		JSONRPC: "2.0",
-		ID:      id,
-		Result: CallToolResult{
-			Content: []Content{{Type: "text", Text: string(note.HTML)}},
-		},
-	}
+	log.Info("note html retrieved", "path", args.Path)
+
+	return successResponse(id, textToolResult(string(note.HTML)))
 }
 
 func handleDynamicMethod(env Env, id any, methodName string) Response {
+	log := logger.WithPrefix(env.Logger(), "mcp:handleDynamicMethod")
+
 	for _, note := range env.LatestNoteViews().List {
 		if note.MCPMethod == methodName {
-			// Return note content without frontmatter
 			content := string(note.Content)
 			content = stripFrontmatter(content)
 
-			return Response{
-				JSONRPC: "2.0",
-				ID:      id,
-				Result: CallToolResult{
-					Content: []Content{{Type: "text", Text: content}},
-				},
-			}
+			log.Info("dynamic method executed", "method", methodName, "note_path", note.Path)
+
+			return successResponse(id, textToolResult(content))
 		}
 	}
 
+	log.Warn("dynamic method not found", "method", methodName)
 	return errorResponse(id, ErrCodeMethodNotFound, "Method not found: "+methodName)
 }
 
 func stripFrontmatter(content string) string {
-	if len(content) < 3 || content[:3] != "---" {
+	// Check for frontmatter start (support both \n and \r\n)
+	if !strings.HasPrefix(content, "---\n") && !strings.HasPrefix(content, "---\r\n") {
 		return content
 	}
 
-	// Find closing ---
-	for i := 4; i < len(content)-2; i++ {
-		if content[i] == '-' && content[i+1] == '-' && content[i+2] == '-' {
-			result := content[i+3:]
-			// Trim leading newlines
-			for len(result) > 0 && (result[0] == '\n' || result[0] == '\r') {
-				result = result[1:]
-			}
-			return result
-		}
+	// Determine line ending and skip opening "---"
+	start := 4 // "---\n"
+	if strings.HasPrefix(content, "---\r\n") {
+		start = 5 // "---\r\n"
 	}
 
-	return content
+	if len(content) <= start {
+		return content
+	}
+
+	// Find closing "---" at the start of a line
+	remaining := content[start:]
+	idx := strings.Index(remaining, "\n---")
+	if idx == -1 {
+		idx = strings.Index(remaining, "\r\n---")
+		if idx == -1 {
+			return content
+		}
+		// Skip past "\r\n---"
+		result := remaining[idx+5:]
+		// Check if there's a newline after closing ---
+		if strings.HasPrefix(result, "\n") {
+			result = result[1:]
+		} else if strings.HasPrefix(result, "\r\n") {
+			result = result[2:]
+		}
+		return strings.TrimLeft(result, "\r\n")
+	}
+
+	// Skip past "\n---"
+	result := remaining[idx+4:]
+	// Check if there's a newline after closing ---
+	if strings.HasPrefix(result, "\n") {
+		result = result[1:]
+	} else if strings.HasPrefix(result, "\r\n") {
+		result = result[2:]
+	}
+
+	return strings.TrimLeft(result, "\r\n")
 }
 
 func vectorSearch(ctx context.Context, env Env, query string, limit int) ([]model.SearchResult, error) {
@@ -362,9 +425,6 @@ func mergeResults(textResults, vectorResults []model.SearchResult) []model.Searc
 		return textResults
 	}
 
-	const textWeight = 0.6
-	const vectorWeight = 0.4
-
 	maxTextScore := 0.0
 	for _, r := range textResults {
 		if r.Score > maxTextScore {
@@ -406,7 +466,7 @@ func mergeResults(textResults, vectorResults []model.SearchResult) []model.Searc
 
 	var finalResults []model.SearchResult
 	for _, m := range resultMap {
-		m.result.Score = m.textScore*textWeight + m.vectorScore*vectorWeight
+		m.result.Score = m.textScore*TextSearchWeight + m.vectorScore*VectorSearchWeight
 		finalResults = append(finalResults, m.result)
 	}
 
@@ -414,8 +474,8 @@ func mergeResults(textResults, vectorResults []model.SearchResult) []model.Searc
 		return finalResults[i].Score > finalResults[j].Score
 	})
 
-	if len(finalResults) > 20 {
-		finalResults = finalResults[:20]
+	if len(finalResults) > MaxMergedResults {
+		finalResults = finalResults[:MaxMergedResults]
 	}
 
 	return finalResults
