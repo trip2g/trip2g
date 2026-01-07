@@ -1168,6 +1168,7 @@ type NoteViewMeta struct {
 type PublicNote struct {
 	PathID   int64           `json:"pathId"`
 	Path     string          `json:"path"`
+	URL      string          `json:"url"`
 	Title    string          `json:"title"`
 	HTML     string          `json:"html"`
 	Toc      []NoteTocItem   `json:"toc"`

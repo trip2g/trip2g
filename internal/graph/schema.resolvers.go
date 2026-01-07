@@ -1934,6 +1934,11 @@ func (r *offerResolver) Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subg
 	return r.env(ctx).ListSubgraphsByOfferID(ctx, obj.ID)
 }
 
+// URL is the resolver for the url field.
+func (r *publicNoteResolver) URL(ctx context.Context, obj *model.PublicNote) (string, error) {
+	return r.env(ctx).PublicURL() + obj.Path, nil
+}
+
 // Successful is the resolver for the successful field.
 func (r *purchaseResolver) Successful(ctx context.Context, obj *db.Purchase) (bool, error) {
 	return nowpayments.PaymentStatus(obj.Status).IsSuccessful(), nil
@@ -2679,6 +2684,9 @@ func (r *Resolver) NoteWarning() NoteWarningResolver { return &noteWarningResolv
 // Offer returns OfferResolver implementation.
 func (r *Resolver) Offer() OfferResolver { return &offerResolver{r} }
 
+// PublicNote returns PublicNoteResolver implementation.
+func (r *Resolver) PublicNote() PublicNoteResolver { return &publicNoteResolver{r} }
+
 // Purchase returns PurchaseResolver implementation.
 func (r *Resolver) Purchase() PurchaseResolver { return &purchaseResolver{r} }
 
@@ -2824,6 +2832,7 @@ type notePathResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }
 type noteWarningResolver struct{ *Resolver }
 type offerResolver struct{ *Resolver }
+type publicNoteResolver struct{ *Resolver }
 type purchaseResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type refreshBoostyDataPayloadResolver struct{ *Resolver }

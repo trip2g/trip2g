@@ -1028,6 +1028,7 @@ type NoteTocItem {
 type PublicNote @goExtraField(name: "NoteView", type: "*trip2g/internal/model.NoteView") {
   pathId: Int64!
   path: String!
+  url: String! @goField(forceResolver: true)
   title: String!
   html: String!
 

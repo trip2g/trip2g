@@ -8,16 +8,18 @@ import (
 	"sort"
 	"strings"
 
-	"trip2g/internal/features"
+	"trip2g/internal/case/similarnotes"
+	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/model"
 	"trip2g/internal/openai"
+	"trip2g/internal/ptr"
 )
 
 type Env interface {
-	LatestNoteViews() *model.NoteViews
+	similarnotes.Env
 	SearchLatestNotes(query string) ([]model.SearchResult, error)
-	Features() features.Features
 	OpenAI() *openai.Client
+	PublicURL() string
 }
 
 func Resolve(ctx context.Context, env Env, req Request) Response {
@@ -80,14 +82,25 @@ func handleToolsList(env Env, id any) Response {
 		},
 		{
 			Name:        "similar",
-			Description: "Find similar notes by text (vector similarity)",
+			Description: "Find similar notes by path (vector similarity)",
 			InputSchema: &InputSchema{
 				Type: "object",
 				Properties: map[string]Property{
-					"text":  {Type: "string", Description: "Text to find similar notes for"},
+					"path":  {Type: "string", Description: "Note path from search results"},
 					"limit": {Type: "number", Description: "Max number of results (default 10)"},
 				},
-				Required: []string{"text"},
+				Required: []string{"path"},
+			},
+		},
+		{
+			Name:        "note_html",
+			Description: "Get HTML content of a note by path",
+			InputSchema: &InputSchema{
+				Type: "object",
+				Properties: map[string]Property{
+					"path": {Type: "string", Description: "Note path from search results"},
+				},
+				Required: []string{"path"},
 			},
 		},
 	}
@@ -125,6 +138,8 @@ func handleToolsCall(ctx context.Context, env Env, req Request) Response {
 		return handleSearch(ctx, env, req.ID, params.Arguments)
 	case "similar":
 		return handleSimilar(ctx, env, req.ID, params.Arguments)
+	case "note_html":
+		return handleNoteHtml(env, req.ID, params.Arguments)
 	default:
 		return handleDynamicMethod(env, req.ID, params.Name)
 	}
@@ -170,7 +185,7 @@ func handleSearch(ctx context.Context, env Env, id any, argsRaw json.RawMessage)
 			if r.HighlightedTitle != nil {
 				title = *r.HighlightedTitle
 			}
-			sb.WriteString(fmt.Sprintf("%d. %s\n   %s\n", i+1, title, r.URL))
+			sb.WriteString(fmt.Sprintf("%d. %s\n   %s\n   %s\n", i+1, title, r.NoteView.Path, env.PublicURL()+r.NoteView.Permalink))
 			if len(r.HighlightedContent) > 0 {
 				sb.WriteString(fmt.Sprintf("   %s\n", r.HighlightedContent[0]))
 			}
@@ -194,8 +209,8 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		return errorResponse(id, ErrCodeInvalidParams, "Invalid similar arguments: "+err.Error())
 	}
 
-	if args.Text == "" {
-		return errorResponse(id, ErrCodeInvalidParams, "text is required")
+	if args.Path == "" {
+		return errorResponse(id, ErrCodeInvalidParams, "path is required")
 	}
 
 	limit := args.Limit
@@ -203,11 +218,12 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		limit = 10
 	}
 
-	if env.OpenAI() == nil {
-		return errorResponse(id, ErrCodeInternal, "Vector search not configured")
+	input := graphmodel.SimilarNotesInput{
+		Path:  args.Path,
+		Limit: ptr.To(int32(limit)),
 	}
 
-	results, err := vectorSearch(ctx, env, args.Text, limit)
+	results, err := similarnotes.Resolve(ctx, env, input)
 	if err != nil {
 		return errorResponse(id, ErrCodeInternal, "Similar search failed: "+err.Error())
 	}
@@ -219,7 +235,7 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 	} else {
 		sb.WriteString(fmt.Sprintf("Found %d similar notes:\n\n", len(results)))
 		for i, r := range results {
-			sb.WriteString(fmt.Sprintf("%d. %s (%.2f)\n   %s\n\n", i+1, r.NoteView.Title, r.Score, r.URL))
+			sb.WriteString(fmt.Sprintf("%d. %s (%.2f)\n   %s\n   %s\n\n", i+1, r.Note.Title, r.Score, r.Note.Path, env.PublicURL()+r.Note.Path))
 		}
 	}
 
@@ -228,6 +244,32 @@ func handleSimilar(ctx context.Context, env Env, id any, argsRaw json.RawMessage
 		ID:      id,
 		Result: CallToolResult{
 			Content: []Content{{Type: "text", Text: sb.String()}},
+		},
+	}
+}
+
+func handleNoteHtml(env Env, id any, argsRaw json.RawMessage) Response {
+	var args NoteHtmlArguments
+	err := json.Unmarshal(argsRaw, &args)
+	if err != nil {
+		return errorResponse(id, ErrCodeInvalidParams, "Invalid note_html arguments: "+err.Error())
+	}
+
+	if args.Path == "" {
+		return errorResponse(id, ErrCodeInvalidParams, "path is required")
+	}
+
+	noteViews := env.LatestNoteViews()
+	note := noteViews.PathMap[args.Path]
+	if note == nil {
+		return errorResponse(id, ErrCodeInvalidParams, "Note not found: "+args.Path)
+	}
+
+	return Response{
+		JSONRPC: "2.0",
+		ID:      id,
+		Result: CallToolResult{
+			Content: []Content{{Type: "text", Text: string(note.HTML)}},
 		},
 	}
 }

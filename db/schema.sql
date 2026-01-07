@@ -536,6 +536,14 @@ CREATE TABLE telegram_publish_sent_account_messages (
 CREATE TABLE note_uncommitted_paths (
     note_path_id integer primary key references note_paths(id) on delete cascade
 );
+CREATE TABLE note_version_embeddings (
+    version_id integer primary key references note_versions(id) on delete cascade,
+    embedding blob not null,
+    model_id integer not null,
+    content_hash blob not null,
+    tokens integer not null,
+    created_at datetime not null default (datetime('now'))
+);
 CREATE INDEX idx_sign_in_codes_user_id on sign_in_codes(user_id);
 CREATE INDEX backlite_tasks_wait_until ON backlite_tasks (wait_until) WHERE wait_until IS NOT NULL;
 CREATE INDEX idx_releases_is_live on releases(is_live);
@@ -563,18 +571,10 @@ CREATE INDEX idx_telegram_publish_sent_account_messages_note_path_id
   on telegram_publish_sent_account_messages(note_path_id);
 CREATE INDEX idx_note_paths_hidden_by on note_paths(hidden_by);
 CREATE INDEX idx_note_version_assets_version_id on note_version_assets(version_id);
+CREATE INDEX idx_note_version_embeddings_model_id on note_version_embeddings(model_id);
 CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
   update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
 end;
-CREATE TABLE note_version_embeddings (
-    version_id integer primary key references note_versions(id) on delete cascade,
-    embedding blob not null,
-    model_id integer not null,
-    content_hash blob not null,
-    tokens integer not null,
-    created_at datetime not null default (datetime('now'))
-);
-CREATE INDEX idx_note_version_embeddings_model_id on note_version_embeddings(model_id);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),

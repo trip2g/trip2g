@@ -69,8 +69,12 @@ type SearchArguments struct {
 }
 
 type SimilarArguments struct {
-	Text  string `json:"text"`
+	Path  string `json:"path"`
 	Limit int    `json:"limit,omitempty"`
+}
+
+type NoteHtmlArguments struct {
+	Path string `json:"path"`
 }
 
 // JSON-RPC error codes.

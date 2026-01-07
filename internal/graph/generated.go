@@ -120,6 +120,7 @@ type ResolverRoot interface {
 	NoteView() NoteViewResolver
 	NoteWarning() NoteWarningResolver
 	Offer() OfferResolver
+	PublicNote() PublicNoteResolver
 	Purchase() PurchaseResolver
 	Query() QueryResolver
 	RefreshBoostyDataPayload() RefreshBoostyDataPayloadResolver
@@ -1060,6 +1061,7 @@ type ComplexityRoot struct {
 		PathID func(childComplexity int) int
 		Title  func(childComplexity int) int
 		Toc    func(childComplexity int) int
+		URL    func(childComplexity int) int
 	}
 
 	Purchase struct {
@@ -1746,6 +1748,9 @@ type OfferResolver interface {
 	ID(ctx context.Context, obj *db.Offer) (string, error)
 
 	Subgraphs(ctx context.Context, obj *db.Offer) ([]db.Subgraph, error)
+}
+type PublicNoteResolver interface {
+	URL(ctx context.Context, obj *model.PublicNote) (string, error)
 }
 type PurchaseResolver interface {
 	Successful(ctx context.Context, obj *db.Purchase) (bool, error)
@@ -5616,6 +5621,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.PublicNote.Toc(childComplexity), true
+	case "PublicNote.url":
+		if e.complexity.PublicNote.URL == nil {
+			break
+		}
+
+		return e.complexity.PublicNote.URL(childComplexity), true
 
 	case "Purchase.id":
 		if e.complexity.Purchase.ID == nil {
@@ -26535,6 +26546,35 @@ func (ec *executionContext) fieldContext_PublicNote_path(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _PublicNote_url(ctx context.Context, field graphql.CollectedField, obj *model.PublicNote) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PublicNote_url,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.PublicNote().URL(ctx, obj)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PublicNote_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PublicNote",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PublicNote_title(ctx context.Context, field graphql.CollectedField, obj *model.PublicNote) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27240,6 +27280,8 @@ func (ec *executionContext) fieldContext_Query_note(ctx context.Context, field g
 				return ec.fieldContext_PublicNote_pathId(ctx, field)
 			case "path":
 				return ec.fieldContext_PublicNote_path(ctx, field)
+			case "url":
+				return ec.fieldContext_PublicNote_url(ctx, field)
 			case "title":
 				return ec.fieldContext_PublicNote_title(ctx, field)
 			case "html":
@@ -28966,6 +29008,8 @@ func (ec *executionContext) fieldContext_SimilarNote_note(_ context.Context, fie
 				return ec.fieldContext_PublicNote_pathId(ctx, field)
 			case "path":
 				return ec.fieldContext_PublicNote_path(ctx, field)
+			case "url":
+				return ec.fieldContext_PublicNote_url(ctx, field)
 			case "title":
 				return ec.fieldContext_PublicNote_title(ctx, field)
 			case "html":
@@ -29387,6 +29431,8 @@ func (ec *executionContext) fieldContext_ToggleFavoriteNotePayload_favoriteNotes
 				return ec.fieldContext_PublicNote_pathId(ctx, field)
 			case "path":
 				return ec.fieldContext_PublicNote_path(ctx, field)
+			case "url":
+				return ec.fieldContext_PublicNote_url(ctx, field)
 			case "title":
 				return ec.fieldContext_PublicNote_title(ctx, field)
 			case "html":
@@ -30129,6 +30175,8 @@ func (ec *executionContext) fieldContext_User_favoriteNotes(_ context.Context, f
 				return ec.fieldContext_PublicNote_pathId(ctx, field)
 			case "path":
 				return ec.fieldContext_PublicNote_path(ctx, field)
+			case "url":
+				return ec.fieldContext_PublicNote_url(ctx, field)
 			case "title":
 				return ec.fieldContext_PublicNote_title(ctx, field)
 			case "html":
@@ -51366,27 +51414,63 @@ func (ec *executionContext) _PublicNote(ctx context.Context, sel ast.SelectionSe
 		case "pathId":
 			out.Values[i] = ec._PublicNote_pathId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "path":
 			out.Values[i] = ec._PublicNote_path(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "url":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PublicNote_url(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "title":
 			out.Values[i] = ec._PublicNote_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "html":
 			out.Values[i] = ec._PublicNote_html(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "toc":
 			out.Values[i] = ec._PublicNote_toc(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
