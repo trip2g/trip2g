@@ -149,13 +149,13 @@ echo "🎭 Running main Playwright tests..."
 echo ""
 
 if [ "$1" = "--headed" ]; then
-  npx playwright test --grep-invert "Setup" --ignore="**/layoutcss.spec.js" --headed
+  npx playwright test --grep-invert "Setup|Layout CSS" --headed
 elif [ "$1" = "--debug" ]; then
-  npx playwright test --grep-invert "Setup" --ignore="**/layoutcss.spec.js" --debug
+  npx playwright test --grep-invert "Setup|Layout CSS" --debug
 elif [ "$1" = "--ui" ]; then
-  npx playwright test --grep-invert "Setup" --ignore="**/layoutcss.spec.js" --ui
+  npx playwright test --grep-invert "Setup|Layout CSS" --ui
 else
-  npx playwright test --grep-invert "Setup" --ignore="**/layoutcss.spec.js"
+  npx playwright test --grep-invert "Setup|Layout CSS"
 fi
 
 TEST_EXIT_CODE=$?

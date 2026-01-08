@@ -136,7 +136,7 @@ const (
 	DefaultMinIORegion      = "us-east-1"
 	DefaultMinIOUseSSL      = false
 	DefaultMinIOInitTimeout = 5 * time.Second
-	DefaultMinIOURLExpires  = 30 * 24 * time.Hour
+	DefaultMinIOURLExpires  = 6 * 24 * time.Hour // Max 7 days for MinIO presigned URLs
 )
 
 // DefaultStorageConfig returns default MinIO storage configuration.
