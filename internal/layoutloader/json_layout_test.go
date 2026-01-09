@@ -183,25 +183,7 @@ func TestConvertJSONLayout_NoteContentWithPath(t *testing.T) {
 
 	result, err := ConvertJSONLayout([]byte(json))
 	require.NoError(t, err)
-	require.Equal(t, `{{ _note0 := nvs.ByPath("_sidebar.md") }}{{ if _note0 }}{{ _note0.HTMLString() | unsafe }}{{ end }}`, result)
-}
-
-func TestConvertJSONLayout_MultipleNoteContentWithPath(t *testing.T) {
-	json := `{
-		"meta": {},
-		"body": [
-			{"type": "note_content", "path": "_header.md"},
-			{"type": "note_content"},
-			{"type": "note_content", "path": "_footer.md"}
-		]
-	}`
-
-	result, err := ConvertJSONLayout([]byte(json))
-	require.NoError(t, err)
-	// Each path-based note_content gets a unique variable
-	require.Contains(t, result, "_note0")
-	require.Contains(t, result, "_note1")
-	require.Contains(t, result, "note.HTMLString()")
+	require.Equal(t, `{{ nvs.ByPath("_sidebar.md").HTMLString() | unsafe }}`, result)
 }
 
 func TestConvertJSONLayout_Import(t *testing.T) {
@@ -215,6 +197,36 @@ func TestConvertJSONLayout_Import(t *testing.T) {
 	result, err := ConvertJSONLayout([]byte(json))
 	require.NoError(t, err)
 	require.Equal(t, `{{ import "blocks" }}`, result)
+}
+
+func TestConvertJSONLayout_IncludeNote(t *testing.T) {
+	json := `{
+		"meta": {},
+		"body": [
+			{"type": "include_note", "path": "/_sidebar.md"}
+		]
+	}`
+
+	result, err := ConvertJSONLayout([]byte(json))
+	require.NoError(t, err)
+	require.Equal(t, `{{ _note0 := nvs.ByPath("/_sidebar.md") }}{{ if _note0 }}{{ _note0.HTMLString() | unsafe }}{{ else }}Create file: /_sidebar.md{{ end }}`, result)
+}
+
+func TestConvertJSONLayout_MultipleIncludeNote(t *testing.T) {
+	json := `{
+		"meta": {},
+		"body": [
+			{"type": "include_note", "path": "/_header.md"},
+			{"type": "include_note", "path": "/_footer.md"}
+		]
+	}`
+
+	result, err := ConvertJSONLayout([]byte(json))
+	require.NoError(t, err)
+	require.Contains(t, result, "_note0")
+	require.Contains(t, result, "_note1")
+	require.Contains(t, result, "Create file: /_header.md")
+	require.Contains(t, result, "Create file: /_footer.md")
 }
 
 func TestConvertJSONLayout_ComplexLayout(t *testing.T) {
@@ -391,6 +403,23 @@ func TestConvertJSONLayout_Error_ImportMissingName(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "import", convertErr.Type)
 	require.Equal(t, "name", convertErr.Field)
+}
+
+func TestConvertJSONLayout_Error_IncludeNoteMissingPath(t *testing.T) {
+	json := `{
+		"meta": {},
+		"body": [
+			{"type": "include_note"}
+		]
+	}`
+
+	_, err := ConvertJSONLayout([]byte(json))
+	require.Error(t, err)
+
+	convertErr, ok := err.(*ConvertError)
+	require.True(t, ok)
+	require.Equal(t, "include_note", convertErr.Type)
+	require.Equal(t, "path", convertErr.Field)
 }
 
 func TestConvertJSONLayout_Error_NestedError(t *testing.T) {

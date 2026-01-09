@@ -40,6 +40,11 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 26. [[slug_cyrillic]] - cyrillic slug (no transliteration)
 27. [[slug_spaces]] - slug with spaces (URL encoded)
 
+## JSON Layout Tests
+28. [[json_layout_test]] - JSON layout with sidebar (show_sidebar: true)
+29. [[json_layout_no_sidebar]] - JSON layout without sidebar (show_sidebar: false)
+30. [[json_layout_missing_include]] - JSON layout with missing include_note file
+
 ## Subgraph (Premium Course) Tests
 28. [[premium]] - premium subgraph home page
 29. Check sidebar: should show premium sidebar for premium pages

@@ -58,7 +58,7 @@ func (e *ConvertError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Path, e.Message)
 }
 
-var validNodeTypes = []string{"block", "if", "range", "expr", "html", "asset", "note_content", "import"}
+var validNodeTypes = []string{"block", "if", "range", "expr", "html", "asset", "note_content", "include_note", "import"}
 
 // ConvertJSONLayout converts JSON layout to Jet template string.
 func ConvertJSONLayout(jsonContent []byte) (string, error) {
@@ -104,6 +104,8 @@ func convertNode(sb *strings.Builder, node JSONNode, path string, varCounter *in
 		return convertAsset(sb, node, path)
 	case "note_content":
 		return convertNoteContent(sb, node, path, varCounter)
+	case "include_note":
+		return convertIncludeNote(sb, node, path, varCounter)
 	case "import":
 		return convertImport(sb, node, path)
 	case "":
@@ -267,16 +269,30 @@ func convertAsset(sb *strings.Builder, node JSONNode, path string) error {
 	return nil
 }
 
-// convertNoteContent: {{ note.HTMLString() | unsafe }} or {{ _var := nvs.ByPath("path") }}{{ if _var }}{{ _var.HTMLString() | unsafe }}{{ end }}
+// convertNoteContent: {{ note.HTMLString() | unsafe }} or {{ nvs.ByPath("path").HTMLString() | unsafe }}
 func convertNoteContent(sb *strings.Builder, node JSONNode, path string, varCounter *int) error {
 	if node.Path == "" {
-		// Current note content
 		sb.WriteString("{{ note.HTMLString() | unsafe }}")
 		return nil
 	}
 
-	// Include another note by path
-	// Generate unique variable name
+	sb.WriteString("{{ nvs.ByPath(\"")
+	sb.WriteString(node.Path)
+	sb.WriteString("\").HTMLString() | unsafe }}")
+	return nil
+}
+
+// convertIncludeNote: {{ _var := nvs.ByPath("path") }}{{ if _var }}{{ _var.HTMLString() | unsafe }}{{ else }}Create file: path{{ end }}
+func convertIncludeNote(sb *strings.Builder, node JSONNode, path string, varCounter *int) error {
+	if node.Path == "" {
+		return &ConvertError{
+			Path:    path,
+			Type:    "include_note",
+			Field:   "path",
+			Message: "requires 'path' field",
+		}
+	}
+
 	varName := fmt.Sprintf("_note%d", *varCounter)
 	*varCounter++
 
@@ -288,7 +304,9 @@ func convertNoteContent(sb *strings.Builder, node JSONNode, path string, varCoun
 	sb.WriteString(varName)
 	sb.WriteString(" }}{{ ")
 	sb.WriteString(varName)
-	sb.WriteString(".HTMLString() | unsafe }}{{ end }}")
+	sb.WriteString(".HTMLString() | unsafe }}{{ else }}Create file: ")
+	sb.WriteString(node.Path)
+	sb.WriteString("{{ end }}")
 
 	return nil
 }

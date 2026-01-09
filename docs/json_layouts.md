@@ -90,7 +90,7 @@ JSON-формат для описания страничных layout-ов. Ис
 
 ### `note_content` - Контент заметки
 
-Вставляет содержимое текущей заметки или подключает другую заметку по пути.
+Вставляет содержимое текущей заметки или другой заметки по пути.
 
 **Текущая заметка:**
 ```json
@@ -109,15 +109,12 @@ JSON-формат для описания страничных layout-ов. Ис
 
 Результат Jet:
 ```jet
-{{ _sidebar := nvs.ByPath("_sidebar.md") }}
-{{ if _sidebar }}
-  {{ _sidebar.HTMLString() | unsafe }}
-{{ end }}
+{{ nvs.ByPath("_sidebar.md").HTMLString() | unsafe }}
 ```
 
 | Поле | Тип | Описание |
 |------|-----|----------|
-| `path` | string? | Путь к заметке для включения. Если не указан - контент текущей заметки |
+| `path` | string? | Путь к заметке. Если не указан - контент текущей заметки |
 
 ### `asset` - Ссылка на ассет
 
@@ -145,6 +142,33 @@ JSON-формат для описания страничных layout-ов. Ис
   "content": "<div class=\"container\">"
 }
 ```
+
+### `include_note` - Включение заметки с fallback
+
+Вставляет содержимое заметки по пути. Если заметка не найдена, показывает сообщение "Create file: путь".
+
+```json
+{
+  "type": "include_note",
+  "path": "/_sidebar.md"
+}
+```
+
+Результат Jet:
+```jet
+{{ _note0 := nvs.ByPath("/_sidebar.md") }}
+{{ if _note0 }}
+  {{ _note0.HTMLString() | unsafe }}
+{{ else }}
+  Create file: /_sidebar.md
+{{ end }}
+```
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `path` | string | Путь к заметке (обязательно) |
+
+> **Примечание**: Если файл не найден, показывается сообщение "Create file: путь" для удобства отладки в визуальном редакторе.
 
 ### `import` - Импорт блоков
 
@@ -244,10 +268,7 @@ JSON-формат для описания страничных layout-ов. Ис
 ```jet
 {{ yield header(level=2) }}
 {{ if note.M().GetBool("show_block") }}
-  {{ _block := nvs.ByPath("_block.md") }}
-  {{ if _block }}
-    {{ _block.HTMLString() | unsafe }}
-  {{ end }}
+  {{ nvs.ByPath("_block.md").HTMLString() | unsafe }}
 {{ end }}
 {{ note.HTMLString() | unsafe }}
 ```
@@ -307,7 +328,8 @@ pushNotes (Obsidian) → noteloader → layoutloader → Jet template
 | `html` | content as-is |
 | `asset` | `{{ asset("path") }}` |
 | `note_content` (без path) | `{{ note.HTMLString() \| unsafe }}` |
-| `note_content` (с path) | `{{ _var := nvs.ByPath("path") }}{{ if _var }}{{ _var.HTMLString() \| unsafe }}{{ end }}` |
+| `note_content` (с path) | `{{ nvs.ByPath("path").HTMLString() \| unsafe }}` |
+| `include_note` | `{{ _var := nvs.ByPath("path") }}{{ if _var }}{{ _var.HTMLString() \| unsafe }}{{ else }}Create file: path{{ end }}` |
 | `import` | `{{ import "name" }}` |
 
 ## Визуальный редактор

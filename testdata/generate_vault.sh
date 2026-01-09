@@ -892,6 +892,112 @@ cat > "$VAULT/_layouts/custom/page.html" << 'EOF'
 EOF
 
 # ============================================================================
+# JSON Layout Tests (_layouts)
+# ============================================================================
+
+cat > "$VAULT/_layouts/json-test.html.json" << 'EOF'
+{
+  "meta": {},
+  "body": [
+    {"type": "html", "html": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>"},
+    {"type": "expr", "expr": "note.Title()"},
+    {"type": "html", "html": "</title>\n</head>\n<body>\n"},
+    {"type": "html", "html": "<header id=\"json-layout-header\">\n  <h1>"},
+    {"type": "expr", "expr": "note.Title()"},
+    {"type": "html", "html": "</h1>\n</header>\n"},
+    {
+      "type": "if",
+      "condition": "note.M().GetBool(\"show_sidebar\")",
+      "content": [
+        {"type": "html", "html": "<aside id=\"json-layout-sidebar\">"},
+        {"type": "note_content", "path": "/_json_test_sidebar.md"},
+        {"type": "html", "html": "</aside>\n"}
+      ]
+    },
+    {"type": "html", "html": "<main id=\"json-layout-main\">\n"},
+    {"type": "note_content"},
+    {"type": "html", "html": "\n</main>\n"},
+    {"type": "html", "html": "<footer id=\"json-layout-footer\">"},
+    {"type": "html", "html": "<p>JSON Layout Footer</p>"},
+    {"type": "html", "html": "</footer>\n"},
+    {"type": "html", "html": "</body>\n</html>"}
+  ]
+}
+EOF
+
+cat > "$VAULT/_layouts/json-include-missing.html.json" << 'EOF'
+{
+  "meta": {},
+  "body": [
+    {"type": "html", "html": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>"},
+    {"type": "expr", "expr": "note.Title()"},
+    {"type": "html", "html": "</title>\n</head>\n<body>\n"},
+    {"type": "html", "html": "<div id=\"include-missing-test\">"},
+    {"type": "include_note", "path": "/_nonexistent_file.md"},
+    {"type": "html", "html": "</div>\n"},
+    {"type": "html", "html": "<main>"},
+    {"type": "note_content"},
+    {"type": "html", "html": "</main>\n"},
+    {"type": "html", "html": "</body>\n</html>"}
+  ]
+}
+EOF
+
+cat > "$VAULT/_json_test_sidebar.md" << 'EOF'
+---
+title: JSON Test Sidebar
+---
+
+- [Home](/)
+- [Public](/public)
+
+Sidebar loaded via note_content.
+EOF
+
+cat > "$VAULT/json_layout_test.md" << 'EOF'
+---
+free: true
+layout: json-test
+title: JSON Layout Test Page
+show_sidebar: true
+---
+
+This page uses a JSON layout file (.html.json) instead of a regular .html template.
+
+The layout demonstrates:
+- HTML blocks
+- Expression blocks (title)
+- Conditional rendering (sidebar)
+- include_note with fallback
+- note_content for main content
+EOF
+
+cat > "$VAULT/json_layout_no_sidebar.md" << 'EOF'
+---
+free: true
+layout: json-test
+title: JSON Layout No Sidebar
+show_sidebar: false
+---
+
+This page uses the same JSON layout but with show_sidebar: false.
+
+The sidebar should NOT be visible.
+EOF
+
+cat > "$VAULT/json_layout_missing_include.md" << 'EOF'
+---
+free: true
+layout: json-include-missing
+title: JSON Layout Missing Include
+---
+
+This page tests include_note with a missing file.
+
+The include should show "Create file: /_nonexistent_file.md" message.
+EOF
+
+# ============================================================================
 # Template Views Tests (_layouts)
 # ============================================================================
 
@@ -1284,6 +1390,11 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 25. [[slug_with_subdir]] - slug with subdirectory
 26. [[slug_cyrillic]] - cyrillic slug (no transliteration)
 27. [[slug_spaces]] - slug with spaces (URL encoded)
+
+## JSON Layout Tests
+28. [[json_layout_test]] - JSON layout with sidebar (show_sidebar: true)
+29. [[json_layout_no_sidebar]] - JSON layout without sidebar (show_sidebar: false)
+30. [[json_layout_missing_include]] - JSON layout with missing include_note file
 
 ## Subgraph (Premium Course) Tests
 28. [[premium]] - premium subgraph home page

@@ -1,0 +1,27 @@
+{
+  "meta": {},
+  "body": [
+    {"type": "html", "html": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>"},
+    {"type": "expr", "expr": "note.Title()"},
+    {"type": "html", "html": "</title>\n</head>\n<body>\n"},
+    {"type": "html", "html": "<header id=\"json-layout-header\">\n  <h1>"},
+    {"type": "expr", "expr": "note.Title()"},
+    {"type": "html", "html": "</h1>\n</header>\n"},
+    {
+      "type": "if",
+      "condition": "note.M().GetBool(\"show_sidebar\")",
+      "content": [
+        {"type": "html", "html": "<aside id=\"json-layout-sidebar\">"},
+        {"type": "note_content", "path": "/_json_test_sidebar.md"},
+        {"type": "html", "html": "</aside>\n"}
+      ]
+    },
+    {"type": "html", "html": "<main id=\"json-layout-main\">\n"},
+    {"type": "note_content"},
+    {"type": "html", "html": "\n</main>\n"},
+    {"type": "html", "html": "<footer id=\"json-layout-footer\">"},
+    {"type": "html", "html": "<p>JSON Layout Footer</p>"},
+    {"type": "html", "html": "</footer>\n"},
+    {"type": "html", "html": "</body>\n</html>"}
+  ]
+}

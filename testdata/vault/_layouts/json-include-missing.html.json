@@ -1,0 +1,15 @@
+{
+  "meta": {},
+  "body": [
+    {"type": "html", "html": "<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>"},
+    {"type": "expr", "expr": "note.Title()"},
+    {"type": "html", "html": "</title>\n</head>\n<body>\n"},
+    {"type": "html", "html": "<div id=\"include-missing-test\">"},
+    {"type": "include_note", "path": "/_nonexistent_file.md"},
+    {"type": "html", "html": "</div>\n"},
+    {"type": "html", "html": "<main>"},
+    {"type": "note_content"},
+    {"type": "html", "html": "</main>\n"},
+    {"type": "html", "html": "</body>\n</html>"}
+  ]
+}
