@@ -849,7 +849,7 @@ cat > "$VAULT/_layouts/custom/blocks.html" << 'EOF'
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ note.Title }}</title>
+    <title>{{ note.Title() }}</title>
     <link rel="stylesheet" href="{{ asset("styles.css") }}">
   </head>
   <body>
@@ -881,7 +881,7 @@ cat > "$VAULT/_layouts/custom/page.html" << 'EOF'
 {{ yield main_layout() content }}
 
 <article>
-  <h1>{{ note.Title }}</h1>
+  <h1>{{ note.Title() }}</h1>
 
   <div>
     {{ note.HTMLString() | unsafe }}
@@ -889,6 +889,187 @@ cat > "$VAULT/_layouts/custom/page.html" << 'EOF'
 </article>
 
 {{ end }}
+EOF
+
+# ============================================================================
+# Template Views Tests (_layouts)
+# ============================================================================
+
+cat > "$VAULT/_layouts/meta-test.html" << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{{ note.Title() }}</title>
+</head>
+<body>
+  <h1>{{ note.Title() }}</h1>
+
+  <div id="meta-test">
+    <p id="meta-author">Author: {{ note.M().GetString("author", "Unknown Author") }}</p>
+    <p id="meta-version">Version: {{ note.M().GetInt("version", 0) }}</p>
+    <p id="meta-featured">Featured: {{ note.M().GetBool("featured", false) }}</p>
+    <p id="meta-has-author">Has author: {{ note.M().Has("author") }}</p>
+    <p id="meta-has-missing">Has missing: {{ note.M().Has("nonexistent") }}</p>
+  </div>
+
+  <div id="note-info">
+    <p id="note-reading-time">Reading time: {{ note.ReadingTime() }} min</p>
+    <p id="note-path-id">Path ID: {{ note.PathID() }}</p>
+    <p id="note-permalink">Permalink: {{ note.Permalink() }}</p>
+  </div>
+
+  <div id="content">
+    {{ note.HTMLString() | unsafe }}
+  </div>
+</body>
+</html>
+EOF
+
+cat > "$VAULT/_layouts/with-sidebar.html" << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{{ note.Title() }}</title>
+</head>
+<body>
+  <div id="layout-container">
+    {{ sidebar := nvs.ByPath("/_test_sidebar.md") }}
+    {{ if sidebar }}
+    <aside id="custom-sidebar">
+      <h2>{{ sidebar.Title() }}</h2>
+      {{ sidebar.HTMLString() | unsafe }}
+    </aside>
+    {{ end }}
+
+    <main id="main-content">
+      <h1>{{ note.Title() }}</h1>
+      {{ note.HTMLString() | unsafe }}
+    </main>
+
+    {{ footer := nvs.ByPath("/_test_footer.md") }}
+    {{ if footer }}
+    <footer id="custom-footer">
+      {{ footer.HTMLString() | unsafe }}
+    </footer>
+    {{ end }}
+  </div>
+</body>
+</html>
+EOF
+
+cat > "$VAULT/_layouts/with-backlinks.html" << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{{ note.Title() }}</title>
+</head>
+<body>
+  <main>
+    <h1>{{ note.Title() }}</h1>
+    {{ note.HTMLString() | unsafe }}
+  </main>
+
+  <section id="backlinks">
+    <h2>Backlinks</h2>
+    {{ backlinks := nvs.BackLinks(note) }}
+    {{ if len(backlinks) > 0 }}
+    <ul id="backlinks-list">
+      {{ range i, link := backlinks }}
+      <li><a href="{{ nvs.ResolveURL(link) }}">{{ link.Title() }}</a></li>
+      {{ end }}
+    </ul>
+    {{ else }}
+    <p id="no-backlinks">No pages link to this one.</p>
+    {{ end }}
+  </section>
+</body>
+</html>
+EOF
+
+# Test notes for template views
+
+cat > "$VAULT/template_meta_test.md" << 'EOF'
+---
+free: true
+layout: meta-test
+title: Meta Test Page
+author: John Doe
+version: 42
+featured: true
+---
+
+This page tests the template Meta accessor methods.
+EOF
+
+cat > "$VAULT/template_meta_defaults.md" << 'EOF'
+---
+free: true
+layout: meta-test
+title: Meta Defaults Page
+---
+
+This page tests Meta accessor default values (no custom meta fields set).
+EOF
+
+cat > "$VAULT/_test_sidebar.md" << 'EOF'
+---
+title: Test Sidebar
+---
+
+- [Home](/)
+- [Public](/public)
+- [About](/about)
+
+This is the sidebar content.
+EOF
+
+cat > "$VAULT/_test_footer.md" << 'EOF'
+---
+title: Test Footer
+---
+
+© 2025 Test Site. All rights reserved.
+EOF
+
+cat > "$VAULT/template_sidebar_test.md" << 'EOF'
+---
+free: true
+layout: with-sidebar
+title: Sidebar Test Page
+---
+
+This page tests nvs.ByPath() for loading sidebar and footer from separate notes.
+EOF
+
+cat > "$VAULT/template_backlinks_target.md" << 'EOF'
+---
+free: true
+layout: with-backlinks
+title: Backlinks Target
+---
+
+This page is linked from other pages. Check the backlinks section below.
+EOF
+
+cat > "$VAULT/template_backlinks_source1.md" << 'EOF'
+---
+free: true
+title: Backlinks Source 1
+---
+
+This page links to [[template_backlinks_target]].
+EOF
+
+cat > "$VAULT/template_backlinks_source2.md" << 'EOF'
+---
+free: true
+title: Backlinks Source 2
+---
+
+Another page linking to [[template_backlinks_target]].
 EOF
 
 # ============================================================================

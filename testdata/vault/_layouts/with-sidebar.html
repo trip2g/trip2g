@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{{ note.Title() }}</title>
+</head>
+<body>
+  <div id="layout-container">
+    {{ sidebar := nvs.ByPath("/_test_sidebar.md") }}
+    {{ if sidebar }}
+    <aside id="custom-sidebar">
+      <h2>{{ sidebar.Title() }}</h2>
+      {{ sidebar.HTMLString() | unsafe }}
+    </aside>
+    {{ end }}
+
+    <main id="main-content">
+      <h1>{{ note.Title() }}</h1>
+      {{ note.HTMLString() | unsafe }}
+    </main>
+
+    {{ footer := nvs.ByPath("/_test_footer.md") }}
+    {{ if footer }}
+    <footer id="custom-footer">
+      {{ footer.HTMLString() | unsafe }}
+    </footer>
+    {{ end }}
+  </div>
+</body>
+</html>

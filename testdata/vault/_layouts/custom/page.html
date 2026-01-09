@@ -5,7 +5,7 @@
 {{ yield main_layout() content }}
 
 <article>
-  <h1>{{ note.Title }}</h1>
+  <h1>{{ note.Title() }}</h1>
 
   <div>
     {{ note.HTMLString() | unsafe }}

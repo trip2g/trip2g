@@ -19,12 +19,12 @@ func (pr *PartialRenderer) SetContent(astNode ast.Node, content []byte) {
 	pr.content = content
 }
 
-func (pr *PartialRenderer) HeadingBlocks(level int) []model.NoteViewHeadingBlock {
+func (pr *PartialRenderer) Sections(level int) []model.NoteViewSection {
 	if pr.ast == nil || pr.content == nil {
 		return nil
 	}
 
-	var blocks []model.NoteViewHeadingBlock
+	var blocks []model.NoteViewSection
 	var allNodes []ast.Node
 
 	// First pass: collect all top-level nodes
@@ -32,7 +32,7 @@ func (pr *PartialRenderer) HeadingBlocks(level int) []model.NoteViewHeadingBlock
 		allNodes = append(allNodes, child)
 	}
 
-	var currentBlock *model.NoteViewHeadingBlock
+	var currentBlock *model.NoteViewSection
 	var contentStart = -1
 
 	for i, node := range allNodes {
@@ -46,7 +46,7 @@ func (pr *PartialRenderer) HeadingBlocks(level int) []model.NoteViewHeadingBlock
 				}
 
 				// Start new block
-				currentBlock = &model.NoteViewHeadingBlock{
+				currentBlock = &model.NoteViewSection{
 					TitleHTML: pr.renderHeading(heading),
 				}
 				contentStart = i + 1
@@ -72,9 +72,86 @@ func (pr *PartialRenderer) HeadingBlocks(level int) []model.NoteViewHeadingBlock
 	return blocks
 }
 
-func (pr *PartialRenderer) Introduce() model.NoteViewHeadingBlock {
+// HeadingBlocks is deprecated, use Sections instead.
+func (pr *PartialRenderer) HeadingBlocks(level int) []model.NoteViewSection {
+	return pr.Sections(level)
+}
+
+// Section finds a section by its heading title.
+// Returns nil if no heading with the given title is found.
+// The title is matched against the plain text content of the heading.
+func (pr *PartialRenderer) Section(title string) *model.NoteViewSection {
 	if pr.ast == nil || pr.content == nil {
-		return model.NoteViewHeadingBlock{}
+		return nil
+	}
+
+	var allNodes []ast.Node
+
+	// Collect all top-level nodes
+	for child := pr.ast.FirstChild(); child != nil; child = child.NextSibling() {
+		allNodes = append(allNodes, child)
+	}
+
+	// Find the heading with matching title
+	for i, node := range allNodes {
+		heading, ok := node.(*ast.Heading)
+		if !ok {
+			continue
+		}
+
+		// Get plain text title for comparison
+		headingText := extractHeadingText(pr.content, heading)
+		if headingText != title {
+			continue
+		}
+
+		// Found the heading, now collect content until next heading of same or higher level
+		contentEnd := len(allNodes)
+		for j := i + 1; j < len(allNodes); j++ {
+			nextHeading, isHeading := allNodes[j].(*ast.Heading)
+			if isHeading && nextHeading.Level <= heading.Level {
+				contentEnd = j
+				break
+			}
+		}
+
+		return &model.NoteViewSection{
+			TitleHTML:   pr.renderHeading(heading),
+			ContentHTML: pr.renderNodeRange(allNodes, i+1, contentEnd),
+		}
+	}
+
+	return nil
+}
+
+// extractHeadingText extracts plain text from a heading node.
+func extractHeadingText(content []byte, heading *ast.Heading) string {
+	var text bytes.Buffer
+
+	for child := heading.FirstChild(); child != nil; child = child.NextSibling() {
+		extractTextFromNodeRecursive(content, child, &text)
+	}
+
+	return text.String()
+}
+
+// extractTextFromNodeRecursive extracts plain text from a node and its children.
+func extractTextFromNodeRecursive(content []byte, node ast.Node, buf *bytes.Buffer) {
+	switch n := node.(type) {
+	case *ast.Text:
+		buf.Write(n.Segment.Value(content))
+	case *ast.String:
+		buf.Write(n.Value)
+	default:
+		for child := node.FirstChild(); child != nil; child = child.NextSibling() {
+			extractTextFromNodeRecursive(content, child, buf)
+		}
+	}
+}
+
+func (pr *PartialRenderer) Introduce() model.NoteViewSection {
+	if pr.ast == nil || pr.content == nil {
+		return model.NoteViewSection{}
 	}
 
 	var allNodes []ast.Node
@@ -95,14 +172,14 @@ func (pr *PartialRenderer) Introduce() model.NoteViewHeadingBlock {
 
 	// If no headings found, return all content
 	if firstHeadingIndex == -1 {
-		return model.NoteViewHeadingBlock{
+		return model.NoteViewSection{
 			TitleHTML:   "",
 			ContentHTML: pr.renderNodeRange(allNodes, 0, len(allNodes)),
 		}
 	}
 
 	// Return content before the first heading
-	return model.NoteViewHeadingBlock{
+	return model.NoteViewSection{
 		TitleHTML:   "",
 		ContentHTML: pr.renderNodeRange(allNodes, 0, firstHeadingIndex),
 	}

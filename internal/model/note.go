@@ -53,14 +53,21 @@ type NoteAssetReplace struct {
 	ExpiresAt time.Time
 }
 
-type NoteViewHeadingBlock struct {
+type NoteViewSection struct {
 	TitleHTML   string
 	ContentHTML string
 }
 
+// NoteViewHeadingBlock is an alias for NoteViewSection (deprecated, use NoteViewSection).
+type NoteViewHeadingBlock = NoteViewSection
+
 type NoteViewPartialRenderer interface {
-	HeadingBlocks(level int) []NoteViewHeadingBlock
-	Introduce() NoteViewHeadingBlock
+	Sections(level int) []NoteViewSection
+	Section(title string) *NoteViewSection
+	Introduce() NoteViewSection
+
+	// HeadingBlocks is deprecated, use Sections instead.
+	HeadingBlocks(level int) []NoteViewSection
 }
 
 type SearchResult struct {

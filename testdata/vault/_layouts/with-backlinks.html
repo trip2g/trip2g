@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{{ note.Title() }}</title>
+</head>
+<body>
+  <main>
+    <h1>{{ note.Title() }}</h1>
+    {{ note.HTMLString() | unsafe }}
+  </main>
+
+  <section id="backlinks">
+    <h2>Backlinks</h2>
+    {{ backlinks := nvs.BackLinks(note) }}
+    {{ if len(backlinks) > 0 }}
+    <ul id="backlinks-list">
+      {{ range i, link := backlinks }}
+      <li><a href="{{ nvs.ResolveURL(link) }}">{{ link.Title() }}</a></li>
+      {{ end }}
+    </ul>
+    {{ else }}
+    <p id="no-backlinks">No pages link to this one.</p>
+    {{ end }}
+  </section>
+</body>
+</html>

@@ -8,6 +8,7 @@ import (
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/render404"
 	"trip2g/internal/case/renderlayout"
+	"trip2g/internal/templateviews"
 
 	"github.com/CloudyKit/jet/v6"
 	"github.com/valyala/fasthttp"
@@ -126,15 +127,31 @@ func renderLayout(
 	env Env,
 	resp *Response,
 	layoutName string,
-) (bool, error) {
+) (processed bool, err error) {
 	layout, layoutExists := env.Layouts().Map["/"+layoutName]
 	if !layoutExists {
 		env.Logger().Warn("layout not found: " + resp.Note.Layout)
 		return false, nil
 	}
 
+	// Recover from template panics (e.g., type conversion errors in Jet)
+	defer func() {
+		if r := recover(); r != nil {
+			env.Logger().Error("template panic", "layout", layoutName, "error", r)
+			if resp.IsAdmin {
+				_, _ = ctx.WriteString(fmt.Sprintf("Template error: %v", r))
+				processed = true
+				err = nil
+			} else {
+				processed = false
+				err = fmt.Errorf("template panic: %v", r)
+			}
+		}
+	}()
+
 	vars := make(jet.VarMap)
-	vars["note"] = reflect.ValueOf(resp.Note)
+	vars["note"] = reflect.ValueOf(templateviews.NewNote(resp.Note))
+	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(resp.Notes, resp.DefaultVersion))
 
 	viewErr := layout.View.Execute(ctx, vars, resp)
 	if viewErr != nil {

@@ -2,10 +2,15 @@ package layoutloader
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
+	"time"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
+	"trip2g/internal/templateviews"
 
+	"github.com/CloudyKit/jet/v6"
+	"github.com/bradleyjkemp/cupaloy"
 	"github.com/stretchr/testify/require"
 )
 
@@ -73,4 +78,165 @@ func TestYieldBlocks(t *testing.T) {
 	layouts, err := Load(env, sources, options)
 	require.NoError(t, err)
 	require.Len(t, layouts.Map, 2)
+}
+
+// createTestNVS creates NVS with test notes for template tests.
+func createTestNVS() *templateviews.NVS {
+	nvs := model.NewNoteViews()
+
+	nvs.PathMap["blog/hello-world.md"] = &model.NoteView{
+		Path:      "blog/hello-world.md",
+		Title:     "Hello World",
+		Permalink: "/blog/hello-world",
+		CreatedAt: time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC),
+		RawMeta: map[string]interface{}{
+			"order": 2,
+		},
+	}
+	nvs.PathMap["blog/getting-started.md"] = &model.NoteView{
+		Path:      "blog/getting-started.md",
+		Title:     "Getting Started",
+		Permalink: "/blog/getting-started",
+		CreatedAt: time.Date(2024, 1, 10, 0, 0, 0, 0, time.UTC),
+		RawMeta: map[string]interface{}{
+			"order": 1,
+		},
+	}
+	nvs.PathMap["blog/advanced-topics.md"] = &model.NoteView{
+		Path:      "blog/advanced-topics.md",
+		Title:     "Advanced Topics",
+		Permalink: "/blog/advanced-topics",
+		CreatedAt: time.Date(2024, 1, 20, 0, 0, 0, 0, time.UTC),
+		RawMeta: map[string]interface{}{
+			"order": 3,
+		},
+	}
+
+	return templateviews.NewNVS(nvs, "live")
+}
+
+func TestTemplateViews_ByGlobSortByTitle(t *testing.T) {
+	sources := []SourceFile{{
+		ID:        "/test/blog-list",
+		VersionID: 1,
+		Path:      "_layouts/test/blog-list.html",
+		Content: `<ul>
+{{ range i, post := nvs.ByGlob("blog/*.md").SortBy("Title").All() }}
+<li>{{ post.Title() }}</li>
+{{ end }}
+</ul>`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	vars := make(jet.VarMap)
+	vars["nvs"] = reflect.ValueOf(createTestNVS())
+
+	var buf bytes.Buffer
+	err = layouts.Map["/test/blog-list"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+
+	cupaloy.SnapshotT(t, buf.String())
+}
+
+func TestTemplateViews_ByGlobSortByCreatedAtDesc(t *testing.T) {
+	sources := []SourceFile{{
+		ID:        "/test/blog-recent",
+		VersionID: 1,
+		Path:      "_layouts/test/blog-recent.html",
+		Content: `<ul>
+{{ range i, post := nvs.ByGlob("blog/*.md").SortBy("CreatedAt").Desc().All() }}
+<li>{{ post.Title() }} - {{ post.CreatedAt().Format("2006-01-02") }}</li>
+{{ end }}
+</ul>`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	vars := make(jet.VarMap)
+	vars["nvs"] = reflect.ValueOf(createTestNVS())
+
+	var buf bytes.Buffer
+	err = layouts.Map["/test/blog-recent"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+
+	cupaloy.SnapshotT(t, buf.String())
+}
+
+func TestTemplateViews_ByGlobSortByMetaLimit(t *testing.T) {
+	sources := []SourceFile{{
+		ID:        "/test/blog-ordered",
+		VersionID: 1,
+		Path:      "_layouts/test/blog-ordered.html",
+		Content: `<ul>
+{{ range i, post := nvs.ByGlob("blog/*.md").SortByMeta("order").Limit(2).All() }}
+<li>{{ post.Title() }}</li>
+{{ end }}
+</ul>`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	vars := make(jet.VarMap)
+	vars["nvs"] = reflect.ValueOf(createTestNVS())
+
+	var buf bytes.Buffer
+	err = layouts.Map["/test/blog-ordered"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+
+	cupaloy.SnapshotT(t, buf.String())
+}
+
+func TestTemplateViews_First(t *testing.T) {
+	sources := []SourceFile{{
+		ID:        "/test/blog-first",
+		VersionID: 1,
+		Path:      "_layouts/test/blog-first.html",
+		Content:   `{{ post := nvs.ByGlob("blog/*.md").SortBy("Title").First() }}<h1>{{ post.Title() }}</h1>`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	vars := make(jet.VarMap)
+	vars["nvs"] = reflect.ValueOf(createTestNVS())
+
+	var buf bytes.Buffer
+	err = layouts.Map["/test/blog-first"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+
+	cupaloy.SnapshotT(t, buf.String())
+}
+
+func TestTemplateViews_NoteMeta(t *testing.T) {
+	sources := []SourceFile{{
+		ID:        "/test/blog-meta",
+		VersionID: 1,
+		Path:      "_layouts/test/blog-meta.html",
+		Content: `<ul>
+{{ range i, post := nvs.ByGlob("blog/*.md").SortByMeta("order").All() }}
+<li data-order="{{ post.M().GetInt("order", 0) }}">{{ post.Title() }}</li>
+{{ end }}
+</ul>`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	vars := make(jet.VarMap)
+	vars["nvs"] = reflect.ValueOf(createTestNVS())
+
+	var buf bytes.Buffer
+	err = layouts.Map["/test/blog-meta"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+
+	cupaloy.SnapshotT(t, buf.String())
 }

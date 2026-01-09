@@ -109,6 +109,7 @@ require (
 	github.com/blevesearch/zapx/v16 v16.2.4 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
 	github.com/bluekeyes/go-gitdiff v0.7.2 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
 	github.com/bombsimon/wsl/v4 v4.7.0 // indirect
 	github.com/breml/bidichk v0.3.3 // indirect
 	github.com/breml/errchkjson v0.4.1 // indirect
