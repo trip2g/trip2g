@@ -215,6 +215,73 @@ func TestTemplateViews_First(t *testing.T) {
 	cupaloy.SnapshotT(t, buf.String())
 }
 
+// TestJetBlockNamedParams verifies that block parameters with default values work correctly.
+// Jet requires default values for parameters, otherwise named arguments don't work.
+func TestJetBlockNamedParams(t *testing.T) {
+	loader := jet.NewInMemLoader()
+	loader.Set("test.html", `{{ block card(title="", body="") }}<div><h1>{{ title }}</h1><p>{{ body }}</p></div>{{ end }}
+{{ yield card(title="Hello", body="World") }}`)
+
+	set := jet.NewSet(loader)
+	tmpl, err := set.GetTemplate("test.html")
+	require.NoError(t, err, "template should parse without error")
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, nil, nil)
+	require.NoError(t, err, "template should execute without error")
+
+	result := buf.String()
+	t.Logf("Result: %s", result)
+	require.Contains(t, result, "Hello", "title parameter should be passed")
+	require.Contains(t, result, "World", "body parameter should be passed")
+	require.NotContains(t, result, "false", "should not contain 'false' - params not working")
+}
+
+// TestJetBlockContentReserved verifies that "content" is a reserved keyword in Jet.
+// Using "content" as a block parameter name causes a parse error.
+// In Jet, "content" is used for yielding nested content: {{ yield block() content }}...{{ end }}
+func TestJetBlockContentReserved(t *testing.T) {
+	loader := jet.NewInMemLoader()
+	// "content" as parameter name causes parse error - it's a reserved keyword
+	loader.Set("test.html", `{{ block card(title="", content="") }}<div><h1>{{ title }}</h1><p>{{ content }}</p></div>{{ end }}
+{{ yield card(title="Hello", content="World") }}`)
+
+	set := jet.NewSet(loader)
+	_, err := set.GetTemplate("test.html")
+
+	// Expect parse error: "content" is a reserved keyword
+	require.Error(t, err, "template with 'content' parameter should fail to parse")
+	require.Contains(t, err.Error(), "content", "error should mention 'content' keyword")
+}
+
+// TestJetBlockYieldContent verifies the content wrapping mechanism.
+// Use "yield content" inside block to render nested HTML passed via "yield block() content ... end".
+func TestJetBlockYieldContent(t *testing.T) {
+	loader := jet.NewInMemLoader()
+	loader.Set("test.html", `{{ block cta_section(title="") }}
+<section>
+  <h2>{{ title }}</h2>
+  <p>{{ yield content }}</p>
+</section>
+{{ end }}
+{{ yield cta_section(title="Ready to start?") content }}
+  Contact us via Telegram.
+{{ end }}`)
+
+	set := jet.NewSet(loader)
+	tmpl, err := set.GetTemplate("test.html")
+	require.NoError(t, err, "template should parse")
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, nil, nil)
+	require.NoError(t, err, "template should execute")
+
+	result := buf.String()
+	t.Logf("Result: %s", result)
+	require.Contains(t, result, "Ready to start?", "title param should work")
+	require.Contains(t, result, "Contact us via Telegram", "content should be yielded")
+}
+
 func TestTemplateViews_NoteMeta(t *testing.T) {
 	sources := []SourceFile{{
 		ID:        "/test/blog-meta",
