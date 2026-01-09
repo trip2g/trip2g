@@ -144,9 +144,10 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 					Path:      note.Path,
 					VersionID: note.VersionID,
 					// without prefix and ext, starts with /
-					ID:      path[len(layoutBasePath) : len(path)-len(ext)],
-					Content: note.Content,
-					Assets:  assetMap[note.VersionID],
+					ID:              path[len(layoutBasePath) : len(path)-len(ext)],
+					Content:         note.Content,
+					OriginalContent: note.Content, // Same for .html files
+					Assets:          assetMap[note.VersionID],
 				})
 			}
 
@@ -171,11 +172,12 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 				// e.g., "_layouts/trip2g/page.html.json" -> "/trip2g/page"
 				const jsonExt = ".html.json"
 				templateSources = append(templateSources, layoutloader.SourceFile{
-					Path:      note.Path,
-					VersionID: note.VersionID,
-					ID:        path[len(layoutBasePath) : len(path)-len(jsonExt)],
-					Content:   jetContent,
-					Assets:    assetMap[note.VersionID],
+					Path:            note.Path,
+					VersionID:       note.VersionID,
+					ID:              path[len(layoutBasePath) : len(path)-len(jsonExt)],
+					Content:         jetContent,
+					OriginalContent: note.Content, // Original JSON content for sync
+					Assets:          assetMap[note.VersionID],
 				})
 			}
 

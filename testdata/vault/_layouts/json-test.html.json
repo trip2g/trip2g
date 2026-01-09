@@ -9,7 +9,7 @@
     {"type": "html", "html": "</h1>\n</header>\n"},
     {
       "type": "if",
-      "condition": "note.M().GetBool(\"show_sidebar\")",
+      "condition": "note.M().GetBool(\"show_sidebar\", false)",
       "content": [
         {"type": "html", "html": "<aside id=\"json-layout-sidebar\">"},
         {"type": "note_content", "path": "/_json_test_sidebar.md"},

@@ -1770,7 +1770,8 @@ func (r *notePathResolver) Content(ctx context.Context, obj *db.NotePath) (strin
 	layouts := r.env(ctx).Layouts()
 	for _, layout := range layouts.Map {
 		if layout.Path == obj.Value {
-			return layout.Content, nil
+			// Return original content for sync (JSON for .html.json, HTML for .html)
+			return layout.OriginalContent, nil
 		}
 	}
 

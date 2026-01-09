@@ -74,7 +74,7 @@ JSON-формат для описания страничных layout-ов. Ис
 ```json
 {
   "type": "if",
-  "condition": "note.M().GetBool(\"show_block\")",
+  "condition": "note.M().GetBool(\"show_block\", false)",
   "content": [
     { "type": "note_content", "path": "_block.md" }
   ]
@@ -83,7 +83,7 @@ JSON-формат для описания страничных layout-ов. Ис
 
 Результат Jet:
 ```jet
-{{ if note.M().GetBool("show_block") }}
+{{ if note.M().GetBool("show_block", false) }}
   {{ /* содержимое content */ }}
 {{ end }}
 ```
@@ -248,7 +248,7 @@ JSON-формат для описания страничных layout-ов. Ис
     },
     {
       "type": "if",
-      "condition": "note.M().GetBool(\"show_block\")",
+      "condition": "note.M().GetBool(\"show_block\", false)",
       "content": [
         {
           "type": "note_content",
@@ -267,7 +267,7 @@ JSON-формат для описания страничных layout-ов. Ис
 
 ```jet
 {{ yield header(level=2) }}
-{{ if note.M().GetBool("show_block") }}
+{{ if note.M().GetBool("show_block", false) }}
   {{ nvs.ByPath("_block.md").HTMLString() | unsafe }}
 {{ end }}
 {{ note.HTMLString() | unsafe }}

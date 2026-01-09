@@ -91,10 +91,14 @@ func Resolve(ctx context.Context, env Env, input model.PushNotesInput) (model.Pu
 }
 
 func validateUpdate(log logger.Logger, update model.PushNoteInput) *model.ErrorPayload {
-	_, allowed := allowedExtensins[strings.ToLower(filepath.Ext(update.Path))]
+	// Check for .html.json first (JSON layout format) since filepath.Ext returns .json
+	allowed := strings.HasSuffix(strings.ToLower(update.Path), ".html.json")
+	if !allowed {
+		_, allowed = allowedExtensins[strings.ToLower(filepath.Ext(update.Path))]
+	}
 	if !allowed {
 		log.Info("unsupported file extension", "path", update.Path)
-		return &model.ErrorPayload{Message: "Only .md and .html files are supported"}
+		return &model.ErrorPayload{Message: "Only .md, .html, and .html.json files are supported"}
 	}
 
 	contentType := http.DetectContentType([]byte(update.Content))

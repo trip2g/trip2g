@@ -16,8 +16,12 @@ type SourceFile struct {
 	ID        string
 	VersionID int64
 	Path      string
-	Content   string
+	Content   string // Processed Jet template content
 	Assets    map[string]*model.NoteAssetReplace
+
+	// OriginalContent stores the original file content before conversion
+	// (JSON for .html.json files, same as Content for .html files)
+	OriginalContent string
 }
 
 type Loader struct {
@@ -135,11 +139,12 @@ func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, e
 		}
 
 		layouts.Map[source.ID] = model.Layout{
-			VersionID: source.VersionID,
-			Path:      source.Path,
-			View:      view,
-			Assets:    assets,
-			Content:   source.Content,
+			VersionID:       source.VersionID,
+			Path:            source.Path,
+			View:            view,
+			Assets:          assets,
+			Content:         source.Content,
+			OriginalContent: source.OriginalContent,
 
 			AssetReplaces: source.Assets,
 		}

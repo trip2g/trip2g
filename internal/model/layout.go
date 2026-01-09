@@ -12,7 +12,11 @@ type Layout struct {
 	Path      string
 	View      *jet.Template
 	Assets    []LayoutAsset
-	Content   string
+	Content   string // Processed Jet template content
+
+	// OriginalContent stores the original file content (JSON for .html.json, HTML for .html)
+	// Used for syncing back to clients
+	OriginalContent string
 
 	AssetReplaces map[string]*NoteAssetReplace
 }
