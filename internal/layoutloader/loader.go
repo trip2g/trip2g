@@ -66,6 +66,10 @@ func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, e
 
 	layouts := model.Layouts{
 		Map: make(map[string]model.Layout),
+		Blocks: model.LayoutBlocks{
+			ByName: make(map[string][]model.LayoutBlock),
+			ByPath: make(map[string]model.LayoutBlock),
+		},
 	}
 
 	for _, source := range sourceFiles {
@@ -101,16 +105,30 @@ func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, e
 			continue
 		}
 
-		finder := assetFinder{}
-		utils.Walk(view, &finder)
+		assetWalker := assetFinder{}
+		utils.Walk(view, &assetWalker)
 
-		log.Debug("detect assets", "assets", finder.List)
+		log.Debug("detect assets", "assets", assetWalker.List)
+
+		// Find block definitions
+		blockWalker := blockFinder{sourceID: source.ID}
+		utils.Walk(view, &blockWalker)
+
+		for _, block := range blockWalker.blocks {
+			// Add to ByName (may have duplicates)
+			layouts.Blocks.ByName[block.Name] = append(layouts.Blocks.ByName[block.Name], block)
+			// Add to ByPath (unique key: sourceID/blockName)
+			pathKey := block.SourceID + "/" + block.Name
+			layouts.Blocks.ByPath[pathKey] = block
+		}
+
+		log.Debug("detect blocks", "count", len(blockWalker.blocks))
 
 		assets := []model.LayoutAsset{}
 
 		dir := filepath.Dir(source.Path)
 
-		for _, assetPath := range finder.List {
+		for _, assetPath := range assetWalker.List {
 			assets = append(assets, model.LayoutAsset{
 				Path: filepath.Join(dir, assetPath),
 			})
@@ -161,4 +179,79 @@ func (w *assetFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	vc.Visit(node)
 
 	w.WaitNext = false
+}
+
+// blockFinder walks the AST to find block definitions.
+type blockFinder struct {
+	sourceID string
+	blocks   []model.LayoutBlock
+}
+
+func (w *blockFinder) Visit(vc utils.VisitorContext, node jet.Node) {
+	if node == nil {
+		return
+	}
+
+	if block, ok := node.(*jet.BlockNode); ok {
+		info := model.LayoutBlock{
+			Name:     block.Name,
+			SourceID: w.sourceID,
+		}
+
+		// Extract parameters
+		if block.Parameters != nil {
+			for _, p := range block.Parameters.List {
+				param := model.LayoutBlockParam{
+					Name: p.Identifier,
+				}
+				if p.Expression != nil {
+					param.Default = p.Expression.String()
+				}
+				info.Params = append(info.Params, param)
+			}
+		}
+
+		// Check if block has {{ yield content }} inside (in List, not Content)
+		info.HasContent = hasYieldContent(block.List)
+
+		w.blocks = append(w.blocks, info)
+	}
+
+	vc.Visit(node)
+}
+
+// hasYieldContent recursively checks if a block contains {{ yield content }}.
+func hasYieldContent(node jet.Node) bool {
+	if node == nil {
+		return false
+	}
+
+	switch n := node.(type) {
+	case *jet.YieldNode:
+		if n.IsContent {
+			return true
+		}
+	case *jet.BlockNode:
+		if hasYieldContent(n.List) || hasYieldContent(n.Content) {
+			return true
+		}
+	case *jet.ListNode:
+		if n != nil {
+			for _, child := range n.Nodes {
+				if hasYieldContent(child) {
+					return true
+				}
+			}
+		}
+	case *jet.IfNode:
+		if hasYieldContent(n.List) || hasYieldContent(n.ElseList) {
+			return true
+		}
+	case *jet.RangeNode:
+		if hasYieldContent(n.List) || hasYieldContent(n.ElseList) {
+			return true
+		}
+	}
+
+	return false
 }

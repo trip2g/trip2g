@@ -282,6 +282,153 @@ func TestJetBlockYieldContent(t *testing.T) {
 	require.Contains(t, result, "Contact us via Telegram", "content should be yielded")
 }
 
+func TestBlockFinder_SimpleBlock(t *testing.T) {
+	sources := []SourceFile{{
+		ID:        "/test/blocks",
+		VersionID: 1,
+		Path:      "_layouts/test/blocks.html",
+		Content:   `{{ block header(level=1) }}<h{{ level }}>Header</h{{ level }}>{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	// Check block found by name
+	blocks := layouts.Blocks.ByName["header"]
+	require.Len(t, blocks, 1)
+	require.Equal(t, "header", blocks[0].Name)
+	require.Equal(t, "/test/blocks", blocks[0].SourceID)
+	require.False(t, blocks[0].HasContent)
+
+	// Check params
+	require.Len(t, blocks[0].Params, 1)
+	require.Equal(t, "level", blocks[0].Params[0].Name)
+	require.Equal(t, "1", blocks[0].Params[0].Default)
+
+	// Check block found by path
+	block, ok := layouts.Blocks.ByPath["/test/blocks/header"]
+	require.True(t, ok)
+	require.Equal(t, "header", block.Name)
+}
+
+func TestBlockFinder_BlockWithContent(t *testing.T) {
+	sources := []SourceFile{{
+		ID:        "/test/blocks",
+		VersionID: 1,
+		Path:      "_layouts/test/blocks.html",
+		Content:   `{{ block card(title="") }}<div><h1>{{ title }}</h1><p>{{ yield content }}</p></div>{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	blocks := layouts.Blocks.ByName["card"]
+	require.Len(t, blocks, 1)
+	require.True(t, blocks[0].HasContent, "block with {{ yield content }} should have HasContent=true")
+}
+
+func TestBlockFinder_MultipleBlocks(t *testing.T) {
+	sources := []SourceFile{{
+		ID:        "/test/blocks",
+		VersionID: 1,
+		Path:      "_layouts/test/blocks.html",
+		Content: `{{ block header(level=1) }}<h{{ level }}>Header</h{{ level }}>{{ end }}
+{{ block footer() }}<footer>Footer</footer>{{ end }}
+{{ block card(title="", subtitle="") }}<div>{{ title }} - {{ subtitle }}</div>{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	require.Len(t, layouts.Blocks.ByName["header"], 1)
+	require.Len(t, layouts.Blocks.ByName["footer"], 1)
+	require.Len(t, layouts.Blocks.ByName["card"], 1)
+
+	// Check card has 2 params
+	card := layouts.Blocks.ByName["card"][0]
+	require.Len(t, card.Params, 2)
+	require.Equal(t, "title", card.Params[0].Name)
+	require.Equal(t, "subtitle", card.Params[1].Name)
+}
+
+func TestBlockFinder_DuplicateBlockNames(t *testing.T) {
+	sources := []SourceFile{{
+		ID:        "/blocks",
+		VersionID: 1,
+		Path:      "_layouts/blocks.html",
+		Content:   `{{ block card() }}<div>Card from blocks</div>{{ end }}`,
+	}, {
+		ID:        "/components",
+		VersionID: 2,
+		Path:      "_layouts/components.html",
+		Content:   `{{ block card() }}<div>Card from components</div>{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	// Both blocks should be in ByName
+	cards := layouts.Blocks.ByName["card"]
+	require.Len(t, cards, 2)
+
+	// Each should have unique path
+	_, ok1 := layouts.Blocks.ByPath["/blocks/card"]
+	_, ok2 := layouts.Blocks.ByPath["/components/card"]
+	require.True(t, ok1)
+	require.True(t, ok2)
+}
+
+func TestBlocksLookup(t *testing.T) {
+	sources := []SourceFile{{
+		ID:        "/blocks",
+		VersionID: 1,
+		Path:      "_layouts/blocks.html",
+		Content:   `{{ block header() }}Header{{ end }}{{ block card() }}Card1{{ end }}`,
+	}, {
+		ID:        "/components",
+		VersionID: 2,
+		Path:      "_layouts/components.html",
+		Content:   `{{ block card() }}Card2{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	// Unique block - lookup by name works
+	block, found, errMsg := layouts.Blocks.Lookup("header")
+	require.True(t, found)
+	require.Empty(t, errMsg)
+	require.Equal(t, "header", block.Name)
+
+	// Duplicate block - lookup by name fails with suggestion
+	_, found, errMsg = layouts.Blocks.Lookup("card")
+	require.False(t, found)
+	require.Contains(t, errMsg, "ambiguous")
+	require.Contains(t, errMsg, "/blocks/card")
+	require.Contains(t, errMsg, "/components/card")
+
+	// Lookup by full path works
+	block, found, errMsg = layouts.Blocks.Lookup("/blocks/card")
+	require.True(t, found)
+	require.Empty(t, errMsg)
+	require.Equal(t, "/blocks", block.SourceID)
+
+	block, found, errMsg = layouts.Blocks.Lookup("/components/card")
+	require.True(t, found)
+	require.Empty(t, errMsg)
+	require.Equal(t, "/components", block.SourceID)
+
+	// Non-existent block
+	_, found, errMsg = layouts.Blocks.Lookup("nonexistent")
+	require.False(t, found)
+	require.Empty(t, errMsg)
+}
+
 func TestTemplateViews_NoteMeta(t *testing.T) {
 	sources := []SourceFile{{
 		ID:        "/test/blog-meta",
