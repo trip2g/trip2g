@@ -150,6 +150,35 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 				})
 			}
 
+		case ".json":
+			// Handle .html.json files (JSON layout format)
+			if !strings.HasSuffix(note.Path, ".html.json") {
+				l.log.Warn("unknown json file", "path", note.Path)
+				continue
+			}
+
+			path := strings.Trim(note.Path, "/")
+
+			if strings.HasPrefix(path, layoutBasePath) {
+				// Convert JSON layout to Jet template
+				jetContent, err := layoutloader.ConvertJSONLayout([]byte(note.Content))
+				if err != nil {
+					l.log.Error("failed to convert json layout", "path", note.Path, "error", err)
+					continue
+				}
+
+				// ID: without prefix and .html.json extension, starts with /
+				// e.g., "_layouts/trip2g/page.html.json" -> "/trip2g/page"
+				const jsonExt = ".html.json"
+				templateSources = append(templateSources, layoutloader.SourceFile{
+					Path:      note.Path,
+					VersionID: note.VersionID,
+					ID:        path[len(layoutBasePath) : len(path)-len(jsonExt)],
+					Content:   jetContent,
+					Assets:    assetMap[note.VersionID],
+				})
+			}
+
 		default:
 			l.log.Warn("unknown note extension", "path", note.Path, "ext", ext)
 		}
