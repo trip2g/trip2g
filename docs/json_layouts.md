@@ -1,7 +1,5 @@
 # JSON Layouts Format
 
-> **TODO**: После завершения реализации убрать секцию "План реализации" — оставить только документацию формата.
-
 JSON-формат для описания страничных layout-ов. Используется визуальным редактором на фронтенде для drag-and-drop сборки страниц.
 
 ## Обзор
@@ -272,88 +270,30 @@ pushNotes (Obsidian) → noteloader → layoutloader → Jet template
 | `internal/layoutloader/json_layout_test.go` | Тесты конвертера |
 | `internal/noteloader/loader.go` | Обработка `.html.json` расширения |
 
-### План реализации
+### Статус реализации
 
-**1. Конвертер `json_layout.go`**
+✅ **Готово:**
+- Конвертер `json_layout.go` с полной поддержкой всех типов блоков
+- Обработка ошибок с путями (`body[2].content[0]`) для отладки
+- Интеграция в `noteloader` - файлы `.html.json` конвертируются на лету
+- Полное покрытие тестами (28 тестов)
 
-```go
-// JSONLayout represents the root structure of .html.json files.
-type JSONLayout struct {
-    Meta map[string]any `json:"meta"`
-    Body []JSONNode     `json:"body"`
-}
+### Дальнейшие улучшения
 
-// JSONNode represents a single node in the layout tree.
-type JSONNode struct {
-    Type       string         `json:"type"`
-    Name       string         `json:"name,omitempty"`       // block, import
-    Args       map[string]any `json:"args,omitempty"`       // block
-    Content    []JSONNode     `json:"content,omitempty"`    // block, if, range
-    Condition  string         `json:"condition,omitempty"`  // if
-    Path       string         `json:"path,omitempty"`       // note_content, asset
-    HTML       string         `json:"content,omitempty"`    // html (alias)
-    Expr       string         `json:"expr,omitempty"`       // expr
-    Iterator   string         `json:"iterator,omitempty"`   // range
-    Collection string         `json:"collection,omitempty"` // range
-}
+**Визуальный редактор (frontend):**
+- [ ] Компонент редактора с drag-and-drop
+- [ ] Property panel для редактирования `args`
+- [ ] Превью сгенерированного HTML
+- [ ] Валидация JSON в реальном времени
 
-// ConvertJSONLayout converts JSON layout to Jet template string.
-func ConvertJSONLayout(jsonContent []byte) (string, error)
-```
+**Расширения формата:**
+- [ ] `else` для блоков `if`
+- [ ] `else` для блоков `range` (пустая коллекция)
+- [ ] Вложенные переменные в `expr` (например `{{ set var = value }}`)
 
-**2. Обработка ошибок**
-
-Ошибки должны быть понятны AI и человеку:
-
-```go
-type ConvertError struct {
-    Path    string // "body[2].content[0]"
-    Type    string // node type
-    Field   string // problematic field
-    Message string // human-readable description
-}
-
-// Примеры:
-// "body[1]: type 'block' requires 'name' field"
-// "body[2].content[0]: unknown type 'foo', expected: block, if, range, expr, html, asset, note_content, import"
-```
-
-**3. Интеграция в noteloader**
-
-В `internal/noteloader/loader.go`:
-
-```go
-case ".html.json":
-    path := strings.Trim(note.Path, "/")
-    if strings.HasPrefix(path, layoutBasePath) {
-        // Конвертируем JSON → Jet
-        jetContent, err := layoutloader.ConvertJSONLayout([]byte(note.Content))
-        if err != nil {
-            l.log.Error("failed to convert json layout", "path", note.Path, "error", err)
-            continue
-        }
-
-        templateSources = append(templateSources, layoutloader.SourceFile{
-            Path:      note.Path,
-            VersionID: note.VersionID,
-            ID:        path[len(layoutBasePath) : len(path)-len(".html.json")],
-            Content:   jetContent,
-            Assets:    assetMap[note.VersionID],
-        })
-    }
-```
-
-**4. Тесты**
-
-- `TestConvertJSONLayout_Block` — простой блок
-- `TestConvertJSONLayout_BlockWithArgs` — блок с параметрами
-- `TestConvertJSONLayout_BlockWithContent` — блок с вложенным контентом
-- `TestConvertJSONLayout_If` — условный блок
-- `TestConvertJSONLayout_Range` — цикл
-- `TestConvertJSONLayout_NoteContent` — контент заметки
-- `TestConvertJSONLayout_NoteContentWithPath` — включение другой заметки
-- `TestConvertJSONLayout_ComplexLayout` — полный пример
-- `TestConvertJSONLayout_Errors` — проверка сообщений об ошибках
+**Интеграция:**
+- [ ] GraphQL мутация для сохранения JSON layouts
+- [ ] Автодополнение имён блоков из реестра блоков (`LayoutBlocks`)
 
 ### Порядок генерации Jet
 
