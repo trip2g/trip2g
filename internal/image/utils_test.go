@@ -31,10 +31,14 @@ func TestIsMediaExtension(t *testing.T) {
 		// Mixed case
 		{"Mp4 mixed", "video.Mp4", true},
 		{"Mov mixed", "video.Mov", true},
+		// Documents/audio
+		{"txt file", "doc.txt", true},
+		{"pdf file", "doc.pdf", true},
+		{"mp3 file", "audio.mp3", true},
 		// Non-media
-		{"txt file", "doc.txt", false},
-		{"pdf file", "doc.pdf", false},
 		{"no extension", "noext", false},
+		{"html file", "page.html", false},
+		{"go file", "main.go", false},
 	}
 
 	for _, tt := range tests {

@@ -586,6 +586,32 @@ Image: ![alt](local.png) and remote ![remote](https://example.com/image.png)`),
 	}, pages.Map["/links"].Assets)
 }
 
+// TestNavigationLinksNotAssets tests that navigation links like [Home](/) are NOT treated as assets.
+func TestNavigationLinksNotAssets(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "sidebar.md",
+		Content: []byte(`Navigation:
+- [Home](/)
+- [About](/about)
+- [Public](/public)
+
+Image: ![alt](image.png)`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	// Only media files should be assets, NOT navigation links
+	require.Equal(t, map[string]struct{}{
+		"image.png": struct{}{},
+	}, pages.Map["/sidebar"].Assets)
+}
+
 // TestVideoRendering tests that video files are rendered as <video> tags, not <img>.
 func TestVideoRendering(t *testing.T) {
 	log := logger.TestLogger{}

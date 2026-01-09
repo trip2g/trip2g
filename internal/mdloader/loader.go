@@ -192,6 +192,12 @@ func (ldr *loader) findAssets() error {
 						break
 					}
 
+					// Only mark as asset if it has a media extension (e.g., .png, .jpg)
+					// This avoids treating navigation links like [Home](/) as assets
+					if !image.IsMediaExtension(url) {
+						break
+					}
+
 					// Mark as asset (local file)
 					ldr.markAsset(p, l.Destination)
 				}
