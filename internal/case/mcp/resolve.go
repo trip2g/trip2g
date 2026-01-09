@@ -483,6 +483,9 @@ func mergeResults(textResults, vectorResults []model.SearchResult) []model.Searc
 	return finalResults
 }
 
+// cosineSimilarity calculates the cosine similarity between two vectors.
+// TODO: Consider replacing with Bleve's FAISS-based vector search when CGO is acceptable.
+// See: https://github.com/blevesearch/bleve/blob/master/docs/vectors.md
 func cosineSimilarity(a, b []float32) float64 {
 	if len(a) != len(b) || len(a) == 0 {
 		return 0

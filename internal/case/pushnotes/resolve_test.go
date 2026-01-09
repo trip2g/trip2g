@@ -54,7 +54,7 @@ func TestResolve(t *testing.T) {
 			validate: func(t *testing.T, result model.PushNotesOrErrorPayload) {
 				errPayload, ok := result.(*model.ErrorPayload)
 				require.True(t, ok)
-				require.Contains(t, errPayload.Message, ".md and .html")
+				require.Contains(t, errPayload.Message, ".md, .html, and .html.json")
 			},
 		},
 		{

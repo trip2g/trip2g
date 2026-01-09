@@ -34,7 +34,11 @@ func Resolve(ctx context.Context, env Env, input model.SimilarNotesInput) ([]mod
 
 	// Get the source note
 	noteViews := env.LatestNoteViews()
-	sourceNote := noteViews.Map[input.Path]
+	// Try PathMap first (e.g., "hello world.md"), then Map (Permalink, e.g., "/hello_world")
+	sourceNote := noteViews.PathMap[input.Path]
+	if sourceNote == nil {
+		sourceNote = noteViews.Map[input.Path]
+	}
 	if sourceNote == nil {
 		return []model.SimilarNote{}, nil
 	}
@@ -105,6 +109,8 @@ func Resolve(ctx context.Context, env Env, input model.SimilarNotesInput) ([]mod
 
 // cosineSimilarity calculates the cosine similarity between two vectors.
 // Returns a value between -1 and 1, where 1 means identical direction.
+// TODO: Consider replacing with Bleve's FAISS-based vector search when CGO is acceptable.
+// See: https://github.com/blevesearch/bleve/blob/master/docs/vectors.md
 func cosineSimilarity(a, b []float32) float64 {
 	if len(a) != len(b) || len(a) == 0 {
 		return 0
