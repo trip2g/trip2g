@@ -9,13 +9,59 @@ $trip2g_admin_layout_editor $mol_page
 			Content <= Note_path $mol_string
 				hint \/about
 				value? <=> note_path? \/
-		<= Layout_field $mol_form_field
-			name \Layout JSON
-			Content <= Layout_input $mol_textarea
-				hint \{"meta":{},"body":[]}
-				value? <=> layout_json? \{"meta":{},"body":[{"type":"note_content"}]}
-		<= Preview $trip2g_admin_layout_editor_preview
-			html <= preview_html \
+		<= Blocks_section $mol_view
+			sub /
+				<= Blocks_title $mol_paragraph
+					title \Blocks
+				<= Blocks_drop $mol_drop
+					adopt?transfer <=> block_adopt?transfer null
+					receive?obj <=> block_receive_end?obj null
+					Sub <= Blocks_list $mol_list
+						rows <= block_rows /
+				<= Palette $mol_row
+					sub <= palette_items /
+		<= Trash_drop $mol_drop
+			adopt?transfer <=> block_adopt?transfer null
+			receive?obj <=> block_trash?obj null
+			Sub <= Trash $mol_view
+				sub /
+					<= Trash_icon $mol_icon_trash_can_outline
+					\Drop to delete
+		<= Preview_section $mol_view
+			sub /
+				<= Preview_title $mol_paragraph
+					title \Preview
+				<= Preview $trip2g_admin_layout_editor_preview
+					html <= preview_html \
+
+$trip2g_admin_layout_editor_block $mol_drag
+	block null
+	block_index 0
+	expanded? false
+	block_changed? null
+	transfer *
+		text/plain <= block_json \
+		text/html \
+		text/uri-list \
+	Sub <= Drop $mol_drop
+		adopt?transfer <=> adopt?transfer null
+		receive?obj <=> receive?obj null
+		Sub <= Wrapper $mol_list
+			rows <= wrapper_rows /
+
+$trip2g_admin_layout_editor_block_form $mol_view
+	block null
+	block_changed? null
+	sub <= fields /
+
+$trip2g_admin_layout_editor_palette_item $mol_drag
+	block_type \
+	transfer *
+		text/plain <= block_json \
+		text/html \
+		text/uri-list \
+	Sub <= Content $mol_button_minor
+		title <= block_type
 
 $trip2g_admin_layout_editor_preview $mol_view
 	html \
