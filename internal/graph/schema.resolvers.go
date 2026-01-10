@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 	"trip2g/internal/appreq"
@@ -1258,6 +1259,11 @@ func (r *adminQueryResolver) BuildGitCommit(ctx context.Context, obj *appmodel.A
 	return r.env(ctx).GitCommit(), nil
 }
 
+// LayoutBlocks is the resolver for the layoutBlocks field.
+func (r *adminQueryResolver) LayoutBlocks(ctx context.Context, obj *appmodel.AdminQuery) ([]appmodel.LayoutBlock, error) {
+	return r.env(ctx).Layouts().Blocks.All(), nil
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminRedirectResolver) CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error) {
 	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
@@ -1665,6 +1671,56 @@ func (r *errorPayloadResolver) Message(ctx context.Context, obj *model.ErrorPayl
 	}
 
 	return strings.Join(messages, ", "), nil
+}
+
+// Value is the resolver for the value field.
+func (r *layoutBlockParamResolver) Value(ctx context.Context, obj *appmodel.LayoutBlockParam) (model.LayoutBlockParamValue, error) {
+	switch obj.Type {
+	case "string":
+		var defaultVal *string
+		if obj.Default != "" {
+			// Remove quotes from string default (e.g., `"hello"` -> `hello`)
+			s := obj.Default
+			if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+				s = s[1 : len(s)-1]
+			}
+			defaultVal = &s
+		}
+		return &model.StringParamValue{DefaultValue: defaultVal}, nil
+
+	case "int":
+		var defaultVal *int32
+		if obj.Default != "" {
+			v, err := strconv.ParseInt(obj.Default, 10, 32)
+			if err == nil {
+				i32 := int32(v)
+				defaultVal = &i32
+			}
+		}
+		return &model.IntParamValue{DefaultValue: defaultVal}, nil
+
+	case "float":
+		var defaultVal *float64
+		if obj.Default != "" {
+			v, err := strconv.ParseFloat(obj.Default, 64)
+			if err == nil {
+				defaultVal = &v
+			}
+		}
+		return &model.FloatParamValue{DefaultValue: defaultVal}, nil
+
+	case "bool":
+		var defaultVal *bool
+		if obj.Default != "" {
+			v := obj.Default == "true"
+			defaultVal = &v
+		}
+		return &model.BoolParamValue{DefaultValue: defaultVal}, nil
+
+	default:
+		// Unknown type - return nil (no value info)
+		return nil, nil
+	}
 }
 
 // RequestEmailSignInCode is the resolver for the requestEmailSignInCode field.
@@ -2670,6 +2726,9 @@ func (r *Resolver) DeletePatreonCredentialsPayload() DeletePatreonCredentialsPay
 // ErrorPayload returns ErrorPayloadResolver implementation.
 func (r *Resolver) ErrorPayload() ErrorPayloadResolver { return &errorPayloadResolver{r} }
 
+// LayoutBlockParam returns LayoutBlockParamResolver implementation.
+func (r *Resolver) LayoutBlockParam() LayoutBlockParamResolver { return &layoutBlockParamResolver{r} }
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
@@ -2828,6 +2887,7 @@ type banUserPayloadResolver struct{ *Resolver }
 type deleteBoostyCredentialsPayloadResolver struct{ *Resolver }
 type deletePatreonCredentialsPayloadResolver struct{ *Resolver }
 type errorPayloadResolver struct{ *Resolver }
+type layoutBlockParamResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type notePathResolver struct{ *Resolver }
 type noteViewResolver struct{ *Resolver }

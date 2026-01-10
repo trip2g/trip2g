@@ -113,13 +113,17 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	}
 
 	mdSources := []mdloader.SourceFile{}
-	templateSources := []layoutloader.SourceFile{}
+	templateSources := []model.LayoutSourceFile{}
 	embeddingMap := make(map[int64][]byte) // version_id -> raw embedding bytes
 
 	const layoutBasePath = "_layouts"
 
 	for _, note := range notes {
 		ext := filepath.Ext(note.Path)
+
+		if ext == ".json" && strings.HasSuffix(note.Path, ".html.json") {
+			ext = ".html.json"
+		}
 
 		switch ext {
 		case ".md":
@@ -136,50 +140,22 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 				embeddingMap[note.VersionID] = note.Embedding
 			}
 
-		case ".html":
+		case ".html", ".html.json":
 			path := strings.Trim(note.Path, "/")
 
-			if strings.HasPrefix(path, layoutBasePath) {
-				templateSources = append(templateSources, layoutloader.SourceFile{
-					Path:      note.Path,
-					VersionID: note.VersionID,
-					// without prefix and ext, starts with /
-					ID:              path[len(layoutBasePath) : len(path)-len(ext)],
-					Content:         note.Content,
-					OriginalContent: note.Content, // Same for .html files
-					Assets:          assetMap[note.VersionID],
-				})
-			}
-
-		case ".json":
-			// Handle .html.json files (JSON layout format)
-			if !strings.HasSuffix(note.Path, ".html.json") {
-				l.log.Warn("unknown json file", "path", note.Path)
+			// handle layouts only under _layouts/
+			if !strings.HasPrefix(path, layoutBasePath) {
 				continue
 			}
 
-			path := strings.Trim(note.Path, "/")
-
-			if strings.HasPrefix(path, layoutBasePath) {
-				// Convert JSON layout to Jet template
-				jetContent, err := layoutloader.ConvertJSONLayout([]byte(note.Content))
-				if err != nil {
-					l.log.Error("failed to convert json layout", "path", note.Path, "error", err)
-					continue
-				}
-
-				// ID: without prefix and .html.json extension, starts with /
-				// e.g., "_layouts/trip2g/page.html.json" -> "/trip2g/page"
-				const jsonExt = ".html.json"
-				templateSources = append(templateSources, layoutloader.SourceFile{
-					Path:            note.Path,
-					VersionID:       note.VersionID,
-					ID:              path[len(layoutBasePath) : len(path)-len(jsonExt)],
-					Content:         jetContent,
-					OriginalContent: note.Content, // Original JSON content for sync
-					Assets:          assetMap[note.VersionID],
-				})
-			}
+			templateSources = append(templateSources, model.LayoutSourceFile{
+				Path:            note.Path,
+				VersionID:       note.VersionID,
+				ID:              path[len(layoutBasePath) : len(path)-len(ext)],
+				Content:         note.Content,
+				OriginalContent: note.Content,
+				Assets:          assetMap[note.VersionID],
+			})
 
 		default:
 			l.log.Warn("unknown note extension", "path", note.Path, "ext", ext)

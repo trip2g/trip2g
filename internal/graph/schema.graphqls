@@ -925,6 +925,43 @@ type AdminQuery {
 
   healthChecks: [HealchCheck!]!
   buildGitCommit: String!
+
+  # Layout blocks for visual editor autocomplete
+  layoutBlocks: [LayoutBlock!]!
+}
+
+# Block definition from Jet templates
+type LayoutBlock {
+  name: String!           # "header", "card"
+  fullName: String!       # "blocks.html#header"
+  sourceId: String!       # "blocks.html"
+  hasContent: Boolean!    # true if block uses {{ yield content }}
+  params: [LayoutBlockParam!]!
+}
+
+# Block parameter metadata
+type LayoutBlockParam {
+  name: String!
+  value: LayoutBlockParamValue    # typed default value, null if unknown type
+  comment: String                 # human-readable description from arg_type
+}
+
+union LayoutBlockParamValue = StringParamValue | IntParamValue | FloatParamValue | BoolParamValue
+
+type StringParamValue {
+  defaultValue: String
+}
+
+type IntParamValue {
+  defaultValue: Int
+}
+
+type FloatParamValue {
+  defaultValue: Float
+}
+
+type BoolParamValue {
+  defaultValue: Boolean
 }
 
 enum HealthCheckStatus {

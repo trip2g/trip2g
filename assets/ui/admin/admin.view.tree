@@ -41,6 +41,8 @@ $trip2g_admin_app $trip2g_admin_catalog
 			close_icon <= Spread_close
 		configversions <= ListConfigVersions $trip2g_admin_configversion_catalog
 			close_icon <= Spread_close
+		layouteditor <= LayoutEditor $trip2g_admin_layout_editor
+			close_icon <= Spread_close
 		healthchecks <= ListHealthChecks $trip2g_admin_healthchecks
 			close_icon <= Spread_close
 		userbans <= ListUserBans $trip2g_admin_user_bans

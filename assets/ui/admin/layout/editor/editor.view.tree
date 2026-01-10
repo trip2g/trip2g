@@ -1,0 +1,21 @@
+$trip2g_admin_layout_editor $mol_page
+	title \Layout Editor
+	close_icon null $mol_view
+	tools /
+		<= close_icon
+	body /
+		<= Note_path_field $mol_form_field
+			name \Note Path
+			Content <= Note_path $mol_string
+				hint \/about
+				value? <=> note_path? \/
+		<= Layout_field $mol_form_field
+			name \Layout JSON
+			Content <= Layout_input $mol_textarea
+				hint \{"meta":{},"body":[]}
+				value? <=> layout_json? \{"meta":{},"body":[{"type":"note_content"}]}
+		<= Preview $trip2g_admin_layout_editor_preview
+			html <= preview_html \
+
+$trip2g_admin_layout_editor_preview $mol_view
+	html \

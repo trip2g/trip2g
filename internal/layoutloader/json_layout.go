@@ -60,27 +60,51 @@ func (e *ConvertError) Error() string {
 
 var validNodeTypes = []string{"block", "if", "range", "expr", "html", "asset", "note_content", "include_note", "import"}
 
+// ConvertOptions contains options for JSON layout conversion.
+type ConvertOptions struct {
+	// Preview wraps each node with a div containing mol_view_root attribute
+	// for visual editor integration.
+	Preview bool
+}
+
+// converter holds state during JSON to Jet conversion.
+type converter struct {
+	sb         strings.Builder
+	varCounter int
+	preview    bool
+}
+
 // ConvertJSONLayout converts JSON layout to Jet template string.
 func ConvertJSONLayout(jsonContent []byte) (string, error) {
+	return ConvertJSONLayoutWithOptions(jsonContent, ConvertOptions{})
+}
+
+// ConvertJSONLayoutWithOptions converts JSON layout to Jet template string with options.
+func ConvertJSONLayoutWithOptions(jsonContent []byte, opts ConvertOptions) (string, error) {
 	var layout JSONLayout
 	err := json.Unmarshal(jsonContent, &layout)
 	if err != nil {
 		return "", fmt.Errorf("invalid JSON: %w", err)
 	}
 
-	var sb strings.Builder
-	err = convertNodes(&sb, layout.Body, "body", 0)
+	return ConvertJSONLayoutFromStruct(layout, opts)
+}
+
+// ConvertJSONLayoutFromStruct converts a parsed JSONLayout to Jet template string.
+func ConvertJSONLayoutFromStruct(layout JSONLayout, opts ConvertOptions) (string, error) {
+	c := &converter{preview: opts.Preview}
+	err := c.convertNodes(layout.Body, "body")
 	if err != nil {
 		return "", err
 	}
 
-	return sb.String(), nil
+	return c.sb.String(), nil
 }
 
-func convertNodes(sb *strings.Builder, nodes []JSONNode, basePath string, varCounter int) error {
+func (c *converter) convertNodes(nodes []JSONNode, basePath string) error {
 	for i, node := range nodes {
 		path := fmt.Sprintf("%s[%d]", basePath, i)
-		err := convertNode(sb, node, path, &varCounter)
+		err := c.convertNode(node, path)
 		if err != nil {
 			return err
 		}
@@ -88,26 +112,31 @@ func convertNodes(sb *strings.Builder, nodes []JSONNode, basePath string, varCou
 	return nil
 }
 
-func convertNode(sb *strings.Builder, node JSONNode, path string, varCounter *int) error {
+func (c *converter) convertNode(node JSONNode, path string) error {
+	if c.preview {
+		c.writePreviewOpen(node, path)
+	}
+
+	var err error
 	switch node.Type {
 	case "block":
-		return convertBlock(sb, node, path, varCounter)
+		err = c.convertBlock(node, path)
 	case "if":
-		return convertIf(sb, node, path, varCounter)
+		err = c.convertIf(node, path)
 	case "range":
-		return convertRange(sb, node, path, varCounter)
+		err = c.convertRange(node, path)
 	case "expr":
-		return convertExpr(sb, node, path)
+		err = c.convertExpr(node, path)
 	case "html":
-		return convertHTML(sb, node, path)
+		err = c.convertHTML(node)
 	case "asset":
-		return convertAsset(sb, node, path)
+		err = c.convertAsset(node, path)
 	case "note_content":
-		return convertNoteContent(sb, node, path, varCounter)
+		err = c.convertNoteContent(node)
 	case "include_note":
-		return convertIncludeNote(sb, node, path, varCounter)
+		err = c.convertIncludeNote(node, path)
 	case "import":
-		return convertImport(sb, node, path)
+		err = c.convertImport(node, path)
 	case "":
 		return &ConvertError{
 			Path:    path,
@@ -120,10 +149,50 @@ func convertNode(sb *strings.Builder, node JSONNode, path string, varCounter *in
 			Message: fmt.Sprintf("unknown type '%s', expected one of: %s", node.Type, strings.Join(validNodeTypes, ", ")),
 		}
 	}
+
+	if err != nil {
+		return err
+	}
+
+	if c.preview {
+		c.writePreviewClose()
+	}
+
+	return nil
+}
+
+func (c *converter) writePreviewOpen(node JSONNode, path string) {
+	c.sb.WriteString(`<div id="jlb-`)
+	c.sb.WriteString(normalizePathToID(path))
+	c.sb.WriteString(`" class="json-layout-block">{{ layoutBlockEditor("`)
+	c.sb.WriteString(path)
+	c.sb.WriteString(`", "`)
+	c.sb.WriteString(node.Type)
+	c.sb.WriteString(`"`)
+	if node.Name != "" {
+		c.sb.WriteString(`, "`)
+		c.sb.WriteString(node.Name)
+		c.sb.WriteString(`"`)
+	}
+	c.sb.WriteString(`) | unsafe }}`)
+}
+
+func (c *converter) writePreviewClose() {
+	c.sb.WriteString(`</div>`)
+}
+
+// normalizePathToID converts a JSON path to a valid HTML id.
+// "body[0]" → "body-0"
+// "body[0].content[1]" → "body-0-content-1"
+func normalizePathToID(path string) string {
+	result := strings.ReplaceAll(path, "[", "-")
+	result = strings.ReplaceAll(result, "]", "")
+	result = strings.ReplaceAll(result, ".", "-")
+	return result
 }
 
 // convertBlock: {{ yield name(args...) }} or {{ yield name(args...) content }}...{{ end }}
-func convertBlock(sb *strings.Builder, node JSONNode, path string, varCounter *int) error {
+func (c *converter) convertBlock(node JSONNode, path string) error {
 	if node.Name == "" {
 		return &ConvertError{
 			Path:    path,
@@ -133,9 +202,9 @@ func convertBlock(sb *strings.Builder, node JSONNode, path string, varCounter *i
 		}
 	}
 
-	sb.WriteString("{{ yield ")
-	sb.WriteString(node.Name)
-	sb.WriteString("(")
+	c.sb.WriteString("{{ yield ")
+	c.sb.WriteString(node.Name)
+	c.sb.WriteString("(")
 
 	// Sort args keys for deterministic output
 	if len(node.Args) > 0 {
@@ -147,32 +216,32 @@ func convertBlock(sb *strings.Builder, node JSONNode, path string, varCounter *i
 
 		for i, k := range keys {
 			if i > 0 {
-				sb.WriteString(", ")
+				c.sb.WriteString(", ")
 			}
-			sb.WriteString(k)
-			sb.WriteString("=")
-			sb.WriteString(formatArg(node.Args[k]))
+			c.sb.WriteString(k)
+			c.sb.WriteString("=")
+			c.sb.WriteString(formatArg(node.Args[k]))
 		}
 	}
 
-	sb.WriteString(")")
+	c.sb.WriteString(")")
 
 	if len(node.Content) > 0 {
-		sb.WriteString(" content }}")
-		err := convertNodes(sb, node.Content, path+".content", *varCounter)
+		c.sb.WriteString(" content }}")
+		err := c.convertNodes(node.Content, path+".content")
 		if err != nil {
 			return err
 		}
-		sb.WriteString("{{ end }}")
+		c.sb.WriteString("{{ end }}")
 	} else {
-		sb.WriteString(" }}")
+		c.sb.WriteString(" }}")
 	}
 
 	return nil
 }
 
 // convertIf: {{ if condition }}...{{ end }}
-func convertIf(sb *strings.Builder, node JSONNode, path string, varCounter *int) error {
+func (c *converter) convertIf(node JSONNode, path string) error {
 	if node.Condition == "" {
 		return &ConvertError{
 			Path:    path,
@@ -182,23 +251,23 @@ func convertIf(sb *strings.Builder, node JSONNode, path string, varCounter *int)
 		}
 	}
 
-	sb.WriteString("{{ if ")
-	sb.WriteString(node.Condition)
-	sb.WriteString(" }}")
+	c.sb.WriteString("{{ if ")
+	c.sb.WriteString(node.Condition)
+	c.sb.WriteString(" }}")
 
 	if len(node.Content) > 0 {
-		err := convertNodes(sb, node.Content, path+".content", *varCounter)
+		err := c.convertNodes(node.Content, path+".content")
 		if err != nil {
 			return err
 		}
 	}
 
-	sb.WriteString("{{ end }}")
+	c.sb.WriteString("{{ end }}")
 	return nil
 }
 
 // convertRange: {{ range iterator := collection }}...{{ end }}
-func convertRange(sb *strings.Builder, node JSONNode, path string, varCounter *int) error {
+func (c *converter) convertRange(node JSONNode, path string) error {
 	if node.Collection == "" {
 		return &ConvertError{
 			Path:    path,
@@ -208,29 +277,29 @@ func convertRange(sb *strings.Builder, node JSONNode, path string, varCounter *i
 		}
 	}
 
-	sb.WriteString("{{ range ")
+	c.sb.WriteString("{{ range ")
 
 	if node.Iterator != "" {
-		sb.WriteString(node.Iterator)
-		sb.WriteString(" := ")
+		c.sb.WriteString(node.Iterator)
+		c.sb.WriteString(" := ")
 	}
 
-	sb.WriteString(node.Collection)
-	sb.WriteString(" }}")
+	c.sb.WriteString(node.Collection)
+	c.sb.WriteString(" }}")
 
 	if len(node.Content) > 0 {
-		err := convertNodes(sb, node.Content, path+".content", *varCounter)
+		err := c.convertNodes(node.Content, path+".content")
 		if err != nil {
 			return err
 		}
 	}
 
-	sb.WriteString("{{ end }}")
+	c.sb.WriteString("{{ end }}")
 	return nil
 }
 
 // convertExpr: {{ expr }}
-func convertExpr(sb *strings.Builder, node JSONNode, path string) error {
+func (c *converter) convertExpr(node JSONNode, path string) error {
 	if node.Expr == "" {
 		return &ConvertError{
 			Path:    path,
@@ -240,20 +309,20 @@ func convertExpr(sb *strings.Builder, node JSONNode, path string) error {
 		}
 	}
 
-	sb.WriteString("{{ ")
-	sb.WriteString(node.Expr)
-	sb.WriteString(" }}")
+	c.sb.WriteString("{{ ")
+	c.sb.WriteString(node.Expr)
+	c.sb.WriteString(" }}")
 	return nil
 }
 
 // convertHTML: raw HTML content
-func convertHTML(sb *strings.Builder, node JSONNode, path string) error {
-	sb.WriteString(node.HTML)
+func (c *converter) convertHTML(node JSONNode) error {
+	c.sb.WriteString(node.HTML)
 	return nil
 }
 
 // convertAsset: {{ asset("path") }}
-func convertAsset(sb *strings.Builder, node JSONNode, path string) error {
+func (c *converter) convertAsset(node JSONNode, path string) error {
 	if node.Path == "" {
 		return &ConvertError{
 			Path:    path,
@@ -263,27 +332,27 @@ func convertAsset(sb *strings.Builder, node JSONNode, path string) error {
 		}
 	}
 
-	sb.WriteString("{{ asset(\"")
-	sb.WriteString(node.Path)
-	sb.WriteString("\") }}")
+	c.sb.WriteString("{{ asset(\"")
+	c.sb.WriteString(node.Path)
+	c.sb.WriteString("\") }}")
 	return nil
 }
 
 // convertNoteContent: {{ note.HTMLString() | unsafe }} or {{ nvs.ByPath("path").HTMLString() | unsafe }}
-func convertNoteContent(sb *strings.Builder, node JSONNode, path string, varCounter *int) error {
+func (c *converter) convertNoteContent(node JSONNode) error {
 	if node.Path == "" {
-		sb.WriteString("{{ note.HTMLString() | unsafe }}")
+		c.sb.WriteString("{{ note.HTMLString() | unsafe }}")
 		return nil
 	}
 
-	sb.WriteString("{{ nvs.ByPath(\"")
-	sb.WriteString(node.Path)
-	sb.WriteString("\").HTMLString() | unsafe }}")
+	c.sb.WriteString("{{ nvs.ByPath(\"")
+	c.sb.WriteString(node.Path)
+	c.sb.WriteString("\").HTMLString() | unsafe }}")
 	return nil
 }
 
 // convertIncludeNote: {{ _var := nvs.ByPath("path") }}{{ if _var }}{{ _var.HTMLString() | unsafe }}{{ else }}Create file: path{{ end }}
-func convertIncludeNote(sb *strings.Builder, node JSONNode, path string, varCounter *int) error {
+func (c *converter) convertIncludeNote(node JSONNode, path string) error {
 	if node.Path == "" {
 		return &ConvertError{
 			Path:    path,
@@ -293,26 +362,26 @@ func convertIncludeNote(sb *strings.Builder, node JSONNode, path string, varCoun
 		}
 	}
 
-	varName := fmt.Sprintf("_note%d", *varCounter)
-	*varCounter++
+	varName := fmt.Sprintf("_note%d", c.varCounter)
+	c.varCounter++
 
-	sb.WriteString("{{ ")
-	sb.WriteString(varName)
-	sb.WriteString(" := nvs.ByPath(\"")
-	sb.WriteString(node.Path)
-	sb.WriteString("\") }}{{ if ")
-	sb.WriteString(varName)
-	sb.WriteString(" }}{{ ")
-	sb.WriteString(varName)
-	sb.WriteString(".HTMLString() | unsafe }}{{ else }}Create file: ")
-	sb.WriteString(node.Path)
-	sb.WriteString("{{ end }}")
+	c.sb.WriteString("{{ ")
+	c.sb.WriteString(varName)
+	c.sb.WriteString(" := nvs.ByPath(\"")
+	c.sb.WriteString(node.Path)
+	c.sb.WriteString("\") }}{{ if ")
+	c.sb.WriteString(varName)
+	c.sb.WriteString(" }}{{ ")
+	c.sb.WriteString(varName)
+	c.sb.WriteString(".HTMLString() | unsafe }}{{ else }}Create file: ")
+	c.sb.WriteString(node.Path)
+	c.sb.WriteString("{{ end }}")
 
 	return nil
 }
 
 // convertImport: {{ import "name" }}
-func convertImport(sb *strings.Builder, node JSONNode, path string) error {
+func (c *converter) convertImport(node JSONNode, path string) error {
 	if node.Name == "" {
 		return &ConvertError{
 			Path:    path,
@@ -322,9 +391,9 @@ func convertImport(sb *strings.Builder, node JSONNode, path string) error {
 		}
 	}
 
-	sb.WriteString("{{ import \"")
-	sb.WriteString(node.Name)
-	sb.WriteString("\" }}")
+	c.sb.WriteString("{{ import \"")
+	c.sb.WriteString(node.Name)
+	c.sb.WriteString("\" }}")
 	return nil
 }
 

@@ -162,6 +162,10 @@ type HideNotesOrErrorPayload interface {
 	IsHideNotesOrErrorPayload()
 }
 
+type LayoutBlockParamValue interface {
+	IsLayoutBlockParamValue()
+}
+
 type MakeReleaseLiveOrErrorPayload interface {
 	IsMakeReleaseLiveOrErrorPayload()
 }
@@ -641,6 +645,12 @@ type BanUserPayload struct {
 
 func (BanUserPayload) IsBanUserOrErrorPayload() {}
 
+type BoolParamValue struct {
+	DefaultValue *bool `json:"defaultValue,omitempty"`
+}
+
+func (BoolParamValue) IsLayoutBlockParamValue() {}
+
 type ClearBackgroundQueueInput struct {
 	ID string `json:"id"`
 }
@@ -1086,6 +1096,12 @@ type FieldMessage struct {
 	Value string `json:"value"`
 }
 
+type FloatParamValue struct {
+	DefaultValue *float64 `json:"defaultValue,omitempty"`
+}
+
+func (FloatParamValue) IsLayoutBlockParamValue() {}
+
 type GenerateTgAttachCodeInput struct {
 	BotID int64 `json:"botId"`
 }
@@ -1113,6 +1129,12 @@ type HideNotesPayload struct {
 }
 
 func (HideNotesPayload) IsHideNotesOrErrorPayload() {}
+
+type IntParamValue struct {
+	DefaultValue *int32 `json:"defaultValue,omitempty"`
+}
+
+func (IntParamValue) IsLayoutBlockParamValue() {}
 
 type LastNoteReadAtInput struct {
 	PathID int64 `json:"pathId"`
@@ -1455,6 +1477,12 @@ type StopBackgroundQueuePayload struct {
 }
 
 func (StopBackgroundQueuePayload) IsStopBackgroundQueueOrErrorPayload() {}
+
+type StringParamValue struct {
+	DefaultValue *string `json:"defaultValue,omitempty"`
+}
+
+func (StringParamValue) IsLayoutBlockParamValue() {}
 
 type SubgraphWaitList struct {
 	TgBotURL     *string `json:"tgBotUrl,omitempty"`

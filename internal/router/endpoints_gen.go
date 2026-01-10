@@ -14,6 +14,7 @@ import (
 	renderadminpagerenderadminpage "trip2g/internal/case/renderadminpage"
 	rendernotepagerendernotepage "trip2g/internal/case/rendernotepage"
 	rendersearchpagerendersearchpage "trip2g/internal/case/rendersearchpage"
+	renderlayoutpreviewrenderlayoutpreview "trip2g/internal/case/admin/renderlayoutpreview"
 	revokeusersubgraphaccessrevokeusersubgraphaccess "trip2g/internal/case/admin/revokeusersubgraphaccess"
 )
 
@@ -27,6 +28,7 @@ var endpoints = []Endpoint{
 	&renderadminpagerenderadminpage.Endpoint{},
 	&rendernotepagerendernotepage.Endpoint{},
 	&rendersearchpagerendersearchpage.Endpoint{},
+	&renderlayoutpreviewrenderlayoutpreview.Endpoint{},
 	&revokeusersubgraphaccessrevokeusersubgraphaccess.Endpoint{},
 }
 
@@ -40,6 +42,7 @@ type RoutesEnv interface {
 	renderadminpagerenderadminpage.Env
 	rendernotepagerendernotepage.Env
 	rendersearchpagerendersearchpage.Env
+	renderlayoutpreviewrenderlayoutpreview.Env
 	revokeusersubgraphaccessrevokeusersubgraphaccess.Env
 }
 

@@ -115,6 +115,7 @@ type ResolverRoot interface {
 	DeleteBoostyCredentialsPayload() DeleteBoostyCredentialsPayloadResolver
 	DeletePatreonCredentialsPayload() DeletePatreonCredentialsPayloadResolver
 	ErrorPayload() ErrorPayloadResolver
+	LayoutBlockParam() LayoutBlockParamResolver
 	Mutation() MutationResolver
 	NotePath() NotePathResolver
 	NoteView() NoteViewResolver
@@ -572,6 +573,7 @@ type ComplexityRoot struct {
 		HTMLInjection              func(childComplexity int, id int64) int
 		HealthChecks               func(childComplexity int) int
 		LatestConfig               func(childComplexity int) int
+		LayoutBlocks               func(childComplexity int) int
 		NoteAsset                  func(childComplexity int, id int64) int
 		NoteView                   func(childComplexity int, id string) int
 		Offer                      func(childComplexity int, id int64) int
@@ -843,6 +845,10 @@ type ComplexityRoot struct {
 		UserID func(childComplexity int) int
 	}
 
+	BoolParamValue struct {
+		DefaultValue func(childComplexity int) int
+	}
+
 	ClearBackgroundQueuePayload struct {
 		DeletedCount func(childComplexity int) int
 		Queue        func(childComplexity int) int
@@ -963,6 +969,10 @@ type ComplexityRoot struct {
 		Value func(childComplexity int) int
 	}
 
+	FloatParamValue struct {
+		DefaultValue func(childComplexity int) int
+	}
+
 	GenerateTgAttachCodePayload struct {
 		Code func(childComplexity int) int
 		URL  func(childComplexity int) int
@@ -976,6 +986,24 @@ type ComplexityRoot struct {
 
 	HideNotesPayload struct {
 		Success func(childComplexity int) int
+	}
+
+	IntParamValue struct {
+		DefaultValue func(childComplexity int) int
+	}
+
+	LayoutBlock struct {
+		FullName   func(childComplexity int) int
+		HasContent func(childComplexity int) int
+		Name       func(childComplexity int) int
+		Params     func(childComplexity int) int
+		SourceID   func(childComplexity int) int
+	}
+
+	LayoutBlockParam struct {
+		Comment func(childComplexity int) int
+		Name    func(childComplexity int) int
+		Value   func(childComplexity int) int
 	}
 
 	MakeReleaseLivePayload struct {
@@ -1205,6 +1233,10 @@ type ComplexityRoot struct {
 
 	StopBackgroundQueuePayload struct {
 		Queues func(childComplexity int) int
+	}
+
+	StringParamValue struct {
+		DefaultValue func(childComplexity int) int
 	}
 
 	Subgraph struct {
@@ -1586,6 +1618,7 @@ type AdminQueryResolver interface {
 	BackgroundQueue(ctx context.Context, obj *model1.AdminQuery, id string) (*model1.BackgroundQueue, error)
 	HealthChecks(ctx context.Context, obj *model1.AdminQuery) ([]model.HealchCheck, error)
 	BuildGitCommit(ctx context.Context, obj *model1.AdminQuery) (string, error)
+	LayoutBlocks(ctx context.Context, obj *model1.AdminQuery) ([]model1.LayoutBlock, error)
 }
 type AdminRedirectResolver interface {
 	CreatedBy(ctx context.Context, obj *db.Redirect) (*db.User, error)
@@ -1709,6 +1742,9 @@ type DeletePatreonCredentialsPayloadResolver interface {
 }
 type ErrorPayloadResolver interface {
 	Message(ctx context.Context, obj *model.ErrorPayload) (string, error)
+}
+type LayoutBlockParamResolver interface {
+	Value(ctx context.Context, obj *model1.LayoutBlockParam) (model.LayoutBlockParamValue, error)
 }
 type MutationResolver interface {
 	RequestEmailSignInCode(ctx context.Context, input model.RequestEmailSignInCodeInput) (model.RequestEmailSignInCodeOrErrorPayload, error)
@@ -3927,6 +3963,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.LatestConfig(childComplexity), true
+	case "AdminQuery.layoutBlocks":
+		if e.complexity.AdminQuery.LayoutBlocks == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.LayoutBlocks(childComplexity), true
 	case "AdminQuery.noteAsset":
 		if e.complexity.AdminQuery.NoteAsset == nil {
 			break
@@ -4954,6 +4996,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.BanUserPayload.UserID(childComplexity), true
 
+	case "BoolParamValue.defaultValue":
+		if e.complexity.BoolParamValue.DefaultValue == nil {
+			break
+		}
+
+		return e.complexity.BoolParamValue.DefaultValue(childComplexity), true
+
 	case "ClearBackgroundQueuePayload.deletedCount":
 		if e.complexity.ClearBackgroundQueuePayload.DeletedCount == nil {
 			break
@@ -5198,6 +5247,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.FieldMessage.Value(childComplexity), true
 
+	case "FloatParamValue.defaultValue":
+		if e.complexity.FloatParamValue.DefaultValue == nil {
+			break
+		}
+
+		return e.complexity.FloatParamValue.DefaultValue(childComplexity), true
+
 	case "GenerateTgAttachCodePayload.code":
 		if e.complexity.GenerateTgAttachCodePayload.Code == nil {
 			break
@@ -5236,6 +5292,63 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.HideNotesPayload.Success(childComplexity), true
+
+	case "IntParamValue.defaultValue":
+		if e.complexity.IntParamValue.DefaultValue == nil {
+			break
+		}
+
+		return e.complexity.IntParamValue.DefaultValue(childComplexity), true
+
+	case "LayoutBlock.fullName":
+		if e.complexity.LayoutBlock.FullName == nil {
+			break
+		}
+
+		return e.complexity.LayoutBlock.FullName(childComplexity), true
+	case "LayoutBlock.hasContent":
+		if e.complexity.LayoutBlock.HasContent == nil {
+			break
+		}
+
+		return e.complexity.LayoutBlock.HasContent(childComplexity), true
+	case "LayoutBlock.name":
+		if e.complexity.LayoutBlock.Name == nil {
+			break
+		}
+
+		return e.complexity.LayoutBlock.Name(childComplexity), true
+	case "LayoutBlock.params":
+		if e.complexity.LayoutBlock.Params == nil {
+			break
+		}
+
+		return e.complexity.LayoutBlock.Params(childComplexity), true
+	case "LayoutBlock.sourceId":
+		if e.complexity.LayoutBlock.SourceID == nil {
+			break
+		}
+
+		return e.complexity.LayoutBlock.SourceID(childComplexity), true
+
+	case "LayoutBlockParam.comment":
+		if e.complexity.LayoutBlockParam.Comment == nil {
+			break
+		}
+
+		return e.complexity.LayoutBlockParam.Comment(childComplexity), true
+	case "LayoutBlockParam.name":
+		if e.complexity.LayoutBlockParam.Name == nil {
+			break
+		}
+
+		return e.complexity.LayoutBlockParam.Name(childComplexity), true
+	case "LayoutBlockParam.value":
+		if e.complexity.LayoutBlockParam.Value == nil {
+			break
+		}
+
+		return e.complexity.LayoutBlockParam.Value(childComplexity), true
 
 	case "MakeReleaseLivePayload.release":
 		if e.complexity.MakeReleaseLivePayload.Release == nil {
@@ -6029,6 +6142,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.StopBackgroundQueuePayload.Queues(childComplexity), true
+
+	case "StringParamValue.defaultValue":
+		if e.complexity.StringParamValue.DefaultValue == nil {
+			break
+		}
+
+		return e.complexity.StringParamValue.DefaultValue(childComplexity), true
 
 	case "Subgraph.homePath":
 		if e.complexity.Subgraph.HomePath == nil {
@@ -18539,6 +18659,47 @@ func (ec *executionContext) fieldContext_AdminQuery_buildGitCommit(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminQuery_layoutBlocks(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_layoutBlocks,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().LayoutBlocks(ctx, obj)
+		},
+		nil,
+		ec.marshalNLayoutBlock2ᚕtrip2gᚋinternalᚋmodelᚐLayoutBlockᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_layoutBlocks(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_LayoutBlock_name(ctx, field)
+			case "fullName":
+				return ec.fieldContext_LayoutBlock_fullName(ctx, field)
+			case "sourceId":
+				return ec.fieldContext_LayoutBlock_sourceId(ctx, field)
+			case "hasContent":
+				return ec.fieldContext_LayoutBlock_hasContent(ctx, field)
+			case "params":
+				return ec.fieldContext_LayoutBlock_params(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LayoutBlock", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminRedirect_id(ctx context.Context, field graphql.CollectedField, obj *db.Redirect) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -23109,6 +23270,35 @@ func (ec *executionContext) fieldContext_BanUserPayload_user(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _BoolParamValue_defaultValue(ctx context.Context, field graphql.CollectedField, obj *model.BoolParamValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_BoolParamValue_defaultValue,
+		func(ctx context.Context) (any, error) {
+			return obj.DefaultValue, nil
+		},
+		nil,
+		ec.marshalOBoolean2ᚖbool,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_BoolParamValue_defaultValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "BoolParamValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ClearBackgroundQueuePayload_queue(ctx context.Context, field graphql.CollectedField, obj *model.ClearBackgroundQueuePayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24471,6 +24661,35 @@ func (ec *executionContext) fieldContext_FieldMessage_value(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _FloatParamValue_defaultValue(ctx context.Context, field graphql.CollectedField, obj *model.FloatParamValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_FloatParamValue_defaultValue,
+		func(ctx context.Context) (any, error) {
+			return obj.DefaultValue, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_FloatParamValue_defaultValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FloatParamValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _GenerateTgAttachCodePayload_code(ctx context.Context, field graphql.CollectedField, obj *model.GenerateTgAttachCodePayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24640,6 +24859,275 @@ func (ec *executionContext) fieldContext_HideNotesPayload_success(_ context.Cont
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _IntParamValue_defaultValue(ctx context.Context, field graphql.CollectedField, obj *model.IntParamValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_IntParamValue_defaultValue,
+		func(ctx context.Context) (any, error) {
+			return obj.DefaultValue, nil
+		},
+		nil,
+		ec.marshalOInt2ᚖint32,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_IntParamValue_defaultValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "IntParamValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LayoutBlock_name(ctx context.Context, field graphql.CollectedField, obj *model1.LayoutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LayoutBlock_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LayoutBlock_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LayoutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LayoutBlock_fullName(ctx context.Context, field graphql.CollectedField, obj *model1.LayoutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LayoutBlock_fullName,
+		func(ctx context.Context) (any, error) {
+			return obj.FullName(), nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LayoutBlock_fullName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LayoutBlock",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LayoutBlock_sourceId(ctx context.Context, field graphql.CollectedField, obj *model1.LayoutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LayoutBlock_sourceId,
+		func(ctx context.Context) (any, error) {
+			return obj.SourceID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LayoutBlock_sourceId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LayoutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LayoutBlock_hasContent(ctx context.Context, field graphql.CollectedField, obj *model1.LayoutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LayoutBlock_hasContent,
+		func(ctx context.Context) (any, error) {
+			return obj.HasContent, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LayoutBlock_hasContent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LayoutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LayoutBlock_params(ctx context.Context, field graphql.CollectedField, obj *model1.LayoutBlock) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LayoutBlock_params,
+		func(ctx context.Context) (any, error) {
+			return obj.Params, nil
+		},
+		nil,
+		ec.marshalNLayoutBlockParam2ᚕtrip2gᚋinternalᚋmodelᚐLayoutBlockParamᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LayoutBlock_params(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LayoutBlock",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_LayoutBlockParam_name(ctx, field)
+			case "value":
+				return ec.fieldContext_LayoutBlockParam_value(ctx, field)
+			case "comment":
+				return ec.fieldContext_LayoutBlockParam_comment(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LayoutBlockParam", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LayoutBlockParam_name(ctx context.Context, field graphql.CollectedField, obj *model1.LayoutBlockParam) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LayoutBlockParam_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LayoutBlockParam_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LayoutBlockParam",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LayoutBlockParam_value(ctx context.Context, field graphql.CollectedField, obj *model1.LayoutBlockParam) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LayoutBlockParam_value,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.LayoutBlockParam().Value(ctx, obj)
+		},
+		nil,
+		ec.marshalOLayoutBlockParamValue2trip2gᚋinternalᚋgraphᚋmodelᚐLayoutBlockParamValue,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LayoutBlockParam_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LayoutBlockParam",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type LayoutBlockParamValue does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LayoutBlockParam_comment(ctx context.Context, field graphql.CollectedField, obj *model1.LayoutBlockParam) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LayoutBlockParam_comment,
+		func(ctx context.Context) (any, error) {
+			return obj.Comment, nil
+		},
+		nil,
+		ec.marshalOString2string,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LayoutBlockParam_comment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LayoutBlockParam",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -27244,6 +27732,8 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_healthChecks(ctx, field)
 			case "buildGitCommit":
 				return ec.fieldContext_AdminQuery_buildGitCommit(ctx, field)
+			case "layoutBlocks":
+				return ec.fieldContext_AdminQuery_layoutBlocks(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminQuery", field.Name)
 		},
@@ -29100,6 +29590,35 @@ func (ec *executionContext) fieldContext_StopBackgroundQueuePayload_queues(_ con
 				return ec.fieldContext_AdminBackgroundQueue_jobs(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminBackgroundQueue", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _StringParamValue_defaultValue(ctx context.Context, field graphql.CollectedField, obj *model.StringParamValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StringParamValue_defaultValue,
+		func(ctx context.Context) (any, error) {
+			return obj.DefaultValue, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_StringParamValue_defaultValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StringParamValue",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -36187,6 +36706,43 @@ func (ec *executionContext) _HideNotesOrErrorPayload(ctx context.Context, sel as
 			return graphql.Null
 		}
 		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _LayoutBlockParamValue(ctx context.Context, sel ast.SelectionSet, obj model.LayoutBlockParamValue) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.StringParamValue:
+		return ec._StringParamValue(ctx, sel, &obj)
+	case *model.StringParamValue:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._StringParamValue(ctx, sel, obj)
+	case model.IntParamValue:
+		return ec._IntParamValue(ctx, sel, &obj)
+	case *model.IntParamValue:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._IntParamValue(ctx, sel, obj)
+	case model.FloatParamValue:
+		return ec._FloatParamValue(ctx, sel, &obj)
+	case *model.FloatParamValue:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._FloatParamValue(ctx, sel, obj)
+	case model.BoolParamValue:
+		return ec._BoolParamValue(ctx, sel, &obj)
+	case *model.BoolParamValue:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._BoolParamValue(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -45477,6 +46033,42 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "layoutBlocks":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_layoutBlocks(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -49033,6 +49625,42 @@ func (ec *executionContext) _BanUserPayload(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var boolParamValueImplementors = []string{"BoolParamValue", "LayoutBlockParamValue"}
+
+func (ec *executionContext) _BoolParamValue(ctx context.Context, sel ast.SelectionSet, obj *model.BoolParamValue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, boolParamValueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BoolParamValue")
+		case "defaultValue":
+			out.Values[i] = ec._BoolParamValue_defaultValue(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var clearBackgroundQueuePayloadImplementors = []string{"ClearBackgroundQueuePayload", "ClearBackgroundQueueOrErrorPayload"}
 
 func (ec *executionContext) _ClearBackgroundQueuePayload(ctx context.Context, sel ast.SelectionSet, obj *model.ClearBackgroundQueuePayload) graphql.Marshaler {
@@ -50255,6 +50883,42 @@ func (ec *executionContext) _FieldMessage(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var floatParamValueImplementors = []string{"FloatParamValue", "LayoutBlockParamValue"}
+
+func (ec *executionContext) _FloatParamValue(ctx context.Context, sel ast.SelectionSet, obj *model.FloatParamValue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, floatParamValueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FloatParamValue")
+		case "defaultValue":
+			out.Values[i] = ec._FloatParamValue_defaultValue(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var generateTgAttachCodePayloadImplementors = []string{"GenerateTgAttachCodePayload", "GenerateTgAttachCodeOrErrorPayload"}
 
 func (ec *executionContext) _GenerateTgAttachCodePayload(ctx context.Context, sel ast.SelectionSet, obj *model.GenerateTgAttachCodePayload) graphql.Marshaler {
@@ -50364,6 +51028,175 @@ func (ec *executionContext) _HideNotesPayload(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var intParamValueImplementors = []string{"IntParamValue", "LayoutBlockParamValue"}
+
+func (ec *executionContext) _IntParamValue(ctx context.Context, sel ast.SelectionSet, obj *model.IntParamValue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, intParamValueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("IntParamValue")
+		case "defaultValue":
+			out.Values[i] = ec._IntParamValue_defaultValue(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var layoutBlockImplementors = []string{"LayoutBlock"}
+
+func (ec *executionContext) _LayoutBlock(ctx context.Context, sel ast.SelectionSet, obj *model1.LayoutBlock) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, layoutBlockImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LayoutBlock")
+		case "name":
+			out.Values[i] = ec._LayoutBlock_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fullName":
+			out.Values[i] = ec._LayoutBlock_fullName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sourceId":
+			out.Values[i] = ec._LayoutBlock_sourceId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hasContent":
+			out.Values[i] = ec._LayoutBlock_hasContent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "params":
+			out.Values[i] = ec._LayoutBlock_params(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var layoutBlockParamImplementors = []string{"LayoutBlockParam"}
+
+func (ec *executionContext) _LayoutBlockParam(ctx context.Context, sel ast.SelectionSet, obj *model1.LayoutBlockParam) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, layoutBlockParamImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LayoutBlockParam")
+		case "name":
+			out.Values[i] = ec._LayoutBlockParam_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "value":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._LayoutBlockParam_value(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "comment":
+			out.Values[i] = ec._LayoutBlockParam_comment(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -53073,6 +53906,42 @@ func (ec *executionContext) _StopBackgroundQueuePayload(ctx context.Context, sel
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var stringParamValueImplementors = []string{"StringParamValue", "LayoutBlockParamValue"}
+
+func (ec *executionContext) _StringParamValue(ctx context.Context, sel ast.SelectionSet, obj *model.StringParamValue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, stringParamValueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StringParamValue")
+		case "defaultValue":
+			out.Values[i] = ec._StringParamValue_defaultValue(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -58440,6 +59309,102 @@ func (ec *executionContext) unmarshalNLastNoteReadAtInput2trip2gᚋinternalᚋgr
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNLayoutBlock2trip2gᚋinternalᚋmodelᚐLayoutBlock(ctx context.Context, sel ast.SelectionSet, v model1.LayoutBlock) graphql.Marshaler {
+	return ec._LayoutBlock(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLayoutBlock2ᚕtrip2gᚋinternalᚋmodelᚐLayoutBlockᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.LayoutBlock) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNLayoutBlock2trip2gᚋinternalᚋmodelᚐLayoutBlock(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNLayoutBlockParam2trip2gᚋinternalᚋmodelᚐLayoutBlockParam(ctx context.Context, sel ast.SelectionSet, v model1.LayoutBlockParam) graphql.Marshaler {
+	return ec._LayoutBlockParam(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLayoutBlockParam2ᚕtrip2gᚋinternalᚋmodelᚐLayoutBlockParamᚄ(ctx context.Context, sel ast.SelectionSet, v []model1.LayoutBlockParam) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNLayoutBlockParam2trip2gᚋinternalᚋmodelᚐLayoutBlockParam(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNMakeReleaseLiveInput2trip2gᚋinternalᚋgraphᚋmodelᚐMakeReleaseLiveInput(ctx context.Context, v any) (model.MakeReleaseLiveInput, error) {
 	res, err := ec.unmarshalInputMakeReleaseLiveInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -60624,6 +61589,13 @@ func (ec *executionContext) marshalOInt642ᚖint64(ctx context.Context, sel ast.
 	return res
 }
 
+func (ec *executionContext) marshalOLayoutBlockParamValue2trip2gᚋinternalᚋgraphᚋmodelᚐLayoutBlockParamValue(ctx context.Context, sel ast.SelectionSet, v model.LayoutBlockParamValue) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._LayoutBlockParamValue(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalONotePathsFilter2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐNotePathsFilter(ctx context.Context, v any) (*model.NotePathsFilter, error) {
 	if v == nil {
 		return nil, nil
@@ -60667,6 +61639,18 @@ func (ec *executionContext) marshalOSearchResultDocument2trip2gᚋinternalᚋgra
 		return graphql.Null
 	}
 	return ec._SearchResultDocument(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOString2string(ctx context.Context, v any) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalString(v)
+	return res
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {

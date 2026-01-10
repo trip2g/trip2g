@@ -482,6 +482,98 @@ func TestConvertJSONLayout_EmptyBody(t *testing.T) {
 	require.Equal(t, "", result)
 }
 
+// Preview mode tests
+
+func TestConvertJSONLayoutWithOptions_Preview(t *testing.T) {
+	json := `{
+		"meta": {},
+		"body": [
+			{"type": "block", "name": "header"},
+			{"type": "html", "html": "<p>Hello</p>"}
+		]
+	}`
+
+	result, err := ConvertJSONLayoutWithOptions([]byte(json), ConvertOptions{Preview: true})
+	require.NoError(t, err)
+
+	// Check wrapper divs with normalized IDs
+	require.Contains(t, result, `<div id="jlb-body-0" class="json-layout-block">`)
+	require.Contains(t, result, `<div id="jlb-body-1" class="json-layout-block">`)
+
+	// Check layoutBlockEditor calls
+	require.Contains(t, result, `{{ layoutBlockEditor("body[0]", "block", "header") | unsafe }}`)
+	require.Contains(t, result, `{{ layoutBlockEditor("body[1]", "html") | unsafe }}`)
+
+	// Check content is still there
+	require.Contains(t, result, `{{ yield header() }}`)
+	require.Contains(t, result, `<p>Hello</p>`)
+
+	// Check closing divs
+	require.Equal(t, 2, strings.Count(result, `</div>`))
+}
+
+func TestConvertJSONLayoutWithOptions_PreviewNested(t *testing.T) {
+	json := `{
+		"meta": {},
+		"body": [
+			{
+				"type": "if",
+				"condition": "true",
+				"content": [
+					{"type": "note_content"}
+				]
+			}
+		]
+	}`
+
+	result, err := ConvertJSONLayoutWithOptions([]byte(json), ConvertOptions{Preview: true})
+	require.NoError(t, err)
+
+	// Check parent wrapper with normalized ID
+	require.Contains(t, result, `<div id="jlb-body-0" class="json-layout-block">`)
+	require.Contains(t, result, `{{ layoutBlockEditor("body[0]", "if") | unsafe }}`)
+
+	// Check nested wrapper with normalized ID
+	require.Contains(t, result, `<div id="jlb-body-0-content-0" class="json-layout-block">`)
+	require.Contains(t, result, `{{ layoutBlockEditor("body[0].content[0]", "note_content") | unsafe }}`)
+
+	// 2 nodes = 2 closing divs
+	require.Equal(t, 2, strings.Count(result, `</div>`))
+}
+
+func TestConvertJSONLayoutWithOptions_PreviewOff(t *testing.T) {
+	json := `{
+		"meta": {},
+		"body": [
+			{"type": "block", "name": "header"}
+		]
+	}`
+
+	result, err := ConvertJSONLayoutWithOptions([]byte(json), ConvertOptions{Preview: false})
+	require.NoError(t, err)
+
+	// No wrapper divs
+	require.NotContains(t, result, `jlb-`)
+	require.NotContains(t, result, `layoutBlockEditor`)
+	require.Equal(t, `{{ yield header() }}`, result)
+}
+
+func TestNormalizePathToID(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"body[0]", "body-0"},
+		{"body[0].content[1]", "body-0-content-1"},
+		{"body[10].content[2].content[0]", "body-10-content-2-content-0"},
+	}
+
+	for _, tt := range tests {
+		result := normalizePathToID(tt.input)
+		require.Equal(t, tt.expected, result, "normalizePathToID(%q)", tt.input)
+	}
+}
+
 // Test that generated Jet is valid by checking it doesn't have obvious syntax errors
 func TestConvertJSONLayout_ValidJetSyntax(t *testing.T) {
 	json := `{

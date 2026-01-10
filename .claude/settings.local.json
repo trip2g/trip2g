@@ -43,7 +43,8 @@
       "Bash(./scripts/test-sync-cli.sh:*)",
       "Bash(npm run test:*)",
       "Bash(npm run build:all:*)",
-      "Bash(go get:*)"
+      "Bash(go get:*)",
+      "Bash(npx tsx:*)"
     ],
     "deny": []
   },

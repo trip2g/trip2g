@@ -62,7 +62,6 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/gitapi"
-	"trip2g/internal/openai"
 	"trip2g/internal/graph"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/hotauthtoken"
@@ -74,6 +73,7 @@ import (
 	"trip2g/internal/notion"
 	"trip2g/internal/notiontypes"
 	"trip2g/internal/nowpayments"
+	"trip2g/internal/openai"
 	"trip2g/internal/patreon"
 	"trip2g/internal/patreonjobs"
 	"trip2g/internal/purchasetoken"
@@ -1503,6 +1503,14 @@ func (a *app) StorePurchaseToken(ctx context.Context, data model.PurchaseToken) 
 	}
 
 	return a.purchaseTokenManager.Store(req.Req, data)
+}
+
+func (a *app) LoadLatestLayout(source model.LayoutSourceFile) model.Layout {
+	load := a.latestNoteLoader.Layouts().Load
+	if load != nil {
+		return load(source)
+	}
+	return model.Layout{}
 }
 
 func (a *app) IsDevMode() bool {

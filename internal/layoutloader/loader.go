@@ -5,24 +5,13 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
 	"github.com/CloudyKit/jet/v6"
 	"github.com/CloudyKit/jet/v6/utils"
 )
-
-type SourceFile struct {
-	ID        string
-	VersionID int64
-	Path      string
-	Content   string // Processed Jet template content
-	Assets    map[string]*model.NoteAssetReplace
-
-	// OriginalContent stores the original file content before conversion
-	// (JSON for .html.json files, same as Content for .html files)
-	OriginalContent string
-}
 
 type Loader struct {
 }
@@ -38,6 +27,10 @@ type Env interface {
 type jetLoader struct {
 	templates map[string]string
 	log       logger.Logger
+
+	layouts model.Layouts
+
+	mu sync.Mutex
 }
 
 func (jl *jetLoader) Exists(templatePath string) bool {
@@ -55,7 +48,7 @@ type Options struct {
 	BasePath string
 }
 
-func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, error) {
+func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*model.Layouts, error) {
 	log := logger.WithPrefix(env.Logger(), "layoutloader:")
 
 	jl := &jetLoader{
@@ -63,48 +56,36 @@ func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, e
 		log:       log,
 	}
 
+	// First pass: add all templates to map (for cross-imports)
 	for _, source := range sourceFiles {
-		jl.templates[source.ID] = source.Content
-		log.Debug("loaded layout", "id", source.ID)
+		content := source.Content
+		if strings.HasSuffix(source.Path, ".html.json") {
+			jetContent, err := ConvertJSONLayout([]byte(content))
+			if err != nil {
+				log.Error("failed to convert json layout", "path", source.Path, "error", err)
+				continue
+			}
+			content = jetContent
+		}
+		jl.templates[source.ID] = content
 	}
 
-	layouts := model.Layouts{
+	jl.layouts = model.Layouts{
 		Map: make(map[string]model.Layout),
 		Blocks: model.LayoutBlocks{
-			ByName: make(map[string][]model.LayoutBlock),
-			ByPath: make(map[string]model.LayoutBlock),
+			ByName:     make(map[string]model.LayoutBlock),
+			ByFullName: make(map[string]model.LayoutBlock),
+		},
+		Load: func(source model.LayoutSourceFile) model.Layout {
+			return model.Layout{
+				View: jl.load(source),
+			}
 		},
 	}
 
 	for _, source := range sourceFiles {
-		views := jet.NewSet(jl, jet.DevelopmentMode(true))
-
-		sourceDir := filepath.Dir(source.Path)
-
-		views.AddGlobalFunc("asset", func(a jet.Arguments) reflect.Value {
-			a.RequireNumOfArguments("asset", 1, 1)
-
-			var val string
-
-			err := a.ParseInto(&val)
-			if err != nil {
-				return reflect.ValueOf("invalid value")
-			}
-
-			key := filepath.Join(sourceDir, val)
-
-			asset, exists := source.Assets[key]
-			if exists {
-				return reflect.ValueOf(asset.URL)
-			}
-
-			return reflect.ValueOf(val)
-		})
-
-		view, err := views.GetTemplate(source.ID)
-		if err != nil || view == nil {
-			// Failed to load layout template - skipping silently
-			// Silently skip templates that fail to load
+		view := jl.load(source)
+		if view == nil {
 			delete(jl.templates, source.ID)
 			continue
 		}
@@ -112,21 +93,20 @@ func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, e
 		assetWalker := assetFinder{}
 		utils.Walk(view, &assetWalker)
 
-		log.Debug("detect assets", "assets", assetWalker.List)
+		jl.log.Debug("detect assets", "assets", assetWalker.List)
 
 		// Find block definitions
 		blockWalker := blockFinder{sourceID: source.ID}
 		utils.Walk(view, &blockWalker)
 
 		for _, block := range blockWalker.blocks {
-			// Add to ByName (may have duplicates)
-			layouts.Blocks.ByName[block.Name] = append(layouts.Blocks.ByName[block.Name], block)
-			// Add to ByPath (unique key: sourceID/blockName)
-			pathKey := block.SourceID + "/" + block.Name
-			layouts.Blocks.ByPath[pathKey] = block
+			// Add to ByName (last one wins if duplicate names)
+			jl.layouts.Blocks.ByName[block.Name] = block
+			// Add to ByFullName (unique key: sourceID#blockName)
+			jl.layouts.Blocks.ByFullName[block.FullName()] = block
 		}
 
-		log.Debug("detect blocks", "count", len(blockWalker.blocks))
+		jl.log.Debug("detect blocks", "count", len(blockWalker.blocks))
 
 		assets := []model.LayoutAsset{}
 
@@ -138,7 +118,7 @@ func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, e
 			})
 		}
 
-		layouts.Map[source.ID] = model.Layout{
+		jl.layouts.Map[source.ID] = model.Layout{
 			VersionID:       source.VersionID,
 			Path:            source.Path,
 			View:            view,
@@ -150,7 +130,65 @@ func Load(env Env, sourceFiles []SourceFile, options Options) (*model.Layouts, e
 		}
 	}
 
-	return &layouts, nil
+	return &jl.layouts, nil
+}
+
+func (jl *jetLoader) load(source model.LayoutSourceFile) *jet.Template {
+	jl.mu.Lock()
+	defer jl.mu.Unlock()
+
+	// Add content to templates map (auto-convert JSON if needed)
+	content := source.Content
+	if strings.HasSuffix(source.Path, ".html.json") {
+		jetContent, err := ConvertJSONLayout([]byte(content))
+		if err != nil {
+			jl.log.Error("failed to convert json layout", "path", source.Path, "error", err)
+			return nil
+		}
+		content = jetContent
+	}
+	jl.templates[source.ID] = content
+
+	views := jet.NewSet(jl, jet.DevelopmentMode(true))
+
+	sourceDir := filepath.Dir(source.Path)
+
+	views.AddGlobalFunc("asset", func(a jet.Arguments) reflect.Value {
+		a.RequireNumOfArguments("asset", 1, 1)
+
+		var val string
+
+		err := a.ParseInto(&val)
+		if err != nil {
+			return reflect.ValueOf("invalid value")
+		}
+
+		key := filepath.Join(sourceDir, val)
+
+		asset, exists := source.Assets[key]
+		if exists {
+			return reflect.ValueOf(asset.URL)
+		}
+
+		return reflect.ValueOf(val)
+	})
+
+	// arg_type is a metadata directive for block parameters.
+	// Runtime: returns empty string (no effect on rendering).
+	// Parse time: blockFinder extracts type/comment info from AST.
+	// Usage: {{ arg_type "paramName" "type" "description" }}
+	views.AddGlobalFunc("arg_type", func(a jet.Arguments) reflect.Value {
+		return reflect.ValueOf("")
+	})
+
+	view, err := views.GetTemplate(source.ID)
+	if err != nil || view == nil {
+		// Failed to load layout template - skipping silently
+		jl.log.Debug("failed to load template", "id", source.ID, "err", err)
+		return nil
+	}
+
+	return view
 }
 
 type assetFinder struct {
@@ -211,8 +249,18 @@ func (w *blockFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 				}
 				if p.Expression != nil {
 					param.Default = p.Expression.String()
+					param.Type = inferTypeFromExpr(p.Expression)
 				}
 				info.Params = append(info.Params, param)
+			}
+		}
+
+		// Extract arg_type metadata from block content
+		argTypes := extractArgTypes(block.List)
+		for i := range info.Params {
+			if meta, ok := argTypes[info.Params[i].Name]; ok {
+				info.Params[i].Type = meta.Type
+				info.Params[i].Comment = meta.Comment
 			}
 		}
 
@@ -223,6 +271,103 @@ func (w *blockFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 	}
 
 	vc.Visit(node)
+}
+
+// argTypeMeta holds metadata extracted from arg_type directive.
+type argTypeMeta struct {
+	Type    string
+	Comment string
+}
+
+// extractArgTypes finds all arg_type calls in block content.
+// Returns map of param name -> metadata.
+func extractArgTypes(node jet.Node) map[string]argTypeMeta {
+	result := make(map[string]argTypeMeta)
+	extractArgTypesRecursive(node, result)
+	return result
+}
+
+func extractArgTypesRecursive(node jet.Node, result map[string]argTypeMeta) {
+	if node == nil {
+		return
+	}
+
+	switch n := node.(type) {
+	case *jet.ListNode:
+		if n != nil {
+			for _, child := range n.Nodes {
+				extractArgTypesRecursive(child, result)
+			}
+		}
+	case *jet.ActionNode:
+		// ActionNode contains a PipeNode
+		if n.Pipe != nil {
+			extractArgTypesFromPipe(n.Pipe, result)
+		}
+	}
+}
+
+func extractArgTypesFromPipe(pipe *jet.PipeNode, result map[string]argTypeMeta) {
+	if pipe == nil || len(pipe.Cmds) == 0 {
+		return
+	}
+
+	cmd := pipe.Cmds[0]
+
+	// BaseExpr should be identifier "arg_type"
+	ident, ok := cmd.BaseExpr.(*jet.IdentifierNode)
+	if !ok || ident.Ident != "arg_type" {
+		return
+	}
+
+	// Need at least 2 args: name and type
+	if len(cmd.Exprs) < 2 {
+		return
+	}
+
+	// Extract param name (1st arg)
+	nameNode, ok := cmd.Exprs[0].(*jet.StringNode)
+	if !ok {
+		return
+	}
+
+	// Extract type (2nd arg)
+	typeNode, ok := cmd.Exprs[1].(*jet.StringNode)
+	if !ok {
+		return
+	}
+
+	meta := argTypeMeta{
+		Type: typeNode.Text,
+	}
+
+	// Extract comment (3rd arg, optional)
+	if len(cmd.Exprs) >= 3 {
+		if commentNode, ok := cmd.Exprs[2].(*jet.StringNode); ok {
+			meta.Comment = commentNode.Text
+		}
+	}
+
+	result[nameNode.Text] = meta
+}
+
+// inferTypeFromExpr determines param type from default value AST node.
+func inferTypeFromExpr(expr jet.Expression) string {
+	switch e := expr.(type) {
+	case *jet.StringNode:
+		return "string"
+	case *jet.NumberNode:
+		if e.IsInt || e.IsUint {
+			return "int"
+		}
+		return "float"
+	case *jet.BoolNode:
+		return "bool"
+	case *jet.NilNode:
+		return "nil"
+	default:
+		return ""
+	}
 }
 
 // hasYieldContent recursively checks if a block contains {{ yield content }}.

@@ -23,7 +23,7 @@ func (t *testEnv) Logger() logger.Logger {
 }
 
 func TestResolveAssets(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/trip2g/main",
 		VersionID: 27,
 		Path:      "_layouts/trip2g/main.html",
@@ -60,7 +60,7 @@ func TestResolveAssets(t *testing.T) {
 }
 
 func TestYieldBlocks(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/trip2g/main",
 		VersionID: 27,
 		Path:      "_layouts/trip2g/main.html",
@@ -116,7 +116,7 @@ func createTestNVS() *templateviews.NVS {
 }
 
 func TestTemplateViews_ByGlobSortByTitle(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/test/blog-list",
 		VersionID: 1,
 		Path:      "_layouts/test/blog-list.html",
@@ -142,7 +142,7 @@ func TestTemplateViews_ByGlobSortByTitle(t *testing.T) {
 }
 
 func TestTemplateViews_ByGlobSortByCreatedAtDesc(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/test/blog-recent",
 		VersionID: 1,
 		Path:      "_layouts/test/blog-recent.html",
@@ -168,7 +168,7 @@ func TestTemplateViews_ByGlobSortByCreatedAtDesc(t *testing.T) {
 }
 
 func TestTemplateViews_ByGlobSortByMetaLimit(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/test/blog-ordered",
 		VersionID: 1,
 		Path:      "_layouts/test/blog-ordered.html",
@@ -194,7 +194,7 @@ func TestTemplateViews_ByGlobSortByMetaLimit(t *testing.T) {
 }
 
 func TestTemplateViews_First(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/test/blog-first",
 		VersionID: 1,
 		Path:      "_layouts/test/blog-first.html",
@@ -283,7 +283,7 @@ func TestJetBlockYieldContent(t *testing.T) {
 }
 
 func TestBlockFinder_SimpleBlock(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/test/blocks",
 		VersionID: 1,
 		Path:      "_layouts/test/blocks.html",
@@ -295,25 +295,26 @@ func TestBlockFinder_SimpleBlock(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check block found by name
-	blocks := layouts.Blocks.ByName["header"]
-	require.Len(t, blocks, 1)
-	require.Equal(t, "header", blocks[0].Name)
-	require.Equal(t, "/test/blocks", blocks[0].SourceID)
-	require.False(t, blocks[0].HasContent)
+	block, ok := layouts.Blocks.ByName["header"]
+	require.True(t, ok)
+	require.Equal(t, "header", block.Name)
+	require.Equal(t, "/test/blocks", block.SourceID)
+	require.False(t, block.HasContent)
 
-	// Check params
-	require.Len(t, blocks[0].Params, 1)
-	require.Equal(t, "level", blocks[0].Params[0].Name)
-	require.Equal(t, "1", blocks[0].Params[0].Default)
+	// Check params with inferred type
+	require.Len(t, block.Params, 1)
+	require.Equal(t, "level", block.Params[0].Name)
+	require.Equal(t, "1", block.Params[0].Default)
+	require.Equal(t, "int", block.Params[0].Type)
 
-	// Check block found by path
-	block, ok := layouts.Blocks.ByPath["/test/blocks/header"]
+	// Check block found by full name
+	block, ok = layouts.Blocks.ByFullName["/test/blocks#header"]
 	require.True(t, ok)
 	require.Equal(t, "header", block.Name)
 }
 
 func TestBlockFinder_BlockWithContent(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/test/blocks",
 		VersionID: 1,
 		Path:      "_layouts/test/blocks.html",
@@ -324,13 +325,14 @@ func TestBlockFinder_BlockWithContent(t *testing.T) {
 	layouts, err := Load(env, sources, Options{})
 	require.NoError(t, err)
 
-	blocks := layouts.Blocks.ByName["card"]
-	require.Len(t, blocks, 1)
-	require.True(t, blocks[0].HasContent, "block with {{ yield content }} should have HasContent=true")
+	block, ok := layouts.Blocks.ByName["card"]
+	require.True(t, ok)
+	require.True(t, block.HasContent, "block with {{ yield content }} should have HasContent=true")
+	require.Equal(t, "string", block.Params[0].Type)
 }
 
 func TestBlockFinder_MultipleBlocks(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/test/blocks",
 		VersionID: 1,
 		Path:      "_layouts/test/blocks.html",
@@ -343,19 +345,22 @@ func TestBlockFinder_MultipleBlocks(t *testing.T) {
 	layouts, err := Load(env, sources, Options{})
 	require.NoError(t, err)
 
-	require.Len(t, layouts.Blocks.ByName["header"], 1)
-	require.Len(t, layouts.Blocks.ByName["footer"], 1)
-	require.Len(t, layouts.Blocks.ByName["card"], 1)
+	_, ok := layouts.Blocks.ByName["header"]
+	require.True(t, ok)
+	_, ok = layouts.Blocks.ByName["footer"]
+	require.True(t, ok)
+	_, ok = layouts.Blocks.ByName["card"]
+	require.True(t, ok)
 
 	// Check card has 2 params
-	card := layouts.Blocks.ByName["card"][0]
+	card := layouts.Blocks.ByName["card"]
 	require.Len(t, card.Params, 2)
 	require.Equal(t, "title", card.Params[0].Name)
 	require.Equal(t, "subtitle", card.Params[1].Name)
 }
 
 func TestBlockFinder_DuplicateBlockNames(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/blocks",
 		VersionID: 1,
 		Path:      "_layouts/blocks.html",
@@ -371,19 +376,20 @@ func TestBlockFinder_DuplicateBlockNames(t *testing.T) {
 	layouts, err := Load(env, sources, Options{})
 	require.NoError(t, err)
 
-	// Both blocks should be in ByName
-	cards := layouts.Blocks.ByName["card"]
-	require.Len(t, cards, 2)
+	// ByName stores last block (components wins)
+	card, ok := layouts.Blocks.ByName["card"]
+	require.True(t, ok)
+	require.Equal(t, "/components", card.SourceID)
 
-	// Each should have unique path
-	_, ok1 := layouts.Blocks.ByPath["/blocks/card"]
-	_, ok2 := layouts.Blocks.ByPath["/components/card"]
+	// Each should have unique full name
+	_, ok1 := layouts.Blocks.ByFullName["/blocks#card"]
+	_, ok2 := layouts.Blocks.ByFullName["/components#card"]
 	require.True(t, ok1)
 	require.True(t, ok2)
 }
 
 func TestBlocksLookup(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/blocks",
 		VersionID: 1,
 		Path:      "_layouts/blocks.html",
@@ -400,37 +406,196 @@ func TestBlocksLookup(t *testing.T) {
 	require.NoError(t, err)
 
 	// Unique block - lookup by name works
-	block, found, errMsg := layouts.Blocks.Lookup("header")
+	block, found := layouts.Blocks.Lookup("header")
 	require.True(t, found)
-	require.Empty(t, errMsg)
 	require.Equal(t, "header", block.Name)
 
-	// Duplicate block - lookup by name fails with suggestion
-	_, found, errMsg = layouts.Blocks.Lookup("card")
-	require.False(t, found)
-	require.Contains(t, errMsg, "ambiguous")
-	require.Contains(t, errMsg, "/blocks/card")
-	require.Contains(t, errMsg, "/components/card")
-
-	// Lookup by full path works
-	block, found, errMsg = layouts.Blocks.Lookup("/blocks/card")
+	// Duplicate block - lookup by name returns last one
+	block, found = layouts.Blocks.Lookup("card")
 	require.True(t, found)
-	require.Empty(t, errMsg)
+	require.Equal(t, "/components", block.SourceID)
+
+	// Lookup by full name works
+	block, found = layouts.Blocks.Lookup("/blocks#card")
+	require.True(t, found)
 	require.Equal(t, "/blocks", block.SourceID)
 
-	block, found, errMsg = layouts.Blocks.Lookup("/components/card")
+	block, found = layouts.Blocks.Lookup("/components#card")
 	require.True(t, found)
-	require.Empty(t, errMsg)
 	require.Equal(t, "/components", block.SourceID)
 
 	// Non-existent block
-	_, found, errMsg = layouts.Blocks.Lookup("nonexistent")
+	_, found = layouts.Blocks.Lookup("nonexistent")
 	require.False(t, found)
-	require.Empty(t, errMsg)
+}
+
+func TestBlockFinder_ArgTypeMetadata(t *testing.T) {
+	sources := []model.LayoutSourceFile{{
+		ID:        "/test/blocks",
+		VersionID: 1,
+		Path:      "_layouts/test/blocks.html",
+		Content: `{{ block card(title, subtitle, level=1, featured=false) }}
+{{ arg_type("title", "string", "Card title") }}
+{{ arg_type("subtitle", "string", "Card subtitle") }}
+{{ arg_type("level", "int", "Heading level (1-6)") }}
+{{ arg_type("featured", "bool", "Highlight this card") }}
+<div class="{{ if featured }}featured{{ end }}">
+  <h{{ level }}>{{ title }}</h{{ level }}>
+  <p>{{ subtitle }}</p>
+</div>
+{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	block, ok := layouts.Blocks.ByName["card"]
+	require.True(t, ok)
+	require.Len(t, block.Params, 4)
+
+	// title - no default, type from arg_type
+	require.Equal(t, "title", block.Params[0].Name)
+	require.Equal(t, "", block.Params[0].Default)
+	require.Equal(t, "string", block.Params[0].Type)
+	require.Equal(t, "Card title", block.Params[0].Comment)
+
+	// subtitle - no default, type from arg_type
+	require.Equal(t, "subtitle", block.Params[1].Name)
+	require.Equal(t, "", block.Params[1].Default)
+	require.Equal(t, "string", block.Params[1].Type)
+	require.Equal(t, "Card subtitle", block.Params[1].Comment)
+
+	// level - has default, type overridden by arg_type
+	require.Equal(t, "level", block.Params[2].Name)
+	require.Equal(t, "1", block.Params[2].Default)
+	require.Equal(t, "int", block.Params[2].Type)
+	require.Equal(t, "Heading level (1-6)", block.Params[2].Comment)
+
+	// featured - has default, type overridden by arg_type
+	require.Equal(t, "featured", block.Params[3].Name)
+	require.Equal(t, "false", block.Params[3].Default)
+	require.Equal(t, "bool", block.Params[3].Type)
+	require.Equal(t, "Highlight this card", block.Params[3].Comment)
+}
+
+func TestBlockFinder_TypeInferenceFromDefault(t *testing.T) {
+	sources := []model.LayoutSourceFile{{
+		ID:        "/test/blocks",
+		VersionID: 1,
+		Path:      "_layouts/test/blocks.html",
+		Content: `{{ block test(str="hello", num=42, flt=3.14, flag=true, noDefault) }}
+<div>{{ str }} {{ num }} {{ flt }} {{ flag }}</div>
+{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	block, ok := layouts.Blocks.ByName["test"]
+	require.True(t, ok)
+	require.Len(t, block.Params, 5)
+
+	// string default
+	require.Equal(t, "str", block.Params[0].Name)
+	require.Equal(t, `"hello"`, block.Params[0].Default)
+	require.Equal(t, "string", block.Params[0].Type)
+
+	// int default
+	require.Equal(t, "num", block.Params[1].Name)
+	require.Equal(t, "42", block.Params[1].Default)
+	require.Equal(t, "int", block.Params[1].Type)
+
+	// float default
+	require.Equal(t, "flt", block.Params[2].Name)
+	require.Equal(t, "3.14", block.Params[2].Default)
+	require.Equal(t, "float", block.Params[2].Type)
+
+	// bool default
+	require.Equal(t, "flag", block.Params[3].Name)
+	require.Equal(t, "true", block.Params[3].Default)
+	require.Equal(t, "bool", block.Params[3].Type)
+
+	// no default - type unknown
+	require.Equal(t, "noDefault", block.Params[4].Name)
+	require.Equal(t, "", block.Params[4].Default)
+	require.Equal(t, "", block.Params[4].Type)
+}
+
+func TestBlockFinder_ArgTypeWithoutComment(t *testing.T) {
+	sources := []model.LayoutSourceFile{{
+		ID:        "/test/blocks",
+		VersionID: 1,
+		Path:      "_layouts/test/blocks.html",
+		Content: `{{ block simple(name) }}
+{{ arg_type("name", "string") }}
+<span>{{ name }}</span>
+{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	block, ok := layouts.Blocks.ByName["simple"]
+	require.True(t, ok)
+	require.Len(t, block.Params, 1)
+
+	require.Equal(t, "name", block.Params[0].Name)
+	require.Equal(t, "string", block.Params[0].Type)
+	require.Equal(t, "", block.Params[0].Comment) // no comment provided
+}
+
+func TestBlockFinder_AllBlocksMethod(t *testing.T) {
+	sources := []model.LayoutSourceFile{{
+		ID:        "/blocks",
+		VersionID: 1,
+		Path:      "_layouts/blocks.html",
+		Content:   `{{ block a() }}A{{ end }}{{ block b() }}B{{ end }}`,
+	}, {
+		ID:        "/components",
+		VersionID: 2,
+		Path:      "_layouts/components.html",
+		Content:   `{{ block c() }}C{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	all := layouts.Blocks.All()
+	require.Len(t, all, 3)
+
+	// Check all blocks are present (order may vary due to map iteration)
+	names := make(map[string]bool)
+	for _, b := range all {
+		names[b.Name] = true
+	}
+	require.True(t, names["a"])
+	require.True(t, names["b"])
+	require.True(t, names["c"])
+}
+
+func TestBlockFinder_FullName(t *testing.T) {
+	sources := []model.LayoutSourceFile{{
+		ID:        "/my/blocks",
+		VersionID: 1,
+		Path:      "_layouts/my/blocks.html",
+		Content:   `{{ block header() }}Header{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	block, ok := layouts.Blocks.ByFullName["/my/blocks#header"]
+	require.True(t, ok)
+	require.Equal(t, "/my/blocks#header", block.FullName())
 }
 
 func TestTemplateViews_NoteMeta(t *testing.T) {
-	sources := []SourceFile{{
+	sources := []model.LayoutSourceFile{{
 		ID:        "/test/blog-meta",
 		VersionID: 1,
 		Path:      "_layouts/test/blog-meta.html",

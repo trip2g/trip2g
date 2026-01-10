@@ -9,6 +9,7 @@ require (
 	github.com/CloudyKit/jet/v6 v6.3.1
 	github.com/amacneil/dbmate/v2 v2.27.0
 	github.com/blevesearch/bleve/v2 v2.5.3
+	github.com/bmatcuk/doublestar/v4 v4.9.1
 	github.com/bradleyjkemp/cupaloy v2.3.0+incompatible
 	github.com/go-faster/errors v0.7.1
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
@@ -109,7 +110,6 @@ require (
 	github.com/blevesearch/zapx/v16 v16.2.4 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
 	github.com/bluekeyes/go-gitdiff v0.7.2 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.9.1 // indirect
 	github.com/bombsimon/wsl/v4 v4.7.0 // indirect
 	github.com/breml/bidichk v0.3.3 // indirect
 	github.com/breml/errchkjson v0.4.1 // indirect
