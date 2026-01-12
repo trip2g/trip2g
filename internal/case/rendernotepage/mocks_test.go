@@ -52,6 +52,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			LoggerFunc: func() logger.Logger {
 //				panic("mock out the Logger method")
 //			},
+//			PublicURLFunc: func() string {
+//				panic("mock out the PublicURL method")
+//			},
 //			RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)  {
 //				panic("mock out the RecordUserNoteView method")
 //			},
@@ -94,6 +97,9 @@ type EnvMock struct {
 
 	// LoggerFunc mocks the Logger method.
 	LoggerFunc func() logger.Logger
+
+	// PublicURLFunc mocks the PublicURL method.
+	PublicURLFunc func() string
 
 	// RecordUserNoteViewFunc mocks the RecordUserNoteView method.
 	RecordUserNoteViewFunc func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
@@ -153,6 +159,9 @@ type EnvMock struct {
 		// Logger holds details about calls to the Logger method.
 		Logger []struct {
 		}
+		// PublicURL holds details about calls to the PublicURL method.
+		PublicURL []struct {
+		}
 		// RecordUserNoteView holds details about calls to the RecordUserNoteView method.
 		RecordUserNoteView []struct {
 			// Ctx is the ctx argument value.
@@ -182,6 +191,7 @@ type EnvMock struct {
 	lockListActiveUserSubgraphs   sync.RWMutex
 	lockLiveNoteViews             sync.RWMutex
 	lockLogger                    sync.RWMutex
+	lockPublicURL                 sync.RWMutex
 	lockRecordUserNoteView        sync.RWMutex
 	lockUpsertUserNoteDailyView   sync.RWMutex
 }
@@ -498,6 +508,33 @@ func (mock *EnvMock) LoggerCalls() []struct {
 	mock.lockLogger.RLock()
 	calls = mock.calls.Logger
 	mock.lockLogger.RUnlock()
+	return calls
+}
+
+// PublicURL calls PublicURLFunc.
+func (mock *EnvMock) PublicURL() string {
+	if mock.PublicURLFunc == nil {
+		panic("EnvMock.PublicURLFunc: method is nil but Env.PublicURL was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockPublicURL.Lock()
+	mock.calls.PublicURL = append(mock.calls.PublicURL, callInfo)
+	mock.lockPublicURL.Unlock()
+	return mock.PublicURLFunc()
+}
+
+// PublicURLCalls gets all the calls that were made to PublicURL.
+// Check the length with:
+//
+//	len(mockedEnv.PublicURLCalls())
+func (mock *EnvMock) PublicURLCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockPublicURL.RLock()
+	calls = mock.calls.PublicURL
+	mock.lockPublicURL.RUnlock()
 	return calls
 }
 

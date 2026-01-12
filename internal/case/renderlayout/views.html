@@ -1,7 +1,7 @@
 {% func BeginLayout(params *Params) %}
 
 <!DOCTYPE html>
-
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
@@ -51,6 +51,7 @@ window.__trip2g_settings = {
 {% endfor %}
 
 </head>
+<body>
 
 <div id="all-content">
 
@@ -71,6 +72,8 @@ window.__trip2g_settings = {
 {%s= injection.Content %}
 {% endfor %}
 
+</body>
+</html>
 {% endfunc %}
 
 {% func BeginTGLayout(params *Params) %}

@@ -20,6 +20,7 @@ type Env interface {
 	Layouts() *model.Layouts
 
 	Logger() logger.Logger
+	PublicURL() string
 	LatestNoteViews() *model.NoteViews
 	LiveNoteViews() *model.NoteViews
 	InsertUserNoteView(ctx context.Context, params db.InsertUserNoteViewParams) error

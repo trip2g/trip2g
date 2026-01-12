@@ -23,7 +23,7 @@ func StreamBeginLayout(qw422016 *qt422016.Writer, params *Params) {
 	qw422016.N().S(`
 
 <!DOCTYPE html>
-
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
@@ -173,114 +173,117 @@ window.__trip2g_settings = {
 	qw422016.N().S(`
 
 </head>
+<body>
 
 <div id="all-content">
 
 <main class="main">
 
 `)
-//line views.html:59
+//line views.html:60
 }
 
-//line views.html:59
+//line views.html:60
 func WriteBeginLayout(qq422016 qtio422016.Writer, params *Params) {
-//line views.html:59
+//line views.html:60
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:59
+//line views.html:60
 	StreamBeginLayout(qw422016, params)
-//line views.html:59
+//line views.html:60
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:59
+//line views.html:60
 }
 
-//line views.html:59
+//line views.html:60
 func BeginLayout(params *Params) string {
-//line views.html:59
+//line views.html:60
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:59
+//line views.html:60
 	WriteBeginLayout(qb422016, params)
-//line views.html:59
+//line views.html:60
 	qs422016 := string(qb422016.B)
-//line views.html:59
+//line views.html:60
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:59
+//line views.html:60
 	return qs422016
-//line views.html:59
+//line views.html:60
 }
 
-//line views.html:61
+//line views.html:62
 func StreamFinishLayout(qw422016 *qt422016.Writer, params *Params) {
-//line views.html:61
+//line views.html:62
 	qw422016.N().S(`
 
 </main>
 </div>
 
 `)
-//line views.html:66
+//line views.html:67
 	for _, url := range params.JSURLs {
-//line views.html:66
+//line views.html:67
 		qw422016.N().S(`
 <script src="`)
-//line views.html:67
+//line views.html:68
 		qw422016.N().S(url)
-//line views.html:67
+//line views.html:68
 		qw422016.N().S(`"></script>
 `)
-//line views.html:68
+//line views.html:69
 	}
-//line views.html:68
+//line views.html:69
 	qw422016.N().S(`
 
 `)
-//line views.html:70
+//line views.html:71
 	for _, injection := range params.HTMLInjections[injectionPlaceholderBodyEnd] {
-//line views.html:70
+//line views.html:71
 		qw422016.N().S(`
 `)
-//line views.html:71
+//line views.html:72
 		qw422016.N().S(injection.Content)
-//line views.html:71
+//line views.html:72
 		qw422016.N().S(`
 `)
-//line views.html:72
+//line views.html:73
 	}
-//line views.html:72
+//line views.html:73
 	qw422016.N().S(`
 
+</body>
+</html>
 `)
-//line views.html:74
+//line views.html:77
 }
 
-//line views.html:74
+//line views.html:77
 func WriteFinishLayout(qq422016 qtio422016.Writer, params *Params) {
-//line views.html:74
+//line views.html:77
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:74
+//line views.html:77
 	StreamFinishLayout(qw422016, params)
-//line views.html:74
+//line views.html:77
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:74
+//line views.html:77
 }
 
-//line views.html:74
+//line views.html:77
 func FinishLayout(params *Params) string {
-//line views.html:74
+//line views.html:77
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:74
+//line views.html:77
 	WriteFinishLayout(qb422016, params)
-//line views.html:74
+//line views.html:77
 	qs422016 := string(qb422016.B)
-//line views.html:74
+//line views.html:77
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:74
+//line views.html:77
 	return qs422016
-//line views.html:74
+//line views.html:77
 }
 
-//line views.html:76
+//line views.html:79
 func StreamBeginTGLayout(qw422016 *qt422016.Writer, params *Params) {
-//line views.html:76
+//line views.html:79
 	qw422016.N().S(`
 
 <!DOCTYPE html>
@@ -292,84 +295,84 @@ func StreamBeginTGLayout(qw422016 *qt422016.Writer, params *Params) {
 <meta name="apple-mobile-web-app-capable" content="yes">
 
 `)
-//line views.html:86
+//line views.html:89
 	for _, url := range params.CSSURLs {
-//line views.html:86
+//line views.html:89
 		qw422016.N().S(`
 <link href="`)
-//line views.html:87
+//line views.html:90
 		qw422016.E().S(url)
-//line views.html:87
+//line views.html:90
 		qw422016.N().S(`" rel="stylesheet">
 `)
-//line views.html:88
+//line views.html:91
 	}
-//line views.html:88
+//line views.html:91
 	qw422016.N().S(`
 
 <script src="https://telegram.org/js/telegram-web-app.js?57"></script>
 </head>
 
 `)
-//line views.html:93
+//line views.html:96
 }
 
-//line views.html:93
+//line views.html:96
 func WriteBeginTGLayout(qq422016 qtio422016.Writer, params *Params) {
-//line views.html:93
+//line views.html:96
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:93
+//line views.html:96
 	StreamBeginTGLayout(qw422016, params)
-//line views.html:93
+//line views.html:96
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:93
+//line views.html:96
 }
 
-//line views.html:93
+//line views.html:96
 func BeginTGLayout(params *Params) string {
-//line views.html:93
+//line views.html:96
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:93
+//line views.html:96
 	WriteBeginTGLayout(qb422016, params)
-//line views.html:93
+//line views.html:96
 	qs422016 := string(qb422016.B)
-//line views.html:93
+//line views.html:96
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:93
+//line views.html:96
 	return qs422016
-//line views.html:93
+//line views.html:96
 }
 
-//line views.html:95
+//line views.html:98
 func StreamFinishTGLayout(qw422016 *qt422016.Writer, params *Params) {
-//line views.html:95
+//line views.html:98
 	qw422016.N().S(`
 `)
-//line views.html:96
+//line views.html:99
 }
 
-//line views.html:96
+//line views.html:99
 func WriteFinishTGLayout(qq422016 qtio422016.Writer, params *Params) {
-//line views.html:96
+//line views.html:99
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line views.html:96
+//line views.html:99
 	StreamFinishTGLayout(qw422016, params)
-//line views.html:96
+//line views.html:99
 	qt422016.ReleaseWriter(qw422016)
-//line views.html:96
+//line views.html:99
 }
 
-//line views.html:96
+//line views.html:99
 func FinishTGLayout(params *Params) string {
-//line views.html:96
+//line views.html:99
 	qb422016 := qt422016.AcquireByteBuffer()
-//line views.html:96
+//line views.html:99
 	WriteFinishTGLayout(qb422016, params)
-//line views.html:96
+//line views.html:99
 	qs422016 := string(qb422016.B)
-//line views.html:96
+//line views.html:99
 	qt422016.ReleaseByteBuffer(qb422016)
-//line views.html:96
+//line views.html:99
 	return qs422016
-//line views.html:96
+//line views.html:99
 }

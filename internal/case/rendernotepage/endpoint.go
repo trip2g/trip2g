@@ -48,7 +48,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		layoutParams.MetaDescription = resp.Note.Description
 
 		layoutParams.OGTags = map[string]string{
-			"og:url":  "https://demo.trip2g.com" + resp.Note.Permalink,
+			"og:url":  env.PublicURL() + resp.Note.Permalink,
 			"og:type": "article",
 		}
 
