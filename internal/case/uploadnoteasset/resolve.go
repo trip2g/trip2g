@@ -51,7 +51,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 		assets := strings.Join(names, ", ")
 
-		return &model.ErrorPayload{Message: "unknown asset path. Assets: " + assets}, nil
+		return &model.ErrorPayload{Message: fmt.Sprintf("unknown asset path %q for noteId=%d. Valid assets: %s", input.Path, input.NoteID, assets)}, nil
 	}
 
 	findAssetParams := db.NoteAssetByPathAndHashParams{
