@@ -743,6 +743,7 @@ func videoMIMEType(ext string) string {
 
 // filenameFromURL extracts a clean filename from a URL, removing query parameters.
 // If no valid extension is found, defaults to .jpg for images.
+// WebP files are renamed to .jpg to avoid PHOTO_EXT_INVALID errors from Telegram.
 func filenameFromURL(rawURL string) string {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
@@ -757,6 +758,13 @@ func filenameFromURL(rawURL string) string {
 	if ext == "" {
 		// No extension, default to .jpg
 		return baseName + ".jpg"
+	}
+
+	// Normalize webp to jpg to avoid Telegram PHOTO_EXT_INVALID error.
+	// Telegram rejects InputMediaUploadedPhoto with .webp extension, but determines
+	// actual format by magic bytes, not filename. Tested against real Telegram API.
+	if ext == ".webp" {
+		return strings.TrimSuffix(baseName, filepath.Ext(baseName)) + ".jpg"
 	}
 
 	return baseName

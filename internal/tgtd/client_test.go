@@ -36,9 +36,9 @@ func TestFilenameFromURL(t *testing.T) {
 			expected: "video.mp4",
 		},
 		{
-			name:     "minio-style URL",
+			name:     "minio-style URL with webp (normalized to jpg)",
 			url:      "https://minio.local/bucket/file.webp?X-Amz-Signature=abc123",
-			expected: "file.webp",
+			expected: "file.jpg",
 		},
 	}
 
