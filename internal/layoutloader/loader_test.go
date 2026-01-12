@@ -2,7 +2,9 @@ package layoutloader
 
 import (
 	"bytes"
+	"io"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 	"trip2g/internal/logger"
@@ -10,6 +12,7 @@ import (
 	"trip2g/internal/templateviews"
 
 	"github.com/CloudyKit/jet/v6"
+	"github.com/CloudyKit/jet/v6/utils"
 	"github.com/bradleyjkemp/cupaloy"
 	"github.com/stretchr/testify/require"
 )
@@ -78,6 +81,242 @@ func TestYieldBlocks(t *testing.T) {
 	layouts, err := Load(env, sources, options)
 	require.NoError(t, err)
 	require.Len(t, layouts.Map, 2)
+
+	// Verify rendering works
+	var buf bytes.Buffer
+	err = layouts.Map["/trip2g/main"].View.Execute(&buf, nil, nil)
+	require.NoError(t, err)
+	require.Contains(t, buf.String(), "<wrapper>hello</wrapper>")
+}
+
+// TestYieldBlocksWithParams tests that block parameters work when importing from another file.
+func TestYieldBlocksWithParams(t *testing.T) {
+	// Note: import path must match ID exactly
+	sources := []model.LayoutSourceFile{{
+		ID:        "/main",
+		VersionID: 1,
+		Path:      "_layouts/main.html",
+		Content:   `{{ import "/blocks" }}{{ yield card(title="Hello", body="World") }}`,
+	}, {
+		ID:        "/blocks",
+		VersionID: 2,
+		Path:      "_layouts/blocks.html",
+		Content:   `{{ block card(title="", body="") }}<div><h1>{{ title }}</h1><p>{{ body }}</p></div>{{ end }}`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	err = layouts.Map["/main"].View.Execute(&buf, nil, nil)
+	require.NoError(t, err)
+
+	t.Logf("Output: %s", buf.String())
+	require.Contains(t, buf.String(), "Hello", "title parameter should be passed")
+	require.Contains(t, buf.String(), "World", "body parameter should be passed")
+}
+
+// TestYieldBlocksWithParams_DirectJet tests with direct Jet usage for comparison.
+func TestYieldBlocksWithParams_DirectJet(t *testing.T) {
+	// Create custom loader that mimics our jetLoader behavior
+	templates := map[string]string{
+		"/main":   `{{ import "/blocks" }}{{ yield card(title="Hello", body="World") }}`,
+		"/blocks": `{{ block card(title="", body="") }}<div><h1>{{ title }}</h1><p>{{ body }}</p></div>{{ end }}`,
+	}
+
+	// Test 1: Same Set for both (like jet.NewInMemLoader)
+	t.Run("SameSet", func(t *testing.T) {
+		loader := jet.NewInMemLoader()
+		for k, v := range templates {
+			loader.Set(k, v)
+		}
+		set := jet.NewSet(loader)
+		tmpl, err := set.GetTemplate("/main")
+		require.NoError(t, err)
+
+		var buf bytes.Buffer
+		err = tmpl.Execute(&buf, nil, nil)
+		require.NoError(t, err)
+		t.Logf("SameSet output: %s", buf.String())
+		require.Contains(t, buf.String(), "Hello")
+	})
+
+	// Test 2: New Set for each file (like our loader)
+	t.Run("NewSetPerFile", func(t *testing.T) {
+		loader := jet.NewInMemLoader()
+		for k, v := range templates {
+			loader.Set(k, v)
+		}
+
+		// Create new Set for /main (mimicking our loader)
+		setMain := jet.NewSet(loader)
+		tmplMain, err := setMain.GetTemplate("/main")
+		require.NoError(t, err)
+
+		var buf bytes.Buffer
+		err = tmplMain.Execute(&buf, nil, nil)
+		require.NoError(t, err)
+		t.Logf("NewSetPerFile output: %s", buf.String())
+		require.Contains(t, buf.String(), "Hello", "should work even with new set")
+	})
+
+	// Test 3: New Set for each file with DevelopmentMode (like our loader)
+	t.Run("NewSetPerFile_DevMode", func(t *testing.T) {
+		loader := jet.NewInMemLoader()
+		for k, v := range templates {
+			loader.Set(k, v)
+		}
+
+		setMain := jet.NewSet(loader, jet.DevelopmentMode(true))
+		tmplMain, err := setMain.GetTemplate("/main")
+		require.NoError(t, err)
+
+		var buf bytes.Buffer
+		err = tmplMain.Execute(&buf, nil, nil)
+		require.NoError(t, err)
+		t.Logf("NewSetPerFile_DevMode output: %s", buf.String())
+		require.Contains(t, buf.String(), "Hello", "should work with dev mode")
+	})
+
+	// Test 4: Use custom loader like our jetLoader
+	t.Run("CustomLoader", func(t *testing.T) {
+		customLoader := &testJetLoader{templates: templates}
+		setMain := jet.NewSet(customLoader, jet.DevelopmentMode(true))
+		tmplMain, err := setMain.GetTemplate("/main")
+		require.NoError(t, err)
+
+		var buf bytes.Buffer
+		err = tmplMain.Execute(&buf, nil, nil)
+		require.NoError(t, err)
+		t.Logf("CustomLoader output: %s", buf.String())
+		require.Contains(t, buf.String(), "Hello", "should work with custom loader")
+	})
+}
+
+// testJetLoader mimics our jetLoader for testing
+type testJetLoader struct {
+	templates map[string]string
+}
+
+func (l *testJetLoader) Exists(templatePath string) bool {
+	_, exists := l.templates[templatePath]
+	return exists
+}
+
+func (l *testJetLoader) Open(templatePath string) (io.ReadCloser, error) {
+	content := l.templates[templatePath]
+	return io.NopCloser(strings.NewReader(content)), nil
+}
+
+// TestYieldBlocksWithParams_MimicLoad mimics exactly what Load() does
+func TestYieldBlocksWithParams_MimicLoad(t *testing.T) {
+	templates := map[string]string{
+		"/main":   `{{ import "/blocks" }}{{ yield card(title="Hello", body="World") }}`,
+		"/blocks": `{{ block card(title="", body="") }}<div><h1>{{ title }}</h1><p>{{ body }}</p></div>{{ end }}`,
+	}
+
+	loader := &testJetLoader{templates: templates}
+
+	// Mimic Load() - create new Set for EACH file
+	loadedTemplates := make(map[string]*jet.Template)
+
+	for id := range templates {
+		// Each file gets its own Set (like our loader does)
+		set := jet.NewSet(loader, jet.DevelopmentMode(true))
+		tmpl, err := set.GetTemplate(id)
+		require.NoError(t, err)
+		loadedTemplates[id] = tmpl
+		t.Logf("Loaded template %s", id)
+	}
+
+	// Execute /main
+	var buf bytes.Buffer
+	err := loadedTemplates["/main"].Execute(&buf, nil, nil)
+	require.NoError(t, err)
+
+	t.Logf("Output: %s", buf.String())
+	require.Contains(t, buf.String(), "Hello", "title parameter should be passed")
+}
+
+// TestYieldNodeParametersPreserved verifies that our fixed assetFinder
+// doesn't clear YieldNode parameters (regression test for the bug fix)
+func TestYieldNodeParametersPreserved(t *testing.T) {
+	templates := map[string]string{
+		"/main":   `{{ import "/blocks" }}{{ yield card(title="Hello", body="World") }}`,
+		"/blocks": `{{ block card(title="", body="") }}<div><h1>{{ title }}</h1><p>{{ body }}</p></div>{{ end }}`,
+	}
+
+	loader := &testJetLoader{templates: templates}
+	set := jet.NewSet(loader, jet.DevelopmentMode(true))
+	tmpl, err := set.GetTemplate("/main")
+	require.NoError(t, err)
+
+	// Before walk - params should work
+	var buf1 bytes.Buffer
+	err = tmpl.Execute(&buf1, nil, nil)
+	require.NoError(t, err)
+	t.Logf("Before walk: %s", buf1.String())
+	require.Contains(t, buf1.String(), "Hello", "params should work before walk")
+
+	// Apply our FIXED assetFinder walk
+	fixedWalker := &assetFinder{}
+	utils.Walk(tmpl, fixedWalker)
+
+	// After walk with fixed code - params should STILL work
+	var buf2 bytes.Buffer
+	err = tmpl.Execute(&buf2, nil, nil)
+	require.NoError(t, err)
+	t.Logf("After walk (fixed): %s", buf2.String())
+	require.Contains(t, buf2.String(), "Hello", "params should still work after walk with fixed code")
+}
+
+// TestYieldNodeParametersCleared_BugDemo demonstrates that unconditionally
+// setting Parameters clears existing params (documents why we need the nil check)
+func TestYieldNodeParametersCleared_BugDemo(t *testing.T) {
+	templates := map[string]string{
+		"/main":   `{{ import "/blocks" }}{{ yield card(title="Hello", body="World") }}`,
+		"/blocks": `{{ block card(title="", body="") }}<div><h1>{{ title }}</h1><p>{{ body }}</p></div>{{ end }}`,
+	}
+
+	loader := &testJetLoader{templates: templates}
+	set := jet.NewSet(loader, jet.DevelopmentMode(true))
+	tmpl, err := set.GetTemplate("/main")
+	require.NoError(t, err)
+
+	// Before walk - params work
+	var buf1 bytes.Buffer
+	err = tmpl.Execute(&buf1, nil, nil)
+	require.NoError(t, err)
+	require.Contains(t, buf1.String(), "Hello")
+
+	// Apply buggy walker that unconditionally clears Parameters
+	buggyWalker := &buggyAssetFinder{}
+	utils.Walk(tmpl, buggyWalker)
+
+	// After buggy walk - params are CLEARED (expected - demonstrating the bug)
+	var buf2 bytes.Buffer
+	err = tmpl.Execute(&buf2, nil, nil)
+	require.NoError(t, err)
+	t.Logf("After buggy walk: %s", buf2.String())
+	require.NotContains(t, buf2.String(), "Hello", "buggy walker should clear params (demonstrating the bug)")
+	require.Contains(t, buf2.String(), "<h1></h1>", "params should be empty after buggy walk")
+}
+
+// buggyAssetFinder reproduces the original bug (unconditional Parameters assignment)
+type buggyAssetFinder struct{}
+
+func (w *buggyAssetFinder) Visit(vc utils.VisitorContext, node jet.Node) {
+	if node == nil {
+		return
+	}
+
+	// This is the BUG - unconditionally clearing Parameters
+	if yieldNode, ok := node.(*jet.YieldNode); ok {
+		yieldNode.Parameters = &jet.BlockParameterList{}
+	}
+
+	vc.Visit(node)
 }
 
 // createTestNVS creates NVS with test notes for template tests.
@@ -235,6 +474,27 @@ func TestJetBlockNamedParams(t *testing.T) {
 	require.Contains(t, result, "Hello", "title parameter should be passed")
 	require.Contains(t, result, "World", "body parameter should be passed")
 	require.NotContains(t, result, "false", "should not contain 'false' - params not working")
+}
+
+// TestJetBlockNamedParams_CrossFile tests if Jet itself supports params with import.
+// This isolates whether the bug is in Jet or in our loader.
+func TestJetBlockNamedParams_CrossFile(t *testing.T) {
+	loader := jet.NewInMemLoader()
+	loader.Set("blocks.html", `{{ block card(title="", body="") }}<div><h1>{{ title }}</h1><p>{{ body }}</p></div>{{ end }}`)
+	loader.Set("main.html", `{{ import "blocks.html" }}{{ yield card(title="Hello", body="World") }}`)
+
+	set := jet.NewSet(loader)
+	tmpl, err := set.GetTemplate("main.html")
+	require.NoError(t, err, "template should parse without error")
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, nil, nil)
+	require.NoError(t, err, "template should execute without error")
+
+	result := buf.String()
+	t.Logf("Result: %s", result)
+	require.Contains(t, result, "Hello", "title parameter should be passed")
+	require.Contains(t, result, "World", "body parameter should be passed")
 }
 
 // TestJetBlockContentReserved verifies that "content" is a reserved keyword in Jet.
@@ -592,6 +852,99 @@ func TestBlockFinder_FullName(t *testing.T) {
 	block, ok := layouts.Blocks.ByFullName["/my/blocks#header"]
 	require.True(t, ok)
 	require.Equal(t, "/my/blocks#header", block.FullName())
+}
+
+// TestImportBlocksOrder verifies that file order in sourceFiles doesn't affect
+// import/block resolution. Both orders should work identically.
+func TestImportBlocksOrder(t *testing.T) {
+	indexContent := `{{ import "/blocks" }}<html>{{ yield header(title="Welcome") }}</html>`
+
+	blocksContent := `{{ block header(title="") }}<h1>{{ title }}</h1>{{ end }}`
+
+	// Order 1: index first, then blocks
+	sourcesIndexFirst := []model.LayoutSourceFile{
+		{ID: "/index", VersionID: 1, Path: "_layouts/index.html", Content: indexContent},
+		{ID: "/blocks", VersionID: 2, Path: "_layouts/blocks.html", Content: blocksContent},
+	}
+
+	// Order 2: blocks first, then index (reversed)
+	sourcesBlocksFirst := []model.LayoutSourceFile{
+		{ID: "/blocks", VersionID: 2, Path: "_layouts/blocks.html", Content: blocksContent},
+		{ID: "/index", VersionID: 1, Path: "_layouts/index.html", Content: indexContent},
+	}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+
+	// Test order 1: index first
+	layouts1, err := Load(env, sourcesIndexFirst, Options{})
+	require.NoError(t, err, "should load with index first")
+
+	var buf1 bytes.Buffer
+	err = layouts1.Map["/index"].View.Execute(&buf1, nil, nil)
+	require.NoError(t, err, "should execute index template (order 1)")
+	require.Contains(t, buf1.String(), "<h1>Welcome</h1>", "block should render correctly (order 1)")
+
+	// Test order 2: blocks first (reversed)
+	layouts2, err := Load(env, sourcesBlocksFirst, Options{})
+	require.NoError(t, err, "should load with blocks first")
+
+	var buf2 bytes.Buffer
+	err = layouts2.Map["/index"].View.Execute(&buf2, nil, nil)
+	require.NoError(t, err, "should execute index template (order 2)")
+	require.Contains(t, buf2.String(), "<h1>Welcome</h1>", "block should render correctly (order 2)")
+
+	// Both should produce identical output
+	require.Equal(t, buf1.String(), buf2.String(), "output should be identical regardless of file order")
+}
+
+// TestImportBlocksOrder_NestedImport tests nested imports work regardless of order.
+func TestImportBlocksOrder_NestedImport(t *testing.T) {
+	// index imports components, components imports blocks
+	indexContent := `{{ import "/components" }}{{ yield page() }}`
+	componentsContent := `{{ import "/blocks" }}{{ block page() }}<div>{{ yield btn(text="Click") }}</div>{{ end }}`
+	blocksContent := `{{ block btn(text="") }}<button>{{ text }}</button>{{ end }}`
+
+	// Try different orderings
+	orderings := [][]model.LayoutSourceFile{
+		// Order 1: index, components, blocks
+		{
+			{ID: "/index", VersionID: 1, Path: "_layouts/index.html", Content: indexContent},
+			{ID: "/components", VersionID: 2, Path: "_layouts/components.html", Content: componentsContent},
+			{ID: "/blocks", VersionID: 3, Path: "_layouts/blocks.html", Content: blocksContent},
+		},
+		// Order 2: blocks, components, index (fully reversed)
+		{
+			{ID: "/blocks", VersionID: 3, Path: "_layouts/blocks.html", Content: blocksContent},
+			{ID: "/components", VersionID: 2, Path: "_layouts/components.html", Content: componentsContent},
+			{ID: "/index", VersionID: 1, Path: "_layouts/index.html", Content: indexContent},
+		},
+		// Order 3: blocks, index, components (mixed)
+		{
+			{ID: "/blocks", VersionID: 3, Path: "_layouts/blocks.html", Content: blocksContent},
+			{ID: "/index", VersionID: 1, Path: "_layouts/index.html", Content: indexContent},
+			{ID: "/components", VersionID: 2, Path: "_layouts/components.html", Content: componentsContent},
+		},
+	}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	var results []string
+
+	for i, sources := range orderings {
+		layouts, err := Load(env, sources, Options{})
+		require.NoError(t, err, "order %d: should load", i+1)
+
+		var buf bytes.Buffer
+		err = layouts.Map["/index"].View.Execute(&buf, nil, nil)
+		require.NoError(t, err, "order %d: should execute", i+1)
+		require.Contains(t, buf.String(), "<button>Click</button>", "order %d: nested block should render", i+1)
+
+		results = append(results, buf.String())
+	}
+
+	// All orderings should produce identical output
+	for i := 1; i < len(results); i++ {
+		require.Equal(t, results[0], results[i], "order %d should match order 1", i+1)
+	}
 }
 
 func TestTemplateViews_NoteMeta(t *testing.T) {
