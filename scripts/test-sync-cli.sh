@@ -664,13 +664,13 @@ test_meta_injection() {
     # Create test directory for CLI meta test
     mkdir -p "$VAULT0/cli_meta"
 
-    # Simple file without frontmatter - title should be injected
+    # Simple file without frontmatter - title should be injected via --meta
     cat > "$VAULT0/cli_meta/cli_test.md" << 'EOF'
 # CLI Test Page
 
 This page was synced with --meta title=FromCLI to test meta injection.
 
-The title in frontmatter should be "FromCLI" not the filename.
+The page title (h1 in header) should be "FromCLI" from injected frontmatter.
 EOF
 
     # Sync with --meta title=FromCLI

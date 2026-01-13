@@ -270,11 +270,11 @@ test.describe('Regression Tests', () => {
 
 test.describe('CLI Meta Injection', () => {
   test('meta injection adds title to page without frontmatter', async ({ page }) => {
-    // This page was synced with --meta title=FromCLI
-    // The file had no frontmatter, but CLI injected title: FromCLI
-    await page.goto('/cli_meta/cli_test');
+    // This page was synced from $VAULT0/cli_meta with --meta title=FromCLI
+    // Path is relative to sync folder, so it's /cli_test not /cli_meta/cli_test
+    await page.goto('/cli_test');
 
-    // Title should be "FromCLI" (from injected meta), not "cli_test" (filename)
+    // Title should be "FromCLI" (from injected frontmatter title field)
     await expect(page.locator('h1').first()).toContainText('FromCLI');
 
     // Content should be present
