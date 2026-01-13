@@ -268,6 +268,20 @@ test.describe('Regression Tests', () => {
   });
 });
 
+test.describe('CLI Meta Injection', () => {
+  test('meta injection adds title to page without frontmatter', async ({ page }) => {
+    // This page was synced with --meta title=FromCLI
+    // The file had no frontmatter, but CLI injected title: FromCLI
+    await page.goto('/cli_meta/cli_test');
+
+    // Title should be "FromCLI" (from injected meta), not "cli_test" (filename)
+    await expect(page.locator('h1').first()).toContainText('FromCLI');
+
+    // Content should be present
+    await expect(page.getByText('This page was synced with --meta')).toBeVisible();
+  });
+});
+
 test.describe('Image Resolution', () => {
   test('image resolution with duplicates - root priority', async ({ page }) => {
     await page.goto('/img_test');

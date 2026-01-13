@@ -425,16 +425,82 @@ npm run build    # билд плагина
 cd obsidian-sync
 
 # 1. Обновить версию в manifest.json
-# 2. Собрать плагин
-npm run build
+# 2. Собрать плагин и CLI
+npm run build:all   # собирает main.js + dist/trip2g-sync.mjs
 
 # 3. Создать релиз (без префикса v — BRAT не понимает v-префикс)
-gh release create 0.1.7 main.js manifest.json styles.css \
+gh release create 0.1.7 main.js manifest.json styles.css dist/trip2g-sync.mjs \
   --title "0.1.7" \
   --notes "Release notes here"
 ```
 
-**Важно:** Имя тега должно быть без префикса `v` (например `0.1.7`, не `v0.1.7`), иначе BRAT не сможет найти релиз.
+**Важно:**
+- Имя тега должно быть без префикса `v` (например `0.1.7`, не `v0.1.7`), иначе BRAT не сможет найти релиз.
+- Всегда включайте `dist/trip2g-sync.mjs` в релиз — это CLI для синхронизации из командной строки.
+
+## CLI Sync
+
+CLI позволяет синхронизировать файлы без Obsidian — из командной строки, CI/CD, или скриптов.
+
+### Установка и запуск
+
+```bash
+# Из исходников (для разработки)
+cd obsidian-sync
+npm run sync -- --folder ./vault --api-key xxx
+
+# Из собранного файла
+node dist/trip2g-sync.mjs --folder ./vault --api-key xxx
+```
+
+### Опция --meta: инъекция frontmatter
+
+Опция `--meta` позволяет добавлять или перезаписывать поля frontmatter для всех синхронизируемых файлов. Это полезно для:
+
+- **Мульти-репозиторный сетап**: несколько репозиториев пушат в разные подпапки с разными subgraph
+- **CI/CD пайплайны**: автоматическое добавление метаданных при деплое
+- **Миграции**: массовое обновление полей во всех файлах
+
+**Синтаксис:**
+```bash
+--meta key=value    # добавить/перезаписать поле
+-m key=value        # короткая форма
+```
+
+**Примеры использования:**
+
+```bash
+# Один репозиторий — документация
+trip2g-sync --folder ./docs --meta subgraph=docs
+
+# Другой репозиторий — блог
+trip2g-sync --folder ./blog --meta subgraph=blog --meta author=Team
+
+# Третий репозиторий — wiki команды
+trip2g-sync --folder ./wiki --meta subgraph=team-wiki --meta team=backend
+```
+
+**Как работает:**
+
+1. Если файл **не имеет frontmatter** — создаётся новый:
+   ```markdown
+   ---
+   subgraph: docs
+   ---
+   # Content
+   ```
+
+2. Если файл **имеет frontmatter** — поля добавляются/перезаписываются:
+   ```markdown
+   ---
+   title: My Note
+   subgraph: docs    ← добавлено или перезаписано
+   ---
+   ```
+
+3. **Существующие поля перезаписываются** — если файл имел `subgraph: old`, станет `subgraph: docs`.
+
+**Важно:** Meta инъекция происходит только при отправке на сервер — локальные файлы не модифицируются.
 
 ## Оптимизация производительности
 

@@ -658,6 +658,51 @@ EOF
     assert_file_contains "$VAULT1/_layouts/demo/index.html" "HTML Test" "HTML content correct"
 }
 
+test_meta_injection() {
+    log_section "Test: Meta injection with --meta"
+
+    # Create test directory for CLI meta test
+    mkdir -p "$VAULT0/cli_meta"
+
+    # Simple file without frontmatter - title should be injected
+    cat > "$VAULT0/cli_meta/cli_test.md" << 'EOF'
+# CLI Test Page
+
+This page was synced with --meta title=FromCLI to test meta injection.
+
+The title in frontmatter should be "FromCLI" not the filename.
+EOF
+
+    # Sync with --meta title=FromCLI
+    log_info "Syncing cli_meta folder with --meta title=FromCLI..."
+    cd "$OBSIDIAN_SYNC_DIR"
+    npx tsx src/sync/cli/cmd.ts \
+        --folder "$VAULT0/cli_meta" \
+        --api-key "$API_KEY" \
+        --api-url "$ENDPOINT" \
+        --meta title=FromCLI
+
+    # Verify via GraphQL that meta was injected
+    log_info "Verifying meta injection via GraphQL..."
+
+    local response
+    response=$(curl -s -X POST "$ENDPOINT" \
+        -H "Content-Type: application/json" \
+        -H "X-API-Key: $API_KEY" \
+        -d '{"query":"query { notePaths(filter: { paths: [\"cli_test.md\"] }) { path: value latestNoteView { content } } }"}')
+
+    # Check for title: FromCLI in frontmatter
+    if echo "$response" | grep -q "title: FromCLI"; then
+        log_success "Meta injection: title=FromCLI found in response"
+    else
+        log_fail "Meta injection: title=FromCLI NOT found"
+        echo "Response: $response" | head -500
+    fi
+
+    # Note: NOT cleaning up cli_meta - it's used by e2e/vault.spec.js to verify meta injection
+    log_info "cli_meta files kept for e2e verification"
+}
+
 test_dry_run() {
     log_section "Test: Dry run mode"
 
@@ -719,6 +764,9 @@ main() {
     test_one_way_sync
     test_publish_field_filtering
     test_html_files_sync
+
+    # Meta injection
+    test_meta_injection
 
     # Other
     test_dry_run
