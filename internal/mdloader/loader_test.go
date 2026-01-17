@@ -1411,6 +1411,77 @@ Link to A: [[note_a]]`),
 	require.Empty(t, noteB.Warnings, "Note B should not have any warnings")
 }
 
+// TestYouTubeEmbed tests that YouTube links in image syntax are rendered as embeds.
+// Markdown: ![](https://www.youtube.com/watch?v=VIDEO_ID)
+// Should render as YouTube embed iframe, not as broken image.
+func TestYouTubeEmbed(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "video.md",
+		Content: []byte(`---
+free: true
+---
+Check out this video:
+
+![](https://www.youtube.com/watch?v=SJCGVbYN9XY)
+
+More content below.`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/video"].HTML)
+
+	// Should contain YouTube embed wrapper
+	require.Contains(t, html, `enclave-object-wrapper`,
+		"YouTube link should be rendered as enclave embed")
+
+	// Should contain YouTube-specific class
+	require.Contains(t, html, `youtube-enclave-object`,
+		"Should have youtube-enclave-object class")
+
+	// Should contain the video ID in iframe src
+	require.Contains(t, html, `youtube.com/embed/SJCGVbYN9XY`,
+		"Should contain YouTube embed iframe with video ID")
+
+	// Should NOT be rendered as regular image
+	require.NotContains(t, html, `<img src="https://www.youtube.com`,
+		"YouTube link should NOT be rendered as regular img tag")
+}
+
+// TestYouTubeShortLinkEmbed tests that youtu.be short links are also rendered as embeds.
+func TestYouTubeShortLinkEmbed(t *testing.T) {
+	log := logger.TestLogger{}
+
+	sourceFiles := []mdloader.SourceFile{{
+		Path: "video_short.md",
+		Content: []byte(`---
+free: true
+---
+![](https://youtu.be/SJCGVbYN9XY)`),
+	}}
+
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: sourceFiles,
+		Log:     &log,
+	})
+	require.NoError(t, err)
+
+	html := string(pages.Map["/video_short"].HTML)
+
+	// Should contain YouTube embed
+	require.Contains(t, html, `youtube-enclave-object`,
+		"youtu.be link should be rendered as YouTube embed")
+
+	require.Contains(t, html, `youtube.com/embed/SJCGVbYN9XY`,
+		"Should contain YouTube embed iframe with video ID")
+}
+
 // TestInLinksWithCachedAST tests that InLinks are correctly populated when
 // notes are loaded with cached AST. This reproduces a bug where AST mutation
 // in extractInLinks (changing link.Target from "note" to "/note") breaks

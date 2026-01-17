@@ -387,3 +387,30 @@ test.describe('Image Resolution', () => {
     expect(src0).not.toBe(src1); // Root vs projectA file
   });
 });
+
+test.describe('YouTube Embed', () => {
+  test('YouTube link renders as embedded iframe', async ({ page }) => {
+    await page.goto('/code_and_media');
+
+    await expect(page.locator('h1').first()).toContainText('Code and Media');
+
+    // YouTube embed iframe should be visible
+    const iframe = page.locator('iframe.youtube-enclave-object');
+    await expect(iframe).toBeVisible();
+
+    const src = await iframe.getAttribute('src');
+    expect(src).toContain('youtube.com/embed/');
+    expect(src).toContain('dQw4w9WgXcQ'); // Video ID from test page
+  });
+
+  test('YouTube embed is wrapped in proper container', async ({ page }) => {
+    await page.goto('/code_and_media');
+
+    // Check the wrapper structure
+    const wrapper = page.locator('.enclave-object-wrapper');
+    await expect(wrapper).toBeVisible();
+
+    // Should have auto-resize class for responsive sizing
+    await expect(wrapper).toHaveClass(/auto-resize/);
+  });
+});
