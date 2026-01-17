@@ -659,13 +659,15 @@ EOF
 }
 
 test_meta_injection() {
-    log_section "Test: Meta injection with --meta"
+    log_section "Test: Meta injection with --meta and prefix"
 
-    # Create test directory for CLI meta test
-    mkdir -p "$VAULT0/cli_meta"
+    # Create temp directory for CLI meta test (separate from vault0)
+    local CLI_TEST_DIR="$TMP_DIR/cli_meta_source"
+    rm -rf "$CLI_TEST_DIR"
+    mkdir -p "$CLI_TEST_DIR"
 
     # Simple file without frontmatter - title should be injected via --meta
-    cat > "$VAULT0/cli_meta/cli_test.md" << 'EOF'
+    cat > "$CLI_TEST_DIR/cli_test.md" << 'EOF'
 # CLI Test Page
 
 This page was synced with --meta title=FromCLI to test meta injection.
@@ -673,14 +675,15 @@ This page was synced with --meta title=FromCLI to test meta injection.
 The page title (h1 in header) should be "FromCLI" from injected frontmatter.
 EOF
 
-    # Sync with --meta title=FromCLI
-    log_info "Syncing cli_meta folder with --meta title=FromCLI..."
+    # Sync with prefix "cli_meta" - file will be uploaded as cli_meta/cli_test.md
+    log_info "Syncing with prefix cli_meta and --meta title=FromCLI --meta free=true..."
     cd "$OBSIDIAN_SYNC_DIR"
     npx tsx src/sync/cli/cmd.ts \
-        --folder "$VAULT0/cli_meta" \
+        "$CLI_TEST_DIR" cli_meta \
         --api-key "$API_KEY" \
         --api-url "$ENDPOINT" \
-        --meta title=FromCLI
+        --meta title=FromCLI \
+        --meta free=true
 
     # Verify via GraphQL that meta was injected
     log_info "Verifying meta injection via GraphQL..."
@@ -689,7 +692,7 @@ EOF
     response=$(curl -s -X POST "$ENDPOINT" \
         -H "Content-Type: application/json" \
         -H "X-API-Key: $API_KEY" \
-        -d '{"query":"query { notePaths(filter: { paths: [\"cli_test.md\"] }) { path: value latestNoteView { content } } }"}')
+        -d '{"query":"query { notePaths(filter: { paths: [\"cli_meta/cli_test.md\"] }) { path: value latestNoteView { content } } }"}')
 
     # Check for title: FromCLI in frontmatter
     if echo "$response" | grep -q "title: FromCLI"; then
@@ -699,7 +702,7 @@ EOF
         echo "Response: $response" | head -500
     fi
 
-    # Note: NOT cleaning up cli_meta - it's used by e2e/vault.spec.js to verify meta injection
+    # Note: NOT cleaning up - it's used by e2e/vault.spec.js to verify meta injection
     log_info "cli_meta files kept for e2e verification"
 }
 

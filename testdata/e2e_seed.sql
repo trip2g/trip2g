@@ -301,8 +301,8 @@ CREATE TABLE tg_user_states (
   data text not null,
   primary key (chat_id, bot_id)
 );
-INSERT INTO tg_user_states VALUES(-1003398645241,1,NULL,'2025-12-18 07:39:36','2025-12-18 07:39:43',2,'pending','{"quiz_states":{}}');
-INSERT INTO tg_user_states VALUES(-1003329836407,1,NULL,'2025-12-18 07:39:51','2025-12-18 07:39:58',2,'pending','{"quiz_states":{}}');
+INSERT INTO tg_user_states VALUES(-1003576908503,1,NULL,'2025-12-18 07:39:36','2025-12-18 07:39:43',2,'pending','{"quiz_states":{}}');
+INSERT INTO tg_user_states VALUES(-1003591599765,1,NULL,'2025-12-18 07:39:51','2025-12-18 07:39:58',2,'pending','{"quiz_states":{}}');
 CREATE TABLE tg_user_profiles (
   sha256_hash text primary key,
   chat_id int not null,
@@ -489,8 +489,8 @@ CREATE TABLE IF NOT EXISTS "tg_bot_chats" (
   can_invite boolean not null default false,
   bot_id integer not null
 );
-INSERT INTO tg_bot_chats VALUES(1,-1003398645241,'channel','Trip2G Test Bot Instant','2025-12-18 07:39:43',NULL,1,1);
-INSERT INTO tg_bot_chats VALUES(2,-1003329836407,'channel','Trip2G Test Bot','2025-12-18 07:39:58',NULL,1,1);
+INSERT INTO tg_bot_chats VALUES(1,-1003576908503,'channel','Trip2G Test Bot Instant','2025-12-18 07:39:43',NULL,1,1);
+INSERT INTO tg_bot_chats VALUES(2,-1003591599765,'channel','Trip2G Test Bot','2025-12-18 07:39:58',NULL,1,1);
 CREATE TABLE html_injections (
   id integer primary key autoincrement,
   created_at datetime not null default current_timestamp,
@@ -640,8 +640,8 @@ CREATE TABLE telegram_publish_account_chats (
   created_by integer not null references admins(user_id) on delete restrict,
   primary key (account_id, telegram_chat_id, tag_id)
 );
-INSERT INTO telegram_publish_account_chats VALUES(1,3598873147,1,'2025-12-18 07:39:10',1);
-INSERT INTO telegram_publish_account_chats VALUES(1,3598873147,2,'2025-12-18 07:39:10',1);
+INSERT INTO telegram_publish_account_chats VALUES(1,3611189458,1,'2025-12-18 07:39:10',1);
+INSERT INTO telegram_publish_account_chats VALUES(1,3611189458,2,'2025-12-18 07:39:10',1);
 CREATE TABLE telegram_publish_account_instant_chats (
   account_id integer not null references telegram_accounts(id) on delete cascade,
   telegram_chat_id integer not null,
@@ -650,8 +650,8 @@ CREATE TABLE telegram_publish_account_instant_chats (
   created_by integer not null references admins(user_id) on delete restrict,
   primary key (account_id, telegram_chat_id, tag_id)
 );
-INSERT INTO telegram_publish_account_instant_chats VALUES(1,3641822634,1,'2025-12-18 07:38:50',1);
-INSERT INTO telegram_publish_account_instant_chats VALUES(1,3641822634,2,'2025-12-18 07:38:50',1);
+INSERT INTO telegram_publish_account_instant_chats VALUES(1,3513155321,1,'2025-12-18 07:38:50',1);
+INSERT INTO telegram_publish_account_instant_chats VALUES(1,3513155321,2,'2025-12-18 07:38:50',1);
 CREATE TABLE telegram_publish_sent_account_messages (
   note_path_id integer not null references note_paths(id) on delete restrict,
   account_id integer not null references telegram_accounts(id) on delete restrict,

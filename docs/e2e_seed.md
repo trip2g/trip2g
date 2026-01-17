@@ -126,3 +126,33 @@ go run ./cmd/tge2e -db test.db check
 | `telegram_publish_tags` | test_channel, test_premium_channel |
 | `telegram_publish_chats` | связь бот-канала с test_channel |
 | `telegram_publish_account_chats` | связь аккаунт-канала с тегами |
+
+## Устаревшие ID каналов
+
+Seed файл содержит захардкоженные Telegram chat ID в таблицах:
+- `telegram_publish_account_chats`
+- `telegram_publish_account_instant_chats`
+
+Иногда Telegram перестаёт находить каналы по старым ID (даже если они существуют). При запуске тестов появится ошибка:
+```
+chat with ID XXXXXXX not found in dialogs
+```
+
+**Решение:** пересоздать каналы с теми же именами и обновить ID в `testdata/e2e_seed.sql`. Актуальные ID можно получить командой:
+```bash
+go run ./cmd/tge2e -db test.db verify
+```
+
+Вывод покажет текущие ID каналов:
+```
+Looking for channel: Trip2G Test Bot... OK (ID=3591599765)
+Looking for channel: Trip2G Test Bot Instant... OK (ID=3576908503)
+Looking for channel: Trip2G Test Account... OK (ID=3611189458)
+Looking for channel: Trip2G Test Account Instant... OK (ID=3513155321)
+```
+
+Таблицы которые нужно обновить:
+- `tg_bot_chats` - ID с префиксом `-100` (например `-1003591599765`)
+- `tg_user_states` - тоже с префиксом `-100`
+- `telegram_publish_account_chats` - ID без префикса
+- `telegram_publish_account_instant_chats` - ID без префикса
