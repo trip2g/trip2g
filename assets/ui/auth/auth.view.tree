@@ -17,7 +17,11 @@ $trip2g_auth $mol_view
 $trip2g_auth_email_form $mol_form
 	code_sent? false
 	entered_email? \
+	oauth_error \
 	body /
+		<= OAuth_error $mol_view
+			sub /
+				<= oauth_error_message \
 		<= Email_field $mol_form_field
 			name \Email
 			bid <= email_bid \
@@ -31,6 +35,7 @@ $trip2g_auth_email_form $mol_form
 			click? <=> submit? null
 		<= RequestResult $mol_status
 			message <= result? \
+		<= OAuth_buttons $trip2g_auth_oauth_buttons
 
 $trip2g_auth_code_form $mol_form
 	reload_me null

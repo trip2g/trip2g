@@ -1083,3 +1083,21 @@ select * from note_version_embeddings where version_id = ?;
 
 -- name: GetNoteVersionEmbeddingsByVersionIDs :many
 select * from note_version_embeddings where version_id in (sqlc.slice('version_ids'));
+
+-- name: GetActiveGoogleOAuthCredentials :one
+select * from google_oauth_credentials where active = true limit 1;
+
+-- name: GetActiveGitHubOAuthCredentials :one
+select * from github_oauth_credentials where active = true limit 1;
+
+-- name: ListGoogleOAuthCredentials :many
+select * from google_oauth_credentials order by created_at desc;
+
+-- name: ListGitHubOAuthCredentials :many
+select * from github_oauth_credentials order by created_at desc;
+
+-- name: GetGoogleOAuthCredentials :one
+select * from google_oauth_credentials where id = ?;
+
+-- name: GetGitHubOAuthCredentials :one
+select * from github_oauth_credentials where id = ?;

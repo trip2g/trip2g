@@ -95,6 +95,13 @@ namespace $.$$ {
 		}
 	}
 
+	const oauth_error_messages: Record<string, string> = {
+		'user_not_found': 'User not registered. Contact administrator.',
+		'email_not_verified': 'Email not verified.',
+		'oauth_failed': 'Authentication failed. Try again.',
+		'invalid_state': 'Invalid request. Try again.',
+	}
+
 	export class $trip2g_auth_email_form extends $.$trip2g_auth_email_form {
 		@$mol_mem
 		request_error( next?: string ): string {
@@ -135,6 +142,25 @@ namespace $.$$ {
 			}
 
 			this.request_error( 'Unknown error' )
+		}
+
+		override oauth_error() {
+			return this.$.$mol_state_arg.value( 'berror' ) || ''
+		}
+
+		override oauth_error_message() {
+			const error = this.oauth_error()
+			if( !error ) return ''
+			return oauth_error_messages[ error ] || error
+		}
+
+		override body() {
+			const items = [ ...super.body() ]
+			// Remove OAuth_error if no error
+			if( !this.oauth_error() ) {
+				return items.filter( item => item !== this.OAuth_error() )
+			}
+			return items
 		}
 	}
 

@@ -575,6 +575,24 @@ CREATE INDEX idx_note_version_embeddings_model_id on note_version_embeddings(mod
 CREATE TRIGGER goqite_updated_timestamp after update on goqite begin
   update goqite set updated = strftime('%Y-%m-%dT%H:%M:%fZ') where id = old.id;
 end;
+CREATE TABLE google_oauth_credentials (
+    id integer primary key,
+    name text not null,
+    client_id text not null,
+    client_secret_encrypted blob not null,
+    active boolean not null default false,
+    created_at datetime not null default (datetime('now')),
+    created_by integer not null references users(id)
+);
+CREATE TABLE github_oauth_credentials (
+    id integer primary key,
+    name text not null,
+    client_id text not null,
+    client_secret_encrypted blob not null,
+    active boolean not null default false,
+    created_at datetime not null default (datetime('now')),
+    created_by integer not null references users(id)
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -676,4 +694,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251218090744'),
   ('20251219021352'),
   ('20251224090437'),
-  ('20260102093534');
+  ('20260102093534'),
+  ('20260119020631');

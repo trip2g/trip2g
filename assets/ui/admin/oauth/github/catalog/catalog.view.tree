@@ -1,0 +1,29 @@
+$trip2g_admin_oauth_github_catalog $trip2g_admin_catalog
+	menu_title @ \GitHub OAuth
+	actions /
+		<= DeactivateButton $trip2g_admin_oauth_github_button_deactivate
+		<= AddLink $mol_link
+			arg * id \add
+			title \+ Add
+	param \id
+	Empty $mol_status
+	ShowPage* $trip2g_admin_oauth_github_show
+		credentials_id <= row_id* 0
+	menu_link_content* / <= PatternItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				sub <= row_content* /
+					<= Id* $trip2g_admin_labeler_id
+						value <= row_id_string* \id
+					<= Name* $mol_labeler
+						title \Name
+						Content <= NameCell* $trip2g_admin_cell
+							content <= row_name* \name
+					<= ClientId* $mol_labeler
+						title \Client ID
+						Content <= ClientIdCell* $trip2g_admin_cell
+							content <= row_client_id* \client_id
+					<= CreatedAt* $trip2g_admin_labeler_moment
+						title @ \Created At
+						value <= row_created_at* \created_at
+	AddForm $trip2g_admin_oauth_github_create

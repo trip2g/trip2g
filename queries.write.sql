@@ -818,3 +818,29 @@ on conflict (version_id) do update set
     content_hash = excluded.content_hash,
     tokens = excluded.tokens,
     created_at = datetime('now');
+
+-- name: InsertGoogleOAuthCredentials :one
+insert into google_oauth_credentials (name, client_id, client_secret_encrypted, active, created_by)
+values (?, ?, ?, ?, ?) returning *;
+
+-- name: InsertGitHubOAuthCredentials :one
+insert into github_oauth_credentials (name, client_id, client_secret_encrypted, active, created_by)
+values (?, ?, ?, ?, ?) returning *;
+
+-- name: SetActiveGoogleOAuthCredentials :exec
+update google_oauth_credentials set active = (id = ?);
+
+-- name: SetActiveGitHubOAuthCredentials :exec
+update github_oauth_credentials set active = (id = ?);
+
+-- name: DeactivateAllGoogleOAuthCredentials :exec
+update google_oauth_credentials set active = false;
+
+-- name: DeactivateAllGitHubOAuthCredentials :exec
+update github_oauth_credentials set active = false;
+
+-- name: DeleteGoogleOAuthCredentials :exec
+delete from google_oauth_credentials where id = ?;
+
+-- name: DeleteGitHubOAuthCredentials :exec
+delete from github_oauth_credentials where id = ?;

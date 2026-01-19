@@ -548,6 +548,34 @@ input AdminBoostyCredentialsFilterInput {
   state: BoostyCredentialsStateEnum
 }
 
+# OAuth Credentials
+
+type AdminGoogleOAuthCredentials @goModel(model: "trip2g/internal/db.GoogleOauthCredential") {
+  id: Int64!
+  name: String!
+  clientId: String!
+  active: Boolean!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+}
+
+type AdminGoogleOAuthCredentialsConnection {
+  nodes: [AdminGoogleOAuthCredentials!]! @goField(forceResolver: true)
+}
+
+type AdminGitHubOAuthCredentials @goModel(model: "trip2g/internal/db.GithubOauthCredential") {
+  id: Int64!
+  name: String!
+  clientId: String!
+  active: Boolean!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+}
+
+type AdminGitHubOAuthCredentialsConnection {
+  nodes: [AdminGitHubOAuthCredentials!]! @goField(forceResolver: true)
+}
+
 enum NoteWarningLevelEnum {
   INFO
   WARNING
@@ -900,6 +928,11 @@ type AdminQuery {
   allBoostyCredentials(filter: AdminBoostyCredentialsFilterInput): AdminBoostyCredentialsConnection!
   boostyCredentials(id: Int64!): AdminBoostyCredentials
 
+  allGoogleOAuthCredentials: AdminGoogleOAuthCredentialsConnection!
+  googleOAuthCredentials(id: Int!): AdminGoogleOAuthCredentials
+  allGitHubOAuthCredentials: AdminGitHubOAuthCredentialsConnection!
+  gitHubOAuthCredentials(id: Int!): AdminGitHubOAuthCredentials
+
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
   auditLogs(filter: AdminAuditLogsFilterInput!): AdminAuditLogsConnection!
 
@@ -1129,8 +1162,49 @@ type SimilarNote {
   note: PublicNote!
 }
 
+input OAuthUrlInput {
+  """
+  URL to redirect to after authentication.
+  """
+  redirectUrl: String!
+
+  """
+  If true, returns callbackUrl even if OAuth is not configured.
+  Useful for admin UI to display the callback URL before configuration.
+  """
+  dry: Boolean
+}
+
+type OAuthUrlPayload {
+  """
+  Full OAuth URL to redirect user to. Null if OAuth is not configured (and dry is false).
+  """
+  authUrl: String
+
+  """
+  Callback URL that should be configured in OAuth provider settings.
+  """
+  callbackUrl: String!
+}
+
 type Query {
   viewer: Viewer!
+
+  """
+  Public URL of the application. Used for OAuth provider Homepage URL and other integrations.
+  """
+  publicUrl: String!
+
+  """
+  Returns Google OAuth URLs for authentication.
+  """
+  googleAuthUrl(input: OAuthUrlInput!): OAuthUrlPayload!
+
+  """
+  Returns GitHub OAuth URLs for authentication.
+  """
+  githubAuthUrl(input: OAuthUrlInput!): OAuthUrlPayload!
+
   admin: AdminQuery!
   note(input: NoteInput!): PublicNote
   search(input: SearchInput!): SearchConnection!
@@ -1953,6 +2027,114 @@ type SetBoostyTierSubgraphsPayload {
 union SetBoostyTierSubgraphsOrErrorPayload = SetBoostyTierSubgraphsPayload | ErrorPayload
 
 #
+# createGoogleOAuthCredentials
+#
+
+input CreateGoogleOAuthCredentialsInput {
+  name: String!
+  clientId: String!
+  clientSecret: String!
+}
+
+type CreateGoogleOAuthCredentialsPayload {
+  credentials: AdminGoogleOAuthCredentials!
+}
+
+union CreateGoogleOAuthCredentialsOrErrorPayload = CreateGoogleOAuthCredentialsPayload | ErrorPayload
+
+#
+# deleteGoogleOAuthCredentials
+#
+
+input DeleteGoogleOAuthCredentialsInput {
+  id: Int64!
+}
+
+type DeleteGoogleOAuthCredentialsPayload {
+  deletedId: Int64!
+}
+
+union DeleteGoogleOAuthCredentialsOrErrorPayload = DeleteGoogleOAuthCredentialsPayload | ErrorPayload
+
+#
+# setActiveGoogleOAuthCredentials
+#
+
+input SetActiveGoogleOAuthCredentialsInput {
+  id: Int64!
+}
+
+type SetActiveGoogleOAuthCredentialsPayload {
+  credentials: AdminGoogleOAuthCredentials!
+}
+
+union SetActiveGoogleOAuthCredentialsOrErrorPayload = SetActiveGoogleOAuthCredentialsPayload | ErrorPayload
+
+#
+# deactivateGoogleOAuth
+#
+
+type DeactivateGoogleOAuthPayload {
+  success: Boolean!
+}
+
+union DeactivateGoogleOAuthOrErrorPayload = DeactivateGoogleOAuthPayload | ErrorPayload
+
+#
+# createGitHubOAuthCredentials
+#
+
+input CreateGitHubOAuthCredentialsInput {
+  name: String!
+  clientId: String!
+  clientSecret: String!
+}
+
+type CreateGitHubOAuthCredentialsPayload {
+  credentials: AdminGitHubOAuthCredentials!
+}
+
+union CreateGitHubOAuthCredentialsOrErrorPayload = CreateGitHubOAuthCredentialsPayload | ErrorPayload
+
+#
+# deleteGitHubOAuthCredentials
+#
+
+input DeleteGitHubOAuthCredentialsInput {
+  id: Int64!
+}
+
+type DeleteGitHubOAuthCredentialsPayload {
+  deletedId: Int64!
+}
+
+union DeleteGitHubOAuthCredentialsOrErrorPayload = DeleteGitHubOAuthCredentialsPayload | ErrorPayload
+
+#
+# setActiveGitHubOAuthCredentials
+#
+
+input SetActiveGitHubOAuthCredentialsInput {
+  id: Int64!
+}
+
+type SetActiveGitHubOAuthCredentialsPayload {
+  credentials: AdminGitHubOAuthCredentials!
+}
+
+union SetActiveGitHubOAuthCredentialsOrErrorPayload = SetActiveGitHubOAuthCredentialsPayload | ErrorPayload
+
+#
+# deactivateGitHubOAuth
+#
+
+type DeactivateGitHubOAuthPayload {
+  success: Boolean!
+}
+
+union DeactivateGitHubOAuthOrErrorPayload = DeactivateGitHubOAuthPayload | ErrorPayload
+
+#
 # setTgChatSubgraphInvites
 #
 
@@ -2286,6 +2468,18 @@ type AdminMutation {
   updateBoostyCredentials(input: UpdateBoostyCredentialsInput!): UpdateBoostyCredentialsOrErrorPayload!
   refreshBoostyData(input: RefreshBoostyDataInput!): RefreshBoostyDataOrErrorPayload!
   setBoostyTierSubgraphs(input: SetBoostyTierSubgraphsInput!): SetBoostyTierSubgraphsOrErrorPayload!
+
+  # Google OAuth credentials mutations
+  createGoogleOAuthCredentials(input: CreateGoogleOAuthCredentialsInput!): CreateGoogleOAuthCredentialsOrErrorPayload!
+  deleteGoogleOAuthCredentials(input: DeleteGoogleOAuthCredentialsInput!): DeleteGoogleOAuthCredentialsOrErrorPayload!
+  setActiveGoogleOAuthCredentials(input: SetActiveGoogleOAuthCredentialsInput!): SetActiveGoogleOAuthCredentialsOrErrorPayload!
+  deactivateGoogleOAuth: DeactivateGoogleOAuthOrErrorPayload!
+
+  # GitHub OAuth credentials mutations
+  createGitHubOAuthCredentials(input: CreateGitHubOAuthCredentialsInput!): CreateGitHubOAuthCredentialsOrErrorPayload!
+  deleteGitHubOAuthCredentials(input: DeleteGitHubOAuthCredentialsInput!): DeleteGitHubOAuthCredentialsOrErrorPayload!
+  setActiveGitHubOAuthCredentials(input: SetActiveGitHubOAuthCredentialsInput!): SetActiveGitHubOAuthCredentialsOrErrorPayload!
+  deactivateGitHubOAuth: DeactivateGitHubOAuthOrErrorPayload!
 
   # Html Injection mutations
   createHtmlInjection(input: CreateHtmlInjectionInput!): CreateHtmlInjectionOrErrorPayload!

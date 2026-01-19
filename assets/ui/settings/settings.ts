@@ -1,29 +1,15 @@
-namespace $ {
-	const default_settings = {
-		is_dev_mode: true,
-		title: 'trip2g',
-	}
+namespace $.$$ {
+	export class $trip2g_settings extends $.$mol_object2 {
+		static title() {
+			return 'Trip2G'
+		}
 
-	const page_settings = typeof window !== 'undefined' && (window as any).__trip2g_settings || {}
-
-	export class $trip2g_settings extends $mol_object {
-		static settings(): any {
-			return {
-				...default_settings,
-				...page_settings,
+		// Returns value only in dev mode, empty string in production
+		static dev_value<T>(value: T): T | string {
+			if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+				return value
 			}
-		}
-
-		static is_dev_mode(): boolean {
-			return $trip2g_settings.settings().is_dev_mode || false
-		}
-
-		static dev_value( v: string ) {
-			return $trip2g_settings.is_dev_mode() ? v : ''
-		}
-
-		static title(): string {
-			return $trip2g_settings.settings().title || 'trip2g'
+			return ''
 		}
 	}
 }

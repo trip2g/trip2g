@@ -78,8 +78,16 @@ type CreateEmailWaitListRequestOrErrorPayload interface {
 	IsCreateEmailWaitListRequestOrErrorPayload()
 }
 
+type CreateGitHubOAuthCredentialsOrErrorPayload interface {
+	IsCreateGitHubOAuthCredentialsOrErrorPayload()
+}
+
 type CreateGitTokenOrErrorPayload interface {
 	IsCreateGitTokenOrErrorPayload()
+}
+
+type CreateGoogleOAuthCredentialsOrErrorPayload interface {
+	IsCreateGoogleOAuthCredentialsOrErrorPayload()
 }
 
 type CreateHTMLInjectionOrErrorPayload interface {
@@ -122,12 +130,28 @@ type CreateUserSubgraphAccessOrErrorPayload interface {
 	IsCreateUserSubgraphAccessOrErrorPayload()
 }
 
+type DeactivateGitHubOAuthOrErrorPayload interface {
+	IsDeactivateGitHubOAuthOrErrorPayload()
+}
+
+type DeactivateGoogleOAuthOrErrorPayload interface {
+	IsDeactivateGoogleOAuthOrErrorPayload()
+}
+
 type DeleteAdminOrErrorPayload interface {
 	IsDeleteAdminOrErrorPayload()
 }
 
 type DeleteBoostyCredentialsOrErrorPayload interface {
 	IsDeleteBoostyCredentialsOrErrorPayload()
+}
+
+type DeleteGitHubOAuthCredentialsOrErrorPayload interface {
+	IsDeleteGitHubOAuthCredentialsOrErrorPayload()
+}
+
+type DeleteGoogleOAuthCredentialsOrErrorPayload interface {
+	IsDeleteGoogleOAuthCredentialsOrErrorPayload()
 }
 
 type DeleteHTMLInjectionOrErrorPayload interface {
@@ -216,6 +240,14 @@ type SearchResultDocument interface {
 
 type SendTelegramPublishNoteNowOrErrorPayload interface {
 	IsSendTelegramPublishNoteNowOrErrorPayload()
+}
+
+type SetActiveGitHubOAuthCredentialsOrErrorPayload interface {
+	IsSetActiveGitHubOAuthCredentialsOrErrorPayload()
+}
+
+type SetActiveGoogleOAuthCredentialsOrErrorPayload interface {
+	IsSetActiveGoogleOAuthCredentialsOrErrorPayload()
 }
 
 type SetBoostyTierSubgraphsOrErrorPayload interface {
@@ -412,8 +444,16 @@ type AdminCronJobsConnection struct {
 	Nodes []db.CronJob `json:"nodes"`
 }
 
+type AdminGitHubOAuthCredentialsConnection struct {
+	Nodes []db.GithubOauthCredential `json:"nodes"`
+}
+
 type AdminGitTokensConnection struct {
 	Nodes []db.GitToken `json:"nodes"`
+}
+
+type AdminGoogleOAuthCredentialsConnection struct {
+	Nodes []db.GoogleOauthCredential `json:"nodes"`
 }
 
 type AdminHTMLInjectionsConnection struct {
@@ -725,6 +765,18 @@ type CreateEmailWaitListRequestPayload struct {
 
 func (CreateEmailWaitListRequestPayload) IsCreateEmailWaitListRequestOrErrorPayload() {}
 
+type CreateGitHubOAuthCredentialsInput struct {
+	Name         string `json:"name"`
+	ClientID     string `json:"clientId"`
+	ClientSecret string `json:"clientSecret"`
+}
+
+type CreateGitHubOAuthCredentialsPayload struct {
+	Credentials *db.GithubOauthCredential `json:"credentials"`
+}
+
+func (CreateGitHubOAuthCredentialsPayload) IsCreateGitHubOAuthCredentialsOrErrorPayload() {}
+
 type CreateGitTokenInput struct {
 	Description string `json:"description"`
 	CanPull     bool   `json:"canPull"`
@@ -737,6 +789,18 @@ type CreateGitTokenPayload struct {
 }
 
 func (CreateGitTokenPayload) IsCreateGitTokenOrErrorPayload() {}
+
+type CreateGoogleOAuthCredentialsInput struct {
+	Name         string `json:"name"`
+	ClientID     string `json:"clientId"`
+	ClientSecret string `json:"clientSecret"`
+}
+
+type CreateGoogleOAuthCredentialsPayload struct {
+	Credentials *db.GoogleOauthCredential `json:"credentials"`
+}
+
+func (CreateGoogleOAuthCredentialsPayload) IsCreateGoogleOAuthCredentialsOrErrorPayload() {}
 
 type CreateHTMLInjectionInput struct {
 	Description string     `json:"description"`
@@ -858,6 +922,18 @@ type CreateUserSubgraphAccessPayload struct {
 
 func (CreateUserSubgraphAccessPayload) IsCreateUserSubgraphAccessOrErrorPayload() {}
 
+type DeactivateGitHubOAuthPayload struct {
+	Success bool `json:"success"`
+}
+
+func (DeactivateGitHubOAuthPayload) IsDeactivateGitHubOAuthOrErrorPayload() {}
+
+type DeactivateGoogleOAuthPayload struct {
+	Success bool `json:"success"`
+}
+
+func (DeactivateGoogleOAuthPayload) IsDeactivateGoogleOAuthOrErrorPayload() {}
+
 type DeleteAdminInput struct {
 	UserID int64 `json:"userId"`
 }
@@ -878,6 +954,26 @@ type DeleteBoostyCredentialsPayload struct {
 }
 
 func (DeleteBoostyCredentialsPayload) IsDeleteBoostyCredentialsOrErrorPayload() {}
+
+type DeleteGitHubOAuthCredentialsInput struct {
+	ID int64 `json:"id"`
+}
+
+type DeleteGitHubOAuthCredentialsPayload struct {
+	DeletedID int64 `json:"deletedId"`
+}
+
+func (DeleteGitHubOAuthCredentialsPayload) IsDeleteGitHubOAuthCredentialsOrErrorPayload() {}
+
+type DeleteGoogleOAuthCredentialsInput struct {
+	ID int64 `json:"id"`
+}
+
+type DeleteGoogleOAuthCredentialsPayload struct {
+	DeletedID int64 `json:"deletedId"`
+}
+
+func (DeleteGoogleOAuthCredentialsPayload) IsDeleteGoogleOAuthCredentialsOrErrorPayload() {}
 
 type DeleteHTMLInjectionInput struct {
 	ID int64 `json:"id"`
@@ -1057,6 +1153,22 @@ func (ErrorPayload) IsRefreshBoostyDataOrErrorPayload() {}
 
 func (ErrorPayload) IsSetBoostyTierSubgraphsOrErrorPayload() {}
 
+func (ErrorPayload) IsCreateGoogleOAuthCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsDeleteGoogleOAuthCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsSetActiveGoogleOAuthCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsDeactivateGoogleOAuthOrErrorPayload() {}
+
+func (ErrorPayload) IsCreateGitHubOAuthCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsDeleteGitHubOAuthCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsSetActiveGitHubOAuthCredentialsOrErrorPayload() {}
+
+func (ErrorPayload) IsDeactivateGitHubOAuthOrErrorPayload() {}
+
 func (ErrorPayload) IsSetTgChatSubgraphInvitesOrErrorPayload() {}
 
 func (ErrorPayload) IsRemoveExpiredTgChatMembersOrErrorPayload() {}
@@ -1185,6 +1297,21 @@ type NoteTocItem struct {
 type NoteViewMeta struct {
 	Key string `json:"key"`
 	Raw string `json:"raw"`
+}
+
+type OAuthURLInput struct {
+	// URL to redirect to after authentication.
+	RedirectURL string `json:"redirectUrl"`
+	// If true, returns callbackUrl even if OAuth is not configured.
+	// Useful for admin UI to display the callback URL before configuration.
+	Dry *bool `json:"dry,omitempty"`
+}
+
+type OAuthURLPayload struct {
+	// Full OAuth URL to redirect user to. Null if OAuth is not configured (and dry is false).
+	AuthURL *string `json:"authUrl,omitempty"`
+	// Callback URL that should be configured in OAuth provider settings.
+	CallbackURL string `json:"callbackUrl"`
 }
 
 type PublicNote struct {
@@ -1350,6 +1477,26 @@ type SendTelegramPublishNoteNowPayload struct {
 }
 
 func (SendTelegramPublishNoteNowPayload) IsSendTelegramPublishNoteNowOrErrorPayload() {}
+
+type SetActiveGitHubOAuthCredentialsInput struct {
+	ID int64 `json:"id"`
+}
+
+type SetActiveGitHubOAuthCredentialsPayload struct {
+	Credentials *db.GithubOauthCredential `json:"credentials"`
+}
+
+func (SetActiveGitHubOAuthCredentialsPayload) IsSetActiveGitHubOAuthCredentialsOrErrorPayload() {}
+
+type SetActiveGoogleOAuthCredentialsInput struct {
+	ID int64 `json:"id"`
+}
+
+type SetActiveGoogleOAuthCredentialsPayload struct {
+	Credentials *db.GoogleOauthCredential `json:"credentials"`
+}
+
+func (SetActiveGoogleOAuthCredentialsPayload) IsSetActiveGoogleOAuthCredentialsOrErrorPayload() {}
 
 type SetBoostyTierSubgraphsInput struct {
 	TierID      int64   `json:"tierId"`

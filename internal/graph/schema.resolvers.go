@@ -25,7 +25,9 @@ import (
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createconfigversion"
+	"trip2g/internal/case/admin/creategithuboauthcredentials"
 	"trip2g/internal/case/admin/creategittoken"
+	"trip2g/internal/case/admin/creategoogleoauthcredentials"
 	"trip2g/internal/case/admin/createhtmlinjection"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
@@ -35,8 +37,12 @@ import (
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/createuser"
 	"trip2g/internal/case/admin/createusersubgraphaccess"
+	"trip2g/internal/case/admin/deactivategithuboauth"
+	"trip2g/internal/case/admin/deactivategoogleoauth"
 	"trip2g/internal/case/admin/deleteadmin"
 	"trip2g/internal/case/admin/deleteboostycredentials"
+	"trip2g/internal/case/admin/deletegithuboauthcredentials"
+	"trip2g/internal/case/admin/deletegoogleoauthcredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
@@ -51,6 +57,8 @@ import (
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
+	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
+	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
@@ -359,6 +367,16 @@ func (r *adminCronJobsConnectionResolver) Nodes(ctx context.Context, obj *model.
 }
 
 // CreatedBy is the resolver for the createdBy field.
+func (r *adminGitHubOAuthCredentialsResolver) CreatedBy(ctx context.Context, obj *db.GithubOauthCredential) (*db.User, error) {
+	return resolveOnePtr[db.User](ctx, &obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminGitHubOAuthCredentialsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminGitHubOAuthCredentialsConnection) ([]db.GithubOauthCredential, error) {
+	return r.env(ctx).ListGitHubOAuthCredentials(ctx)
+}
+
+// CreatedBy is the resolver for the createdBy field.
 func (r *adminGitTokenResolver) CreatedBy(ctx context.Context, obj *db.GitToken) (*db.User, error) {
 	return resolveOnePtr[db.User](ctx, obj.AdminID, r.env(ctx).UserByID)
 }
@@ -371,6 +389,16 @@ func (r *adminGitTokenResolver) DisabledBy(ctx context.Context, obj *db.GitToken
 // Nodes is the resolver for the nodes field.
 func (r *adminGitTokensConnectionResolver) Nodes(ctx context.Context, obj *model.AdminGitTokensConnection) ([]db.GitToken, error) {
 	return r.env(ctx).ListAllGitTokens(ctx)
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminGoogleOAuthCredentialsResolver) CreatedBy(ctx context.Context, obj *db.GoogleOauthCredential) (*db.User, error) {
+	return resolveOnePtr[db.User](ctx, &obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminGoogleOAuthCredentialsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminGoogleOAuthCredentialsConnection) ([]db.GoogleOauthCredential, error) {
+	return r.env(ctx).ListGoogleOAuthCredentials(ctx)
 }
 
 // Position is the resolver for the position field.
@@ -728,6 +756,46 @@ func (r *adminMutationResolver) RefreshBoostyData(ctx context.Context, obj *appm
 // SetBoostyTierSubgraphs is the resolver for the setBoostyTierSubgraphs field.
 func (r *adminMutationResolver) SetBoostyTierSubgraphs(ctx context.Context, obj *appmodel.AdminMutation, input model.SetBoostyTierSubgraphsInput) (model.SetBoostyTierSubgraphsOrErrorPayload, error) {
 	return setboostytiersubgraphs.Resolve(ctx, r.env(ctx), input)
+}
+
+// CreateGoogleOAuthCredentials is the resolver for the createGoogleOAuthCredentials field.
+func (r *adminMutationResolver) CreateGoogleOAuthCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateGoogleOAuthCredentialsInput) (model.CreateGoogleOAuthCredentialsOrErrorPayload, error) {
+	return creategoogleoauthcredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteGoogleOAuthCredentials is the resolver for the deleteGoogleOAuthCredentials field.
+func (r *adminMutationResolver) DeleteGoogleOAuthCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteGoogleOAuthCredentialsInput) (model.DeleteGoogleOAuthCredentialsOrErrorPayload, error) {
+	return deletegoogleoauthcredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// SetActiveGoogleOAuthCredentials is the resolver for the setActiveGoogleOAuthCredentials field.
+func (r *adminMutationResolver) SetActiveGoogleOAuthCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.SetActiveGoogleOAuthCredentialsInput) (model.SetActiveGoogleOAuthCredentialsOrErrorPayload, error) {
+	return setactivegoogleoauthcredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeactivateGoogleOAuth is the resolver for the deactivateGoogleOAuth field.
+func (r *adminMutationResolver) DeactivateGoogleOAuth(ctx context.Context, obj *appmodel.AdminMutation) (model.DeactivateGoogleOAuthOrErrorPayload, error) {
+	return deactivategoogleoauth.Resolve(ctx, r.env(ctx))
+}
+
+// CreateGitHubOAuthCredentials is the resolver for the createGitHubOAuthCredentials field.
+func (r *adminMutationResolver) CreateGitHubOAuthCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateGitHubOAuthCredentialsInput) (model.CreateGitHubOAuthCredentialsOrErrorPayload, error) {
+	return creategithuboauthcredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteGitHubOAuthCredentials is the resolver for the deleteGitHubOAuthCredentials field.
+func (r *adminMutationResolver) DeleteGitHubOAuthCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteGitHubOAuthCredentialsInput) (model.DeleteGitHubOAuthCredentialsOrErrorPayload, error) {
+	return deletegithuboauthcredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// SetActiveGitHubOAuthCredentials is the resolver for the setActiveGitHubOAuthCredentials field.
+func (r *adminMutationResolver) SetActiveGitHubOAuthCredentials(ctx context.Context, obj *appmodel.AdminMutation, input model.SetActiveGitHubOAuthCredentialsInput) (model.SetActiveGitHubOAuthCredentialsOrErrorPayload, error) {
+	return setactivegithuboauthcredentials.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeactivateGitHubOAuth is the resolver for the deactivateGitHubOAuth field.
+func (r *adminMutationResolver) DeactivateGitHubOAuth(ctx context.Context, obj *appmodel.AdminMutation) (model.DeactivateGitHubOAuthOrErrorPayload, error) {
+	return deactivategithuboauth.Resolve(ctx, r.env(ctx))
 }
 
 // CreateHTMLInjection is the resolver for the createHTMLInjection field.
@@ -1148,6 +1216,34 @@ func (r *adminQueryResolver) AllBoostyCredentials(ctx context.Context, obj *appm
 // BoostyCredentials is the resolver for the boostyCredentials field.
 func (r *adminQueryResolver) BoostyCredentials(ctx context.Context, obj *appmodel.AdminQuery, id int64) (*db.BoostyCredential, error) {
 	return resolveOne[db.BoostyCredential](ctx, id, r.env(ctx).BoostyCredentials)
+}
+
+// AllGoogleOAuthCredentials is the resolver for the allGoogleOAuthCredentials field.
+func (r *adminQueryResolver) AllGoogleOAuthCredentials(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminGoogleOAuthCredentialsConnection, error) {
+	return &model.AdminGoogleOAuthCredentialsConnection{}, nil
+}
+
+// GoogleOAuthCredentials is the resolver for the googleOAuthCredentials field.
+func (r *adminQueryResolver) GoogleOAuthCredentials(ctx context.Context, obj *appmodel.AdminQuery, id int32) (*db.GoogleOauthCredential, error) {
+	creds, err := r.env(ctx).GetGoogleOAuthCredentials(ctx, int64(id))
+	if err != nil {
+		return nil, err
+	}
+	return &creds, nil
+}
+
+// AllGitHubOAuthCredentials is the resolver for the allGitHubOAuthCredentials field.
+func (r *adminQueryResolver) AllGitHubOAuthCredentials(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminGitHubOAuthCredentialsConnection, error) {
+	return &model.AdminGitHubOAuthCredentialsConnection{}, nil
+}
+
+// GitHubOAuthCredentials is the resolver for the gitHubOAuthCredentials field.
+func (r *adminQueryResolver) GitHubOAuthCredentials(ctx context.Context, obj *appmodel.AdminQuery, id int32) (*db.GithubOauthCredential, error) {
+	creds, err := r.env(ctx).GetGitHubOAuthCredentials(ctx, int64(id))
+	if err != nil {
+		return nil, err
+	}
+	return &creds, nil
 }
 
 // APIKeyLogs is the resolver for the apiKeyLogs field.
@@ -2016,6 +2112,45 @@ func (r *queryResolver) Viewer(ctx context.Context) (*appmodel.Viewer, error) {
 	return &appmodel.Viewer{UserToken: token}, nil
 }
 
+// PublicURL is the resolver for the publicUrl field.
+func (r *queryResolver) PublicURL(ctx context.Context) (string, error) {
+	return r.env(ctx).GetPublicURLForRequest(ctx), nil
+}
+
+// GoogleAuthURL is the resolver for the googleAuthUrl field.
+func (r *queryResolver) GoogleAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error) {
+	dry := input.Dry != nil && *input.Dry
+	callbackURL, authURL, err := r.env(ctx).BuildGoogleAuthURL(ctx, input.RedirectURL, dry)
+	if err != nil {
+		return nil, err
+	}
+	var authURLPtr *string
+	if authURL != "" {
+		authURLPtr = &authURL
+	}
+	return &model.OAuthURLPayload{
+		AuthURL:     authURLPtr,
+		CallbackURL: callbackURL,
+	}, nil
+}
+
+// GithubAuthURL is the resolver for the githubAuthUrl field.
+func (r *queryResolver) GithubAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error) {
+	dry := input.Dry != nil && *input.Dry
+	callbackURL, authURL, err := r.env(ctx).BuildGitHubAuthURL(ctx, input.RedirectURL, dry)
+	if err != nil {
+		return nil, err
+	}
+	var authURLPtr *string
+	if authURL != "" {
+		authURLPtr = &authURL
+	}
+	return &model.OAuthURLPayload{
+		AuthURL:     authURLPtr,
+		CallbackURL: callbackURL,
+	}, nil
+}
+
 // Admin is the resolver for the admin field.
 func (r *queryResolver) Admin(ctx context.Context) (*appmodel.AdminQuery, error) {
 	err := checkAdmin(ctx)
@@ -2499,12 +2634,32 @@ func (r *Resolver) AdminCronJobsConnection() AdminCronJobsConnectionResolver {
 	return &adminCronJobsConnectionResolver{r}
 }
 
+// AdminGitHubOAuthCredentials returns AdminGitHubOAuthCredentialsResolver implementation.
+func (r *Resolver) AdminGitHubOAuthCredentials() AdminGitHubOAuthCredentialsResolver {
+	return &adminGitHubOAuthCredentialsResolver{r}
+}
+
+// AdminGitHubOAuthCredentialsConnection returns AdminGitHubOAuthCredentialsConnectionResolver implementation.
+func (r *Resolver) AdminGitHubOAuthCredentialsConnection() AdminGitHubOAuthCredentialsConnectionResolver {
+	return &adminGitHubOAuthCredentialsConnectionResolver{r}
+}
+
 // AdminGitToken returns AdminGitTokenResolver implementation.
 func (r *Resolver) AdminGitToken() AdminGitTokenResolver { return &adminGitTokenResolver{r} }
 
 // AdminGitTokensConnection returns AdminGitTokensConnectionResolver implementation.
 func (r *Resolver) AdminGitTokensConnection() AdminGitTokensConnectionResolver {
 	return &adminGitTokensConnectionResolver{r}
+}
+
+// AdminGoogleOAuthCredentials returns AdminGoogleOAuthCredentialsResolver implementation.
+func (r *Resolver) AdminGoogleOAuthCredentials() AdminGoogleOAuthCredentialsResolver {
+	return &adminGoogleOAuthCredentialsResolver{r}
+}
+
+// AdminGoogleOAuthCredentialsConnection returns AdminGoogleOAuthCredentialsConnectionResolver implementation.
+func (r *Resolver) AdminGoogleOAuthCredentialsConnection() AdminGoogleOAuthCredentialsConnectionResolver {
+	return &adminGoogleOAuthCredentialsConnectionResolver{r}
 }
 
 // AdminHtmlInjection returns AdminHtmlInjectionResolver implementation.
@@ -2836,8 +2991,12 @@ type adminConfigVersionsConnectionResolver struct{ *Resolver }
 type adminCronJobResolver struct{ *Resolver }
 type adminCronJobExecutionResolver struct{ *Resolver }
 type adminCronJobsConnectionResolver struct{ *Resolver }
+type adminGitHubOAuthCredentialsResolver struct{ *Resolver }
+type adminGitHubOAuthCredentialsConnectionResolver struct{ *Resolver }
 type adminGitTokenResolver struct{ *Resolver }
 type adminGitTokensConnectionResolver struct{ *Resolver }
+type adminGoogleOAuthCredentialsResolver struct{ *Resolver }
+type adminGoogleOAuthCredentialsConnectionResolver struct{ *Resolver }
 type adminHtmlInjectionResolver struct{ *Resolver }
 type adminHtmlInjectionsConnectionResolver struct{ *Resolver }
 type adminLatestNoteAssetsConnectionResolver struct{ *Resolver }

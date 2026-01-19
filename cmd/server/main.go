@@ -62,6 +62,8 @@ import (
 	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/gitapi"
+	"trip2g/internal/githubauth"
+	"trip2g/internal/googleauth"
 	"trip2g/internal/graph"
 	graphmodel "trip2g/internal/graph/model"
 	"trip2g/internal/hotauthtoken"
@@ -1347,6 +1349,69 @@ func (a *app) GeneratePurchaseID() string {
 
 func (a *app) PublicURL() string {
 	return a.config.PublicURL
+}
+
+func (a *app) Insecure() bool {
+	return a.config.UserToken.Insecure
+}
+
+// BuildGoogleAuthURL returns (callbackURL, authURL, error).
+// callbackURL is always returned for admin UI display.
+// authURL is only returned if OAuth is configured (or dry=true for just getting callbackURL).
+func (a *app) BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error) {
+	publicURL := a.GetPublicURLForRequest(ctx)
+	callbackURL = fmt.Sprintf("%s/_system/auth/google/callback", publicURL)
+
+	if dry {
+		return callbackURL, "", nil
+	}
+
+	creds, err := a.GetActiveGoogleOAuthCredentials(ctx)
+	if err != nil {
+		// No active credentials - OAuth not configured
+		return callbackURL, "", nil //nolint:nilerr
+	}
+	if creds.ClientID == "" {
+		return callbackURL, "", nil
+	}
+
+	authURL = fmt.Sprintf("%s/_system/auth/google?redirect=%s", publicURL, url.QueryEscape(redirectURL))
+	return callbackURL, authURL, nil
+}
+
+// BuildGitHubAuthURL returns (callbackURL, authURL, error).
+// callbackURL is always returned for admin UI display.
+// authURL is only returned if OAuth is configured (or dry=true for just getting callbackURL).
+func (a *app) BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error) {
+	publicURL := a.GetPublicURLForRequest(ctx)
+	callbackURL = fmt.Sprintf("%s/_system/auth/github/callback", publicURL)
+
+	if dry {
+		return callbackURL, "", nil
+	}
+
+	creds, err := a.GetActiveGitHubOAuthCredentials(ctx)
+	if err != nil {
+		// No active credentials - OAuth not configured
+		return callbackURL, "", nil //nolint:nilerr
+	}
+	if creds.ClientID == "" {
+		return callbackURL, "", nil
+	}
+
+	authURL = fmt.Sprintf("%s/_system/auth/github?redirect=%s", publicURL, url.QueryEscape(redirectURL))
+	return callbackURL, authURL, nil
+}
+
+// ValidateGoogleOAuthCredentials validates Google OAuth credentials by making a test API call.
+func (a *app) ValidateGoogleOAuthCredentials(ctx context.Context, clientID, clientSecret string) error {
+	redirectURI := fmt.Sprintf("%s/_system/auth/google/callback", a.GetPublicURLForRequest(ctx))
+	return googleauth.ValidateCredentials(clientID, clientSecret, redirectURI)
+}
+
+// ValidateGitHubOAuthCredentials validates GitHub OAuth credentials by making a test API call.
+func (a *app) ValidateGitHubOAuthCredentials(ctx context.Context, clientID, clientSecret string) error {
+	return githubauth.ValidateCredentials(clientID, clientSecret)
 }
 
 func (a *app) GetPublicURLForRequest(ctx context.Context) string {

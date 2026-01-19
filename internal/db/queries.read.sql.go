@@ -1124,6 +1124,44 @@ func (q *Queries) FilteredTgBotChats(ctx context.Context, arg FilteredTgBotChats
 	return items, nil
 }
 
+const getActiveGitHubOAuthCredentials = `-- name: GetActiveGitHubOAuthCredentials :one
+select id, name, client_id, client_secret_encrypted, active, created_at, created_by from github_oauth_credentials where active = true limit 1
+`
+
+func (q *Queries) GetActiveGitHubOAuthCredentials(ctx context.Context) (GithubOauthCredential, error) {
+	row := q.db.QueryRowContext(ctx, getActiveGitHubOAuthCredentials)
+	var i GithubOauthCredential
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ClientID,
+		&i.ClientSecretEncrypted,
+		&i.Active,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
+const getActiveGoogleOAuthCredentials = `-- name: GetActiveGoogleOAuthCredentials :one
+select id, name, client_id, client_secret_encrypted, active, created_at, created_by from google_oauth_credentials where active = true limit 1
+`
+
+func (q *Queries) GetActiveGoogleOAuthCredentials(ctx context.Context) (GoogleOauthCredential, error) {
+	row := q.db.QueryRowContext(ctx, getActiveGoogleOAuthCredentials)
+	var i GoogleOauthCredential
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ClientID,
+		&i.ClientSecretEncrypted,
+		&i.Active,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
 const getBoostyMemberByEmail = `-- name: GetBoostyMemberByEmail :one
 select id, credentials_id, boosty_id, created_at, missed_at, email, status, data, current_tier_id, user_id from boosty_members
 where email = ? and status = 'active'
@@ -1261,6 +1299,44 @@ func (q *Queries) GetBoostyTiers(ctx context.Context) ([]BoostyTier, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getGitHubOAuthCredentials = `-- name: GetGitHubOAuthCredentials :one
+select id, name, client_id, client_secret_encrypted, active, created_at, created_by from github_oauth_credentials where id = ?
+`
+
+func (q *Queries) GetGitHubOAuthCredentials(ctx context.Context, id int64) (GithubOauthCredential, error) {
+	row := q.db.QueryRowContext(ctx, getGitHubOAuthCredentials, id)
+	var i GithubOauthCredential
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ClientID,
+		&i.ClientSecretEncrypted,
+		&i.Active,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
+const getGoogleOAuthCredentials = `-- name: GetGoogleOAuthCredentials :one
+select id, name, client_id, client_secret_encrypted, active, created_at, created_by from google_oauth_credentials where id = ?
+`
+
+func (q *Queries) GetGoogleOAuthCredentials(ctx context.Context, id int64) (GoogleOauthCredential, error) {
+	row := q.db.QueryRowContext(ctx, getGoogleOAuthCredentials, id)
+	var i GoogleOauthCredential
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ClientID,
+		&i.ClientSecretEncrypted,
+		&i.Active,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
 }
 
 const getGoqiteQueueStats = `-- name: GetGoqiteQueueStats :one
@@ -3295,6 +3371,76 @@ func (q *Queries) ListEnabledTgBots(ctx context.Context) ([]TgBot, error) {
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.Name,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listGitHubOAuthCredentials = `-- name: ListGitHubOAuthCredentials :many
+select id, name, client_id, client_secret_encrypted, active, created_at, created_by from github_oauth_credentials order by created_at desc
+`
+
+func (q *Queries) ListGitHubOAuthCredentials(ctx context.Context) ([]GithubOauthCredential, error) {
+	rows, err := q.db.QueryContext(ctx, listGitHubOAuthCredentials)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GithubOauthCredential
+	for rows.Next() {
+		var i GithubOauthCredential
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.ClientID,
+			&i.ClientSecretEncrypted,
+			&i.Active,
+			&i.CreatedAt,
+			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listGoogleOAuthCredentials = `-- name: ListGoogleOAuthCredentials :many
+select id, name, client_id, client_secret_encrypted, active, created_at, created_by from google_oauth_credentials order by created_at desc
+`
+
+func (q *Queries) ListGoogleOAuthCredentials(ctx context.Context) ([]GoogleOauthCredential, error) {
+	rows, err := q.db.QueryContext(ctx, listGoogleOAuthCredentials)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GoogleOauthCredential
+	for rows.Next() {
+		var i GoogleOauthCredential
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.ClientID,
+			&i.ClientSecretEncrypted,
+			&i.Active,
+			&i.CreatedAt,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}

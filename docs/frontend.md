@@ -72,14 +72,29 @@ $trip2g_admin_[entity]_show $mol_page
 	tools /
 		<= EditLink $mol_link
 			arg * action \update
-		<= ActionButton $mol_button_major
+		<= DeleteLink $mol_link
+			arg * action \delete
+			title \Delete
+	DeleteForm $trip2g_admin_[entity]_delete
+		[entity]_id <= [entity]_id
 	body /
 		<= Details $mol_view
 			sub /
-				<= Id_labeler $mol_labeler
-					title \ID
-					Content <= Id $trip2g_admin_cell
+				<= Details_row $mol_view
+					style *
+						flexDirection \column
+					sub /
+						<= Id_labeler $mol_labeler
+							title \ID
+							Content <= Id $trip2g_admin_cell
+								content <= [entity]_id_string \
+						<= Name_labeler $mol_labeler
+							title \Name
+							Content <= Name $trip2g_admin_cell
+								content <= [entity]_name \
 ```
+
+**Vertical Layout**: Use `$mol_view` with `style * flexDirection \column` for vertical stacking of labelers instead of `$mol_row` for better readability.
 
 **Business Logic** (`show.view.ts`):
 ```typescript
@@ -143,6 +158,31 @@ namespace $.$$ {
 }
 ```
 
+### Button Disabled State
+
+To disable a button based on condition, use the `disabled` property:
+
+**Structure** (`show.view.tree`):
+```tree
+<= SetActiveButton $mol_button_minor
+	disabled <= is_active false
+	title <= set_active_title \Set Active
+	click? <=> set_active_click? null
+```
+
+**Logic** (`show.view.ts`):
+```typescript
+is_active() {
+	return this.data().active
+}
+
+set_active_title() {
+	return this.data().active ? 'Active' : 'Set Active'
+}
+```
+
+The button will be grayed out and unclickable when `is_active()` returns `true`.
+
 ### CSS Styling
 
 **Column Width Guidelines:**
@@ -164,6 +204,13 @@ namespace $.$$ {
 ```
 
 ## Mol Framework Essentials
+
+### Source Code Reference
+**$mol framework sources are available at `../mam/mol/`**. When you need to understand how a $mol component works (e.g., `$mol_form`, `$mol_list`), read its `.view.tree` file:
+```bash
+cat ../mam/mol/form/form.view.tree
+cat ../mam/mol/list/list.view.tree
+```
 
 ### View Definitions
 - Tree-based UI specs in `.view.tree` files, behavior in `.view.ts`

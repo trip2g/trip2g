@@ -1,0 +1,50 @@
+$trip2g_admin_oauth_google_create $mol_page
+	title \Add Google OAuth
+	body /
+		<= RegisterLink $mol_link
+			uri \https://console.cloud.google.com/apis/credentials
+			title \Register app in Google Cloud Console →
+		<= HomepageUrl $mol_labeler
+			title \Homepage URL
+			Content <= HomepageUrlRow $mol_row
+				sub /
+					<= HomepageUrlText $mol_paragraph
+						title <= homepage_url \
+					<= CopyHomepageUrl $mol_button_copy
+						text <= homepage_url
+						title \Copy
+		<= CallbackUrl $mol_labeler
+			title \Authorization callback URL
+			Content <= CallbackUrlRow $mol_row
+				sub /
+					<= CallbackUrlText $mol_paragraph
+						title <= callback_url \
+					<= CopyCallbackUrl $mol_button_copy
+						text <= callback_url
+						title \Copy
+		<= Form $mol_form
+			body /
+				<= Name_field $mol_form_field
+					name \Name
+					bid <= name_bid \
+					Content <= name_control $mol_string
+						hint \Production
+						value? <=> name? \
+				<= ClientId_field $mol_form_field
+					name \Client ID
+					bid <= client_id_bid \
+					Content <= client_id_control $mol_string
+						hint \123456789.apps.googleusercontent.com
+						value? <=> client_id? \
+				<= ClientSecret_field $mol_form_field
+					name \Client Secret
+					bid <= client_secret_bid \
+					Content <= client_secret_control $mol_string
+						hint \GOCSPX-...
+						value? <=> client_secret? \
+			buttons /
+				<= Submit $mol_button_major
+					title \Create
+					click? <=> submit? null
+				<= Result $mol_status
+					message <= result? \

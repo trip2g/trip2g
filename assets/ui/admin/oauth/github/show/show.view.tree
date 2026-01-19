@@ -1,0 +1,44 @@
+$trip2g_admin_oauth_github_show $mol_page
+	credentials_id? 0
+	title \GitHub OAuth Credentials
+	tools /
+		<= SetActiveButton $mol_button_minor
+			disabled <= is_active false
+			title <= set_active_title \Set Active
+			click? <=> set_active_click? null
+		<= DeleteLink $mol_link
+			arg * action \delete
+			title \Delete
+	DeleteForm $trip2g_admin_oauth_github_delete
+		credentials_id <= credentials_id
+	body /
+		<= CredentialsDetails $mol_view
+			sub /
+				<= Details_row $mol_view
+					style *
+						flexDirection \column
+					sub /
+						<= Id_labeler $mol_labeler
+							title \ID
+							Content <= Id $trip2g_admin_cell
+								content <= credentials_id_string \
+						<= Name_labeler $mol_labeler
+							title \Name
+							Content <= Name $trip2g_admin_cell
+								content <= credentials_name \
+						<= ClientId_labeler $mol_labeler
+							title \Client ID
+							Content <= ClientId $trip2g_admin_cell
+								content <= credentials_client_id \
+						<= Active_labeler $mol_labeler
+							title \Active
+							Content <= Active $trip2g_admin_cell
+								content <= credentials_active \
+						<= CreatedAt_labeler $mol_labeler
+							title \Created At
+							Content <= CreatedAt $trip2g_admin_cell
+								content <= credentials_created_at \
+						<= CreatedBy_labeler $mol_labeler
+							title \Created By
+							Content <= CreatedBy $trip2g_admin_cell
+								content <= credentials_created_by \

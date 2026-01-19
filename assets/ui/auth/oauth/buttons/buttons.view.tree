@@ -1,0 +1,8 @@
+$trip2g_auth_oauth_buttons $mol_view
+	sub <= buttons /
+	Google $mol_link
+		title \Google
+		uri <= google_uri \
+	Github $mol_link
+		title \GitHub
+		uri <= github_uri \

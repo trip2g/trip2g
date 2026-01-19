@@ -6,6 +6,10 @@ package router
 
 import (
 	downloadonboardingvaultdownloadonboardingvault "trip2g/internal/case/downloadonboardingvault"
+	handlegithubcallbackhandlegithubcallback "trip2g/internal/case/handlegithubcallback"
+	handlegithubstarthandlegithubstart "trip2g/internal/case/handlegithubstart"
+	handlegooglecallbackhandlegooglecallback "trip2g/internal/case/handlegooglecallback"
+	handlegooglestarthandlegooglestart "trip2g/internal/case/handlegooglestart"
 	mcpmcp "trip2g/internal/case/mcp"
 	processnotionwebookprocessnotionwebook "trip2g/internal/case/processnotionwebook"
 	processnowpaymentsipnprocessnowpaymentsipn "trip2g/internal/case/processnowpaymentsipn"
@@ -20,6 +24,10 @@ import (
 
 var endpoints = []Endpoint{
 	&downloadonboardingvaultdownloadonboardingvault.Endpoint{},
+	&handlegithubcallbackhandlegithubcallback.Endpoint{},
+	&handlegithubstarthandlegithubstart.Endpoint{},
+	&handlegooglecallbackhandlegooglecallback.Endpoint{},
+	&handlegooglestarthandlegooglestart.Endpoint{},
 	&mcpmcp.Endpoint{},
 	&processnotionwebookprocessnotionwebook.Endpoint{},
 	&processnowpaymentsipnprocessnowpaymentsipn.Endpoint{},
@@ -34,6 +42,10 @@ var endpoints = []Endpoint{
 
 type RoutesEnv interface {
 	downloadonboardingvaultdownloadonboardingvault.Env
+	handlegithubcallbackhandlegithubcallback.Env
+	handlegithubstarthandlegithubstart.Env
+	handlegooglecallbackhandlegooglecallback.Env
+	handlegooglestarthandlegooglestart.Env
 	mcpmcp.Env
 	processnotionwebookprocessnotionwebook.Env
 	processnowpaymentsipnprocessnowpaymentsipn.Env

@@ -167,6 +167,26 @@ type GitToken struct {
 	DisabledBy  *int64     `json:"disabled_by"`
 }
 
+type GithubOauthCredential struct {
+	ID                    int64     `json:"id"`
+	Name                  string    `json:"name"`
+	ClientID              string    `json:"client_id"`
+	ClientSecretEncrypted []byte    `json:"client_secret_encrypted"`
+	Active                bool      `json:"active"`
+	CreatedAt             time.Time `json:"created_at"`
+	CreatedBy             int64     `json:"created_by"`
+}
+
+type GoogleOauthCredential struct {
+	ID                    int64     `json:"id"`
+	Name                  string    `json:"name"`
+	ClientID              string    `json:"client_id"`
+	ClientSecretEncrypted []byte    `json:"client_secret_encrypted"`
+	Active                bool      `json:"active"`
+	CreatedAt             time.Time `json:"created_at"`
+	CreatedBy             int64     `json:"created_by"`
+}
+
 type Goqite struct {
 	ID       string `json:"id"`
 	Created  string `json:"created"`

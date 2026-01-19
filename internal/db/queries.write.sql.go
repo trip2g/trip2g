@@ -172,6 +172,24 @@ func (q *WriteQueries) CreateUserSubgraphAccess(ctx context.Context, arg CreateU
 	return i, err
 }
 
+const deactivateAllGitHubOAuthCredentials = `-- name: DeactivateAllGitHubOAuthCredentials :exec
+update github_oauth_credentials set active = false
+`
+
+func (q *WriteQueries) DeactivateAllGitHubOAuthCredentials(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deactivateAllGitHubOAuthCredentials)
+	return err
+}
+
+const deactivateAllGoogleOAuthCredentials = `-- name: DeactivateAllGoogleOAuthCredentials :exec
+update google_oauth_credentials set active = false
+`
+
+func (q *WriteQueries) DeactivateAllGoogleOAuthCredentials(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deactivateAllGoogleOAuthCredentials)
+	return err
+}
+
 const deleteAcmeCert = `-- name: DeleteAcmeCert :exec
 delete from acme_certs where key = ?
 `
@@ -205,6 +223,24 @@ delete from cron_jobs where name = ?
 
 func (q *WriteQueries) DeleteCronJobByName(ctx context.Context, name string) error {
 	_, err := q.db.ExecContext(ctx, deleteCronJobByName, name)
+	return err
+}
+
+const deleteGitHubOAuthCredentials = `-- name: DeleteGitHubOAuthCredentials :exec
+delete from github_oauth_credentials where id = ?
+`
+
+func (q *WriteQueries) DeleteGitHubOAuthCredentials(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteGitHubOAuthCredentials, id)
+	return err
+}
+
+const deleteGoogleOAuthCredentials = `-- name: DeleteGoogleOAuthCredentials :exec
+delete from google_oauth_credentials where id = ?
+`
+
+func (q *WriteQueries) DeleteGoogleOAuthCredentials(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteGoogleOAuthCredentials, id)
 	return err
 }
 
@@ -830,6 +866,40 @@ func (q *WriteQueries) InsertCronJobExecution(ctx context.Context, arg InsertCro
 	return i, err
 }
 
+const insertGitHubOAuthCredentials = `-- name: InsertGitHubOAuthCredentials :one
+insert into github_oauth_credentials (name, client_id, client_secret_encrypted, active, created_by)
+values (?, ?, ?, ?, ?) returning id, name, client_id, client_secret_encrypted, active, created_at, created_by
+`
+
+type InsertGitHubOAuthCredentialsParams struct {
+	Name                  string `json:"name"`
+	ClientID              string `json:"client_id"`
+	ClientSecretEncrypted []byte `json:"client_secret_encrypted"`
+	Active                bool   `json:"active"`
+	CreatedBy             int64  `json:"created_by"`
+}
+
+func (q *WriteQueries) InsertGitHubOAuthCredentials(ctx context.Context, arg InsertGitHubOAuthCredentialsParams) (GithubOauthCredential, error) {
+	row := q.db.QueryRowContext(ctx, insertGitHubOAuthCredentials,
+		arg.Name,
+		arg.ClientID,
+		arg.ClientSecretEncrypted,
+		arg.Active,
+		arg.CreatedBy,
+	)
+	var i GithubOauthCredential
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ClientID,
+		&i.ClientSecretEncrypted,
+		&i.Active,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
 const insertGitToken = `-- name: InsertGitToken :one
 insert into git_tokens (value_sha256, admin_id, description, can_pull, can_push)
 values (?, ?, ?, ?, ?)
@@ -865,6 +935,40 @@ func (q *WriteQueries) InsertGitToken(ctx context.Context, arg InsertGitTokenPar
 		&i.UsageCount,
 		&i.DisabledAt,
 		&i.DisabledBy,
+	)
+	return i, err
+}
+
+const insertGoogleOAuthCredentials = `-- name: InsertGoogleOAuthCredentials :one
+insert into google_oauth_credentials (name, client_id, client_secret_encrypted, active, created_by)
+values (?, ?, ?, ?, ?) returning id, name, client_id, client_secret_encrypted, active, created_at, created_by
+`
+
+type InsertGoogleOAuthCredentialsParams struct {
+	Name                  string `json:"name"`
+	ClientID              string `json:"client_id"`
+	ClientSecretEncrypted []byte `json:"client_secret_encrypted"`
+	Active                bool   `json:"active"`
+	CreatedBy             int64  `json:"created_by"`
+}
+
+func (q *WriteQueries) InsertGoogleOAuthCredentials(ctx context.Context, arg InsertGoogleOAuthCredentialsParams) (GoogleOauthCredential, error) {
+	row := q.db.QueryRowContext(ctx, insertGoogleOAuthCredentials,
+		arg.Name,
+		arg.ClientID,
+		arg.ClientSecretEncrypted,
+		arg.Active,
+		arg.CreatedBy,
+	)
+	var i GoogleOauthCredential
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ClientID,
+		&i.ClientSecretEncrypted,
+		&i.Active,
+		&i.CreatedAt,
+		&i.CreatedBy,
 	)
 	return i, err
 }
@@ -1908,6 +2012,24 @@ type RevokeUserSubgraphAccessParams struct {
 
 func (q *WriteQueries) RevokeUserSubgraphAccess(ctx context.Context, arg RevokeUserSubgraphAccessParams) error {
 	_, err := q.db.ExecContext(ctx, revokeUserSubgraphAccess, arg.RevokeID, arg.ID)
+	return err
+}
+
+const setActiveGitHubOAuthCredentials = `-- name: SetActiveGitHubOAuthCredentials :exec
+update github_oauth_credentials set active = (id = ?)
+`
+
+func (q *WriteQueries) SetActiveGitHubOAuthCredentials(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, setActiveGitHubOAuthCredentials, id)
+	return err
+}
+
+const setActiveGoogleOAuthCredentials = `-- name: SetActiveGoogleOAuthCredentials :exec
+update google_oauth_credentials set active = (id = ?)
+`
+
+func (q *WriteQueries) SetActiveGoogleOAuthCredentials(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, setActiveGoogleOAuthCredentials, id)
 	return err
 }
 

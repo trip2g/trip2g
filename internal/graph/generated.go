@@ -64,8 +64,12 @@ type ResolverRoot interface {
 	AdminCronJob() AdminCronJobResolver
 	AdminCronJobExecution() AdminCronJobExecutionResolver
 	AdminCronJobsConnection() AdminCronJobsConnectionResolver
+	AdminGitHubOAuthCredentials() AdminGitHubOAuthCredentialsResolver
+	AdminGitHubOAuthCredentialsConnection() AdminGitHubOAuthCredentialsConnectionResolver
 	AdminGitToken() AdminGitTokenResolver
 	AdminGitTokensConnection() AdminGitTokensConnectionResolver
+	AdminGoogleOAuthCredentials() AdminGoogleOAuthCredentialsResolver
+	AdminGoogleOAuthCredentialsConnection() AdminGoogleOAuthCredentialsConnectionResolver
 	AdminHtmlInjection() AdminHtmlInjectionResolver
 	AdminHtmlInjectionsConnection() AdminHtmlInjectionsConnectionResolver
 	AdminLatestNoteAssetsConnection() AdminLatestNoteAssetsConnectionResolver
@@ -308,6 +312,19 @@ type ComplexityRoot struct {
 		Nodes func(childComplexity int) int
 	}
 
+	AdminGitHubOAuthCredentials struct {
+		Active    func(childComplexity int) int
+		ClientID  func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		CreatedBy func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Name      func(childComplexity int) int
+	}
+
+	AdminGitHubOAuthCredentialsConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
 	AdminGitToken struct {
 		CanPull     func(childComplexity int) int
 		CanPush     func(childComplexity int) int
@@ -320,6 +337,19 @@ type ComplexityRoot struct {
 	}
 
 	AdminGitTokensConnection struct {
+		Nodes func(childComplexity int) int
+	}
+
+	AdminGoogleOAuthCredentials struct {
+		Active    func(childComplexity int) int
+		ClientID  func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		CreatedBy func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Name      func(childComplexity int) int
+	}
+
+	AdminGoogleOAuthCredentialsConnection struct {
 		Nodes func(childComplexity int) int
 	}
 
@@ -359,7 +389,9 @@ type ComplexityRoot struct {
 		CreateAdmin                              func(childComplexity int, input model.CreateAdminInput) int
 		CreateBoostyCredentials                  func(childComplexity int, input model.CreateBoostyCredentialsInput) int
 		CreateConfigVersion                      func(childComplexity int, input model.CreateConfigVersionInput) int
+		CreateGitHubOAuthCredentials             func(childComplexity int, input model.CreateGitHubOAuthCredentialsInput) int
 		CreateGitToken                           func(childComplexity int, input model.CreateGitTokenInput) int
+		CreateGoogleOAuthCredentials             func(childComplexity int, input model.CreateGoogleOAuthCredentialsInput) int
 		CreateHTMLInjection                      func(childComplexity int, input model.CreateHTMLInjectionInput) int
 		CreateNotFoundIgnoredPattern             func(childComplexity int, input model.CreateNotFoundIgnoredPatternInput) int
 		CreateOffer                              func(childComplexity int, input model.CreateOfferInput) int
@@ -369,8 +401,12 @@ type ComplexityRoot struct {
 		CreateTgBot                              func(childComplexity int, input model.CreateTgBotInput) int
 		CreateUser                               func(childComplexity int, input model.CreateUserInput) int
 		CreateUserSubgraphAccess                 func(childComplexity int, input model.CreateUserSubgraphAccessInput) int
+		DeactivateGitHubOAuth                    func(childComplexity int) int
+		DeactivateGoogleOAuth                    func(childComplexity int) int
 		DeleteAdmin                              func(childComplexity int, input model.DeleteAdminInput) int
 		DeleteBoostyCredentials                  func(childComplexity int, input model.DeleteBoostyCredentialsInput) int
+		DeleteGitHubOAuthCredentials             func(childComplexity int, input model.DeleteGitHubOAuthCredentialsInput) int
+		DeleteGoogleOAuthCredentials             func(childComplexity int, input model.DeleteGoogleOAuthCredentialsInput) int
 		DeleteHTMLInjection                      func(childComplexity int, input model.DeleteHTMLInjectionInput) int
 		DeleteNotFoundIgnoredPattern             func(childComplexity int, input model.DeleteNotFoundIgnoredPatternInput) int
 		DeletePatreonCredentials                 func(childComplexity int, input model.DeletePatreonCredentialsInput) int
@@ -388,6 +424,8 @@ type ComplexityRoot struct {
 		RestorePatreonCredentials                func(childComplexity int, input model.RestorePatreonCredentialsInput) int
 		RunCronJob                               func(childComplexity int, input model.RunCronJobInput) int
 		SendTelegramPublishNoteNow               func(childComplexity int, input model.SendTelegramPublishNoteNowInput) int
+		SetActiveGitHubOAuthCredentials          func(childComplexity int, input model.SetActiveGitHubOAuthCredentialsInput) int
+		SetActiveGoogleOAuthCredentials          func(childComplexity int, input model.SetActiveGoogleOAuthCredentialsInput) int
 		SetBoostyTierSubgraphs                   func(childComplexity int, input model.SetBoostyTierSubgraphsInput) int
 		SetPatreonTierSubgraphs                  func(childComplexity int, input model.SetPatreonTierSubgraphsInput) int
 		SetTelegramAccountChatPublishInstantTags func(childComplexity int, input model.AdminSetTelegramAccountChatPublishInstantTagsInput) int
@@ -544,7 +582,9 @@ type ComplexityRoot struct {
 		AllBoostyCredentials       func(childComplexity int, filter *model.AdminBoostyCredentialsFilterInput) int
 		AllConfigVersions          func(childComplexity int) int
 		AllCronJobs                func(childComplexity int) int
+		AllGitHubOAuthCredentials  func(childComplexity int) int
 		AllGitTokens               func(childComplexity int) int
+		AllGoogleOAuthCredentials  func(childComplexity int) int
 		AllHTMLInjections          func(childComplexity int) int
 		AllLatestNoteAssets        func(childComplexity int) int
 		AllLatestNoteViews         func(childComplexity int, filter *model.AdminLatestNoteViewsFilter) int
@@ -570,6 +610,8 @@ type ComplexityRoot struct {
 		BoostyCredentials          func(childComplexity int, id int64) int
 		BuildGitCommit             func(childComplexity int) int
 		CronJob                    func(childComplexity int, id int64) int
+		GitHubOAuthCredentials     func(childComplexity int, id int32) int
+		GoogleOAuthCredentials     func(childComplexity int, id int32) int
 		HTMLInjection              func(childComplexity int, id int64) int
 		HealthChecks               func(childComplexity int) int
 		LatestConfig               func(childComplexity int) int
@@ -879,9 +921,17 @@ type ComplexityRoot struct {
 		Success func(childComplexity int) int
 	}
 
+	CreateGitHubOAuthCredentialsPayload struct {
+		Credentials func(childComplexity int) int
+	}
+
 	CreateGitTokenPayload struct {
 		GitToken func(childComplexity int) int
 		Value    func(childComplexity int) int
+	}
+
+	CreateGoogleOAuthCredentialsPayload struct {
+		Credentials func(childComplexity int) int
 	}
 
 	CreateHtmlInjectionPayload struct {
@@ -925,6 +975,14 @@ type ComplexityRoot struct {
 		Accesses func(childComplexity int) int
 	}
 
+	DeactivateGitHubOAuthPayload struct {
+		Success func(childComplexity int) int
+	}
+
+	DeactivateGoogleOAuthPayload struct {
+		Success func(childComplexity int) int
+	}
+
 	DeleteAdminPayload struct {
 		Success func(childComplexity int) int
 	}
@@ -932,6 +990,14 @@ type ComplexityRoot struct {
 	DeleteBoostyCredentialsPayload struct {
 		BoostyCredentials func(childComplexity int) int
 		DeletedID         func(childComplexity int) int
+	}
+
+	DeleteGitHubOAuthCredentialsPayload struct {
+		DeletedID func(childComplexity int) int
+	}
+
+	DeleteGoogleOAuthCredentialsPayload struct {
+		DeletedID func(childComplexity int) int
 	}
 
 	DeleteHtmlInjectionPayload struct {
@@ -1077,6 +1143,11 @@ type ComplexityRoot struct {
 		Message func(childComplexity int) int
 	}
 
+	OAuthUrlPayload struct {
+		AuthURL     func(childComplexity int) int
+		CallbackURL func(childComplexity int) int
+	}
+
 	Offer struct {
 		ID        func(childComplexity int) int
 		PriceUsd  func(childComplexity int) int
@@ -1118,12 +1189,15 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Admin        func(childComplexity int) int
-		Note         func(childComplexity int, input model.NoteInput) int
-		NotePaths    func(childComplexity int, filter *model.NotePathsFilter) int
-		Search       func(childComplexity int, input model.SearchInput) int
-		SimilarNotes func(childComplexity int, input model.SimilarNotesInput) int
-		Viewer       func(childComplexity int) int
+		Admin         func(childComplexity int) int
+		GithubAuthURL func(childComplexity int, input model.OAuthURLInput) int
+		GoogleAuthURL func(childComplexity int, input model.OAuthURLInput) int
+		Note          func(childComplexity int, input model.NoteInput) int
+		NotePaths     func(childComplexity int, filter *model.NotePathsFilter) int
+		PublicURL     func(childComplexity int) int
+		Search        func(childComplexity int, input model.SearchInput) int
+		SimilarNotes  func(childComplexity int, input model.SimilarNotesInput) int
+		Viewer        func(childComplexity int) int
 	}
 
 	RefreshBoostyDataPayload struct {
@@ -1181,6 +1255,14 @@ type ComplexityRoot struct {
 
 	SendTelegramPublishNoteNowPayload struct {
 		PublishNote func(childComplexity int) int
+	}
+
+	SetActiveGitHubOAuthCredentialsPayload struct {
+		Credentials func(childComplexity int) int
+	}
+
+	SetActiveGoogleOAuthCredentialsPayload struct {
+		Credentials func(childComplexity int) int
 	}
 
 	SetBoostyTierSubgraphsPayload struct {
@@ -1432,12 +1514,24 @@ type AdminCronJobExecutionResolver interface {
 type AdminCronJobsConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminCronJobsConnection) ([]db.CronJob, error)
 }
+type AdminGitHubOAuthCredentialsResolver interface {
+	CreatedBy(ctx context.Context, obj *db.GithubOauthCredential) (*db.User, error)
+}
+type AdminGitHubOAuthCredentialsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminGitHubOAuthCredentialsConnection) ([]db.GithubOauthCredential, error)
+}
 type AdminGitTokenResolver interface {
 	CreatedBy(ctx context.Context, obj *db.GitToken) (*db.User, error)
 	DisabledBy(ctx context.Context, obj *db.GitToken) (*db.User, error)
 }
 type AdminGitTokensConnectionResolver interface {
 	Nodes(ctx context.Context, obj *model.AdminGitTokensConnection) ([]db.GitToken, error)
+}
+type AdminGoogleOAuthCredentialsResolver interface {
+	CreatedBy(ctx context.Context, obj *db.GoogleOauthCredential) (*db.User, error)
+}
+type AdminGoogleOAuthCredentialsConnectionResolver interface {
+	Nodes(ctx context.Context, obj *model.AdminGoogleOAuthCredentialsConnection) ([]db.GoogleOauthCredential, error)
 }
 type AdminHtmlInjectionResolver interface {
 	Position(ctx context.Context, obj *db.HtmlInjection) (int32, error)
@@ -1505,6 +1599,14 @@ type AdminMutationResolver interface {
 	UpdateBoostyCredentials(ctx context.Context, obj *model1.AdminMutation, input model.UpdateBoostyCredentialsInput) (model.UpdateBoostyCredentialsOrErrorPayload, error)
 	RefreshBoostyData(ctx context.Context, obj *model1.AdminMutation, input model.RefreshBoostyDataInput) (model.RefreshBoostyDataOrErrorPayload, error)
 	SetBoostyTierSubgraphs(ctx context.Context, obj *model1.AdminMutation, input model.SetBoostyTierSubgraphsInput) (model.SetBoostyTierSubgraphsOrErrorPayload, error)
+	CreateGoogleOAuthCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreateGoogleOAuthCredentialsInput) (model.CreateGoogleOAuthCredentialsOrErrorPayload, error)
+	DeleteGoogleOAuthCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeleteGoogleOAuthCredentialsInput) (model.DeleteGoogleOAuthCredentialsOrErrorPayload, error)
+	SetActiveGoogleOAuthCredentials(ctx context.Context, obj *model1.AdminMutation, input model.SetActiveGoogleOAuthCredentialsInput) (model.SetActiveGoogleOAuthCredentialsOrErrorPayload, error)
+	DeactivateGoogleOAuth(ctx context.Context, obj *model1.AdminMutation) (model.DeactivateGoogleOAuthOrErrorPayload, error)
+	CreateGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminMutation, input model.CreateGitHubOAuthCredentialsInput) (model.CreateGitHubOAuthCredentialsOrErrorPayload, error)
+	DeleteGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminMutation, input model.DeleteGitHubOAuthCredentialsInput) (model.DeleteGitHubOAuthCredentialsOrErrorPayload, error)
+	SetActiveGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminMutation, input model.SetActiveGitHubOAuthCredentialsInput) (model.SetActiveGitHubOAuthCredentialsOrErrorPayload, error)
+	DeactivateGitHubOAuth(ctx context.Context, obj *model1.AdminMutation) (model.DeactivateGitHubOAuthOrErrorPayload, error)
 	CreateHTMLInjection(ctx context.Context, obj *model1.AdminMutation, input model.CreateHTMLInjectionInput) (model.CreateHTMLInjectionOrErrorPayload, error)
 	UpdateHTMLInjection(ctx context.Context, obj *model1.AdminMutation, input model.UpdateHTMLInjectionInput) (model.UpdateHTMLInjectionOrErrorPayload, error)
 	DeleteHTMLInjection(ctx context.Context, obj *model1.AdminMutation, input model.DeleteHTMLInjectionInput) (model.DeleteHTMLInjectionOrErrorPayload, error)
@@ -1598,6 +1700,10 @@ type AdminQueryResolver interface {
 	PatreonCredentials(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.PatreonCredential, error)
 	AllBoostyCredentials(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminBoostyCredentialsFilterInput) (*model.AdminBoostyCredentialsConnection, error)
 	BoostyCredentials(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.BoostyCredential, error)
+	AllGoogleOAuthCredentials(ctx context.Context, obj *model1.AdminQuery) (*model.AdminGoogleOAuthCredentialsConnection, error)
+	GoogleOAuthCredentials(ctx context.Context, obj *model1.AdminQuery, id int32) (*db.GoogleOauthCredential, error)
+	AllGitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery) (*model.AdminGitHubOAuthCredentialsConnection, error)
+	GitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery, id int32) (*db.GithubOauthCredential, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	AuditLogs(ctx context.Context, obj *model1.AdminQuery, filter model.AdminAuditLogsFilterInput) (*model.AdminAuditLogsConnection, error)
 	LatestConfig(ctx context.Context, obj *model1.AdminQuery) (*db.ConfigVersion, error)
@@ -1793,6 +1899,9 @@ type PurchaseResolver interface {
 }
 type QueryResolver interface {
 	Viewer(ctx context.Context) (*model1.Viewer, error)
+	PublicURL(ctx context.Context) (string, error)
+	GoogleAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error)
+	GithubAuthURL(ctx context.Context, input model.OAuthURLInput) (*model.OAuthURLPayload, error)
 	Admin(ctx context.Context) (*model1.AdminQuery, error)
 	Note(ctx context.Context, input model.NoteInput) (*model.PublicNote, error)
 	Search(ctx context.Context, input model.SearchInput) (*model.SearchConnection, error)
@@ -2422,6 +2531,50 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminCronJobsConnection.Nodes(childComplexity), true
 
+	case "AdminGitHubOAuthCredentials.active":
+		if e.complexity.AdminGitHubOAuthCredentials.Active == nil {
+			break
+		}
+
+		return e.complexity.AdminGitHubOAuthCredentials.Active(childComplexity), true
+	case "AdminGitHubOAuthCredentials.clientId":
+		if e.complexity.AdminGitHubOAuthCredentials.ClientID == nil {
+			break
+		}
+
+		return e.complexity.AdminGitHubOAuthCredentials.ClientID(childComplexity), true
+	case "AdminGitHubOAuthCredentials.createdAt":
+		if e.complexity.AdminGitHubOAuthCredentials.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminGitHubOAuthCredentials.CreatedAt(childComplexity), true
+	case "AdminGitHubOAuthCredentials.createdBy":
+		if e.complexity.AdminGitHubOAuthCredentials.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.AdminGitHubOAuthCredentials.CreatedBy(childComplexity), true
+	case "AdminGitHubOAuthCredentials.id":
+		if e.complexity.AdminGitHubOAuthCredentials.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminGitHubOAuthCredentials.ID(childComplexity), true
+	case "AdminGitHubOAuthCredentials.name":
+		if e.complexity.AdminGitHubOAuthCredentials.Name == nil {
+			break
+		}
+
+		return e.complexity.AdminGitHubOAuthCredentials.Name(childComplexity), true
+
+	case "AdminGitHubOAuthCredentialsConnection.nodes":
+		if e.complexity.AdminGitHubOAuthCredentialsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminGitHubOAuthCredentialsConnection.Nodes(childComplexity), true
+
 	case "AdminGitToken.canPull":
 		if e.complexity.AdminGitToken.CanPull == nil {
 			break
@@ -2477,6 +2630,50 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminGitTokensConnection.Nodes(childComplexity), true
+
+	case "AdminGoogleOAuthCredentials.active":
+		if e.complexity.AdminGoogleOAuthCredentials.Active == nil {
+			break
+		}
+
+		return e.complexity.AdminGoogleOAuthCredentials.Active(childComplexity), true
+	case "AdminGoogleOAuthCredentials.clientId":
+		if e.complexity.AdminGoogleOAuthCredentials.ClientID == nil {
+			break
+		}
+
+		return e.complexity.AdminGoogleOAuthCredentials.ClientID(childComplexity), true
+	case "AdminGoogleOAuthCredentials.createdAt":
+		if e.complexity.AdminGoogleOAuthCredentials.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.AdminGoogleOAuthCredentials.CreatedAt(childComplexity), true
+	case "AdminGoogleOAuthCredentials.createdBy":
+		if e.complexity.AdminGoogleOAuthCredentials.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.AdminGoogleOAuthCredentials.CreatedBy(childComplexity), true
+	case "AdminGoogleOAuthCredentials.id":
+		if e.complexity.AdminGoogleOAuthCredentials.ID == nil {
+			break
+		}
+
+		return e.complexity.AdminGoogleOAuthCredentials.ID(childComplexity), true
+	case "AdminGoogleOAuthCredentials.name":
+		if e.complexity.AdminGoogleOAuthCredentials.Name == nil {
+			break
+		}
+
+		return e.complexity.AdminGoogleOAuthCredentials.Name(childComplexity), true
+
+	case "AdminGoogleOAuthCredentialsConnection.nodes":
+		if e.complexity.AdminGoogleOAuthCredentialsConnection.Nodes == nil {
+			break
+		}
+
+		return e.complexity.AdminGoogleOAuthCredentialsConnection.Nodes(childComplexity), true
 
 	case "AdminHtmlInjection.activeFrom":
 		if e.complexity.AdminHtmlInjection.ActiveFrom == nil {
@@ -2643,6 +2840,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.CreateConfigVersion(childComplexity, args["input"].(model.CreateConfigVersionInput)), true
+	case "AdminMutation.createGitHubOAuthCredentials":
+		if e.complexity.AdminMutation.CreateGitHubOAuthCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_createGitHubOAuthCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.CreateGitHubOAuthCredentials(childComplexity, args["input"].(model.CreateGitHubOAuthCredentialsInput)), true
 	case "AdminMutation.createGitToken":
 		if e.complexity.AdminMutation.CreateGitToken == nil {
 			break
@@ -2654,6 +2862,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.CreateGitToken(childComplexity, args["input"].(model.CreateGitTokenInput)), true
+	case "AdminMutation.createGoogleOAuthCredentials":
+		if e.complexity.AdminMutation.CreateGoogleOAuthCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_createGoogleOAuthCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.CreateGoogleOAuthCredentials(childComplexity, args["input"].(model.CreateGoogleOAuthCredentialsInput)), true
 	case "AdminMutation.createHtmlInjection":
 		if e.complexity.AdminMutation.CreateHTMLInjection == nil {
 			break
@@ -2753,6 +2972,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.CreateUserSubgraphAccess(childComplexity, args["input"].(model.CreateUserSubgraphAccessInput)), true
+	case "AdminMutation.deactivateGitHubOAuth":
+		if e.complexity.AdminMutation.DeactivateGitHubOAuth == nil {
+			break
+		}
+
+		return e.complexity.AdminMutation.DeactivateGitHubOAuth(childComplexity), true
+	case "AdminMutation.deactivateGoogleOAuth":
+		if e.complexity.AdminMutation.DeactivateGoogleOAuth == nil {
+			break
+		}
+
+		return e.complexity.AdminMutation.DeactivateGoogleOAuth(childComplexity), true
 	case "AdminMutation.deleteAdmin":
 		if e.complexity.AdminMutation.DeleteAdmin == nil {
 			break
@@ -2775,6 +3006,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.DeleteBoostyCredentials(childComplexity, args["input"].(model.DeleteBoostyCredentialsInput)), true
+	case "AdminMutation.deleteGitHubOAuthCredentials":
+		if e.complexity.AdminMutation.DeleteGitHubOAuthCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_deleteGitHubOAuthCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.DeleteGitHubOAuthCredentials(childComplexity, args["input"].(model.DeleteGitHubOAuthCredentialsInput)), true
+	case "AdminMutation.deleteGoogleOAuthCredentials":
+		if e.complexity.AdminMutation.DeleteGoogleOAuthCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_deleteGoogleOAuthCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.DeleteGoogleOAuthCredentials(childComplexity, args["input"].(model.DeleteGoogleOAuthCredentialsInput)), true
 	case "AdminMutation.deleteHtmlInjection":
 		if e.complexity.AdminMutation.DeleteHTMLInjection == nil {
 			break
@@ -2962,6 +3215,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.SendTelegramPublishNoteNow(childComplexity, args["input"].(model.SendTelegramPublishNoteNowInput)), true
+	case "AdminMutation.setActiveGitHubOAuthCredentials":
+		if e.complexity.AdminMutation.SetActiveGitHubOAuthCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_setActiveGitHubOAuthCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.SetActiveGitHubOAuthCredentials(childComplexity, args["input"].(model.SetActiveGitHubOAuthCredentialsInput)), true
+	case "AdminMutation.setActiveGoogleOAuthCredentials":
+		if e.complexity.AdminMutation.SetActiveGoogleOAuthCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminMutation_setActiveGoogleOAuthCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminMutation.SetActiveGoogleOAuthCredentials(childComplexity, args["input"].(model.SetActiveGoogleOAuthCredentialsInput)), true
 	case "AdminMutation.setBoostyTierSubgraphs":
 		if e.complexity.AdminMutation.SetBoostyTierSubgraphs == nil {
 			break
@@ -3749,12 +4024,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AllCronJobs(childComplexity), true
+	case "AdminQuery.allGitHubOAuthCredentials":
+		if e.complexity.AdminQuery.AllGitHubOAuthCredentials == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllGitHubOAuthCredentials(childComplexity), true
 	case "AdminQuery.allGitTokens":
 		if e.complexity.AdminQuery.AllGitTokens == nil {
 			break
 		}
 
 		return e.complexity.AdminQuery.AllGitTokens(childComplexity), true
+	case "AdminQuery.allGoogleOAuthCredentials":
+		if e.complexity.AdminQuery.AllGoogleOAuthCredentials == nil {
+			break
+		}
+
+		return e.complexity.AdminQuery.AllGoogleOAuthCredentials(childComplexity), true
 	case "AdminQuery.allHtmlInjections":
 		if e.complexity.AdminQuery.AllHTMLInjections == nil {
 			break
@@ -3940,6 +4227,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.CronJob(childComplexity, args["id"].(int64)), true
+	case "AdminQuery.gitHubOAuthCredentials":
+		if e.complexity.AdminQuery.GitHubOAuthCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_gitHubOAuthCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.GitHubOAuthCredentials(childComplexity, args["id"].(int32)), true
+	case "AdminQuery.googleOAuthCredentials":
+		if e.complexity.AdminQuery.GoogleOAuthCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_AdminQuery_googleOAuthCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.AdminQuery.GoogleOAuthCredentials(childComplexity, args["id"].(int32)), true
 	case "AdminQuery.htmlInjection":
 		if e.complexity.AdminQuery.HTMLInjection == nil {
 			break
@@ -5064,6 +5373,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.CreateEmailWaitListRequestPayload.Success(childComplexity), true
 
+	case "CreateGitHubOAuthCredentialsPayload.credentials":
+		if e.complexity.CreateGitHubOAuthCredentialsPayload.Credentials == nil {
+			break
+		}
+
+		return e.complexity.CreateGitHubOAuthCredentialsPayload.Credentials(childComplexity), true
+
 	case "CreateGitTokenPayload.gitToken":
 		if e.complexity.CreateGitTokenPayload.GitToken == nil {
 			break
@@ -5076,6 +5392,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CreateGitTokenPayload.Value(childComplexity), true
+
+	case "CreateGoogleOAuthCredentialsPayload.credentials":
+		if e.complexity.CreateGoogleOAuthCredentialsPayload.Credentials == nil {
+			break
+		}
+
+		return e.complexity.CreateGoogleOAuthCredentialsPayload.Credentials(childComplexity), true
 
 	case "CreateHtmlInjectionPayload.htmlInjection":
 		if e.complexity.CreateHtmlInjectionPayload.HTMLInjection == nil {
@@ -5153,6 +5476,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.CreateUserSubgraphAccessPayload.Accesses(childComplexity), true
 
+	case "DeactivateGitHubOAuthPayload.success":
+		if e.complexity.DeactivateGitHubOAuthPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.DeactivateGitHubOAuthPayload.Success(childComplexity), true
+
+	case "DeactivateGoogleOAuthPayload.success":
+		if e.complexity.DeactivateGoogleOAuthPayload.Success == nil {
+			break
+		}
+
+		return e.complexity.DeactivateGoogleOAuthPayload.Success(childComplexity), true
+
 	case "DeleteAdminPayload.success":
 		if e.complexity.DeleteAdminPayload.Success == nil {
 			break
@@ -5172,6 +5509,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.DeleteBoostyCredentialsPayload.DeletedID(childComplexity), true
+
+	case "DeleteGitHubOAuthCredentialsPayload.deletedId":
+		if e.complexity.DeleteGitHubOAuthCredentialsPayload.DeletedID == nil {
+			break
+		}
+
+		return e.complexity.DeleteGitHubOAuthCredentialsPayload.DeletedID(childComplexity), true
+
+	case "DeleteGoogleOAuthCredentialsPayload.deletedId":
+		if e.complexity.DeleteGoogleOAuthCredentialsPayload.DeletedID == nil {
+			break
+		}
+
+		return e.complexity.DeleteGoogleOAuthCredentialsPayload.DeletedID(childComplexity), true
 
 	case "DeleteHtmlInjectionPayload.deletedId":
 		if e.complexity.DeleteHtmlInjectionPayload.DeletedID == nil {
@@ -5685,6 +6036,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.NoteWarning.Message(childComplexity), true
 
+	case "OAuthUrlPayload.authUrl":
+		if e.complexity.OAuthUrlPayload.AuthURL == nil {
+			break
+		}
+
+		return e.complexity.OAuthUrlPayload.AuthURL(childComplexity), true
+	case "OAuthUrlPayload.callbackUrl":
+		if e.complexity.OAuthUrlPayload.CallbackURL == nil {
+			break
+		}
+
+		return e.complexity.OAuthUrlPayload.CallbackURL(childComplexity), true
+
 	case "Offer.id":
 		if e.complexity.Offer.ID == nil {
 			break
@@ -5829,6 +6193,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Admin(childComplexity), true
+	case "Query.githubAuthUrl":
+		if e.complexity.Query.GithubAuthURL == nil {
+			break
+		}
+
+		args, err := ec.field_Query_githubAuthUrl_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GithubAuthURL(childComplexity, args["input"].(model.OAuthURLInput)), true
+	case "Query.googleAuthUrl":
+		if e.complexity.Query.GoogleAuthURL == nil {
+			break
+		}
+
+		args, err := ec.field_Query_googleAuthUrl_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GoogleAuthURL(childComplexity, args["input"].(model.OAuthURLInput)), true
 	case "Query.note":
 		if e.complexity.Query.Note == nil {
 			break
@@ -5851,6 +6237,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.NotePaths(childComplexity, args["filter"].(*model.NotePathsFilter)), true
+	case "Query.publicUrl":
+		if e.complexity.Query.PublicURL == nil {
+			break
+		}
+
+		return e.complexity.Query.PublicURL(childComplexity), true
 	case "Query.search":
 		if e.complexity.Query.Search == nil {
 			break
@@ -6017,6 +6409,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.SendTelegramPublishNoteNowPayload.PublishNote(childComplexity), true
+
+	case "SetActiveGitHubOAuthCredentialsPayload.credentials":
+		if e.complexity.SetActiveGitHubOAuthCredentialsPayload.Credentials == nil {
+			break
+		}
+
+		return e.complexity.SetActiveGitHubOAuthCredentialsPayload.Credentials(childComplexity), true
+
+	case "SetActiveGoogleOAuthCredentialsPayload.credentials":
+		if e.complexity.SetActiveGoogleOAuthCredentialsPayload.Credentials == nil {
+			break
+		}
+
+		return e.complexity.SetActiveGoogleOAuthCredentialsPayload.Credentials(childComplexity), true
 
 	case "SetBoostyTierSubgraphsPayload.success":
 		if e.complexity.SetBoostyTierSubgraphsPayload.Success == nil {
@@ -6498,7 +6904,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateBoostyCredentialsInput,
 		ec.unmarshalInputCreateConfigVersionInput,
 		ec.unmarshalInputCreateEmailWaitListRequestInput,
+		ec.unmarshalInputCreateGitHubOAuthCredentialsInput,
 		ec.unmarshalInputCreateGitTokenInput,
+		ec.unmarshalInputCreateGoogleOAuthCredentialsInput,
 		ec.unmarshalInputCreateHtmlInjectionInput,
 		ec.unmarshalInputCreateNotFoundIgnoredPatternInput,
 		ec.unmarshalInputCreateOfferInput,
@@ -6511,6 +6919,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateUserSubgraphAccessInput,
 		ec.unmarshalInputDeleteAdminInput,
 		ec.unmarshalInputDeleteBoostyCredentialsInput,
+		ec.unmarshalInputDeleteGitHubOAuthCredentialsInput,
+		ec.unmarshalInputDeleteGoogleOAuthCredentialsInput,
 		ec.unmarshalInputDeleteHtmlInjectionInput,
 		ec.unmarshalInputDeleteNotFoundIgnoredPatternInput,
 		ec.unmarshalInputDeletePatreonCredentialsInput,
@@ -6523,6 +6933,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputMakeReleaseLiveInput,
 		ec.unmarshalInputNoteInput,
 		ec.unmarshalInputNotePathsFilter,
+		ec.unmarshalInputOAuthUrlInput,
 		ec.unmarshalInputPushNoteInput,
 		ec.unmarshalInputPushNotesInput,
 		ec.unmarshalInputRefreshBoostyDataInput,
@@ -6536,6 +6947,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRunCronJobInput,
 		ec.unmarshalInputSearchInput,
 		ec.unmarshalInputSendTelegramPublishNoteNowInput,
+		ec.unmarshalInputSetActiveGitHubOAuthCredentialsInput,
+		ec.unmarshalInputSetActiveGoogleOAuthCredentialsInput,
 		ec.unmarshalInputSetBoostyTierSubgraphsInput,
 		ec.unmarshalInputSetPatreonTierSubgraphsInput,
 		ec.unmarshalInputSetTgChatPublishInstantTagsInput,
@@ -6766,10 +7179,32 @@ func (ec *executionContext) field_AdminMutation_createConfigVersion_args(ctx con
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminMutation_createGitHubOAuthCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateGitHubOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGitHubOAuthCredentialsInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminMutation_createGitToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateGitTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGitTokenInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_createGoogleOAuthCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateGoogleOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGoogleOAuthCredentialsInput)
 	if err != nil {
 		return nil, err
 	}
@@ -6891,6 +7326,28 @@ func (ec *executionContext) field_AdminMutation_deleteBoostyCredentials_args(ctx
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeleteBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteBoostyCredentialsInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_deleteGitHubOAuthCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeleteGitHubOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteGitHubOAuthCredentialsInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_deleteGoogleOAuthCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeleteGoogleOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteGoogleOAuthCredentialsInput)
 	if err != nil {
 		return nil, err
 	}
@@ -7078,6 +7535,28 @@ func (ec *executionContext) field_AdminMutation_sendTelegramPublishNoteNow_args(
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSendTelegramPublishNoteNowInput2trip2gᚋinternalᚋgraphᚋmodelᚐSendTelegramPublishNoteNowInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_setActiveGitHubOAuthCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetActiveGitHubOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveGitHubOAuthCredentialsInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminMutation_setActiveGoogleOAuthCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetActiveGoogleOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveGoogleOAuthCredentialsInput)
 	if err != nil {
 		return nil, err
 	}
@@ -7470,6 +7949,28 @@ func (ec *executionContext) field_AdminQuery_cronJob_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_AdminQuery_gitHubOAuthCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNInt2int32)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_AdminQuery_googleOAuthCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNInt2int32)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_AdminQuery_htmlInjection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -7753,6 +8254,28 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_githubAuthUrl_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNOAuthUrlInput2trip2gᚋinternalᚋgraphᚋmodelᚐOAuthURLInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_googleAuthUrl_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNOAuthUrlInput2trip2gᚋinternalᚋgraphᚋmodelᚐOAuthURLInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -10729,6 +11252,235 @@ func (ec *executionContext) fieldContext_AdminCronJobsConnection_nodes(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _AdminGitHubOAuthCredentials_id(ctx context.Context, field graphql.CollectedField, obj *db.GithubOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGitHubOAuthCredentials_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGitHubOAuthCredentials_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitHubOAuthCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitHubOAuthCredentials_name(ctx context.Context, field graphql.CollectedField, obj *db.GithubOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGitHubOAuthCredentials_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGitHubOAuthCredentials_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitHubOAuthCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitHubOAuthCredentials_clientId(ctx context.Context, field graphql.CollectedField, obj *db.GithubOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGitHubOAuthCredentials_clientId,
+		func(ctx context.Context) (any, error) {
+			return obj.ClientID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGitHubOAuthCredentials_clientId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitHubOAuthCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitHubOAuthCredentials_active(ctx context.Context, field graphql.CollectedField, obj *db.GithubOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGitHubOAuthCredentials_active,
+		func(ctx context.Context) (any, error) {
+			return obj.Active, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGitHubOAuthCredentials_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitHubOAuthCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitHubOAuthCredentials_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.GithubOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGitHubOAuthCredentials_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGitHubOAuthCredentials_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitHubOAuthCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitHubOAuthCredentials_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.GithubOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGitHubOAuthCredentials_createdBy,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminGitHubOAuthCredentials().CreatedBy(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGitHubOAuthCredentials_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitHubOAuthCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			case "admin":
+				return ec.fieldContext_AdminUser_admin(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGitHubOAuthCredentialsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminGitHubOAuthCredentialsConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGitHubOAuthCredentialsConnection_nodes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminGitHubOAuthCredentialsConnection().Nodes(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminGitHubOAuthCredentials2ᚕtrip2gᚋinternalᚋdbᚐGithubOauthCredentialᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGitHubOAuthCredentialsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGitHubOAuthCredentialsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_name(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_clientId(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGitHubOAuthCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _AdminGitToken_id(ctx context.Context, field graphql.CollectedField, obj *db.GitToken) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -11027,6 +11779,235 @@ func (ec *executionContext) fieldContext_AdminGitTokensConnection_nodes(_ contex
 				return ec.fieldContext_AdminGitToken_disabledAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminGitToken", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGoogleOAuthCredentials_id(ctx context.Context, field graphql.CollectedField, obj *db.GoogleOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGoogleOAuthCredentials_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGoogleOAuthCredentials_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGoogleOAuthCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGoogleOAuthCredentials_name(ctx context.Context, field graphql.CollectedField, obj *db.GoogleOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGoogleOAuthCredentials_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGoogleOAuthCredentials_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGoogleOAuthCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGoogleOAuthCredentials_clientId(ctx context.Context, field graphql.CollectedField, obj *db.GoogleOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGoogleOAuthCredentials_clientId,
+		func(ctx context.Context) (any, error) {
+			return obj.ClientID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGoogleOAuthCredentials_clientId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGoogleOAuthCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGoogleOAuthCredentials_active(ctx context.Context, field graphql.CollectedField, obj *db.GoogleOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGoogleOAuthCredentials_active,
+		func(ctx context.Context) (any, error) {
+			return obj.Active, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGoogleOAuthCredentials_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGoogleOAuthCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGoogleOAuthCredentials_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.GoogleOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGoogleOAuthCredentials_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNTime2timeᚐTime,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGoogleOAuthCredentials_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGoogleOAuthCredentials",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGoogleOAuthCredentials_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.GoogleOauthCredential) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGoogleOAuthCredentials_createdBy,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminGoogleOAuthCredentials().CreatedBy(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGoogleOAuthCredentials_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGoogleOAuthCredentials",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminUser_id(ctx, field)
+			case "email":
+				return ec.fieldContext_AdminUser_email(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminUser_createdAt(ctx, field)
+			case "ban":
+				return ec.fieldContext_AdminUser_ban(ctx, field)
+			case "admin":
+				return ec.fieldContext_AdminUser_admin(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminGoogleOAuthCredentialsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminGoogleOAuthCredentialsConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminGoogleOAuthCredentialsConnection_nodes,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminGoogleOAuthCredentialsConnection().Nodes(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminGoogleOAuthCredentials2ᚕtrip2gᚋinternalᚋdbᚐGoogleOauthCredentialᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminGoogleOAuthCredentialsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminGoogleOAuthCredentialsConnection",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_name(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_clientId(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGoogleOAuthCredentials", field.Name)
 		},
 	}
 	return fc, nil
@@ -13619,6 +14600,310 @@ func (ec *executionContext) fieldContext_AdminMutation_setBoostyTierSubgraphs(ct
 	if fc.Args, err = ec.field_AdminMutation_setBoostyTierSubgraphs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_createGoogleOAuthCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_createGoogleOAuthCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().CreateGoogleOAuthCredentials(ctx, obj, fc.Args["input"].(model.CreateGoogleOAuthCredentialsInput))
+		},
+		nil,
+		ec.marshalNCreateGoogleOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGoogleOAuthCredentialsOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createGoogleOAuthCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateGoogleOAuthCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createGoogleOAuthCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deleteGoogleOAuthCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_deleteGoogleOAuthCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().DeleteGoogleOAuthCredentials(ctx, obj, fc.Args["input"].(model.DeleteGoogleOAuthCredentialsInput))
+		},
+		nil,
+		ec.marshalNDeleteGoogleOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteGoogleOAuthCredentialsOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deleteGoogleOAuthCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeleteGoogleOAuthCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_deleteGoogleOAuthCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_setActiveGoogleOAuthCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_setActiveGoogleOAuthCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().SetActiveGoogleOAuthCredentials(ctx, obj, fc.Args["input"].(model.SetActiveGoogleOAuthCredentialsInput))
+		},
+		nil,
+		ec.marshalNSetActiveGoogleOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveGoogleOAuthCredentialsOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_setActiveGoogleOAuthCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SetActiveGoogleOAuthCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_setActiveGoogleOAuthCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deactivateGoogleOAuth(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_deactivateGoogleOAuth,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminMutation().DeactivateGoogleOAuth(ctx, obj)
+		},
+		nil,
+		ec.marshalNDeactivateGoogleOAuthOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeactivateGoogleOAuthOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deactivateGoogleOAuth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeactivateGoogleOAuthOrErrorPayload does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_createGitHubOAuthCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_createGitHubOAuthCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().CreateGitHubOAuthCredentials(ctx, obj, fc.Args["input"].(model.CreateGitHubOAuthCredentialsInput))
+		},
+		nil,
+		ec.marshalNCreateGitHubOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGitHubOAuthCredentialsOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_createGitHubOAuthCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CreateGitHubOAuthCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_createGitHubOAuthCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deleteGitHubOAuthCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_deleteGitHubOAuthCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().DeleteGitHubOAuthCredentials(ctx, obj, fc.Args["input"].(model.DeleteGitHubOAuthCredentialsInput))
+		},
+		nil,
+		ec.marshalNDeleteGitHubOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteGitHubOAuthCredentialsOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deleteGitHubOAuthCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeleteGitHubOAuthCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_deleteGitHubOAuthCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_setActiveGitHubOAuthCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_setActiveGitHubOAuthCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminMutation().SetActiveGitHubOAuthCredentials(ctx, obj, fc.Args["input"].(model.SetActiveGitHubOAuthCredentialsInput))
+		},
+		nil,
+		ec.marshalNSetActiveGitHubOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveGitHubOAuthCredentialsOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_setActiveGitHubOAuthCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SetActiveGitHubOAuthCredentialsOrErrorPayload does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminMutation_setActiveGitHubOAuthCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminMutation_deactivateGitHubOAuth(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminMutation_deactivateGitHubOAuth,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminMutation().DeactivateGitHubOAuth(ctx, obj)
+		},
+		nil,
+		ec.marshalNDeactivateGitHubOAuthOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeactivateGitHubOAuthOrErrorPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminMutation_deactivateGitHubOAuth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminMutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DeactivateGitHubOAuthOrErrorPayload does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -17609,6 +18894,182 @@ func (ec *executionContext) fieldContext_AdminQuery_boostyCredentials(ctx contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_AdminQuery_boostyCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allGoogleOAuthCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_allGoogleOAuthCredentials,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().AllGoogleOAuthCredentials(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminGoogleOAuthCredentialsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminGoogleOAuthCredentialsConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allGoogleOAuthCredentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminGoogleOAuthCredentialsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGoogleOAuthCredentialsConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_googleOAuthCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_googleOAuthCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().GoogleOAuthCredentials(ctx, obj, fc.Args["id"].(int32))
+		},
+		nil,
+		ec.marshalOAdminGoogleOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGoogleOauthCredential,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_googleOAuthCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_name(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_clientId(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGoogleOAuthCredentials", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_googleOAuthCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_allGitHubOAuthCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_allGitHubOAuthCredentials,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.AdminQuery().AllGitHubOAuthCredentials(ctx, obj)
+		},
+		nil,
+		ec.marshalNAdminGitHubOAuthCredentialsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminGitHubOAuthCredentialsConnection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_allGitHubOAuthCredentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "nodes":
+				return ec.fieldContext_AdminGitHubOAuthCredentialsConnection_nodes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGitHubOAuthCredentialsConnection", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AdminQuery_gitHubOAuthCredentials(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AdminQuery_gitHubOAuthCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.AdminQuery().GitHubOAuthCredentials(ctx, obj, fc.Args["id"].(int32))
+		},
+		nil,
+		ec.marshalOAdminGitHubOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGithubOauthCredential,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AdminQuery_gitHubOAuthCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AdminQuery",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_name(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_clientId(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGitHubOAuthCredentials", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_AdminQuery_gitHubOAuthCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -23634,6 +25095,49 @@ func (ec *executionContext) fieldContext_CreateEmailWaitListRequestPayload_succe
 	return fc, nil
 }
 
+func (ec *executionContext) _CreateGitHubOAuthCredentialsPayload_credentials(ctx context.Context, field graphql.CollectedField, obj *model.CreateGitHubOAuthCredentialsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CreateGitHubOAuthCredentialsPayload_credentials,
+		func(ctx context.Context) (any, error) {
+			return obj.Credentials, nil
+		},
+		nil,
+		ec.marshalNAdminGitHubOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGithubOauthCredential,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CreateGitHubOAuthCredentialsPayload_credentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateGitHubOAuthCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_name(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_clientId(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGitHubOAuthCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _CreateGitTokenPayload_value(ctx context.Context, field graphql.CollectedField, obj *model.CreateGitTokenPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -23705,6 +25209,49 @@ func (ec *executionContext) fieldContext_CreateGitTokenPayload_gitToken(_ contex
 				return ec.fieldContext_AdminGitToken_disabledAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminGitToken", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CreateGoogleOAuthCredentialsPayload_credentials(ctx context.Context, field graphql.CollectedField, obj *model.CreateGoogleOAuthCredentialsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CreateGoogleOAuthCredentialsPayload_credentials,
+		func(ctx context.Context) (any, error) {
+			return obj.Credentials, nil
+		},
+		nil,
+		ec.marshalNAdminGoogleOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGoogleOauthCredential,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CreateGoogleOAuthCredentialsPayload_credentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CreateGoogleOAuthCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_name(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_clientId(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGoogleOAuthCredentials", field.Name)
 		},
 	}
 	return fc, nil
@@ -24173,6 +25720,64 @@ func (ec *executionContext) fieldContext_CreateUserSubgraphAccessPayload_accesse
 	return fc, nil
 }
 
+func (ec *executionContext) _DeactivateGitHubOAuthPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.DeactivateGitHubOAuthPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeactivateGitHubOAuthPayload_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeactivateGitHubOAuthPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeactivateGitHubOAuthPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeactivateGoogleOAuthPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.DeactivateGoogleOAuthPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeactivateGoogleOAuthPayload_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeactivateGoogleOAuthPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeactivateGoogleOAuthPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _DeleteAdminPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.DeleteAdminPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -24277,6 +25882,64 @@ func (ec *executionContext) fieldContext_DeleteBoostyCredentialsPayload_boostyCr
 				return ec.fieldContext_AdminBoostyCredentials_members(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminBoostyCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteGitHubOAuthCredentialsPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteGitHubOAuthCredentialsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteGitHubOAuthCredentialsPayload_deletedId,
+		func(ctx context.Context) (any, error) {
+			return obj.DeletedID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteGitHubOAuthCredentialsPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteGitHubOAuthCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteGoogleOAuthCredentialsPayload_deletedId(ctx context.Context, field graphql.CollectedField, obj *model.DeleteGoogleOAuthCredentialsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteGoogleOAuthCredentialsPayload_deletedId,
+		func(ctx context.Context) (any, error) {
+			return obj.DeletedID, nil
+		},
+		nil,
+		ec.marshalNInt642int64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteGoogleOAuthCredentialsPayload_deletedId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteGoogleOAuthCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int64 does not have child fields")
 		},
 	}
 	return fc, nil
@@ -25748,6 +27411,22 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_refreshBoostyData(ctx, field)
 			case "setBoostyTierSubgraphs":
 				return ec.fieldContext_AdminMutation_setBoostyTierSubgraphs(ctx, field)
+			case "createGoogleOAuthCredentials":
+				return ec.fieldContext_AdminMutation_createGoogleOAuthCredentials(ctx, field)
+			case "deleteGoogleOAuthCredentials":
+				return ec.fieldContext_AdminMutation_deleteGoogleOAuthCredentials(ctx, field)
+			case "setActiveGoogleOAuthCredentials":
+				return ec.fieldContext_AdminMutation_setActiveGoogleOAuthCredentials(ctx, field)
+			case "deactivateGoogleOAuth":
+				return ec.fieldContext_AdminMutation_deactivateGoogleOAuth(ctx, field)
+			case "createGitHubOAuthCredentials":
+				return ec.fieldContext_AdminMutation_createGitHubOAuthCredentials(ctx, field)
+			case "deleteGitHubOAuthCredentials":
+				return ec.fieldContext_AdminMutation_deleteGitHubOAuthCredentials(ctx, field)
+			case "setActiveGitHubOAuthCredentials":
+				return ec.fieldContext_AdminMutation_setActiveGitHubOAuthCredentials(ctx, field)
+			case "deactivateGitHubOAuth":
+				return ec.fieldContext_AdminMutation_deactivateGitHubOAuth(ctx, field)
 			case "createHtmlInjection":
 				return ec.fieldContext_AdminMutation_createHtmlInjection(ctx, field)
 			case "updateHtmlInjection":
@@ -26881,6 +28560,64 @@ func (ec *executionContext) fieldContext_NoteWarning_message(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _OAuthUrlPayload_authUrl(ctx context.Context, field graphql.CollectedField, obj *model.OAuthURLPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OAuthUrlPayload_authUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.AuthURL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_OAuthUrlPayload_authUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OAuthUrlPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OAuthUrlPayload_callbackUrl(ctx context.Context, field graphql.CollectedField, obj *model.OAuthURLPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_OAuthUrlPayload_callbackUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.CallbackURL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_OAuthUrlPayload_callbackUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OAuthUrlPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Offer_id(ctx context.Context, field graphql.CollectedField, obj *db.Offer) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27602,6 +29339,129 @@ func (ec *executionContext) fieldContext_Query_viewer(_ context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_publicUrl(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_publicUrl,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().PublicURL(ctx)
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_publicUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_googleAuthUrl(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_googleAuthUrl,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().GoogleAuthURL(ctx, fc.Args["input"].(model.OAuthURLInput))
+		},
+		nil,
+		ec.marshalNOAuthUrlPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐOAuthURLPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_googleAuthUrl(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "authUrl":
+				return ec.fieldContext_OAuthUrlPayload_authUrl(ctx, field)
+			case "callbackUrl":
+				return ec.fieldContext_OAuthUrlPayload_callbackUrl(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type OAuthUrlPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_googleAuthUrl_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_githubAuthUrl(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_githubAuthUrl,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().GithubAuthURL(ctx, fc.Args["input"].(model.OAuthURLInput))
+		},
+		nil,
+		ec.marshalNOAuthUrlPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐOAuthURLPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_githubAuthUrl(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "authUrl":
+				return ec.fieldContext_OAuthUrlPayload_authUrl(ctx, field)
+			case "callbackUrl":
+				return ec.fieldContext_OAuthUrlPayload_callbackUrl(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type OAuthUrlPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_githubAuthUrl_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_admin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27692,6 +29552,14 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allBoostyCredentials(ctx, field)
 			case "boostyCredentials":
 				return ec.fieldContext_AdminQuery_boostyCredentials(ctx, field)
+			case "allGoogleOAuthCredentials":
+				return ec.fieldContext_AdminQuery_allGoogleOAuthCredentials(ctx, field)
+			case "googleOAuthCredentials":
+				return ec.fieldContext_AdminQuery_googleOAuthCredentials(ctx, field)
+			case "allGitHubOAuthCredentials":
+				return ec.fieldContext_AdminQuery_allGitHubOAuthCredentials(ctx, field)
+			case "gitHubOAuthCredentials":
+				return ec.fieldContext_AdminQuery_gitHubOAuthCredentials(ctx, field)
 			case "apiKeyLogs":
 				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "auditLogs":
@@ -28837,6 +30705,92 @@ func (ec *executionContext) fieldContext_SendTelegramPublishNoteNowPayload_publi
 				return ec.fieldContext_AdminTelegramPublishNote_chats(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminTelegramPublishNote", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetActiveGitHubOAuthCredentialsPayload_credentials(ctx context.Context, field graphql.CollectedField, obj *model.SetActiveGitHubOAuthCredentialsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SetActiveGitHubOAuthCredentialsPayload_credentials,
+		func(ctx context.Context) (any, error) {
+			return obj.Credentials, nil
+		},
+		nil,
+		ec.marshalNAdminGitHubOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGithubOauthCredential,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SetActiveGitHubOAuthCredentialsPayload_credentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetActiveGitHubOAuthCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_name(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_clientId(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminGitHubOAuthCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGitHubOAuthCredentials", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetActiveGoogleOAuthCredentialsPayload_credentials(ctx context.Context, field graphql.CollectedField, obj *model.SetActiveGoogleOAuthCredentialsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SetActiveGoogleOAuthCredentialsPayload_credentials,
+		func(ctx context.Context) (any, error) {
+			return obj.Credentials, nil
+		},
+		nil,
+		ec.marshalNAdminGoogleOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGoogleOauthCredential,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SetActiveGoogleOAuthCredentialsPayload_credentials(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetActiveGoogleOAuthCredentialsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_id(ctx, field)
+			case "name":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_name(ctx, field)
+			case "clientId":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_clientId(ctx, field)
+			case "active":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_active(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_createdAt(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_AdminGoogleOAuthCredentials_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AdminGoogleOAuthCredentials", field.Name)
 		},
 	}
 	return fc, nil
@@ -33624,6 +35578,47 @@ func (ec *executionContext) unmarshalInputCreateEmailWaitListRequestInput(ctx co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateGitHubOAuthCredentialsInput(ctx context.Context, obj any) (model.CreateGitHubOAuthCredentialsInput, error) {
+	var it model.CreateGitHubOAuthCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "clientId", "clientSecret"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "clientId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientID = data
+		case "clientSecret":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientSecret"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientSecret = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateGitTokenInput(ctx context.Context, obj any) (model.CreateGitTokenInput, error) {
 	var it model.CreateGitTokenInput
 	asMap := map[string]any{}
@@ -33659,6 +35654,47 @@ func (ec *executionContext) unmarshalInputCreateGitTokenInput(ctx context.Contex
 				return it, err
 			}
 			it.CanPush = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateGoogleOAuthCredentialsInput(ctx context.Context, obj any) (model.CreateGoogleOAuthCredentialsInput, error) {
+	var it model.CreateGoogleOAuthCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "clientId", "clientSecret"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "clientId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientID = data
+		case "clientSecret":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientSecret"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientSecret = data
 		}
 	}
 
@@ -34122,6 +36158,60 @@ func (ec *executionContext) unmarshalInputDeleteBoostyCredentialsInput(ctx conte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDeleteGitHubOAuthCredentialsInput(ctx context.Context, obj any) (model.DeleteGitHubOAuthCredentialsInput, error) {
+	var it model.DeleteGitHubOAuthCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteGoogleOAuthCredentialsInput(ctx context.Context, obj any) (model.DeleteGoogleOAuthCredentialsInput, error) {
+	var it model.DeleteGoogleOAuthCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDeleteHtmlInjectionInput(ctx context.Context, obj any) (model.DeleteHTMLInjectionInput, error) {
 	var it model.DeleteHTMLInjectionInput
 	asMap := map[string]any{}
@@ -34468,6 +36558,40 @@ func (ec *executionContext) unmarshalInputNotePathsFilter(ctx context.Context, o
 				return it, err
 			}
 			it.Paths = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputOAuthUrlInput(ctx context.Context, obj any) (model.OAuthURLInput, error) {
+	var it model.OAuthURLInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"redirectUrl", "dry"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "redirectUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectUrl"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectURL = data
+		case "dry":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dry"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Dry = data
 		}
 	}
 
@@ -34821,6 +36945,60 @@ func (ec *executionContext) unmarshalInputSearchInput(ctx context.Context, obj a
 
 func (ec *executionContext) unmarshalInputSendTelegramPublishNoteNowInput(ctx context.Context, obj any) (model.SendTelegramPublishNoteNowInput, error) {
 	var it model.SendTelegramPublishNoteNowInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSetActiveGitHubOAuthCredentialsInput(ctx context.Context, obj any) (model.SetActiveGitHubOAuthCredentialsInput, error) {
+	var it model.SetActiveGitHubOAuthCredentialsInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNInt642int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSetActiveGoogleOAuthCredentialsInput(ctx context.Context, obj any) (model.SetActiveGoogleOAuthCredentialsInput, error) {
+	var it model.SetActiveGoogleOAuthCredentialsInput
 	asMap := map[string]any{}
 	for k, v := range obj.(map[string]any) {
 		asMap[k] = v
@@ -36228,6 +38406,29 @@ func (ec *executionContext) _CreateEmailWaitListRequestOrErrorPayload(ctx contex
 	}
 }
 
+func (ec *executionContext) _CreateGitHubOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateGitHubOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateGitHubOAuthCredentialsPayload:
+		return ec._CreateGitHubOAuthCredentialsPayload(ctx, sel, &obj)
+	case *model.CreateGitHubOAuthCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateGitHubOAuthCredentialsPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _CreateGitTokenOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateGitTokenOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -36246,6 +38447,29 @@ func (ec *executionContext) _CreateGitTokenOrErrorPayload(ctx context.Context, s
 			return graphql.Null
 		}
 		return ec._CreateGitTokenPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _CreateGoogleOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateGoogleOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.CreateGoogleOAuthCredentialsPayload:
+		return ec._CreateGoogleOAuthCredentialsPayload(ctx, sel, &obj)
+	case *model.CreateGoogleOAuthCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._CreateGoogleOAuthCredentialsPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -36481,6 +38705,52 @@ func (ec *executionContext) _CreateUserSubgraphAccessOrErrorPayload(ctx context.
 	}
 }
 
+func (ec *executionContext) _DeactivateGitHubOAuthOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeactivateGitHubOAuthOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DeactivateGitHubOAuthPayload:
+		return ec._DeactivateGitHubOAuthPayload(ctx, sel, &obj)
+	case *model.DeactivateGitHubOAuthPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeactivateGitHubOAuthPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _DeactivateGoogleOAuthOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeactivateGoogleOAuthOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DeactivateGoogleOAuthPayload:
+		return ec._DeactivateGoogleOAuthPayload(ctx, sel, &obj)
+	case *model.DeactivateGoogleOAuthPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeactivateGoogleOAuthPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 func (ec *executionContext) _DeleteAdminOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteAdminOrErrorPayload) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
@@ -36522,6 +38792,52 @@ func (ec *executionContext) _DeleteBoostyCredentialsOrErrorPayload(ctx context.C
 			return graphql.Null
 		}
 		return ec._DeleteBoostyCredentialsPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _DeleteGitHubOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteGitHubOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DeleteGitHubOAuthCredentialsPayload:
+		return ec._DeleteGitHubOAuthCredentialsPayload(ctx, sel, &obj)
+	case *model.DeleteGitHubOAuthCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeleteGitHubOAuthCredentialsPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _DeleteGoogleOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.DeleteGoogleOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	case model.DeleteGoogleOAuthCredentialsPayload:
+		return ec._DeleteGoogleOAuthCredentialsPayload(ctx, sel, &obj)
+	case *model.DeleteGoogleOAuthCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._DeleteGoogleOAuthCredentialsPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -37028,6 +39344,52 @@ func (ec *executionContext) _SendTelegramPublishNoteNowOrErrorPayload(ctx contex
 			return graphql.Null
 		}
 		return ec._SendTelegramPublishNoteNowPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SetActiveGitHubOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SetActiveGitHubOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SetActiveGitHubOAuthCredentialsPayload:
+		return ec._SetActiveGitHubOAuthCredentialsPayload(ctx, sel, &obj)
+	case *model.SetActiveGitHubOAuthCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SetActiveGitHubOAuthCredentialsPayload(ctx, sel, obj)
+	case model.ErrorPayload:
+		return ec._ErrorPayload(ctx, sel, &obj)
+	case *model.ErrorPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ErrorPayload(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _SetActiveGoogleOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.SetActiveGoogleOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.SetActiveGoogleOAuthCredentialsPayload:
+		return ec._SetActiveGoogleOAuthCredentialsPayload(ctx, sel, &obj)
+	case *model.SetActiveGoogleOAuthCredentialsPayload:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SetActiveGoogleOAuthCredentialsPayload(ctx, sel, obj)
 	case model.ErrorPayload:
 		return ec._ErrorPayload(ctx, sel, &obj)
 	case *model.ErrorPayload:
@@ -39829,6 +42191,171 @@ func (ec *executionContext) _AdminCronJobsConnection(ctx context.Context, sel as
 	return out
 }
 
+var adminGitHubOAuthCredentialsImplementors = []string{"AdminGitHubOAuthCredentials"}
+
+func (ec *executionContext) _AdminGitHubOAuthCredentials(ctx context.Context, sel ast.SelectionSet, obj *db.GithubOauthCredential) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminGitHubOAuthCredentialsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminGitHubOAuthCredentials")
+		case "id":
+			out.Values[i] = ec._AdminGitHubOAuthCredentials_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._AdminGitHubOAuthCredentials_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "clientId":
+			out.Values[i] = ec._AdminGitHubOAuthCredentials_clientId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "active":
+			out.Values[i] = ec._AdminGitHubOAuthCredentials_active(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminGitHubOAuthCredentials_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminGitHubOAuthCredentials_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminGitHubOAuthCredentialsConnectionImplementors = []string{"AdminGitHubOAuthCredentialsConnection"}
+
+func (ec *executionContext) _AdminGitHubOAuthCredentialsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminGitHubOAuthCredentialsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminGitHubOAuthCredentialsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminGitHubOAuthCredentialsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminGitHubOAuthCredentialsConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var adminGitTokenImplementors = []string{"AdminGitToken"}
 
 func (ec *executionContext) _AdminGitToken(ctx context.Context, sel ast.SelectionSet, obj *db.GitToken) graphql.Marshaler {
@@ -39980,6 +42507,171 @@ func (ec *executionContext) _AdminGitTokensConnection(ctx context.Context, sel a
 					}
 				}()
 				res = ec._AdminGitTokensConnection_nodes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminGoogleOAuthCredentialsImplementors = []string{"AdminGoogleOAuthCredentials"}
+
+func (ec *executionContext) _AdminGoogleOAuthCredentials(ctx context.Context, sel ast.SelectionSet, obj *db.GoogleOauthCredential) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminGoogleOAuthCredentialsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminGoogleOAuthCredentials")
+		case "id":
+			out.Values[i] = ec._AdminGoogleOAuthCredentials_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._AdminGoogleOAuthCredentials_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "clientId":
+			out.Values[i] = ec._AdminGoogleOAuthCredentials_clientId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "active":
+			out.Values[i] = ec._AdminGoogleOAuthCredentials_active(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._AdminGoogleOAuthCredentials_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "createdBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminGoogleOAuthCredentials_createdBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var adminGoogleOAuthCredentialsConnectionImplementors = []string{"AdminGoogleOAuthCredentialsConnection"}
+
+func (ec *executionContext) _AdminGoogleOAuthCredentialsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminGoogleOAuthCredentialsConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adminGoogleOAuthCredentialsConnectionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdminGoogleOAuthCredentialsConnection")
+		case "nodes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminGoogleOAuthCredentialsConnection_nodes(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -42270,6 +44962,294 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 					}
 				}()
 				res = ec._AdminMutation_setBoostyTierSubgraphs(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createGoogleOAuthCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createGoogleOAuthCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deleteGoogleOAuthCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deleteGoogleOAuthCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "setActiveGoogleOAuthCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_setActiveGoogleOAuthCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deactivateGoogleOAuth":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deactivateGoogleOAuth(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createGitHubOAuthCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_createGitHubOAuthCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deleteGitHubOAuthCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deleteGitHubOAuthCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "setActiveGitHubOAuthCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_setActiveGitHubOAuthCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "deactivateGitHubOAuth":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminMutation_deactivateGitHubOAuth(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -45329,6 +48309,144 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_boostyCredentials(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allGoogleOAuthCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allGoogleOAuthCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "googleOAuthCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_googleOAuthCredentials(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "allGitHubOAuthCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_allGitHubOAuthCredentials(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "gitHubOAuthCredentials":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._AdminQuery_gitHubOAuthCredentials(ctx, field, obj)
 				return res
 			}
 
@@ -49944,6 +53062,45 @@ func (ec *executionContext) _CreateEmailWaitListRequestPayload(ctx context.Conte
 	return out
 }
 
+var createGitHubOAuthCredentialsPayloadImplementors = []string{"CreateGitHubOAuthCredentialsPayload", "CreateGitHubOAuthCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _CreateGitHubOAuthCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateGitHubOAuthCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createGitHubOAuthCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateGitHubOAuthCredentialsPayload")
+		case "credentials":
+			out.Values[i] = ec._CreateGitHubOAuthCredentialsPayload_credentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var createGitTokenPayloadImplementors = []string{"CreateGitTokenPayload", "CreateGitTokenOrErrorPayload"}
 
 func (ec *executionContext) _CreateGitTokenPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateGitTokenPayload) graphql.Marshaler {
@@ -49962,6 +53119,45 @@ func (ec *executionContext) _CreateGitTokenPayload(ctx context.Context, sel ast.
 			}
 		case "gitToken":
 			out.Values[i] = ec._CreateGitTokenPayload_gitToken(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var createGoogleOAuthCredentialsPayloadImplementors = []string{"CreateGoogleOAuthCredentialsPayload", "CreateGoogleOAuthCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _CreateGoogleOAuthCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateGoogleOAuthCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, createGoogleOAuthCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CreateGoogleOAuthCredentialsPayload")
+		case "credentials":
+			out.Values[i] = ec._CreateGoogleOAuthCredentialsPayload_credentials(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -50380,6 +53576,84 @@ func (ec *executionContext) _CreateUserSubgraphAccessPayload(ctx context.Context
 	return out
 }
 
+var deactivateGitHubOAuthPayloadImplementors = []string{"DeactivateGitHubOAuthPayload", "DeactivateGitHubOAuthOrErrorPayload"}
+
+func (ec *executionContext) _DeactivateGitHubOAuthPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeactivateGitHubOAuthPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deactivateGitHubOAuthPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeactivateGitHubOAuthPayload")
+		case "success":
+			out.Values[i] = ec._DeactivateGitHubOAuthPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var deactivateGoogleOAuthPayloadImplementors = []string{"DeactivateGoogleOAuthPayload", "DeactivateGoogleOAuthOrErrorPayload"}
+
+func (ec *executionContext) _DeactivateGoogleOAuthPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeactivateGoogleOAuthPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deactivateGoogleOAuthPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeactivateGoogleOAuthPayload")
+		case "success":
+			out.Values[i] = ec._DeactivateGoogleOAuthPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var deleteAdminPayloadImplementors = []string{"DeleteAdminPayload", "DeleteAdminOrErrorPayload"}
 
 func (ec *executionContext) _DeleteAdminPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteAdminPayload) graphql.Marshaler {
@@ -50471,6 +53745,84 @@ func (ec *executionContext) _DeleteBoostyCredentialsPayload(ctx context.Context,
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var deleteGitHubOAuthCredentialsPayloadImplementors = []string{"DeleteGitHubOAuthCredentialsPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _DeleteGitHubOAuthCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteGitHubOAuthCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteGitHubOAuthCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteGitHubOAuthCredentialsPayload")
+		case "deletedId":
+			out.Values[i] = ec._DeleteGitHubOAuthCredentialsPayload_deletedId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var deleteGoogleOAuthCredentialsPayloadImplementors = []string{"DeleteGoogleOAuthCredentialsPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _DeleteGoogleOAuthCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeleteGoogleOAuthCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteGoogleOAuthCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteGoogleOAuthCredentialsPayload")
+		case "deletedId":
+			out.Values[i] = ec._DeleteGoogleOAuthCredentialsPayload_deletedId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -50764,7 +54116,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -52122,6 +55474,47 @@ func (ec *executionContext) _NoteWarning(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
+var oAuthUrlPayloadImplementors = []string{"OAuthUrlPayload"}
+
+func (ec *executionContext) _OAuthUrlPayload(ctx context.Context, sel ast.SelectionSet, obj *model.OAuthURLPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, oAuthUrlPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OAuthUrlPayload")
+		case "authUrl":
+			out.Values[i] = ec._OAuthUrlPayload_authUrl(ctx, field, obj)
+		case "callbackUrl":
+			out.Values[i] = ec._OAuthUrlPayload_callbackUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var offerImplementors = []string{"Offer"}
 
 func (ec *executionContext) _Offer(ctx context.Context, sel ast.SelectionSet, obj *db.Offer) graphql.Marshaler {
@@ -52586,6 +55979,72 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_viewer(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "publicUrl":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_publicUrl(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "googleAuthUrl":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_googleAuthUrl(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "githubAuthUrl":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_githubAuthUrl(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -53310,6 +56769,84 @@ func (ec *executionContext) _SendTelegramPublishNoteNowPayload(ctx context.Conte
 			out.Values[i] = graphql.MarshalString("SendTelegramPublishNoteNowPayload")
 		case "publishNote":
 			out.Values[i] = ec._SendTelegramPublishNoteNowPayload_publishNote(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var setActiveGitHubOAuthCredentialsPayloadImplementors = []string{"SetActiveGitHubOAuthCredentialsPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _SetActiveGitHubOAuthCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SetActiveGitHubOAuthCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, setActiveGitHubOAuthCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SetActiveGitHubOAuthCredentialsPayload")
+		case "credentials":
+			out.Values[i] = ec._SetActiveGitHubOAuthCredentialsPayload_credentials(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var setActiveGoogleOAuthCredentialsPayloadImplementors = []string{"SetActiveGoogleOAuthCredentialsPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload"}
+
+func (ec *executionContext) _SetActiveGoogleOAuthCredentialsPayload(ctx context.Context, sel ast.SelectionSet, obj *model.SetActiveGoogleOAuthCredentialsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, setActiveGoogleOAuthCredentialsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SetActiveGoogleOAuthCredentialsPayload")
+		case "credentials":
+			out.Values[i] = ec._SetActiveGoogleOAuthCredentialsPayload_credentials(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -56654,6 +60191,78 @@ func (ec *executionContext) marshalNAdminCronJobsConnection2ᚖtrip2gᚋinternal
 	return ec._AdminCronJobsConnection(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNAdminGitHubOAuthCredentials2trip2gᚋinternalᚋdbᚐGithubOauthCredential(ctx context.Context, sel ast.SelectionSet, v db.GithubOauthCredential) graphql.Marshaler {
+	return ec._AdminGitHubOAuthCredentials(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminGitHubOAuthCredentials2ᚕtrip2gᚋinternalᚋdbᚐGithubOauthCredentialᚄ(ctx context.Context, sel ast.SelectionSet, v []db.GithubOauthCredential) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminGitHubOAuthCredentials2trip2gᚋinternalᚋdbᚐGithubOauthCredential(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminGitHubOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGithubOauthCredential(ctx context.Context, sel ast.SelectionSet, v *db.GithubOauthCredential) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminGitHubOAuthCredentials(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminGitHubOAuthCredentialsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminGitHubOAuthCredentialsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminGitHubOAuthCredentialsConnection) graphql.Marshaler {
+	return ec._AdminGitHubOAuthCredentialsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminGitHubOAuthCredentialsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminGitHubOAuthCredentialsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminGitHubOAuthCredentialsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminGitHubOAuthCredentialsConnection(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNAdminGitToken2trip2gᚋinternalᚋdbᚐGitToken(ctx context.Context, sel ast.SelectionSet, v db.GitToken) graphql.Marshaler {
 	return ec._AdminGitToken(ctx, sel, &v)
 }
@@ -56724,6 +60333,78 @@ func (ec *executionContext) marshalNAdminGitTokensConnection2ᚖtrip2gᚋinterna
 		return graphql.Null
 	}
 	return ec._AdminGitTokensConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminGoogleOAuthCredentials2trip2gᚋinternalᚋdbᚐGoogleOauthCredential(ctx context.Context, sel ast.SelectionSet, v db.GoogleOauthCredential) graphql.Marshaler {
+	return ec._AdminGoogleOAuthCredentials(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminGoogleOAuthCredentials2ᚕtrip2gᚋinternalᚋdbᚐGoogleOauthCredentialᚄ(ctx context.Context, sel ast.SelectionSet, v []db.GoogleOauthCredential) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAdminGoogleOAuthCredentials2trip2gᚋinternalᚋdbᚐGoogleOauthCredential(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAdminGoogleOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGoogleOauthCredential(ctx context.Context, sel ast.SelectionSet, v *db.GoogleOauthCredential) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminGoogleOAuthCredentials(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAdminGoogleOAuthCredentialsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminGoogleOAuthCredentialsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminGoogleOAuthCredentialsConnection) graphql.Marshaler {
+	return ec._AdminGoogleOAuthCredentialsConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAdminGoogleOAuthCredentialsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminGoogleOAuthCredentialsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminGoogleOAuthCredentialsConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AdminGoogleOAuthCredentialsConnection(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNAdminHtmlInjection2trip2gᚋinternalᚋdbᚐHtmlInjection(ctx context.Context, sel ast.SelectionSet, v db.HtmlInjection) graphql.Marshaler {
@@ -58757,6 +62438,21 @@ func (ec *executionContext) marshalNCreateEmailWaitListRequestOrErrorPayload2tri
 	return ec._CreateEmailWaitListRequestOrErrorPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCreateGitHubOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGitHubOAuthCredentialsInput(ctx context.Context, v any) (model.CreateGitHubOAuthCredentialsInput, error) {
+	res, err := ec.unmarshalInputCreateGitHubOAuthCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateGitHubOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGitHubOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateGitHubOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateGitHubOAuthCredentialsOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateGitTokenInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGitTokenInput(ctx context.Context, v any) (model.CreateGitTokenInput, error) {
 	res, err := ec.unmarshalInputCreateGitTokenInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -58770,6 +62466,21 @@ func (ec *executionContext) marshalNCreateGitTokenOrErrorPayload2trip2gᚋintern
 		return graphql.Null
 	}
 	return ec._CreateGitTokenOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateGoogleOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGoogleOAuthCredentialsInput(ctx context.Context, v any) (model.CreateGoogleOAuthCredentialsInput, error) {
+	res, err := ec.unmarshalInputCreateGoogleOAuthCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCreateGoogleOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateGoogleOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateGoogleOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CreateGoogleOAuthCredentialsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNCreateHtmlInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateHTMLInjectionInput(ctx context.Context, v any) (model.CreateHTMLInjectionInput, error) {
@@ -58932,6 +62643,26 @@ func (ec *executionContext) marshalNCronJobExecutionStatus2trip2gᚋinternalᚋg
 	return v
 }
 
+func (ec *executionContext) marshalNDeactivateGitHubOAuthOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeactivateGitHubOAuthOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeactivateGitHubOAuthOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeactivateGitHubOAuthOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDeactivateGoogleOAuthOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeactivateGoogleOAuthOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeactivateGoogleOAuthOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeactivateGoogleOAuthOrErrorPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNDeleteAdminInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteAdminInput(ctx context.Context, v any) (model.DeleteAdminInput, error) {
 	res, err := ec.unmarshalInputDeleteAdminInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -58960,6 +62691,36 @@ func (ec *executionContext) marshalNDeleteBoostyCredentialsOrErrorPayload2trip2g
 		return graphql.Null
 	}
 	return ec._DeleteBoostyCredentialsOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeleteGitHubOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteGitHubOAuthCredentialsInput(ctx context.Context, v any) (model.DeleteGitHubOAuthCredentialsInput, error) {
+	res, err := ec.unmarshalInputDeleteGitHubOAuthCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteGitHubOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteGitHubOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteGitHubOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteGitHubOAuthCredentialsOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDeleteGoogleOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteGoogleOAuthCredentialsInput(ctx context.Context, v any) (model.DeleteGoogleOAuthCredentialsInput, error) {
+	res, err := ec.unmarshalInputDeleteGoogleOAuthCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDeleteGoogleOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteGoogleOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.DeleteGoogleOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteGoogleOAuthCredentialsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDeleteHtmlInjectionInput2trip2gᚋinternalᚋgraphᚋmodelᚐDeleteHTMLInjectionInput(ctx context.Context, v any) (model.DeleteHTMLInjectionInput, error) {
@@ -59733,6 +63494,25 @@ func (ec *executionContext) marshalNNoteWarningLevelEnum2trip2gᚋinternalᚋgra
 	return v
 }
 
+func (ec *executionContext) unmarshalNOAuthUrlInput2trip2gᚋinternalᚋgraphᚋmodelᚐOAuthURLInput(ctx context.Context, v any) (model.OAuthURLInput, error) {
+	res, err := ec.unmarshalInputOAuthUrlInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNOAuthUrlPayload2trip2gᚋinternalᚋgraphᚋmodelᚐOAuthURLPayload(ctx context.Context, sel ast.SelectionSet, v model.OAuthURLPayload) graphql.Marshaler {
+	return ec._OAuthUrlPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNOAuthUrlPayload2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐOAuthURLPayload(ctx context.Context, sel ast.SelectionSet, v *model.OAuthURLPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._OAuthUrlPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNOffer2trip2gᚋinternalᚋdbᚐOffer(ctx context.Context, sel ast.SelectionSet, v db.Offer) graphql.Marshaler {
 	return ec._Offer(ctx, sel, &v)
 }
@@ -60263,6 +64043,36 @@ func (ec *executionContext) marshalNSendTelegramPublishNoteNowOrErrorPayload2tri
 		return graphql.Null
 	}
 	return ec._SendTelegramPublishNoteNowOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSetActiveGitHubOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveGitHubOAuthCredentialsInput(ctx context.Context, v any) (model.SetActiveGitHubOAuthCredentialsInput, error) {
+	res, err := ec.unmarshalInputSetActiveGitHubOAuthCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSetActiveGitHubOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveGitHubOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SetActiveGitHubOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SetActiveGitHubOAuthCredentialsOrErrorPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSetActiveGoogleOAuthCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveGoogleOAuthCredentialsInput(ctx context.Context, v any) (model.SetActiveGoogleOAuthCredentialsInput, error) {
+	res, err := ec.unmarshalInputSetActiveGoogleOAuthCredentialsInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSetActiveGoogleOAuthCredentialsOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐSetActiveGoogleOAuthCredentialsOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.SetActiveGoogleOAuthCredentialsOrErrorPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SetActiveGoogleOAuthCredentialsOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNSetBoostyTierSubgraphsInput2trip2gᚋinternalᚋgraphᚋmodelᚐSetBoostyTierSubgraphsInput(ctx context.Context, v any) (model.SetBoostyTierSubgraphsInput, error) {
@@ -61318,6 +65128,20 @@ func (ec *executionContext) marshalOAdminCronJob2ᚖtrip2gᚋinternalᚋdbᚐCro
 		return graphql.Null
 	}
 	return ec._AdminCronJob(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminGitHubOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGithubOauthCredential(ctx context.Context, sel ast.SelectionSet, v *db.GithubOauthCredential) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminGitHubOAuthCredentials(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAdminGoogleOAuthCredentials2ᚖtrip2gᚋinternalᚋdbᚐGoogleOauthCredential(ctx context.Context, sel ast.SelectionSet, v *db.GoogleOauthCredential) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdminGoogleOAuthCredentials(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAdminHtmlInjection2ᚖtrip2gᚋinternalᚋdbᚐHtmlInjection(ctx context.Context, sel ast.SelectionSet, v *db.HtmlInjection) graphql.Marshaler {

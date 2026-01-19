@@ -81,6 +81,10 @@ $trip2g_admin_app $trip2g_admin_catalog
 			close_icon <= Spread_close
 		boostycredentials <= ListBoostyCredentials $trip2g_admin_boostycredentials_catalog
 			close_icon <= Spread_close
+		googleoauth <= GoogleOAuth $trip2g_admin_oauth_google_catalog
+			close_icon <= Spread_close
+		githuboauth <= GitHubOAuth $trip2g_admin_oauth_github_catalog
+			close_icon <= Spread_close
 		auditlogs <= AuditLogs $trip2g_admin_auditlog_catalog
 			tools / <= Spread_close
 		waitlistemailrequests <= WaitListEmailRequests $trip2g_admin_waitlistemailrequest_catalog

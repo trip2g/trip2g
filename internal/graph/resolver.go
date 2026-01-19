@@ -13,7 +13,9 @@ import (
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
 	"trip2g/internal/case/admin/createconfigversion"
+	"trip2g/internal/case/admin/creategithuboauthcredentials"
 	"trip2g/internal/case/admin/creategittoken"
+	"trip2g/internal/case/admin/creategoogleoauthcredentials"
 	"trip2g/internal/case/admin/createhtmlinjection"
 	"trip2g/internal/case/admin/createnotfoundignoredpattern"
 	"trip2g/internal/case/admin/createoffer"
@@ -24,7 +26,11 @@ import (
 	"trip2g/internal/case/admin/createuser"
 	"trip2g/internal/case/admin/createusersubgraphaccess"
 	"trip2g/internal/case/admin/deleteadmin"
+	"trip2g/internal/case/admin/deactivategithuboauth"
+	"trip2g/internal/case/admin/deactivategoogleoauth"
 	"trip2g/internal/case/admin/deleteboostycredentials"
+	"trip2g/internal/case/admin/deletegithuboauthcredentials"
+	"trip2g/internal/case/admin/deletegoogleoauthcredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
@@ -39,6 +45,8 @@ import (
 	"trip2g/internal/case/admin/restorepatreoncredentials"
 	"trip2g/internal/case/admin/runcronjob"
 	"trip2g/internal/case/admin/sendtelegrampublishnotenow"
+	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
+	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
@@ -263,6 +271,20 @@ type Env interface {
 	settelegramaccountchatpublishtags.Env
 	settelegramaccountchatpublishinstanttags.Env
 	importtelegramaccountchannel.Env
+
+	// OAuth credentials
+	creategoogleoauthcredentials.Env
+	deletegoogleoauthcredentials.Env
+	setactivegoogleoauthcredentials.Env
+	creategithuboauthcredentials.Env
+	deletegithuboauthcredentials.Env
+	setactivegithuboauthcredentials.Env
+	deactivategoogleoauth.Env
+	deactivategithuboauth.Env
+	ListGoogleOAuthCredentials(ctx context.Context) ([]db.GoogleOauthCredential, error)
+	ListGitHubOAuthCredentials(ctx context.Context) ([]db.GithubOauthCredential, error)
+	BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
+	BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error)
 
 	ListUserFavoriteNotes(ctx context.Context, userID int64) ([]db.ListUserFavoriteNotesRow, error)
 

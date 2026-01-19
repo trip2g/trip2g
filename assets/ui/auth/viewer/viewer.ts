@@ -1,4 +1,4 @@
-namespace $.$$ {
+namespace $ {
 	const request = $trip2g_graphql_request(/* GraphQL */ `
 		query Viewer {
 			viewer {
