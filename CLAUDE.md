@@ -74,8 +74,8 @@
 | Задача | Документы |
 |--------|-----------|
 | **Новая фича (backend)** | [docs/instructions.md](docs/instructions.md) — GraphQL mutations, SQL, cases |
-| **Новая фича (frontend)** | [docs/mol.md](docs/mol.md), [docs/frontend.md](docs/frontend.md) |
-| **Admin CRUD интерфейс** | [docs/frontend_crud.md](docs/frontend_crud.md), [docs/admin_config_modules.md](docs/admin_config_modules.md) |
+| **Новая фича (frontend)** | [docs/mol.md](docs/mol.md), [docs/frontend.md](docs/frontend.md) — **не забудь про переводы!** |
+| **Admin CRUD интерфейс** | [docs/frontend_crud.md](docs/frontend_crud.md), [docs/admin_config_modules.md](docs/admin_config_modules.md) — **не забудь про переводы!** |
 | **Интеграция (OAuth, платежи)** | [docs/admin_config_modules.md](docs/admin_config_modules.md) |
 | **Telegram** | [docs/telegram.md](docs/telegram.md) |
 | **Тесты** | [docs/TESTING.md](docs/TESTING.md) |
@@ -189,6 +189,12 @@ if err != nil {
     return nil, fmt.Errorf("failed to get current user token: %w", err)
 }
 ```
+
+### Frontend: локализация
+Если добавляешь текст в UI — сразу делай перевод на русский:
+1. Помечай текст `@ \Your text here`
+2. Создавай `component.view.tree.locale=ru.json` рядом с компонентом
+3. Подробности: [docs/frontend.md#localization](docs/frontend.md#localization)
 
 ---
 
