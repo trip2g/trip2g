@@ -73,7 +73,10 @@ func ExchangeCode(clientID, clientSecret, code string) (*TokenResponse, error) {
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
 
-	httpClient := &fasthttp.Client{NoDefaultUserAgentHeader: true}
+	httpClient := &fasthttp.Client{
+		NoDefaultUserAgentHeader: true,
+		ReadBufferSize:           16384, // GitHub sends large headers (CSP)
+	}
 	err := httpClient.DoTimeout(req, resp, 10*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("failed to exchange code: %w", err)
@@ -111,7 +114,10 @@ func GetPrimaryVerifiedEmail(accessToken string) (string, error) {
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
 
-	httpClient := &fasthttp.Client{NoDefaultUserAgentHeader: true}
+	httpClient := &fasthttp.Client{
+		NoDefaultUserAgentHeader: true,
+		ReadBufferSize:           16384, // GitHub sends large headers (CSP)
+	}
 	err := httpClient.DoTimeout(req, resp, 10*time.Second)
 	if err != nil {
 		return "", fmt.Errorf("failed to get emails: %w", err)
@@ -164,7 +170,10 @@ func ValidateCredentials(clientID, clientSecret string) error {
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
 
-	httpClient := &fasthttp.Client{NoDefaultUserAgentHeader: true}
+	httpClient := &fasthttp.Client{
+		NoDefaultUserAgentHeader: true,
+		ReadBufferSize:           16384, // GitHub sends large headers (CSP)
+	}
 	err := httpClient.DoTimeout(req, resp, 10*time.Second)
 	if err != nil {
 		return fmt.Errorf("failed to validate credentials: %w", err)
