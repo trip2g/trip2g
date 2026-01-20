@@ -5,10 +5,25 @@ import path from 'path';
 
 /**
  * Setup test - runs first
- * Creates API key via UI for loading data via push_notes.py
+ * Tests onboarding page, then creates API key via UI for loading data via push_notes.py
  */
 
 test.describe.serial('Setup', () => {
+  // Onboarding tests - must run BEFORE any data is loaded
+  test('shows onboarding page for guest when no notes', async ({ page }) => {
+    await page.goto('/');
+
+    // Should show onboarding, not 404
+    await expect(page.locator('[data-onboarding]')).toBeVisible();
+    await expect(page.getByText('Сайт в процессе настройки')).toBeVisible();
+    await expect(page.getByText('Site is being set up')).toBeVisible();
+  });
+
+  test('onboarding-vault returns 401 for guest', async ({ page }) => {
+    const response = await page.request.get('/_system/onboarding-vault');
+    expect(response.status()).toBe(401);
+  });
+
   test('sign in and create API key via UI', async ({ page }) => {
     await page.goto('/');
 
@@ -33,6 +48,18 @@ test.describe.serial('Setup', () => {
 
     // Wait for sign in to complete
     await page.waitForTimeout(500);
+
+    // Verify onboarding page shows download link for admin
+    await page.goto('/');
+    await expect(page.locator('[data-onboarding]')).toBeVisible();
+    await expect(page.getByText('Добро пожаловать!')).toBeVisible();
+    await expect(page.getByText('Welcome!')).toBeVisible();
+    await expect(page.locator('a[href="/_system/onboarding-vault"]')).toBeVisible();
+
+    // Verify admin can download onboarding vault
+    const vaultResponse = await page.request.get('/_system/onboarding-vault');
+    expect(vaultResponse.status()).toBe(200);
+    expect(vaultResponse.headers()['content-type']).toBe('application/zip');
 
     await page.goto('/admin');
 

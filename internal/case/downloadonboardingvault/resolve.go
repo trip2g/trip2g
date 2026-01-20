@@ -73,6 +73,8 @@ func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 		return nil, fmt.Errorf("failed to marshal plugin data: %w", err)
 	}
 
+	publicURL := env.PublicURL()
+
 	// Prepare file replacements
 	replacements := map[string][]byte{
 		dataJSONPath: newDataJSON,
@@ -87,8 +89,8 @@ func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 		}
 	}
 
-	// Read embedded ZIP and modify files
-	modifiedZip, err := modifyZipFiles(onboardingvault.ZipData, replacements)
+	// Read embedded ZIP and modify files, replacing {{publicUrl}} placeholder
+	modifiedZip, err := modifyZipFiles(onboardingvault.ZipData, replacements, publicURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to modify zip: %w", err)
 	}
@@ -96,7 +98,7 @@ func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 	return modifiedZip, nil
 }
 
-func modifyZipFiles(zipData []byte, replacements map[string][]byte) ([]byte, error) {
+func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL string) ([]byte, error) {
 	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read zip: %w", err)
@@ -121,7 +123,29 @@ func modifyZipFiles(zipData []byte, replacements map[string][]byte) ([]byte, err
 			continue
 		}
 
-		// Copy file as-is
+		// For _index.md, replace {{publicUrl}} placeholder.
+		if file.Name == indexMDPath {
+			content, readErr := readZipFileContent(file)
+			if readErr != nil {
+				return nil, fmt.Errorf("failed to read %s: %w", file.Name, readErr)
+			}
+
+			content = bytes.ReplaceAll(content, []byte("{{publicUrl}}"), []byte(publicURL))
+
+			w, createErr := writer.Create(file.Name)
+			if createErr != nil {
+				return nil, fmt.Errorf("failed to create file in zip: %w", createErr)
+			}
+
+			_, writeErr := w.Write(content)
+			if writeErr != nil {
+				return nil, fmt.Errorf("failed to write content: %w", writeErr)
+			}
+
+			continue
+		}
+
+		// Copy file as-is.
 		err = copyZipFile(writer, file)
 		if err != nil {
 			return nil, fmt.Errorf("failed to copy file %s: %w", file.Name, err)
@@ -134,6 +158,16 @@ func modifyZipFiles(zipData []byte, replacements map[string][]byte) ([]byte, err
 	}
 
 	return buf.Bytes(), nil
+}
+
+func readZipFileContent(file *zip.File) ([]byte, error) {
+	rc, err := file.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+
+	return io.ReadAll(io.LimitReader(rc, maxFileSize))
 }
 
 // maxFileSize is the maximum size of a single file in the ZIP (10MB).

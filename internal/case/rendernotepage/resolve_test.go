@@ -98,6 +98,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
@@ -134,6 +137,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
 					ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
@@ -190,6 +196,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
 					ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
@@ -389,6 +398,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
 					ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
@@ -608,6 +620,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
 					ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
@@ -655,6 +670,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
@@ -953,6 +971,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return liveNoteViews
+					},
 					ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
 						return []string{}, nil
 					},
@@ -1092,6 +1113,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
@@ -1118,6 +1142,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
@@ -1227,6 +1254,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
@@ -1340,6 +1370,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViewsWithUnderscore
 					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return noteViewsWithUnderscore
+					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						return true, nil
 					},
@@ -1437,6 +1470,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
 					CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 						// This should not be called for unauthenticated users on non-free notes
 						// as the paywall check happens before CanReadNote
@@ -1467,6 +1503,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
 					ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {
@@ -1517,6 +1556,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 						return db.ConfigVersion{}
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
+						return noteViews
+					},
+					LatestNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
 					ListActiveUserSubgraphsFunc: func(ctx context.Context, userID int64) ([]string, error) {

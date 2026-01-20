@@ -68,7 +68,8 @@ type Response struct {
 
 	Config db.ConfigVersion
 
-	IsAdmin bool
+	IsAdmin        bool
+	OnboardingMode bool
 }
 
 func (r *Response) NoteSubgraphsJSON() string {
@@ -130,6 +131,12 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	if systemRE.MatchString(path) {
 		return &response, ErrNotFound
+	}
+
+	// Show onboarding page if there are no notes at all.
+	if len(env.LatestNoteViews().Map) == 0 {
+		response.OnboardingMode = true
+		return &response, nil
 	}
 
 	note := notes.GetByPath(path)

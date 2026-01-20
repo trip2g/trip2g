@@ -774,79 +774,198 @@ func PayWall(resp *Response, err *PaywallError) string {
 }
 
 //line view.html:213
-func StreamTableOfContents(qw422016 *qt422016.Writer, resp *Response) {
+func StreamOnboarding(qw422016 *qt422016.Writer, resp *Response) {
 //line view.html:213
 	qw422016.N().S(`
-`)
-//line view.html:214
-	toc := resp.Note.TOC()
 
-//line view.html:214
+<div class="noteview" id="noteview-layout" data-onboarding>
+  <div class="noteview__header">
+    <div id="noteview-sidebar" class="sidebar">
+      <div class="sidebar__menu">
+        <ul>
+          <li><a href="/">Главная</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="noteview__header-space"></div>
+
+    <div>
+      <div mol_view_root="$trip2g_user_space"></div>
+    </div>
+  </div>
+
+  <div class="noteview__content" id="noteview-content">
+    <div class="noteview__container">
+      <div class="noteview__left-column">
+        <div class="noteview__markup prose prose-stone prose-lg">
+
+          `)
+//line view.html:237
+	if resp.IsAdmin {
+//line view.html:237
+		qw422016.N().S(`
+          <h3>Добро пожаловать!</h3>
+          <p>
+            Скачайте стартовый архив и откройте его в Obsidian.
+            Будет создан API-ключ и упакован в ZIP-архив с демонстрационным хранилищем.
+          </p>
+          <p>
+            Не передавайте этот архив никому, так как он содержит приватный ключ.
+            Архив содержит только демонстрационное хранилище. Если у вас уже есть данные,
+            двухсторонняя синхронизация предложит скачать актуальный контент с сервера.
+          </p>
+          <p>
+            <a href="/_system/onboarding-vault" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+              Скачать архив
+            </a>
+          </p>
+
+          <hr>
+
+          <h3>Welcome!</h3>
+          <p>
+            Download the starter archive and open it in Obsidian.
+            An API key will be created and packed into a ZIP archive with a demo vault.
+          </p>
+          <p>
+            Do not share this archive with anyone as it contains a private key.
+            The archive contains only a demo vault. If you already have data,
+            two-way sync will offer to download current content from the server.
+          </p>
+          <p>
+            <a href="/_system/onboarding-vault" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+              Download archive
+            </a>
+          </p>
+          `)
+//line view.html:271
+	} else {
+//line view.html:271
+		qw422016.N().S(`
+          <h3>Сайт в процессе настройки</h3>
+          <p>Войдите как администратор, чтобы начать работу.</p>
+
+          <hr>
+
+          <h3>Site is being set up</h3>
+          <p>Log in as administrator to get started.</p>
+          `)
+//line view.html:279
+	}
+//line view.html:279
+	qw422016.N().S(`
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+`)
+//line view.html:287
+}
+
+//line view.html:287
+func WriteOnboarding(qq422016 qtio422016.Writer, resp *Response) {
+//line view.html:287
+	qw422016 := qt422016.AcquireWriter(qq422016)
+//line view.html:287
+	StreamOnboarding(qw422016, resp)
+//line view.html:287
+	qt422016.ReleaseWriter(qw422016)
+//line view.html:287
+}
+
+//line view.html:287
+func Onboarding(resp *Response) string {
+//line view.html:287
+	qb422016 := qt422016.AcquireByteBuffer()
+//line view.html:287
+	WriteOnboarding(qb422016, resp)
+//line view.html:287
+	qs422016 := string(qb422016.B)
+//line view.html:287
+	qt422016.ReleaseByteBuffer(qb422016)
+//line view.html:287
+	return qs422016
+//line view.html:287
+}
+
+//line view.html:289
+func StreamTableOfContents(qw422016 *qt422016.Writer, resp *Response) {
+//line view.html:289
 	qw422016.N().S(`
 `)
-//line view.html:215
+//line view.html:290
+	toc := resp.Note.TOC()
+
+//line view.html:290
+	qw422016.N().S(`
+`)
+//line view.html:291
 	if len(toc) > 0 {
-//line view.html:215
+//line view.html:291
 		qw422016.N().S(`
 <div class="noteview__toc toc" id="noteview-toc" id="noteview-toc">
   <h2 class="toc__title">Содержание</h2>
   `)
-//line view.html:218
+//line view.html:294
 		for _, item := range toc {
-//line view.html:218
+//line view.html:294
 			qw422016.N().S(`
     <div class="toc__item toc__item--level`)
-//line view.html:219
+//line view.html:295
 			qw422016.N().D(item.Level)
-//line view.html:219
+//line view.html:295
 			qw422016.N().S(`">
       <a href="#`)
-//line view.html:220
+//line view.html:296
 			qw422016.N().S(item.ID)
-//line view.html:220
+//line view.html:296
 			qw422016.N().S(`" class="toc__link">`)
-//line view.html:220
+//line view.html:296
 			qw422016.N().S(item.Text)
-//line view.html:220
+//line view.html:296
 			qw422016.N().S(`</a>
     </div>
   `)
-//line view.html:222
+//line view.html:298
 		}
-//line view.html:222
+//line view.html:298
 		qw422016.N().S(`
 </div>
 `)
-//line view.html:224
+//line view.html:300
 	}
-//line view.html:224
+//line view.html:300
 	qw422016.N().S(`
 `)
-//line view.html:225
+//line view.html:301
 }
 
-//line view.html:225
+//line view.html:301
 func WriteTableOfContents(qq422016 qtio422016.Writer, resp *Response) {
-//line view.html:225
+//line view.html:301
 	qw422016 := qt422016.AcquireWriter(qq422016)
-//line view.html:225
+//line view.html:301
 	StreamTableOfContents(qw422016, resp)
-//line view.html:225
+//line view.html:301
 	qt422016.ReleaseWriter(qw422016)
-//line view.html:225
+//line view.html:301
 }
 
-//line view.html:225
+//line view.html:301
 func TableOfContents(resp *Response) string {
-//line view.html:225
+//line view.html:301
 	qb422016 := qt422016.AcquireByteBuffer()
-//line view.html:225
+//line view.html:301
 	WriteTableOfContents(qb422016, resp)
-//line view.html:225
+//line view.html:301
 	qs422016 := string(qb422016.B)
-//line view.html:225
+//line view.html:301
 	qt422016.ReleaseByteBuffer(qb422016)
-//line view.html:225
+//line view.html:301
 	return qs422016
-//line view.html:225
+//line view.html:301
 }

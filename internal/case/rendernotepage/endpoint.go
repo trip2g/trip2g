@@ -66,6 +66,15 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 		return nil, nil
 	}
 
+	if resp.OnboardingMode {
+		layoutParams.MetaRobots = "noindex"
+		ctx.Response.Header.Set("Cache-Control", "no-store")
+
+		return renderlayout.Handle(req, layoutParams, func() {
+			WriteOnboarding(ctx, resp)
+		})
+	}
+
 	if err != nil {
 		var paywallErr *PaywallError
 		if errors.As(err, &paywallErr) {
