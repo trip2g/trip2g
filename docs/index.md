@@ -13,34 +13,34 @@ trip2g is a publishing platform that transforms Obsidian markdown vaults into we
 ## Quick Start
 
 **New Developers:**
-1. Read [Development & Operations Guide](./development-operations.md) for setup
-2. Review [Source Tree](./source-tree.md) to understand project structure
-3. Check [Architecture](./architecture.md) for system design overview
+1. Read [[development-operations|Development & Operations Guide]] for setup
+2. Review [[source-tree|Source Tree]] to understand project structure
+3. Check [[architecture|Architecture]] for system design overview
 
 **Existing Team:**
-- [API Contracts](./api-contracts.md) - GraphQL API reference
-- [Data Models](./data-models.md) - Database schema
-- [UI Components](./ui-components.md) - Frontend components
+- [[api-contracts|API Contracts]] - GraphQL API reference
+- [[data-models|Data Models]] - Database schema
+- [[ui-components|UI Components]] - Frontend components
 
 ## Generated Documentation
 
 ### Core Reference Documentation
 
-**[API Contracts](./api-contracts.md)**
+**[[api-contracts|API Contracts]]**
 - Complete GraphQL API documentation
 - 100+ queries and mutations
 - Public and Admin API sections
 - Request/response examples
 - Authentication patterns
 
-**[Data Models](./data-models.md)**
+**[[data-models|Data Models]]**
 - Full database schema (50+ tables)
 - Entity relationships
 - Access control patterns
 - Payment integration models
 - Telegram integration schema
 
-**[UI Components](./ui-components.md)**
+**[[ui-components|UI Components]]**
 - 131 $mol framework components
 - Component organization patterns
 - Admin panel catalog (103 components)
@@ -49,7 +49,7 @@ trip2g is a publishing platform that transforms Obsidian markdown vaults into we
 
 ### System Documentation
 
-**[Architecture](./architecture.md)**
+**[[architecture|Architecture]]**
 - High-level system design
 - Component interactions
 - Data flow diagrams
@@ -57,14 +57,14 @@ trip2g is a publishing platform that transforms Obsidian markdown vaults into we
 - Scalability considerations
 - Technology decisions
 
-**[Source Tree](./source-tree.md)**
+**[[source-tree|Source Tree]]**
 - Complete directory structure
 - Component descriptions
 - File organization patterns
 - Generated vs. source files
 - Development workflow
 
-**[Development & Operations](./development-operations.md)**
+**[[development-operations|Development & Operations]]**
 - Quick start guide
 - Build commands
 - Testing procedures
@@ -77,51 +77,51 @@ trip2g is a publishing platform that transforms Obsidian markdown vaults into we
 
 ### Development Guides
 
-**[Instructions](./instructions.md)**
+**[[instructions|Instructions]]**
 - Common development patterns
 - Code style guidelines
 - Best practices
 
-**[Frontend Guide](./frontend.md)**
+**[[frontend|Frontend Guide]]**
 - $mol framework usage
 - Component patterns
 - CRUD interfaces
 
-**[Mol Framework](./mol.md)**
+**[[mol|Mol Framework]]**
 - $mol view properties
 - view.tree syntax
 - Component patterns
 
-**[Testing Guide](./TESTING.md)**
+**[[TESTING|Testing Guide]]**
 - Testing strategies
 - E2E test patterns
 - Unit test examples
 
 ### Feature Documentation
 
-**[Telegram Integration](./telegram.md)**
+**[[telegram|Telegram Integration]]**
 - Bot setup
 - Publishing system
 - Chat management
 
-**[Obsidian Links](./obsidian_links.md)**
+**[[obsidian_links|Obsidian Links]]**
 - Wikilink processing
 - Cross-referencing
 - Link resolution
 
-**[Job Queues](./queues.md)**
+**[[queues|Job Queues]]**
 - Background job system
 - Queue management
 - Job patterns
 
-**[SQLite Usage](./sqlite.md)**
+**[[sqlite|SQLite Usage]]**
 - Database patterns
 - Performance tips
 - Migration strategies
 
 ### AI Context
 
-**[AI Context](./aicontext.md)**
+**[[aicontext|AI Context]]**
 - AI assistant instructions
 - Project-specific context
 
@@ -369,17 +369,17 @@ make deploy                     # Deploy via Ansible
 ## Next Steps for New Developers
 
 1. **Setup Environment**
-   - Follow [Development & Operations Guide](./development-operations.md)
+   - Follow [[development-operations|Development & Operations Guide]]
    - Get database running
    - Start development server
 
 2. **Explore Codebase**
-   - Read [Source Tree](./source-tree.md)
+   - Read [[source-tree|Source Tree]]
    - Browse key directories
    - Run existing tests
 
 3. **Understand Architecture**
-   - Review [Architecture](./architecture.md)
+   - Review [[architecture|Architecture]]
    - Study data flows
    - Explore integration patterns
 
