@@ -1,0 +1,8 @@
+$trip2g_admin_oauth_github_disableall $mol_page
+	title @ \Disable GitHub OAuth
+	body /
+		<= Warning $mol_paragraph
+			title @ \Users will no longer be able to sign in via GitHub. You can re-enable it later by setting active credentials.
+		<= Confirm_button $mol_button_major
+			title @ \Confirm Disable
+			click? <=> disable? null

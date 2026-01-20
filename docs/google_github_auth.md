@@ -77,7 +77,7 @@
 | Admin Google OAuth create | `assets/ui/admin/oauth/google/create/` | ✅ |
 | Admin GitHub OAuth catalog | `assets/ui/admin/oauth/github/catalog/` | ✅ |
 | Admin GitHub OAuth create | `assets/ui/admin/oauth/github/create/` | ✅ |
-| Deactivate buttons | `assets/ui/admin/oauth/*/button/deactivate/` | ✅ |
+| Disable all pages | `assets/ui/admin/oauth/*/disableall/` | ✅ |
 | Register app links | Links to Google Cloud Console / GitHub Developer Settings | ✅ |
 | Callback URL display | Shows callback URL with Copy button (from backend via `dry: true`) | ✅ |
 
@@ -87,10 +87,6 @@
 |-----------|------|--------|
 | Create Google tests | `internal/case/admin/creategoogleoauthcredentials/resolve_test.go` | ✅ |
 | Create GitHub tests | `internal/case/admin/creategithuboauthcredentials/resolve_test.go` | ✅ |
-
-## Next Steps
-
-1. **Manual testing** of the full OAuth flow
 
 ## Architecture
 

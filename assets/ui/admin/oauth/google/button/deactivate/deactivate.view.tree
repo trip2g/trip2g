@@ -1,3 +1,0 @@
-$trip2g_admin_oauth_google_button_deactivate $mol_button_minor
-	title \Disable All
-	click? <=> deactivate? null

@@ -1,0 +1,5 @@
+{
+	"$trip2g_admin_oauth_github_disableall_title": "Отключить GitHub OAuth",
+	"$trip2g_admin_oauth_github_disableall_Warning_title": "Пользователи больше не смогут входить через GitHub. Вы можете включить обратно, установив активные учётные данные.",
+	"$trip2g_admin_oauth_github_disableall_Confirm_button_title": "Подтвердить отключение"
+}

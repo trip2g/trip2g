@@ -25,13 +25,14 @@ namespace $.$$ {
 		spreads(): any {
 			return {
 				add: this.AddForm(),
+				disableall: this.DisableallForm(),
 				...this.data().mapKeys( key => this.ShowPage( key ) ),
 			}
 		}
 
 		@$mol_mem
 		override spread_ids_filtered() {
-			return this.spread_ids().filter( id => id !== 'add' )
+			return this.spread_ids().filter( id => id !== 'add' && id !== 'disableall' )
 		}
 
 		row( id: any ) {

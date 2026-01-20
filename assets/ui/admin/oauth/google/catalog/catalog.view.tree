@@ -1,7 +1,9 @@
 $trip2g_admin_oauth_google_catalog $trip2g_admin_catalog
 	menu_title @ \Google OAuth
 	actions /
-		<= DeactivateButton $trip2g_admin_oauth_google_button_deactivate
+		<= DisableAllLink $mol_link
+			arg * id \disableall
+			title \Disable All
 		<= AddLink $mol_link
 			arg * id \add
 			title \+ Add
@@ -9,6 +11,7 @@ $trip2g_admin_oauth_google_catalog $trip2g_admin_catalog
 	Empty $mol_status
 	ShowPage* $trip2g_admin_oauth_google_show
 		credentials_id <= row_id* 0
+	DisableallForm $trip2g_admin_oauth_google_disableall
 	menu_link_content* / <= PatternItem* $mol_view
 		sub /
 			<= Rows* $mol_row
