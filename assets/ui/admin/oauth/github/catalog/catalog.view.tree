@@ -8,7 +8,9 @@ $trip2g_admin_oauth_github_catalog $trip2g_admin_catalog
 			arg * id \add
 			title \+ Add
 	param \id
-	Empty $mol_status
+	Empty $mol_view
+		sub /
+			<= Help @ \Enable one-click sign-in via GitHub for you and your readers. Add credentials to get started.
 	ShowPage* $trip2g_admin_oauth_github_show
 		credentials_id <= row_id* 0
 	DisableallForm $trip2g_admin_oauth_github_disableall

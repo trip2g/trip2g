@@ -31,6 +31,16 @@ namespace $.$$ {
 		}
 
 		@$mol_mem
+		override menu_body() {
+			const body = super.menu_body()
+			if (this.data().size() === 0) {
+				return [this.Empty()]
+			}
+
+			return body
+		}
+
+		@$mol_mem
 		override spread_ids_filtered() {
 			return this.spread_ids().filter( id => id !== 'add' && id !== 'disableall' )
 		}
