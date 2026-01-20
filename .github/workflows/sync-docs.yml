@@ -1,0 +1,35 @@
+name: Sync docs to internaldev
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download CLI
+        run: |
+          curl -L -o trip2g-sync.mjs \
+            https://github.com/trip2g/obsidian-sync/releases/download/0.3.5/trip2g-sync.mjs
+
+      - name: Sync docs
+        env:
+          API_KEY: ${{ secrets.INTERNALDEV_API_KEY }}
+        run: |
+          node trip2g-sync.mjs \
+            --folder ./docs \
+            --api-url https://internaldev.trip2g.com/graphql \
+            --conflict-resolution local \
+            --verbose
