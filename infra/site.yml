@@ -20,6 +20,7 @@
       - { service_name: trip2g_sn, listen_addr: "localhost:8090", domain: "sn.trip2g.com" }
       - { service_name: trip2g_alexkey, listen_addr: "localhost:8091", domain: "alexkey.trip2g.com" }
       - { service_name: trip2g_founder, listen_addr: "localhost:8092", domain: "keeper.trip2g.com" }
+      - { service_name: trip2g_internaldev, listen_addr: "localhost:8093", domain: "internaldev.trip2g.com" }
       # - { service_name: trip2g_sn, listen_addr: "localhost:8089", domain: "sn.trip2g.com" }
   tasks:
     - name: Create trip2g user
