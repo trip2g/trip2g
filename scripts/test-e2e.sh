@@ -26,6 +26,8 @@ run_telegram_cron() {
 wait_all_jobs() {
   echo "⏳ Waiting for all background jobs to complete..."
   curl -s --max-time 300 "$APP_URL/debug/wait_all_jobs" | tee /dev/stderr | grep -q "^ok:" || exit 1
+
+  sleep 2 # wait a bit for consistency
 }
 
 # Helper function to sync vault

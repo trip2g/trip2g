@@ -1,7 +1,16 @@
+declare global {
+	interface Window {
+		__trip2g_settings?: {
+			title?: string
+			is_dev_mode?: boolean
+		}
+	}
+}
+
 namespace $.$$ {
 	export class $trip2g_settings extends $.$mol_object2 {
 		static title() {
-			return 'Trip2G'
+			return window.__trip2g_settings?.title || 'Trip2G'
 		}
 
 		// Returns value only in dev mode, empty string in production

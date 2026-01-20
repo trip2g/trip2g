@@ -160,9 +160,10 @@
           "length": 26
         },
         {
-          "type": "underline",
+          "type": "text_url",
           "offset": 400,
-          "length": 25
+          "length": 25,
+          "url": "https://t.me/c/{telegram_media_group}"
         }
       ],
       "has_media": true,
@@ -238,9 +239,10 @@
           "url": "https://t.me/c/{telegram_media_group}"
         },
         {
-          "type": "underline",
+          "type": "text_url",
           "offset": 451,
-          "length": 26
+          "length": 26,
+          "url": "https://t.me/c/{telegram_one_photo}"
         },
         {
           "type": "text_url",
@@ -274,9 +276,10 @@
           "length": 3
         },
         {
-          "type": "underline",
+          "type": "text_url",
           "offset": 846,
-          "length": 26
+          "length": 26,
+          "url": "https://t.me/c/{telegram_one_photo}"
         },
         {
           "type": "text_url",
@@ -284,9 +287,7 @@
           "length": 25,
           "url": "https://t.me/c/{telegram_media_group}"
         }
-      ],
-      "has_media": true,
-      "media_type": "webpage"
+      ]
     },
     {
       "text": "id: telegram_video_with_emoji\n\nThis post has a single video with custom emoji in caption.\n\nCustom emoji test: ➡️ and 😅.\n\nThe custom emoji files should NOT be included as media attachments!\nOnly telegram_single_video.mp4 should be the post media.\n\nText-only Telegram Post | Image with Custom Emoji",

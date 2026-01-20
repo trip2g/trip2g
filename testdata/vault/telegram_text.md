@@ -1,5 +1,5 @@
 ---
-telegram_publish_disable_web_page_preview: false
+telegram_publish_disable_web_page_preview: true
 telegram_publish_at: 2025-11-18T09:36:00
 telegram_publish_tags:
   - test_channel

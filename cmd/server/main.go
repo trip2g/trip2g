@@ -774,7 +774,7 @@ func (a *app) AcquireTxEnvInRequest(ctx context.Context, label string) error {
 		return fmt.Errorf("failed to get request from context: %w", err)
 	}
 
-	tx, err := a.conn.BeginTx(ctx, nil)
+	tx, err := a.writeConn.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -921,10 +921,16 @@ func (a *app) LoadNoteViewByVersionID(ctx context.Context, id int64) (*model.Not
 }
 
 func (a *app) UpsertAPIKeyLogAction(ctx context.Context, name string) error {
+	if txEnv, ok := ctx.Value(txEnvKey).(*app); ok && txEnv.currentTx != nil {
+		return txEnv.WriteQueries.UpsertAPIKeyLogAction(ctx, name)
+	}
 	return a.WriteQueries.UpsertAPIKeyLogAction(ctx, name)
 }
 
 func (a *app) UpsertAPIKeyLogIP(ctx context.Context, ip string) error {
+	if txEnv, ok := ctx.Value(txEnvKey).(*app); ok && txEnv.currentTx != nil {
+		return txEnv.WriteQueries.UpsertAPIKeyLogIP(ctx, ip)
+	}
 	return a.WriteQueries.UpsertAPIKeyLogIP(ctx, ip)
 }
 

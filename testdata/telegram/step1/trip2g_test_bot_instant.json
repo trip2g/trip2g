@@ -222,9 +222,10 @@
           "length": 21
         },
         {
-          "type": "underline",
+          "type": "text_url",
           "offset": 401,
-          "length": 25
+          "length": 25,
+          "url": "https://t.me/c/{telegram_media_group}"
         },
         {
           "type": "underline",
@@ -263,9 +264,10 @@
           "length": 26
         },
         {
-          "type": "underline",
+          "type": "text_url",
           "offset": 875,
-          "length": 25
+          "length": 25,
+          "url": "https://t.me/c/{telegram_media_group}"
         }
       ]
     },

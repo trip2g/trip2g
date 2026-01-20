@@ -121,11 +121,11 @@
     },
     {
       "has_media": true,
-      "media_type": "video"
+      "media_type": "photo"
     },
     {
       "has_media": true,
-      "media_type": "photo"
+      "media_type": "video"
     },
     {
       "text": "id: telegram_text\n\nThis is a text-only Telegram post with no media attachments. It will be sent using sendMessage API method.\n\nText formatting examples:\n\nBold text, italic text, and bold italic formatting.\n\nStrikethrough is also supported.\n\nInline code and underlined text.\n\nCode block with syntax highlighting:\ndef hello():\n    print(\"Hello, world!\")\n\nLinks to other posts:\n\nCheck out these posts:\n- Media Group Telegram Post with photos and video\n- Single Photo Telegram Post single photo example\n- Главная link to website (not published to Telegram)\n\nLists:\n\nUnordered list:\n- First item\n- Second item\n- Third item\n\nNumbered list:\n1. First step\n2. Second step\n3. Third step\n\nBlockquote:\n\nThis is a blockquote\nMultiple lines supported\n\nCustom emoji: 2️⃣\n\nThis tests comprehensive Telegram text formatting with all supported markdown features.\n\nSingle Photo Telegram Post | Media Group Telegram Post",
