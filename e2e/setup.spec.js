@@ -54,7 +54,7 @@ test.describe.serial('Setup', () => {
     await expect(page.locator('[data-onboarding]')).toBeVisible();
     await expect(page.getByText('Добро пожаловать!')).toBeVisible();
     await expect(page.getByText('Welcome!')).toBeVisible();
-    await expect(page.locator('a[href="/_system/onboarding-vault"]')).toBeVisible();
+    await expect(page.locator('a[href="/_system/onboarding-vault"]').first()).toBeVisible();
 
     // Verify admin can download onboarding vault
     const vaultResponse = await page.request.get('/_system/onboarding-vault');
