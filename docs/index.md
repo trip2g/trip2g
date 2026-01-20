@@ -1,7 +1,10 @@
-# trip2g Documentation Index
+---
+title: trip2g Documentation Index
+---
 
-**Last Updated:** 2025-11-15
-**Version:** Brownfield Documentation v1.0
+> **При добавлении новой документации** — добавь ссылку в этот файл.
+
+[[changelog]] — история изменений
 
 ## Overview
 
