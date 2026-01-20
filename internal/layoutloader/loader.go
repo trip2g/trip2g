@@ -260,7 +260,7 @@ func (w *blockFinder) Visit(vc utils.VisitorContext, node jet.Node) {
 		// Extract arg_type metadata from block content
 		argTypes := extractArgTypes(block.List)
 		for i := range info.Params {
-			if meta, ok := argTypes[info.Params[i].Name]; ok {
+			if meta, found := argTypes[info.Params[i].Name]; found {
 				info.Params[i].Type = meta.Type
 				info.Params[i].Comment = meta.Comment
 			}
@@ -345,7 +345,7 @@ func extractArgTypesFromPipe(pipe *jet.PipeNode, result map[string]argTypeMeta) 
 
 	// Extract comment (3rd arg, optional)
 	if len(cmd.Exprs) >= 3 {
-		if commentNode, ok := cmd.Exprs[2].(*jet.StringNode); ok {
+		if commentNode, isStr := cmd.Exprs[2].(*jet.StringNode); isStr {
 			meta.Comment = commentNode.Text
 		}
 	}

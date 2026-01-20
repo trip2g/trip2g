@@ -146,7 +146,7 @@ func vectorSearch(ctx context.Context, env Env, query string, useLatest bool) ([
 	}
 
 	results := make([]appmodel.SearchResult, 0, limit)
-	for i := 0; i < limit; i++ {
+	for i := range limit {
 		s := scores[i]
 		results = append(results, appmodel.SearchResult{
 			NoteView: s.note,
@@ -275,7 +275,7 @@ func trimWhitespace(s string) string {
 	// Simple trim of leading/trailing whitespace and normalize internal whitespace
 	result := make([]byte, 0, len(s))
 	inWhitespace := true
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		c := s[i]
 		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
 			if !inWhitespace && len(result) > 0 {

@@ -98,7 +98,6 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	}
 
 	if layout != "" {
-
 		processed, layoutErr := renderLayout(ctx, env, resp, layout)
 		if layoutErr != nil {
 			return nil, layoutErr
@@ -122,6 +121,7 @@ func (Endpoint) Method() string {
 	return http.MethodGet
 }
 
+//nolint:nonamedreturns // named returns required for defer/recover to set return values
 func renderLayout(
 	ctx *fasthttp.RequestCtx,
 	env Env,
@@ -139,7 +139,7 @@ func renderLayout(
 		if r := recover(); r != nil {
 			env.Logger().Error("template panic", "layout", layoutName, "error", r)
 			if resp.IsAdmin {
-				_, _ = ctx.WriteString(fmt.Sprintf("Template error: %v", r))
+				_, _ = fmt.Fprintf(ctx, "Template error: %v", r)
 				processed = true
 				err = nil
 			} else {

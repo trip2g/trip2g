@@ -58,7 +58,7 @@ func Resolve(ctx context.Context, env Env, params model.TelegramAccountUpdatePos
 	return nil
 }
 
-//nolint:funlen // complex edit logic with multiple post types
+//nolint:funlen,gocognit // complex edit logic with multiple post types
 func resolve1(ctx context.Context, env Env, params model.TelegramAccountUpdatePostParams) error {
 	logger := logger.WithPrefix(env.Logger(), "backjob/updatetelegramaccountmessage:")
 	post := params.Post

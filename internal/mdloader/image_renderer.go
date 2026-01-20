@@ -69,6 +69,7 @@ func (r *imageRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(enclavecore.KindEnclave, r.renderEnclave)
 }
 
+//nolint:gocognit,gocyclo,cyclop // complex rendering logic with multiple enclave providers
 func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	if entering {
 		// Remove text children (cleanup from enclave transformer)
@@ -93,88 +94,88 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 	case enclavecore.EnclaveProviderYouTube:
 		html, err := object.GetYoutubeEmbedHtml(enc)
 		if err != nil || html == "" {
-			html = wrapEnclaveErrorHtml("youtube", enc.ObjectID)
+			html = wrapEnclaveErrorHTML("youtube", enc.ObjectID)
 		} else {
-			html = wrapEnclaveHtml("youtube", html, false, false)
+			html = wrapEnclaveHTML("youtube", html, false, false)
 		}
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderBilibili:
 		html, err := object.GetBilibiliEmbedHtml(enc)
 		if err != nil || html == "" {
-			html = wrapEnclaveErrorHtml("bilibili", enc.ObjectID)
+			html = wrapEnclaveErrorHTML("bilibili", enc.ObjectID)
 		} else {
-			html = wrapEnclaveHtml("bilibili", html, false, false)
+			html = wrapEnclaveHTML("bilibili", html, false, false)
 		}
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderTwitter:
 		html, err := object.GetTweetOembedHtml(enc.ObjectID, enc.Theme)
 		if err != nil || html == "" {
-			html = wrapEnclaveErrorHtml("twitter", enc.ObjectID)
+			html = wrapEnclaveErrorHTML("twitter", enc.ObjectID)
 		} else {
-			html = wrapEnclaveHtml("twitter", html, true, false)
+			html = wrapEnclaveHTML("twitter", html, true, false)
 		}
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderTradingView:
 		html, err := object.GetTradingViewWidgetHtml(enc)
 		if err != nil || html == "" {
-			html = wrapEnclaveErrorHtml("tradingview", enc.ObjectID)
+			html = wrapEnclaveErrorHTML("tradingview", enc.ObjectID)
 		} else {
-			html = wrapEnclaveHtml("tradingview", html, false, false)
+			html = wrapEnclaveHTML("tradingview", html, false, false)
 		}
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderDifyWidget:
 		html, err := object.GetDifyWidgetHtml(enc)
 		if err != nil || html == "" {
-			html = wrapEnclaveErrorHtml("dify", enc.ObjectID)
+			html = wrapEnclaveErrorHTML("dify", enc.ObjectID)
 		} else {
-			html = wrapEnclaveHtml("dify", html, true, false)
+			html = wrapEnclaveHTML("dify", html, true, false)
 		}
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderQuailWidget:
 		html, err := object.GetQuailWidgetHtml(enc)
 		if err != nil || html == "" {
-			html = wrapEnclaveErrorHtml("quail", enc.ObjectID)
+			html = wrapEnclaveErrorHTML("quail", enc.ObjectID)
 		} else {
-			html = wrapEnclaveHtml("quail", html, true, false)
+			html = wrapEnclaveHTML("quail", html, true, false)
 		}
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderQuailAd:
 		html, err := object.GetQuailAdHtml(enc)
 		if err != nil || html == "" {
-			html = wrapEnclaveErrorHtml("quail-ad", enc.ObjectID)
+			html = wrapEnclaveErrorHTML("quail-ad", enc.ObjectID)
 		}
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderSpotify:
 		html, err := object.GetSpotifyWidgetHtml(enc)
 		if err != nil || html == "" {
-			html = wrapEnclaveErrorHtml("spotify", enc.ObjectID)
+			html = wrapEnclaveErrorHTML("spotify", enc.ObjectID)
 		} else {
-			html = wrapEnclaveHtml("spotify", html, true, false)
+			html = wrapEnclaveHTML("spotify", html, true, false)
 		}
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveProviderPodbean:
 		html, err := object.GetPodbeanHtml(enc)
 		if err != nil || html == "" {
-			html = wrapEnclaveErrorHtml("podbean", enc.ObjectID)
+			html = wrapEnclaveErrorHTML("podbean", enc.ObjectID)
 		} else {
-			html = wrapEnclaveHtml("podbean", html, true, false)
+			html = wrapEnclaveHTML("podbean", html, true, false)
 		}
 		_, _ = w.Write([]byte(html))
 
 	case enclavecore.EnclaveHtml5Audio:
 		html, err := object.GetAudioHtml(enc)
 		if err != nil || html == "" {
-			html = wrapEnclaveErrorHtml("audio", enc.ObjectID)
+			html = wrapEnclaveErrorHTML("audio", enc.ObjectID)
 		} else {
-			html = wrapEnclaveHtml("audio", html, true, false)
+			html = wrapEnclaveHTML("audio", html, true, false)
 		}
 		_, _ = w.Write([]byte(html))
 	}
@@ -182,7 +183,7 @@ func (r *imageRenderer) renderEnclave(w util.BufWriter, source []byte, node ast.
 	return ast.WalkContinue, nil
 }
 
-// renderImage renders regular images and quail images with asset replacement
+// renderImage renders regular images and quail images with asset replacement.
 func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) {
 	// Get the original URL - ObjectID contains the clean URL for QuailImage
 	originalURL := enc.URL.String()
@@ -242,16 +243,18 @@ func (r *imageRenderer) renderImage(w util.BufWriter, enc *enclavecore.Enclave) 
 	_, _ = w.Write([]byte(html))
 }
 
-// wrapEnclaveErrorHtml wraps error message in enclave error HTML
-func wrapEnclaveErrorHtml(enclaveName, objectID string) string {
+// wrapEnclaveErrorHTML wraps error message in enclave error HTML.
+func wrapEnclaveErrorHTML(enclaveName, objectID string) string {
 	return fmt.Sprintf(
 		`<div class="enclave-object-wrapper normal-wrapper"><div class="enclave-object %s-enclave-object error">Failed to load %s from %s</div></div>`,
 		enclaveName, enclaveName, objectID,
 	)
 }
 
-// wrapEnclaveHtml wraps content in enclave HTML wrapper
-func wrapEnclaveHtml(enclaveName, html string, isNormal, hasBorder bool) string {
+// wrapEnclaveHTML wraps content in enclave HTML wrapper.
+//
+//nolint:unparam // hasBorder kept for future use
+func wrapEnclaveHTML(enclaveName, html string, isNormal, hasBorder bool) string {
 	normalCls := ""
 	borderCls := ""
 	autoResizeCls := "normal-wrapper"

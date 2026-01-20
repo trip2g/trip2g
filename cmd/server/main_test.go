@@ -37,6 +37,7 @@ func TestWithTransaction(t *testing.T) {
 	a := &app{
 		log:          log,
 		conn:         conn,
+		writeConn:    conn,
 		queries:      queries,
 		Queries:      queries,
 		WriteQueries: writeQueries,

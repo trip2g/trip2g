@@ -160,8 +160,8 @@ func TestResolve(t *testing.T) {
 
 		limit := int32(3)
 		result, err := similarnotes.Resolve(ctx, env, model.SimilarNotesInput{
-			Path: "/note0",
-			Limit:  &limit,
+			Path:  "/note0",
+			Limit: &limit,
 		})
 		require.NoError(t, err)
 		require.Len(t, result, 3)

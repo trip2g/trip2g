@@ -54,7 +54,11 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	return writeJSON(ctx, http.StatusOK, responseBody{HTML: resp.HTML})
 }
 
-func writeJSON(ctx interface{ SetContentType(string); SetStatusCode(int); SetBody([]byte) }, status int, body responseBody) (interface{}, error) {
+func writeJSON(ctx interface {
+	SetContentType(string)
+	SetStatusCode(int)
+	SetBody([]byte)
+}, status int, body responseBody) (interface{}, error) {
 	ctx.SetContentType("application/json")
 	ctx.SetStatusCode(status)
 	data, err := json.Marshal(body)

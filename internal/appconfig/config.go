@@ -111,7 +111,7 @@ type Config struct {
 	SimpleBackup SimpleBackupConfig
 
 	// Features configuration (parsed from JSON)
-	FeaturesJSON string           // Raw JSON from flag/env
+	FeaturesJSON string            // Raw JSON from flag/env
 	Features     features.Features // Parsed features
 }
 

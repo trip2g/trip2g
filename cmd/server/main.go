@@ -1364,6 +1364,8 @@ func (a *app) Insecure() bool {
 // BuildGoogleAuthURL returns (callbackURL, authURL, error).
 // callbackURL is always returned for admin UI display.
 // authURL is only returned if OAuth is configured (or dry=true for just getting callbackURL).
+//
+//nolint:nonamedreturns // named returns document the multiple string return values
 func (a *app) BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error) {
 	publicURL := a.GetPublicURLForRequest(ctx)
 	callbackURL = fmt.Sprintf("%s/_system/auth/google/callback", publicURL)
@@ -1375,7 +1377,7 @@ func (a *app) BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bo
 	creds, err := a.GetActiveGoogleOAuthCredentials(ctx)
 	if err != nil {
 		// No active credentials - OAuth not configured
-		return callbackURL, "", nil //nolint:nilerr
+		return callbackURL, "", nil //nolint:nilerr // expected: missing credentials returns empty authURL
 	}
 	if creds.ClientID == "" {
 		return callbackURL, "", nil
@@ -1388,6 +1390,8 @@ func (a *app) BuildGoogleAuthURL(ctx context.Context, redirectURL string, dry bo
 // BuildGitHubAuthURL returns (callbackURL, authURL, error).
 // callbackURL is always returned for admin UI display.
 // authURL is only returned if OAuth is configured (or dry=true for just getting callbackURL).
+//
+//nolint:nonamedreturns // named returns document the multiple string return values
 func (a *app) BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bool) (callbackURL string, authURL string, err error) {
 	publicURL := a.GetPublicURLForRequest(ctx)
 	callbackURL = fmt.Sprintf("%s/_system/auth/github/callback", publicURL)
@@ -1399,7 +1403,7 @@ func (a *app) BuildGitHubAuthURL(ctx context.Context, redirectURL string, dry bo
 	creds, err := a.GetActiveGitHubOAuthCredentials(ctx)
 	if err != nil {
 		// No active credentials - OAuth not configured
-		return callbackURL, "", nil //nolint:nilerr
+		return callbackURL, "", nil //nolint:nilerr // expected: missing credentials returns empty authURL
 	}
 	if creds.ClientID == "" {
 		return callbackURL, "", nil

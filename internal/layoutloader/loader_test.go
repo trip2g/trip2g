@@ -194,7 +194,7 @@ func TestYieldBlocksWithParams_DirectJet(t *testing.T) {
 	})
 }
 
-// testJetLoader mimics our jetLoader for testing
+// testJetLoader mimics our jetLoader for testing.
 type testJetLoader struct {
 	templates map[string]string
 }
@@ -209,7 +209,7 @@ func (l *testJetLoader) Open(templatePath string) (io.ReadCloser, error) {
 	return io.NopCloser(strings.NewReader(content)), nil
 }
 
-// TestYieldBlocksWithParams_MimicLoad mimics exactly what Load() does
+// TestYieldBlocksWithParams_MimicLoad mimics exactly what Load() does.
 func TestYieldBlocksWithParams_MimicLoad(t *testing.T) {
 	templates := map[string]string{
 		"/main":   `{{ import "/blocks" }}{{ yield card(title="Hello", body="World") }}`,
@@ -240,7 +240,7 @@ func TestYieldBlocksWithParams_MimicLoad(t *testing.T) {
 }
 
 // TestYieldNodeParametersPreserved verifies that our fixed assetFinder
-// doesn't clear YieldNode parameters (regression test for the bug fix)
+// doesn't clear YieldNode parameters (regression test for the bug fix).
 func TestYieldNodeParametersPreserved(t *testing.T) {
 	templates := map[string]string{
 		"/main":   `{{ import "/blocks" }}{{ yield card(title="Hello", body="World") }}`,
@@ -272,7 +272,7 @@ func TestYieldNodeParametersPreserved(t *testing.T) {
 }
 
 // TestYieldNodeParametersCleared_BugDemo demonstrates that unconditionally
-// setting Parameters clears existing params (documents why we need the nil check)
+// setting Parameters clears existing params (documents why we need the nil check).
 func TestYieldNodeParametersCleared_BugDemo(t *testing.T) {
 	templates := map[string]string{
 		"/main":   `{{ import "/blocks" }}{{ yield card(title="Hello", body="World") }}`,
@@ -303,7 +303,7 @@ func TestYieldNodeParametersCleared_BugDemo(t *testing.T) {
 	require.Contains(t, buf2.String(), "<h1></h1>", "params should be empty after buggy walk")
 }
 
-// buggyAssetFinder reproduces the original bug (unconditional Parameters assignment)
+// buggyAssetFinder reproduces the original bug (unconditional Parameters assignment).
 type buggyAssetFinder struct{}
 
 func (w *buggyAssetFinder) Visit(vc utils.VisitorContext, node jet.Node) {
@@ -499,7 +499,7 @@ func TestJetBlockNamedParams_CrossFile(t *testing.T) {
 
 // TestJetBlockContentReserved verifies that "content" is a reserved keyword in Jet.
 // Using "content" as a block parameter name causes a parse error.
-// In Jet, "content" is used for yielding nested content: {{ yield block() content }}...{{ end }}
+// In Jet, "content" is used for yielding nested content: {{ yield block() content }}...{{ end }}.
 func TestJetBlockContentReserved(t *testing.T) {
 	loader := jet.NewInMemLoader()
 	// "content" as parameter name causes parse error - it's a reserved keyword
@@ -716,13 +716,13 @@ func TestBlockFinder_ArgTypeMetadata(t *testing.T) {
 
 	// title - no default, type from arg_type
 	require.Equal(t, "title", block.Params[0].Name)
-	require.Equal(t, "", block.Params[0].Default)
+	require.Empty(t, block.Params[0].Default)
 	require.Equal(t, "string", block.Params[0].Type)
 	require.Equal(t, "Card title", block.Params[0].Comment)
 
 	// subtitle - no default, type from arg_type
 	require.Equal(t, "subtitle", block.Params[1].Name)
-	require.Equal(t, "", block.Params[1].Default)
+	require.Empty(t, block.Params[1].Default)
 	require.Equal(t, "string", block.Params[1].Type)
 	require.Equal(t, "Card subtitle", block.Params[1].Comment)
 
@@ -779,8 +779,8 @@ func TestBlockFinder_TypeInferenceFromDefault(t *testing.T) {
 
 	// no default - type unknown
 	require.Equal(t, "noDefault", block.Params[4].Name)
-	require.Equal(t, "", block.Params[4].Default)
-	require.Equal(t, "", block.Params[4].Type)
+	require.Empty(t, block.Params[4].Default)
+	require.Empty(t, block.Params[4].Type)
 }
 
 func TestBlockFinder_ArgTypeWithoutComment(t *testing.T) {
@@ -804,7 +804,7 @@ func TestBlockFinder_ArgTypeWithoutComment(t *testing.T) {
 
 	require.Equal(t, "name", block.Params[0].Name)
 	require.Equal(t, "string", block.Params[0].Type)
-	require.Equal(t, "", block.Params[0].Comment) // no comment provided
+	require.Empty(t, block.Params[0].Comment) // no comment provided
 }
 
 func TestBlockFinder_AllBlocksMethod(t *testing.T) {

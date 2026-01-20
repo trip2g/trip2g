@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -58,6 +59,7 @@ func (e *ConvertError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Path, e.Message)
 }
 
+//nolint:gochecknoglobals // immutable list of valid node types for JSON layout validation
 var validNodeTypes = []string{"block", "if", "range", "expr", "html", "asset", "note_content", "include_note", "import"}
 
 // ConvertOptions contains options for JSON layout conversion.
@@ -182,8 +184,8 @@ func (c *converter) writePreviewClose() {
 }
 
 // normalizePathToID converts a JSON path to a valid HTML id.
-// "body[0]" → "body-0"
-// "body[0].content[1]" → "body-0-content-1"
+// "body[0]" → "body-0".
+// "body[0].content[1]" → "body-0-content-1".
 func normalizePathToID(path string) string {
 	result := strings.ReplaceAll(path, "[", "-")
 	result = strings.ReplaceAll(result, "]", "")
@@ -191,7 +193,7 @@ func normalizePathToID(path string) string {
 	return result
 }
 
-// convertBlock: {{ yield name(args...) }} or {{ yield name(args...) content }}...{{ end }}
+// convertBlock: {{ yield name(args...) }} or {{ yield name(args...) content }}...{{ end }}.
 func (c *converter) convertBlock(node JSONNode, path string) error {
 	if node.Name == "" {
 		return &ConvertError{
@@ -240,7 +242,7 @@ func (c *converter) convertBlock(node JSONNode, path string) error {
 	return nil
 }
 
-// convertIf: {{ if condition }}...{{ end }}
+// convertIf: {{ if condition }}...{{ end }}.
 func (c *converter) convertIf(node JSONNode, path string) error {
 	if node.Condition == "" {
 		return &ConvertError{
@@ -266,7 +268,7 @@ func (c *converter) convertIf(node JSONNode, path string) error {
 	return nil
 }
 
-// convertRange: {{ range iterator := collection }}...{{ end }}
+// convertRange: {{ range iterator := collection }}...{{ end }}.
 func (c *converter) convertRange(node JSONNode, path string) error {
 	if node.Collection == "" {
 		return &ConvertError{
@@ -298,7 +300,7 @@ func (c *converter) convertRange(node JSONNode, path string) error {
 	return nil
 }
 
-// convertExpr: {{ expr }}
+// convertExpr: {{ expr }}.
 func (c *converter) convertExpr(node JSONNode, path string) error {
 	if node.Expr == "" {
 		return &ConvertError{
@@ -315,13 +317,15 @@ func (c *converter) convertExpr(node JSONNode, path string) error {
 	return nil
 }
 
-// convertHTML: raw HTML content
+// convertHTML: raw HTML content.
+//
+//nolint:unparam // error return for interface consistency with other convert* methods
 func (c *converter) convertHTML(node JSONNode) error {
 	c.sb.WriteString(node.HTML)
 	return nil
 }
 
-// convertAsset: {{ asset("path") }}
+// convertAsset: {{ asset("path") }}.
 func (c *converter) convertAsset(node JSONNode, path string) error {
 	if node.Path == "" {
 		return &ConvertError{
@@ -338,7 +342,9 @@ func (c *converter) convertAsset(node JSONNode, path string) error {
 	return nil
 }
 
-// convertNoteContent: {{ note.HTMLString() | unsafe }} or {{ nvs.ByPath("path").HTMLString() | unsafe }}
+// convertNoteContent: {{ note.HTMLString() | unsafe }} or {{ nvs.ByPath("path").HTMLString() | unsafe }}.
+//
+//nolint:unparam // error return for interface consistency with other convert* methods
 func (c *converter) convertNoteContent(node JSONNode) error {
 	if node.Path == "" {
 		c.sb.WriteString("{{ note.HTMLString() | unsafe }}")
@@ -351,7 +357,7 @@ func (c *converter) convertNoteContent(node JSONNode) error {
 	return nil
 }
 
-// convertIncludeNote: {{ _var := nvs.ByPath("path") }}{{ if _var }}{{ _var.HTMLString() | unsafe }}{{ else }}Create file: path{{ end }}
+// convertIncludeNote: {{ _var := nvs.ByPath("path") }}{{ if _var }}{{ _var.HTMLString() | unsafe }}{{ else }}Create file: path{{ end }}.
 func (c *converter) convertIncludeNote(node JSONNode, path string) error {
 	if node.Path == "" {
 		return &ConvertError{
@@ -380,7 +386,7 @@ func (c *converter) convertIncludeNote(node JSONNode, path string) error {
 	return nil
 }
 
-// convertImport: {{ import "name" }}
+// convertImport: {{ import "name" }}.
 func (c *converter) convertImport(node JSONNode, path string) error {
 	if node.Name == "" {
 		return &ConvertError{
@@ -405,9 +411,9 @@ func formatArg(v any) string {
 	case float64:
 		// JSON numbers are float64
 		if val == float64(int64(val)) {
-			return fmt.Sprintf("%d", int64(val))
+			return strconv.FormatInt(int64(val), 10)
 		}
-		return fmt.Sprintf("%v", val)
+		return strconv.FormatFloat(val, 'f', -1, 64)
 	case bool:
 		if val {
 			return "true"

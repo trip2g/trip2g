@@ -26,7 +26,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 	creds, err := env.GetActiveGoogleOAuthCredentials(ctx)
 	if err != nil || creds.ClientID == "" {
 		req.Req.Redirect("/?berror=oauth_not_configured", http.StatusFound)
-		return nil, nil
+		return nil, nil //nolint:nilerr // error handled via redirect, not returned
 	}
 
 	// Get redirect URL from query params (default to "/")

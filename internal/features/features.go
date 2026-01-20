@@ -51,9 +51,9 @@ func Parse(jsonStr string) Features {
 			panic("OPENAI_API_KEY environment variable is required when vector_search.enabled=true")
 		}
 
-		model, err := ParseEmbeddingModel(f.VectorSearch.ModelName)
-		if err != nil {
-			panic(fmt.Sprintf("invalid vector_search.model: %v", err))
+		model, modelErr := ParseEmbeddingModel(f.VectorSearch.ModelName)
+		if modelErr != nil {
+			panic(fmt.Sprintf("invalid vector_search.model: %v", modelErr))
 		}
 		f.VectorSearch.Model = model
 	}

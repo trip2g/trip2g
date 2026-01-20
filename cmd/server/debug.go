@@ -43,7 +43,7 @@ func (a *app) handleDebugLayoutsLatest(ctx *fasthttp.RequestCtx) bool {
 	ctx.SetContentType("application/json")
 	ctx.SetStatusCode(fasthttp.StatusOK)
 
-	data, err := json.Marshal(a.Layouts()) //nolint:musttag // debug endpoint
+	data, err := json.Marshal(a.Layouts()) //nolint:musttag,staticcheck // debug endpoint, func fields skipped by json
 	if err != nil {
 		a.log.Error("failed to marshal latest note views", "error", err)
 		return true
@@ -93,11 +93,11 @@ func (a *app) handleDebugWaitAllJobs(ctx *fasthttp.RequestCtx) bool {
 		}
 
 		// Get all queue stats
-		stats, err := a.Queries.ListGoqiteAllQueueStats(a.ctx)
-		if err != nil {
-			a.log.Error("failed to get queue stats", "error", err)
+		stats, statsErr := a.Queries.ListGoqiteAllQueueStats(a.ctx)
+		if statsErr != nil {
+			a.log.Error("failed to get queue stats", "error", statsErr)
 			ctx.SetStatusCode(fasthttp.StatusInternalServerError)
-			ctx.SetBodyString("failed to get queue stats: " + err.Error())
+			ctx.SetBodyString("failed to get queue stats: " + statsErr.Error())
 			return true
 		}
 

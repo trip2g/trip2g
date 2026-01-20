@@ -40,7 +40,7 @@ func (*Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 			"provider", "google",
 			"ip", clientIP)
 		ctx.Redirect("/?berror=oauth_not_configured", http.StatusFound)
-		return nil, nil
+		return nil, nil //nolint:nilerr // error handled via redirect, not returned
 	}
 
 	// Decrypt client secret

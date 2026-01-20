@@ -209,7 +209,9 @@ func TestConvertJSONLayout_IncludeNote(t *testing.T) {
 
 	result, err := ConvertJSONLayout([]byte(json))
 	require.NoError(t, err)
-	require.Equal(t, `{{ _note0 := nvs.ByPath("/_sidebar.md") }}{{ if _note0 }}{{ _note0.HTMLString() | unsafe }}{{ else }}Create file: /_sidebar.md{{ end }}`, result)
+	expected := `{{ _note0 := nvs.ByPath("/_sidebar.md") }}` +
+		`{{ if _note0 }}{{ _note0.HTMLString() | unsafe }}{{ else }}Create file: /_sidebar.md{{ end }}`
+	require.Equal(t, expected, result)
 }
 
 func TestConvertJSONLayout_MultipleIncludeNote(t *testing.T) {
@@ -277,8 +279,8 @@ func TestConvertJSONLayout_Error_MissingType(t *testing.T) {
 	_, err := ConvertJSONLayout([]byte(json))
 	require.Error(t, err)
 
-	convertErr, ok := err.(*ConvertError)
-	require.True(t, ok)
+	var convertErr *ConvertError
+	require.ErrorAs(t, err, &convertErr)
 	require.Equal(t, "body[0]", convertErr.Path)
 	require.Contains(t, convertErr.Message, "missing 'type'")
 }
@@ -294,8 +296,8 @@ func TestConvertJSONLayout_Error_UnknownType(t *testing.T) {
 	_, err := ConvertJSONLayout([]byte(json))
 	require.Error(t, err)
 
-	convertErr, ok := err.(*ConvertError)
-	require.True(t, ok)
+	var convertErr *ConvertError
+	require.ErrorAs(t, err, &convertErr)
 	require.Equal(t, "body[0]", convertErr.Path)
 	require.Equal(t, "unknown_type", convertErr.Type)
 	require.Contains(t, convertErr.Message, "unknown type")
@@ -313,8 +315,8 @@ func TestConvertJSONLayout_Error_BlockMissingName(t *testing.T) {
 	_, err := ConvertJSONLayout([]byte(json))
 	require.Error(t, err)
 
-	convertErr, ok := err.(*ConvertError)
-	require.True(t, ok)
+	var convertErr *ConvertError
+	require.ErrorAs(t, err, &convertErr)
 	require.Equal(t, "body[0]", convertErr.Path)
 	require.Equal(t, "block", convertErr.Type)
 	require.Equal(t, "name", convertErr.Field)
@@ -331,8 +333,8 @@ func TestConvertJSONLayout_Error_IfMissingCondition(t *testing.T) {
 	_, err := ConvertJSONLayout([]byte(json))
 	require.Error(t, err)
 
-	convertErr, ok := err.(*ConvertError)
-	require.True(t, ok)
+	var convertErr *ConvertError
+	require.ErrorAs(t, err, &convertErr)
 	require.Equal(t, "if", convertErr.Type)
 	require.Equal(t, "condition", convertErr.Field)
 }
@@ -348,8 +350,8 @@ func TestConvertJSONLayout_Error_RangeMissingCollection(t *testing.T) {
 	_, err := ConvertJSONLayout([]byte(json))
 	require.Error(t, err)
 
-	convertErr, ok := err.(*ConvertError)
-	require.True(t, ok)
+	var convertErr *ConvertError
+	require.ErrorAs(t, err, &convertErr)
 	require.Equal(t, "range", convertErr.Type)
 	require.Equal(t, "collection", convertErr.Field)
 }
@@ -365,8 +367,8 @@ func TestConvertJSONLayout_Error_ExprMissingExpr(t *testing.T) {
 	_, err := ConvertJSONLayout([]byte(json))
 	require.Error(t, err)
 
-	convertErr, ok := err.(*ConvertError)
-	require.True(t, ok)
+	var convertErr *ConvertError
+	require.ErrorAs(t, err, &convertErr)
 	require.Equal(t, "expr", convertErr.Type)
 	require.Equal(t, "expr", convertErr.Field)
 }
@@ -382,8 +384,8 @@ func TestConvertJSONLayout_Error_AssetMissingPath(t *testing.T) {
 	_, err := ConvertJSONLayout([]byte(json))
 	require.Error(t, err)
 
-	convertErr, ok := err.(*ConvertError)
-	require.True(t, ok)
+	var convertErr *ConvertError
+	require.ErrorAs(t, err, &convertErr)
 	require.Equal(t, "asset", convertErr.Type)
 	require.Equal(t, "path", convertErr.Field)
 }
@@ -399,8 +401,8 @@ func TestConvertJSONLayout_Error_ImportMissingName(t *testing.T) {
 	_, err := ConvertJSONLayout([]byte(json))
 	require.Error(t, err)
 
-	convertErr, ok := err.(*ConvertError)
-	require.True(t, ok)
+	var convertErr *ConvertError
+	require.ErrorAs(t, err, &convertErr)
 	require.Equal(t, "import", convertErr.Type)
 	require.Equal(t, "name", convertErr.Field)
 }
@@ -416,8 +418,8 @@ func TestConvertJSONLayout_Error_IncludeNoteMissingPath(t *testing.T) {
 	_, err := ConvertJSONLayout([]byte(json))
 	require.Error(t, err)
 
-	convertErr, ok := err.(*ConvertError)
-	require.True(t, ok)
+	var convertErr *ConvertError
+	require.ErrorAs(t, err, &convertErr)
 	require.Equal(t, "include_note", convertErr.Type)
 	require.Equal(t, "path", convertErr.Field)
 }
@@ -445,8 +447,8 @@ func TestConvertJSONLayout_Error_NestedError(t *testing.T) {
 	_, err := ConvertJSONLayout([]byte(json))
 	require.Error(t, err)
 
-	convertErr, ok := err.(*ConvertError)
-	require.True(t, ok)
+	var convertErr *ConvertError
+	require.ErrorAs(t, err, &convertErr)
 	require.Equal(t, "body[0].content[0].content[0]", convertErr.Path)
 }
 
@@ -479,7 +481,7 @@ func TestConvertJSONLayout_EmptyBody(t *testing.T) {
 
 	result, err := ConvertJSONLayout([]byte(json))
 	require.NoError(t, err)
-	require.Equal(t, "", result)
+	require.Empty(t, result)
 }
 
 // Preview mode tests
@@ -574,7 +576,7 @@ func TestNormalizePathToID(t *testing.T) {
 	}
 }
 
-// Test that generated Jet is valid by checking it doesn't have obvious syntax errors
+// Test that generated Jet is valid by checking it doesn't have obvious syntax errors.
 func TestConvertJSONLayout_ValidJetSyntax(t *testing.T) {
 	json := `{
 		"meta": {},

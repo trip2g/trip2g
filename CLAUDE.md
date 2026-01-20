@@ -87,6 +87,69 @@ go test ./...
 make lint
 ```
 
+### Go: lint правила
+
+**Комментарии** — заканчивай точкой:
+```go
+// convertBlock: {{ yield name(args...) }}.   // правильно
+// convertBlock: {{ yield name(args...) }}    // неправильно
+```
+
+**errors.As** вместо type assertion:
+```go
+// Правильно
+var convertErr *ConvertError
+if errors.As(err, &convertErr) { ... }
+
+// Неправильно
+convertErr, ok := err.(*ConvertError)
+```
+
+**Не shadow переменные** — используй разные имена:
+```go
+// Правильно
+if meta, found := argTypes[name]; found { ... }
+
+// Неправильно (ok уже объявлен выше)
+if meta, ok := argTypes[name]; ok { ... }
+```
+
+**Integer range** (Go 1.22+):
+```go
+for i := range limit { ... }      // правильно
+for i := 0; i < limit; i++ { ... } // неправильно
+```
+
+**strconv вместо fmt.Sprintf** для чисел:
+```go
+strconv.FormatInt(val, 10)  // правильно
+fmt.Sprintf("%d", val)       // неправильно
+```
+
+**fmt.Fprintf вместо WriteString(fmt.Sprintf)**:
+```go
+fmt.Fprintf(w, "error: %v", err)           // правильно
+w.WriteString(fmt.Sprintf("error: %v", err)) // неправильно
+```
+
+**require.Empty** в тестах:
+```go
+require.Empty(t, result)       // правильно
+require.Equal(t, "", result)   // неправильно
+```
+
+**nolint с объяснением**:
+```go
+//nolint:nilerr // error handled via redirect, not returned
+return nil, nil
+```
+
+**HTML в именах функций** — капсом:
+```go
+func wrapEnclaveHTML() {}  // правильно
+func wrapEnclaveHtml() {}  // неправильно
+```
+
 ### SQL: lowercase keywords
 ```sql
 select * from users where id = ?;  -- правильно

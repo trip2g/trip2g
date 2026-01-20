@@ -80,6 +80,7 @@ type LoadOptions struct {
 	ForceRefreshURLs bool // bypass URL cache, regenerate all presigned URLs
 }
 
+//nolint:gocognit // complex loading logic with multiple data sources
 func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 	notes, err := l.env.RawNotes(ctx)
 	if err != nil {
