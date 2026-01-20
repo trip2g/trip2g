@@ -1,4 +1,35 @@
-Read instructions of common patterns in docs/instructions.md
+# Project Instructions
+
+## Обязательно к прочтению
+
+**Перед началом работы прочитай релевантную документацию:**
+
+### Архитектура и принципы
+| Документ | Когда читать |
+|----------|--------------|
+| [docs/principles.md](docs/principles.md) | **Всегда** — базовые принципы проекта |
+| [docs/architecture.md](docs/architecture.md) | Для понимания общей структуры |
+
+### По типу задачи
+
+| Задача | Документы |
+|--------|-----------|
+| **Backend: GraphQL мутации** | [docs/instructions.md](docs/instructions.md) |
+| **Backend: HTTP эндпоинты** | См. секцию "Router and HTTP Endpoints" ниже |
+| **Backend: Cron jobs** | См. секцию "Cron Jobs" ниже |
+| **Frontend: $mol компоненты** | [docs/mol.md](docs/mol.md), [docs/frontend.md](docs/frontend.md) |
+| **Frontend: Admin CRUD** | [docs/frontend_crud.md](docs/frontend_crud.md) |
+| **Интеграции (OAuth, платежи)** | [docs/admin_config_modules.md](docs/admin_config_modules.md) |
+| **Telegram боты** | [docs/telegram.md](docs/telegram.md) |
+| **База данных** | [docs/sqlite.md](docs/sqlite.md) |
+| **Тесты** | [docs/TESTING.md](docs/TESTING.md) |
+
+### Рефакторинг
+| Документ | Содержание |
+|----------|------------|
+| [docs/refactor.md](docs/refactor.md) | Архитектурный roadmap и технический долг |
+
+---
 
 ## Database Schema
 
