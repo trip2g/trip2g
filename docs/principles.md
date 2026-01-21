@@ -215,7 +215,78 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 
 ---
 
-## 6. SQL: Lowercase Keywords
+## 6. Read/Write разделение (SQLite)
+
+**Читаем параллельно, пишем в один поток.**
+
+SQLite в WAL режиме позволяет параллельное чтение, но запись — только один writer. Конкурентная запись = `SQLITE_BUSY` ошибки.
+
+### Архитектура
+
+```
+HTTP Request
+     │
+     ▼
+┌─────────────┐
+│  GraphQL    │
+│  Resolver   │
+└─────────────┘
+     │
+     ├── Query (read)  ──▶  ReadDB  ──▶  любой goroutine
+     │
+     └── Mutation (write) ──▶  WriteDB  ──▶  один поток (очередь)
+```
+
+### Два пула соединений
+
+```go
+// ReadDB — много соединений, параллельное чтение
+readDB.SetMaxOpenConns(10)
+
+// WriteDB — одно соединение, сериализованная запись
+writeDB.SetMaxOpenConns(1)
+```
+
+### Правила
+
+| Операция | Соединение | Конкурентность |
+|----------|------------|----------------|
+| SELECT | ReadDB | Параллельно |
+| INSERT/UPDATE/DELETE | WriteDB | Последовательно |
+| Транзакция с записью | WriteDB | Последовательно |
+
+### Антипаттерны
+
+```go
+// Плохо — запись через ReadDB
+func (e *Env) CreateUser(ctx context.Context, params Params) error {
+    return e.readDB.Insert(ctx, params)  // SQLITE_BUSY при нагрузке
+}
+
+// Плохо — чтение через WriteDB
+func (e *Env) GetUsers(ctx context.Context) ([]User, error) {
+    return e.writeDB.Select(ctx)  // блокирует очередь записи
+}
+
+// Хорошо — разделение
+func (e *Env) CreateUser(ctx context.Context, params Params) error {
+    return e.writeDB.Insert(ctx, params)
+}
+
+func (e *Env) GetUsers(ctx context.Context) ([]User, error) {
+    return e.readDB.Select(ctx)
+}
+```
+
+### Когда это критично
+
+- Высокая нагрузка на запись (синхронизация vault, импорт)
+- Долгие транзакции (batch-операции)
+- Background jobs (очереди, cron)
+
+---
+
+## 7. SQL: Lowercase Keywords
 
 **SQL ключевые слова пишем в lowercase.**
 
@@ -237,7 +308,7 @@ CREATE TABLE Users (ID INTEGER PRIMARY KEY);
 
 ---
 
-## 7. Commit Message Convention
+## 8. Commit Message Convention
 
 ```
 type(scope): description
@@ -257,3 +328,79 @@ docs: update API documentation
 - `style` — форматирование
 - `test` — тесты
 - `chore` — поддержка, обновление зависимостей
+
+---
+
+## 9. Логирование для воспроизведения
+
+**Лог должен содержать достаточно данных, чтобы воспроизвести ошибку.**
+
+### Принцип
+
+Когда случится ошибка в production — у тебя будет только лог. Ни дебаггера, ни доступа к состоянию. Лог должен ответить на вопросы:
+- Что произошло?
+- С какими данными?
+- В каком контексте?
+
+### Правила
+
+```go
+// Плохо — непонятно что случилось
+log.Error().Err(err).Msg("failed")
+
+// Плохо — нет контекста
+log.Error().Err(err).Msg("failed to process user")
+
+// Хорошо — можно воспроизвести
+log.Error().
+    Err(err).
+    Int64("user_id", userID).
+    Str("action", "sync_vault").
+    Str("vault_path", path).
+    Msg("failed to sync user vault")
+```
+
+### Что логировать
+
+| Уровень | Что включать |
+|---------|--------------|
+| Error | ID сущностей, входные параметры, состояние |
+| Warn | ID, причина предупреждения |
+| Info | Ключевые события (старт/финиш операций) |
+| Debug | Детали для отладки (в production выключено) |
+
+### Чувствительные данные
+
+Не логируй:
+- Пароли, токены, ключи API
+- Email, телефоны (можно хэш или маску: `a***@example.com`)
+- Платёжные данные
+
+```go
+// Плохо
+log.Info().Str("token", token).Msg("auth success")
+
+// Хорошо
+log.Info().Str("token_prefix", token[:8]+"...").Msg("auth success")
+```
+
+### Антипаттерны
+
+```go
+// Плохо — лог без ошибки
+if err != nil {
+    log.Error().Msg("something went wrong")
+    return err
+}
+
+// Плохо — дублирование (логируем и возвращаем)
+if err != nil {
+    log.Error().Err(err).Msg("failed")
+    return fmt.Errorf("failed: %w", err)  // ошибка залогируется выше ещё раз
+}
+
+// Хорошо — логируем на верхнем уровне, внизу только wrap
+if err != nil {
+    return fmt.Errorf("sync vault %s: %w", path, err)
+}
+```
