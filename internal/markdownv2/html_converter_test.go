@@ -583,6 +583,38 @@ title: "Test"
 	}
 }
 
+// TestHTMLCoverImageNoLeadingNewline tests that when an embedded image (used as cover)
+// is at the start of content, there's no leading blank line in the output.
+func TestHTMLCoverImageNoLeadingNewline(t *testing.T) {
+	markdown := `![[glavnyj_nedostatok_viden_snaruzhi.webp]]
+**🦄 Главный недостаток виден снаружи**`
+
+	mdOptions := mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Content: []byte(`---
+title: "Test Post"
+telegram_publish_at: 2026-01-24T08:52:00
+telegram_publish_tags:
+  - keeper_blog
+---
+` + markdown),
+		}},
+		Log: &logger.TestLogger{},
+	}
+
+	nvs, err := mdloader.Load(mdOptions)
+	require.NoError(t, err)
+
+	convertor := markdownv2.HTMLConverter{}
+	res := convertor.Process(nvs.List[0])
+
+	// Output should NOT start with newline - the cover image is removed,
+	// and trimming should ensure no leading whitespace.
+	expected := `<b>🦄 Главный недостаток виден снаружи</b>`
+
+	require.Equal(t, expected, res.Content, "should not have leading newline after cover image removal")
+}
+
 // TestHTMLMediaFilesBlankLines tests that excessive blank lines are removed
 // when media files (embedded wikilinks) are in the middle of content.
 func TestHTMLMediaFilesBlankLines(t *testing.T) {

@@ -468,6 +468,9 @@ func (c *HTMLConverter) Process(nv *model.NoteView) ConverterResult {
 		content = strings.ReplaceAll(content, "\n\n\n", "\n\n")
 	}
 
+	// Trim leading/trailing whitespace (e.g., when cover image is removed)
+	content = strings.TrimSpace(content)
+
 	res.Content = content
 
 	return res
