@@ -213,6 +213,39 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 | Бизнес-логика (нет доступа) | `ErrorPayload, nil` | "Access denied" |
 | Системная (БД упала) | `nil, error` | "Internal server error" |
 
+### Ошибки с привязкой к полям
+
+Если ошибка зависит от конкретного поля — указывай поле через `byFields`:
+
+```go
+// Ошибка конкретного поля
+return model.NewFieldError("email", "Email already registered"), nil
+
+// Валидация через ozzo — автоматически собирает ошибки по полям
+err := ozzo.ValidateStruct(input,
+    ozzo.Field(&input.Email, ozzo.Required, is.Email),
+    ozzo.Field(&input.Password, ozzo.Required, ozzo.Length(8, 100)),
+)
+if err != nil {
+    return model.NewOzzoError(err), nil
+}
+```
+
+Хелперы в `internal/graph/model/extra_methods.go`:
+- `NewFieldError(field, message)` — ошибка одного поля
+- `NewOzzoError(err)` — преобразует ozzo.Errors в ErrorPayload с byFields
+
+GraphQL ответ:
+```json
+{
+  "message": "",
+  "byFields": [
+    {"name": "email", "value": "must be a valid email address"},
+    {"name": "password", "value": "the length must be between 8 and 100"}
+  ]
+}
+```
+
 ---
 
 ## 6. Read/Write разделение (SQLite)
@@ -403,4 +436,67 @@ if err != nil {
 if err != nil {
     return fmt.Errorf("sync vault %s: %w", path, err)
 }
+```
+
+---
+
+## 10. Атомарные коммиты
+
+**Одна фича = один коммит. Если работа перетекает в другую задачу — сначала закоммить текущую.**
+
+### Проблема
+
+```bash
+# Плохо — один коммит на несколько несвязанных изменений
+git commit -m "feat(oauth): add Google OAuth + fix typo in readme + refactor utils"
+```
+
+Такой коммит:
+- Сложно ревьюить (что относится к OAuth, а что нет?)
+- Невозможно откатить одну часть без другой
+- Ломает git bisect и blame
+
+### Правило
+
+Когда замечаешь, что начинаешь делать что-то не относящееся к текущей задаче:
+
+1. **Остановись**
+2. **Закоммить текущую работу** (даже если она не закончена — используй WIP)
+3. **Переключись на новую задачу**
+
+```bash
+# Работал над OAuth, заметил баг в utils
+git add -A && git commit -m "wip: oauth in progress"
+
+# Исправил баг
+git commit -m "fix(utils): handle empty array case"
+
+# Вернулся к OAuth
+git commit -m "feat(oauth): add Google OAuth admin management"
+```
+
+### Признаки что пора коммитить
+
+- Переключаешься на другой файл/модуль не связанный с задачей
+- Исправляешь "попутный" баг
+- Рефакторишь код который "заодно увидел"
+- Добавляешь "небольшое улучшение" не из плана
+
+### Чеклист при коммите
+
+При каждом коммите спроси себя:
+
+- [ ] **Changelog?** — Это изменение видно пользователям? → Добавь в `docs/changelog.md`
+
+Changelog нужен для: новых фич, исправленных багов, изменений UI/UX.
+Changelog НЕ нужен для: рефакторинга, тестов, внутренних оптимизаций.
+
+### Антипаттерны
+
+```bash
+# Плохо — накопил изменения за день
+git add -A && git commit -m "various fixes and improvements"
+
+# Плохо — смешал фичи
+git commit -m "feat: add OAuth and fix validation and update docs"
 ```
