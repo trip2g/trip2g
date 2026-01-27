@@ -5,7 +5,7 @@
 Формат см. в CLAUDE.md
 -->
 
-## [IN PROGRESS] Рефакторинг конфига — Фаза 1
+## [DONE] Рефакторинг конфига — Фаза 1
 
 ### Контекст
 Переход от монолитной таблицы `config_versions` к атомарным таблицам настроек. Фаза 1: добавляем `site_title_template` + инфраструктуру для новых конфигов.
@@ -22,7 +22,7 @@
 - [x] Resolver: `internal/case/admin/setconfigstringvalue/`
 - [x] Env method: `SiteTitleTemplate() string`
 - [x] rendernotepage: `formatTitle()`
-- [ ] Frontend: новая страница `/admin/config` ← текущий
+- [x] Frontend: новая страница `/admin/config`
 - [x] Тесты (backend)
 
 ### Заметки

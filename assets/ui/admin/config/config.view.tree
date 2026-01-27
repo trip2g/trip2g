@@ -1,0 +1,39 @@
+$trip2g_admin_config $mol_page
+	title @ \Site Config
+	close_icon null $mol_view
+	tools / <= close_icon
+	body /
+		<= Rows $mol_list
+			rows <= rows /$mol_view
+				<= Row*0 $mol_view
+					style *
+						flexDirection \column
+						marginBottom \16px
+						padding \8px
+						border \1px solid var(--mol_theme_line)
+						borderRadius \4px
+					sub /
+						<= Row_header* $mol_row
+							sub /
+								<= ID* $mol_labeler
+									title @ \Config ID
+									Content <= Id_cell* $trip2g_admin_cell
+										content <= row_id* \
+								<= Updated* $mol_labeler
+									title @ \Updated
+									Content <= Updated_cell* $trip2g_admin_cell
+										content <= row_updated_at* \
+						<= Description* $mol_labeler
+							title @ \Description
+							Content <= Description_cell* $trip2g_admin_cell
+								content <= row_description* \
+						<= Value_row* $mol_row
+							sub /
+								<= Value_field* $mol_form_field
+									name @ \Value
+									Content <= value_control* $mol_view
+								<= Save_button* $mol_button_major
+									title @ \Save
+									click? <=> save_row* null
+								<= Row_status* $mol_status
+									message <= row_status_message* \

@@ -43,6 +43,8 @@ $trip2g_admin_app $trip2g_admin_catalog
 			close_icon <= Spread_close
 		healthchecks <= ListHealthChecks $trip2g_admin_healthchecks
 			close_icon <= Spread_close
+		config <= Config $trip2g_admin_config
+			close_icon <= Spread_close
 		userbans <= ListUserBans $trip2g_admin_user_bans
 			close_icon <= Spread_close
 		usersubgraphaccesses <= ListUsersSubgraphAccesses $trip2g_admin_usersubgraphaccesses_catalog
