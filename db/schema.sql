@@ -593,6 +593,12 @@ CREATE TABLE github_oauth_credentials (
     created_at datetime not null default (datetime('now')),
     created_by integer not null references users(id)
 );
+CREATE TABLE config_site_title_templates (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  value text not null
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -695,4 +701,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251219021352'),
   ('20251224090437'),
   ('20260102093534'),
-  ('20260119020631');
+  ('20260119020631'),
+  ('20260126113359');

@@ -765,6 +765,18 @@ select *
  order by id desc
  limit 50;
 
+-- name: GetLatestConfigSiteTitleTemplate :one
+select *
+  from config_site_title_templates
+ order by id desc
+ limit 1;
+
+-- name: ListConfigSiteTitleTemplateHistory :many
+select *
+  from config_site_title_templates
+ order by id desc
+ limit 50;
+
 -- name: ListNotePathsLike :many
 select * from note_paths
  where value like ?

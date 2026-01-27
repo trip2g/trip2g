@@ -22,6 +22,14 @@ type AdminCompleteTelegramAccountAuthOrErrorPayload interface {
 	IsAdminCompleteTelegramAccountAuthOrErrorPayload()
 }
 
+type AdminConfigValue interface {
+	IsAdminConfigValue()
+	GetID() string
+	GetDescription() *string
+	GetUpdatedAt() *time.Time
+	GetUpdatedBy() *db.User
+}
+
 type AdminImportTelegramAccountChannelOrErrorPayload interface {
 	IsAdminImportTelegramAccountChannelOrErrorPayload()
 }
@@ -254,6 +262,14 @@ type SetBoostyTierSubgraphsOrErrorPayload interface {
 	IsSetBoostyTierSubgraphsOrErrorPayload()
 }
 
+type SetConfigBoolValuePayload interface {
+	IsSetConfigBoolValuePayload()
+}
+
+type SetConfigStringValuePayload interface {
+	IsSetConfigStringValuePayload()
+}
+
 type SetPatreonTierSubgraphsOrErrorPayload interface {
 	IsSetPatreonTierSubgraphsOrErrorPayload()
 }
@@ -435,6 +451,50 @@ type AdminCompleteTelegramAccountAuthPayload struct {
 }
 
 func (AdminCompleteTelegramAccountAuthPayload) IsAdminCompleteTelegramAccountAuthOrErrorPayload() {}
+
+type AdminConfigBoolEntry struct {
+	ID        int64     `json:"id"`
+	Value     bool      `json:"value"`
+	CreatedAt time.Time `json:"createdAt"`
+	CreatedBy *db.User  `json:"createdBy"`
+}
+
+type AdminConfigBoolValue struct {
+	ID          string                 `json:"id"`
+	Description *string                `json:"description,omitempty"`
+	UpdatedAt   *time.Time             `json:"updatedAt,omitempty"`
+	UpdatedBy   *db.User               `json:"updatedBy,omitempty"`
+	Value       bool                   `json:"value"`
+	History     []AdminConfigBoolEntry `json:"history"`
+}
+
+func (AdminConfigBoolValue) IsAdminConfigValue()           {}
+func (this AdminConfigBoolValue) GetID() string            { return this.ID }
+func (this AdminConfigBoolValue) GetDescription() *string  { return this.Description }
+func (this AdminConfigBoolValue) GetUpdatedAt() *time.Time { return this.UpdatedAt }
+func (this AdminConfigBoolValue) GetUpdatedBy() *db.User   { return this.UpdatedBy }
+
+type AdminConfigStringEntry struct {
+	ID        int64     `json:"id"`
+	Value     string    `json:"value"`
+	CreatedAt time.Time `json:"createdAt"`
+	CreatedBy *db.User  `json:"createdBy"`
+}
+
+type AdminConfigStringValue struct {
+	ID          string                   `json:"id"`
+	Description *string                  `json:"description,omitempty"`
+	UpdatedAt   *time.Time               `json:"updatedAt,omitempty"`
+	UpdatedBy   *db.User                 `json:"updatedBy,omitempty"`
+	Value       string                   `json:"value"`
+	History     []AdminConfigStringEntry `json:"history"`
+}
+
+func (AdminConfigStringValue) IsAdminConfigValue()           {}
+func (this AdminConfigStringValue) GetID() string            { return this.ID }
+func (this AdminConfigStringValue) GetDescription() *string  { return this.Description }
+func (this AdminConfigStringValue) GetUpdatedAt() *time.Time { return this.UpdatedAt }
+func (this AdminConfigStringValue) GetUpdatedBy() *db.User   { return this.UpdatedBy }
 
 type AdminConfigVersionsConnection struct {
 	Nodes []db.ConfigVersion `json:"nodes"`
@@ -1041,6 +1101,10 @@ type ErrorPayload struct {
 	ByFields []FieldMessage `json:"byFields"`
 }
 
+func (ErrorPayload) IsSetConfigStringValuePayload() {}
+
+func (ErrorPayload) IsSetConfigBoolValuePayload() {}
+
 func (ErrorPayload) IsAdminStartTelegramAccountAuthOrErrorPayload() {}
 
 func (ErrorPayload) IsAdminCompleteTelegramAccountAuthOrErrorPayload() {}
@@ -1509,6 +1573,28 @@ type SetBoostyTierSubgraphsPayload struct {
 }
 
 func (SetBoostyTierSubgraphsPayload) IsSetBoostyTierSubgraphsOrErrorPayload() {}
+
+type SetConfigBoolValueInput struct {
+	ID    string `json:"id"`
+	Value bool   `json:"value"`
+}
+
+type SetConfigBoolValueSuccess struct {
+	ConfigValue *AdminConfigBoolValue `json:"configValue"`
+}
+
+func (SetConfigBoolValueSuccess) IsSetConfigBoolValuePayload() {}
+
+type SetConfigStringValueInput struct {
+	ID    string `json:"id"`
+	Value string `json:"value"`
+}
+
+type SetConfigStringValueSuccess struct {
+	ConfigValue *AdminConfigStringValue `json:"configValue"`
+}
+
+func (SetConfigStringValueSuccess) IsSetConfigStringValuePayload() {}
 
 type SetPatreonTierSubgraphsInput struct {
 	TierID      int64   `json:"tierId"`

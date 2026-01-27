@@ -527,6 +527,19 @@ func (a *app) GitCommit() string {
 	return GitCommit
 }
 
+func (a *app) SiteTitleTemplate() string {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	entry, err := a.GetLatestConfigSiteTitleTemplate(ctx)
+	if err != nil {
+		// Default: just the note title.
+		return "%s"
+	}
+
+	return entry.Value
+}
+
 func (a *app) InsertConfigVersion(ctx context.Context, params db.InsertConfigVersionParams) (db.ConfigVersion, error) {
 	config, err := a.WriteQueries.InsertConfigVersion(ctx, params)
 

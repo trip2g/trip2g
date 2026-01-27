@@ -500,3 +500,37 @@ git add -A && git commit -m "various fixes and improvements"
 # Плохо — смешал фичи
 git commit -m "feat: add OAuth and fix validation and update docs"
 ```
+
+---
+
+## 11. SQL миграции — подтверждение
+
+**Перед созданием SQL миграции всегда спрашивай подтверждение у пользователя.**
+
+### Почему
+
+Миграции БД — необратимая операция:
+- Откатить сложно/невозможно
+- Могут сломать production
+- Требуют внимания к деталям (NOT NULL, DEFAULT, индексы)
+
+### Правило
+
+Перед выполнением `make db-new name=...`:
+
+1. Покажи полный SQL миграции
+2. Спроси подтверждение: "Создать миграцию?"
+3. Только после "да" — выполняй
+
+```
+Миграция:
+
+create table config_site_title_templates (
+    id integer primary key,
+    created_at timestamp not null default current_timestamp,
+    created_by integer not null references admin_users(id),
+    value text not null default ''
+);
+
+Создать миграцию? (да/нет)
+```

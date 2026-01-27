@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/canceltelegramaccountauth"
@@ -60,6 +61,7 @@ import (
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
+	"trip2g/internal/case/admin/setconfigstringvalue"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishtags"
@@ -104,6 +106,7 @@ import (
 	"trip2g/internal/case/sitesearch"
 	"trip2g/internal/case/toggleuserfavoritenote"
 	"trip2g/internal/case/uploadnoteasset"
+	"trip2g/internal/configregistry"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
 	appmodel "trip2g/internal/model"
@@ -323,6 +326,73 @@ func (r *adminBoostyTierResolver) Subgraphs(ctx context.Context, obj *db.BoostyT
 // Nodes is the resolver for the nodes field.
 func (r *adminBoostyTiersConnectionResolver) Nodes(ctx context.Context, obj *model.AdminBoostyTiersConnection) ([]db.BoostyTier, error) {
 	return r.env(ctx).GetBoostyTiers(ctx)
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminConfigBoolEntryResolver) CreatedBy(ctx context.Context, obj *model.AdminConfigBoolEntry) (*db.User, error) {
+	panic(errors.New("not implemented: CreatedBy - createdBy"))
+}
+
+// UpdatedBy is the resolver for the updatedBy field.
+func (r *adminConfigBoolValueResolver) UpdatedBy(ctx context.Context, obj *model.AdminConfigBoolValue) (*db.User, error) {
+	// Bool configs not yet implemented.
+	return nil, nil
+}
+
+// History is the resolver for the history field.
+func (r *adminConfigBoolValueResolver) History(ctx context.Context, obj *model.AdminConfigBoolValue) ([]model.AdminConfigBoolEntry, error) {
+	// Bool configs not yet implemented.
+	return nil, nil
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminConfigStringEntryResolver) CreatedBy(ctx context.Context, obj *model.AdminConfigStringEntry) (*db.User, error) {
+	if obj.CreatedBy == nil {
+		return nil, nil
+	}
+	return obj.CreatedBy, nil
+}
+
+// UpdatedBy is the resolver for the updatedBy field.
+func (r *adminConfigStringValueResolver) UpdatedBy(ctx context.Context, obj *model.AdminConfigStringValue) (*db.User, error) {
+	switch obj.ID {
+	case configregistry.ConfigSiteTitleTemplate:
+		entry, err := r.env(ctx).GetLatestConfigSiteTitleTemplate(ctx)
+		if err != nil {
+			//nolint:nilerr // no entry means no updatedBy, not an error.
+			return nil, nil
+		}
+		return resolveOne[db.User](ctx, entry.CreatedBy, r.env(ctx).UserByID)
+	default:
+		return nil, nil
+	}
+}
+
+// History is the resolver for the history field.
+func (r *adminConfigStringValueResolver) History(ctx context.Context, obj *model.AdminConfigStringValue) ([]model.AdminConfigStringEntry, error) {
+	switch obj.ID {
+	case configregistry.ConfigSiteTitleTemplate:
+		entries, err := r.env(ctx).ListConfigSiteTitleTemplateHistory(ctx)
+		if err != nil {
+			return nil, err
+		}
+		result := make([]model.AdminConfigStringEntry, len(entries))
+		for i, e := range entries {
+			user, userErr := r.env(ctx).UserByID(ctx, e.CreatedBy)
+			if userErr != nil {
+				return nil, fmt.Errorf("failed to get user %d: %w", e.CreatedBy, userErr)
+			}
+			result[i] = model.AdminConfigStringEntry{
+				ID:        e.ID,
+				Value:     e.Value,
+				CreatedAt: e.CreatedAt,
+				CreatedBy: &user,
+			}
+		}
+		return result, nil
+	default:
+		return nil, nil
+	}
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -828,6 +898,17 @@ func (r *adminMutationResolver) CreateConfigVersion(ctx context.Context, obj *ap
 	return createconfigversion.Resolve(ctx, r.env(ctx), input)
 }
 
+// SetConfigStringValue is the resolver for the setConfigStringValue field.
+func (r *adminMutationResolver) SetConfigStringValue(ctx context.Context, obj *appmodel.AdminMutation, input model.SetConfigStringValueInput) (model.SetConfigStringValuePayload, error) {
+	return setconfigstringvalue.Resolve(ctx, r.env(ctx), input)
+}
+
+// SetConfigBoolValue is the resolver for the setConfigBoolValue field.
+func (r *adminMutationResolver) SetConfigBoolValue(ctx context.Context, obj *appmodel.AdminMutation, input model.SetConfigBoolValueInput) (model.SetConfigBoolValuePayload, error) {
+	// TODO: Implement in Phase 5.
+	return &model.ErrorPayload{Message: "bool config mutations not yet implemented"}, nil
+}
+
 // StopBackgroundQueue is the resolver for the stopBackgroundQueue field.
 func (r *adminMutationResolver) StopBackgroundQueue(ctx context.Context, obj *appmodel.AdminMutation, input model.StopBackgroundQueueInput) (model.StopBackgroundQueueOrErrorPayload, error) {
 	return stopbackgroundqueue.Resolve(ctx, r.env(ctx), input)
@@ -1260,6 +1341,90 @@ func (r *adminQueryResolver) AuditLogs(ctx context.Context, obj *appmodel.AdminQ
 func (r *adminQueryResolver) LatestConfig(ctx context.Context, obj *appmodel.AdminQuery) (*db.ConfigVersion, error) {
 	cfg := r.env(ctx).LatestConfig()
 	return &cfg, nil
+}
+
+// ConfigValues is the resolver for the configValues field.
+func (r *adminQueryResolver) ConfigValues(ctx context.Context, obj *appmodel.AdminQuery) ([]model.AdminConfigValue, error) {
+	var result []model.AdminConfigValue
+
+	// Build config values from registry.
+	for _, meta := range configregistry.Registry {
+		configValue, err := r.buildConfigValue(ctx, meta.ID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, configValue)
+	}
+
+	return result, nil
+}
+
+// ConfigValue is the resolver for the configValue field.
+func (r *adminQueryResolver) ConfigValue(ctx context.Context, obj *appmodel.AdminQuery, id string) (model.AdminConfigValue, error) {
+	_, ok := configregistry.Get(id)
+	if !ok {
+		return nil, nil
+	}
+
+	return r.buildConfigValue(ctx, id)
+}
+
+// buildConfigValue builds a config value from the database or defaults.
+func (r *adminQueryResolver) buildConfigValue(ctx context.Context, id string) (model.AdminConfigValue, error) {
+	meta, ok := configregistry.Get(id)
+	if !ok {
+		return nil, fmt.Errorf("unknown config: %s", id)
+	}
+
+	switch meta.Type {
+	case configregistry.ConfigTypeString:
+		return r.buildStringConfigValue(ctx, id, meta)
+	case configregistry.ConfigTypeBool:
+		return r.buildBoolConfigValue(ctx, id, meta)
+	default:
+		return nil, fmt.Errorf("unknown config type: %s", meta.Type)
+	}
+}
+
+func (r *adminQueryResolver) buildStringConfigValue(ctx context.Context, id string, meta configregistry.ConfigMeta) (*model.AdminConfigStringValue, error) {
+	defaultValue, _ := meta.Default.(string)
+
+	// For now, only site_title_template is implemented.
+	switch id {
+	case configregistry.ConfigSiteTitleTemplate:
+		entry, err := r.env(ctx).GetLatestConfigSiteTitleTemplate(ctx)
+		if err != nil {
+			//nolint:nilerr // no entry means use default, not an error.
+			return &model.AdminConfigStringValue{
+				ID:          id,
+				Description: &meta.Description,
+				Value:       defaultValue,
+			}, nil
+		}
+		return &model.AdminConfigStringValue{
+			ID:          id,
+			Description: &meta.Description,
+			UpdatedAt:   &entry.CreatedAt,
+			Value:       entry.Value,
+		}, nil
+	default:
+		// Other string configs not yet implemented, return defaults.
+		return &model.AdminConfigStringValue{
+			ID:          id,
+			Description: &meta.Description,
+			Value:       defaultValue,
+		}, nil
+	}
+}
+
+func (r *adminQueryResolver) buildBoolConfigValue(_ context.Context, id string, meta configregistry.ConfigMeta) (*model.AdminConfigBoolValue, error) {
+	// Bool configs not yet implemented, return defaults.
+	defaultValue, _ := meta.Default.(bool)
+	return &model.AdminConfigBoolValue{
+		ID:          id,
+		Description: &meta.Description,
+		Value:       defaultValue,
+	}, nil
 }
 
 // Subgraph is the resolver for the subgraph field.
@@ -2611,6 +2776,26 @@ func (r *Resolver) AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolv
 	return &adminBoostyTiersConnectionResolver{r}
 }
 
+// AdminConfigBoolEntry returns AdminConfigBoolEntryResolver implementation.
+func (r *Resolver) AdminConfigBoolEntry() AdminConfigBoolEntryResolver {
+	return &adminConfigBoolEntryResolver{r}
+}
+
+// AdminConfigBoolValue returns AdminConfigBoolValueResolver implementation.
+func (r *Resolver) AdminConfigBoolValue() AdminConfigBoolValueResolver {
+	return &adminConfigBoolValueResolver{r}
+}
+
+// AdminConfigStringEntry returns AdminConfigStringEntryResolver implementation.
+func (r *Resolver) AdminConfigStringEntry() AdminConfigStringEntryResolver {
+	return &adminConfigStringEntryResolver{r}
+}
+
+// AdminConfigStringValue returns AdminConfigStringValueResolver implementation.
+func (r *Resolver) AdminConfigStringValue() AdminConfigStringValueResolver {
+	return &adminConfigStringValueResolver{r}
+}
+
 // AdminConfigVersion returns AdminConfigVersionResolver implementation.
 func (r *Resolver) AdminConfigVersion() AdminConfigVersionResolver {
 	return &adminConfigVersionResolver{r}
@@ -2986,6 +3171,10 @@ type adminBoostyMemberResolver struct{ *Resolver }
 type adminBoostyMembersConnectionResolver struct{ *Resolver }
 type adminBoostyTierResolver struct{ *Resolver }
 type adminBoostyTiersConnectionResolver struct{ *Resolver }
+type adminConfigBoolEntryResolver struct{ *Resolver }
+type adminConfigBoolValueResolver struct{ *Resolver }
+type adminConfigStringEntryResolver struct{ *Resolver }
+type adminConfigStringValueResolver struct{ *Resolver }
 type adminConfigVersionResolver struct{ *Resolver }
 type adminConfigVersionsConnectionResolver struct{ *Resolver }
 type adminCronJobResolver struct{ *Resolver }
@@ -3070,3 +3259,10 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.

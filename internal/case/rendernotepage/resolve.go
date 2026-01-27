@@ -30,6 +30,7 @@ type Env interface {
 	RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
 	LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
 	LatestConfig() db.ConfigVersion
+	SiteTitleTemplate() string
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
 }
 
@@ -152,7 +153,7 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	// TODO: hide all _* pages (system)
 	// TODO: add hideSidebar logic
 
-	response.Title = note.Title
+	response.Title = formatTitle(note.Title, env.SiteTitleTemplate())
 	response.Note = note
 	response.Notes = notes
 	response.UserToken = request.UserToken
@@ -291,4 +292,10 @@ func extractReferrerVersionID(referrer string, notes *model.NoteViews) *int64 {
 	}
 
 	return &referrerNote.VersionID
+}
+
+// formatTitle applies the site title template to the note title.
+// Template must contain %s which will be replaced with the note title.
+func formatTitle(noteTitle, template string) string {
+	return fmt.Sprintf(template, noteTitle)
 }

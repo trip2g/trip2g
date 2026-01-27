@@ -652,6 +652,63 @@ type AdminConfigVersionsConnection {
   nodes: [AdminConfigVersion!]! @goField(forceResolver: true)
 }
 
+#
+# Atomic config types
+#
+
+# Entry types for history
+type AdminConfigStringEntry {
+  id: Int64!
+  value: String!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+}
+
+type AdminConfigBoolEntry {
+  id: Int64!
+  value: Boolean!
+  createdAt: Time!
+  createdBy: AdminUser! @goField(forceResolver: true)
+}
+
+# Interface for all config values
+interface AdminConfigValue {
+  id: String!
+  description: String
+  updatedAt: Time
+  updatedBy: AdminUser
+}
+
+# Concrete config value types
+type AdminConfigStringValue implements AdminConfigValue {
+  id: String!
+  description: String
+  updatedAt: Time
+  updatedBy: AdminUser @goField(forceResolver: true)
+  value: String!
+  history: [AdminConfigStringEntry!]! @goField(forceResolver: true)
+}
+
+type AdminConfigBoolValue implements AdminConfigValue {
+  id: String!
+  description: String
+  updatedAt: Time
+  updatedBy: AdminUser @goField(forceResolver: true)
+  value: Boolean!
+  history: [AdminConfigBoolEntry!]! @goField(forceResolver: true)
+}
+
+# Mutation payloads
+type SetConfigStringValueSuccess {
+  configValue: AdminConfigStringValue!
+}
+union SetConfigStringValuePayload = SetConfigStringValueSuccess | ErrorPayload
+
+type SetConfigBoolValueSuccess {
+  configValue: AdminConfigBoolValue!
+}
+union SetConfigBoolValuePayload = SetConfigBoolValueSuccess | ErrorPayload
+
 type AdminTelegramPublishTagsConnection {
   nodes: [AdminTelegramPublishTag!]! @goField(forceResolver: true)
 }
@@ -937,6 +994,10 @@ type AdminQuery {
   auditLogs(filter: AdminAuditLogsFilterInput!): AdminAuditLogsConnection!
 
   latestConfig: AdminConfigVersion!
+
+  # Atomic config
+  configValues: [AdminConfigValue!]!
+  configValue(id: String!): AdminConfigValue
 
   subgraph(id: Int64!): AdminSubgraph
   noteView(id: String!): NoteView
@@ -2331,6 +2392,20 @@ type CreateConfigVersionPayload {
 union CreateConfigVersionOrErrorPayload = CreateConfigVersionPayload | ErrorPayload
 
 #
+# Atomic config mutations
+#
+
+input SetConfigStringValueInput {
+  id: String!
+  value: String!
+}
+
+input SetConfigBoolValueInput {
+  id: String!
+  value: Boolean!
+}
+
+#
 # resetTelegramPublishNote
 #
 
@@ -2492,6 +2567,10 @@ type AdminMutation {
 
   # Config Version mutations
   createConfigVersion(input: CreateConfigVersionInput!): CreateConfigVersionOrErrorPayload!
+
+  # Atomic config mutations
+  setConfigStringValue(input: SetConfigStringValueInput!): SetConfigStringValuePayload!
+  setConfigBoolValue(input: SetConfigBoolValueInput!): SetConfigBoolValuePayload!
 
   # Background Queue mutations
   stopBackgroundQueue(input: StopBackgroundQueueInput!): StopBackgroundQueueOrErrorPayload!

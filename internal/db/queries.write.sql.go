@@ -805,6 +805,29 @@ func (q *WriteQueries) InsertBoostyTierSubgraph(ctx context.Context, arg InsertB
 	return err
 }
 
+const insertConfigSiteTitleTemplate = `-- name: InsertConfigSiteTitleTemplate :one
+insert into config_site_title_templates (created_by, value)
+values (?, ?)
+returning id, created_at, created_by, value
+`
+
+type InsertConfigSiteTitleTemplateParams struct {
+	CreatedBy int64  `json:"created_by"`
+	Value     string `json:"value"`
+}
+
+func (q *WriteQueries) InsertConfigSiteTitleTemplate(ctx context.Context, arg InsertConfigSiteTitleTemplateParams) (ConfigSiteTitleTemplate, error) {
+	row := q.db.QueryRowContext(ctx, insertConfigSiteTitleTemplate, arg.CreatedBy, arg.Value)
+	var i ConfigSiteTitleTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Value,
+	)
+	return i, err
+}
+
 const insertConfigVersion = `-- name: InsertConfigVersion :one
 insert into config_versions (created_by, show_draft_versions, default_layout, timezone, robots_txt)
 values (?, ?, ?, ?, ?)

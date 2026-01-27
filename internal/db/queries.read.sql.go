@@ -1411,6 +1411,25 @@ func (q *Queries) GetLatestConfig(ctx context.Context) (ConfigVersion, error) {
 	return i, err
 }
 
+const getLatestConfigSiteTitleTemplate = `-- name: GetLatestConfigSiteTitleTemplate :one
+select id, created_at, created_by, value
+  from config_site_title_templates
+ order by id desc
+ limit 1
+`
+
+func (q *Queries) GetLatestConfigSiteTitleTemplate(ctx context.Context) (ConfigSiteTitleTemplate, error) {
+	row := q.db.QueryRowContext(ctx, getLatestConfigSiteTitleTemplate)
+	var i ConfigSiteTitleTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Value,
+	)
+	return i, err
+}
+
 const getNoteVersionEmbedding = `-- name: GetNoteVersionEmbedding :one
 select version_id, embedding, model_id, content_hash, tokens, created_at from note_version_embeddings where version_id = ?
 `
@@ -3240,6 +3259,41 @@ func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([
 			&i.Level,
 			&i.Message,
 			&i.Params,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listConfigSiteTitleTemplateHistory = `-- name: ListConfigSiteTitleTemplateHistory :many
+select id, created_at, created_by, value
+  from config_site_title_templates
+ order by id desc
+ limit 50
+`
+
+func (q *Queries) ListConfigSiteTitleTemplateHistory(ctx context.Context) ([]ConfigSiteTitleTemplate, error) {
+	rows, err := q.db.QueryContext(ctx, listConfigSiteTitleTemplateHistory)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ConfigSiteTitleTemplate
+	for rows.Next() {
+		var i ConfigSiteTitleTemplate
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.Value,
 		); err != nil {
 			return nil, err
 		}

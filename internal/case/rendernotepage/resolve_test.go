@@ -28,6 +28,7 @@ type Env interface {
 	RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
 	LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
 	LatestConfig() db.ConfigVersion
+	SiteTitleTemplate() string
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
 }
 
@@ -95,6 +96,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
 					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -135,6 +139,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -195,6 +202,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
 					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -253,6 +263,9 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -397,6 +410,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
 					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
@@ -451,6 +467,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
@@ -507,6 +526,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
 					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
@@ -561,6 +583,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
@@ -617,6 +642,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
 					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
@@ -668,6 +696,9 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
@@ -789,6 +820,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
 					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
 					},
@@ -839,6 +873,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
@@ -918,6 +955,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
 					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return sameNoteViews
 					},
@@ -967,6 +1007,9 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return liveNoteViews
@@ -1110,6 +1153,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
 					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -1140,6 +1186,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -1172,6 +1221,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
 					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -1199,6 +1251,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -1228,6 +1283,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
 					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -1252,6 +1310,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -1288,6 +1349,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -1366,6 +1430,9 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViewsWithUnderscore
@@ -1467,6 +1534,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
 					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
+					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
 					},
@@ -1501,6 +1571,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews
@@ -1554,6 +1627,9 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					},
 					LatestConfigFunc: func() db.ConfigVersion {
 						return db.ConfigVersion{}
+					},
+					SiteTitleTemplateFunc: func() string {
+						return "%s"
 					},
 					LiveNoteViewsFunc: func() *model.NoteViews {
 						return noteViews

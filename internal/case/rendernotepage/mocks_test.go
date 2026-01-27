@@ -58,6 +58,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)  {
 //				panic("mock out the RecordUserNoteView method")
 //			},
+//			SiteTitleTemplateFunc: func() string {
+//				panic("mock out the SiteTitleTemplate method")
+//			},
 //			UpsertUserNoteDailyViewFunc: func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error) {
 //				panic("mock out the UpsertUserNoteDailyView method")
 //			},
@@ -103,6 +106,9 @@ type EnvMock struct {
 
 	// RecordUserNoteViewFunc mocks the RecordUserNoteView method.
 	RecordUserNoteViewFunc func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
+
+	// SiteTitleTemplateFunc mocks the SiteTitleTemplate method.
+	SiteTitleTemplateFunc func() string
 
 	// UpsertUserNoteDailyViewFunc mocks the UpsertUserNoteDailyView method.
 	UpsertUserNoteDailyViewFunc func(ctx context.Context, params db.UpsertUserNoteDailyViewParams) (int64, error)
@@ -173,6 +179,9 @@ type EnvMock struct {
 			// ReferrerVersionID is the referrerVersionID argument value.
 			ReferrerVersionID *int64
 		}
+		// SiteTitleTemplate holds details about calls to the SiteTitleTemplate method.
+		SiteTitleTemplate []struct {
+		}
 		// UpsertUserNoteDailyView holds details about calls to the UpsertUserNoteDailyView method.
 		UpsertUserNoteDailyView []struct {
 			// Ctx is the ctx argument value.
@@ -193,6 +202,7 @@ type EnvMock struct {
 	lockLogger                    sync.RWMutex
 	lockPublicURL                 sync.RWMutex
 	lockRecordUserNoteView        sync.RWMutex
+	lockSiteTitleTemplate         sync.RWMutex
 	lockUpsertUserNoteDailyView   sync.RWMutex
 }
 
@@ -579,6 +589,33 @@ func (mock *EnvMock) RecordUserNoteViewCalls() []struct {
 	mock.lockRecordUserNoteView.RLock()
 	calls = mock.calls.RecordUserNoteView
 	mock.lockRecordUserNoteView.RUnlock()
+	return calls
+}
+
+// SiteTitleTemplate calls SiteTitleTemplateFunc.
+func (mock *EnvMock) SiteTitleTemplate() string {
+	if mock.SiteTitleTemplateFunc == nil {
+		panic("EnvMock.SiteTitleTemplateFunc: method is nil but Env.SiteTitleTemplate was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockSiteTitleTemplate.Lock()
+	mock.calls.SiteTitleTemplate = append(mock.calls.SiteTitleTemplate, callInfo)
+	mock.lockSiteTitleTemplate.Unlock()
+	return mock.SiteTitleTemplateFunc()
+}
+
+// SiteTitleTemplateCalls gets all the calls that were made to SiteTitleTemplate.
+// Check the length with:
+//
+//	len(mockedEnv.SiteTitleTemplateCalls())
+func (mock *EnvMock) SiteTitleTemplateCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockSiteTitleTemplate.RLock()
+	calls = mock.calls.SiteTitleTemplate
+	mock.lockSiteTitleTemplate.RUnlock()
 	return calls
 }
 

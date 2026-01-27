@@ -5,20 +5,30 @@
 Формат см. в CLAUDE.md
 -->
 
-## [DONE] Onboarding страница для пустого сайта
+## [IN PROGRESS] Рефакторинг конфига — Фаза 1
 
 ### Контекст
-Показывать страницу онбординга когда на сайте нет ни одной заметки. Для гостей — предложение войти. Для админов — ссылка на скачивание стартового архива. Заменила страницу в админке.
+Переход от монолитной таблицы `config_versions` к атомарным таблицам настроек. Фаза 1: добавляем `site_title_template` + инфраструктуру для новых конфигов.
+
+Подробный план: [docs/config_refactoring.md](config_refactoring.md)
 
 ### План
-- [x] Проверить и исправить что `/_system/onboarding-vault` требует авторизации админа
-- [x] Добавить поле `OnboardingMode bool` в Response (rendernotepage)
-- [x] Добавить проверку `len(env.LatestNoteViews().Map) == 0` в Resolve()
-- [x] Создать шаблон онбординга в view.html с переводами ru/en
-- [x] Добавить e2e тесты в setup.spec.js (гость, админ, onboarding-vault 401)
-- [x] Удалить страницу онбординга из админки
+- [x] Миграция: `create table config_site_title_templates`
+- [x] sqlc queries
+- [x] GraphQL: interface `AdminConfigValue`, типы `AdminConfigStringValue`, `AdminConfigBoolValue`
+- [x] GraphQL: query `configValues`, `configValue(id)`
+- [x] GraphQL: mutation `setConfigStringValue`, `setConfigBoolValue`
+- [x] Registry конфигов: `internal/configregistry/`
+- [x] Resolver: `internal/case/admin/setconfigstringvalue/`
+- [x] Env method: `SiteTitleTemplate() string`
+- [x] rendernotepage: `formatTitle()`
+- [ ] Frontend: новая страница `/admin/config` ← текущий
+- [x] Тесты (backend)
 
 ### Заметки
-- Endpoint `/_system/onboarding-vault` теперь требует роль admin (не просто авторизацию)
-- Текст показывается на обоих языках (ru и en)
-- E2E тесты: гость видит "Войти", админ видит "Скачать архив", гость получает 401 на /_system/onboarding-vault
+- Старую логику `config_versions` пока не трогаем
+- Дефолт для site_title_template: `%s` (только название страницы)
+- Валидация: шаблон должен содержать `%s`
+- Registry конфигов в `internal/configregistry/` хранит метаданные (id, description, type, default, validate)
+- Пока реализован только `site_title_template`, остальные конфиги возвращают defaults
+- GraphQL API готов для всех конфигов сразу

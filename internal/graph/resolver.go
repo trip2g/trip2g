@@ -48,6 +48,7 @@ import (
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
+	"trip2g/internal/case/admin/setconfigstringvalue"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishtags"
@@ -183,6 +184,8 @@ type Env interface {
 	Now() time.Time
 
 	LatestConfig() db.ConfigVersion
+	GetLatestConfigSiteTitleTemplate(ctx context.Context) (db.ConfigSiteTitleTemplate, error)
+	ListConfigSiteTitleTemplateHistory(ctx context.Context) ([]db.ConfigSiteTitleTemplate, error)
 
 	AcquireTxEnvInRequest(ctx context.Context, label string) error
 	ReleaseTxEnvInRequest(ctx context.Context, commit bool) error
@@ -248,6 +251,7 @@ type Env interface {
 	sendtelegrampublishnotenow.Env
 	convertnoteviewtotgpost.Env
 	createconfigversion.Env
+	setconfigstringvalue.Env
 	startbackgroundqueue.Env
 	stopbackgroundqueue.Env
 

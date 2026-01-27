@@ -125,6 +125,13 @@ type BoostyTierSubgraph struct {
 	CreatedBy  int64     `json:"created_by"`
 }
 
+type ConfigSiteTitleTemplate struct {
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	Value     string    `json:"value"`
+}
+
 type ConfigVersion struct {
 	ID                int64     `json:"id"`
 	CreatedAt         time.Time `json:"created_at"`

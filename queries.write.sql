@@ -649,6 +649,11 @@ insert into config_versions (created_by, show_draft_versions, default_layout, ti
 values (?, ?, ?, ?, ?)
 returning *;
 
+-- name: InsertConfigSiteTitleTemplate :one
+insert into config_site_title_templates (created_by, value)
+values (?, ?)
+returning *;
+
 -- name: InsertTelegramPublishTags :exec
 insert into telegram_publish_tags (label)
 values (?)
