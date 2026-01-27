@@ -654,6 +654,26 @@ insert into config_site_title_templates (created_by, value)
 values (?, ?)
 returning *;
 
+-- name: InsertConfigTimezone :one
+insert into config_timezones (created_by, value)
+values (?, ?)
+returning *;
+
+-- name: InsertConfigDefaultLayout :one
+insert into config_default_layouts (created_by, value)
+values (?, ?)
+returning *;
+
+-- name: InsertConfigRobotsTxt :one
+insert into config_robots_txts (created_by, value)
+values (?, ?)
+returning *;
+
+-- name: InsertConfigShowDraftVersions :one
+insert into config_show_draft_versions (created_by, value)
+values (?, ?)
+returning *;
+
 -- name: InsertTelegramPublishTags :exec
 insert into telegram_publish_tags (label)
 values (?)

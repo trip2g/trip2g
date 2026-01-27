@@ -1411,6 +1411,63 @@ func (q *Queries) GetLatestConfig(ctx context.Context) (ConfigVersion, error) {
 	return i, err
 }
 
+const getLatestConfigDefaultLayout = `-- name: GetLatestConfigDefaultLayout :one
+select id, created_at, created_by, value
+  from config_default_layouts
+ order by id desc
+ limit 1
+`
+
+func (q *Queries) GetLatestConfigDefaultLayout(ctx context.Context) (ConfigDefaultLayout, error) {
+	row := q.db.QueryRowContext(ctx, getLatestConfigDefaultLayout)
+	var i ConfigDefaultLayout
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Value,
+	)
+	return i, err
+}
+
+const getLatestConfigRobotsTxt = `-- name: GetLatestConfigRobotsTxt :one
+select id, created_at, created_by, value
+  from config_robots_txts
+ order by id desc
+ limit 1
+`
+
+func (q *Queries) GetLatestConfigRobotsTxt(ctx context.Context) (ConfigRobotsTxt, error) {
+	row := q.db.QueryRowContext(ctx, getLatestConfigRobotsTxt)
+	var i ConfigRobotsTxt
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Value,
+	)
+	return i, err
+}
+
+const getLatestConfigShowDraftVersions = `-- name: GetLatestConfigShowDraftVersions :one
+select id, created_at, created_by, value
+  from config_show_draft_versions
+ order by id desc
+ limit 1
+`
+
+func (q *Queries) GetLatestConfigShowDraftVersions(ctx context.Context) (ConfigShowDraftVersion, error) {
+	row := q.db.QueryRowContext(ctx, getLatestConfigShowDraftVersions)
+	var i ConfigShowDraftVersion
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Value,
+	)
+	return i, err
+}
+
 const getLatestConfigSiteTitleTemplate = `-- name: GetLatestConfigSiteTitleTemplate :one
 select id, created_at, created_by, value
   from config_site_title_templates
@@ -1421,6 +1478,25 @@ select id, created_at, created_by, value
 func (q *Queries) GetLatestConfigSiteTitleTemplate(ctx context.Context) (ConfigSiteTitleTemplate, error) {
 	row := q.db.QueryRowContext(ctx, getLatestConfigSiteTitleTemplate)
 	var i ConfigSiteTitleTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Value,
+	)
+	return i, err
+}
+
+const getLatestConfigTimezone = `-- name: GetLatestConfigTimezone :one
+select id, created_at, created_by, value
+  from config_timezones
+ order by id desc
+ limit 1
+`
+
+func (q *Queries) GetLatestConfigTimezone(ctx context.Context) (ConfigTimezone, error) {
+	row := q.db.QueryRowContext(ctx, getLatestConfigTimezone)
+	var i ConfigTimezone
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
@@ -3273,6 +3349,111 @@ func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([
 	return items, nil
 }
 
+const listConfigDefaultLayoutHistory = `-- name: ListConfigDefaultLayoutHistory :many
+select id, created_at, created_by, value
+  from config_default_layouts
+ order by id desc
+ limit 50
+`
+
+func (q *Queries) ListConfigDefaultLayoutHistory(ctx context.Context) ([]ConfigDefaultLayout, error) {
+	rows, err := q.db.QueryContext(ctx, listConfigDefaultLayoutHistory)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ConfigDefaultLayout
+	for rows.Next() {
+		var i ConfigDefaultLayout
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.Value,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listConfigRobotsTxtHistory = `-- name: ListConfigRobotsTxtHistory :many
+select id, created_at, created_by, value
+  from config_robots_txts
+ order by id desc
+ limit 50
+`
+
+func (q *Queries) ListConfigRobotsTxtHistory(ctx context.Context) ([]ConfigRobotsTxt, error) {
+	rows, err := q.db.QueryContext(ctx, listConfigRobotsTxtHistory)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ConfigRobotsTxt
+	for rows.Next() {
+		var i ConfigRobotsTxt
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.Value,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listConfigShowDraftVersionsHistory = `-- name: ListConfigShowDraftVersionsHistory :many
+select id, created_at, created_by, value
+  from config_show_draft_versions
+ order by id desc
+ limit 50
+`
+
+func (q *Queries) ListConfigShowDraftVersionsHistory(ctx context.Context) ([]ConfigShowDraftVersion, error) {
+	rows, err := q.db.QueryContext(ctx, listConfigShowDraftVersionsHistory)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ConfigShowDraftVersion
+	for rows.Next() {
+		var i ConfigShowDraftVersion
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.Value,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listConfigSiteTitleTemplateHistory = `-- name: ListConfigSiteTitleTemplateHistory :many
 select id, created_at, created_by, value
   from config_site_title_templates
@@ -3289,6 +3470,41 @@ func (q *Queries) ListConfigSiteTitleTemplateHistory(ctx context.Context) ([]Con
 	var items []ConfigSiteTitleTemplate
 	for rows.Next() {
 		var i ConfigSiteTitleTemplate
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.Value,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listConfigTimezoneHistory = `-- name: ListConfigTimezoneHistory :many
+select id, created_at, created_by, value
+  from config_timezones
+ order by id desc
+ limit 50
+`
+
+func (q *Queries) ListConfigTimezoneHistory(ctx context.Context) ([]ConfigTimezone, error) {
+	rows, err := q.db.QueryContext(ctx, listConfigTimezoneHistory)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ConfigTimezone
+	for rows.Next() {
+		var i ConfigTimezone
 		if err := rows.Scan(
 			&i.ID,
 			&i.CreatedAt,

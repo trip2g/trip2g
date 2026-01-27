@@ -48,6 +48,7 @@ import (
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
+	"trip2g/internal/case/admin/setconfigboolvalue"
 	"trip2g/internal/case/admin/setconfigstringvalue"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
@@ -186,6 +187,10 @@ type Env interface {
 	LatestConfig() db.ConfigVersion
 	GetLatestConfigSiteTitleTemplate(ctx context.Context) (db.ConfigSiteTitleTemplate, error)
 	ListConfigSiteTitleTemplateHistory(ctx context.Context) ([]db.ConfigSiteTitleTemplate, error)
+	GetLatestConfigTimezone(ctx context.Context) (db.ConfigTimezone, error)
+	GetLatestConfigDefaultLayout(ctx context.Context) (db.ConfigDefaultLayout, error)
+	GetLatestConfigRobotsTxt(ctx context.Context) (db.ConfigRobotsTxt, error)
+	GetLatestConfigShowDraftVersions(ctx context.Context) (db.ConfigShowDraftVersion, error)
 
 	AcquireTxEnvInRequest(ctx context.Context, label string) error
 	ReleaseTxEnvInRequest(ctx context.Context, commit bool) error
@@ -252,6 +257,7 @@ type Env interface {
 	convertnoteviewtotgpost.Env
 	createconfigversion.Env
 	setconfigstringvalue.Env
+	setconfigboolvalue.Env
 	startbackgroundqueue.Env
 	stopbackgroundqueue.Env
 

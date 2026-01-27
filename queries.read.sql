@@ -777,6 +777,54 @@ select *
  order by id desc
  limit 50;
 
+-- name: GetLatestConfigTimezone :one
+select *
+  from config_timezones
+ order by id desc
+ limit 1;
+
+-- name: ListConfigTimezoneHistory :many
+select *
+  from config_timezones
+ order by id desc
+ limit 50;
+
+-- name: GetLatestConfigDefaultLayout :one
+select *
+  from config_default_layouts
+ order by id desc
+ limit 1;
+
+-- name: ListConfigDefaultLayoutHistory :many
+select *
+  from config_default_layouts
+ order by id desc
+ limit 50;
+
+-- name: GetLatestConfigRobotsTxt :one
+select *
+  from config_robots_txts
+ order by id desc
+ limit 1;
+
+-- name: ListConfigRobotsTxtHistory :many
+select *
+  from config_robots_txts
+ order by id desc
+ limit 50;
+
+-- name: GetLatestConfigShowDraftVersions :one
+select *
+  from config_show_draft_versions
+ order by id desc
+ limit 1;
+
+-- name: ListConfigShowDraftVersionsHistory :many
+select *
+  from config_show_draft_versions
+ order by id desc
+ limit 50;
+
 -- name: ListNotePathsLike :many
 select * from note_paths
  where value like ?

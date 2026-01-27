@@ -599,6 +599,30 @@ CREATE TABLE config_site_title_templates (
   created_by integer not null references admins(user_id) on delete restrict,
   value text not null
 );
+CREATE TABLE config_timezones (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  value text not null
+);
+CREATE TABLE config_default_layouts (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  value text not null
+);
+CREATE TABLE config_robots_txts (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  value text not null
+);
+CREATE TABLE config_show_draft_versions (
+  id integer primary key autoincrement,
+  created_at datetime not null default current_timestamp,
+  created_by integer not null references admins(user_id) on delete restrict,
+  value boolean not null
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20250402131258'),
@@ -702,4 +726,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20251224090437'),
   ('20260102093534'),
   ('20260119020631'),
-  ('20260126113359');
+  ('20260126113359'),
+  ('20260127122121');

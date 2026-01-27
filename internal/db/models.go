@@ -125,7 +125,35 @@ type BoostyTierSubgraph struct {
 	CreatedBy  int64     `json:"created_by"`
 }
 
+type ConfigDefaultLayout struct {
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	Value     string    `json:"value"`
+}
+
+type ConfigRobotsTxt struct {
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	Value     string    `json:"value"`
+}
+
+type ConfigShowDraftVersion struct {
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	Value     bool      `json:"value"`
+}
+
 type ConfigSiteTitleTemplate struct {
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	Value     string    `json:"value"`
+}
+
+type ConfigTimezone struct {
 	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	CreatedBy int64     `json:"created_by"`

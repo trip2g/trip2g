@@ -805,6 +805,75 @@ func (q *WriteQueries) InsertBoostyTierSubgraph(ctx context.Context, arg InsertB
 	return err
 }
 
+const insertConfigDefaultLayout = `-- name: InsertConfigDefaultLayout :one
+insert into config_default_layouts (created_by, value)
+values (?, ?)
+returning id, created_at, created_by, value
+`
+
+type InsertConfigDefaultLayoutParams struct {
+	CreatedBy int64  `json:"created_by"`
+	Value     string `json:"value"`
+}
+
+func (q *WriteQueries) InsertConfigDefaultLayout(ctx context.Context, arg InsertConfigDefaultLayoutParams) (ConfigDefaultLayout, error) {
+	row := q.db.QueryRowContext(ctx, insertConfigDefaultLayout, arg.CreatedBy, arg.Value)
+	var i ConfigDefaultLayout
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Value,
+	)
+	return i, err
+}
+
+const insertConfigRobotsTxt = `-- name: InsertConfigRobotsTxt :one
+insert into config_robots_txts (created_by, value)
+values (?, ?)
+returning id, created_at, created_by, value
+`
+
+type InsertConfigRobotsTxtParams struct {
+	CreatedBy int64  `json:"created_by"`
+	Value     string `json:"value"`
+}
+
+func (q *WriteQueries) InsertConfigRobotsTxt(ctx context.Context, arg InsertConfigRobotsTxtParams) (ConfigRobotsTxt, error) {
+	row := q.db.QueryRowContext(ctx, insertConfigRobotsTxt, arg.CreatedBy, arg.Value)
+	var i ConfigRobotsTxt
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Value,
+	)
+	return i, err
+}
+
+const insertConfigShowDraftVersions = `-- name: InsertConfigShowDraftVersions :one
+insert into config_show_draft_versions (created_by, value)
+values (?, ?)
+returning id, created_at, created_by, value
+`
+
+type InsertConfigShowDraftVersionsParams struct {
+	CreatedBy int64 `json:"created_by"`
+	Value     bool  `json:"value"`
+}
+
+func (q *WriteQueries) InsertConfigShowDraftVersions(ctx context.Context, arg InsertConfigShowDraftVersionsParams) (ConfigShowDraftVersion, error) {
+	row := q.db.QueryRowContext(ctx, insertConfigShowDraftVersions, arg.CreatedBy, arg.Value)
+	var i ConfigShowDraftVersion
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Value,
+	)
+	return i, err
+}
+
 const insertConfigSiteTitleTemplate = `-- name: InsertConfigSiteTitleTemplate :one
 insert into config_site_title_templates (created_by, value)
 values (?, ?)
@@ -819,6 +888,29 @@ type InsertConfigSiteTitleTemplateParams struct {
 func (q *WriteQueries) InsertConfigSiteTitleTemplate(ctx context.Context, arg InsertConfigSiteTitleTemplateParams) (ConfigSiteTitleTemplate, error) {
 	row := q.db.QueryRowContext(ctx, insertConfigSiteTitleTemplate, arg.CreatedBy, arg.Value)
 	var i ConfigSiteTitleTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.Value,
+	)
+	return i, err
+}
+
+const insertConfigTimezone = `-- name: InsertConfigTimezone :one
+insert into config_timezones (created_by, value)
+values (?, ?)
+returning id, created_at, created_by, value
+`
+
+type InsertConfigTimezoneParams struct {
+	CreatedBy int64  `json:"created_by"`
+	Value     string `json:"value"`
+}
+
+func (q *WriteQueries) InsertConfigTimezone(ctx context.Context, arg InsertConfigTimezoneParams) (ConfigTimezone, error) {
+	row := q.db.QueryRowContext(ctx, insertConfigTimezone, arg.CreatedBy, arg.Value)
+	var i ConfigTimezone
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,

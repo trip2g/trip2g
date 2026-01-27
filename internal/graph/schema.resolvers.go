@@ -61,6 +61,7 @@ import (
 	"trip2g/internal/case/admin/setactivegithuboauthcredentials"
 	"trip2g/internal/case/admin/setactivegoogleoauthcredentials"
 	"trip2g/internal/case/admin/setboostytiersubgraphs"
+	"trip2g/internal/case/admin/setconfigboolvalue"
 	"trip2g/internal/case/admin/setconfigstringvalue"
 	"trip2g/internal/case/admin/setpatreontiersubgraphs"
 	"trip2g/internal/case/admin/settelegramaccountchatpublishinstanttags"
@@ -905,8 +906,7 @@ func (r *adminMutationResolver) SetConfigStringValue(ctx context.Context, obj *a
 
 // SetConfigBoolValue is the resolver for the setConfigBoolValue field.
 func (r *adminMutationResolver) SetConfigBoolValue(ctx context.Context, obj *appmodel.AdminMutation, input model.SetConfigBoolValueInput) (model.SetConfigBoolValuePayload, error) {
-	// TODO: Implement in Phase 5.
-	return &model.ErrorPayload{Message: "bool config mutations not yet implemented"}, nil
+	return setconfigboolvalue.Resolve(ctx, r.env(ctx), input)
 }
 
 // StopBackgroundQueue is the resolver for the stopBackgroundQueue field.
@@ -1389,7 +1389,6 @@ func (r *adminQueryResolver) buildConfigValue(ctx context.Context, id string) (m
 func (r *adminQueryResolver) buildStringConfigValue(ctx context.Context, id string, meta configregistry.ConfigMeta) (*model.AdminConfigStringValue, error) {
 	defaultValue, _ := meta.Default.(string)
 
-	// For now, only site_title_template is implemented.
 	switch id {
 	case configregistry.ConfigSiteTitleTemplate:
 		entry, err := r.env(ctx).GetLatestConfigSiteTitleTemplate(ctx)
@@ -1407,8 +1406,55 @@ func (r *adminQueryResolver) buildStringConfigValue(ctx context.Context, id stri
 			UpdatedAt:   &entry.CreatedAt,
 			Value:       entry.Value,
 		}, nil
+	case configregistry.ConfigTimezone:
+		entry, err := r.env(ctx).GetLatestConfigTimezone(ctx)
+		if err != nil {
+			//nolint:nilerr // no entry means use default, not an error.
+			return &model.AdminConfigStringValue{
+				ID:          id,
+				Description: &meta.Description,
+				Value:       defaultValue,
+			}, nil
+		}
+		return &model.AdminConfigStringValue{
+			ID:          id,
+			Description: &meta.Description,
+			UpdatedAt:   &entry.CreatedAt,
+			Value:       entry.Value,
+		}, nil
+	case configregistry.ConfigDefaultLayout:
+		entry, err := r.env(ctx).GetLatestConfigDefaultLayout(ctx)
+		if err != nil {
+			//nolint:nilerr // no entry means use default, not an error.
+			return &model.AdminConfigStringValue{
+				ID:          id,
+				Description: &meta.Description,
+				Value:       defaultValue,
+			}, nil
+		}
+		return &model.AdminConfigStringValue{
+			ID:          id,
+			Description: &meta.Description,
+			UpdatedAt:   &entry.CreatedAt,
+			Value:       entry.Value,
+		}, nil
+	case configregistry.ConfigRobotsTxt:
+		entry, err := r.env(ctx).GetLatestConfigRobotsTxt(ctx)
+		if err != nil {
+			//nolint:nilerr // no entry means use default, not an error.
+			return &model.AdminConfigStringValue{
+				ID:          id,
+				Description: &meta.Description,
+				Value:       defaultValue,
+			}, nil
+		}
+		return &model.AdminConfigStringValue{
+			ID:          id,
+			Description: &meta.Description,
+			UpdatedAt:   &entry.CreatedAt,
+			Value:       entry.Value,
+		}, nil
 	default:
-		// Other string configs not yet implemented, return defaults.
 		return &model.AdminConfigStringValue{
 			ID:          id,
 			Description: &meta.Description,
@@ -1417,14 +1463,33 @@ func (r *adminQueryResolver) buildStringConfigValue(ctx context.Context, id stri
 	}
 }
 
-func (r *adminQueryResolver) buildBoolConfigValue(_ context.Context, id string, meta configregistry.ConfigMeta) (*model.AdminConfigBoolValue, error) {
-	// Bool configs not yet implemented, return defaults.
+func (r *adminQueryResolver) buildBoolConfigValue(ctx context.Context, id string, meta configregistry.ConfigMeta) (*model.AdminConfigBoolValue, error) {
 	defaultValue, _ := meta.Default.(bool)
-	return &model.AdminConfigBoolValue{
-		ID:          id,
-		Description: &meta.Description,
-		Value:       defaultValue,
-	}, nil
+
+	switch id {
+	case configregistry.ConfigShowDraftVersions:
+		entry, err := r.env(ctx).GetLatestConfigShowDraftVersions(ctx)
+		if err != nil {
+			//nolint:nilerr // no entry means use default, not an error.
+			return &model.AdminConfigBoolValue{
+				ID:          id,
+				Description: &meta.Description,
+				Value:       defaultValue,
+			}, nil
+		}
+		return &model.AdminConfigBoolValue{
+			ID:          id,
+			Description: &meta.Description,
+			UpdatedAt:   &entry.CreatedAt,
+			Value:       entry.Value,
+		}, nil
+	default:
+		return &model.AdminConfigBoolValue{
+			ID:          id,
+			Description: &meta.Description,
+			Value:       defaultValue,
+		}, nil
+	}
 }
 
 // Subgraph is the resolver for the subgraph field.
