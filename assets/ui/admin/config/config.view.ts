@@ -8,10 +8,10 @@ namespace $.$$ {
 					description
 					updatedAt
 					... on AdminConfigStringValue {
-						value
+						stringValue: value
 					}
 					... on AdminConfigBoolValue {
-						value
+						boolValue: value
 					}
 				}
 			}
@@ -119,14 +119,14 @@ namespace $.$$ {
 		row_value_string(id: any, next?: string): string {
 			if (next !== undefined) return next
 			const row = this.row(id)
-			return row.value || ''
+			return row.stringValue || ''
 		}
 
 		@$mol_mem_key
 		row_value_bool(id: any, next?: boolean): boolean {
 			if (next !== undefined) return next
 			const row = this.row(id)
-			return row.value || false
+			return row.boolValue || false
 		}
 
 		@$mol_mem_key
