@@ -1,6 +1,15 @@
 $trip2g_admin_config_show $mol_page
 	config_id \
 	title <= config_title \Config
+	MyTimezoneButton $mol_button_minor
+		title <= my_timezone \
+		click? <=> set_my_timezone? null
+	RobotsOpenedButton $mol_button_minor
+		title \opened
+		click? <=> set_robots_opened? null
+	RobotsClosedButton $mol_button_minor
+		title \closed
+		click? <=> set_robots_closed? null
 	body /
 		<= Details $mol_view
 			style *
@@ -33,15 +42,6 @@ $trip2g_admin_config_show $mol_page
 							click? <=> save? null
 						<= Result $mol_status
 							message <= result_message \
-	MyTimezoneButton $mol_button_minor
-		title <= my_timezone \
-		click? <=> set_my_timezone? null
-	RobotsOpenedButton $mol_button_minor
-		title \opened
-		click? <=> set_robots_opened? null
-	RobotsClosedButton $mol_button_minor
-		title \closed
-		click? <=> set_robots_closed? null
 		<= HistorySection $mol_section
 			title @ \History
 			content /
