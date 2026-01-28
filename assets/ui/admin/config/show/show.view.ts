@@ -109,6 +109,10 @@ namespace $.$$ {
 			return this.config_id() === 'timezone'
 		}
 
+		is_robots_txt_config(): boolean {
+			return this.config_id() === 'robots_txt'
+		}
+
 		override config_title(): string {
 			return this.config_id()
 		}
@@ -146,9 +150,13 @@ namespace $.$$ {
 
 		@$mol_mem
 		override value_field_content() {
-			const controls = [this.value_control()]
+			const controls: any[] = [this.value_control()]
 			if (this.is_timezone_config()) {
 				controls.push(this.MyTimezoneButton())
+			}
+			if (this.is_robots_txt_config()) {
+				controls.push(this.RobotsOpenButton())
+				controls.push(this.RobotsClosedButton())
 			}
 			return controls
 		}
@@ -167,6 +175,22 @@ namespace $.$$ {
 
 		set_my_timezone() {
 			this.edit_value_string(this.my_timezone())
+		}
+
+		@$mol_mem
+		RobotsOpenButton() {
+			const button = new this.$.$mol_button_minor()
+			button.title = () => 'open'
+			button.click = () => this.edit_value_string('open')
+			return button
+		}
+
+		@$mol_mem
+		RobotsClosedButton() {
+			const button = new this.$.$mol_button_minor()
+			button.title = () => 'closed'
+			button.click = () => this.edit_value_string('closed')
+			return button
 		}
 
 		@$mol_mem
