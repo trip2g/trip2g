@@ -155,21 +155,13 @@ namespace $.$$ {
 				controls.push(this.MyTimezoneButton())
 			}
 			if (this.is_robots_txt_config()) {
-				controls.push(this.RobotsOpenButton())
+				controls.push(this.RobotsOpenedButton())
 				controls.push(this.RobotsClosedButton())
 			}
 			return controls
 		}
 
-		@$mol_mem
-		MyTimezoneButton() {
-			const button = new this.$.$mol_button_minor()
-			button.title = () => this.my_timezone()
-			button.click = () => this.set_my_timezone()
-			return button
-		}
-
-		my_timezone(): string {
+		override my_timezone(): string {
 			return Intl.DateTimeFormat().resolvedOptions().timeZone
 		}
 
@@ -177,20 +169,12 @@ namespace $.$$ {
 			this.edit_value_string(this.my_timezone())
 		}
 
-		@$mol_mem
-		RobotsOpenButton() {
-			const button = new this.$.$mol_button_minor()
-			button.title = () => 'opened'
-			button.click = () => this.edit_value_string('opened')
-			return button
+		set_robots_opened() {
+			this.edit_value_string('opened')
 		}
 
-		@$mol_mem
-		RobotsClosedButton() {
-			const button = new this.$.$mol_button_minor()
-			button.title = () => 'closed'
-			button.click = () => this.edit_value_string('closed')
-			return button
+		set_robots_closed() {
+			this.edit_value_string('closed')
 		}
 
 		@$mol_mem
