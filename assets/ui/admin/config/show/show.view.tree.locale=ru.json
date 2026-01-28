@@ -1,0 +1,12 @@
+{
+	"$trip2g_admin_config_show_Id_labeler_title": "ID настройки",
+	"$trip2g_admin_config_show_Description_labeler_title": "Описание",
+	"$trip2g_admin_config_show_CurrentValue_labeler_title": "Текущее значение",
+	"$trip2g_admin_config_show_EditSection_title": "Редактирование",
+	"$trip2g_admin_config_show_Value_field_name": "Новое значение",
+	"$trip2g_admin_config_show_Submit_title": "Сохранить",
+	"$trip2g_admin_config_show_HistorySection_title": "История",
+	"$trip2g_admin_config_show_HistoryValue_title": "Значение",
+	"$trip2g_admin_config_show_HistoryAt_title": "Дата",
+	"$trip2g_admin_config_show_HistoryBy_title": "Кем"
+}

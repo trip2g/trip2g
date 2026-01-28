@@ -1,0 +1,26 @@
+$trip2g_admin_config_catalog $trip2g_admin_catalog
+	menu_title @ \Site Config
+	param \id
+	Empty $mol_status
+	Content* $trip2g_admin_config_show
+		config_id <= row_id* \
+	menu_link_content* / <= ConfigItem* $mol_view
+		sub /
+			<= Rows* $mol_row
+				minimal_height 24
+				minimal_width 800
+				sub <= row_content* /
+					<= Row_id_labeler* $mol_labeler
+						title @ \Config ID
+						Content <= Row_id* $trip2g_admin_cell
+							content <= row_id* \
+					<= Row_value_labeler* $mol_labeler
+						title @ \Value
+						Content <= Row_value* $trip2g_admin_cell
+							content <= row_value_preview* \
+					<= UpdatedAt* $trip2g_admin_labeler_moment
+						title @ \Updated
+						value <= row_updated_at* \
+					<= UpdatedBy* $trip2g_admin_labeler_email
+						title @ \Updated By
+						value <= row_updated_by* \

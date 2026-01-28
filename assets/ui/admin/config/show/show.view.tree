@@ -1,0 +1,49 @@
+$trip2g_admin_config_show $mol_page
+	config_id \
+	title <= config_title \Config
+	body /
+		<= Details $mol_view
+			sub /
+				<= Id_labeler $mol_labeler
+					title @ \Config ID
+					Content <= Id $trip2g_admin_cell
+						content <= config_id
+				<= Description_labeler $mol_labeler
+					title @ \Description
+					Content <= Description $trip2g_admin_cell
+						content <= config_description \
+				<= CurrentValue_labeler $mol_labeler
+					title @ \Current Value
+					Content <= CurrentValue $trip2g_admin_cell
+						content <= config_current_value \
+		<= EditSection $mol_section
+			title @ \Edit Value
+			content /
+				<= EditForm $mol_form
+					body /
+						<= Value_field $mol_form_field
+							name @ \New Value
+							Content <= value_control $mol_view
+					buttons /
+						<= Submit $mol_button_major
+							title @ \Save
+							click? <=> save? null
+						<= Result $mol_status
+							message <= result_message \
+		<= HistorySection $mol_section
+			title @ \History
+			content /
+				<= History $mol_list
+					rows <= history_rows /$mol_view
+						<= HistoryRow*0 $mol_row
+							sub /
+								<= HistoryValue* $mol_labeler
+									title @ \Value
+									Content <= History_value* $trip2g_admin_cell
+										content <= history_value* \
+								<= HistoryAt* $trip2g_admin_labeler_moment
+									title @ \Date
+									value <= history_at* \
+								<= HistoryBy* $trip2g_admin_labeler_email
+									title @ \By
+									value <= history_by* \
