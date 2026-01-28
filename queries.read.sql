@@ -753,76 +753,36 @@ select *
 -- name: AllNotionIntegrations :many
 select * from notion_integrations order by id;
 
--- name: GetLatestConfig :one
-select *
-  from config_versions
- order by id desc
+-- name: GetLatestConfigString :one
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_string_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
  limit 1;
 
--- name: ListAllConfigVersions :many
-select *
-  from config_versions
- order by id desc
+-- name: GetLatestConfigBool :one
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_bool_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
+ limit 1;
+
+-- name: ListConfigStringHistory :many
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_string_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
  limit 50;
 
--- name: GetLatestConfigSiteTitleTemplate :one
-select *
-  from config_site_title_templates
- order by id desc
- limit 1;
-
--- name: ListConfigSiteTitleTemplateHistory :many
-select *
-  from config_site_title_templates
- order by id desc
- limit 50;
-
--- name: GetLatestConfigTimezone :one
-select *
-  from config_timezones
- order by id desc
- limit 1;
-
--- name: ListConfigTimezoneHistory :many
-select *
-  from config_timezones
- order by id desc
- limit 50;
-
--- name: GetLatestConfigDefaultLayout :one
-select *
-  from config_default_layouts
- order by id desc
- limit 1;
-
--- name: ListConfigDefaultLayoutHistory :many
-select *
-  from config_default_layouts
- order by id desc
- limit 50;
-
--- name: GetLatestConfigRobotsTxt :one
-select *
-  from config_robots_txts
- order by id desc
- limit 1;
-
--- name: ListConfigRobotsTxtHistory :many
-select *
-  from config_robots_txts
- order by id desc
- limit 50;
-
--- name: GetLatestConfigShowDraftVersions :one
-select *
-  from config_show_draft_versions
- order by id desc
- limit 1;
-
--- name: ListConfigShowDraftVersionsHistory :many
-select *
-  from config_show_draft_versions
- order by id desc
+-- name: ListConfigBoolHistory :many
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_bool_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
  limit 50;
 
 -- name: ListNotePathsLike :many

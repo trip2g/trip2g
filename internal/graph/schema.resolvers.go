@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 	"trip2g/internal/appreq"
 	"trip2g/internal/case/admin/banuser"
 	"trip2g/internal/case/admin/canceltelegramaccountauth"
@@ -25,7 +24,6 @@ import (
 	"trip2g/internal/case/admin/createadmin"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
-	"trip2g/internal/case/admin/createconfigversion"
 	"trip2g/internal/case/admin/creategithuboauthcredentials"
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/creategoogleoauthcredentials"
@@ -336,14 +334,34 @@ func (r *adminConfigBoolEntryResolver) CreatedBy(ctx context.Context, obj *model
 
 // UpdatedBy is the resolver for the updatedBy field.
 func (r *adminConfigBoolValueResolver) UpdatedBy(ctx context.Context, obj *model.AdminConfigBoolValue) (*db.User, error) {
-	// Bool configs not yet implemented.
-	return nil, nil
+	entry, err := r.env(ctx).GetLatestConfigBool(ctx, obj.ID)
+	if err != nil {
+		//nolint:nilerr // no entry means no updatedBy, not an error.
+		return nil, nil
+	}
+	return resolveOne[db.User](ctx, entry.CreatedBy, r.env(ctx).UserByID)
 }
 
 // History is the resolver for the history field.
 func (r *adminConfigBoolValueResolver) History(ctx context.Context, obj *model.AdminConfigBoolValue) ([]model.AdminConfigBoolEntry, error) {
-	// Bool configs not yet implemented.
-	return nil, nil
+	entries, err := r.env(ctx).ListConfigBoolHistory(ctx, obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]model.AdminConfigBoolEntry, len(entries))
+	for i, e := range entries {
+		user, userErr := r.env(ctx).UserByID(ctx, e.CreatedBy)
+		if userErr != nil {
+			return nil, fmt.Errorf("failed to get user %d: %w", e.CreatedBy, userErr)
+		}
+		result[i] = model.AdminConfigBoolEntry{
+			ID:        e.ID,
+			Value:     e.Value,
+			CreatedAt: e.CreatedAt,
+			CreatedBy: &user,
+		}
+	}
+	return result, nil
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -356,54 +374,34 @@ func (r *adminConfigStringEntryResolver) CreatedBy(ctx context.Context, obj *mod
 
 // UpdatedBy is the resolver for the updatedBy field.
 func (r *adminConfigStringValueResolver) UpdatedBy(ctx context.Context, obj *model.AdminConfigStringValue) (*db.User, error) {
-	switch obj.ID {
-	case configregistry.ConfigSiteTitleTemplate:
-		entry, err := r.env(ctx).GetLatestConfigSiteTitleTemplate(ctx)
-		if err != nil {
-			//nolint:nilerr // no entry means no updatedBy, not an error.
-			return nil, nil
-		}
-		return resolveOne[db.User](ctx, entry.CreatedBy, r.env(ctx).UserByID)
-	default:
+	entry, err := r.env(ctx).GetLatestConfigString(ctx, obj.ID)
+	if err != nil {
+		//nolint:nilerr // no entry means no updatedBy, not an error.
 		return nil, nil
 	}
+	return resolveOne[db.User](ctx, entry.CreatedBy, r.env(ctx).UserByID)
 }
 
 // History is the resolver for the history field.
 func (r *adminConfigStringValueResolver) History(ctx context.Context, obj *model.AdminConfigStringValue) ([]model.AdminConfigStringEntry, error) {
-	switch obj.ID {
-	case configregistry.ConfigSiteTitleTemplate:
-		entries, err := r.env(ctx).ListConfigSiteTitleTemplateHistory(ctx)
-		if err != nil {
-			return nil, err
-		}
-		result := make([]model.AdminConfigStringEntry, len(entries))
-		for i, e := range entries {
-			user, userErr := r.env(ctx).UserByID(ctx, e.CreatedBy)
-			if userErr != nil {
-				return nil, fmt.Errorf("failed to get user %d: %w", e.CreatedBy, userErr)
-			}
-			result[i] = model.AdminConfigStringEntry{
-				ID:        e.ID,
-				Value:     e.Value,
-				CreatedAt: e.CreatedAt,
-				CreatedBy: &user,
-			}
-		}
-		return result, nil
-	default:
-		return nil, nil
+	entries, err := r.env(ctx).ListConfigStringHistory(ctx, obj.ID)
+	if err != nil {
+		return nil, err
 	}
-}
-
-// CreatedBy is the resolver for the createdBy field.
-func (r *adminConfigVersionResolver) CreatedBy(ctx context.Context, obj *db.ConfigVersion) (*db.User, error) {
-	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
-}
-
-// Nodes is the resolver for the nodes field.
-func (r *adminConfigVersionsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminConfigVersionsConnection) ([]db.ConfigVersion, error) {
-	return r.env(ctx).ListAllConfigVersions(ctx)
+	result := make([]model.AdminConfigStringEntry, len(entries))
+	for i, e := range entries {
+		user, userErr := r.env(ctx).UserByID(ctx, e.CreatedBy)
+		if userErr != nil {
+			return nil, fmt.Errorf("failed to get user %d: %w", e.CreatedBy, userErr)
+		}
+		result[i] = model.AdminConfigStringEntry{
+			ID:        e.ID,
+			Value:     e.Value,
+			CreatedAt: e.CreatedAt,
+			CreatedBy: &user,
+		}
+	}
+	return result, nil
 }
 
 // Executions is the resolver for the executions field.
@@ -894,11 +892,6 @@ func (r *adminMutationResolver) RunCronJob(ctx context.Context, obj *appmodel.Ad
 	return runcronjob.Resolve(ctx, r.env(ctx), input)
 }
 
-// CreateConfigVersion is the resolver for the createConfigVersion field.
-func (r *adminMutationResolver) CreateConfigVersion(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateConfigVersionInput) (model.CreateConfigVersionOrErrorPayload, error) {
-	return createconfigversion.Resolve(ctx, r.env(ctx), input)
-}
-
 // SetConfigStringValue is the resolver for the setConfigStringValue field.
 func (r *adminMutationResolver) SetConfigStringValue(ctx context.Context, obj *appmodel.AdminMutation, input model.SetConfigStringValueInput) (model.SetConfigStringValuePayload, error) {
 	return setconfigstringvalue.Resolve(ctx, r.env(ctx), input)
@@ -1224,11 +1217,6 @@ func (r *adminQueryResolver) AllCronJobs(ctx context.Context, obj *appmodel.Admi
 	return &model.AdminCronJobsConnection{}, nil
 }
 
-// AllConfigVersions is the resolver for the allConfigVersions field.
-func (r *adminQueryResolver) AllConfigVersions(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminConfigVersionsConnection, error) {
-	return &model.AdminConfigVersionsConnection{}, nil
-}
-
 // AllTelegramPublishTags is the resolver for the allTelegramPublishTags field.
 func (r *adminQueryResolver) AllTelegramPublishTags(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminTelegramPublishTagsConnection, error) {
 	return &model.AdminTelegramPublishTagsConnection{}, nil
@@ -1337,12 +1325,6 @@ func (r *adminQueryResolver) AuditLogs(ctx context.Context, obj *appmodel.AdminQ
 	return &model.AdminAuditLogsConnection{Filter: &filter}, nil
 }
 
-// LatestConfig is the resolver for the latestConfig field.
-func (r *adminQueryResolver) LatestConfig(ctx context.Context, obj *appmodel.AdminQuery) (*db.ConfigVersion, error) {
-	cfg := r.env(ctx).LatestConfig()
-	return &cfg, nil
-}
-
 // ConfigValues is the resolver for the configValues field.
 func (r *adminQueryResolver) ConfigValues(ctx context.Context, obj *appmodel.AdminQuery) ([]model.AdminConfigValue, error) {
 	var result []model.AdminConfigValue
@@ -1367,129 +1349,6 @@ func (r *adminQueryResolver) ConfigValue(ctx context.Context, obj *appmodel.Admi
 	}
 
 	return r.buildConfigValue(ctx, id)
-}
-
-// buildConfigValue builds a config value from the database or defaults.
-func (r *adminQueryResolver) buildConfigValue(ctx context.Context, id string) (model.AdminConfigValue, error) {
-	meta, ok := configregistry.Get(id)
-	if !ok {
-		return nil, fmt.Errorf("unknown config: %s", id)
-	}
-
-	switch meta.Type {
-	case configregistry.ConfigTypeString:
-		return r.buildStringConfigValue(ctx, id, meta)
-	case configregistry.ConfigTypeBool:
-		return r.buildBoolConfigValue(ctx, id, meta)
-	default:
-		return nil, fmt.Errorf("unknown config type: %s", meta.Type)
-	}
-}
-
-func (r *adminQueryResolver) buildStringConfigValue(ctx context.Context, id string, meta configregistry.ConfigMeta) (*model.AdminConfigStringValue, error) {
-	defaultValue, _ := meta.Default.(string)
-
-	switch id {
-	case configregistry.ConfigSiteTitleTemplate:
-		entry, err := r.env(ctx).GetLatestConfigSiteTitleTemplate(ctx)
-		if err != nil {
-			//nolint:nilerr // no entry means use default, not an error.
-			return &model.AdminConfigStringValue{
-				ID:          id,
-				Description: &meta.Description,
-				Value:       defaultValue,
-			}, nil
-		}
-		return &model.AdminConfigStringValue{
-			ID:          id,
-			Description: &meta.Description,
-			UpdatedAt:   &entry.CreatedAt,
-			Value:       entry.Value,
-		}, nil
-	case configregistry.ConfigTimezone:
-		entry, err := r.env(ctx).GetLatestConfigTimezone(ctx)
-		if err != nil {
-			//nolint:nilerr // no entry means use default, not an error.
-			return &model.AdminConfigStringValue{
-				ID:          id,
-				Description: &meta.Description,
-				Value:       defaultValue,
-			}, nil
-		}
-		return &model.AdminConfigStringValue{
-			ID:          id,
-			Description: &meta.Description,
-			UpdatedAt:   &entry.CreatedAt,
-			Value:       entry.Value,
-		}, nil
-	case configregistry.ConfigDefaultLayout:
-		entry, err := r.env(ctx).GetLatestConfigDefaultLayout(ctx)
-		if err != nil {
-			//nolint:nilerr // no entry means use default, not an error.
-			return &model.AdminConfigStringValue{
-				ID:          id,
-				Description: &meta.Description,
-				Value:       defaultValue,
-			}, nil
-		}
-		return &model.AdminConfigStringValue{
-			ID:          id,
-			Description: &meta.Description,
-			UpdatedAt:   &entry.CreatedAt,
-			Value:       entry.Value,
-		}, nil
-	case configregistry.ConfigRobotsTxt:
-		entry, err := r.env(ctx).GetLatestConfigRobotsTxt(ctx)
-		if err != nil {
-			//nolint:nilerr // no entry means use default, not an error.
-			return &model.AdminConfigStringValue{
-				ID:          id,
-				Description: &meta.Description,
-				Value:       defaultValue,
-			}, nil
-		}
-		return &model.AdminConfigStringValue{
-			ID:          id,
-			Description: &meta.Description,
-			UpdatedAt:   &entry.CreatedAt,
-			Value:       entry.Value,
-		}, nil
-	default:
-		return &model.AdminConfigStringValue{
-			ID:          id,
-			Description: &meta.Description,
-			Value:       defaultValue,
-		}, nil
-	}
-}
-
-func (r *adminQueryResolver) buildBoolConfigValue(ctx context.Context, id string, meta configregistry.ConfigMeta) (*model.AdminConfigBoolValue, error) {
-	defaultValue, _ := meta.Default.(bool)
-
-	switch id {
-	case configregistry.ConfigShowDraftVersions:
-		entry, err := r.env(ctx).GetLatestConfigShowDraftVersions(ctx)
-		if err != nil {
-			//nolint:nilerr // no entry means use default, not an error.
-			return &model.AdminConfigBoolValue{
-				ID:          id,
-				Description: &meta.Description,
-				Value:       defaultValue,
-			}, nil
-		}
-		return &model.AdminConfigBoolValue{
-			ID:          id,
-			Description: &meta.Description,
-			UpdatedAt:   &entry.CreatedAt,
-			Value:       entry.Value,
-		}, nil
-	default:
-		return &model.AdminConfigBoolValue{
-			ID:          id,
-			Description: &meta.Description,
-			Value:       defaultValue,
-		}, nil
-	}
 }
 
 // Subgraph is the resolver for the subgraph field.
@@ -2675,11 +2534,14 @@ func (r *viewerResolver) Offers(ctx context.Context, obj *appmodel.Viewer, filte
 		return nil, nil
 	}
 
-	config := r.env(ctx).LatestConfig()
+	showDraftVersions := false
+	if entry, err := r.env(ctx).GetLatestConfigBool(ctx, "show_draft_versions"); err == nil {
+		showDraftVersions = entry.Value
+	}
 
 	var note *appmodel.NoteView
 
-	if config.ShowDraftVersions {
+	if showDraftVersions {
 		note = r.env(ctx).LatestNoteViews().GetByPathID(*filter.PageID)
 	} else {
 		note = r.env(ctx).LiveNoteViews().GetByPathID(*filter.PageID)
@@ -2859,16 +2721,6 @@ func (r *Resolver) AdminConfigStringEntry() AdminConfigStringEntryResolver {
 // AdminConfigStringValue returns AdminConfigStringValueResolver implementation.
 func (r *Resolver) AdminConfigStringValue() AdminConfigStringValueResolver {
 	return &adminConfigStringValueResolver{r}
-}
-
-// AdminConfigVersion returns AdminConfigVersionResolver implementation.
-func (r *Resolver) AdminConfigVersion() AdminConfigVersionResolver {
-	return &adminConfigVersionResolver{r}
-}
-
-// AdminConfigVersionsConnection returns AdminConfigVersionsConnectionResolver implementation.
-func (r *Resolver) AdminConfigVersionsConnection() AdminConfigVersionsConnectionResolver {
-	return &adminConfigVersionsConnectionResolver{r}
 }
 
 // AdminCronJob returns AdminCronJobResolver implementation.
@@ -3240,8 +3092,6 @@ type adminConfigBoolEntryResolver struct{ *Resolver }
 type adminConfigBoolValueResolver struct{ *Resolver }
 type adminConfigStringEntryResolver struct{ *Resolver }
 type adminConfigStringValueResolver struct{ *Resolver }
-type adminConfigVersionResolver struct{ *Resolver }
-type adminConfigVersionsConnectionResolver struct{ *Resolver }
 type adminCronJobResolver struct{ *Resolver }
 type adminCronJobExecutionResolver struct{ *Resolver }
 type adminCronJobsConnectionResolver struct{ *Resolver }
@@ -3324,10 +3174,3 @@ type userResolver struct{ *Resolver }
 type userBanResolver struct{ *Resolver }
 type userSubgraphAccessResolver struct{ *Resolver }
 type viewerResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.

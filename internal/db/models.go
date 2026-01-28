@@ -125,49 +125,21 @@ type BoostyTierSubgraph struct {
 	CreatedBy  int64     `json:"created_by"`
 }
 
-type ConfigDefaultLayout struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	CreatedBy int64     `json:"created_by"`
-	Value     string    `json:"value"`
+type ConfigBoolValue struct {
+	ChangeID int64 `json:"change_id"`
+	Value    bool  `json:"value"`
 }
 
-type ConfigRobotsTxt struct {
+type ConfigChange struct {
 	ID        int64     `json:"id"`
+	ValueID   string    `json:"value_id"`
 	CreatedAt time.Time `json:"created_at"`
 	CreatedBy int64     `json:"created_by"`
-	Value     string    `json:"value"`
 }
 
-type ConfigShowDraftVersion struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	CreatedBy int64     `json:"created_by"`
-	Value     bool      `json:"value"`
-}
-
-type ConfigSiteTitleTemplate struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	CreatedBy int64     `json:"created_by"`
-	Value     string    `json:"value"`
-}
-
-type ConfigTimezone struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	CreatedBy int64     `json:"created_by"`
-	Value     string    `json:"value"`
-}
-
-type ConfigVersion struct {
-	ID                int64     `json:"id"`
-	CreatedAt         time.Time `json:"created_at"`
-	CreatedBy         int64     `json:"created_by"`
-	ShowDraftVersions bool      `json:"show_draft_versions"`
-	DefaultLayout     string    `json:"default_layout"`
-	Timezone          string    `json:"timezone"`
-	RobotsTxt         string    `json:"robots_txt"`
+type ConfigStringValue struct {
+	ChangeID int64  `json:"change_id"`
+	Value    string `json:"value"`
 }
 
 type CronJob struct {

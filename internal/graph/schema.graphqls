@@ -638,19 +638,6 @@ type AdminCronJobsConnection {
   nodes: [AdminCronJob!]! @goField(forceResolver: true)
 }
 
-type AdminConfigVersion @goModel(model: "trip2g/internal/db.ConfigVersion") {
-  id: Int64!
-  createdAt: Time!
-  createdBy: AdminUser! @goField(forceResolver: true)
-	showDraftVersions: Boolean!
-	defaultLayout: String!
-  timezone: String!
-  robotsTxt: String!
-}
-
-type AdminConfigVersionsConnection {
-  nodes: [AdminConfigVersion!]! @goField(forceResolver: true)
-}
 
 #
 # Atomic config types
@@ -964,7 +951,6 @@ type AdminQuery {
   allLatestNoteAssets: AdminLatestNoteAssetsConnection!
   allHtmlInjections: AdminHtmlInjectionsConnection!
   allCronJobs: AdminCronJobsConnection!
-  allConfigVersions: AdminConfigVersionsConnection!
   allTelegramPublishTags: AdminTelegramPublishTagsConnection!
   allTelegramPublishNotes(filter: AdminTelegramPublishNotesFilter): AdminTelegramPublishNotesConnection!
 
@@ -992,8 +978,6 @@ type AdminQuery {
 
   apiKeyLogs(filter: ApiKeyLogsFilterInput!): AdminApiKeyLogsConnection!
   auditLogs(filter: AdminAuditLogsFilterInput!): AdminAuditLogsConnection!
-
-  latestConfig: AdminConfigVersion!
 
   # Atomic config
   configValues: [AdminConfigValue!]!
@@ -2375,23 +2359,6 @@ type SetTgChatPublishInstantTagsPayload
 union SetTgChatPublishInstantTagsOrErrorPayload = SetTgChatPublishInstantTagsPayload | ErrorPayload
 
 #
-# createConfigVersion
-#
-
-input CreateConfigVersionInput {
-  showDraftVersions: Boolean!
-  defaultLayout: String!
-  timezone: String!
-  robotsTxt: String!
-}
-
-type CreateConfigVersionPayload {
-  configVersion: AdminConfigVersion!
-}
-
-union CreateConfigVersionOrErrorPayload = CreateConfigVersionPayload | ErrorPayload
-
-#
 # Atomic config mutations
 #
 
@@ -2564,9 +2531,6 @@ type AdminMutation {
   # Cron Job mutations
   updateCronJob(input: UpdateCronJobInput!): UpdateCronJobOrErrorPayload!
   runCronJob(input: RunCronJobInput!): RunCronJobOrErrorPayload!
-
-  # Config Version mutations
-  createConfigVersion(input: CreateConfigVersionInput!): CreateConfigVersionOrErrorPayload!
 
   # Atomic config mutations
   setConfigStringValue(input: SetConfigStringValueInput!): SetConfigStringValuePayload!

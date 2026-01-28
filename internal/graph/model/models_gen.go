@@ -78,10 +78,6 @@ type CreateBoostyCredentialsOrErrorPayload interface {
 	IsCreateBoostyCredentialsOrErrorPayload()
 }
 
-type CreateConfigVersionOrErrorPayload interface {
-	IsCreateConfigVersionOrErrorPayload()
-}
-
 type CreateEmailWaitListRequestOrErrorPayload interface {
 	IsCreateEmailWaitListRequestOrErrorPayload()
 }
@@ -496,10 +492,6 @@ func (this AdminConfigStringValue) GetDescription() *string  { return this.Descr
 func (this AdminConfigStringValue) GetUpdatedAt() *time.Time { return this.UpdatedAt }
 func (this AdminConfigStringValue) GetUpdatedBy() *db.User   { return this.UpdatedBy }
 
-type AdminConfigVersionsConnection struct {
-	Nodes []db.ConfigVersion `json:"nodes"`
-}
-
 type AdminCronJobsConnection struct {
 	Nodes []db.CronJob `json:"nodes"`
 }
@@ -800,19 +792,6 @@ type CreateBoostyCredentialsPayload struct {
 }
 
 func (CreateBoostyCredentialsPayload) IsCreateBoostyCredentialsOrErrorPayload() {}
-
-type CreateConfigVersionInput struct {
-	ShowDraftVersions bool   `json:"showDraftVersions"`
-	DefaultLayout     string `json:"defaultLayout"`
-	Timezone          string `json:"timezone"`
-	RobotsTxt         string `json:"robotsTxt"`
-}
-
-type CreateConfigVersionPayload struct {
-	ConfigVersion *db.ConfigVersion `json:"configVersion"`
-}
-
-func (CreateConfigVersionPayload) IsCreateConfigVersionOrErrorPayload() {}
 
 type CreateEmailWaitListRequestInput struct {
 	Email  string `json:"email"`
@@ -1254,8 +1233,6 @@ func (ErrorPayload) IsUpdateUserOrErrorPayload() {}
 func (ErrorPayload) IsSetTgChatPublishTagsOrErrorPayload() {}
 
 func (ErrorPayload) IsSetTgChatPublishInstantTagsOrErrorPayload() {}
-
-func (ErrorPayload) IsCreateConfigVersionOrErrorPayload() {}
 
 func (ErrorPayload) IsResetTelegramPublishNoteOrErrorPayload() {}
 

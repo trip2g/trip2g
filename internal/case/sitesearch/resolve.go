@@ -21,7 +21,7 @@ type Env interface {
 	SearchLiveNotes(query string) ([]appmodel.SearchResult, error)
 	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
 	CanReadNote(ctx context.Context, note *appmodel.NoteView) (bool, error)
-	LatestConfig() db.ConfigVersion
+	GetLatestConfigBool(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error)
 	Logger() logger.Logger
 
 	// For hybrid search
@@ -42,8 +42,12 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}
 
-	config := env.LatestConfig()
-	useLatest := config.ShowDraftVersions || userToken.IsAdmin()
+	showDraftVersions := false
+	if entry, getErr := env.GetLatestConfigBool(ctx, "show_draft_versions"); getErr == nil {
+		showDraftVersions = entry.Value
+	}
+
+	useLatest := showDraftVersions || userToken.IsAdmin()
 
 	var results []appmodel.SearchResult
 

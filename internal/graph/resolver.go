@@ -12,7 +12,6 @@ import (
 	"trip2g/internal/case/admin/createadmin"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
-	"trip2g/internal/case/admin/createconfigversion"
 	"trip2g/internal/case/admin/creategithuboauthcredentials"
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/creategoogleoauthcredentials"
@@ -145,7 +144,6 @@ type Env interface {
 	ListNotePathsByValues(ctx context.Context, paths []string) ([]db.NotePath, error)
 	ListAllTelegramPublishTags(ctx context.Context) ([]db.TelegramPublishTag, error)
 	AllWaitListEmailRequests(ctx context.Context) ([]db.AllWaitListEmailRequestsRow, error)
-	ListAllConfigVersions(ctx context.Context) ([]db.ConfigVersion, error)
 	AllWaitListTgBotRequests(ctx context.Context) ([]db.AllWaitListTgBotRequestsRow, error)
 	ListAllTelegramPublishNotes(ctx context.Context, arg db.ListAllTelegramPublishNotesParams) ([]db.TelegramPublishNote, error)
 	ListTelegramPublishTagsByNoteID(ctx context.Context, notePathID int64) ([]db.TelegramPublishTag, error)
@@ -184,13 +182,13 @@ type Env interface {
 	Logger() logger.Logger
 	Now() time.Time
 
-	LatestConfig() db.ConfigVersion
-	GetLatestConfigSiteTitleTemplate(ctx context.Context) (db.ConfigSiteTitleTemplate, error)
-	ListConfigSiteTitleTemplateHistory(ctx context.Context) ([]db.ConfigSiteTitleTemplate, error)
-	GetLatestConfigTimezone(ctx context.Context) (db.ConfigTimezone, error)
-	GetLatestConfigDefaultLayout(ctx context.Context) (db.ConfigDefaultLayout, error)
-	GetLatestConfigRobotsTxt(ctx context.Context) (db.ConfigRobotsTxt, error)
-	GetLatestConfigShowDraftVersions(ctx context.Context) (db.ConfigShowDraftVersion, error)
+	GetLatestConfigString(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error)
+	GetLatestConfigBool(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error)
+	ListConfigStringHistory(ctx context.Context, valueID string) ([]db.ListConfigStringHistoryRow, error)
+	ListConfigBoolHistory(ctx context.Context, valueID string) ([]db.ListConfigBoolHistoryRow, error)
+	InsertConfigChange(ctx context.Context, arg db.InsertConfigChangeParams) (db.ConfigChange, error)
+	InsertConfigStringValue(ctx context.Context, arg db.InsertConfigStringValueParams) error
+	InsertConfigBoolValue(ctx context.Context, arg db.InsertConfigBoolValueParams) error
 
 	AcquireTxEnvInRequest(ctx context.Context, label string) error
 	ReleaseTxEnvInRequest(ctx context.Context, commit bool) error
@@ -255,7 +253,6 @@ type Env interface {
 	resettelegrampublishnote.Env
 	sendtelegrampublishnotenow.Env
 	convertnoteviewtotgpost.Env
-	createconfigversion.Env
 	setconfigstringvalue.Env
 	setconfigboolvalue.Env
 	startbackgroundqueue.Env

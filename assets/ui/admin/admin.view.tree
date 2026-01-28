@@ -37,8 +37,6 @@ $trip2g_admin_app $trip2g_admin_catalog
 			close_icon <= Spread_close
 		backgroundqueues <= BackgroundQueues $trip2g_admin_backgroundqueue_catalog
 			close_icon <= Spread_close
-		configversions <= ListConfigVersions $trip2g_admin_configversion_catalog
-			close_icon <= Spread_close
 		config <= Config $trip2g_admin_config_catalog
 			close_icon <= Spread_close
 		layouteditor <= LayoutEditor $trip2g_admin_layout_editor

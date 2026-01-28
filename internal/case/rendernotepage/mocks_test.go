@@ -25,6 +25,12 @@ var _ rendernotepage.Env = &EnvMock{}
 //			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 //				panic("mock out the CanReadNote method")
 //			},
+//			GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
+//				panic("mock out the GetLatestConfigBool method")
+//			},
+//			GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
+//				panic("mock out the GetLatestConfigString method")
+//			},
 //			IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 //				panic("mock out the IncreaseUserNoteViewCount method")
 //			},
@@ -33,9 +39,6 @@ var _ rendernotepage.Env = &EnvMock{}
 //			},
 //			LastUserNoteViewFunc: func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error) {
 //				panic("mock out the LastUserNoteView method")
-//			},
-//			LatestConfigFunc: func() db.ConfigVersion {
-//				panic("mock out the LatestConfig method")
 //			},
 //			LatestNoteViewsFunc: func() *model.NoteViews {
 //				panic("mock out the LatestNoteViews method")
@@ -74,6 +77,12 @@ type EnvMock struct {
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
 
+	// GetLatestConfigBoolFunc mocks the GetLatestConfigBool method.
+	GetLatestConfigBoolFunc func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error)
+
+	// GetLatestConfigStringFunc mocks the GetLatestConfigString method.
+	GetLatestConfigStringFunc func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error)
+
 	// IncreaseUserNoteViewCountFunc mocks the IncreaseUserNoteViewCount method.
 	IncreaseUserNoteViewCountFunc func(ctx context.Context, userID int64) error
 
@@ -82,9 +91,6 @@ type EnvMock struct {
 
 	// LastUserNoteViewFunc mocks the LastUserNoteView method.
 	LastUserNoteViewFunc func(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
-
-	// LatestConfigFunc mocks the LatestConfig method.
-	LatestConfigFunc func() db.ConfigVersion
 
 	// LatestNoteViewsFunc mocks the LatestNoteViews method.
 	LatestNoteViewsFunc func() *model.NoteViews
@@ -122,6 +128,20 @@ type EnvMock struct {
 			// Note is the note argument value.
 			Note *model.NoteView
 		}
+		// GetLatestConfigBool holds details about calls to the GetLatestConfigBool method.
+		GetLatestConfigBool []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ValueID is the valueID argument value.
+			ValueID string
+		}
+		// GetLatestConfigString holds details about calls to the GetLatestConfigString method.
+		GetLatestConfigString []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ValueID is the valueID argument value.
+			ValueID string
+		}
 		// IncreaseUserNoteViewCount holds details about calls to the IncreaseUserNoteViewCount method.
 		IncreaseUserNoteViewCount []struct {
 			// Ctx is the ctx argument value.
@@ -142,9 +162,6 @@ type EnvMock struct {
 			Ctx context.Context
 			// Arg is the arg argument value.
 			Arg db.LastUserNoteViewParams
-		}
-		// LatestConfig holds details about calls to the LatestConfig method.
-		LatestConfig []struct {
 		}
 		// LatestNoteViews holds details about calls to the LatestNoteViews method.
 		LatestNoteViews []struct {
@@ -191,10 +208,11 @@ type EnvMock struct {
 		}
 	}
 	lockCanReadNote               sync.RWMutex
+	lockGetLatestConfigBool       sync.RWMutex
+	lockGetLatestConfigString     sync.RWMutex
 	lockIncreaseUserNoteViewCount sync.RWMutex
 	lockInsertUserNoteView        sync.RWMutex
 	lockLastUserNoteView          sync.RWMutex
-	lockLatestConfig              sync.RWMutex
 	lockLatestNoteViews           sync.RWMutex
 	lockLayouts                   sync.RWMutex
 	lockListActiveUserSubgraphs   sync.RWMutex
@@ -239,6 +257,78 @@ func (mock *EnvMock) CanReadNoteCalls() []struct {
 	mock.lockCanReadNote.RLock()
 	calls = mock.calls.CanReadNote
 	mock.lockCanReadNote.RUnlock()
+	return calls
+}
+
+// GetLatestConfigBool calls GetLatestConfigBoolFunc.
+func (mock *EnvMock) GetLatestConfigBool(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
+	if mock.GetLatestConfigBoolFunc == nil {
+		panic("EnvMock.GetLatestConfigBoolFunc: method is nil but Env.GetLatestConfigBool was just called")
+	}
+	callInfo := struct {
+		Ctx     context.Context
+		ValueID string
+	}{
+		Ctx:     ctx,
+		ValueID: valueID,
+	}
+	mock.lockGetLatestConfigBool.Lock()
+	mock.calls.GetLatestConfigBool = append(mock.calls.GetLatestConfigBool, callInfo)
+	mock.lockGetLatestConfigBool.Unlock()
+	return mock.GetLatestConfigBoolFunc(ctx, valueID)
+}
+
+// GetLatestConfigBoolCalls gets all the calls that were made to GetLatestConfigBool.
+// Check the length with:
+//
+//	len(mockedEnv.GetLatestConfigBoolCalls())
+func (mock *EnvMock) GetLatestConfigBoolCalls() []struct {
+	Ctx     context.Context
+	ValueID string
+} {
+	var calls []struct {
+		Ctx     context.Context
+		ValueID string
+	}
+	mock.lockGetLatestConfigBool.RLock()
+	calls = mock.calls.GetLatestConfigBool
+	mock.lockGetLatestConfigBool.RUnlock()
+	return calls
+}
+
+// GetLatestConfigString calls GetLatestConfigStringFunc.
+func (mock *EnvMock) GetLatestConfigString(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
+	if mock.GetLatestConfigStringFunc == nil {
+		panic("EnvMock.GetLatestConfigStringFunc: method is nil but Env.GetLatestConfigString was just called")
+	}
+	callInfo := struct {
+		Ctx     context.Context
+		ValueID string
+	}{
+		Ctx:     ctx,
+		ValueID: valueID,
+	}
+	mock.lockGetLatestConfigString.Lock()
+	mock.calls.GetLatestConfigString = append(mock.calls.GetLatestConfigString, callInfo)
+	mock.lockGetLatestConfigString.Unlock()
+	return mock.GetLatestConfigStringFunc(ctx, valueID)
+}
+
+// GetLatestConfigStringCalls gets all the calls that were made to GetLatestConfigString.
+// Check the length with:
+//
+//	len(mockedEnv.GetLatestConfigStringCalls())
+func (mock *EnvMock) GetLatestConfigStringCalls() []struct {
+	Ctx     context.Context
+	ValueID string
+} {
+	var calls []struct {
+		Ctx     context.Context
+		ValueID string
+	}
+	mock.lockGetLatestConfigString.RLock()
+	calls = mock.calls.GetLatestConfigString
+	mock.lockGetLatestConfigString.RUnlock()
 	return calls
 }
 
@@ -347,33 +437,6 @@ func (mock *EnvMock) LastUserNoteViewCalls() []struct {
 	mock.lockLastUserNoteView.RLock()
 	calls = mock.calls.LastUserNoteView
 	mock.lockLastUserNoteView.RUnlock()
-	return calls
-}
-
-// LatestConfig calls LatestConfigFunc.
-func (mock *EnvMock) LatestConfig() db.ConfigVersion {
-	if mock.LatestConfigFunc == nil {
-		panic("EnvMock.LatestConfigFunc: method is nil but Env.LatestConfig was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockLatestConfig.Lock()
-	mock.calls.LatestConfig = append(mock.calls.LatestConfig, callInfo)
-	mock.lockLatestConfig.Unlock()
-	return mock.LatestConfigFunc()
-}
-
-// LatestConfigCalls gets all the calls that were made to LatestConfig.
-// Check the length with:
-//
-//	len(mockedEnv.LatestConfigCalls())
-func (mock *EnvMock) LatestConfigCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockLatestConfig.RLock()
-	calls = mock.calls.LatestConfig
-	mock.lockLatestConfig.RUnlock()
 	return calls
 }
 

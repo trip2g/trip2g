@@ -644,35 +644,18 @@ update notion_integrations
    set verification_token = ?
  where id = ?;
 
--- name: InsertConfigVersion :one
-insert into config_versions (created_by, show_draft_versions, default_layout, timezone, robots_txt)
-values (?, ?, ?, ?, ?)
-returning *;
-
--- name: InsertConfigSiteTitleTemplate :one
-insert into config_site_title_templates (created_by, value)
+-- name: InsertConfigChange :one
+insert into config_changes (value_id, created_by)
 values (?, ?)
 returning *;
 
--- name: InsertConfigTimezone :one
-insert into config_timezones (created_by, value)
-values (?, ?)
-returning *;
+-- name: InsertConfigStringValue :exec
+insert into config_string_values (change_id, value)
+values (?, ?);
 
--- name: InsertConfigDefaultLayout :one
-insert into config_default_layouts (created_by, value)
-values (?, ?)
-returning *;
-
--- name: InsertConfigRobotsTxt :one
-insert into config_robots_txts (created_by, value)
-values (?, ?)
-returning *;
-
--- name: InsertConfigShowDraftVersions :one
-insert into config_show_draft_versions (created_by, value)
-values (?, ?)
-returning *;
+-- name: InsertConfigBoolValue :exec
+insert into config_bool_values (change_id, value)
+values (?, ?);
 
 -- name: InsertTelegramPublishTags :exec
 insert into telegram_publish_tags (label)

@@ -44,7 +44,7 @@ func (e Endpoint) Handle(req *appreq.Request) (interface{}, error) {
 
 	resp, err := Resolve(ctx, env, request)
 	if resp != nil && resp.Note != nil {
-		layoutParams.Title = resp.Note.Title
+		layoutParams.Title = resp.Title
 		layoutParams.MetaDescription = resp.Note.Description
 
 		layoutParams.OGTags = map[string]string{
@@ -161,6 +161,7 @@ func renderLayout(
 	vars := make(jet.VarMap)
 	vars["note"] = reflect.ValueOf(templateviews.NewNote(resp.Note))
 	vars["nvs"] = reflect.ValueOf(templateviews.NewNVS(resp.Notes, resp.DefaultVersion))
+	vars["title"] = reflect.ValueOf(resp.Title)
 
 	viewErr := layout.View.Execute(ctx, vars, resp)
 	if viewErr != nil {

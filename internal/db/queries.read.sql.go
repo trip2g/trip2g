@@ -1389,40 +1389,29 @@ func (q *Queries) GetHTMLInjection(ctx context.Context, id int64) (HtmlInjection
 	return i, err
 }
 
-const getLatestConfig = `-- name: GetLatestConfig :one
-select id, created_at, created_by, show_draft_versions, default_layout, timezone, robots_txt
-  from config_versions
- order by id desc
+const getLatestConfigBool = `-- name: GetLatestConfigBool :one
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_bool_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
  limit 1
 `
 
-func (q *Queries) GetLatestConfig(ctx context.Context) (ConfigVersion, error) {
-	row := q.db.QueryRowContext(ctx, getLatestConfig)
-	var i ConfigVersion
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.CreatedBy,
-		&i.ShowDraftVersions,
-		&i.DefaultLayout,
-		&i.Timezone,
-		&i.RobotsTxt,
-	)
-	return i, err
+type GetLatestConfigBoolRow struct {
+	ID        int64     `json:"id"`
+	ValueID   string    `json:"value_id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	Value     bool      `json:"value"`
 }
 
-const getLatestConfigDefaultLayout = `-- name: GetLatestConfigDefaultLayout :one
-select id, created_at, created_by, value
-  from config_default_layouts
- order by id desc
- limit 1
-`
-
-func (q *Queries) GetLatestConfigDefaultLayout(ctx context.Context) (ConfigDefaultLayout, error) {
-	row := q.db.QueryRowContext(ctx, getLatestConfigDefaultLayout)
-	var i ConfigDefaultLayout
+func (q *Queries) GetLatestConfigBool(ctx context.Context, valueID string) (GetLatestConfigBoolRow, error) {
+	row := q.db.QueryRowContext(ctx, getLatestConfigBool, valueID)
+	var i GetLatestConfigBoolRow
 	err := row.Scan(
 		&i.ID,
+		&i.ValueID,
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.Value,
@@ -1430,75 +1419,29 @@ func (q *Queries) GetLatestConfigDefaultLayout(ctx context.Context) (ConfigDefau
 	return i, err
 }
 
-const getLatestConfigRobotsTxt = `-- name: GetLatestConfigRobotsTxt :one
-select id, created_at, created_by, value
-  from config_robots_txts
- order by id desc
+const getLatestConfigString = `-- name: GetLatestConfigString :one
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_string_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
  limit 1
 `
 
-func (q *Queries) GetLatestConfigRobotsTxt(ctx context.Context) (ConfigRobotsTxt, error) {
-	row := q.db.QueryRowContext(ctx, getLatestConfigRobotsTxt)
-	var i ConfigRobotsTxt
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.CreatedBy,
-		&i.Value,
-	)
-	return i, err
+type GetLatestConfigStringRow struct {
+	ID        int64     `json:"id"`
+	ValueID   string    `json:"value_id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	Value     string    `json:"value"`
 }
 
-const getLatestConfigShowDraftVersions = `-- name: GetLatestConfigShowDraftVersions :one
-select id, created_at, created_by, value
-  from config_show_draft_versions
- order by id desc
- limit 1
-`
-
-func (q *Queries) GetLatestConfigShowDraftVersions(ctx context.Context) (ConfigShowDraftVersion, error) {
-	row := q.db.QueryRowContext(ctx, getLatestConfigShowDraftVersions)
-	var i ConfigShowDraftVersion
+func (q *Queries) GetLatestConfigString(ctx context.Context, valueID string) (GetLatestConfigStringRow, error) {
+	row := q.db.QueryRowContext(ctx, getLatestConfigString, valueID)
+	var i GetLatestConfigStringRow
 	err := row.Scan(
 		&i.ID,
-		&i.CreatedAt,
-		&i.CreatedBy,
-		&i.Value,
-	)
-	return i, err
-}
-
-const getLatestConfigSiteTitleTemplate = `-- name: GetLatestConfigSiteTitleTemplate :one
-select id, created_at, created_by, value
-  from config_site_title_templates
- order by id desc
- limit 1
-`
-
-func (q *Queries) GetLatestConfigSiteTitleTemplate(ctx context.Context) (ConfigSiteTitleTemplate, error) {
-	row := q.db.QueryRowContext(ctx, getLatestConfigSiteTitleTemplate)
-	var i ConfigSiteTitleTemplate
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.CreatedBy,
-		&i.Value,
-	)
-	return i, err
-}
-
-const getLatestConfigTimezone = `-- name: GetLatestConfigTimezone :one
-select id, created_at, created_by, value
-  from config_timezones
- order by id desc
- limit 1
-`
-
-func (q *Queries) GetLatestConfigTimezone(ctx context.Context) (ConfigTimezone, error) {
-	row := q.db.QueryRowContext(ctx, getLatestConfigTimezone)
-	var i ConfigTimezone
-	err := row.Scan(
-		&i.ID,
+		&i.ValueID,
 		&i.CreatedAt,
 		&i.CreatedBy,
 		&i.Value,
@@ -2719,44 +2662,6 @@ func (q *Queries) ListAllAdmins(ctx context.Context) ([]Admin, error) {
 	return items, nil
 }
 
-const listAllConfigVersions = `-- name: ListAllConfigVersions :many
-select id, created_at, created_by, show_draft_versions, default_layout, timezone, robots_txt
-  from config_versions
- order by id desc
- limit 50
-`
-
-func (q *Queries) ListAllConfigVersions(ctx context.Context) ([]ConfigVersion, error) {
-	rows, err := q.db.QueryContext(ctx, listAllConfigVersions)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ConfigVersion
-	for rows.Next() {
-		var i ConfigVersion
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatedAt,
-			&i.CreatedBy,
-			&i.ShowDraftVersions,
-			&i.DefaultLayout,
-			&i.Timezone,
-			&i.RobotsTxt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listAllCronJobs = `-- name: ListAllCronJobs :many
 select id, name, enabled, expression, last_exec_at from cron_jobs
 order by name
@@ -3349,24 +3254,35 @@ func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([
 	return items, nil
 }
 
-const listConfigDefaultLayoutHistory = `-- name: ListConfigDefaultLayoutHistory :many
-select id, created_at, created_by, value
-  from config_default_layouts
- order by id desc
+const listConfigBoolHistory = `-- name: ListConfigBoolHistory :many
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_bool_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
  limit 50
 `
 
-func (q *Queries) ListConfigDefaultLayoutHistory(ctx context.Context) ([]ConfigDefaultLayout, error) {
-	rows, err := q.db.QueryContext(ctx, listConfigDefaultLayoutHistory)
+type ListConfigBoolHistoryRow struct {
+	ID        int64     `json:"id"`
+	ValueID   string    `json:"value_id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	Value     bool      `json:"value"`
+}
+
+func (q *Queries) ListConfigBoolHistory(ctx context.Context, valueID string) ([]ListConfigBoolHistoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, listConfigBoolHistory, valueID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ConfigDefaultLayout
+	var items []ListConfigBoolHistoryRow
 	for rows.Next() {
-		var i ConfigDefaultLayout
+		var i ListConfigBoolHistoryRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.ValueID,
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.Value,
@@ -3384,129 +3300,35 @@ func (q *Queries) ListConfigDefaultLayoutHistory(ctx context.Context) ([]ConfigD
 	return items, nil
 }
 
-const listConfigRobotsTxtHistory = `-- name: ListConfigRobotsTxtHistory :many
-select id, created_at, created_by, value
-  from config_robots_txts
- order by id desc
+const listConfigStringHistory = `-- name: ListConfigStringHistory :many
+select c.id, c.value_id, c.created_at, c.created_by, v.value
+  from config_changes c
+  join config_string_values v on v.change_id = c.id
+ where c.value_id = ?
+ order by c.id desc
  limit 50
 `
 
-func (q *Queries) ListConfigRobotsTxtHistory(ctx context.Context) ([]ConfigRobotsTxt, error) {
-	rows, err := q.db.QueryContext(ctx, listConfigRobotsTxtHistory)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ConfigRobotsTxt
-	for rows.Next() {
-		var i ConfigRobotsTxt
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatedAt,
-			&i.CreatedBy,
-			&i.Value,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+type ListConfigStringHistoryRow struct {
+	ID        int64     `json:"id"`
+	ValueID   string    `json:"value_id"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	Value     string    `json:"value"`
 }
 
-const listConfigShowDraftVersionsHistory = `-- name: ListConfigShowDraftVersionsHistory :many
-select id, created_at, created_by, value
-  from config_show_draft_versions
- order by id desc
- limit 50
-`
-
-func (q *Queries) ListConfigShowDraftVersionsHistory(ctx context.Context) ([]ConfigShowDraftVersion, error) {
-	rows, err := q.db.QueryContext(ctx, listConfigShowDraftVersionsHistory)
+func (q *Queries) ListConfigStringHistory(ctx context.Context, valueID string) ([]ListConfigStringHistoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, listConfigStringHistory, valueID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ConfigShowDraftVersion
+	var items []ListConfigStringHistoryRow
 	for rows.Next() {
-		var i ConfigShowDraftVersion
+		var i ListConfigStringHistoryRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.CreatedAt,
-			&i.CreatedBy,
-			&i.Value,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listConfigSiteTitleTemplateHistory = `-- name: ListConfigSiteTitleTemplateHistory :many
-select id, created_at, created_by, value
-  from config_site_title_templates
- order by id desc
- limit 50
-`
-
-func (q *Queries) ListConfigSiteTitleTemplateHistory(ctx context.Context) ([]ConfigSiteTitleTemplate, error) {
-	rows, err := q.db.QueryContext(ctx, listConfigSiteTitleTemplateHistory)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ConfigSiteTitleTemplate
-	for rows.Next() {
-		var i ConfigSiteTitleTemplate
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatedAt,
-			&i.CreatedBy,
-			&i.Value,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listConfigTimezoneHistory = `-- name: ListConfigTimezoneHistory :many
-select id, created_at, created_by, value
-  from config_timezones
- order by id desc
- limit 50
-`
-
-func (q *Queries) ListConfigTimezoneHistory(ctx context.Context) ([]ConfigTimezone, error) {
-	rows, err := q.db.QueryContext(ctx, listConfigTimezoneHistory)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ConfigTimezone
-	for rows.Next() {
-		var i ConfigTimezone
-		if err := rows.Scan(
-			&i.ID,
+			&i.ValueID,
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.Value,

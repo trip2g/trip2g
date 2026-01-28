@@ -29,7 +29,8 @@ type Env interface {
 	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
 	RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
 	LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
-	LatestConfig() db.ConfigVersion
+	GetLatestConfigBool(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error)
+	GetLatestConfigString(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error)
 	SiteTitleTemplate() string
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
 }
@@ -67,7 +68,10 @@ type Response struct {
 
 	ViewedAt *time.Time
 
-	Config db.ConfigVersion
+	Config struct {
+		ShowDraftVersions bool
+		DefaultLayout     string
+	}
 
 	IsAdmin        bool
 	OnboardingMode bool
@@ -108,10 +112,18 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 	response.IsAdmin = isAdmin
 
-	config := env.LatestConfig()
-	response.Config = config
+	// Get config values using atomic getters.
+	showDraftVersions := false
+	if entry, err := env.GetLatestConfigBool(ctx, "show_draft_versions"); err == nil {
+		showDraftVersions = entry.Value
+	}
+	response.Config.ShowDraftVersions = showDraftVersions
 
-	if isAdmin || config.ShowDraftVersions {
+	if entry, err := env.GetLatestConfigString(ctx, "default_layout"); err == nil {
+		response.Config.DefaultLayout = entry.Value
+	}
+
+	if isAdmin || showDraftVersions {
 		response.DefaultVersion = "latest"
 
 		// admins view the latest version by default

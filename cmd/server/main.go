@@ -506,23 +506,6 @@ func (a *app) ApplyGitChanges(ctx context.Context) ([]string, error) {
 	return a.gitAPI.ApplyChanges(ctx)
 }
 
-func (a *app) LatestConfig() db.ConfigVersion {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	cfg, err := a.GetLatestConfig(ctx)
-	if err != nil {
-		a.log.Error("failed to get latest config", "error", err)
-
-		return db.ConfigVersion{
-			ShowDraftVersions: true,
-			Timezone:          "UTC",
-		}
-	}
-
-	return cfg
-}
-
 func (a *app) GitCommit() string {
 	return GitCommit
 }
@@ -531,30 +514,13 @@ func (a *app) SiteTitleTemplate() string {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	entry, err := a.GetLatestConfigSiteTitleTemplate(ctx)
+	entry, err := a.GetLatestConfigString(ctx, "site_title_template")
 	if err != nil {
 		// Default: just the note title.
 		return "%s"
 	}
 
 	return entry.Value
-}
-
-func (a *app) InsertConfigVersion(ctx context.Context, params db.InsertConfigVersionParams) (db.ConfigVersion, error) {
-	config, err := a.WriteQueries.InsertConfigVersion(ctx, params)
-
-	if err == nil {
-		a.resetTimeLocation()
-	}
-
-	return config, err
-}
-
-func (a *app) resetTimeLocation() {
-	a.timeLocationMutex.Lock()
-	defer a.timeLocationMutex.Unlock()
-
-	a.timeLocation = nil
 }
 
 func (a *app) TimeLocation() *time.Location {
@@ -565,14 +531,20 @@ func (a *app) TimeLocation() *time.Location {
 		return a.timeLocation
 	}
 
-	cfg := a.LatestConfig()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	var err error
+	timezone := "UTC"
+	if entry, err := a.GetLatestConfigString(ctx, "timezone"); err == nil {
+		timezone = entry.Value
+	}
 
-	a.timeLocation, err = time.LoadLocation(cfg.Timezone)
-	if err != nil {
+	var loadErr error
+
+	a.timeLocation, loadErr = time.LoadLocation(timezone)
+	if loadErr != nil {
 		a.timeLocation = time.UTC
-		a.log.Error("failed to load timezone location", "timezone", cfg.Timezone, "error", err)
+		a.log.Error("failed to load timezone location", "timezone", timezone, "error", loadErr)
 	}
 
 	return a.timeLocation
@@ -1739,7 +1711,10 @@ func (a *app) handleRobotsTxt(req *appreq.Request) bool {
 		req.Req.SetContentType("text/plain")
 		req.Req.SetStatusCode(http.StatusOK)
 
-		txt := a.LatestConfig().RobotsTxt
+		txt := "closed"
+		if entry, err := a.GetLatestConfigString(context.Background(), "robots_txt"); err == nil {
+			txt = entry.Value
+		}
 
 		switch txt {
 		case "closed":

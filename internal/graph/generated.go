@@ -63,8 +63,6 @@ type ResolverRoot interface {
 	AdminConfigBoolValue() AdminConfigBoolValueResolver
 	AdminConfigStringEntry() AdminConfigStringEntryResolver
 	AdminConfigStringValue() AdminConfigStringValueResolver
-	AdminConfigVersion() AdminConfigVersionResolver
-	AdminConfigVersionsConnection() AdminConfigVersionsConnectionResolver
 	AdminCronJob() AdminCronJobResolver
 	AdminCronJobExecution() AdminCronJobExecutionResolver
 	AdminCronJobsConnection() AdminCronJobsConnectionResolver
@@ -310,20 +308,6 @@ type ComplexityRoot struct {
 		Value       func(childComplexity int) int
 	}
 
-	AdminConfigVersion struct {
-		CreatedAt         func(childComplexity int) int
-		CreatedBy         func(childComplexity int) int
-		DefaultLayout     func(childComplexity int) int
-		ID                func(childComplexity int) int
-		RobotsTxt         func(childComplexity int) int
-		ShowDraftVersions func(childComplexity int) int
-		Timezone          func(childComplexity int) int
-	}
-
-	AdminConfigVersionsConnection struct {
-		Nodes func(childComplexity int) int
-	}
-
 	AdminCronJob struct {
 		Enabled    func(childComplexity int) int
 		Executions func(childComplexity int) int
@@ -424,7 +408,6 @@ type ComplexityRoot struct {
 		CreateAPIKey                             func(childComplexity int, input model.CreateAPIKeyInput) int
 		CreateAdmin                              func(childComplexity int, input model.CreateAdminInput) int
 		CreateBoostyCredentials                  func(childComplexity int, input model.CreateBoostyCredentialsInput) int
-		CreateConfigVersion                      func(childComplexity int, input model.CreateConfigVersionInput) int
 		CreateGitHubOAuthCredentials             func(childComplexity int, input model.CreateGitHubOAuthCredentialsInput) int
 		CreateGitToken                           func(childComplexity int, input model.CreateGitTokenInput) int
 		CreateGoogleOAuthCredentials             func(childComplexity int, input model.CreateGoogleOAuthCredentialsInput) int
@@ -618,7 +601,6 @@ type ComplexityRoot struct {
 		AllAdmins                  func(childComplexity int) int
 		AllBackgroundQueues        func(childComplexity int) int
 		AllBoostyCredentials       func(childComplexity int, filter *model.AdminBoostyCredentialsFilterInput) int
-		AllConfigVersions          func(childComplexity int) int
 		AllCronJobs                func(childComplexity int) int
 		AllGitHubOAuthCredentials  func(childComplexity int) int
 		AllGitTokens               func(childComplexity int) int
@@ -654,7 +636,6 @@ type ComplexityRoot struct {
 		GoogleOAuthCredentials     func(childComplexity int, id int32) int
 		HTMLInjection              func(childComplexity int, id int64) int
 		HealthChecks               func(childComplexity int) int
-		LatestConfig               func(childComplexity int) int
 		LayoutBlocks               func(childComplexity int) int
 		NoteAsset                  func(childComplexity int, id int64) int
 		NoteView                   func(childComplexity int, id string) int
@@ -951,10 +932,6 @@ type ComplexityRoot struct {
 
 	CreateBoostyCredentialsPayload struct {
 		BoostyCredentials func(childComplexity int) int
-	}
-
-	CreateConfigVersionPayload struct {
-		ConfigVersion func(childComplexity int) int
 	}
 
 	CreateEmailWaitListRequestPayload struct {
@@ -1561,12 +1538,6 @@ type AdminConfigStringValueResolver interface {
 
 	History(ctx context.Context, obj *model.AdminConfigStringValue) ([]model.AdminConfigStringEntry, error)
 }
-type AdminConfigVersionResolver interface {
-	CreatedBy(ctx context.Context, obj *db.ConfigVersion) (*db.User, error)
-}
-type AdminConfigVersionsConnectionResolver interface {
-	Nodes(ctx context.Context, obj *model.AdminConfigVersionsConnection) ([]db.ConfigVersion, error)
-}
 type AdminCronJobResolver interface {
 	Executions(ctx context.Context, obj *db.CronJob) ([]db.CronJobExecution, error)
 }
@@ -1676,7 +1647,6 @@ type AdminMutationResolver interface {
 	DeleteHTMLInjection(ctx context.Context, obj *model1.AdminMutation, input model.DeleteHTMLInjectionInput) (model.DeleteHTMLInjectionOrErrorPayload, error)
 	UpdateCronJob(ctx context.Context, obj *model1.AdminMutation, input model.UpdateCronJobInput) (model.UpdateCronJobOrErrorPayload, error)
 	RunCronJob(ctx context.Context, obj *model1.AdminMutation, input model.RunCronJobInput) (model.RunCronJobOrErrorPayload, error)
-	CreateConfigVersion(ctx context.Context, obj *model1.AdminMutation, input model.CreateConfigVersionInput) (model.CreateConfigVersionOrErrorPayload, error)
 	SetConfigStringValue(ctx context.Context, obj *model1.AdminMutation, input model.SetConfigStringValueInput) (model.SetConfigStringValuePayload, error)
 	SetConfigBoolValue(ctx context.Context, obj *model1.AdminMutation, input model.SetConfigBoolValueInput) (model.SetConfigBoolValuePayload, error)
 	StopBackgroundQueue(ctx context.Context, obj *model1.AdminMutation, input model.StopBackgroundQueueInput) (model.StopBackgroundQueueOrErrorPayload, error)
@@ -1751,7 +1721,6 @@ type AdminQueryResolver interface {
 	AllLatestNoteAssets(ctx context.Context, obj *model1.AdminQuery) (*model.AdminLatestNoteAssetsConnection, error)
 	AllHTMLInjections(ctx context.Context, obj *model1.AdminQuery) (*model.AdminHTMLInjectionsConnection, error)
 	AllCronJobs(ctx context.Context, obj *model1.AdminQuery) (*model.AdminCronJobsConnection, error)
-	AllConfigVersions(ctx context.Context, obj *model1.AdminQuery) (*model.AdminConfigVersionsConnection, error)
 	AllTelegramPublishTags(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTelegramPublishTagsConnection, error)
 	AllTelegramPublishNotes(ctx context.Context, obj *model1.AdminQuery, filter *model.AdminTelegramPublishNotesFilter) (*model.AdminTelegramPublishNotesConnection, error)
 	AllTelegramAccounts(ctx context.Context, obj *model1.AdminQuery) (*model.AdminTelegramAccountsConnection, error)
@@ -1772,7 +1741,6 @@ type AdminQueryResolver interface {
 	GitHubOAuthCredentials(ctx context.Context, obj *model1.AdminQuery, id int32) (*db.GithubOauthCredential, error)
 	APIKeyLogs(ctx context.Context, obj *model1.AdminQuery, filter model.APIKeyLogsFilterInput) (*model.AdminAPIKeyLogsConnection, error)
 	AuditLogs(ctx context.Context, obj *model1.AdminQuery, filter model.AdminAuditLogsFilterInput) (*model.AdminAuditLogsConnection, error)
-	LatestConfig(ctx context.Context, obj *model1.AdminQuery) (*db.ConfigVersion, error)
 	ConfigValues(ctx context.Context, obj *model1.AdminQuery) ([]model.AdminConfigValue, error)
 	ConfigValue(ctx context.Context, obj *model1.AdminQuery, id string) (model.AdminConfigValue, error)
 	Subgraph(ctx context.Context, obj *model1.AdminQuery, id int64) (*db.Subgraph, error)
@@ -2580,56 +2548,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AdminConfigStringValue.Value(childComplexity), true
 
-	case "AdminConfigVersion.createdAt":
-		if e.complexity.AdminConfigVersion.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.AdminConfigVersion.CreatedAt(childComplexity), true
-	case "AdminConfigVersion.createdBy":
-		if e.complexity.AdminConfigVersion.CreatedBy == nil {
-			break
-		}
-
-		return e.complexity.AdminConfigVersion.CreatedBy(childComplexity), true
-	case "AdminConfigVersion.defaultLayout":
-		if e.complexity.AdminConfigVersion.DefaultLayout == nil {
-			break
-		}
-
-		return e.complexity.AdminConfigVersion.DefaultLayout(childComplexity), true
-	case "AdminConfigVersion.id":
-		if e.complexity.AdminConfigVersion.ID == nil {
-			break
-		}
-
-		return e.complexity.AdminConfigVersion.ID(childComplexity), true
-	case "AdminConfigVersion.robotsTxt":
-		if e.complexity.AdminConfigVersion.RobotsTxt == nil {
-			break
-		}
-
-		return e.complexity.AdminConfigVersion.RobotsTxt(childComplexity), true
-	case "AdminConfigVersion.showDraftVersions":
-		if e.complexity.AdminConfigVersion.ShowDraftVersions == nil {
-			break
-		}
-
-		return e.complexity.AdminConfigVersion.ShowDraftVersions(childComplexity), true
-	case "AdminConfigVersion.timezone":
-		if e.complexity.AdminConfigVersion.Timezone == nil {
-			break
-		}
-
-		return e.complexity.AdminConfigVersion.Timezone(childComplexity), true
-
-	case "AdminConfigVersionsConnection.nodes":
-		if e.complexity.AdminConfigVersionsConnection.Nodes == nil {
-			break
-		}
-
-		return e.complexity.AdminConfigVersionsConnection.Nodes(childComplexity), true
-
 	case "AdminCronJob.enabled":
 		if e.complexity.AdminCronJob.Enabled == nil {
 			break
@@ -3021,17 +2939,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminMutation.CreateBoostyCredentials(childComplexity, args["input"].(model.CreateBoostyCredentialsInput)), true
-	case "AdminMutation.createConfigVersion":
-		if e.complexity.AdminMutation.CreateConfigVersion == nil {
-			break
-		}
-
-		args, err := ec.field_AdminMutation_createConfigVersion_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.AdminMutation.CreateConfigVersion(childComplexity, args["input"].(model.CreateConfigVersionInput)), true
 	case "AdminMutation.createGitHubOAuthCredentials":
 		if e.complexity.AdminMutation.CreateGitHubOAuthCredentials == nil {
 			break
@@ -4226,12 +4133,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.AllBoostyCredentials(childComplexity, args["filter"].(*model.AdminBoostyCredentialsFilterInput)), true
-	case "AdminQuery.allConfigVersions":
-		if e.complexity.AdminQuery.AllConfigVersions == nil {
-			break
-		}
-
-		return e.complexity.AdminQuery.AllConfigVersions(childComplexity), true
 	case "AdminQuery.allCronJobs":
 		if e.complexity.AdminQuery.AllCronJobs == nil {
 			break
@@ -4497,12 +4398,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AdminQuery.HealthChecks(childComplexity), true
-	case "AdminQuery.latestConfig":
-		if e.complexity.AdminQuery.LatestConfig == nil {
-			break
-		}
-
-		return e.complexity.AdminQuery.LatestConfig(childComplexity), true
 	case "AdminQuery.layoutBlocks":
 		if e.complexity.AdminQuery.LayoutBlocks == nil {
 			break
@@ -5589,13 +5484,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CreateBoostyCredentialsPayload.BoostyCredentials(childComplexity), true
-
-	case "CreateConfigVersionPayload.configVersion":
-		if e.complexity.CreateConfigVersionPayload.ConfigVersion == nil {
-			break
-		}
-
-		return e.complexity.CreateConfigVersionPayload.ConfigVersion(childComplexity), true
 
 	case "CreateEmailWaitListRequestPayload.success":
 		if e.complexity.CreateEmailWaitListRequestPayload.Success == nil {
@@ -7147,7 +7035,6 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateAdminInput,
 		ec.unmarshalInputCreateApiKeyInput,
 		ec.unmarshalInputCreateBoostyCredentialsInput,
-		ec.unmarshalInputCreateConfigVersionInput,
 		ec.unmarshalInputCreateEmailWaitListRequestInput,
 		ec.unmarshalInputCreateGitHubOAuthCredentialsInput,
 		ec.unmarshalInputCreateGitTokenInput,
@@ -7408,17 +7295,6 @@ func (ec *executionContext) field_AdminMutation_createBoostyCredentials_args(ctx
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateBoostyCredentialsInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateBoostyCredentialsInput)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_AdminMutation_createConfigVersion_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateConfigVersionInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateConfigVersionInput)
 	if err != nil {
 		return nil, err
 	}
@@ -11434,266 +11310,6 @@ func (ec *executionContext) fieldContext_AdminConfigStringValue_history(_ contex
 				return ec.fieldContext_AdminConfigStringEntry_createdBy(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AdminConfigStringEntry", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminConfigVersion_id(ctx context.Context, field graphql.CollectedField, obj *db.ConfigVersion) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminConfigVersion_id,
-		func(ctx context.Context) (any, error) {
-			return obj.ID, nil
-		},
-		nil,
-		ec.marshalNInt642int64,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminConfigVersion_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminConfigVersion",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int64 does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminConfigVersion_createdAt(ctx context.Context, field graphql.CollectedField, obj *db.ConfigVersion) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminConfigVersion_createdAt,
-		func(ctx context.Context) (any, error) {
-			return obj.CreatedAt, nil
-		},
-		nil,
-		ec.marshalNTime2timeᚐTime,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminConfigVersion_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminConfigVersion",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Time does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminConfigVersion_createdBy(ctx context.Context, field graphql.CollectedField, obj *db.ConfigVersion) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminConfigVersion_createdBy,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminConfigVersion().CreatedBy(ctx, obj)
-		},
-		nil,
-		ec.marshalNAdminUser2ᚖtrip2gᚋinternalᚋdbᚐUser,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminConfigVersion_createdBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminConfigVersion",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_AdminUser_id(ctx, field)
-			case "email":
-				return ec.fieldContext_AdminUser_email(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_AdminUser_createdAt(ctx, field)
-			case "ban":
-				return ec.fieldContext_AdminUser_ban(ctx, field)
-			case "admin":
-				return ec.fieldContext_AdminUser_admin(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminUser", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminConfigVersion_showDraftVersions(ctx context.Context, field graphql.CollectedField, obj *db.ConfigVersion) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminConfigVersion_showDraftVersions,
-		func(ctx context.Context) (any, error) {
-			return obj.ShowDraftVersions, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminConfigVersion_showDraftVersions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminConfigVersion",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminConfigVersion_defaultLayout(ctx context.Context, field graphql.CollectedField, obj *db.ConfigVersion) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminConfigVersion_defaultLayout,
-		func(ctx context.Context) (any, error) {
-			return obj.DefaultLayout, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminConfigVersion_defaultLayout(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminConfigVersion",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminConfigVersion_timezone(ctx context.Context, field graphql.CollectedField, obj *db.ConfigVersion) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminConfigVersion_timezone,
-		func(ctx context.Context) (any, error) {
-			return obj.Timezone, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminConfigVersion_timezone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminConfigVersion",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminConfigVersion_robotsTxt(ctx context.Context, field graphql.CollectedField, obj *db.ConfigVersion) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminConfigVersion_robotsTxt,
-		func(ctx context.Context) (any, error) {
-			return obj.RobotsTxt, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminConfigVersion_robotsTxt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminConfigVersion",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminConfigVersionsConnection_nodes(ctx context.Context, field graphql.CollectedField, obj *model.AdminConfigVersionsConnection) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminConfigVersionsConnection_nodes,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminConfigVersionsConnection().Nodes(ctx, obj)
-		},
-		nil,
-		ec.marshalNAdminConfigVersion2ᚕtrip2gᚋinternalᚋdbᚐConfigVersionᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminConfigVersionsConnection_nodes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminConfigVersionsConnection",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_AdminConfigVersion_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_AdminConfigVersion_createdAt(ctx, field)
-			case "createdBy":
-				return ec.fieldContext_AdminConfigVersion_createdBy(ctx, field)
-			case "showDraftVersions":
-				return ec.fieldContext_AdminConfigVersion_showDraftVersions(ctx, field)
-			case "defaultLayout":
-				return ec.fieldContext_AdminConfigVersion_defaultLayout(ctx, field)
-			case "timezone":
-				return ec.fieldContext_AdminConfigVersion_timezone(ctx, field)
-			case "robotsTxt":
-				return ec.fieldContext_AdminConfigVersion_robotsTxt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminConfigVersion", field.Name)
 		},
 	}
 	return fc, nil
@@ -16041,47 +15657,6 @@ func (ec *executionContext) fieldContext_AdminMutation_runCronJob(ctx context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminMutation_createConfigVersion(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminMutation_createConfigVersion,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.AdminMutation().CreateConfigVersion(ctx, obj, fc.Args["input"].(model.CreateConfigVersionInput))
-		},
-		nil,
-		ec.marshalNCreateConfigVersionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateConfigVersionOrErrorPayload,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminMutation_createConfigVersion(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminMutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type CreateConfigVersionOrErrorPayload does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_AdminMutation_createConfigVersion_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _AdminMutation_setConfigStringValue(ctx context.Context, field graphql.CollectedField, obj *model1.AdminMutation) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -19255,39 +18830,6 @@ func (ec *executionContext) fieldContext_AdminQuery_allCronJobs(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _AdminQuery_allConfigVersions(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminQuery_allConfigVersions,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminQuery().AllConfigVersions(ctx, obj)
-		},
-		nil,
-		ec.marshalNAdminConfigVersionsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigVersionsConnection,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminQuery_allConfigVersions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminQuery",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "nodes":
-				return ec.fieldContext_AdminConfigVersionsConnection_nodes(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminConfigVersionsConnection", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _AdminQuery_allTelegramPublishTags(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -20172,51 +19714,6 @@ func (ec *executionContext) fieldContext_AdminQuery_auditLogs(ctx context.Contex
 	if fc.Args, err = ec.field_AdminQuery_auditLogs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _AdminQuery_latestConfig(ctx context.Context, field graphql.CollectedField, obj *model1.AdminQuery) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_AdminQuery_latestConfig,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.AdminQuery().LatestConfig(ctx, obj)
-		},
-		nil,
-		ec.marshalNAdminConfigVersion2ᚖtrip2gᚋinternalᚋdbᚐConfigVersion,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_AdminQuery_latestConfig(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "AdminQuery",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_AdminConfigVersion_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_AdminConfigVersion_createdAt(ctx, field)
-			case "createdBy":
-				return ec.fieldContext_AdminConfigVersion_createdBy(ctx, field)
-			case "showDraftVersions":
-				return ec.fieldContext_AdminConfigVersion_showDraftVersions(ctx, field)
-			case "defaultLayout":
-				return ec.fieldContext_AdminConfigVersion_defaultLayout(ctx, field)
-			case "timezone":
-				return ec.fieldContext_AdminConfigVersion_timezone(ctx, field)
-			case "robotsTxt":
-				return ec.fieldContext_AdminConfigVersion_robotsTxt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminConfigVersion", field.Name)
-		},
 	}
 	return fc, nil
 }
@@ -26101,51 +25598,6 @@ func (ec *executionContext) fieldContext_CreateBoostyCredentialsPayload_boostyCr
 	return fc, nil
 }
 
-func (ec *executionContext) _CreateConfigVersionPayload_configVersion(ctx context.Context, field graphql.CollectedField, obj *model.CreateConfigVersionPayload) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_CreateConfigVersionPayload_configVersion,
-		func(ctx context.Context) (any, error) {
-			return obj.ConfigVersion, nil
-		},
-		nil,
-		ec.marshalNAdminConfigVersion2ᚖtrip2gᚋinternalᚋdbᚐConfigVersion,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_CreateConfigVersionPayload_configVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "CreateConfigVersionPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_AdminConfigVersion_id(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_AdminConfigVersion_createdAt(ctx, field)
-			case "createdBy":
-				return ec.fieldContext_AdminConfigVersion_createdBy(ctx, field)
-			case "showDraftVersions":
-				return ec.fieldContext_AdminConfigVersion_showDraftVersions(ctx, field)
-			case "defaultLayout":
-				return ec.fieldContext_AdminConfigVersion_defaultLayout(ctx, field)
-			case "timezone":
-				return ec.fieldContext_AdminConfigVersion_timezone(ctx, field)
-			case "robotsTxt":
-				return ec.fieldContext_AdminConfigVersion_robotsTxt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AdminConfigVersion", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _CreateEmailWaitListRequestPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.CreateEmailWaitListRequestPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -28517,8 +27969,6 @@ func (ec *executionContext) fieldContext_Mutation_admin(_ context.Context, field
 				return ec.fieldContext_AdminMutation_updateCronJob(ctx, field)
 			case "runCronJob":
 				return ec.fieldContext_AdminMutation_runCronJob(ctx, field)
-			case "createConfigVersion":
-				return ec.fieldContext_AdminMutation_createConfigVersion(ctx, field)
 			case "setConfigStringValue":
 				return ec.fieldContext_AdminMutation_setConfigStringValue(ctx, field)
 			case "setConfigBoolValue":
@@ -30606,8 +30056,6 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_allHtmlInjections(ctx, field)
 			case "allCronJobs":
 				return ec.fieldContext_AdminQuery_allCronJobs(ctx, field)
-			case "allConfigVersions":
-				return ec.fieldContext_AdminQuery_allConfigVersions(ctx, field)
 			case "allTelegramPublishTags":
 				return ec.fieldContext_AdminQuery_allTelegramPublishTags(ctx, field)
 			case "allTelegramPublishNotes":
@@ -30648,8 +30096,6 @@ func (ec *executionContext) fieldContext_Query_admin(_ context.Context, field gr
 				return ec.fieldContext_AdminQuery_apiKeyLogs(ctx, field)
 			case "auditLogs":
 				return ec.fieldContext_AdminQuery_auditLogs(ctx, field)
-			case "latestConfig":
-				return ec.fieldContext_AdminQuery_latestConfig(ctx, field)
 			case "configValues":
 				return ec.fieldContext_AdminQuery_configValues(ctx, field)
 			case "configValue":
@@ -36670,54 +36116,6 @@ func (ec *executionContext) unmarshalInputCreateBoostyCredentialsInput(ctx conte
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputCreateConfigVersionInput(ctx context.Context, obj any) (model.CreateConfigVersionInput, error) {
-	var it model.CreateConfigVersionInput
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"showDraftVersions", "defaultLayout", "timezone", "robotsTxt"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "showDraftVersions":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("showDraftVersions"))
-			data, err := ec.unmarshalNBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ShowDraftVersions = data
-		case "defaultLayout":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("defaultLayout"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.DefaultLayout = data
-		case "timezone":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("timezone"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Timezone = data
-		case "robotsTxt":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("robotsTxt"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RobotsTxt = data
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputCreateEmailWaitListRequestInput(ctx context.Context, obj any) (model.CreateEmailWaitListRequestInput, error) {
 	var it model.CreateEmailWaitListRequestInput
 	asMap := map[string]any{}
@@ -39620,29 +39018,6 @@ func (ec *executionContext) _CreateBoostyCredentialsOrErrorPayload(ctx context.C
 			return graphql.Null
 		}
 		return ec._CreateBoostyCredentialsPayload(ctx, sel, obj)
-	default:
-		panic(fmt.Errorf("unexpected type %T", obj))
-	}
-}
-
-func (ec *executionContext) _CreateConfigVersionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, obj model.CreateConfigVersionOrErrorPayload) graphql.Marshaler {
-	switch obj := (obj).(type) {
-	case nil:
-		return graphql.Null
-	case model.ErrorPayload:
-		return ec._ErrorPayload(ctx, sel, &obj)
-	case *model.ErrorPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._ErrorPayload(ctx, sel, obj)
-	case model.CreateConfigVersionPayload:
-		return ec._CreateConfigVersionPayload(ctx, sel, &obj)
-	case *model.CreateConfigVersionPayload:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._CreateConfigVersionPayload(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -43447,176 +42822,6 @@ func (ec *executionContext) _AdminConfigStringValue(ctx context.Context, sel ast
 	return out
 }
 
-var adminConfigVersionImplementors = []string{"AdminConfigVersion"}
-
-func (ec *executionContext) _AdminConfigVersion(ctx context.Context, sel ast.SelectionSet, obj *db.ConfigVersion) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, adminConfigVersionImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("AdminConfigVersion")
-		case "id":
-			out.Values[i] = ec._AdminConfigVersion_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "createdAt":
-			out.Values[i] = ec._AdminConfigVersion_createdAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "createdBy":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminConfigVersion_createdBy(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "showDraftVersions":
-			out.Values[i] = ec._AdminConfigVersion_showDraftVersions(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "defaultLayout":
-			out.Values[i] = ec._AdminConfigVersion_defaultLayout(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "timezone":
-			out.Values[i] = ec._AdminConfigVersion_timezone(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "robotsTxt":
-			out.Values[i] = ec._AdminConfigVersion_robotsTxt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var adminConfigVersionsConnectionImplementors = []string{"AdminConfigVersionsConnection"}
-
-func (ec *executionContext) _AdminConfigVersionsConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AdminConfigVersionsConnection) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, adminConfigVersionsConnectionImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("AdminConfigVersionsConnection")
-		case "nodes":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminConfigVersionsConnection_nodes(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var adminCronJobImplementors = []string{"AdminCronJob"}
 
 func (ec *executionContext) _AdminCronJob(ctx context.Context, sel ast.SelectionSet, obj *db.CronJob) graphql.Marshaler {
@@ -47171,42 +46376,6 @@ func (ec *executionContext) _AdminMutation(ctx context.Context, sel ast.Selectio
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "createConfigVersion":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminMutation_createConfigVersion(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "setConfigStringValue":
 			field := field
 
@@ -49588,42 +48757,6 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "allConfigVersions":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminQuery_allConfigVersions(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "allTelegramPublishTags":
 			field := field
 
@@ -50303,42 +49436,6 @@ func (ec *executionContext) _AdminQuery(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._AdminQuery_auditLogs(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "latestConfig":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._AdminQuery_latestConfig(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -54840,45 +53937,6 @@ func (ec *executionContext) _CreateBoostyCredentialsPayload(ctx context.Context,
 	return out
 }
 
-var createConfigVersionPayloadImplementors = []string{"CreateConfigVersionPayload", "CreateConfigVersionOrErrorPayload"}
-
-func (ec *executionContext) _CreateConfigVersionPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateConfigVersionPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, createConfigVersionPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("CreateConfigVersionPayload")
-		case "configVersion":
-			out.Values[i] = ec._CreateConfigVersionPayload_configVersion(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var createEmailWaitListRequestPayloadImplementors = []string{"CreateEmailWaitListRequestPayload", "CreateEmailWaitListRequestOrErrorPayload"}
 
 func (ec *executionContext) _CreateEmailWaitListRequestPayload(ctx context.Context, sel ast.SelectionSet, obj *model.CreateEmailWaitListRequestPayload) graphql.Marshaler {
@@ -55972,7 +55030,7 @@ func (ec *executionContext) _DisableGitTokenPayload(ctx context.Context, sel ast
 	return out
 }
 
-var errorPayloadImplementors = []string{"ErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "CreateConfigVersionOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload"}
+var errorPayloadImplementors = []string{"ErrorPayload", "SetConfigStringValuePayload", "SetConfigBoolValuePayload", "AdminStartTelegramAccountAuthOrErrorPayload", "AdminCompleteTelegramAccountAuthOrErrorPayload", "AdminCancelTelegramAccountAuthOrErrorPayload", "AdminUpdateTelegramAccountOrErrorPayload", "AdminSignOutTelegramAccountOrErrorPayload", "AdminSetTelegramAccountChatPublishTagsOrErrorPayload", "AdminSetTelegramAccountChatPublishInstantTagsOrErrorPayload", "AdminImportTelegramAccountChannelOrErrorPayload", "RequestEmailSignInCodeOrErrorPayload", "SignInOrErrorPayload", "SignOutOrErrorPayload", "CreatePaymentLinkOrErrorPayload", "PushNotesOrErrorPayload", "UploadNoteAssetOrErrorPayload", "HideNotesOrErrorPayload", "CreateEmailWaitListRequestOrErrorPayload", "ToggleFavoriteNoteOrErrorPayload", "GenerateTgAttachCodeOrErrorPayload", "CommitNotesOrErrorPayload", "UpdateSubgraphOrErrorPayload", "UpdateUserSubgraphAccessOrErrorPayload", "CreateUserSubgraphAccessOrErrorPayload", "UnbanUserOrErrorPayload", "BanUserOrErrorPayload", "CreateAdminOrErrorPayload", "DeleteAdminOrErrorPayload", "CreateApiKeyOrErrorPayload", "DisableApiKeyOrErrorPayload", "CreateGitTokenOrErrorPayload", "DisableGitTokenOrErrorPayload", "CreateReleaseOrErrorPayload", "MakeReleaseLiveOrErrorPayload", "UpdateNoteGraphPositionsOrErrorPayload", "CreateOfferOrErrorPayload", "UpdateOfferOrErrorPayload", "CreateRedirectOrErrorPayload", "UpdateRedirectOrErrorPayload", "DeleteRedirectOrErrorPayload", "ResetNotFoundPathOrErrorPayload", "CreateNotFoundIgnoredPatternOrErrorPayload", "UpdateNotFoundIgnoredPatternOrErrorPayload", "DeleteNotFoundIgnoredPatternOrErrorPayload", "CreateTgBotOrErrorPayload", "UpdateTgBotOrErrorPayload", "SetTgChatSubgraphsOrErrorPayload", "CreatePatreonCredentialsOrErrorPayload", "DeletePatreonCredentialsOrErrorPayload", "RestorePatreonCredentialsOrErrorPayload", "RefreshPatreonDataOrErrorPayload", "SetPatreonTierSubgraphsOrErrorPayload", "CreateBoostyCredentialsOrErrorPayload", "DeleteBoostyCredentialsOrErrorPayload", "RestoreBoostyCredentialsOrErrorPayload", "UpdateBoostyCredentialsOrErrorPayload", "RefreshBoostyDataOrErrorPayload", "SetBoostyTierSubgraphsOrErrorPayload", "CreateGoogleOAuthCredentialsOrErrorPayload", "DeleteGoogleOAuthCredentialsOrErrorPayload", "SetActiveGoogleOAuthCredentialsOrErrorPayload", "DeactivateGoogleOAuthOrErrorPayload", "CreateGitHubOAuthCredentialsOrErrorPayload", "DeleteGitHubOAuthCredentialsOrErrorPayload", "SetActiveGitHubOAuthCredentialsOrErrorPayload", "DeactivateGitHubOAuthOrErrorPayload", "SetTgChatSubgraphInvitesOrErrorPayload", "RemoveExpiredTgChatMembersOrErrorPayload", "CreateHtmlInjectionOrErrorPayload", "UpdateHtmlInjectionOrErrorPayload", "DeleteHtmlInjectionOrErrorPayload", "UpdateCronJobOrErrorPayload", "RunCronJobOrErrorPayload", "CreateUserOrErrorPayload", "UpdateUserOrErrorPayload", "SetTgChatPublishTagsOrErrorPayload", "SetTgChatPublishInstantTagsOrErrorPayload", "ResetTelegramPublishNoteOrErrorPayload", "SendTelegramPublishNoteNowOrErrorPayload", "StopBackgroundQueueOrErrorPayload", "StartBackgroundQueueOrErrorPayload", "ClearBackgroundQueueOrErrorPayload"}
 
 func (ec *executionContext) _ErrorPayload(ctx context.Context, sel ast.SelectionSet, obj *model.ErrorPayload) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, errorPayloadImplementors)
@@ -62093,78 +61151,6 @@ func (ec *executionContext) marshalNAdminConfigValue2ᚕtrip2gᚋinternalᚋgrap
 	return ret
 }
 
-func (ec *executionContext) marshalNAdminConfigVersion2trip2gᚋinternalᚋdbᚐConfigVersion(ctx context.Context, sel ast.SelectionSet, v db.ConfigVersion) graphql.Marshaler {
-	return ec._AdminConfigVersion(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNAdminConfigVersion2ᚕtrip2gᚋinternalᚋdbᚐConfigVersionᚄ(ctx context.Context, sel ast.SelectionSet, v []db.ConfigVersion) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNAdminConfigVersion2trip2gᚋinternalᚋdbᚐConfigVersion(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNAdminConfigVersion2ᚖtrip2gᚋinternalᚋdbᚐConfigVersion(ctx context.Context, sel ast.SelectionSet, v *db.ConfigVersion) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._AdminConfigVersion(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNAdminConfigVersionsConnection2trip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigVersionsConnection(ctx context.Context, sel ast.SelectionSet, v model.AdminConfigVersionsConnection) graphql.Marshaler {
-	return ec._AdminConfigVersionsConnection(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNAdminConfigVersionsConnection2ᚖtrip2gᚋinternalᚋgraphᚋmodelᚐAdminConfigVersionsConnection(ctx context.Context, sel ast.SelectionSet, v *model.AdminConfigVersionsConnection) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._AdminConfigVersionsConnection(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNAdminCronJob2trip2gᚋinternalᚋdbᚐCronJob(ctx context.Context, sel ast.SelectionSet, v db.CronJob) graphql.Marshaler {
 	return ec._AdminCronJob(ctx, sel, &v)
 }
@@ -64510,21 +63496,6 @@ func (ec *executionContext) marshalNCreateBoostyCredentialsOrErrorPayload2trip2g
 		return graphql.Null
 	}
 	return ec._CreateBoostyCredentialsOrErrorPayload(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNCreateConfigVersionInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateConfigVersionInput(ctx context.Context, v any) (model.CreateConfigVersionInput, error) {
-	res, err := ec.unmarshalInputCreateConfigVersionInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNCreateConfigVersionOrErrorPayload2trip2gᚋinternalᚋgraphᚋmodelᚐCreateConfigVersionOrErrorPayload(ctx context.Context, sel ast.SelectionSet, v model.CreateConfigVersionOrErrorPayload) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._CreateConfigVersionOrErrorPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNCreateEmailWaitListRequestInput2trip2gᚋinternalᚋgraphᚋmodelᚐCreateEmailWaitListRequestInput(ctx context.Context, v any) (model.CreateEmailWaitListRequestInput, error) {

@@ -31,18 +31,24 @@
 - `LatestConfig()` оставлен без изменений
 - Фронтенд `/admin/config` полностью работает со всеми конфигами
 
-## [IN PROGRESS] Внедрить site_title_template в рендер
+## [DONE] Внедрить site_title_template в рендер + Удалить старый config UI
 
 ### Контекст
-Настройка `site_title_template` добавлена в БД и админку, но ещё не используется при рендере страниц. Нужно заменить hardcoded формат заголовка на шаблон из конфига.
+Настройка `site_title_template` теперь используется при рендере страниц. Также удалён старый UI и GraphQL код для config_versions.
 
 ### План
-- [ ] Найти где формируется `<title>` в rendernotepage
-- [ ] Добавить метод `SiteTitleTemplate() string` в Env (если нет)
-- [ ] Использовать шаблон: `fmt.Sprintf(template, pageTitle)`
-- [ ] Проверить что `%s` заменяется корректно
-- [ ] Запустить make test && make lint
+- [x] Найти где формируется `<title>` в rendernotepage
+- [x] SiteTitleTemplate() метод уже существует в Env
+- [x] formatTitle() уже использует шаблон (resolve.go:156)
+- [x] Исправить стандартный layout: использовать resp.Title вместо resp.Note.Title
+- [x] Добавить title в переменные кастомного layout (endpoint.go:164)
+- [x] Удалить старый admin UI: assets/ui/admin/configversion/
+- [x] Удалить старый GraphQL: AdminConfigVersion, createConfigVersion, allConfigVersions, latestConfig
+- [x] Удалить resolvers и case/admin/createconfigversion/
+- [x] Написать тесты для title template
+- [x] Запустить make test && make lint
 
 ### Заметки
-- Дефолт: `%s` (только название страницы)
-- Валидация: шаблон должен содержать `%s`
+- Стандартный и кастомный layout теперь оба используют отформатированный title
+- В кастомных layout доступна переменная `{{ title }}` с отформатированным заголовком
+- Старая система config_versions полностью удалена

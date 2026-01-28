@@ -466,13 +466,6 @@ CREATE TABLE notion_integrations (
   verification_token text,
   base_path text not null default '/'
 );
-CREATE TABLE config_versions (
-  id integer primary key autoincrement,
-  created_at datetime not null default current_timestamp,
-  created_by integer not null references admins(user_id) on delete restrict,
-  show_draft_versions boolean not null default false,
-  default_layout text not null default ''
-, timezone text not null default 'UTC', robots_txt text not null default 'open');
 CREATE TABLE telegram_publish_tags (
   id integer primary key autoincrement,
   created_at datetime not null default current_timestamp,
@@ -593,34 +586,19 @@ CREATE TABLE github_oauth_credentials (
     created_at datetime not null default (datetime('now')),
     created_by integer not null references users(id)
 );
-CREATE TABLE config_site_title_templates (
+CREATE TABLE config_changes (
   id integer primary key autoincrement,
+  value_id text not null,
   created_at datetime not null default current_timestamp,
-  created_by integer not null references admins(user_id) on delete restrict,
+  created_by integer not null references admins(user_id) on delete restrict
+);
+CREATE INDEX idx_config_changes_value_id on config_changes(value_id);
+CREATE TABLE config_string_values (
+  change_id integer primary key references config_changes(id) on delete cascade,
   value text not null
 );
-CREATE TABLE config_timezones (
-  id integer primary key autoincrement,
-  created_at datetime not null default current_timestamp,
-  created_by integer not null references admins(user_id) on delete restrict,
-  value text not null
-);
-CREATE TABLE config_default_layouts (
-  id integer primary key autoincrement,
-  created_at datetime not null default current_timestamp,
-  created_by integer not null references admins(user_id) on delete restrict,
-  value text not null
-);
-CREATE TABLE config_robots_txts (
-  id integer primary key autoincrement,
-  created_at datetime not null default current_timestamp,
-  created_by integer not null references admins(user_id) on delete restrict,
-  value text not null
-);
-CREATE TABLE config_show_draft_versions (
-  id integer primary key autoincrement,
-  created_at datetime not null default current_timestamp,
-  created_by integer not null references admins(user_id) on delete restrict,
+CREATE TABLE config_bool_values (
+  change_id integer primary key references config_changes(id) on delete cascade,
   value boolean not null
 );
 -- Dbmate schema migrations
@@ -727,4 +705,5 @@ INSERT INTO "schema_migrations" (version) VALUES
   ('20260102093534'),
   ('20260119020631'),
   ('20260126113359'),
-  ('20260127122121');
+  ('20260127122121'),
+  ('20260128081252');
