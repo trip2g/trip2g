@@ -74,6 +74,23 @@ namespace $.$$ {
 		}
 	`)
 
+	const TIMEZONE_SUGGESTS = [
+		'UTC',
+		'America/New_York',
+		'America/Los_Angeles',
+		'America/Chicago',
+		'Europe/London',
+		'Europe/Paris',
+		'Europe/Moscow',
+		'Asia/Dubai',
+		'Asia/Kolkata',
+		'Asia/Shanghai',
+		'Asia/Tokyo',
+		'Asia/Singapore',
+		'Australia/Sydney',
+		'Pacific/Auckland',
+	]
+
 	export class $trip2g_admin_config_show extends $.$trip2g_admin_config_show {
 		@$mol_mem
 		data(reset?: null) {
@@ -86,6 +103,10 @@ namespace $.$$ {
 
 		is_bool_config(): boolean {
 			return this.data().__typename === 'AdminConfigBoolValue'
+		}
+
+		is_timezone_config(): boolean {
+			return this.config_id() === 'timezone'
 		}
 
 		override config_title(): string {
@@ -111,9 +132,41 @@ namespace $.$$ {
 				control.checked = (next?: boolean) => this.edit_value_bool(next)
 				return control
 			}
+			if (this.is_timezone_config()) {
+				const control = new this.$.$mol_search()
+				control.query = (next?: string) => this.edit_value_string(next)
+				control.suggests = () => TIMEZONE_SUGGESTS
+				control.hint = () => 'Enter timezone or select from list'
+				return control
+			}
 			const control = new this.$.$mol_string()
 			control.value = (next?: string) => this.edit_value_string(next)
 			return control
+		}
+
+		@$mol_mem
+		override value_field_content() {
+			const controls = [this.value_control()]
+			if (this.is_timezone_config()) {
+				controls.push(this.MyTimezoneButton())
+			}
+			return controls
+		}
+
+		@$mol_mem
+		MyTimezoneButton() {
+			const button = new this.$.$mol_button_minor()
+			button.title = () => this.my_timezone()
+			button.click = () => this.set_my_timezone()
+			return button
+		}
+
+		my_timezone(): string {
+			return Intl.DateTimeFormat().resolvedOptions().timeZone
+		}
+
+		set_my_timezone() {
+			this.edit_value_string(this.my_timezone())
 		}
 
 		@$mol_mem

@@ -3,6 +3,8 @@ $trip2g_admin_config_show $mol_page
 	title <= config_title \Config
 	body /
 		<= Details $mol_view
+			style *
+				flexDirection \column
 			sub /
 				<= Id_labeler $mol_labeler
 					title @ \Config ID
@@ -23,8 +25,9 @@ $trip2g_admin_config_show $mol_page
 					body /
 						<= Value_field $mol_form_field
 							name @ \New Value
-							Content <= value_control $mol_view
-					buttons /
+							content <= value_field_content /
+								<= value_control $mol_view
+					buttons <= edit_buttons /
 						<= Submit $mol_button_major
 							title @ \Save
 							click? <=> save? null
