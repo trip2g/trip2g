@@ -25,7 +25,9 @@ namespace $.$$ {
 		@$mol_mem
 		data(reset?: null) {
 			const res = data_request()
-			return $trip2g_graphql_make_map(res.admin.configValues)
+			// Sort by id for stable order.
+			const sorted = [...res.admin.configValues].sort((a, b) => a.id.localeCompare(b.id))
+			return $trip2g_graphql_make_map(sorted)
 		}
 
 		@$mol_mem
