@@ -1744,7 +1744,7 @@ func (a *app) handleRobotsTxt(req *appreq.Request) bool {
 		switch txt {
 		case "closed":
 			req.Req.SetBodyString(robotsTxtContentClosed)
-		case "open":
+		case "opened":
 			req.Req.SetBodyString(robotsTxtContentOpened)
 		default:
 			req.Req.SetBodyString(txt)

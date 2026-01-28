@@ -58,9 +58,9 @@ var Registry = map[string]ConfigMeta{
 	},
 	ConfigRobotsTxt: {
 		ID:          ConfigRobotsTxt,
-		Description: "Содержимое robots.txt. Значения: open, closed или произвольный текст.",
+		Description: "Содержимое robots.txt. Значения: opened, closed или произвольный текст.",
 		Type:        ConfigTypeString,
-		Default:     "open",
+		Default:     "opened",
 		Validate:    nil,
 	},
 	ConfigShowDraftVersions: {

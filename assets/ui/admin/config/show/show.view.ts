@@ -180,8 +180,8 @@ namespace $.$$ {
 		@$mol_mem
 		RobotsOpenButton() {
 			const button = new this.$.$mol_button_minor()
-			button.title = () => 'open'
-			button.click = () => this.edit_value_string('open')
+			button.title = () => 'opened'
+			button.click = () => this.edit_value_string('opened')
 			return button
 		}
 
