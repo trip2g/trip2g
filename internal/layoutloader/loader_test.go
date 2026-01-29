@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 	"trip2g/internal/logger"
+	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
 	"trip2g/internal/templateviews"
 
@@ -971,4 +972,184 @@ func TestTemplateViews_NoteMeta(t *testing.T) {
 	require.NoError(t, err)
 
 	cupaloy.SnapshotT(t, buf.String())
+}
+
+func TestTemplateViews_NestedSections(t *testing.T) {
+	// Create a note with nested headings (h2 categories, h3 slides)
+	noteContent := []byte(`
+## Category 1
+
+Introduction to category 1.
+
+### Slide 1.1
+
+Content for slide 1.1
+
+### Slide 1.2
+
+Content for slide 1.2
+
+## Category 2
+
+Introduction to category 2.
+
+### Slide 2.1
+
+Content for slide 2.1
+`)
+
+	// Load note through mdloader to get proper PartialRenderer
+	log := &logger.TestLogger{}
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path:    "presentation.md",
+			Content: noteContent,
+		}},
+		Log: log,
+	})
+	require.NoError(t, err)
+	require.Len(t, pages.List, 1)
+
+	noteView := pages.List[0]
+
+	// Template that uses nested Sections
+	sources := []model.LayoutSourceFile{{
+		ID:        "/test/nested-sections",
+		VersionID: 1,
+		Path:      "_layouts/test/nested-sections.html",
+		Content: `<div class="presentation">
+{{ range idx, category := note.PartialRenderer().Sections(2) }}
+<section class="category" data-title="{{ category.Title }}">
+  <h2>{{ category.TitleHTML | unsafe }}</h2>
+{{ range slideIdx, slide := category.Sections(3) }}
+  <section class="slide" data-slide-num="{{ slideIdx + 1 }}" data-category="{{ category.Title }}">
+    <h3>{{ slide.TitleHTML | unsafe }}</h3>
+    {{ slide.ContentHTML | unsafe }}
+  </section>
+{{ end }}
+</section>
+{{ end }}
+</div>`,
+	}}
+
+	env := &testEnv{logger: log}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	// Create templateviews.Note wrapper
+	nvs := model.NewNoteViews()
+	nvs.RegisterNote(noteView)
+	tplNVS := templateviews.NewNVS(nvs, "live")
+	note := tplNVS.ByPath("presentation.md")
+	require.NotNil(t, note)
+
+	vars := make(jet.VarMap)
+	vars["note"] = reflect.ValueOf(note)
+
+	var buf bytes.Buffer
+	err = layouts.Map["/test/nested-sections"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+
+	result := buf.String()
+	t.Logf("Result:\n%s", result)
+
+	// Verify category 1 and its slides
+	require.Contains(t, result, `data-title="Category 1"`)
+	require.Contains(t, result, `data-slide-num="1" data-category="Category 1"`)
+	require.Contains(t, result, `data-slide-num="2" data-category="Category 1"`)
+	require.Contains(t, result, "Slide 1.1")
+	require.Contains(t, result, "Slide 1.2")
+	require.Contains(t, result, "Content for slide 1.1")
+	require.Contains(t, result, "Content for slide 1.2")
+
+	// Verify category 2 and its slides
+	require.Contains(t, result, `data-title="Category 2"`)
+	require.Contains(t, result, `data-slide-num="1" data-category="Category 2"`)
+	require.Contains(t, result, "Slide 2.1")
+	require.Contains(t, result, "Content for slide 2.1")
+
+	cupaloy.SnapshotT(t, result)
+}
+
+func TestTemplateViews_NestedSectionByTitle(t *testing.T) {
+	// Create a note with nested headings
+	noteContent := []byte(`
+## Features
+
+### Performance
+
+Our app is fast.
+
+### Security
+
+Our app is secure.
+
+## Pricing
+
+### Basic Plan
+
+$10/month
+`)
+
+	// Load note through mdloader to get proper PartialRenderer
+	log := &logger.TestLogger{}
+	pages, err := mdloader.Load(mdloader.Options{
+		Sources: []mdloader.SourceFile{{
+			Path:    "features.md",
+			Content: noteContent,
+		}},
+		Log: log,
+	})
+	require.NoError(t, err)
+	require.Len(t, pages.List, 1)
+
+	noteView := pages.List[0]
+
+	// Template that uses Section(title) to find specific subsection
+	sources := []model.LayoutSourceFile{{
+		ID:        "/test/section-by-title",
+		VersionID: 1,
+		Path:      "_layouts/test/section-by-title.html",
+		Content: `{{ features := note.PartialRenderer().Section("Features") }}
+{{ if features }}
+<div class="features">
+  {{ security := features.Section("Security") }}
+  {{ if security }}
+  <div class="security-highlight">
+    <h4>{{ security.TitleHTML | unsafe }}</h4>
+    {{ security.ContentHTML | unsafe }}
+  </div>
+  {{ end }}
+</div>
+{{ end }}`,
+	}}
+
+	env := &testEnv{logger: log}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	// Create templateviews.Note wrapper
+	nvs := model.NewNoteViews()
+	nvs.RegisterNote(noteView)
+	tplNVS := templateviews.NewNVS(nvs, "live")
+	note := tplNVS.ByPath("features.md")
+	require.NotNil(t, note)
+
+	vars := make(jet.VarMap)
+	vars["note"] = reflect.ValueOf(note)
+
+	var buf bytes.Buffer
+	err = layouts.Map["/test/section-by-title"].View.Execute(&buf, vars, nil)
+	require.NoError(t, err)
+
+	result := buf.String()
+	t.Logf("Result:\n%s", result)
+
+	// Verify that nested Section(title) works
+	require.Contains(t, result, "security-highlight")
+	require.Contains(t, result, "Security")
+	require.Contains(t, result, "Our app is secure")
+
+	// Should NOT contain Performance (we only requested Security)
+	require.NotContains(t, result, "Performance")
 }

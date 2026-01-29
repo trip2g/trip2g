@@ -139,7 +139,18 @@ func renderLayout(
 ) (processed bool, err error) {
 	layout, layoutExists := env.Layouts().Map["/"+layoutName]
 	if !layoutExists {
-		env.Logger().Warn("layout not found: " + resp.Note.Layout)
+		layoutNames := []string{}
+
+		for name := range env.Layouts().Map {
+			layoutNames = append(layoutNames, name)
+		}
+
+		env.Logger().Warn(
+			"layout not found",
+			"name", resp.Note.Layout,
+			"available_layouts", layoutNames,
+		)
+
 		return false, nil
 	}
 

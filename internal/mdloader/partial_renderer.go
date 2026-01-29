@@ -9,9 +9,11 @@ import (
 )
 
 type PartialRenderer struct {
-	md      goldmark.Markdown
-	ast     ast.Node
-	content []byte
+	md       goldmark.Markdown
+	ast      ast.Node
+	content  []byte
+	resolver *myLinkResolver
+	page     *model.NoteView
 }
 
 func (pr *PartialRenderer) SetContent(astNode ast.Node, content []byte) {
@@ -19,57 +21,168 @@ func (pr *PartialRenderer) SetContent(astNode ast.Node, content []byte) {
 	pr.content = content
 }
 
+// SetPage sets the page reference for correct asset resolution during rendering.
+func (pr *PartialRenderer) SetPage(page *model.NoteView) {
+	pr.page = page
+}
+
+// withCurrentPage temporarily sets resolver.currentPage to this page for rendering.
+func (pr *PartialRenderer) withCurrentPage(fn func()) {
+	if pr.resolver == nil || pr.page == nil {
+		fn()
+		return
+	}
+
+	prev := pr.resolver.currentPage
+	pr.resolver.currentPage = pr.page
+	fn()
+	pr.resolver.currentPage = prev
+}
+
 func (pr *PartialRenderer) Sections(level int) []model.NoteViewSection {
-	if pr.ast == nil || pr.content == nil {
+	return pr.sectionsFromNodes(pr.collectTopLevelNodes(), level)
+}
+
+func (pr *PartialRenderer) collectTopLevelNodes() []ast.Node {
+	if pr.ast == nil {
+		return nil
+	}
+
+	var nodes []ast.Node
+	for child := pr.ast.FirstChild(); child != nil; child = child.NextSibling() {
+		nodes = append(nodes, child)
+	}
+	return nodes
+}
+
+func (pr *PartialRenderer) sectionsFromNodes(allNodes []ast.Node, level int) []model.NoteViewSection {
+	if len(allNodes) == 0 || pr.content == nil {
 		return nil
 	}
 
 	var blocks []model.NoteViewSection
-	var allNodes []ast.Node
 
-	// First pass: collect all top-level nodes
-	for child := pr.ast.FirstChild(); child != nil; child = child.NextSibling() {
-		allNodes = append(allNodes, child)
+	type sectionRange struct {
+		title        string
+		titleHTML    string
+		contentStart int
+		contentEnd   int
 	}
 
-	var currentBlock *model.NoteViewSection
-	var contentStart = -1
+	var ranges []sectionRange
+	var currentRange *sectionRange
 
 	for i, node := range allNodes {
-		if heading, ok := node.(*ast.Heading); ok {
-			// If we find a heading of the target level
-			if heading.Level == level {
-				// Save previous block if exists
-				if currentBlock != nil {
-					currentBlock.ContentHTML = pr.renderNodeRange(allNodes, contentStart, i)
-					blocks = append(blocks, *currentBlock)
-				}
+		heading, ok := node.(*ast.Heading)
+		if !ok {
+			continue
+		}
 
-				// Start new block
-				currentBlock = &model.NoteViewSection{
-					TitleHTML: pr.renderHeading(heading),
-				}
-				contentStart = i + 1
-				continue
+		// If we find a heading of the target level.
+		if heading.Level == level {
+			// Save previous range if exists.
+			if currentRange != nil {
+				currentRange.contentEnd = i
+				ranges = append(ranges, *currentRange)
 			}
 
-			// If we find a heading of same or higher level, finish current block
-			if currentBlock != nil && heading.Level <= level {
-				currentBlock.ContentHTML = pr.renderNodeRange(allNodes, contentStart, i)
-				blocks = append(blocks, *currentBlock)
-				currentBlock = nil
-				contentStart = -1
+			// Start new range.
+			currentRange = &sectionRange{
+				title:        extractHeadingText(pr.content, heading),
+				titleHTML:    pr.renderHeading(heading),
+				contentStart: i + 1,
 			}
+			continue
+		}
+
+		// If we find a heading of same or higher level, finish current range.
+		if currentRange != nil && heading.Level <= level {
+			currentRange.contentEnd = i
+			ranges = append(ranges, *currentRange)
+			currentRange = nil
 		}
 	}
 
-	// Add the last block if exists
-	if currentBlock != nil {
-		currentBlock.ContentHTML = pr.renderNodeRange(allNodes, contentStart, len(allNodes))
-		blocks = append(blocks, *currentBlock)
+	// Add the last range if exists.
+	if currentRange != nil {
+		currentRange.contentEnd = len(allNodes)
+		ranges = append(ranges, *currentRange)
+	}
+
+	// Build sections from ranges.
+	for _, r := range ranges {
+		contentNodes := allNodes[r.contentStart:r.contentEnd]
+
+		section := model.NoteViewSection{
+			Title:       r.title,
+			TitleHTML:   r.titleHTML,
+			ContentHTML: pr.renderNodeRange(allNodes, r.contentStart, r.contentEnd),
+		}
+
+		// Capture nodes for nested Sections()/Section() calls.
+		section.SectionsFunc = pr.makeSectionsFunc(contentNodes)
+		section.SectionFunc = pr.makeSectionFunc(contentNodes)
+
+		blocks = append(blocks, section)
 	}
 
 	return blocks
+}
+
+func (pr *PartialRenderer) makeSectionsFunc(nodes []ast.Node) func(int) []model.NoteViewSection {
+	return func(level int) []model.NoteViewSection {
+		return pr.sectionsFromNodes(nodes, level)
+	}
+}
+
+func (pr *PartialRenderer) makeSectionFunc(nodes []ast.Node) func(string) *model.NoteViewSection {
+	return func(title string) *model.NoteViewSection {
+		return pr.sectionFromNodes(nodes, title)
+	}
+}
+
+func (pr *PartialRenderer) sectionFromNodes(allNodes []ast.Node, title string) *model.NoteViewSection {
+	if len(allNodes) == 0 || pr.content == nil {
+		return nil
+	}
+
+	// Find the heading with matching title.
+	for i, node := range allNodes {
+		heading, ok := node.(*ast.Heading)
+		if !ok {
+			continue
+		}
+
+		headingText := extractHeadingText(pr.content, heading)
+		if headingText != title {
+			continue
+		}
+
+		// Found the heading, now collect content until next heading of same or higher level.
+		contentEnd := len(allNodes)
+		for j := i + 1; j < len(allNodes); j++ {
+			nextHeading, isHeading := allNodes[j].(*ast.Heading)
+			if isHeading && nextHeading.Level <= heading.Level {
+				contentEnd = j
+				break
+			}
+		}
+
+		contentNodes := allNodes[i+1 : contentEnd]
+
+		section := &model.NoteViewSection{
+			Title:       headingText,
+			TitleHTML:   pr.renderHeading(heading),
+			ContentHTML: pr.renderNodeRange(allNodes, i+1, contentEnd),
+		}
+
+		section.SectionsFunc = pr.makeSectionsFunc(contentNodes)
+		section.SectionFunc = pr.makeSectionFunc(contentNodes)
+
+		return section
+	}
+
+	return nil
 }
 
 // HeadingBlocks is deprecated, use Sections instead.
@@ -81,47 +194,7 @@ func (pr *PartialRenderer) HeadingBlocks(level int) []model.NoteViewSection {
 // Returns nil if no heading with the given title is found.
 // The title is matched against the plain text content of the heading.
 func (pr *PartialRenderer) Section(title string) *model.NoteViewSection {
-	if pr.ast == nil || pr.content == nil {
-		return nil
-	}
-
-	var allNodes []ast.Node
-
-	// Collect all top-level nodes
-	for child := pr.ast.FirstChild(); child != nil; child = child.NextSibling() {
-		allNodes = append(allNodes, child)
-	}
-
-	// Find the heading with matching title
-	for i, node := range allNodes {
-		heading, ok := node.(*ast.Heading)
-		if !ok {
-			continue
-		}
-
-		// Get plain text title for comparison
-		headingText := extractHeadingText(pr.content, heading)
-		if headingText != title {
-			continue
-		}
-
-		// Found the heading, now collect content until next heading of same or higher level
-		contentEnd := len(allNodes)
-		for j := i + 1; j < len(allNodes); j++ {
-			nextHeading, isHeading := allNodes[j].(*ast.Heading)
-			if isHeading && nextHeading.Level <= heading.Level {
-				contentEnd = j
-				break
-			}
-		}
-
-		return &model.NoteViewSection{
-			TitleHTML:   pr.renderHeading(heading),
-			ContentHTML: pr.renderNodeRange(allNodes, i+1, contentEnd),
-		}
-	}
-
-	return nil
+	return pr.sectionFromNodes(pr.collectTopLevelNodes(), title)
 }
 
 // extractHeadingText extracts plain text from a heading node.
@@ -188,13 +261,15 @@ func (pr *PartialRenderer) Introduce() model.NoteViewSection {
 func (pr *PartialRenderer) renderHeading(heading *ast.Heading) string {
 	var buf bytes.Buffer
 
-	// Render only the children of the heading (the content inside)
-	for child := heading.FirstChild(); child != nil; child = child.NextSibling() {
-		err := pr.md.Renderer().Render(&buf, pr.content, child)
-		if err != nil {
-			continue // Skip nodes that can't be rendered
+	pr.withCurrentPage(func() {
+		// Render only the children of the heading (the content inside).
+		for child := heading.FirstChild(); child != nil; child = child.NextSibling() {
+			err := pr.md.Renderer().Render(&buf, pr.content, child)
+			if err != nil {
+				continue // Skip nodes that can't be rendered.
+			}
 		}
-	}
+	})
 
 	return buf.String()
 }
@@ -206,13 +281,15 @@ func (pr *PartialRenderer) renderNodeRange(allNodes []ast.Node, start, end int) 
 
 	var buf bytes.Buffer
 
-	for i := start; i < end && i < len(allNodes); i++ {
-		node := allNodes[i]
-		err := pr.md.Renderer().Render(&buf, pr.content, node)
-		if err != nil {
-			continue // Skip nodes that can't be rendered
+	pr.withCurrentPage(func() {
+		for i := start; i < end && i < len(allNodes); i++ {
+			node := allNodes[i]
+			err := pr.md.Renderer().Render(&buf, pr.content, node)
+			if err != nil {
+				continue // Skip nodes that can't be rendered.
+			}
 		}
-	}
+	})
 
 	return buf.String()
 }

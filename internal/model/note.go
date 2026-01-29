@@ -54,8 +54,32 @@ type NoteAssetReplace struct {
 }
 
 type NoteViewSection struct {
+	Title       string
 	TitleHTML   string
 	ContentHTML string
+
+	// SectionsFunc is set by PartialRenderer to enable nested section extraction.
+	SectionsFunc func(level int) []NoteViewSection `json:"-"`
+	// SectionFunc is set by PartialRenderer to enable finding a section by title.
+	SectionFunc func(title string) *NoteViewSection `json:"-"`
+}
+
+// Sections returns subsections at the specified heading level.
+// This allows nested iteration over sections in templates.
+func (s *NoteViewSection) Sections(level int) []NoteViewSection {
+	if s.SectionsFunc == nil {
+		return nil
+	}
+	return s.SectionsFunc(level)
+}
+
+// Section finds a subsection by its heading title.
+// Returns nil if no heading with the given title is found.
+func (s *NoteViewSection) Section(title string) *NoteViewSection {
+	if s.SectionFunc == nil {
+		return nil
+	}
+	return s.SectionFunc(title)
 }
 
 // NoteViewHeadingBlock is an alias for NoteViewSection (deprecated, use NoteViewSection).
