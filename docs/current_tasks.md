@@ -65,14 +65,55 @@
 - [ ] Обернуть трекинг 404 в проверку конфига
 - [ ] Добавить в admin UI конфигов
 
-## [TODO] RSS
+## [DONE] RSS
 
 ### Контекст
 Любая заметка — RSS лента. Markdown AST преобразуется в RSS feed: каждая ссылка → RSS item. Дизайн: [docs/rss.md](rss.md)
 
 ### План
-- [ ] Markdown AST → RSS: извлечение ссылок из заметки
-- [ ] Роутинг: `/path/to/note.rss.xml`
-- [ ] Метаданные из целевых заметок (description, created_at)
-- [ ] Frontmatter: `rss_title`, `rss_description`
-- [ ] Конфиг: `EnableRSS` (bool) в SiteConfig
+- [x] Markdown AST → RSS: извлечение ссылок из заметки
+- [x] Роутинг: `/path/to/note.rss.xml`
+- [x] Метаданные из целевых заметок (description, created_at)
+- [x] Frontmatter: `rss_title`, `rss_description`
+- [x] Конфиг: `EnableRSS` (bool) в SiteConfig
+- [x] Package `internal/rssfeed/` с генератором
+- [x] Middleware `handleRSSFeed` в `cmd/server/main.go`
+- [x] Тесты
+
+### Заметки
+- Поддерживаются wikilinks и markdown links
+- Internal links обогащаются метаданными из целевых заметок
+- AST walking пропускает embedded images и media files
+- `created_at`/`created_on` из фронтматтера переопределяет значение из БД
+- E2E тесты: `e2e/rss.spec.js`
+
+## [DONE] Sitemap.xml
+
+### Контекст
+Генерация sitemap.xml из всех опубликованных страниц. Генерируется вместе с заметками в NoteViews и отдаётся по запросу. Включаются только free: true заметки. Документация: [docs/sitemap.md](sitemap.md)
+
+### План
+- [x] Добавить поле `Sitemap []byte` в `NoteViews`
+- [x] Генерировать sitemap при загрузке заметок в `mdloader`
+- [x] Middleware `handleSitemap` для отдачи по `/sitemap.xml`
+- [x] Конфиг `EnableSitemap` (bool, default true)
+- [x] Тесты
+- [x] make test && make lint
+
+### Заметки
+- Реализация завершена в `internal/sitemap/`
+- Генерируется при загрузке заметок в `noteloader`
+- Включаются только `free: true` заметки
+- Системные страницы `/_*` исключаются
+- `lastmod` берётся из `CreatedAt` или frontmatter `created_at`/`created_on`
+
+## [TODO] Рефакторинг: ShowDraftVersions → LiveNoteViews()
+
+### Контекст
+Сейчас логика ShowDraftVersions дублируется в `internal/case/rendernotepage/resolve.go` (строки 118-127). Нужно перенести эту логику в `cmd/server/main.go` метод `LiveNoteViews()`: если `ShowDraftVersions` включён, возвращать `LatestNoteViews()`. Это упростит resolve.go и уберёт зависимость от конфига.
+
+### План
+- [ ] Перенести логику ShowDraftVersions в `app.LiveNoteViews()`
+- [ ] Убрать дополнительную логику из `rendernotepage/resolve.go`
+- [ ] Проверить все вызовы LiveNoteViews() — нигде не сломается
+- [ ] make test && make lint

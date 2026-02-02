@@ -16,6 +16,7 @@ import (
 	"trip2g/internal/logger"
 	"trip2g/internal/mdloader"
 	"trip2g/internal/model"
+	"trip2g/internal/sitemap"
 
 	"github.com/blevesearch/bleve/v2"
 	"golang.org/x/sync/errgroup"
@@ -44,6 +45,7 @@ type Env interface {
 	NoteAssetExists(ctx context.Context, asset db.NoteAsset) (bool, error)
 	NoteAssetURL(ctx context.Context, asset db.NoteAsset) (model.PresignedURL, error)
 	NoteAssetPath(asset db.NoteAsset) string
+	PublicURL() string
 	Logger() logger.Logger
 	Now() time.Time
 
@@ -215,15 +217,12 @@ func (l *Loader) Load(ctx context.Context, options LoadOptions) error {
 		}
 	}
 
-	// Assign embeddings to notes
-	embeddingCount := 0
-	for _, nv := range nvs.List {
-		if rawEmb, ok := embeddingMap[nv.VersionID]; ok {
-			nv.Embedding = bytesToFloat32Slice(rawEmb)
-			embeddingCount++
-		}
+	l.assignEmbeddings(nvs, embeddingMap)
+
+	err = l.generateSitemap(nvs)
+	if err != nil {
+		return err
 	}
-	l.log.Debug("embeddings loaded", "count", embeddingCount, "total_notes", len(nvs.List))
 
 	l.log.Debug("done")
 
@@ -343,6 +342,29 @@ func (l *Loader) NoteByPath(path string) *model.NoteView {
 	defer l.Unlock()
 
 	return l.nvs.Map[path]
+}
+
+func (l *Loader) assignEmbeddings(nvs *model.NoteViews, embeddingMap map[int64][]byte) {
+	count := 0
+	for _, nv := range nvs.List {
+		if rawEmb, ok := embeddingMap[nv.VersionID]; ok {
+			nv.Embedding = bytesToFloat32Slice(rawEmb)
+			count++
+		}
+	}
+
+	l.log.Debug("embeddings loaded", "count", count, "total_notes", len(nvs.List))
+}
+
+func (l *Loader) generateSitemap(nvs *model.NoteViews) error {
+	sitemapBytes, err := sitemap.Generate(nvs, l.env.PublicURL())
+	if err != nil {
+		return fmt.Errorf("failed to generate sitemap: %w", err)
+	}
+
+	nvs.Sitemap = sitemapBytes
+
+	return nil
 }
 
 // bytesToFloat32Slice converts []byte back to []float32.

@@ -7,4 +7,5 @@ type SiteConfig struct {
 	DefaultLayout     string
 	RobotsTxt         string
 	ShowDraftVersions bool
+	EnableRSS         bool
 }

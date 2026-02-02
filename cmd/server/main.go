@@ -81,6 +81,7 @@ import (
 	"trip2g/internal/purchasetoken"
 	"trip2g/internal/redirectmanager"
 	"trip2g/internal/router"
+	"trip2g/internal/rssfeed"
 	"trip2g/internal/simplebackup"
 	"trip2g/internal/tgauthtoken"
 	"trip2g/internal/tgbots"
@@ -523,6 +524,7 @@ func (a *app) SiteConfig(ctx context.Context) model.SiteConfig {
 		Timezone:          "UTC",
 		RobotsTxt:         "opened",
 		ShowDraftVersions: true,
+		EnableRSS:         true,
 	}
 
 	strings, err := a.AllLatestConfigStrings(ctx)
@@ -546,6 +548,9 @@ func (a *app) SiteConfig(ctx context.Context) model.SiteConfig {
 		for _, b := range bools {
 			if b.ValueID == "show_draft_versions" {
 				cfg.ShowDraftVersions = b.Value
+			}
+			if b.ValueID == "enable_rss" {
+				cfg.EnableRSS = b.Value
 			}
 		}
 	}
@@ -1755,6 +1760,58 @@ func (a *app) handleRobotsTxt(req *appreq.Request) bool {
 	return false
 }
 
+func (a *app) handleRSSFeed(req *appreq.Request) bool {
+	if !strings.HasSuffix(req.Path, ".rss.xml") {
+		return false
+	}
+
+	cfg := a.SiteConfig(context.Background())
+	if !cfg.EnableRSS {
+		return false
+	}
+
+	// Strip .rss.xml suffix to get the note path.
+	notePath := strings.TrimSuffix(req.Path, ".rss.xml")
+	if notePath == "" {
+		notePath = "/"
+	}
+
+	notes := a.LiveNoteViews()
+	note := notes.GetByPath(notePath)
+	if note == nil {
+		return false
+	}
+
+	xmlBytes, err := rssfeed.Generate(note, a.PublicURL(), notes)
+	if err != nil {
+		a.log.Error("failed to generate RSS feed", "error", err, "path", req.Path)
+		return false
+	}
+
+	req.Req.SetContentType("application/rss+xml; charset=utf-8")
+	req.Req.SetStatusCode(http.StatusOK)
+	req.Req.SetBody(xmlBytes)
+
+	return true
+}
+
+func (a *app) handleSitemap(req *appreq.Request) bool {
+	if req.Path != "/sitemap.xml" {
+		return false
+	}
+
+	nvs := a.LiveNoteViews()
+	if nvs == nil || len(nvs.Sitemap) == 0 {
+		return false
+	}
+
+	req.Req.SetContentType("application/xml; charset=utf-8")
+	req.Req.SetStatusCode(http.StatusOK)
+	req.Req.SetBody(nvs.Sitemap)
+
+	return true
+}
+
 // Middleware should return true if the request is fully handled.
 type Middleware func(req *appreq.Request) bool
 
@@ -1763,6 +1820,8 @@ func (a *app) prepareMiddlewares() []Middleware {
 
 	return []Middleware{
 		a.handleRobotsTxt,
+		a.handleSitemap,
+		a.handleRSSFeed,
 		func(req *appreq.Request) bool {
 			return a.handleCors(req.Req)
 		},

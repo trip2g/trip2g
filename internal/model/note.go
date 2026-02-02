@@ -166,6 +166,10 @@ type NoteView struct {
 	MCPMethod      string // method name for MCP tools/list
 	MCPDescription string // description for MCP tools/list
 
+	// RSS feed fields from frontmatter.
+	RSSTitle       string
+	RSSDescription string
+
 	// Vector embedding for semantic search (loaded separately)
 	Embedding []float32 `json:"-"`
 }
@@ -184,6 +188,8 @@ type NoteViews struct {
 	PathMap map[string]*NoteView
 
 	List []*NoteView
+
+	Sitemap []byte `json:"-"`
 
 	Subgraphs map[string]*NoteSubgraph `json:"-"`
 
@@ -409,6 +415,8 @@ func (n *NoteView) ExtractMetaData() error {
 
 	n.extractMCPFields()
 
+	n.extractRSSFields()
+
 	return nil
 }
 
@@ -418,6 +426,15 @@ func (n *NoteView) extractMCPFields() {
 	}
 	if desc, ok := n.RawMeta["mcp_description"].(string); ok {
 		n.MCPDescription = desc
+	}
+}
+
+func (n *NoteView) extractRSSFields() {
+	if title, ok := n.RawMeta["rss_title"].(string); ok {
+		n.RSSTitle = title
+	}
+	if desc, ok := n.RawMeta["rss_description"].(string); ok {
+		n.RSSDescription = desc
 	}
 }
 

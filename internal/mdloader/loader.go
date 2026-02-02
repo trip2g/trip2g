@@ -126,6 +126,7 @@ func Load(options Options) (*model.NoteViews, error) {
 		page.PathID = src.PathID
 		page.VersionID = src.VersionID
 		page.CreatedAt = src.CreatedAt
+		page.ExtractCreatedAt(time.UTC)
 
 		ldr.nvs.RegisterNote(page)
 	}

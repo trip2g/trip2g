@@ -29,6 +29,7 @@ const (
 // Bool config IDs.
 const (
 	ConfigShowDraftVersions = "show_draft_versions"
+	ConfigEnableRSS         = "enable_rss"
 )
 
 // Registry contains all config metadata.
@@ -66,6 +67,13 @@ var Registry = map[string]ConfigMeta{
 	ConfigShowDraftVersions: {
 		ID:          ConfigShowDraftVersions,
 		Description: "Показывать черновики админам.",
+		Type:        ConfigTypeBool,
+		Default:     true,
+		Validate:    nil,
+	},
+	ConfigEnableRSS: {
+		ID:          ConfigEnableRSS,
+		Description: "Включить RSS-ленту для заметок.",
 		Type:        ConfigTypeBool,
 		Default:     true,
 		Validate:    nil,
