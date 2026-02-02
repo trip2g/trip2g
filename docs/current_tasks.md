@@ -107,13 +107,18 @@
 - Системные страницы `/_*` исключаются
 - `lastmod` берётся из `CreatedAt` или frontmatter `created_at`/`created_on`
 
-## [TODO] Рефакторинг: ShowDraftVersions → LiveNoteViews()
+## [DONE] Рефакторинг: ShowDraftVersions → LiveNoteViews()
 
 ### Контекст
-Сейчас логика ShowDraftVersions дублируется в `internal/case/rendernotepage/resolve.go` (строки 118-127). Нужно перенести эту логику в `cmd/server/main.go` метод `LiveNoteViews()`: если `ShowDraftVersions` включён, возвращать `LatestNoteViews()`. Это упростит resolve.go и уберёт зависимость от конфига.
+Логика ShowDraftVersions дублировалась в `rendernotepage/resolve.go`. Перенесена в `app.LiveNoteViews()`.
 
 ### План
-- [ ] Перенести логику ShowDraftVersions в `app.LiveNoteViews()`
-- [ ] Убрать дополнительную логику из `rendernotepage/resolve.go`
-- [ ] Проверить все вызовы LiveNoteViews() — нигде не сломается
-- [ ] make test && make lint
+- [x] Перенести логику ShowDraftVersions в `app.LiveNoteViews()`
+- [x] Убрать дополнительную логику из `rendernotepage/resolve.go`
+- [x] Проверить все вызовы LiveNoteViews() — нигде не сломается
+- [x] make test && make lint
+
+### Заметки
+- `LiveNoteViews()` теперь возвращает latest когда ShowDraftVersions включён
+- RSS, sitemap и все middleware автоматически используют правильные заметки
+- Админы по-прежнему могут переключаться через `?version=`

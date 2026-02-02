@@ -1143,6 +1143,11 @@ func (a *app) LiveNoteViews() *model.NoteViews {
 		return a.latestNoteLoader.NoteViews()
 	}
 
+	cfg := a.SiteConfig(context.Background())
+	if cfg.ShowDraftVersions {
+		return a.latestNoteLoader.NoteViews()
+	}
+
 	return a.liveNoteLoader.NoteViews()
 }
 

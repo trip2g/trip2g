@@ -105,9 +105,8 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 		UserRole:       "guest",
 	}
 
-	// only admins can access the latest version
+	// only admins can access the latest version via ?version=latest
 	isAdmin := request.UserToken.IsAdmin()
-	isLatest := request.Version == "latest"
 
 	response.IsAdmin = isAdmin
 
@@ -115,15 +114,12 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Config.ShowDraftVersions = siteConfig.ShowDraftVersions
 	response.Config.DefaultLayout = siteConfig.DefaultLayout
 
+	// LiveNoteViews() already returns latest when ShowDraftVersions is on.
+	// Admins can additionally switch to explicit latest via ?version=latest.
+	isLatest := isAdmin && (request.Version == "latest" || request.Version == "")
+
 	if isAdmin || siteConfig.ShowDraftVersions {
 		response.DefaultVersion = "latest"
-
-		// admins view the latest version by default
-		if request.Version == "" {
-			isLatest = true
-		}
-	} else {
-		isLatest = false
 	}
 
 	if isLatest {
