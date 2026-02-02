@@ -27,8 +27,7 @@ type Env interface {
 	ListActiveUserSubgraphs(ctx context.Context, userID int64) ([]string, error)
 	RecordUserNoteView(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
 	LastUserNoteView(ctx context.Context, arg db.LastUserNoteViewParams) (db.LastUserNoteViewRow, error)
-	GetLatestConfigBool(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error)
-	GetLatestConfigString(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error)
+	SiteConfig(ctx context.Context) model.SiteConfig
 	SiteTitleTemplate() string
 	CanReadNote(ctx context.Context, note *model.NoteView) (bool, error)
 }
@@ -94,11 +93,8 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -141,11 +137,8 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -206,11 +199,8 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -271,11 +261,8 @@ func TestResolve_FreeNoteWithSubgraph(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -420,11 +407,8 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -481,11 +465,8 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -542,11 +523,8 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -603,11 +581,8 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -664,11 +639,8 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -722,11 +694,8 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -848,11 +817,8 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -905,11 +871,8 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -989,11 +952,8 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1045,11 +1005,8 @@ func TestResolve_CheckLatestBannerWithDefaultVersion(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1193,11 +1150,8 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1230,11 +1184,8 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1267,11 +1218,8 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1301,11 +1249,8 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1335,11 +1280,8 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1366,11 +1308,8 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1408,11 +1347,8 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1492,11 +1428,8 @@ func TestResolve_SystemPagesBlocked(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1598,11 +1531,8 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1639,11 +1569,8 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1698,11 +1625,8 @@ func TestResolve_NonFreeNoteWithSubgraph(t *testing.T) {
 					LoggerFunc: func() logger.Logger {
 						return &logger.DummyLogger{}
 					},
-					GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-						return db.GetLatestConfigBoolRow{Value: false}, nil
-					},
-					GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-						return db.GetLatestConfigStringRow{Value: ""}, nil
+					SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+						return model.SiteConfig{}
 					},
 					SiteTitleTemplateFunc: func() string {
 						return "%s"
@@ -1813,11 +1737,8 @@ func TestResolve_SiteTitleTemplate(t *testing.T) {
 				LoggerFunc: func() logger.Logger {
 					return &logger.DummyLogger{}
 				},
-				GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-					return db.GetLatestConfigBoolRow{Value: false}, nil
-				},
-				GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-					return db.GetLatestConfigStringRow{Value: ""}, nil
+				SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+					return model.SiteConfig{}
 				},
 				SiteTitleTemplateFunc: func() string {
 					return tt.titleTemplate

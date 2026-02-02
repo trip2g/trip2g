@@ -52,3 +52,27 @@
 - Стандартный и кастомный layout теперь оба используют отформатированный title
 - В кастомных layout доступна переменная `{{ title }}` с отформатированным заголовком
 - Старая система config_versions полностью удалена
+
+## [TODO] Добавить конфиг EnableNotFoundTracking
+
+### Контекст
+Сейчас система трекает все 404 ошибки (таблицы `not_found_paths`, `not_found_ip_hits`), что создаёт лишнюю нагрузку на БД. Нужно добавить булевый конфиг для включения/выключения этого трекинга. По умолчанию — выключен.
+
+### План
+- [ ] Добавить `EnableNotFoundTracking` (bool, default false) в `configregistry`
+- [ ] Добавить поле в `model.SiteConfig`
+- [ ] Загружать в `app.SiteConfig()`
+- [ ] Обернуть трекинг 404 в проверку конфига
+- [ ] Добавить в admin UI конфигов
+
+## [TODO] RSS
+
+### Контекст
+Любая заметка — RSS лента. Markdown AST преобразуется в RSS feed: каждая ссылка → RSS item. Дизайн: [docs/rss.md](rss.md)
+
+### План
+- [ ] Markdown AST → RSS: извлечение ссылок из заметки
+- [ ] Роутинг: `/path/to/note.rss.xml`
+- [ ] Метаданные из целевых заметок (description, created_at)
+- [ ] Frontmatter: `rss_title`, `rss_description`
+- [ ] Конфиг: `EnableRSS` (bool) в SiteConfig

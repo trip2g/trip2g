@@ -514,13 +514,43 @@ func (a *app) SiteTitleTemplate() string {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	entry, err := a.GetLatestConfigString(ctx, "site_title_template")
-	if err != nil {
-		// Default: just the note title.
-		return "%s"
+	return a.SiteConfig(ctx).SiteTitleTemplate
+}
+
+func (a *app) SiteConfig(ctx context.Context) model.SiteConfig {
+	cfg := model.SiteConfig{
+		SiteTitleTemplate: "%s",
+		Timezone:          "UTC",
+		RobotsTxt:         "opened",
+		ShowDraftVersions: true,
 	}
 
-	return entry.Value
+	strings, err := a.AllLatestConfigStrings(ctx)
+	if err == nil {
+		for _, s := range strings {
+			switch s.ValueID {
+			case "site_title_template":
+				cfg.SiteTitleTemplate = s.Value
+			case "timezone":
+				cfg.Timezone = s.Value
+			case "default_layout":
+				cfg.DefaultLayout = s.Value
+			case "robots_txt":
+				cfg.RobotsTxt = s.Value
+			}
+		}
+	}
+
+	bools, err := a.AllLatestConfigBools(ctx)
+	if err == nil {
+		for _, b := range bools {
+			if b.ValueID == "show_draft_versions" {
+				cfg.ShowDraftVersions = b.Value
+			}
+		}
+	}
+
+	return cfg
 }
 
 func (a *app) TimeLocation() *time.Location {
@@ -534,10 +564,7 @@ func (a *app) TimeLocation() *time.Location {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	timezone := "UTC"
-	if entry, err := a.GetLatestConfigString(ctx, "timezone"); err == nil {
-		timezone = entry.Value
-	}
+	timezone := a.SiteConfig(ctx).Timezone
 
 	var loadErr error
 
@@ -1711,10 +1738,7 @@ func (a *app) handleRobotsTxt(req *appreq.Request) bool {
 		req.Req.SetContentType("text/plain")
 		req.Req.SetStatusCode(http.StatusOK)
 
-		txt := "closed"
-		if entry, err := a.GetLatestConfigString(context.Background(), "robots_txt"); err == nil {
-			txt = entry.Value
-		}
+		txt := a.SiteConfig(context.Background()).RobotsTxt
 
 		switch txt {
 		case "closed":

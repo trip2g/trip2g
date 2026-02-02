@@ -279,63 +279,34 @@ func (c *Client) ListDialogs(ctx context.Context, sessionData []byte) ([]DialogI
 	err = client.Run(ctx, func(ctx context.Context) error {
 		api := client.API()
 
-		// Get dialogs
-		dialogsResp, getDialogsErr := api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
-			OffsetPeer: &tg.InputPeerEmpty{},
-			Limit:      100,
-		})
-		if getDialogsErr != nil {
-			return fmt.Errorf("failed to get dialogs: %w", getDialogsErr)
-		}
+		// Paginate through all dialogs.
+		var offsetPeer tg.InputPeerClass = &tg.InputPeerEmpty{}
+		offsetDate := 0
 
-		var chatList []tg.ChatClass
-		var userList []tg.UserClass
-		switch d := dialogsResp.(type) {
-		case *tg.MessagesDialogs:
-			chatList = d.Chats
-			userList = d.Users
-		case *tg.MessagesDialogsSlice:
-			chatList = d.Chats
-			userList = d.Users
-		}
-
-		// Add users
-		for _, user := range userList {
-			if u, ok := user.(*tg.User); ok {
-				if u.Bot || u.Self {
-					continue
-				}
-				title := u.FirstName
-				if u.LastName != "" {
-					title += " " + u.LastName
-				}
-				dialogs = append(dialogs, DialogInfo{
-					ID:       u.ID,
-					Username: u.Username,
-					Title:    title,
-					Type:     DialogTypeUser,
-				})
+		for {
+			dialogsResp, getDialogsErr := api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
+				OffsetPeer: offsetPeer,
+				OffsetDate: offsetDate,
+				Limit:      100,
+			})
+			if getDialogsErr != nil {
+				return fmt.Errorf("failed to get dialogs: %w", getDialogsErr)
 			}
-		}
 
-		// Add channels and groups
-		for _, chat := range chatList {
-			switch ch := chat.(type) {
-			case *tg.Channel:
-				dialogs = append(dialogs, DialogInfo{
-					ID:       ch.ID,
-					Username: ch.Username,
-					Title:    ch.Title,
-					Type:     DialogTypeChannel,
-				})
-			case *tg.Chat:
-				dialogs = append(dialogs, DialogInfo{
-					ID:       ch.ID,
-					Username: "",
-					Title:    ch.Title,
-					Type:     DialogTypeChat,
-				})
+			page := extractDialogPage(dialogsResp)
+			dialogs = append(dialogs, collectDialogInfos(page.Chats, page.Users)...)
+
+			// MessagesDialogs (not slice) means all dialogs fit in one response.
+			if _, allFit := dialogsResp.(*tg.MessagesDialogs); allFit {
+				break
 			}
+
+			nextPeer, nextDate, hasMore := dialogPageOffset(page)
+			if !hasMore {
+				break
+			}
+			offsetPeer = nextPeer
+			offsetDate = nextDate
 		}
 
 		return nil
@@ -1070,25 +1041,135 @@ func (c *Client) cacheAccessHash(ctx context.Context, chatID int64, accessHash i
 }
 
 func (c *Client) resolvePeerFromDialogs(ctx context.Context, api *tg.Client, chatID int64) (tg.InputPeerClass, error) {
-	// Try to get channel/chat from dialogs with retry on FLOOD_WAIT
-	dialogs, err := retryOnFloodWait(ctx, c.log, func() (tg.MessagesDialogsClass, error) {
-		return api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
-			OffsetPeer: &tg.InputPeerEmpty{},
-			Limit:      100,
+	// Paginate through all dialogs to find the target chat.
+	var offsetPeer tg.InputPeerClass = &tg.InputPeerEmpty{}
+	offsetDate := 0
+
+	for {
+		resp, err := retryOnFloodWait(ctx, c.log, func() (tg.MessagesDialogsClass, error) {
+			return api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
+				OffsetPeer: offsetPeer,
+				OffsetDate: offsetDate,
+				Limit:      100,
+			})
 		})
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get dialogs: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get dialogs: %w", err)
+		}
+
+		page := extractDialogPage(resp)
+
+		// Search for the target chat in this page.
+		found := findChatInputPeer(page.Chats, chatID)
+		if found != nil {
+			return found, nil
+		}
+
+		// MessagesDialogs (not slice) means all dialogs fit in one response.
+		if _, allFit := resp.(*tg.MessagesDialogs); allFit {
+			break
+		}
+
+		nextPeer, nextDate, hasMore := dialogPageOffset(page)
+		if !hasMore {
+			break
+		}
+		offsetPeer = nextPeer
+		offsetDate = nextDate
 	}
 
-	var chatList []tg.ChatClass
-	switch d := dialogs.(type) {
+	return nil, fmt.Errorf("chat with ID %d not found in dialogs", chatID)
+}
+
+// dialogPageFields extracts lists from a dialog response regardless of concrete type.
+type dialogPageFields struct {
+	Chats    []tg.ChatClass
+	Users    []tg.UserClass
+	Messages []tg.MessageClass
+	Dialogs  []tg.DialogClass
+}
+
+func extractDialogPage(resp tg.MessagesDialogsClass) dialogPageFields {
+	switch d := resp.(type) {
 	case *tg.MessagesDialogs:
-		chatList = d.Chats
+		return dialogPageFields{Chats: d.Chats, Users: d.Users, Messages: d.Messages, Dialogs: d.Dialogs}
 	case *tg.MessagesDialogsSlice:
-		chatList = d.Chats
+		return dialogPageFields{Chats: d.Chats, Users: d.Users, Messages: d.Messages, Dialogs: d.Dialogs}
+	default:
+		return dialogPageFields{}
+	}
+}
+
+// dialogPageOffset computes the next pagination offset from a dialog page.
+// Returns false if pagination should stop.
+func dialogPageOffset(page dialogPageFields) (tg.InputPeerClass, int, bool) {
+	if len(page.Dialogs) == 0 {
+		return nil, 0, false
+	}
+	lastDlg, lastDlgOk := page.Dialogs[len(page.Dialogs)-1].(*tg.Dialog)
+	if !lastDlgOk {
+		return nil, 0, false
 	}
 
+	// Find top message date for offset.
+	msgDate := 0
+	for _, msg := range page.Messages {
+		m, mOk := msg.(*tg.Message)
+		if mOk && m.ID == lastDlg.TopMessage {
+			msgDate = m.Date
+			break
+		}
+	}
+
+	nextPeer, peerErr := peerToInputPeer(lastDlg.Peer, page.Chats, page.Users)
+	if peerErr != nil {
+		return nil, 0, false
+	}
+	return nextPeer, msgDate, true
+}
+
+// collectDialogInfos converts chat and user lists into DialogInfo entries.
+func collectDialogInfos(chatList []tg.ChatClass, userList []tg.UserClass) []DialogInfo {
+	var result []DialogInfo
+	for _, user := range userList {
+		u, uOk := user.(*tg.User)
+		if !uOk || u.Bot || u.Self {
+			continue
+		}
+		title := u.FirstName
+		if u.LastName != "" {
+			title += " " + u.LastName
+		}
+		result = append(result, DialogInfo{
+			ID:       u.ID,
+			Username: u.Username,
+			Title:    title,
+			Type:     DialogTypeUser,
+		})
+	}
+	for _, chat := range chatList {
+		switch ch := chat.(type) {
+		case *tg.Channel:
+			result = append(result, DialogInfo{
+				ID:       ch.ID,
+				Username: ch.Username,
+				Title:    ch.Title,
+				Type:     DialogTypeChannel,
+			})
+		case *tg.Chat:
+			result = append(result, DialogInfo{
+				ID:       ch.ID,
+				Username: "",
+				Title:    ch.Title,
+				Type:     DialogTypeChat,
+			})
+		}
+	}
+	return result
+}
+
+// findChatInputPeer searches a chat list for a given chatID and returns the corresponding InputPeerClass.
+func findChatInputPeer(chatList []tg.ChatClass, chatID int64) tg.InputPeerClass {
 	for _, chat := range chatList {
 		switch ch := chat.(type) {
 		case *tg.Channel:
@@ -1096,18 +1177,51 @@ func (c *Client) resolvePeerFromDialogs(ctx context.Context, api *tg.Client, cha
 				return &tg.InputPeerChannel{
 					ChannelID:  ch.ID,
 					AccessHash: ch.AccessHash,
-				}, nil
+				}
 			}
 		case *tg.Chat:
 			if ch.ID == chatID {
 				return &tg.InputPeerChat{
 					ChatID: ch.ID,
-				}, nil
+				}
 			}
 		}
 	}
+	return nil
+}
 
-	return nil, fmt.Errorf("chat with ID %d not found in dialogs", chatID)
+// peerToInputPeer converts a PeerClass to InputPeerClass using chats/users for access hashes.
+func peerToInputPeer(peer tg.PeerClass, chatList []tg.ChatClass, userList []tg.UserClass) (tg.InputPeerClass, error) {
+	switch p := peer.(type) {
+	case *tg.PeerUser:
+		for _, user := range userList {
+			u, uOk := user.(*tg.User)
+			if uOk && u.ID == p.UserID {
+				return &tg.InputPeerUser{
+					UserID:     u.ID,
+					AccessHash: u.AccessHash,
+				}, nil
+			}
+		}
+		return nil, fmt.Errorf("user %d not found in user list", p.UserID)
+	case *tg.PeerChat:
+		return &tg.InputPeerChat{
+			ChatID: p.ChatID,
+		}, nil
+	case *tg.PeerChannel:
+		for _, chat := range chatList {
+			ch, chOk := chat.(*tg.Channel)
+			if chOk && ch.ID == p.ChannelID {
+				return &tg.InputPeerChannel{
+					ChannelID:  ch.ID,
+					AccessHash: ch.AccessHash,
+				}, nil
+			}
+		}
+		return nil, fmt.Errorf("channel %d not found in chat list", p.ChannelID)
+	default:
+		return nil, fmt.Errorf("unknown peer type: %T", peer)
+	}
 }
 
 func extractMessageID(updates tg.UpdatesClass) (int64, error) {

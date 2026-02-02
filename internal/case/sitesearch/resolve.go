@@ -6,7 +6,6 @@ import (
 	"math"
 	"sort"
 
-	"trip2g/internal/db"
 	"trip2g/internal/features"
 	"trip2g/internal/graph/model"
 	"trip2g/internal/logger"
@@ -21,7 +20,7 @@ type Env interface {
 	SearchLiveNotes(query string) ([]appmodel.SearchResult, error)
 	CurrentUserToken(ctx context.Context) (*usertoken.Data, error)
 	CanReadNote(ctx context.Context, note *appmodel.NoteView) (bool, error)
-	GetLatestConfigBool(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error)
+	SiteConfig(ctx context.Context) appmodel.SiteConfig
 	Logger() logger.Logger
 
 	// For hybrid search
@@ -42,12 +41,9 @@ func Resolve(ctx context.Context, env Env, input model.SearchInput) (*model.Sear
 		return nil, fmt.Errorf("failed to get current user token: %w", err)
 	}
 
-	showDraftVersions := false
-	if entry, getErr := env.GetLatestConfigBool(ctx, "show_draft_versions"); getErr == nil {
-		showDraftVersions = entry.Value
-	}
+	siteConfig := env.SiteConfig(ctx)
 
-	useLatest := showDraftVersions || userToken.IsAdmin()
+	useLatest := siteConfig.ShowDraftVersions || userToken.IsAdmin()
 
 	var results []appmodel.SearchResult
 

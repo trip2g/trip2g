@@ -785,6 +785,28 @@ select c.id, c.value_id, c.created_at, c.created_by, v.value
  order by c.id desc
  limit 50;
 
+-- name: AllLatestConfigStrings :many
+select c.value_id, v.value
+  from config_changes c
+  join config_string_values v on v.change_id = c.id
+ where c.id in (
+   select max(c2.id)
+     from config_changes c2
+     join config_string_values v2 on v2.change_id = c2.id
+    group by c2.value_id
+ );
+
+-- name: AllLatestConfigBools :many
+select c.value_id, v.value
+  from config_changes c
+  join config_bool_values v on v.change_id = c.id
+ where c.id in (
+   select max(c2.id)
+     from config_changes c2
+     join config_bool_values v2 on v2.change_id = c2.id
+    group by c2.value_id
+ );
+
 -- name: ListNotePathsLike :many
 select * from note_paths
  where value like ?

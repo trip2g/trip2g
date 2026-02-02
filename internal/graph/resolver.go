@@ -184,6 +184,8 @@ type Env interface {
 
 	GetLatestConfigString(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error)
 	GetLatestConfigBool(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error)
+	AllLatestConfigStrings(ctx context.Context) ([]db.AllLatestConfigStringsRow, error)
+	AllLatestConfigBools(ctx context.Context) ([]db.AllLatestConfigBoolsRow, error)
 	ListConfigStringHistory(ctx context.Context, valueID string) ([]db.ListConfigStringHistoryRow, error)
 	ListConfigBoolHistory(ctx context.Context, valueID string) ([]db.ListConfigBoolHistoryRow, error)
 	InsertConfigChange(ctx context.Context, arg db.InsertConfigChangeParams) (db.ConfigChange, error)

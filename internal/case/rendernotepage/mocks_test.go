@@ -25,12 +25,6 @@ var _ rendernotepage.Env = &EnvMock{}
 //			CanReadNoteFunc: func(ctx context.Context, note *model.NoteView) (bool, error) {
 //				panic("mock out the CanReadNote method")
 //			},
-//			GetLatestConfigBoolFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-//				panic("mock out the GetLatestConfigBool method")
-//			},
-//			GetLatestConfigStringFunc: func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-//				panic("mock out the GetLatestConfigString method")
-//			},
 //			IncreaseUserNoteViewCountFunc: func(ctx context.Context, userID int64) error {
 //				panic("mock out the IncreaseUserNoteViewCount method")
 //			},
@@ -61,6 +55,9 @@ var _ rendernotepage.Env = &EnvMock{}
 //			RecordUserNoteViewFunc: func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)  {
 //				panic("mock out the RecordUserNoteView method")
 //			},
+//			SiteConfigFunc: func(ctx context.Context) model.SiteConfig {
+//				panic("mock out the SiteConfig method")
+//			},
 //			SiteTitleTemplateFunc: func() string {
 //				panic("mock out the SiteTitleTemplate method")
 //			},
@@ -76,12 +73,6 @@ var _ rendernotepage.Env = &EnvMock{}
 type EnvMock struct {
 	// CanReadNoteFunc mocks the CanReadNote method.
 	CanReadNoteFunc func(ctx context.Context, note *model.NoteView) (bool, error)
-
-	// GetLatestConfigBoolFunc mocks the GetLatestConfigBool method.
-	GetLatestConfigBoolFunc func(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error)
-
-	// GetLatestConfigStringFunc mocks the GetLatestConfigString method.
-	GetLatestConfigStringFunc func(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error)
 
 	// IncreaseUserNoteViewCountFunc mocks the IncreaseUserNoteViewCount method.
 	IncreaseUserNoteViewCountFunc func(ctx context.Context, userID int64) error
@@ -113,6 +104,9 @@ type EnvMock struct {
 	// RecordUserNoteViewFunc mocks the RecordUserNoteView method.
 	RecordUserNoteViewFunc func(ctx context.Context, userID int64, note *model.NoteView, referrerVersionID *int64)
 
+	// SiteConfigFunc mocks the SiteConfig method.
+	SiteConfigFunc func(ctx context.Context) model.SiteConfig
+
 	// SiteTitleTemplateFunc mocks the SiteTitleTemplate method.
 	SiteTitleTemplateFunc func() string
 
@@ -127,20 +121,6 @@ type EnvMock struct {
 			Ctx context.Context
 			// Note is the note argument value.
 			Note *model.NoteView
-		}
-		// GetLatestConfigBool holds details about calls to the GetLatestConfigBool method.
-		GetLatestConfigBool []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ValueID is the valueID argument value.
-			ValueID string
-		}
-		// GetLatestConfigString holds details about calls to the GetLatestConfigString method.
-		GetLatestConfigString []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ValueID is the valueID argument value.
-			ValueID string
 		}
 		// IncreaseUserNoteViewCount holds details about calls to the IncreaseUserNoteViewCount method.
 		IncreaseUserNoteViewCount []struct {
@@ -196,6 +176,11 @@ type EnvMock struct {
 			// ReferrerVersionID is the referrerVersionID argument value.
 			ReferrerVersionID *int64
 		}
+		// SiteConfig holds details about calls to the SiteConfig method.
+		SiteConfig []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// SiteTitleTemplate holds details about calls to the SiteTitleTemplate method.
 		SiteTitleTemplate []struct {
 		}
@@ -208,8 +193,6 @@ type EnvMock struct {
 		}
 	}
 	lockCanReadNote               sync.RWMutex
-	lockGetLatestConfigBool       sync.RWMutex
-	lockGetLatestConfigString     sync.RWMutex
 	lockIncreaseUserNoteViewCount sync.RWMutex
 	lockInsertUserNoteView        sync.RWMutex
 	lockLastUserNoteView          sync.RWMutex
@@ -220,6 +203,7 @@ type EnvMock struct {
 	lockLogger                    sync.RWMutex
 	lockPublicURL                 sync.RWMutex
 	lockRecordUserNoteView        sync.RWMutex
+	lockSiteConfig                sync.RWMutex
 	lockSiteTitleTemplate         sync.RWMutex
 	lockUpsertUserNoteDailyView   sync.RWMutex
 }
@@ -257,78 +241,6 @@ func (mock *EnvMock) CanReadNoteCalls() []struct {
 	mock.lockCanReadNote.RLock()
 	calls = mock.calls.CanReadNote
 	mock.lockCanReadNote.RUnlock()
-	return calls
-}
-
-// GetLatestConfigBool calls GetLatestConfigBoolFunc.
-func (mock *EnvMock) GetLatestConfigBool(ctx context.Context, valueID string) (db.GetLatestConfigBoolRow, error) {
-	if mock.GetLatestConfigBoolFunc == nil {
-		panic("EnvMock.GetLatestConfigBoolFunc: method is nil but Env.GetLatestConfigBool was just called")
-	}
-	callInfo := struct {
-		Ctx     context.Context
-		ValueID string
-	}{
-		Ctx:     ctx,
-		ValueID: valueID,
-	}
-	mock.lockGetLatestConfigBool.Lock()
-	mock.calls.GetLatestConfigBool = append(mock.calls.GetLatestConfigBool, callInfo)
-	mock.lockGetLatestConfigBool.Unlock()
-	return mock.GetLatestConfigBoolFunc(ctx, valueID)
-}
-
-// GetLatestConfigBoolCalls gets all the calls that were made to GetLatestConfigBool.
-// Check the length with:
-//
-//	len(mockedEnv.GetLatestConfigBoolCalls())
-func (mock *EnvMock) GetLatestConfigBoolCalls() []struct {
-	Ctx     context.Context
-	ValueID string
-} {
-	var calls []struct {
-		Ctx     context.Context
-		ValueID string
-	}
-	mock.lockGetLatestConfigBool.RLock()
-	calls = mock.calls.GetLatestConfigBool
-	mock.lockGetLatestConfigBool.RUnlock()
-	return calls
-}
-
-// GetLatestConfigString calls GetLatestConfigStringFunc.
-func (mock *EnvMock) GetLatestConfigString(ctx context.Context, valueID string) (db.GetLatestConfigStringRow, error) {
-	if mock.GetLatestConfigStringFunc == nil {
-		panic("EnvMock.GetLatestConfigStringFunc: method is nil but Env.GetLatestConfigString was just called")
-	}
-	callInfo := struct {
-		Ctx     context.Context
-		ValueID string
-	}{
-		Ctx:     ctx,
-		ValueID: valueID,
-	}
-	mock.lockGetLatestConfigString.Lock()
-	mock.calls.GetLatestConfigString = append(mock.calls.GetLatestConfigString, callInfo)
-	mock.lockGetLatestConfigString.Unlock()
-	return mock.GetLatestConfigStringFunc(ctx, valueID)
-}
-
-// GetLatestConfigStringCalls gets all the calls that were made to GetLatestConfigString.
-// Check the length with:
-//
-//	len(mockedEnv.GetLatestConfigStringCalls())
-func (mock *EnvMock) GetLatestConfigStringCalls() []struct {
-	Ctx     context.Context
-	ValueID string
-} {
-	var calls []struct {
-		Ctx     context.Context
-		ValueID string
-	}
-	mock.lockGetLatestConfigString.RLock()
-	calls = mock.calls.GetLatestConfigString
-	mock.lockGetLatestConfigString.RUnlock()
 	return calls
 }
 
@@ -652,6 +564,38 @@ func (mock *EnvMock) RecordUserNoteViewCalls() []struct {
 	mock.lockRecordUserNoteView.RLock()
 	calls = mock.calls.RecordUserNoteView
 	mock.lockRecordUserNoteView.RUnlock()
+	return calls
+}
+
+// SiteConfig calls SiteConfigFunc.
+func (mock *EnvMock) SiteConfig(ctx context.Context) model.SiteConfig {
+	if mock.SiteConfigFunc == nil {
+		panic("EnvMock.SiteConfigFunc: method is nil but Env.SiteConfig was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockSiteConfig.Lock()
+	mock.calls.SiteConfig = append(mock.calls.SiteConfig, callInfo)
+	mock.lockSiteConfig.Unlock()
+	return mock.SiteConfigFunc(ctx)
+}
+
+// SiteConfigCalls gets all the calls that were made to SiteConfig.
+// Check the length with:
+//
+//	len(mockedEnv.SiteConfigCalls())
+func (mock *EnvMock) SiteConfigCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockSiteConfig.RLock()
+	calls = mock.calls.SiteConfig
+	mock.lockSiteConfig.RUnlock()
 	return calls
 }
 

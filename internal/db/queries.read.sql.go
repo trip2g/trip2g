@@ -293,6 +293,86 @@ func (q *Queries) AllDeletedPatreonCredentials(ctx context.Context) ([]PatreonCr
 	return items, nil
 }
 
+const allLatestConfigBools = `-- name: AllLatestConfigBools :many
+select c.value_id, v.value
+  from config_changes c
+  join config_bool_values v on v.change_id = c.id
+ where c.id in (
+   select max(c2.id)
+     from config_changes c2
+     join config_bool_values v2 on v2.change_id = c2.id
+    group by c2.value_id
+ )
+`
+
+type AllLatestConfigBoolsRow struct {
+	ValueID string `json:"value_id"`
+	Value   bool   `json:"value"`
+}
+
+func (q *Queries) AllLatestConfigBools(ctx context.Context) ([]AllLatestConfigBoolsRow, error) {
+	rows, err := q.db.QueryContext(ctx, allLatestConfigBools)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllLatestConfigBoolsRow
+	for rows.Next() {
+		var i AllLatestConfigBoolsRow
+		if err := rows.Scan(&i.ValueID, &i.Value); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const allLatestConfigStrings = `-- name: AllLatestConfigStrings :many
+select c.value_id, v.value
+  from config_changes c
+  join config_string_values v on v.change_id = c.id
+ where c.id in (
+   select max(c2.id)
+     from config_changes c2
+     join config_string_values v2 on v2.change_id = c2.id
+    group by c2.value_id
+ )
+`
+
+type AllLatestConfigStringsRow struct {
+	ValueID string `json:"value_id"`
+	Value   string `json:"value"`
+}
+
+func (q *Queries) AllLatestConfigStrings(ctx context.Context) ([]AllLatestConfigStringsRow, error) {
+	rows, err := q.db.QueryContext(ctx, allLatestConfigStrings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllLatestConfigStringsRow
+	for rows.Next() {
+		var i AllLatestConfigStringsRow
+		if err := rows.Scan(&i.ValueID, &i.Value); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const allLatestNoteAssets = `-- name: AllLatestNoteAssets :many
 with latest_versions as (
   select 

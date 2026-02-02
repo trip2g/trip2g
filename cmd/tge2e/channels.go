@@ -187,28 +187,84 @@ func ClearAllTestChannels(ctx context.Context, api *tg.Client, channels map[stri
 }
 
 func findChannelByTitle(ctx context.Context, api *tg.Client, title string) (*tg.Channel, error) {
-	dialogs, err := retryOnFloodWait(ctx, func() (tg.MessagesDialogsClass, error) {
-		return api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
-			OffsetPeer: &tg.InputPeerEmpty{},
-			Limit:      100,
+	offsetPeer := tg.InputPeerClass(&tg.InputPeerEmpty{})
+	offsetID := 0
+	offsetDate := 0
+	const limit = 100
+
+	for {
+		dialogs, err := retryOnFloodWait(ctx, func() (tg.MessagesDialogsClass, error) {
+			return api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
+				OffsetPeer: offsetPeer,
+				OffsetID:   offsetID,
+				OffsetDate: offsetDate,
+				Limit:      limit,
+			})
 		})
-	})
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}
 
-	var chats []tg.ChatClass
-	switch d := dialogs.(type) {
-	case *tg.MessagesDialogs:
-		chats = d.Chats
-	case *tg.MessagesDialogsSlice:
-		chats = d.Chats
-	}
+		var chats []tg.ChatClass
+		var dialogsSlice []tg.DialogClass
+		var messages []tg.MessageClass
+		isComplete := false
 
-	for _, chat := range chats {
-		if ch, ok := chat.(*tg.Channel); ok {
-			if ch.Title == title {
-				return ch, nil
+		switch d := dialogs.(type) {
+		case *tg.MessagesDialogs:
+			chats = d.Chats
+			isComplete = true
+		case *tg.MessagesDialogsSlice:
+			chats = d.Chats
+			dialogsSlice = d.Dialogs
+			messages = d.Messages
+			if len(dialogsSlice) < limit {
+				isComplete = true
+			}
+		}
+
+		// Search for channel in current batch.
+		for _, chat := range chats {
+			if ch, ok := chat.(*tg.Channel); ok {
+				if ch.Title == title {
+					return ch, nil
+				}
+			}
+		}
+
+		// Stop if we got all dialogs or no more results.
+		if isComplete || len(dialogsSlice) == 0 {
+			break
+		}
+
+		// Prepare offsets for next iteration.
+		lastDialog := dialogsSlice[len(dialogsSlice)-1]
+		dialog, ok := lastDialog.(*tg.Dialog)
+		if !ok {
+			break
+		}
+
+		offsetID = dialog.TopMessage
+
+		// Convert Peer to InputPeer for offset.
+		switch p := dialog.Peer.(type) {
+		case *tg.PeerUser:
+			offsetPeer = &tg.InputPeerUser{UserID: p.UserID}
+		case *tg.PeerChat:
+			offsetPeer = &tg.InputPeerChat{ChatID: p.ChatID}
+		case *tg.PeerChannel:
+			offsetPeer = &tg.InputPeerChannel{ChannelID: p.ChannelID}
+		default:
+			offsetPeer = &tg.InputPeerEmpty{}
+		}
+
+		// Extract offset date from messages.
+		for _, msg := range messages {
+			if m, ok := msg.(*tg.Message); ok {
+				if m.ID == dialog.TopMessage {
+					offsetDate = m.Date
+					break
+				}
 			}
 		}
 	}

@@ -329,7 +329,10 @@ func (r *adminBoostyTiersConnectionResolver) Nodes(ctx context.Context, obj *mod
 
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminConfigBoolEntryResolver) CreatedBy(ctx context.Context, obj *model.AdminConfigBoolEntry) (*db.User, error) {
-	panic(errors.New("not implemented: CreatedBy - createdBy"))
+	if obj.CreatedBy == nil {
+		return nil, nil
+	}
+	return obj.CreatedBy, nil
 }
 
 // UpdatedBy is the resolver for the updatedBy field.
