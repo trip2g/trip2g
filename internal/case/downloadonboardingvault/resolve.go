@@ -35,9 +35,10 @@ type pluginData struct {
 }
 
 type syncDir struct {
-	Path   string `json:"path"`
-	APIKey string `json:"apiKey"`
-	APIURL string `json:"apiUrl"`
+	Path       string `json:"path"`
+	APIKey     string `json:"apiKey"`
+	APIURL     string `json:"apiUrl"`
+	TwoWaySync bool   `json:"twoWaySync"`
 }
 
 func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
@@ -63,9 +64,10 @@ func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 	newData := pluginData{
 		SyncDirs: []syncDir{
 			{
-				Path:   "/",
-				APIKey: apiKey,
-				APIURL: env.PublicURL(),
+				Path:       "/",
+				APIKey:     apiKey,
+				APIURL:     env.PublicURL(),
+				TwoWaySync: true,
 			},
 		},
 		SkipPushConfirmation: false,
@@ -83,10 +85,10 @@ func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 		dataJSONPath: newDataJSON,
 	}
 
-	// Check if /_index note exists, use its content instead of template
+	// Check if /_index note exists, use its content instead of template.
 	notes := env.LatestNoteViews()
 	if notes != nil {
-		indexNote := notes.GetByPath("/_index")
+		indexNote := notes.PathMap["/_index"]
 		if indexNote != nil && len(indexNote.Content) > 0 {
 			replacements[indexMDPath] = indexNote.Content
 		}
