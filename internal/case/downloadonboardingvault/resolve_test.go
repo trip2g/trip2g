@@ -46,7 +46,7 @@ func TestResolve_IndexMDContainsPublicURL(t *testing.T) {
 
 	var indexContent string
 	for _, file := range reader.File {
-		if file.Name == indexMDPath {
+		if file.Name == "example.com/_index.md" {
 			rc, openErr := file.Open()
 			require.NoError(t, openErr)
 
@@ -62,4 +62,21 @@ func TestResolve_IndexMDContainsPublicURL(t *testing.T) {
 	require.NotEmpty(t, indexContent, "_index.md should exist in zip")
 	require.Contains(t, indexContent, "https://example.com", "_index.md should contain publicURL")
 	require.NotContains(t, indexContent, "{{publicUrl}}", "_index.md should not contain placeholder")
+}
+
+func TestResolve_FolderRenamedToDomain(t *testing.T) {
+	env := &mockEnv{publicURL: "https://trip2g.com"}
+
+	zipData, err := Resolve(context.Background(), env, 1)
+	require.NoError(t, err)
+
+	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
+	require.NoError(t, err)
+
+	for _, file := range reader.File {
+		require.False(t, len(file.Name) >= len(oldPrefix) && file.Name[:len(oldPrefix)] == oldPrefix,
+			"file %s should not have old prefix %s", file.Name, oldPrefix)
+		require.True(t, len(file.Name) >= len("trip2g.com/") && file.Name[:len("trip2g.com/")] == "trip2g.com/",
+			"file %s should start with trip2g.com/", file.Name)
+	}
 }

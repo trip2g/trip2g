@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
+	"strings"
 
 	onboardingvault "trip2g/onboarding-vault"
 
@@ -23,8 +25,9 @@ type Env interface {
 	PublicURL() string
 }
 
-const dataJSONPath = "onboarding-vault/.obsidian/plugins/trip2g/data.json"
-const indexMDPath = "onboarding-vault/_index.md"
+const oldPrefix = "onboarding-vault/"
+const dataJSONPath = oldPrefix + ".obsidian/plugins/trip2g/data.json"
+const indexMDPath = oldPrefix + "_index.md"
 
 type pluginData struct {
 	SyncDirs             []syncDir `json:"syncDirs"`
@@ -89,8 +92,10 @@ func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 		}
 	}
 
-	// Read embedded ZIP and modify files, replacing {{publicUrl}} placeholder
-	modifiedZip, err := modifyZipFiles(onboardingvault.ZipData, replacements, publicURL)
+	newPrefix := domainFromURL(publicURL) + "/"
+
+	// Read embedded ZIP and modify files, replacing {{publicUrl}} placeholder.
+	modifiedZip, err := modifyZipFiles(onboardingvault.ZipData, replacements, publicURL, newPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to modify zip: %w", err)
 	}
@@ -98,7 +103,35 @@ func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 	return modifiedZip, nil
 }
 
-func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL string) ([]byte, error) {
+// renamePath replaces the old folder prefix with the new one.
+func renamePath(name, newPrefix string) string {
+	if strings.HasPrefix(name, oldPrefix) {
+		return newPrefix + name[len(oldPrefix):]
+	}
+	return name
+}
+
+// domainFromURL extracts the host without port from a URL.
+func domainFromURL(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil || parsed.Host == "" {
+		return "vault"
+	}
+
+	host := parsed.Host
+	// Remove port if present.
+	if idx := strings.LastIndex(host, ":"); idx != -1 {
+		host = host[:idx]
+	}
+
+	if host == "" {
+		return "vault"
+	}
+
+	return host
+}
+
+func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL, newPrefix string) ([]byte, error) {
 	reader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read zip: %w", err)
@@ -108,9 +141,11 @@ func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL st
 	writer := zip.NewWriter(&buf)
 
 	for _, file := range reader.File {
+		outName := renamePath(file.Name, newPrefix)
+
 		if newContent, ok := replacements[file.Name]; ok {
-			// Replace with new content
-			w, createErr := writer.Create(file.Name)
+			// Replace with new content.
+			w, createErr := writer.Create(outName)
 			if createErr != nil {
 				return nil, fmt.Errorf("failed to create file in zip: %w", createErr)
 			}
@@ -132,7 +167,7 @@ func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL st
 
 			content = bytes.ReplaceAll(content, []byte("{{publicUrl}}"), []byte(publicURL))
 
-			w, createErr := writer.Create(file.Name)
+			w, createErr := writer.Create(outName)
 			if createErr != nil {
 				return nil, fmt.Errorf("failed to create file in zip: %w", createErr)
 			}
@@ -145,8 +180,8 @@ func modifyZipFiles(zipData []byte, replacements map[string][]byte, publicURL st
 			continue
 		}
 
-		// Copy file as-is.
-		err = copyZipFile(writer, file)
+		// Copy file as-is, with renamed path.
+		err = copyZipFileRenamed(writer, file, outName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to copy file %s: %w", file.Name, err)
 		}
@@ -173,19 +208,22 @@ func readZipFileContent(file *zip.File) ([]byte, error) {
 // maxFileSize is the maximum size of a single file in the ZIP (10MB).
 const maxFileSize = 10 * 1024 * 1024
 
-func copyZipFile(writer *zip.Writer, file *zip.File) error {
+func copyZipFileRenamed(writer *zip.Writer, file *zip.File, name string) error {
 	rc, err := file.Open()
 	if err != nil {
 		return err
 	}
 	defer rc.Close()
 
-	w, err := writer.CreateHeader(&file.FileHeader)
+	header := file.FileHeader
+	header.Name = name
+
+	w, err := writer.CreateHeader(&header)
 	if err != nil {
 		return err
 	}
 
-	// Limit copy size to prevent decompression bomb attacks
+	// Limit copy size to prevent decompression bomb attacks.
 	_, err = io.Copy(w, io.LimitReader(rc, maxFileSize))
 
 	return err
