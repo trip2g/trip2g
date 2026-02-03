@@ -88,7 +88,7 @@ func Resolve(ctx context.Context, env Env, userID int) ([]byte, error) {
 	// Check if /_index note exists, use its content instead of template.
 	notes := env.LatestNoteViews()
 	if notes != nil {
-		indexNote := notes.PathMap["/_index"]
+		indexNote := notes.PathMap["_index.md"]
 		if indexNote != nil && len(indexNote.Content) > 0 {
 			replacements[indexMDPath] = indexNote.Content
 		}
