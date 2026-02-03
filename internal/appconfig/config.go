@@ -54,7 +54,6 @@ type Config struct {
 
 	// Application settings
 	DevMode    bool
-	LatestLive bool // use the latest release as live version
 	AdminJSURL string
 	LogLevel   string
 
@@ -388,7 +387,6 @@ func (c *Config) defineServerFlags() {
 	flag.StringVar(&c.AdminJSURL, "admin-js-url", c.AdminJSURL, "Admin JS URL")
 	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Log level")
 	flag.BoolVar(&c.DevMode, "dev", c.DevMode, "Development mode")
-	flag.BoolVar(&c.LatestLive, "latest-live", c.LatestLive, "Use latest release as live version")
 	flag.DurationVar(&c.ShutdownGracePeriod, "shutdown-grace-period", 50*time.Millisecond, "Shutdown grace period")
 	flag.DurationVar(&c.ShutdownTimeout, "shutdown-timeout", 1*time.Second, "Shutdown timeout")
 	flag.StringVar(&c.InternalListenAddr, "internal-listen-addr", ":8082", "Internal listen address (for health checks etc.)")

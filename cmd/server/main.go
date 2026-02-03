@@ -1139,11 +1139,10 @@ func (a *app) LatestNoteViews() *model.NoteViews {
 }
 
 func (a *app) LiveNoteViews() *model.NoteViews {
-	if a.config.LatestLive {
-		return a.latestNoteLoader.NoteViews()
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	cfg := a.SiteConfig(context.Background())
+	cfg := a.SiteConfig(ctx)
 	if cfg.ShowDraftVersions {
 		return a.latestNoteLoader.NoteViews()
 	}
