@@ -388,6 +388,54 @@ test.describe('Image Resolution', () => {
   });
 });
 
+test.describe('Broken Layout Handling', () => {
+  test('guest sees default rendering for page with broken layout', async ({ request }) => {
+    // Use raw HTTP request without any cookies (guest mode)
+    const response = await request.fetch('/broken_layout_test', {
+      headers: {
+        'Cookie': '', // Explicitly clear cookies
+      },
+    });
+
+    expect(response.ok()).toBeTruthy();
+
+    const html = await response.text();
+
+    // Guest should see the page content
+    expect(html).toContain('Broken Layout Test Page');
+    expect(html).toContain('This page uses a broken layout');
+
+    // No error message for guests (should render with default layout)
+    expect(html).not.toContain('Layout Error');
+  });
+
+  test('admin sees error message for page with broken layout', async ({ page }) => {
+    // 1. Sign in as admin
+    await page.goto('/');
+
+    await page.locator('mol_button_minor[trip2g_user_space_signinbutton]').click();
+    await page.locator('input[trip2g_auth_email_form_email_control]').fill('hello@example.com');
+    await page.locator('button[trip2g_auth_email_form_requestcode]').click();
+    await page.locator('input[trip2g_auth_code_form_code_control]').waitFor({ state: 'visible' });
+    await page.locator('input[trip2g_auth_code_form_code_control]').clear();
+    await page.locator('input[trip2g_auth_code_form_code_control]').fill('111111');
+    await page.locator('mol_button_major[trip2g_auth_code_form_signup]').click();
+    await page.waitForTimeout(500);
+
+    // 2. Navigate to page with broken layout
+    await page.goto('/broken_layout_test');
+
+    // Admin should see error message
+    await expect(page.getByText('Layout Error: broken-layout')).toBeVisible();
+
+    // Error details should be visible
+    await expect(page.getByText('parsing')).toBeVisible();
+
+    // Content should still be visible below the error
+    await expect(page.getByText('This page uses a broken layout')).toBeVisible();
+  });
+});
+
 test.describe('YouTube Embed', () => {
   test('YouTube link renders as embedded iframe', async ({ page }) => {
     await page.goto('/code_and_media');

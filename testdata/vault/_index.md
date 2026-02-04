@@ -45,6 +45,9 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 29. [[json_layout_no_sidebar]] - JSON layout without sidebar (show_sidebar: false)
 30. [[json_layout_missing_include]] - JSON layout with missing include_note file
 
+## Layout Error Handling
+31. [[broken_layout_test]] - page with broken layout (parse error handling)
+
 ## Subgraph (Premium Course) Tests
 28. [[premium]] - premium subgraph home page
 29. Check sidebar: should show premium sidebar for premium pages

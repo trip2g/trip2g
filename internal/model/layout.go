@@ -19,6 +19,9 @@ type Layout struct {
 	OriginalContent string
 
 	AssetReplaces map[string]*NoteAssetReplace
+
+	// Warnings contains issues detected during loading (e.g., parse errors).
+	Warnings []NoteWarning
 }
 
 type LayoutSourceFile struct {

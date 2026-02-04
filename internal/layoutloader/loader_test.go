@@ -1071,6 +1071,64 @@ Content for slide 2.1
 	cupaloy.SnapshotT(t, result)
 }
 
+func TestLoad_ParseError_StoresWarnings(t *testing.T) {
+	sources := []model.LayoutSourceFile{{
+		ID:        "/broken",
+		VersionID: 1,
+		Path:      "_layouts/broken.html",
+		Content:   `{{ some_mistake`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err, "Load should not return error for parse failures")
+
+	// Layout should be in the map
+	layout, exists := layouts.Map["/broken"]
+	require.True(t, exists, "layout should be in map even with parse error")
+
+	// View should be nil
+	require.Nil(t, layout.View, "View should be nil when parse failed")
+
+	// Warnings should contain the error
+	require.Len(t, layout.Warnings, 1, "should have one warning")
+	require.Equal(t, model.NoteWarningCritical, layout.Warnings[0].Level)
+	require.Contains(t, layout.Warnings[0].Message, "parsing")
+}
+
+func TestLoad_ParseError_ValidLayoutStillWorks(t *testing.T) {
+	sources := []model.LayoutSourceFile{{
+		ID:        "/broken",
+		VersionID: 1,
+		Path:      "_layouts/broken.html",
+		Content:   `{{ some_mistake`,
+	}, {
+		ID:        "/valid",
+		VersionID: 2,
+		Path:      "_layouts/valid.html",
+		Content:   `<h1>Hello</h1>`,
+	}}
+
+	env := &testEnv{logger: &logger.TestLogger{}}
+	layouts, err := Load(env, sources, Options{})
+	require.NoError(t, err)
+
+	// Broken layout should have warning
+	broken := layouts.Map["/broken"]
+	require.Nil(t, broken.View)
+	require.Len(t, broken.Warnings, 1)
+
+	// Valid layout should work normally
+	valid := layouts.Map["/valid"]
+	require.NotNil(t, valid.View)
+	require.Empty(t, valid.Warnings)
+
+	var buf bytes.Buffer
+	err = valid.View.Execute(&buf, nil, nil)
+	require.NoError(t, err)
+	require.Equal(t, "<h1>Hello</h1>", buf.String())
+}
+
 func TestTemplateViews_NestedSectionByTitle(t *testing.T) {
 	// Create a note with nested headings
 	noteContent := []byte(`

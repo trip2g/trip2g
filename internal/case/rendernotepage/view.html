@@ -1,3 +1,5 @@
+{% import "trip2g/internal/model" %}
+
 {% func Note(resp *Response) %}
 
 <div class="noteview" id="noteview-layout">
@@ -278,6 +280,39 @@
           <p>Log in as administrator to get started.</p>
           {% endif %}
 
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endfunc %}
+
+{% func LayoutError(resp *Response, layoutName string, warnings []model.NoteWarning) %}
+
+<div class="noteview" id="noteview-layout">
+  <div class="noteview__header">
+    {%= Sidebar(resp) %}
+
+    <div class="noteview__header-space"></div>
+
+    <div>
+      <div mol_view_root="$trip2g_user_space"></div>
+    </div>
+  </div>
+
+  <div class="noteview__content" id="noteview-content">
+    <div class="noteview__container">
+      <div class="noteview__left-column">
+        <div style="background: #fee; border: 1px solid #c00; padding: 16px; margin-bottom: 16px; border-radius: 4px;">
+          <h3 style="color: #c00; margin: 0 0 8px 0;">Layout Error: {%s layoutName %}</h3>
+          {% for _, w := range warnings %}
+          <pre style="background: #fff; padding: 8px; overflow-x: auto; margin: 8px 0;">{%s w.Message %}</pre>
+          {% endfor %}
+        </div>
+
+        <div class="noteview__markup prose prose-stone prose-lg">
+          {%s= string(resp.Note.HTML) %}
         </div>
       </div>
     </div>

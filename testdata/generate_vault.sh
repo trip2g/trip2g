@@ -1317,6 +1317,38 @@ Notes are organized hierarchically:
 EOF
 
 # ============================================================================
+# Broken Layout Test (parse error handling)
+# ============================================================================
+
+cat > "$VAULT/_layouts/broken-layout.html" << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{ note.Title() }}</title>
+</head>
+<body>
+  {{ some_unclosed_tag
+  <main>
+    {{ note.HTMLString() | unsafe }}
+  </main>
+</body>
+</html>
+EOF
+
+cat > "$VAULT/broken_layout_test.md" << 'EOF'
+---
+free: true
+layout: broken-layout
+title: Broken Layout Test Page
+---
+
+This page uses a broken layout that has a parse error.
+
+For guests: should render with default layout (no error visible).
+For admins: should show the layout error message.
+EOF
+
+# ============================================================================
 # Main page and sidebar
 # ============================================================================
 
@@ -1395,6 +1427,9 @@ Welcome to the comprehensive test vault for Obsidian publishing!
 28. [[json_layout_test]] - JSON layout with sidebar (show_sidebar: true)
 29. [[json_layout_no_sidebar]] - JSON layout without sidebar (show_sidebar: false)
 30. [[json_layout_missing_include]] - JSON layout with missing include_note file
+
+## Layout Error Handling
+31. [[broken_layout_test]] - page with broken layout (parse error handling)
 
 ## Subgraph (Premium Course) Tests
 28. [[premium]] - premium subgraph home page

@@ -77,15 +77,34 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 			ByFullName: make(map[string]model.LayoutBlock),
 		},
 		Load: func(source model.LayoutSourceFile) model.Layout {
-			return model.Layout{
-				View: jl.load(source),
+			view, parseErr := jl.load(source)
+			layout := model.Layout{View: view}
+			if parseErr != "" {
+				layout.Warnings = []model.NoteWarning{{
+					Level:   model.NoteWarningCritical,
+					Message: parseErr,
+				}}
 			}
+			return layout
 		},
 	}
 
 	for _, source := range sourceFiles {
-		view := jl.load(source)
-		if view == nil {
+		view, parseErr := jl.load(source)
+		if parseErr != "" {
+			// Store layout with parse error for fallback rendering
+			jl.layouts.Map[source.ID] = model.Layout{
+				VersionID:       source.VersionID,
+				Path:            source.Path,
+				View:            nil,
+				Content:         source.Content,
+				OriginalContent: source.OriginalContent,
+				AssetReplaces:   source.Assets,
+				Warnings: []model.NoteWarning{{
+					Level:   model.NoteWarningCritical,
+					Message: parseErr,
+				}},
+			}
 			delete(jl.templates, source.ID)
 			continue
 		}
@@ -133,7 +152,9 @@ func Load(env Env, sourceFiles []model.LayoutSourceFile, options Options) (*mode
 	return &jl.layouts, nil
 }
 
-func (jl *jetLoader) load(source model.LayoutSourceFile) *jet.Template {
+// load parses a template and returns (template, parseError).
+// If parsing fails, returns (nil, errorMessage).
+func (jl *jetLoader) load(source model.LayoutSourceFile) (*jet.Template, string) {
 	jl.mu.Lock()
 	defer jl.mu.Unlock()
 
@@ -143,7 +164,7 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) *jet.Template {
 		jetContent, err := ConvertJSONLayout([]byte(content))
 		if err != nil {
 			jl.log.Error("failed to convert json layout", "path", source.Path, "error", err)
-			return nil
+			return nil, err.Error()
 		}
 		content = jetContent
 	}
@@ -183,12 +204,15 @@ func (jl *jetLoader) load(source model.LayoutSourceFile) *jet.Template {
 
 	view, err := views.GetTemplate(source.ID)
 	if err != nil || view == nil {
-		// Failed to load layout template - skipping silently
-		jl.log.Debug("failed to load template", "id", source.ID, "err", err)
-		return nil
+		errMsg := "unknown error"
+		if err != nil {
+			errMsg = err.Error()
+		}
+		jl.log.Error("failed to load template", "id", source.ID, "err", err)
+		return nil, errMsg
 	}
 
-	return view
+	return view, ""
 }
 
 type assetFinder struct {
