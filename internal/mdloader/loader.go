@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -82,10 +81,7 @@ func Load(options Options) (*model.NoteViews, error) {
 		config:    options.Config,
 		noteCache: options.NoteCache,
 
-		linkResolver: &myLinkResolver{
-			version:        options.Version,
-			versionEscaped: url.QueryEscape(options.Version),
-		},
+		linkResolver: &myLinkResolver{},
 	}
 
 	ldr.nvs.Version = options.Version

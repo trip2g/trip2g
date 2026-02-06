@@ -783,26 +783,7 @@ func (nv *NoteViews) Copy() *NoteViews {
 	return &res
 }
 
-func (nv *NoteViews) ResolveURL(note *NoteView, defaultVersion string) string {
-	if defaultVersion == "" {
-		defaultVersion = "live"
-	}
-
-	// TODO: extract this logic from here and internal/mdloader/link_resolver.go
-	if len(nv.Version) > 0 && nv.Version != defaultVersion {
-		// parse url and add ?version= to the end
-		u, err := url.Parse(note.Permalink)
-		if err != nil {
-			return ""
-		}
-
-		query := u.Query()
-		query.Set("version", nv.Version)
-		u.RawQuery = query.Encode()
-
-		return u.String()
-	}
-
+func (nv *NoteViews) ResolveURL(note *NoteView) string {
 	return note.Permalink
 }
 

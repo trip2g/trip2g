@@ -682,12 +682,12 @@ Simple content`),
 	// Path slashes should NOT be encoded as %2F
 	require.NotContains(t, html, `%2F`, "Slashes in paths should not be URL-encoded")
 
-	// Version parameter should be present
-	require.Contains(t, html, `?version=v1.2.3`, "Version parameter should be in URL")
+	// Version parameter should NOT be present in links (removed in favor of session-based version)
+	require.NotContains(t, html, `?version=`, "Version parameter should not be in links")
 
-	// The href should look like: href="/folder/source?version=v1.2.3"
-	require.Contains(t, html, `href="/folder/source?version=v1.2.3"`, "Path with version should preserve slashes")
-	require.Contains(t, html, `href="/simple?version=v1.2.3"`, "Simple path with version should work")
+	// The href should look like: href="/folder/source"
+	require.Contains(t, html, `href="/folder/source"`, "Path should preserve slashes")
+	require.Contains(t, html, `href="/simple"`, "Simple path should work")
 }
 
 // TestVersionedLinksWithSpecialChars tests that paths with special characters
@@ -729,10 +729,10 @@ Content in Cyrillic path`),
 
 	// Cyrillic paths are transliterated, slashes preserved
 	// "путь/файл" becomes "/putj/fajl" with slash preserved
-	require.Contains(t, html, `/putj/fajl?version=latest`, "Cyrillic path should be transliterated with slashes preserved")
+	require.Contains(t, html, `href="/putj/fajl"`, "Cyrillic path should be transliterated with slashes preserved")
 
-	// Version parameter should be present
-	require.Contains(t, html, `?version=latest`, "Version parameter should be in URL")
+	// Version parameter should NOT be present in links
+	require.NotContains(t, html, `?version=`, "Version parameter should not be in links")
 }
 
 // TestVersionedLinksNotAppliedToImages tests that version parameter is NOT added to image links.
@@ -767,8 +767,9 @@ Page content`),
 	require.Contains(t, html, `<img src="photo.png">`, "Image should not have version parameter")
 	require.NotContains(t, html, `photo.png?version`, "Image should not have version in URL")
 
-	// Links should have version parameter
-	require.Contains(t, html, `href="/page?version=v1.0"`, "Link should have version parameter")
+	// Links should NOT have version parameter (version is session-based now)
+	require.Contains(t, html, `href="/page"`, "Link should not have version parameter")
+	require.NotContains(t, html, `?version=`, "Version parameter should not be in links")
 }
 
 // TestDefaultVersionNoParameter tests that default "live" version doesn't add ?version= parameter.
@@ -838,12 +839,15 @@ Content with cyrillic slug`),
 
 	// Should have properly encoded cyrillic URL (single encoding)
 	// %D0%BC%D0%BE%D1%8F = "моя" in URL encoding
-	require.Contains(t, html, `href="/%D0%BC%D0%BE%D1%8F-%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0?version=latest"`,
+	require.Contains(t, html, `href="/%D0%BC%D0%BE%D1%8F-%D1%81%D1%82%D1%80%D0%B0%D0%BD%D0%B8%D1%86%D0%B0"`,
 		"Cyrillic slug should be URL-encoded once, not double-encoded")
 
 	// Should NOT have double-encoded percent signs (%25)
 	require.NotContains(t, html, `%25`,
 		"Should not have double-encoded percent signs")
+
+	// Should NOT have version parameter
+	require.NotContains(t, html, `?version=`, "Version parameter should not be in links")
 }
 
 // TestSlugWithSpacesNoDoubleEncoding tests that pages with spaces in slug
@@ -877,12 +881,15 @@ Content with spaces in slug`),
 	html := string(pages.Map["/"].HTML)
 
 	// Should have properly encoded space as %20 (single encoding)
-	require.Contains(t, html, `href="/page%20with%20spaces?version=latest"`,
-		"Spaces in slug should be URL-encoded as %%20, not double-encoded")
+	require.Contains(t, html, `href="/page%20with%20spaces"`,
+		"Spaces in slug should be URL-encoded as %20, not double-encoded")
 
 	// Should NOT have double-encoded %2520 (where %25 is encoded %)
 	require.NotContains(t, html, `%2520`,
-		"Should not have double-encoded spaces (%%2520)")
+		"Should not have double-encoded spaces (%2520)")
+
+	// Should NOT have version parameter
+	require.NotContains(t, html, `?version=`, "Version parameter should not be in links")
 }
 
 // TestSlugLinksNotMarkedAsWIP tests that pages with custom slug are found
@@ -1289,7 +1296,7 @@ Link to [[software]]`),
 	// other.md should link to software correctly
 	otherPage := pages.PathMap["other.md"]
 	require.NotNil(t, otherPage, "other.md should exist")
-	require.Contains(t, string(otherPage.HTML), `href="/software?version=latest"`,
+	require.Contains(t, string(otherPage.HTML), `href="/software"`,
 		"Link to software should work correctly")
 }
 

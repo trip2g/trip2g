@@ -87,6 +87,11 @@ func (r *Response) NoteSubgraphsJSON() string {
 
 var ErrNotFound = errors.New("page not found")
 
+const (
+	versionLive   = "live"
+	versionLatest = "latest"
+)
+
 type PaywallError struct {
 	Message string
 }
@@ -101,11 +106,10 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	var notes *model.NoteViews
 
 	response := Response{
-		DefaultVersion: "live",
+		DefaultVersion: versionLive,
 		UserRole:       "guest",
 	}
 
-	// only admins can access the latest version via ?version=latest
 	isAdmin := request.UserToken.IsAdmin()
 
 	response.IsAdmin = isAdmin
@@ -114,12 +118,16 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 	response.Config.ShowDraftVersions = siteConfig.ShowDraftVersions
 	response.Config.DefaultLayout = siteConfig.DefaultLayout
 
-	// LiveNoteViews() already returns latest when ShowDraftVersions is on.
-	// Admins can additionally switch to explicit latest via ?version=latest.
-	isLatest := isAdmin && (request.Version == "latest" || request.Version == "")
+	// Default: everyone sees live (or latest if ShowDraftVersions is on).
+	// Admin can explicitly switch via ?version=latest or ?version=live.
+	isLatest := siteConfig.ShowDraftVersions
 
-	if isAdmin || siteConfig.ShowDraftVersions {
-		response.DefaultVersion = "latest"
+	if isAdmin && request.Version != "" {
+		isLatest = request.Version == versionLatest
+	}
+
+	if siteConfig.ShowDraftVersions {
+		response.DefaultVersion = versionLatest
 	}
 
 	if isLatest {
@@ -194,17 +202,30 @@ func Resolve(ctx context.Context, env Env, request Request) (*Response, error) {
 
 func checkLatestBanner(env Env, response *Response, isLatest bool, path string, note *model.NoteView) {
 	var alternativeNotes *model.NoteViews
+	var alternativeVersion string
 
 	if isLatest {
 		alternativeNotes = env.LiveNoteViews()
+		alternativeVersion = versionLive
 	} else {
 		alternativeNotes = env.LatestNoteViews()
+		alternativeVersion = versionLatest
 	}
 
 	alternativeNote := alternativeNotes.GetByPath(path)
 	if alternativeNote != nil && alternativeNote.VersionID != note.VersionID {
+		// Build permalink with version parameter for switching.
+		permalink := alternativeNote.Permalink
+		u, err := url.Parse(permalink)
+		if err == nil {
+			query := u.Query()
+			query.Set("version", alternativeVersion)
+			u.RawQuery = query.Encode()
+			permalink = u.String()
+		}
+
 		response.versionBanner = &VersionBanner{
-			Permalink: alternativeNotes.ResolveURL(alternativeNote, response.DefaultVersion),
+			Permalink: permalink,
 		}
 
 		if isLatest {

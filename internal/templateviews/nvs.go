@@ -105,7 +105,7 @@ func (n *NVS) ResolveURL(note *Note) string {
 	if n.nvs == nil || note == nil {
 		return ""
 	}
-	return n.nvs.ResolveURL(note.nv, n.defaultVersion)
+	return n.nvs.ResolveURL(note.nv)
 }
 
 // List returns all visible notes (excluding system notes starting with /_).

@@ -2,22 +2,11 @@ package mdloader
 
 import (
 	"bytes"
-	"net/url"
-	"strings"
 	"trip2g/internal/logger"
 	"trip2g/internal/model"
 
 	"go.abhg.dev/goldmark/wikilink"
 )
-
-// escapePathPreserveSlashes encodes path segments but preserves slashes.
-func escapePathPreserveSlashes(path string) string {
-	segments := strings.Split(path, "/")
-	for i, seg := range segments {
-		segments[i] = url.PathEscape(seg)
-	}
-	return strings.Join(segments, "/")
-}
 
 type myLinkResolver struct {
 	log logger.Logger
@@ -25,16 +14,10 @@ type myLinkResolver struct {
 	nvs *model.NoteViews
 
 	currentPage *model.NoteView
-
-	version        string
-	versionEscaped string // cached url.QueryEscape(version)
 }
 
 const _html = ".html"
 const _hash = "#"
-
-// DefaultVersion does not add ?version= to the URL.
-const DefaultVersion = "live"
 
 func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 	assetReplace, ok := r.currentPage.AssetReplaces[string(n.Target)]
@@ -62,15 +45,6 @@ func (r *myLinkResolver) ResolveWikilink(n *wikilink.Node) ([]byte, error) {
 	if len(n.Fragment) > 0 {
 		i += copy(dest[i:], _hash)
 		i += copy(dest[i:], n.Fragment)
-	}
-
-	// TODO: don't resolve links to assets, not only images
-	if len(r.version) > 0 && r.version != DefaultVersion && !resolveAsImage(n) {
-		// Add ?version= to the end
-		destStr := string(dest[:i])
-		encoded := escapePathPreserveSlashes(destStr) + "?version=" + r.versionEscaped
-
-		return []byte(encoded), nil
 	}
 
 	return dest[:i], nil

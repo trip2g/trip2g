@@ -451,7 +451,7 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 			},
 		},
 		{
-			name: "admin user should have DefaultVersion set to 'latest'",
+			name: "admin user should have DefaultVersion set to 'live' (same as regular users)",
 			request: rendernotepage.Request{
 				Path:    "/test-versioned-note",
 				Version: "",
@@ -503,16 +503,17 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 			wantErr: false,
 			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
 				require.NotNil(t, resp)
-				require.Equal(t, "latest", resp.DefaultVersion)
-				require.Equal(t, "Test Note - Latest Version", resp.Title)
-				require.Equal(t, int64(301), resp.Note.VersionID)
+				// Admin now sees live by default (same as regular users)
+				require.Equal(t, "live", resp.DefaultVersion)
+				require.Equal(t, "Test Note - Live Version", resp.Title)
+				require.Equal(t, int64(300), resp.Note.VersionID)
 			},
 		},
 		{
-			name: "admin with empty version should view latest by default",
+			name: "admin explicitly requesting latest version should view latest",
 			request: rendernotepage.Request{
 				Path:    "/test-versioned-note",
-				Version: "", // Empty version
+				Version: "latest", // Explicitly request latest
 				UserToken: &usertoken.Data{
 					ID:   300,
 					Role: "admin",
@@ -561,7 +562,8 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 			wantErr: false,
 			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
 				require.NotNil(t, resp)
-				require.Equal(t, "latest", resp.DefaultVersion)
+				// Admin can explicitly switch to latest
+				require.Equal(t, "live", resp.DefaultVersion) // DefaultVersion stays live
 				require.Equal(t, "Test Note - Latest Version", resp.Title)
 				require.Equal(t, int64(301), resp.Note.VersionID)
 			},
@@ -619,7 +621,7 @@ func TestResolve_AdminDefaultVersionBehavior(t *testing.T) {
 			wantErr: false,
 			checkResponse: func(t *testing.T, resp *rendernotepage.Response) {
 				require.NotNil(t, resp)
-				require.Equal(t, "latest", resp.DefaultVersion) // DefaultVersion is still 'latest' for admin
+				require.Equal(t, "live", resp.DefaultVersion)
 				require.Equal(t, "Test Note - Live Version", resp.Title)
 				require.Equal(t, int64(300), resp.Note.VersionID)
 			},

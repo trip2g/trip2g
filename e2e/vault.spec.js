@@ -134,7 +134,7 @@ test.describe('Link Resolution', () => {
 
     // Check that link to 'dup' resolves to root /dup, not local /folder/dup
     // This verifies Obsidian's global resolution with root priority
-    await expect(page.locator('a[href="/dup?version=latest"]')).toBeVisible();
+    await expect(page.locator('a[href="/dup"]')).toBeVisible();
   });
 
   test('headers and block references', async ({ page }) => {
