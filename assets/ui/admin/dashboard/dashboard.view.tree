@@ -1,5 +1,7 @@
 $trip2g_admin_dashboard $mol_page
 	title \Dashboard
+	tools /
+		<= Editor $trip2g_editor
 	body /
 		<= BuildInfo $trip2g_admin_dashboard_buildinfo
 		<= Desk $mol_deck

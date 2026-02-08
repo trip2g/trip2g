@@ -1,0 +1,8 @@
+$trip2g_editor_preview $mol_view
+	preview_html \
+	sub /
+		<= Head $mol_view
+			sub / <= head_title @ \Preview
+		<= Body $mol_view
+			dom_name \article
+			sub / <= preview_html

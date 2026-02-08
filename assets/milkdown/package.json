@@ -1,0 +1,16 @@
+{
+  "name": "trip2g-milkdown",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.browser.mjs",
+    "watch": "node esbuild.browser.mjs --watch"
+  },
+  "dependencies": {
+    "@milkdown/kit": "^7.0.0",
+    "remark-wiki-link": "^2.0.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0"
+  }
+}

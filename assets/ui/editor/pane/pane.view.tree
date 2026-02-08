@@ -1,0 +1,11 @@
+$trip2g_editor_pane $mol_view
+	content? \
+	preview_html \
+	navigator_visible? true
+	preview_visible? true
+	sub <= columns /$mol_view
+	Navigator $trip2g_editor_navigator
+	Content $trip2g_editor_content
+		content? <=> content?
+	Preview $trip2g_editor_preview
+		preview_html <= preview_html

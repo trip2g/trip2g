@@ -1,122 +1,150 @@
-# Редактор файлов в админке
+# Редактор файлов
 
-## Цель
+> **Примечание**: Веб-редактор markdown/HTML для редактирования контента сайта без Obsidian. Интегрирован с $mol фреймворком и системой синхронизации vault.
 
-Возможность редактировать страницы без Obsidian. Админ видит плавающую кнопку "Редактировать" на любой странице.
+## Обзор
 
-## Концепция
+Веб-редактор markdown/HTML файлов, открывается как модальное диалоговое окно на любой странице фронтенда. Построен на $mol фреймворке.
+
+**Два режима использования:**
+1. **Плавающая кнопка на странице** — быстрое редактирование текущей страницы
+2. **Полноценный редактор `/admin/editor`** — навигация по файлам, создание/удаление
+
+## Возможности
+
+### Текущая реализация (MVP)
+
+- Редактор markdown на базе текстового поля
+- Открывается как модальное окно через кнопку в хедере
+- Состояние сохраняется в URL через `$mol_state_arg` (ключ: "editor")
+- Двухколоночный layout: список файлов (слева) и редактор (по центру)
+
+### Планируется
+
+#### Полная версия
+- 3-колоночный layout: список файлов | редактор | превью
+- Все колонки можно скрывать/показывать
+- Изменяемая ширина колонок (drag-handle между колонками)
+- Поддержка редактирования HTML файлов
+- Автоопределение текущей страницы и открытие соответствующего файла
+
+#### Milkdown интеграция
+- Milkdown bundled как IIFE через esbuild (паттерн из obsidian-sync/esbuild.browser.mjs)
+- Bundle размещается в `assets/ui/editor/milkdown.js`
+- Загрузка через `require()` в mol namespace
+- Кастомный `$mol_view` оборачивает Milkdown и монтирует его на `dom_node()`
+
+#### CRUD операции
+- Создание файлов
+- Переименование файлов
+- Удаление файлов
+- Сохранение на сервер через GraphQL mutation
+
+## Структура файлов
 
 ```
-┌─────────────────────────────────────────┐
-│                                         │
-│         Обычная страница                │
-│                                         │
-│    # About                              │
-│                                         │
-│    Some content here...                 │
-│                                         │
-│                                    [✏️] │  ← плавающая кнопка
-│                                         │
-└─────────────────────────────────────────┘
+assets/ui/editor/
+  editor.view.tree     — кнопка-переключатель + модальное окно
+  editor.view.ts       — управление состоянием диалога через $mol_state_arg
+  editor.view.css.ts   — стили диалога
+  pane/
+    pane.view.tree     — layout с колонками (sidebar, editor, preview)
+    panel.view.css.ts  — стили колонок, resize handles
+  milkdown/            (планируется)
+    esbuild.browser.mjs — конфиг esbuild для IIFE bundle
+    milkdown.js         — скомпилированный IIFE bundle
+    milkdown.ts         — mol интеграция (require + export в namespace)
 ```
 
-Клик на кнопку открывает редактор текущей страницы:
+## Технические детали
 
-```
-┌─────────────────────────┬─────────────────────────┐
-│        Editor           │        Preview          │
-│                         │                         │
-│ ---                     │ ┌─────────────────────┐ │
-│ title: About            │ │                     │ │
-│ ---                     │ │   About             │ │
-│                         │ │                     │ │
-│ # About                 │ │   Some content...   │ │
-│                         │ │                     │ │
-│ Some content...         │ │                     │ │
-│                         │ └─────────────────────┘ │
-│                         │                         │
-│    [Save]   [Cancel]    │                         │
-└─────────────────────────┴─────────────────────────┘
-```
+### Модальное окно (dialog)
 
-## Scope
+Используется нативный HTML `<dialog>` элемент:
 
-**В scope:**
-- Плавающая кнопка "Редактировать" для админов
-- Редактор текущей страницы (2 колонки: editor + preview)
-- Сохранение изменений
-
-**Вне scope (MVP):**
-- Файловый навигатор (не нужен — редактируем текущую страницу)
-- Загрузка ассетов
-- Создание/удаление файлов
-
-## UI Flow
-
-1. Админ заходит на любую страницу сайта
-2. Видит плавающую кнопку "✏️" (или "Edit") в углу
-3. Клик → открывается модалка/overlay с редактором
-4. Редактирует markdown
-5. Save → страница обновляется
-6. Cancel → закрывает без сохранения
-
-## Реализация
-
-### Скрипт для страниц
-
-Подключается в layout для админов:
-
-```html
-<!-- Только для залогиненных админов -->
-<script src="/_system/admin-edit.js"></script>
+**Структура** (`editor.view.tree`):
+```tree
+$trip2g_editor $mol_view
+	sub /
+		<= Open $mol_check_icon
+			Icon <= Open_icon $mol_icon_application_edit
+			hint @ \Open Editor
+			checked? <=> opened? false
+		<= Dialog $mol_view
+			dom_name \dialog
+			attr * open <= open_status null null|string
+			event *
+				click?event <=> close_click?event null
+				close?event <=> close_event?event null
+			sub /
+				<= Pane $trip2g_editor_pane
+				<= CloseButton $mol_button_major
 ```
 
-Скрипт:
-1. Рендерит плавающую кнопку
-2. При клике — открывает редактор
-3. Загружает содержимое текущей страницы через GraphQL
-4. Отправляет изменения через GraphQL mutation
+**Логика** (`editor.view.ts`):
+- `open_status()` — управляет состоянием через `$mol_state_arg.value('editor')`
+- `dialog_dom().showModal()` / `.close()` — нативные методы `<dialog>`
+- При клике вне диалога — автоматическое закрытие (проверка координат)
+- Состояние открытия хранится в URL параметре `?editor=open`
+
+### Layout колонок
+
+**Структура** (`pane/pane.view.tree`):
+```tree
+$trip2g_editor_pane $mol_view
+	content? \
+	sub /
+		<= Sidebar $mol_list
+			rows /
+				<= Sidebar_head $mol_view
+					sub / <= sidebar_title @ \Files
+		<= Body $mol_view
+			sub /
+				<= Editor $mol_textarea
+					hint @ \Start typing...
+					value? <=> content?
+```
+
+**Стили** (`pane/panel.view.css.ts`):
+- Flexbox layout с `flex-direction: row`
+- Sidebar: фиксированная ширина `16rem`, border справа
+- Body: растягивается на оставшееся место (`flex-grow: 1`)
+- Editor: занимает всю высоту родителя
+
+### Сохранение состояния
+
+Используется `$mol_state_arg` для синхронизации с URL:
+
+```typescript
+// Открыть редактор
+this.$.$mol_state_arg.value('editor', 'open')
+
+// Закрыть редактор
+this.$.$mol_state_arg.value('editor', null)
+
+// Проверить состояние
+const isOpen = this.$.$mol_state_arg.value('editor') === 'open'
+```
+
+При изменении URL параметра автоматически вызывается `showModal()` или `close()`.
+
+## Интеграция с Backend
 
 ### Существующие эндпоинты
 
-Уже есть всё что нужно в [[operations.graphql|obsidian-sync/src/operations.graphql]]:
+Для работы с файлами vault используются эндпоинты из obsidian-sync:
 
-| Query/Mutation | Что делает |
-|----------------|------------|
-| `notePaths(filter)` | Получить содержимое файлов |
-| `pushNotes` | Сохранить файлы |
-| `commitNotes` | Закоммитить изменения |
+| Query/Mutation | Что делает | Файл |
+|----------------|------------|------|
+| `notePaths(filter)` | Получить содержимое файлов | `obsidian-sync/src/operations.graphql` |
+| `pushNotes` | Сохранить файлы | `obsidian-sync/src/operations.graphql` |
+| `commitNotes` | Закоммитить изменения | `obsidian-sync/src/operations.graphql` |
 
-**Проблема:** Эти эндпоинты требуют `X-Api-Key` header. Админ в браузере авторизован через cookie.
+**Авторизация**: Эндпоинты поддерживают:
+- `X-Api-Key` header для Obsidian плагина
+- Admin cookie для веб-интерфейса (через `ResolveAPIKeyOrAdmin`)
 
-### Backend: API key ИЛИ admin auth
-
-Добавить helper `ResolveAPIKeyOrAdmin` в [[checkapikey|internal/case/checkapikey/]]:
-
-```go
-func ResolveAPIKeyOrAdmin(ctx context.Context, env Env, action string) (*db.ApiKey, error) {
-    // Попробовать API key
-    apiKey, err := Resolve(ctx, env, action)
-    if err == nil {
-        return apiKey, nil
-    }
-
-    // Если нет API key — проверить admin cookie
-    adminToken, err := env.CurrentAdminUserToken(ctx)
-    if err != nil {
-        return nil, errors.New("unauthorized: API key or admin auth required")
-    }
-
-    // Вернуть "виртуальный" API key для админа
-    return &db.ApiKey{CreatedBy: adminToken.ID}, nil
-}
-```
-
-Использовать в `PushNotes`, `NotePaths`, `CommitNotes` вместо `checkapikey.Resolve`.
-
-### Backend: превью
-
-Аналог [[renderlayoutpreview]] для заметок:
+### Preview markdown
 
 ```graphql
 type AdminQuery {
@@ -129,76 +157,141 @@ type RenderNotePreviewPayload {
 }
 ```
 
-Реализация в `internal/case/admin/rendernotepreview/`:
-- Использует `mdloader` для рендера markdown → HTML
-- Возвращает warnings если есть (broken links и т.д.)
+Использует `mdloader` для рендера markdown → HTML с warnings (broken links и т.д.).
 
-### Frontend: admin-edit.js
+### Определение текущей страницы
 
-```
-assets/ui/admin/
-├── edit_button/
-│   └── edit_button.view.tree    # плавающая кнопка
-└── editor/
-    └── editor.view.tree         # модалка с редактором
+Layout рендерит meta-тег с путем к файлу:
+
+```html
+<meta name="trip2g:path" content="about.md">
 ```
 
-Или один bundle:
+Frontend читает этот тег для автоматического открытия соответствующего файла в редакторе.
+
+## UI Flow
+
+### Режим 1: Плавающая кнопка
+
+1. Админ заходит на любую страницу сайта
+2. Видит плавающую кнопку "✏️" (или "Edit") в углу
+3. Клик → открывается модалка с редактором текущей страницы
+4. Редактирует markdown, видит live preview
+5. Save → страница обновляется
+6. Cancel → закрывает без сохранения
+
+### Режим 2: Полноценный редактор
+
+1. Админ открывает `/admin/editor`
+2. Видит список файлов слева, редактор по центру, preview справа
+3. Выбирает файл из списка → загружается в редактор
+4. Редактирует, сохраняет
+5. Может создавать/переименовывать/удалять файлы
+
+## Roadmap
+
+### Ближайшие шаги
+
+1. **Список файлов**
+   - GraphQL query для получения списка файлов
+   - Рендеринг дерева файлов в Sidebar
+   - Навигация по файлам (клик открывает файл)
+
+2. **Загрузка/сохранение**
+   - GraphQL query для чтения содержимого файла
+   - GraphQL mutation для сохранения изменений
+   - Индикация несохраненных изменений
+
+3. **Milkdown интеграция**
+   - Bundle Milkdown как IIFE через esbuild
+   - Интеграция в mol namespace через `require()`
+   - Обертка `$mol_view` для монтирования редактора
+
+4. **Превью**
+   - Третья колонка для preview
+   - Live preview для markdown
+   - Синхронизация скролла между редактором и превью
+
+### Будущие улучшения
+
+- Автоопределение текущей страницы из URL
+- Drag-handles для изменения ширины колонок
+- Кнопки показа/скрытия колонок
+- Поддержка HTML редактирования
+- Создание/переименование/удаление файлов
+- Синтаксическая подсветка кода
+- Поиск и замена
+- История изменений (undo/redo)
+- Ctrl+S для сохранения
+- Подтверждение при закрытии с несохраненными изменениями
+
+## Версии файлов
+
+Каждое сохранение файла создаёт новую версию (`note_version`). Редактор может показывать историю версий:
+
+- Список версий файла с датой и автором
+- Просмотр содержимого конкретной версии
+- Diff между версиями
+- Откат к предыдущей версии
+
+Версии уже хранятся в БД через систему синхронизации — нужно только UI.
+
+## Wikilinks
+
+Поддержка `[[wikilinks]]` через `remark-wiki-link`:
+
+- Парсинг `[[page]]` и `[[page|alias]]` синтаксиса
+- Ссылки на другие страницы vault
+- Визуальное отличие существующих и несуществующих страниц
+- Автодополнение при вводе `[[`
+
+Подключен в бандле Milkdown через `$remark` утилиту.
+
+## Связанные компоненты
+
+- `$mol_state_arg` — синхронизация состояния с URL
+- `$mol_textarea` — текущий редактор (временно, заменится на Milkdown)
+- `$mol_list` — список файлов в sidebar
+- `$mol_view` — базовый компонент для layout
+
+## Примеры использования
+
+### Открыть редактор программно
+
+```typescript
+// Установить URL параметр
+this.$.$mol_state_arg.value('editor', 'open')
 ```
-assets/ui/admin-edit.js          # самодостаточный скрипт
+
+### Закрыть редактор
+
+```typescript
+// Удалить URL параметр
+this.$.$mol_state_arg.value('editor', null)
 ```
 
-### Как определить текущую страницу
+### Получить содержимое редактора
 
-Варианты:
-1. **Meta tag**: `<meta name="trip2g:path" content="about.md">`
-2. **Data attribute**: `<body data-path="about.md">`
-3. **По URL**: `/about` → ищем в API
+```typescript
+// Через property binding
+const content = this.content()
+```
 
-**Решение**: Meta tag — layout рендерит `<meta name="trip2g:path" content="{{ path }}">`.
+## Важные заметки
 
-## Альтернатива: страница /admin/editor
+### Синхронизация с Obsidian
 
-Можно также сделать полноценную страницу `/admin/editor` с файловым навигатором для случаев когда нужно:
-- Редактировать файл который не опубликован
-- Смотреть все файлы
-- Создавать новые файлы
+Если админ редактирует файл в браузере, а затем изменяет его в Obsidian — при следующем push Obsidian перезапишет веб-изменения. Это документированное поведение, нужно предупреждать пользователей.
 
-Это можно добавить позже как отдельную фичу.
+### Конфликты редактирования
 
-## План выполнения
+Если два админа редактируют одну страницу одновременно:
+- **MVP**: последний сохраненный выигрывает (last-write-wins)
+- **Будущее**: optimistic locking с предупреждением о конфликте
 
-### Этап 1: Backend
-- [ ] `checkapikey.ResolveAPIKeyOrAdmin` — проверка API key ИЛИ admin cookie
-- [ ] Использовать в `PushNotes`, `NotePaths`, `CommitNotes`
-- [ ] GraphQL: `admin.renderNotePreview(content)` — превью markdown
-- [ ] `internal/case/admin/rendernotepreview/` — рендер через mdloader
-- [ ] Тесты backend
+## См. также
 
-### Этап 2: Frontend
-- [ ] Meta tag `trip2g:path` в layout (путь к файлу)
-- [ ] Условие для показа скрипта только админам
-- [ ] `admin-edit.js` — плавающая кнопка
-- [ ] Модалка с редактором (textarea + preview)
-- [ ] GraphQL: `notePaths` для загрузки, `pushNotes` + `commitNotes` для сохранения
-- [ ] GraphQL: `admin.renderNotePreview` для превью
-
-### Этап 3: UX улучшения
-- [ ] Ctrl+S для сохранения
-- [ ] Индикатор несохранённых изменений
-- [ ] Подтверждение при закрытии с изменениями
-- [ ] E2E тесты
-
-## Вопросы
-
-1. **Видимость кнопки**: Кнопка "Редактировать" видна только если пользователь — админ
-   - Сервер рендерит скрипт только для админов, ИЛИ
-   - Скрипт проверяет наличие админского токена
-
-2. **Синхронизация с Obsidian**: Что если пользователь редактирует и в браузере, и в Obsidian?
-   - Obsidian sync перезапишет при следующем push
-   - Документируем это поведение
-
-3. **Конфликты**: Два админа редактируют одну страницу?
-   - MVP: последний выигрывает
-   - Later: optimistic locking
+- [frontend.md](frontend.md) — общая документация по фронтенду
+- [mol.md](mol.md) — документация по $mol фреймворку
+- [Milkdown документация](https://milkdown.dev/)
+- [obsidian-sync](../obsidian-sync/) — система синхронизации vault

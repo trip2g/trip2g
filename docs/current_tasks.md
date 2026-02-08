@@ -123,9 +123,50 @@
 - RSS, sitemap и все middleware автоматически используют правильные заметки
 - Админы по-прежнему могут переключаться через `?version=`
 
-## [TODO] Редактор файлов в админке
+## [IN PROGRESS] Редактор файлов
 
 ### Контекст
-Возможность редактировать страницы без Obsidian. Админ видит плавающую кнопку "Редактировать" на любой странице сайта. Клик открывает модалку с редактором (editor + preview). Файловый навигатор не нужен — редактируем текущую страницу.
+Веб-редактор markdown файлов. Модалка на весь экран, доступна на любой фронт-странице через кнопку в хедере. Milkdown WYSIWYG редактор. Пока прикидываем интерфейс.
 
-Подробный дизайн и план: [docs/editor.md](editor.md)
+Подробный дизайн: [docs/editor.md](editor.md)
+
+### План
+
+**Интерфейс (текущий этап)**
+- [x] Модалка на `<dialog>` с состоянием в `$mol_state_arg`
+- [x] Кнопка открытия в `$trip2g_user_space`
+- [x] Toolbar: заголовок, тогглы Files/Preview, кнопка закрытия
+- [x] 3 колонки: navigator | editor | preview
+- [x] Скрытие navigator и preview через тогглы
+- [x] Milkdown бандл собран (esbuild IIFE, `assets/milkdown/`)
+- [x] Async загрузка через `$mol_import.script`
+- [x] `embed.go` и `Caddyfile` обновлены
+- [ ] Исправить закрытие модалки (raw CSS `display:none` для `dialog:not([open])`) ← текущий
+- [ ] Добавить русские переводы (locale файлы)
+- [ ] Проверить что Milkdown рендерится в content
+
+**Файловый навигатор (следующий этап)**
+- [ ] GraphQL query для списка файлов
+- [ ] Дерево файлов в navigator
+- [ ] Выбор файла → загрузка в редактор
+
+**Загрузка и сохранение**
+- [ ] Загрузка содержимого файла (notePaths GraphQL)
+- [ ] Сохранение изменений (pushNotes GraphQL)
+- [ ] Индикация несохраненных изменений
+- [ ] Ctrl+S для сохранения
+
+**Превью**
+- [ ] Live preview рендеринг (renderNotePreview GraphQL)
+- [ ] Синхронизация скролла
+
+**Дополнительно**
+- [ ] Автоопределение текущей страницы (meta tag trip2g:path)
+- [ ] История версий файла
+- [ ] Wikilinks автодополнение
+
+### Заметки
+- Milkdown бандл: 867KB IIFE, включает commonmark + remark-wiki-link
+- Загрузка async через `$mol_import.script('/assets/milkdown/milkdown.js')`
+- Компоненты: `editor/navigator/`, `editor/content/`, `editor/preview/`, `editor/pane/`
+- Raw CSS нужен для `dialog:not([open])` — mol `$mol_style_define` не поддерживает attribute selectors

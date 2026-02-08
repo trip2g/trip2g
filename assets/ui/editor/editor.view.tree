@@ -1,0 +1,33 @@
+$trip2g_editor $mol_view
+	minimal_height 0
+	minimal_width 0
+	sub /
+		<= Open $mol_check_icon
+			Icon <= Open_icon $mol_icon_application_edit
+			hint @ \Open Editor
+			checked? <=> opened? false
+		<= Dialog $mol_view
+			dom_name \dialog
+			attr * open <= open_status null null|string
+			event *
+				click?event <=> close_click?event null
+				close?event <=> close_event?event null
+			sub /
+				<= Toolbar $mol_view
+					sub /
+						<= toolbar_title @ \Editor
+						<= Navigator_toggle $mol_check
+							title @ \Files
+							checked? <=> navigator_visible? true
+						<= Preview_toggle $mol_check
+							title @ \Preview
+							checked? <=> preview_visible? true
+						<= CloseButton $mol_button_minor
+							click <= close null
+							sub /
+								<= CloseIcon $mol_icon_close
+				<= Pane $trip2g_editor_pane
+					navigator_visible? <=> navigator_visible?
+					preview_visible? <=> preview_visible?
+					content? <=> content? \
+					preview_html <= preview_html \

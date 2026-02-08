@@ -12,6 +12,10 @@ handle /graphql {
 	reverse_proxy http://localhost:8081
 }
 
+handle /assets/milkdown/* {
+	reverse_proxy http://localhost:8081
+}
+
 handle /* {
 	reverse_proxy http://localhost:9080
 }

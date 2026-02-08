@@ -1,0 +1,21 @@
+[trip2g_editor_dialog] {
+	width: 100vw;
+	height: 100vh;
+	max-width: 100vw;
+	max-height: 100vh;
+	margin: 0;
+	padding: 0;
+	border: none;
+	display: flex;
+	flex-direction: column;
+	background-color: var(--mol_theme_back);
+}
+
+[trip2g_editor_dialog]::backdrop {
+	background: rgba(0, 0, 0, 0.5);
+	backdrop-filter: blur(2px);
+}
+
+[trip2g_editor_dialog]:not([open]) {
+	display: none;
+}

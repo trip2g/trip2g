@@ -1,0 +1,6 @@
+$trip2g_editor_navigator $mol_list
+	rows /
+		<= Head $mol_view
+			sub / <= head_title @ \Files
+		<= Tree $mol_view
+			sub / \file tree placeholder

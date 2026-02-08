@@ -44,7 +44,9 @@
       "Bash(npm run test:*)",
       "Bash(npm run build:all:*)",
       "Bash(go get:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "WebFetch(domain:milkdown.dev)",
+      "WebFetch(domain:www.npmjs.com)"
     ],
     "deny": []
   },
