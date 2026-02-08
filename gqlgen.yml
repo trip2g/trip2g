@@ -62,7 +62,7 @@ omit_slice_element_pointers: true
 # omit_interface_checks: true
 
 # Optional: turn on to skip generation of ComplexityRoot struct content and Complexity function
-# omit_complexity: false
+omit_complexity: true
 
 # Optional: turn on to not generate any file notice comments in generated files
 # omit_gqlgen_file_notice: false
@@ -93,7 +93,7 @@ omit_slice_element_pointers: true
 # skip_validation: true
 
 # Optional: set to skip running `go mod tidy` when generating server code
-# skip_mod_tidy: true
+skip_mod_tidy: true
 
 # Optional: if this is set to true, argument directives that
 # decorate a field with a null value will still be called.
