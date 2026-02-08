@@ -1,6 +1,270 @@
-# GraphQL: gqlgen
+# GraphQL
 
-## Файлы
+## Зачем GraphQL
+
+GraphQL — DSL для описания JSON-контрактов между сервером и клиентом.
+
+Даже при REST API рано или поздно приходится делать JSON view, которые отличаются от моделей в БД — и это хорошая практика закладывать сразу. Разные страницы требуют разные наборы полей — появляются `/api/users?fields=...`, `/api/users/detailed`, вложенные includes. Многие компании рано или поздно приходят к своему DSL для описания этих view, и если его доработать — выйдет GraphQL. GraphQL решает это на уровне протокола: клиент запрашивает ровно то, что ему нужно.
+
+GraphQL запрос выглядит как JSON без значений — описываешь форму ответа, получаешь данные ровно в этой форме:
+
+```graphql
+{                              →  {
+  viewer {                     →    "viewer": {
+    role                       →      "role": "ADMIN",
+    user {                     →      "user": {
+      email                    →        "email": "a@b.com"
+    }                          →      }
+  }                            →    }
+}                              →  }
+```
+
+Один endpoint `/graphql` для всего. Схема — это граф типов, а `Query`, `Mutation`, `Subscription` — точки входа в этот граф. Клиент заходит через них и обходит ровно те узлы, которые ему нужны.
+
+Главные бонусы:
+- **Типизированные клиенты** — TypeScript типы генерируются из introspection сервера. Если фронт собрался — он может общаться с бэком. Контракт проверяется постоянно на этапе компиляции, ломающие изменения невозможно пропустить.
+- **Один endpoint** — вместо десятков REST маршрутов.
+- **Подписки** — SSE стриминг для real-time данных через тот же endpoint.
+- **Introspection** — схема сама себя документирует, playground работает из коробки.
+
+Технология просто выжила и хорошо работает.
+
+## Ошибки через union, а не throw
+
+Mutations возвращают `CreateUserPayload | ErrorPayload`, а не бросают ошибки в стандартный `errors` массив GraphQL.
+
+**Стандартный механизм** (`errors` массив):
+```json
+{
+  "data": { "createUser": null },
+  "errors": [{ "message": "email already exists", "path": ["createUser"] }]
+}
+```
+
+Проблемы:
+- Ошибки нетипизированы — просто строки. Клиент парсит `message` регулярками.
+- `data` становится `null` — клиент не знает что пошло не так без отдельного парсинга.
+- Невозможно различить "email занят" и "сервер упал" без костылей в `extensions`.
+- Кодген не может сгенерировать типы для ошибок — они вне схемы.
+
+**Union подход** (`Payload | ErrorPayload`):
+```json
+{
+  "data": {
+    "createUser": {
+      "__typename": "ErrorPayload",
+      "message": "email already exists",
+      "byFields": [{ "name": "email", "value": "already taken" }]
+    }
+  }
+}
+```
+
+Почему лучше:
+- **Ошибки — часть схемы.** Кодген генерирует типы, клиент получает discriminated union в TypeScript.
+- **Типобезопасная обработка** — `if (result.__typename === 'ErrorPayload')` вместо парсинга строк.
+- **Поле `byFields`** — ошибки привязаны к конкретным полям формы, клиент подсвечивает нужный input.
+- **`data` никогда не null** — ответ всегда типизирован.
+- **Стандартный `errors`** остаётся для настоящих ошибок: сервер упал, таймаут, невалидный GraphQL. То, что клиент не может обработать.
+
+## Паттерны
+
+### DB типы напрямую в схеме
+
+```graphql
+type AdminSubgraph @goModel(model: "trip2g/internal/db.Subgraph") {
+  id: Int64!
+  name: String!
+}
+```
+
+Многие GraphQL типы привязаны к DB структурам через `@goModel` и `autobind` — без промежуточных DTO. С одной стороны это завязывает схему БД на выходные поля. С другой — экономит тонну времени на перекладывание структур. gqlgen отлично рефакторится когда разделение действительно понадобится: добавляешь отдельный тип, меняешь маппинг — resolvers обновляются при следующем `make gqlgen`.
+
+### Вложенный admin namespace
+
+```graphql
+type Query {
+  viewer: Viewer!
+  admin: AdminQuery!   # все admin queries вложены
+}
+type Mutation {
+  signOut: ...
+  admin: AdminMutation! # все admin mutations вложены
+}
+```
+
+Чистое разделение публичного API и админки. Разные правила авторизации, разный уровень introspection.
+
+### Connection pattern без пагинации
+
+```graphql
+type AdminUsersConnection {
+  nodes: [AdminUser!]! @goField(forceResolver: true)
+}
+```
+
+46 Connection типов, все с одним полем `nodes`. Пока без `pageInfo`/`edges`/`cursor` — пагинация будет добавлена позже. `forceResolver: true` — resolver решает как именно грузить.
+
+### @goExtraField для передачи контекста
+
+```graphql
+type AdminAuditLogsConnection
+  @goExtraField(name: "Filter", type: "*...AdminAuditLogsFilterInput") {
+  nodes: [AdminAuditLog!]! @goField(forceResolver: true)
+}
+```
+
+`@goExtraField` добавляет поле в Go-структуру, невидимое в GraphQL. Родительский resolver записывает фильтр, дочерний `nodes` resolver читает его из `obj.Filter`. Передача контекста без загрязнения схемы.
+
+Так же используется для инъекции API ключа в input:
+```graphql
+input PushNotesInput
+  @goExtraField(name: "ApiKey", type: "trip2g/internal/db.ApiKey") {
+  updates: [PushNoteInput!]!
+}
+```
+
+### Case-layer: бизнес-логика в отдельных пакетах
+
+```
+internal/case/admin/createapikey/
+  ├── resolve.go
+  └── resolve_test.go
+```
+
+Каждая операция — отдельный пакет с `Resolve(ctx, env, input) (Payload, error)`. GraphQL resolver — тонкая обёртка:
+
+```go
+func (r *adminMutationResolver) CreateApiKey(ctx, input) {
+    return createapikey.Resolve(ctx, r.env(ctx), input)
+}
+```
+
+60+ пакетов. Тестируется без GraphQL, переиспользуется из CLI/REST.
+
+### Env interface — единая точка зависимостей
+
+```go
+type Env interface {
+    Logger() logger.Logger
+    IsDevMode() bool
+    // ... 200+ методов
+    createapikey.Env  // встраивание case-интерфейсов
+    signinbyemail.Env
+    // ... 60+ embedded interfaces
+}
+```
+
+Один интерфейс для всех resolvers, собранный из case-интерфейсов. `app` struct реализует его целиком.
+
+### Автоматические транзакции
+
+`AroundOperations` middleware оборачивает каждую mutation в транзакцию:
+- Commit если `len(resp.Errors) == 0`
+- Rollback если есть ошибки
+- `@skipTx` — opt-out для операций вроде file upload
+
+### resolveOne — generic helper для FK
+
+```go
+func resolveOne[T any](ctx, id, fetch) (*T, error) {
+    row, err := fetch(ctx, id)
+    if errors.Is(err, sql.ErrNoRows) {
+        return nil, nil // NotFound → nil
+    }
+    return &row, nil
+}
+```
+
+DRY для всех `forceResolver: true` полей, которые грузят связанную сущность по FK.
+
+## gqlgen — кодген
+
+gqlgen — один из лучших кодгенов, которые я видел:
+
+- **Подстраивается под существующий код** — не навязывает свою структуру. Указываешь `autobind` пакеты, и gqlgen маппит GraphQL типы на уже написанные Go структуры.
+- **Resolvers не перетираются** — при повторной генерации добавляет только новые resolvers, не трогая реализованные.
+- **Быстрая генерация** — `make gqlgen` отрабатывает за секунды даже на большой схеме.
+- **Минимум boilerplate** — schema-first подход: пишешь `.graphqls`, получаешь типы и интерфейсы.
+
+Workflow: правишь `schema.graphqls` → `make gqlgen` → реализуешь новые resolvers → готово.
+
+## Архитектура: fasthttp + gqlgen
+
+```
+Клиент
+  │
+  ├── GET /page → fasthttp → pre-generated HTML (быстро, минимум ресурсов)
+  │
+  └── POST /graphql → fasthttp → fasthttpadaptor → gqlgen (queries, mutations)
+      POST /graphql (Accept: text/event-stream) → gqlgen SSE (subscriptions)
+```
+
+fasthttp отдаёт заранее сгенерированный HTML — это основной трафик, и здесь fasthttp быстр: минимальное потребление памяти, переиспользование объектов.
+
+gqlgen работает через `fasthttpadaptor` — обёртка, которая транслирует fasthttp запросы в `net/http`. Для GraphQL overhead адаптора незаметен: bottleneck в resolvers и SQL.
+
+SSE подписки работают через тот же fasthttpadaptor — он реализует `http.Flusher`, что позволяет gqlgen стримить events. Подробности: [gqlgen_fasthttp.md](gqlgen_fasthttp.md).
+
+Хороший фундамент: fasthttp для статики минимальными ресурсами + gqlgen для API со всеми фичами. При 30-50 процессах на одном сервере мелочи складываются.
+
+## Подписки (SSE)
+
+Подписки работают через Server-Sent Events. SSE вместо WebSocket:
+- Проще протокол (обычный HTTP, тестируется curl'ом)
+- Для GraphQL подписок нужен только server→client поток
+- Firewall-friendly
+- Подробное сравнение: [gqlgen_fasthttp.md](gqlgen_fasthttp.md)
+
+### Планы использования
+
+**Статусы задач** — прогресс длительных операций (импорт, публикация) в реальном времени без поллинга.
+
+**Синхронизация файлов** — файл изменён (через API, git push, редактор) → подписчики получают событие → страница обновляется автоматически. Без кнопки "обновить".
+
+**Live preview в редакторе** — preview обновляется по мере редактирования.
+
+### Демо подписка
+
+```graphql
+type Subscription {
+  currentTime(format: String = "2006-01-02 15:04:05"): String!
+}
+```
+
+```bash
+curl -N --request POST --url http://localhost:8081/graphql \
+  --data '{"query":"subscription { currentTime }"}' \
+  -H "accept: text/event-stream" -H "content-type: application/json"
+```
+
+## Будущий рефакторинг
+
+### Курсорная пагинация в Connection типах
+
+Сейчас все 46 Connection типов грузят данные целиком. Нужно добавить `pageInfo` и cursor-based пагинацию:
+
+```graphql
+type AdminUsersConnection {
+  nodes: [AdminUser!]!
+  pageInfo: PageInfo!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+```
+
+Курсорная пагинация лучше offset-based: стабильна при вставках/удалениях, эффективнее на больших таблицах (`WHERE id > cursor LIMIT N` вместо `OFFSET N`).
+
+---
+
+## Техническая справка
+
+### Файлы
 
 ```
 internal/graph/

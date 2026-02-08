@@ -1939,8 +1939,17 @@ func (a *app) startServer() {
 		handlerTimeout = 10 * time.Minute
 	}
 
+	timeoutHandler := fasthttp.TimeoutHandler(handler, handlerTimeout, "timeout")
+
 	s := &fasthttp.Server{
-		Handler:            fasthttp.TimeoutHandler(handler, handlerTimeout, "timeout"),
+		Handler: func(ctx *fasthttp.RequestCtx) {
+			// SSE connections are long-lived, skip timeout handler for them.
+			if strings.Contains(string(ctx.Request.Header.Peek("Accept")), "text/event-stream") {
+				handler(ctx)
+				return
+			}
+			timeoutHandler(ctx)
+		},
 		MaxRequestBodySize: a.config.MaxRequestBodySize * 1024 * 1024,
 		ReadTimeout:        handlerTimeout,
 		WriteTimeout:       handlerTimeout,
@@ -1978,9 +1987,12 @@ func (a *app) prepareGraphQLHandler() func(ctx *fasthttp.RequestCtx, path string
 
 	return func(ctx *fasthttp.RequestCtx, path string) bool {
 		if strings.HasPrefix(path, "/graphql") {
-			if string(ctx.Method()) == "GET" {
+			switch {
+			case string(ctx.Method()) == "GET":
 				playgroundHandler(ctx)
-			} else {
+			case strings.Contains(string(ctx.Request.Header.Peek("Accept")), "text/event-stream"):
+				graphqlHandler(ctx)
+			default:
 				compressedGraphqlHandler(ctx)
 			}
 

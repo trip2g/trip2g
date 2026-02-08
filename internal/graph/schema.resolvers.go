@@ -2399,6 +2399,34 @@ func (r *subgraphResolver) HomePath(ctx context.Context, obj *db.Subgraph) (stri
 	return subgraph.Home.Permalink, nil
 }
 
+// CurrentTime is the resolver for the currentTime field.
+func (r *subscriptionResolver) CurrentTime(ctx context.Context, format *string) (<-chan string, error) {
+	timeFormat := "2006-01-02 15:04:05"
+	if format != nil && *format != "" {
+		timeFormat = *format
+	}
+
+	ch := make(chan string, 1)
+
+	go func() {
+		defer close(ch)
+
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case t := <-ticker.C:
+				ch <- t.Format(timeFormat)
+			}
+		}
+	}()
+
+	return ch, nil
+}
+
 // FavoriteNotes is the resolver for the favoriteNotes field.
 func (r *toggleFavoriteNotePayloadResolver) FavoriteNotes(ctx context.Context, obj *model.ToggleFavoriteNotePayload) ([]model.PublicNote, error) {
 	userResolver := userResolver{Resolver: r.Resolver}
@@ -3049,6 +3077,9 @@ func (r *Resolver) SetTgChatSubgraphsPayload() SetTgChatSubgraphsPayloadResolver
 // Subgraph returns SubgraphResolver implementation.
 func (r *Resolver) Subgraph() SubgraphResolver { return &subgraphResolver{r} }
 
+// Subscription returns SubscriptionResolver implementation.
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
 // ToggleFavoriteNotePayload returns ToggleFavoriteNotePayloadResolver implementation.
 func (r *Resolver) ToggleFavoriteNotePayload() ToggleFavoriteNotePayloadResolver {
 	return &toggleFavoriteNotePayloadResolver{r}
@@ -3170,6 +3201,7 @@ type setTgChatPublishTagsPayloadResolver struct{ *Resolver }
 type setTgChatSubgraphInvitesPayloadResolver struct{ *Resolver }
 type setTgChatSubgraphsPayloadResolver struct{ *Resolver }
 type subgraphResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }
 type toggleFavoriteNotePayloadResolver struct{ *Resolver }
 type unbanUserPayloadResolver struct{ *Resolver }
 type updateNoteGraphPositionsPayloadResolver struct{ *Resolver }

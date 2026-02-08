@@ -53,6 +53,25 @@
 - В кастомных layout доступна переменная `{{ title }}` с отформатированным заголовком
 - Старая система config_versions полностью удалена
 
+## [TODO] Фронтенд: SSE подписка currentTime
+
+### Контекст
+SSE подписки работают через fasthttp + fasthttpadaptor + gqlgen. Демо подписка `currentTime` отдаёт время каждую секунду. Нужно реализовать клиентскую часть, чтобы убедиться что весь pipeline работает end-to-end и можно использовать подписки для реальных задач.
+
+В будущем подписки будут использоваться для: статусы задач, синхронизация файлов (страница обновляется при правках без кнопки обновить), live preview в редакторе.
+
+### План
+- [ ] SSE клиент на фронте (EventSource или fetch + ReadableStream)
+- [ ] Компонент отображения текущего времени с сервера
+- [ ] Показать на странице (например в admin dashboard или в dev toolbar)
+- [ ] Проверить: подключение, получение events, автореконнект при обрыве
+- [ ] Удалить демо после проверки (или оставить как dev tool)
+
+### Заметки
+- Бэкенд: `schema.graphqls` type Subscription + `schema.resolvers.go` CurrentTime resolver
+- Endpoint: `POST /graphql` с `Accept: text/event-stream`
+- Документация: [docs/graphql.md](graphql.md), [docs/gqlgen_fasthttp.md](gqlgen_fasthttp.md)
+
 ## [TODO] Добавить конфиг EnableNotFoundTracking
 
 ### Контекст
@@ -145,7 +164,7 @@
 - [x] Добавить русские переводы (locale файлы)
 - [x] Milkdown рендерится в content (`$mol_wire_sync` для async create)
 - [x] Переход на Crepe (toolbar, block edit, link tooltip, theme)
-- [ ] Проверить Crepe в браузере, подтвердить что контролы работают ← текущий
+- [ ] Починить загрузку CSS Crepe — браузер пытается загрузить `prosemirror.css` и др. через mol paths ← текущий
 
 **Файловый навигатор (следующий этап)**
 - [ ] GraphQL query для списка файлов
@@ -176,3 +195,4 @@
 - `$remark` wikilink fix: передаём attacher как reference, options через 3-й аргумент `$remark`
 - CSS Crepe темы инлайнятся в JS через esbuild plugin (inline-css)
 - Отключены: Latex, CodeMirror, ImageBlock, Table (для уменьшения бандла)
+- **Проблема CSS**: Crepe theme CSS содержит `@import` на `prosemirror.css` и др. Наш inline-css esbuild plugin инлайнит верхний CSS, но вложенные `@import` остаются как есть — браузер пытается загрузить их через mol пути (`trip2g/admin/-/prosemirror.css`). **Направление**: рекурсивно резолвить `@import` в inline-css plugin, либо собрать весь CSS в один файл через postcss/esbuild перед инлайном

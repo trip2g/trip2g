@@ -1701,6 +1701,9 @@ type SubgraphWaitList struct {
 
 func (SubgraphWaitList) IsViewerOffers() {}
 
+type Subscription struct {
+}
+
 type ToggleFavoriteNoteInput struct {
 	PathID int64 `json:"pathId"`
 	Value  bool  `json:"value"`

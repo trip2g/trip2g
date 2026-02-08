@@ -48,6 +48,7 @@ func NewHandler(env Env) *handler.Server {
 
 	maxBodySize := int64(env.MaxRequestBodySize() * 1024 * 1024)
 
+	srv.AddTransport(transport.SSE{})
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})

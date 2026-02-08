@@ -1458,6 +1458,10 @@ type CommitNotesPayload {
 
 union CommitNotesOrErrorPayload = CommitNotesPayload | ErrorPayload
 
+type Subscription {
+  currentTime(format: String = "2006-01-02 15:04:05"): String!
+}
+
 type Mutation {
   requestEmailSignInCode(input: RequestEmailSignInCodeInput!): RequestEmailSignInCodeOrErrorPayload!
   signInByEmail(input: SignInByEmailInput!): SignInOrErrorPayload!
