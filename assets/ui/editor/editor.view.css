@@ -19,3 +19,17 @@
 [trip2g_editor_dialog]:not([open]) {
 	display: none;
 }
+
+/* Milkdown Crepe inside mol: ensure proper sizing */
+[trip2g_editor_content] .milkdown {
+	width: 100%;
+	height: 100%;
+}
+
+[trip2g_editor_content] .milkdown .ProseMirror {
+	outline: none;
+}
+
+[trip2g_editor_content] .milkdown .ProseMirror:focus {
+	outline: none;
+}

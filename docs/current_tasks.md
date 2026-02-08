@@ -141,9 +141,11 @@
 - [x] Milkdown бандл собран (esbuild IIFE, `assets/milkdown/`)
 - [x] Async загрузка через `$mol_import.script`
 - [x] `embed.go` и `Caddyfile` обновлены
-- [ ] Исправить закрытие модалки (raw CSS `display:none` для `dialog:not([open])`) ← текущий
-- [ ] Добавить русские переводы (locale файлы)
-- [ ] Проверить что Milkdown рендерится в content
+- [x] Исправить закрытие модалки (raw CSS `display:none` для `dialog:not([open])`)
+- [x] Добавить русские переводы (locale файлы)
+- [x] Milkdown рендерится в content (`$mol_wire_sync` для async create)
+- [x] Переход на Crepe (toolbar, block edit, link tooltip, theme)
+- [ ] Проверить Crepe в браузере, подтвердить что контролы работают ← текущий
 
 **Файловый навигатор (следующий этап)**
 - [ ] GraphQL query для списка файлов
@@ -166,7 +168,11 @@
 - [ ] Wikilinks автодополнение
 
 ### Заметки
-- Milkdown бандл: 867KB IIFE, включает commonmark + remark-wiki-link
+- Milkdown Crepe бандл: ~2.5MB minified / ~860KB gzipped (Vue.js, lodash-es, prosemirror внутри)
 - Загрузка async через `$mol_import.script('/assets/milkdown/milkdown.js')`
 - Компоненты: `editor/navigator/`, `editor/content/`, `editor/preview/`, `editor/pane/`
 - Raw CSS нужен для `dialog:not([open])` — mol `$mol_style_define` не поддерживает attribute selectors
+- `$mol_wire_sync` для интеграции async milkdown create() в mol реактивную систему
+- `$remark` wikilink fix: передаём attacher как reference, options через 3-й аргумент `$remark`
+- CSS Crepe темы инлайнятся в JS через esbuild plugin (inline-css)
+- Отключены: Latex, CodeMirror, ImageBlock, Table (для уменьшения бандла)

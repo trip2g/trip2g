@@ -613,6 +613,96 @@ namespace $.$$ {
 }
 ```
 
+## Async/Sync интеграция
+
+$mol использует реактивную систему на основе файберов (fibers/волокон). Весь прикладной код пишется синхронно, а асинхронные операции прозрачно интегрируются через специальные обёртки.
+
+### Почему синхронный код лучше
+
+- Проще для понимания
+- Можно вызывать из любых функций (нет проблемы "цветных функций")
+- Легко и надёжно отслеживать зависимости
+- Быстрее (лучше оптимизируется JIT)
+- Требует меньше памяти
+
+### `$mol_wire_sync` — делает async API синхронным
+
+Оборачивает объект/функцию с async методами, превращая их в синхронные вызовы в контексте реактивной системы mol:
+
+```typescript
+function getData(uri: string): { lucky: number } {
+    const request = $mol_wire_sync(fetch)
+    const response = $mol_wire_sync(request(uri))
+    return response.json().data
+}
+```
+
+Под капотом: при вызове async метода выбрасывается специальное исключение (Promise). Реактивная система mol перехватывает его, ждёт резолва, затем перезапускает волокно. На повторном запуске `$mol_wire_sync` возвращает уже готовый результат.
+
+### `$mol_wire_async` — делает sync API асинхронным
+
+Оборачивает синхронную функцию для использования в async контексте (совместимость с Suspense API):
+
+```typescript
+async function lucky_update(uri: string): Promise<undefined> {
+    const fetchData = $mol_wire_async(getData)
+    const data = await fetchData(uri)
+    data.lucky = 777
+    await fetch(uri, { method: 'put', body: JSON.stringify({ data }) })
+}
+```
+
+### Конкуренция и отмена
+
+При повторном запуске async экшена новый запуск автоматически отменяет предыдущий:
+
+```typescript
+// Каждый клик отменяет предыдущий
+button.onclick = $mol_wire_async(function() {
+    counter.sendIncrement()
+})
+```
+
+С добавлением задержки — автоматический debounce:
+
+```typescript
+button.onclick = $mol_wire_async(function() {
+    $mol_wait_timeout(1000)
+    counter.sendIncrement()
+})
+```
+
+### Интеграция сторонних библиотек
+
+При интеграции async библиотек (milkdown, fetch и т.д.) в mol компоненты:
+
+```typescript
+override render() {
+    const node = this.dom_node_actual()
+    const lib = this.load_library() // $mol_import.script — уже async-safe
+
+    if (!this._instance) {
+        this._instance = lib.create()
+        // $mol_wire_sync для async init — волокно приостановится и перезапустится
+        $mol_wire_sync(this._instance).init(node)
+    }
+}
+```
+
+**Важно:** `$mol_wire_sync` работает в контексте волокна. Если метод ещё не завершился — волокно приостанавливается. При резолве — перезапускается с начала текущей реактивной функции.
+
+### `$mol_import.script` — асинхронная загрузка скриптов
+
+Загружает скрипт и возвращает глобальный объект. Внутри использует ту же систему файберов:
+
+```typescript
+static milkdown(): any {
+    return $mol_import.script('/assets/milkdown/milkdown.js').$trip2g_milkdown_bundle
+}
+```
+
+При первом вызове — загружает скрипт, приостанавливает волокно. При повторном — возвращает кешированный результат.
+
 ## IDE Support
 
 * [Language Service for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=valikov.tree-language-service)

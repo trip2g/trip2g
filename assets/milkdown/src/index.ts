@@ -1,18 +1,18 @@
-import { Editor, rootCtx, defaultValueCtx, editorViewCtx, serializerCtx, parserCtx } from "@milkdown/kit/core";
-import { commonmark } from "@milkdown/kit/preset/commonmark";
-import { listener, listenerCtx } from "@milkdown/kit/plugin/listener";
+import { Crepe, CrepeFeature } from "@milkdown/crepe";
 import { $remark } from "@milkdown/kit/utils";
 import { Slice } from "@milkdown/kit/prose/model";
+import { editorViewCtx, serializerCtx, parserCtx } from "@milkdown/kit/core";
 import remarkWikiLink from "remark-wiki-link";
 
-const wikiLinkRemark = $remark("wikiLink", () =>
-	remarkWikiLink({
-		aliasDivider: "|",
-		hrefTemplate: (permalink: string) => `/${permalink}`,
-		wikiLinkClassName: "wikilink",
-		newClassName: "wikilink-new",
-	})
-);
+import "@milkdown/crepe/theme/common/style.css";
+import "@milkdown/crepe/theme/frame.css";
+
+const wikiLinkRemark = $remark("wikiLink", () => remarkWikiLink, {
+	aliasDivider: "|",
+	hrefTemplate: (permalink: string) => `/${permalink}`,
+	wikiLinkClassName: "wikilink",
+	newClassName: "wikilink-new",
+});
 
 export interface MilkdownInstance {
 	create(root: HTMLElement, defaultValue?: string): Promise<void>;
@@ -23,48 +23,50 @@ export interface MilkdownInstance {
 }
 
 export function createMilkdown(): MilkdownInstance {
-	let editor: Editor | null = null;
+	let crepe: Crepe | null = null;
 	let changeCallback: ((markdown: string) => void) | null = null;
 
 	return {
 		async create(root: HTMLElement, defaultValue = "") {
-			editor = await Editor.make()
-				.config((ctx) => {
-					ctx.set(rootCtx, root);
-					ctx.set(defaultValueCtx, defaultValue);
-					ctx.set(listenerCtx, {
-						markdown: [(getMarkdown) => {
-							if (changeCallback) {
-								changeCallback(getMarkdown());
-							}
-						}],
+			crepe = new Crepe({
+				root,
+				defaultValue,
+				features: {
+					[CrepeFeature.Latex]: false,
+					[CrepeFeature.CodeMirror]: false,
+					[CrepeFeature.ImageBlock]: false,
+					[CrepeFeature.Table]: false,
+				},
+			});
+
+			crepe.editor.use(wikiLinkRemark);
+
+			if (changeCallback) {
+				crepe.on((listener) => {
+					listener.markdownUpdated((_ctx, markdown) => {
+						changeCallback!(markdown);
 					});
-				})
-				.use(commonmark)
-				.use(wikiLinkRemark)
-				.use(listener)
-				.create();
+				});
+			}
+
+			await crepe.create();
 		},
 
 		async destroy() {
-			if (editor) {
-				await editor.destroy();
-				editor = null;
+			if (crepe) {
+				await crepe.destroy();
+				crepe = null;
 			}
 		},
 
 		getMarkdown(): string {
-			if (!editor) return "";
-			return editor.action((ctx) => {
-				const view = ctx.get(editorViewCtx);
-				const serializer = ctx.get(serializerCtx);
-				return serializer(view.state.doc);
-			});
+			if (!crepe) return "";
+			return crepe.getMarkdown();
 		},
 
 		setMarkdown(markdown: string) {
-			if (!editor) return;
-			editor.action((ctx) => {
+			if (!crepe) return;
+			crepe.editor.action((ctx) => {
 				const view = ctx.get(editorViewCtx);
 				const parser = ctx.get(parserCtx);
 				const doc = parser(markdown);
