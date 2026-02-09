@@ -214,6 +214,7 @@ func initDBs(config *appconfig.Config, log logger.Logger) (*sql.DB, *sql.DB) {
 		Logger:       log,
 		LogQueries:   config.LogQueries,
 		ReadOnly:     true,
+		DevMode:      config.DevMode,
 	}
 
 	conn, err := db.Setup(dbConfig)

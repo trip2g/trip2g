@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
+	"regexp"
 
 	"trip2g/internal/logger"
 
@@ -18,6 +19,9 @@ import (
 	sqldblogger "github.com/simukti/sqldb-logger"
 )
 
+// writeOpPattern matches SQL write operations (insert, update, delete, replace).
+var writeOpPattern = regexp.MustCompile(`(?im)^\s*(insert|update|delete|replace)\s`)
+
 // SetupConfig contains configuration for database setup.
 type SetupConfig struct {
 	SkipDump     bool
@@ -26,6 +30,7 @@ type SetupConfig struct {
 	ReadOnly     bool
 	LogQueries   bool
 	CheckStatus  bool
+	DevMode      bool
 }
 
 // Setup initializes the database with migrations, pragmas, and validation.
@@ -50,7 +55,8 @@ func Setup(config SetupConfig) (*sql.DB, error) {
 	}
 
 	// Open database connection
-	conn, err := openConnection(config.DatabaseFile, queryLogger)
+	panicOnWrite := config.DevMode && config.ReadOnly
+	conn, err := openConnection(config.DatabaseFile, queryLogger, panicOnWrite)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
@@ -112,16 +118,25 @@ func runMigrations(databaseFile string, skipDump bool) error {
 	return nil
 }
 
-type loggerProxy struct {
-	logger logger.Logger
+type queryInterceptor struct {
+	logger       logger.Logger
+	panicOnWrite bool
 }
 
-func (p *loggerProxy) Log(ctx context.Context, level sqldblogger.Level, msg string, data map[string]interface{}) {
-	p.logger.Debug(msg, "level", level, "data", data)
+func (p *queryInterceptor) Log(ctx context.Context, level sqldblogger.Level, msg string, data map[string]interface{}) {
+	if p.panicOnWrite {
+		if query, ok := data["query"].(string); ok && writeOpPattern.MatchString(query) {
+			panic("write operation on read-only connection: " + query)
+		}
+	}
+
+	if p.logger != nil {
+		p.logger.Debug(msg, "level", level, "data", data)
+	}
 }
 
 // openConnection opens a SQLite database connection with optimized settings.
-func openConnection(databaseFile string, logger logger.Logger) (*sql.DB, error) {
+func openConnection(databaseFile string, queryLog logger.Logger, panicOnWrite bool) (*sql.DB, error) {
 	// build url with params
 	url := &url.URL{Path: databaseFile}
 	q := url.Query()
@@ -142,8 +157,11 @@ func openConnection(databaseFile string, logger logger.Logger) (*sql.DB, error) 
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	if logger != nil {
-		conn = sqldblogger.OpenDriver(url.String(), conn.Driver(), &loggerProxy{logger: logger})
+	if queryLog != nil || panicOnWrite {
+		conn = sqldblogger.OpenDriver(url.String(), conn.Driver(), &queryInterceptor{
+			logger:       queryLog,
+			panicOnWrite: panicOnWrite,
+		})
 	}
 
 	return conn, nil
