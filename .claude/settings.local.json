@@ -49,7 +49,9 @@
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:gqlgen.com)",
       "WebFetch(domain:gist.github.com)",
-      "Bash(node esbuild.browser.mjs:*)"
+      "Bash(node esbuild.browser.mjs:*)",
+      "WebFetch(domain:docs.stripe.com)",
+      "WebFetch(domain:docs.github.com)"
     ],
     "deny": []
   },

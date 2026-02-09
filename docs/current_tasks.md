@@ -68,7 +68,7 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - [x] Codegen fix: запятая в subscription overloads, return type → `$trip2g_sse_host`
 - [x] Тест SSE подписки (sse.test.ts)
 - [x] Документация: TypeScript codegen секция в docs/graphql.md
-- [ ] Проверить в браузере: подключение, получение events, автореконнект ← текущий
+- [ ] Проверить в браузере: подключение, получение events, автореконнект
 - [ ] Удалить демо после проверки (или оставить как dev tool)
 
 ### Заметки
@@ -174,7 +174,7 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - [x] Переход на Crepe (toolbar, block edit, link tooltip, theme)
 - [x] Починить загрузку CSS Crepe — браузер пытается загрузить `prosemirror.css` и др. через mol paths
 
-**Файловый навигатор (следующий этап)**
+**Файловый навигатор (следующий этап)** ← текущий
 - [ ] GraphQL query для списка файлов
 - [ ] Дерево файлов в navigator
 - [ ] Выбор файла → загрузка в редактор

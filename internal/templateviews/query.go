@@ -78,6 +78,7 @@ func (q *NoteQuery) All() []*Note {
 	var notes []*Note
 	for path, nv := range q.nvs.nvs.PathMap {
 		if q.glob != "" {
+			// TODO: handle error and compile pattern once
 			match, _ := doublestar.Match(q.glob, path)
 			if !match {
 				continue
