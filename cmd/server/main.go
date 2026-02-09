@@ -60,6 +60,7 @@ import (
 	"trip2g/internal/cronjobs"
 	"trip2g/internal/dataencryption"
 	"trip2g/internal/db"
+	"trip2g/internal/fastgql"
 	"trip2g/internal/features"
 	"trip2g/internal/gitapi"
 	"trip2g/internal/githubauth"
@@ -1982,8 +1983,15 @@ func (a *app) startServer() {
 func (a *app) prepareGraphQLHandler() func(ctx *fasthttp.RequestCtx, path string) bool {
 	// graphql.
 	playgroundHandler := fasthttpadaptor.NewFastHTTPHandler(playground.Handler("GraphQL playground", "/graphql"))
-	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(graph.NewHandler(a))
+
+	gqlHandler := graph.NewHandler(a)
+	graphqlHandler := fasthttpadaptor.NewFastHTTPHandler(gqlHandler)
 	compressedGraphqlHandler := fasthttp.CompressHandler(graphqlHandler)
+
+	// SSE uses a custom handler that does not pool the response writer,
+	// avoiding a data race in fasthttpadaptor where the pooled writer
+	// is recycled while the SSE goroutine is still writing to it.
+	sseHandler := fastgql.NewSSEHandler(gqlHandler)
 
 	return func(ctx *fasthttp.RequestCtx, path string) bool {
 		if strings.HasPrefix(path, "/graphql") {
@@ -1991,7 +1999,7 @@ func (a *app) prepareGraphQLHandler() func(ctx *fasthttp.RequestCtx, path string
 			case string(ctx.Method()) == "GET":
 				playgroundHandler(ctx)
 			case strings.Contains(string(ctx.Request.Header.Peek("Accept")), "text/event-stream"):
-				graphqlHandler(ctx)
+				sseHandler(ctx)
 			default:
 				compressedGraphqlHandler(ctx)
 			}
