@@ -212,7 +212,7 @@ module.exports.plugin = (schema, documents, config) => {
 
 		if (op.type === 'subscription') {
 			subscriptionLines.push(
-				`export function ${molPrefix}_subscription(query: '${lit}'${vars}): ${op.resultType}`
+				`export function ${molPrefix}_subscription(query: '${lit}'${vars ? ', ' + vars : ''}): $trip2g_sse_host`
 			)
 		} else {
       //requestLines.push(`export function ${molPrefix}_request(query: '${lit}'${vars}): ${op.resultType}`)

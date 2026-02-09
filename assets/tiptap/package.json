@@ -1,0 +1,25 @@
+{
+  "name": "trip2g-tiptap",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.browser.mjs",
+    "watch": "node esbuild.browser.mjs --watch"
+  },
+  "dependencies": {
+    "@tiptap/core": "^2.12.0",
+    "@tiptap/starter-kit": "^2.12.0",
+    "@tiptap/extension-placeholder": "^2.12.0",
+    "@tiptap/extension-link": "^2.12.0",
+    "@tiptap/extension-task-list": "^2.12.0",
+    "@tiptap/extension-task-item": "^2.12.0",
+    "@tiptap/pm": "^2.12.0",
+    "markdown-it": "^14.0.0",
+    "prosemirror-markdown": "^1.13.0"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.0.0",
+    "esbuild": "^0.27.0",
+    "typescript": "^5.0.0"
+  }
+}

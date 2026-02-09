@@ -1,0 +1,6 @@
+$trip2g_sse_icon $mol_icon_sync
+	status \
+	status_icon *$mol_icon
+		error <= Error_icon $mol_icon_sync_off
+		open <= Open_icon $mol_icon_sync
+		connecting <= Connecting_icon $mol_icon_sync_alert

@@ -53,7 +53,7 @@
 - В кастомных layout доступна переменная `{{ title }}` с отформатированным заголовком
 - Старая система config_versions полностью удалена
 
-## [TODO] Фронтенд: SSE подписка currentTime
+## [IN PROGRESS] Фронтенд: SSE подписка currentTime
 
 ### Контекст
 SSE подписки работают через fasthttp + fasthttpadaptor + gqlgen. Демо подписка `currentTime` отдаёт время каждую секунду. Нужно реализовать клиентскую часть, чтобы убедиться что весь pipeline работает end-to-end и можно использовать подписки для реальных задач.
@@ -61,13 +61,21 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 В будущем подписки будут использоваться для: статусы задач, синхронизация файлов (страница обновляется при правках без кнопки обновить), live preview в редакторе.
 
 ### План
-- [ ] SSE клиент на фронте (EventSource или fetch + ReadableStream)
-- [ ] Компонент отображения текущего времени с сервера
-- [ ] Показать на странице (например в admin dashboard или в dev toolbar)
-- [ ] Проверить: подключение, получение events, автореконнект при обрыве
+- [x] SSE клиент (`$trip2g_sse_host`) — fetch + ReadableStream, SSE парсер, автореконнект
+- [x] Статус-виджет (`$trip2g_sse_status` + `$trip2g_sse_icon`) — по паттерну yuf/ws/status
+- [x] `$trip2g_graphql_raw_subscription` — реализация вместо stub
+- [x] Компонент `$trip2g_time_current` — показывает время + статус иконку
+- [x] Codegen fix: запятая в subscription overloads, return type → `$trip2g_sse_host`
+- [x] Тест SSE подписки (sse.test.ts)
+- [x] Документация: TypeScript codegen секция в docs/graphql.md
+- [ ] Проверить в браузере: подключение, получение events, автореконнект ← текущий
 - [ ] Удалить демо после проверки (или оставить как dev tool)
 
 ### Заметки
+- SSE клиент написан с нуля (fetch + ReadableStream), без graphql-sse зависимости
+- graphqlmol.js: исправлен баг — отсутствие запятой между query и variables в subscription overloads
+- graphqlmol.js: subscription overloads теперь возвращают `$trip2g_sse_host` вместо data type
+- `$mol_wait_timeout is not a function` — предсуществующий баг, не связан с SSE
 - Бэкенд: `schema.graphqls` type Subscription + `schema.resolvers.go` CurrentTime resolver
 - Endpoint: `POST /graphql` с `Accept: text/event-stream`
 - Документация: [docs/graphql.md](graphql.md), [docs/gqlgen_fasthttp.md](gqlgen_fasthttp.md)
@@ -196,6 +204,54 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - CSS Crepe темы инлайнятся в JS через esbuild plugin (inline-css)
 - Отключены: Latex, CodeMirror, ImageBlock, Table (для уменьшения бандла)
 - **CSS решено**: inline-css esbuild plugin теперь вызывает `esbuild.build()` с `bundle: true` для рекурсивного разрешения всех `@import`. KaTeX CSS пропускается через `skip-katex` sub-plugin (Latex отключён)
+- **Tiptap альтернатива**: бандл собран рядом (`assets/tiptap/`), 990KB vs 5MB milkdown. Тот же интерфейс (create/destroy/getMarkdown/setMarkdown/onChange). Slash menu, task lists, wiki-links. Не подключён в UI — нужно протестировать и сравнить с milkdown
+
+## [TODO] Webhooks для изменений заметок
+
+### Контекст
+Вебхуки уведомляют внешние сервисы (агенты, автоматизации) об изменениях заметок (create/update/remove). Агент получает POST с батчем изменений и может отреагировать. Include/exclude glob-паттерны через doublestar. Опциональный JWT webhook token для доступа к API.
+
+Подробный дизайн: [docs/webhooks.md](webhooks.md)
+
+### План
+
+**Этап 1: Ядро (MVP)**
+- [ ] Миграция: таблицы `webhooks` + `webhook_deliveries`
+- [ ] SQL-запросы (sqlc) + `make sqlc`
+- [ ] `internal/webhooktoken/` — JWT sign/parse (по аналогии с hotauthtoken)
+- [ ] Admin mutations: createWebhook/updateWebhook/deleteWebhook
+- [ ] `internal/case/handlenotewebhooks/` — glob-матчинг (doublestar) + enqueue delivery jobs
+- [ ] `cmd/server/case_methods.go` — метод `HandleNoteWebhooks(ctx, changedPathIDs, event)`
+- [ ] `internal/case/backjob/deliverwebhook/` — HTTP POST + JWT + сохранение результата
+- [ ] Интеграция в `HandleLatestNotesAfterSave` (create/update) и `hidenotes.Resolve` (remove)
+- [ ] Admin queries: webhooks, webhookDeliveries
+
+**Этап 2: Безопасность**
+- [ ] HMAC-SHA256 подпись payload (если задан secret)
+- [ ] Auth middleware для валидации webhook JWT токенов
+
+**Этап 3: Admin UI**
+- [ ] Фронтенд: CRUD вебхуков в админке
+- [ ] Фронтенд: просмотр истории доставок
+- [ ] Кнопка retry для failed доставок
+
+### Заметки
+- Батчинг: все совпавшие заметки → один POST на вебхук
+- Matching логика синхронная (просто compute), только HTTP POST уходит в goqite (BackgroundDefaultQueue)
+- Event types: create (version_count == 1), update (version_count > 1), remove (hideNotes)
+- Include/exclude паттерны (comma-separated), матчинг через doublestar.Match
+- `include_content` (default true) — передавать полное содержимое заметок в payload
+- JWT webhook token (30 мин TTL) вместо создания/удаления API-ключей
+
+## [TODO] Рефакторинг: обработка ошибок doublestar.Match в templateviews
+
+### Контекст
+В `internal/templateviews/query.go:82` ошибка `doublestar.Match` игнорируется (`match, _ := ...`). Нужно обрабатывать ошибку и pre-compile паттерны, чтобы невалидный glob обнаруживался раньше.
+
+### План
+- [ ] Обработать ошибку `doublestar.Match` в `query.go:82`
+- [ ] Pre-compile glob паттерны (валидация при создании NoteQuery)
+- [ ] make test && make lint
 
 ## [TODO] UTM-метки для ссылок из заметок
 

@@ -1,0 +1,6 @@
+{
+	"$trip2g_sse_status_title": "SSE: {status}",
+	"$trip2g_sse_status_status_message_error": "ошибка",
+	"$trip2g_sse_status_status_message_open": "онлайн",
+	"$trip2g_sse_status_status_message_connecting": "соединяется"
+}

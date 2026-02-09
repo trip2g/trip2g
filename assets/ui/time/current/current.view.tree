@@ -1,0 +1,7 @@
+$trip2g_time_current $mol_view
+	format \15:04:05
+	sub /
+		<= Status $trip2g_sse_status
+			sse <= sse $trip2g_sse_host
+		<= Cell $trip2g_admin_cell
+			content <= current_time \

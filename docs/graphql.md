@@ -320,3 +320,70 @@ gqlgen автоматически привязывает Go-типы из пак
 ## Complexity
 
 `omit_complexity: true` — complexity estimation отключена. Если понадобится для отдельных полей, использовать whitelist через кастомный код, а не генерацию.
+
+## TypeScript кодген
+
+`npm run graphqlgen` генерирует типизированные TypeScript функции из GraphQL операций, найденных в `assets/ui/**/*.ts`.
+
+### Как это работает
+
+1. `graphql-codegen` с конфигом `graphqlgen.js` делает introspection запущенного сервера на `http://localhost:8081/graphql`
+2. Сканирует все `.ts` файлы в `assets/ui/` на вызовы `$trip2g_graphql_request(...)` и `$trip2g_graphql_subscription(...)`
+3. Кастомный плагин `graphqlmol.js` генерирует типизированные overloads в `assets/ui/graphql/queries.ts`
+
+### Использование
+
+**Queries/Mutations** — оборачиваются в `$trip2g_graphql_request`:
+
+```typescript
+const request = $trip2g_graphql_request(/* GraphQL */ `
+    query MyQuery($id: Int64!) {
+        admin { user(id: $id) { email } }
+    }
+`)
+
+// request — функция (variables?) => типизированный результат
+const data = request({ id: 123 })
+```
+
+**Subscriptions** — оборачиваются в `$trip2g_graphql_subscription`:
+
+```typescript
+const host = $trip2g_graphql_subscription(/* GraphQL */ `
+    subscription CurrentTime($format: String) {
+        currentTime(format: $format)
+    }
+`, { format: '15:04:05' })
+
+// host — $trip2g_sse_host, реактивный объект
+// host.data() — последние данные из SSE стрима
+// host.ready() — true когда соединение установлено
+// host.error_message() — текст ошибки или ''
+```
+
+### Требования
+
+Для кодгена сервер должен быть запущен на `:8081` (introspection схемы).
+
+### @exportType директива
+
+Кастомная директива для экспорта вложенных типов:
+
+```typescript
+$trip2g_graphql_request(/* GraphQL */ `
+    query AdminBackgroundQueue($id: String!) {
+        admin {
+            backgroundQueue(id: $id) {
+                jobs @exportType(name: "Job", single: true) {
+                    id
+                    name
+                }
+            }
+        }
+    }
+`)
+// Генерирует: export type $trip2g_graphql_AdminBackgroundQueueJob = ...
+```
+
+- `@exportType(name: "Name")` — экспортирует тип массива
+- `@exportType(name: "Name", single: true)` — экспортирует тип элемента массива

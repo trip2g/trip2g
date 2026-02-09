@@ -1,0 +1,13 @@
+$trip2g_sse_status $mol_view
+	attr *
+		^
+		title <= title_formatted <= title
+	sse $trip2g_sse_host
+		error_message => error_message
+	title @ \SSE: {status}
+	status_message *
+		error @ \error
+		open @ \online
+		connecting @ \connecting
+	sub /
+		<= Icon $trip2g_sse_icon status <= status \connecting
