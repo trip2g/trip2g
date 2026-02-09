@@ -20038,6 +20038,44 @@ img.ProseMirror-separator {
     }
   });
 
+  // src/wikilink.ts
+  var WikiLink = Node2.create({
+    name: "wikilink",
+    group: "inline",
+    inline: true,
+    atom: true,
+    addAttributes() {
+      return {
+        href: { default: "" },
+        label: { default: null }
+      };
+    },
+    parseHTML() {
+      return [{ tag: "a.tiptap-wikilink" }];
+    },
+    renderHTML({ HTMLAttributes }) {
+      const href = HTMLAttributes.href || "";
+      const label = HTMLAttributes.label || href.replace(/^\//, "");
+      return [
+        "a",
+        mergeAttributes({ class: "tiptap-wikilink", href }, HTMLAttributes),
+        label
+      ];
+    },
+    addInputRules() {
+      return [
+        nodeInputRule({
+          find: /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]$/,
+          type: this.type,
+          getAttributes: (match2) => ({
+            href: "/" + match2[1].trim(),
+            label: match2[2]?.trim() || null
+          })
+        })
+      ];
+    }
+  });
+
   // src/slash-menu.ts
   var defaultItems = [
     {
@@ -26441,10 +26479,20 @@ img.ProseMirror-separator {
   }
   var md = lib_default("commonmark", { html: false }).use(wikiLinkPlugin);
   function createMarkdownParser(schema2) {
-    return new MarkdownParser(schema2, md, {
+    const tokens = {
       ...defaultMarkdownParser.tokens
       // task_list and task_item handled by tiptap extensions natively.
-    });
+    };
+    if (schema2.nodes.wikilink) {
+      tokens.wikilink = {
+        node: "wikilink",
+        getAttrs: (token) => ({
+          href: token.attrGet("href") || "",
+          label: token.content || null
+        })
+      };
+    }
+    return new MarkdownParser(schema2, md, tokens);
   }
   function createMarkdownSerializer(schema2) {
     const nodes = { ...defaultMarkdownSerializer.nodes };
@@ -26461,6 +26509,17 @@ img.ProseMirror-separator {
         state.renderContent(node);
       };
     }
+    if (schema2.nodes.wikilink) {
+      nodes.wikilink = (state, node) => {
+        const href = (node.attrs.href || "").replace(/^\//, "");
+        const label = node.attrs.label;
+        if (label && label !== href) {
+          state.write(`[[${href}|${label}]]`);
+        } else {
+          state.write(`[[${href}]]`);
+        }
+      };
+    }
     return new MarkdownSerializer(nodes, marks);
   }
 
@@ -26468,21 +26527,148 @@ img.ProseMirror-separator {
   (function() {
     if (typeof document !== "undefined") {
       var s = document.createElement("style");
-      s.textContent = '/* src/style.css */\n.tiptap-editor {\n  padding: 1rem;\n  outline: none;\n  min-height: 200px;\n  font-family:\n    -apple-system,\n    BlinkMacSystemFont,\n    "Segoe UI",\n    Roboto,\n    sans-serif;\n  font-size: 16px;\n  line-height: 1.6;\n  color: #1a1a1a;\n}\n.tiptap-editor:focus {\n  outline: none;\n}\n.tiptap-editor h1 {\n  font-size: 2em;\n  font-weight: 700;\n  margin: 1em 0 0.5em;\n}\n.tiptap-editor h2 {\n  font-size: 1.5em;\n  font-weight: 600;\n  margin: 0.8em 0 0.4em;\n}\n.tiptap-editor h3 {\n  font-size: 1.2em;\n  font-weight: 600;\n  margin: 0.6em 0 0.3em;\n}\n.tiptap-editor p {\n  margin: 0.5em 0;\n}\n.tiptap-editor p.is-editor-empty:first-child::before {\n  content: attr(data-placeholder);\n  float: left;\n  color: #aaa;\n  pointer-events: none;\n  height: 0;\n}\n.tiptap-editor ul,\n.tiptap-editor ol {\n  padding-left: 1.5em;\n  margin: 0.5em 0;\n}\n.tiptap-editor ul[data-type=taskList] {\n  list-style: none;\n  padding-left: 0;\n}\n.tiptap-editor ul[data-type=taskList] li {\n  display: flex;\n  align-items: flex-start;\n  gap: 0.5em;\n}\n.tiptap-editor ul[data-type=taskList] li label {\n  margin-top: 0.25em;\n}\n.tiptap-editor blockquote {\n  border-left: 3px solid #ddd;\n  padding-left: 1em;\n  margin: 0.5em 0;\n  color: #666;\n}\n.tiptap-editor pre {\n  background: #f5f5f5;\n  border-radius: 6px;\n  padding: 0.75em 1em;\n  margin: 0.5em 0;\n  overflow-x: auto;\n}\n.tiptap-editor pre code {\n  font-family:\n    "SF Mono",\n    Menlo,\n    monospace;\n  font-size: 0.9em;\n  background: none;\n  padding: 0;\n}\n.tiptap-editor code {\n  background: #f0f0f0;\n  border-radius: 3px;\n  padding: 0.15em 0.3em;\n  font-family:\n    "SF Mono",\n    Menlo,\n    monospace;\n  font-size: 0.9em;\n}\n.tiptap-editor hr {\n  border: none;\n  border-top: 1px solid #ddd;\n  margin: 1.5em 0;\n}\n.tiptap-editor a {\n  color: #2563eb;\n  text-decoration: none;\n}\n.tiptap-editor a:hover {\n  text-decoration: underline;\n}\n.tiptap-editor a.wikilink {\n  color: #7c3aed;\n}\n.tiptap-slash-menu {\n  position: fixed;\n  z-index: 10000;\n  background: white;\n  border: 1px solid #e0e0e0;\n  border-radius: 8px;\n  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);\n  max-height: 300px;\n  overflow-y: auto;\n  min-width: 220px;\n  padding: 4px;\n}\n.tiptap-slash-menu-item {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  padding: 8px 12px;\n  border: none;\n  background: none;\n  cursor: pointer;\n  border-radius: 6px;\n  text-align: left;\n}\n.tiptap-slash-menu-item:hover,\n.tiptap-slash-menu-item.is-selected {\n  background: #f0f0f0;\n}\n.tiptap-slash-menu-title {\n  font-size: 14px;\n  font-weight: 500;\n  color: #1a1a1a;\n}\n.tiptap-slash-menu-desc {\n  font-size: 12px;\n  color: #888;\n}\n';
+      s.textContent = '/* src/style.css */\n.tiptap-editor {\n  padding: 1rem;\n  outline: none;\n  min-height: 200px;\n  color: var(--mol_theme_text, #e0e0e0);\n}\n.tiptap-editor:focus {\n  outline: none;\n}\n.tiptap-editor h1 {\n  font-size: 2em;\n  font-weight: 700;\n  margin: 1em 0 0.5em;\n}\n.tiptap-editor h2 {\n  font-size: 1.5em;\n  font-weight: 600;\n  margin: 0.8em 0 0.4em;\n}\n.tiptap-editor h3 {\n  font-size: 1.2em;\n  font-weight: 600;\n  margin: 0.6em 0 0.3em;\n}\n.tiptap-editor p {\n  margin: 0.5em 0;\n}\n.tiptap-editor p.is-editor-empty:first-child::before {\n  content: attr(data-placeholder);\n  float: left;\n  color: #555;\n  pointer-events: none;\n  height: 0;\n}\n.tiptap-editor ul,\n.tiptap-editor ol {\n  padding-left: 1.5em;\n  margin: 0.5em 0;\n}\n.tiptap-editor ul[data-type=taskList] {\n  list-style: none;\n  padding-left: 0;\n}\n.tiptap-editor ul[data-type=taskList] li {\n  display: flex;\n  align-items: flex-start;\n  gap: 0.5em;\n}\n.tiptap-editor ul[data-type=taskList] li label {\n  margin-top: 0.25em;\n}\n.tiptap-editor blockquote {\n  border-left: 3px solid #444;\n  padding-left: 1em;\n  margin: 0.5em 0;\n  color: #999;\n}\n.tiptap-editor pre {\n  background: #1e1e1e;\n  border-radius: 6px;\n  padding: 0.75em 1em;\n  margin: 0.5em 0;\n  overflow-x: auto;\n}\n.tiptap-editor pre code {\n  font-family:\n    "SF Mono",\n    Menlo,\n    monospace;\n  font-size: 0.9em;\n  background: none;\n  padding: 0;\n}\n.tiptap-editor code {\n  background: #2a2a2a;\n  border-radius: 3px;\n  padding: 0.15em 0.3em;\n  font-family:\n    "SF Mono",\n    Menlo,\n    monospace;\n  font-size: 0.9em;\n}\n.tiptap-editor hr {\n  border: none;\n  border-top: 1px solid #444;\n  margin: 1.5em 0;\n}\n.tiptap-editor a {\n  color: #60a5fa;\n  text-decoration: none;\n}\n.tiptap-editor a:hover {\n  text-decoration: underline;\n}\n.tiptap-editor .tiptap-wikilink {\n  color: #a78bfa;\n  text-decoration: none;\n  border-bottom: 1px dashed #a78bfa;\n  cursor: pointer;\n  padding: 0 1px;\n}\n.tiptap-editor .tiptap-wikilink:hover {\n  border-bottom-style: solid;\n}\n.tiptap-editor .tiptap-wikilink.ProseMirror-selectednode {\n  background: #3b2d6b;\n  border-radius: 2px;\n}\n.tiptap-slash-menu {\n  position: fixed;\n  z-index: 10000;\n  background: #252525;\n  border: 1px solid #3a3a3a;\n  border-radius: 8px;\n  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);\n  max-height: 300px;\n  overflow-y: auto;\n  min-width: 220px;\n  padding: 4px;\n}\n.tiptap-slash-menu-item {\n  display: flex;\n  flex-direction: column;\n  width: 100%;\n  padding: 8px 12px;\n  border: none;\n  background: none;\n  cursor: pointer;\n  border-radius: 6px;\n  text-align: left;\n}\n.tiptap-slash-menu-item:hover,\n.tiptap-slash-menu-item.is-selected {\n  background: #333;\n}\n.tiptap-slash-menu-title {\n  font-size: 14px;\n  font-weight: 500;\n  color: #e0e0e0;\n}\n.tiptap-slash-menu-desc {\n  font-size: 12px;\n  color: #777;\n}\n.tiptap-toolbar {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: center;\n  gap: 2px;\n  padding: 4px 8px;\n  border-bottom: 1px solid var(--mol_theme_line, #333);\n  background: var(--mol_theme_back, #1a1a1a);\n  position: sticky;\n  top: 0;\n  z-index: 10;\n}\n.tiptap-toolbar-btn {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  min-width: 28px;\n  height: 28px;\n  padding: 0 6px;\n  border: none;\n  background: none;\n  cursor: pointer;\n  border-radius: 4px;\n  font-size: 13px;\n  font-weight: 500;\n  color: var(--mol_theme_shade, #999);\n  font-family: inherit;\n}\n.tiptap-toolbar-btn:hover {\n  background: var(--mol_theme_hover, #333);\n  color: var(--mol_theme_text, #e0e0e0);\n}\n.tiptap-toolbar-btn.is-active {\n  background: #2a2d5e;\n  color: #8b9cf7;\n}\n.tiptap-toolbar-sep {\n  width: 1px;\n  height: 18px;\n  background: #444;\n  margin: 0 4px;\n}\n';
       document.head.appendChild(s);
     }
   })();
 
   // src/index.ts
+  function createToolbar(editor) {
+    const toolbar = document.createElement("div");
+    toolbar.className = "tiptap-toolbar";
+    const groups = [
+      [
+        {
+          label: "B",
+          action: (e) => e.chain().focus().toggleBold().run(),
+          isActive: (e) => e.isActive("bold")
+        },
+        {
+          label: "I",
+          action: (e) => e.chain().focus().toggleItalic().run(),
+          isActive: (e) => e.isActive("italic")
+        },
+        {
+          label: "S\u0336",
+          action: (e) => e.chain().focus().toggleStrike().run(),
+          isActive: (e) => e.isActive("strike")
+        },
+        {
+          label: "</>",
+          action: (e) => e.chain().focus().toggleCode().run(),
+          isActive: (e) => e.isActive("code")
+        }
+      ],
+      [
+        {
+          label: "H1",
+          action: (e) => e.chain().focus().toggleHeading({ level: 1 }).run(),
+          isActive: (e) => e.isActive("heading", { level: 1 })
+        },
+        {
+          label: "H2",
+          action: (e) => e.chain().focus().toggleHeading({ level: 2 }).run(),
+          isActive: (e) => e.isActive("heading", { level: 2 })
+        },
+        {
+          label: "H3",
+          action: (e) => e.chain().focus().toggleHeading({ level: 3 }).run(),
+          isActive: (e) => e.isActive("heading", { level: 3 })
+        }
+      ],
+      [
+        {
+          label: "\u2022 List",
+          action: (e) => e.chain().focus().toggleBulletList().run(),
+          isActive: (e) => e.isActive("bulletList")
+        },
+        {
+          label: "1. List",
+          action: (e) => e.chain().focus().toggleOrderedList().run(),
+          isActive: (e) => e.isActive("orderedList")
+        },
+        {
+          label: "\u2611 List",
+          action: (e) => e.chain().focus().toggleTaskList().run(),
+          isActive: (e) => e.isActive("taskList")
+        },
+        {
+          label: "\u201C\u201D",
+          action: (e) => e.chain().focus().toggleBlockquote().run(),
+          isActive: (e) => e.isActive("blockquote")
+        },
+        {
+          label: "{ }",
+          action: (e) => e.chain().focus().toggleCodeBlock().run(),
+          isActive: (e) => e.isActive("codeBlock")
+        }
+      ],
+      [
+        {
+          label: "\u2014",
+          action: (e) => e.chain().focus().setHorizontalRule().run()
+        },
+        {
+          label: "Link",
+          action: (e) => {
+            if (e.isActive("link")) {
+              e.chain().focus().unsetLink().run();
+              return;
+            }
+            const href = window.prompt("URL:");
+            if (href) {
+              e.chain().focus().setLink({ href }).run();
+            }
+          },
+          isActive: (e) => e.isActive("link")
+        }
+      ]
+    ];
+    const buttons = [];
+    for (let gi = 0; gi < groups.length; gi++) {
+      if (gi > 0) {
+        const sep = document.createElement("span");
+        sep.className = "tiptap-toolbar-sep";
+        toolbar.appendChild(sep);
+      }
+      for (const item of groups[gi]) {
+        if (item === "sep") continue;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "tiptap-toolbar-btn";
+        btn.textContent = item.label;
+        btn.addEventListener("mousedown", (ev) => {
+          ev.preventDefault();
+          item.action(editor);
+        });
+        toolbar.appendChild(btn);
+        buttons.push({ el: btn, isActive: item.isActive });
+      }
+    }
+    const updateActive = () => {
+      for (const { el, isActive: isActive2 } of buttons) {
+        if (isActive2) {
+          el.classList.toggle("is-active", isActive2(editor));
+        }
+      }
+    };
+    editor.on("selectionUpdate", updateActive);
+    editor.on("transaction", updateActive);
+    updateActive();
+    return toolbar;
+  }
   function createTiptap() {
     let editor = null;
     let changeCallback = null;
     let mdParser = null;
     let mdSerializer = null;
+    let toolbarEl = null;
+    let editorContainer = null;
     return {
       async create(root, defaultValue = "") {
+        editorContainer = document.createElement("div");
         editor = new Editor({
-          element: root,
+          element: editorContainer,
           extensions: [
             StarterKit,
             Placeholder.configure({
@@ -26492,6 +26678,7 @@ img.ProseMirror-separator {
               openOnClick: false,
               HTMLAttributes: { class: "tiptap-link" }
             }),
+            WikiLink,
             TaskList,
             TaskItem.configure({ nested: true }),
             SlashMenu
@@ -26505,6 +26692,9 @@ img.ProseMirror-separator {
             }
           }
         });
+        toolbarEl = createToolbar(editor);
+        root.appendChild(toolbarEl);
+        root.appendChild(editorContainer);
         mdParser = createMarkdownParser(editor.schema);
         mdSerializer = createMarkdownSerializer(editor.schema);
         if (defaultValue) {
@@ -26520,6 +26710,14 @@ img.ProseMirror-separator {
           editor = null;
           mdParser = null;
           mdSerializer = null;
+        }
+        if (toolbarEl) {
+          toolbarEl.remove();
+          toolbarEl = null;
+        }
+        if (editorContainer) {
+          editorContainer.remove();
+          editorContainer = null;
         }
       },
       getMarkdown() {

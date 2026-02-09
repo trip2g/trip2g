@@ -11,12 +11,17 @@
     "test:e2e:headed": "./scripts/test-e2e.sh --headed"
   },
   "dependencies": {
+    "@types/change-case": "^0.0.30",
+    "@types/jsdom": "^27.0.0",
+    "change-case": "^5.4.4",
     "graphology": "^0.26.0",
     "graphology-communities-louvain": "^2.0.2",
     "graphology-layout": "^0.6.1",
     "graphology-layout-forceatlas2": "^0.10.1",
     "graphql": "^16.10.0",
-    "sigma": "^3.0.1"
+    "jsdom": "^28.0.0",
+    "sigma": "^3.0.1",
+    "sourcemap-codec": "^1.4.8"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.5",

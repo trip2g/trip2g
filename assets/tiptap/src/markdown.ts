@@ -40,10 +40,22 @@ function wikiLinkPlugin(md: MarkdownIt) {
 const md = MarkdownIt('commonmark', { html: false }).use(wikiLinkPlugin)
 
 export function createMarkdownParser(schema: Schema): MarkdownParser {
-	return new MarkdownParser(schema, md, {
+	const tokens: Record<string, any> = {
 		...defaultMarkdownParser.tokens,
 		// task_list and task_item handled by tiptap extensions natively.
-	})
+	}
+
+	if (schema.nodes.wikilink) {
+		tokens.wikilink = {
+			node: 'wikilink',
+			getAttrs: (token: any) => ({
+				href: token.attrGet('href') || '',
+				label: token.content || null,
+			}),
+		}
+	}
+
+	return new MarkdownParser(schema, md, tokens)
 }
 
 export function createMarkdownSerializer(schema: Schema): MarkdownSerializer {
@@ -62,6 +74,19 @@ export function createMarkdownSerializer(schema: Schema): MarkdownSerializer {
 			const checked = node.attrs.checked ? '[x] ' : '[ ] '
 			state.write(checked)
 			state.renderContent(node)
+		}
+	}
+
+	// Wikilink serialization: [[page]] or [[page|alias]].
+	if (schema.nodes.wikilink) {
+		nodes.wikilink = (state, node) => {
+			const href = (node.attrs.href || '').replace(/^\//, '')
+			const label = node.attrs.label
+			if (label && label !== href) {
+				state.write(`[[${href}|${label}]]`)
+			} else {
+				state.write(`[[${href}]]`)
+			}
 		}
 	}
 

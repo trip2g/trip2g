@@ -99,6 +99,7 @@
 | **Admin CRUD интерфейс** | [docs/frontend_crud.md](docs/frontend_crud.md), [docs/admin_config_modules.md](docs/admin_config_modules.md) — **не забудь про переводы!** |
 | **Интеграция (OAuth, платежи)** | [docs/admin_config_modules.md](docs/admin_config_modules.md) |
 | **Telegram** | [docs/telegram.md](docs/telegram.md) |
+| **Webhooks** | [docs/webhooks.md](docs/webhooks.md) — overview, решения, тесты. Спецификации: change/cron/shared/job_statuses |
 | **Тесты** | [docs/TESTING.md](docs/TESTING.md) |
 | **Понять архитектуру** | [docs/architecture.md](docs/architecture.md) |
 | **Рефакторинг** | [docs/refactor.md](docs/refactor.md) |
