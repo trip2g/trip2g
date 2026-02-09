@@ -79,6 +79,7 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - Бэкенд: `schema.graphqls` type Subscription + `schema.resolvers.go` CurrentTime resolver
 - Endpoint: `POST /graphql` с `Accept: text/event-stream`
 - Документация: [docs/graphql.md](graphql.md), [docs/gqlgen_fasthttp.md](gqlgen_fasthttp.md)
+- **Data race fix**: `fasthttpadaptor.NewFastHTTPHandler` использует sync.Pool, writer возвращается в пул при ошибке записи, а SSE горутина ещё пишет → race. Решение: `internal/fastgql.NewSSEHandler` — обёртка без sync.Pool, с mutex и отменой контекста при disconnect
 
 ## [TODO] Добавить конфиг EnableNotFoundTracking
 
@@ -195,53 +196,52 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - [ ] Wikilinks автодополнение
 
 ### Заметки
-- Milkdown Crepe бандл: ~2.5MB minified / ~860KB gzipped (Vue.js, lodash-es, prosemirror внутри)
-- Загрузка async через `$mol_import.script('/assets/milkdown/milkdown.js')`
+- Tiptap бандл: ~990KB unminified (prosemirror внутри, без Vue.js)
+- Загрузка async через `$mol_import.script('/assets/tiptap/tiptap.js')`
 - Компоненты: `editor/navigator/`, `editor/content/`, `editor/preview/`, `editor/pane/`
 - Raw CSS нужен для `dialog:not([open])` — mol `$mol_style_define` не поддерживает attribute selectors
-- `$mol_wire_sync` для интеграции async milkdown create() в mol реактивную систему
-- `$remark` wikilink fix: передаём attacher как reference, options через 3-й аргумент `$remark`
-- CSS Crepe темы инлайнятся в JS через esbuild plugin (inline-css)
-- Отключены: Latex, CodeMirror, ImageBlock, Table (для уменьшения бандла)
-- **CSS решено**: inline-css esbuild plugin теперь вызывает `esbuild.build()` с `bundle: true` для рекурсивного разрешения всех `@import`. KaTeX CSS пропускается через `skip-katex` sub-plugin (Latex отключён)
-- **Tiptap альтернатива**: бандл собран рядом (`assets/tiptap/`), 990KB vs 5MB milkdown. Тот же интерфейс (create/destroy/getMarkdown/setMarkdown/onChange). Slash menu, task lists, wiki-links. Не подключён в UI — нужно протестировать и сравнить с milkdown
+- `$mol_wire_sync` для интеграции async tiptap create() в mol реактивную систему
+- Wiki-links: markdown-it плагин в tiptap бандле
+- CSS инлайнятся в JS через esbuild plugin (inline-css)
+- Включены: StarterKit, TaskList, Link, Placeholder, slash menu, wiki-links
+- **Tiptap**: заменил Milkdown. Бандл 990KB vs 5MB. Тот же интерфейс (create/destroy/getMarkdown/setMarkdown/onChange). Slash menu, task lists, wiki-links. Подключён в UI через `content.view.ts`
 
-## [TODO] Webhooks для изменений заметок
+## [TODO] Change Webhooks для изменений заметок
 
 ### Контекст
-Вебхуки уведомляют внешние сервисы (агенты, автоматизации) об изменениях заметок (create/update/remove). Агент получает POST с батчем изменений и может отреагировать. Include/exclude glob-паттерны через doublestar. Опциональный JWT webhook token для доступа к API.
+Вебхуки уведомляют внешние сервисы (агенты, автоматизации) об изменениях заметок (create/update/remove). Агент получает POST с батчем изменений и может отреагировать — запустить линтер, пересобрать индекс, вызвать AI-агента. Агент может вернуть изменения в ответе (agent response).
 
-Подробный дизайн: [docs/webhooks.md](webhooks.md)
+Подробный дизайн: [docs/change_webhooks.md](change_webhooks.md)
 
 ### План
 
 **Этап 1: Ядро (MVP)**
-- [ ] Миграция: таблицы `webhooks` + `webhook_deliveries`
+- [ ] Миграция: таблицы `change_webhooks` + `change_webhook_deliveries` + alter `api_keys` (skip_webhooks)
 - [ ] SQL-запросы (sqlc) + `make sqlc`
-- [ ] `internal/webhooktoken/` — JWT sign/parse (по аналогии с hotauthtoken)
-- [ ] Admin mutations: createWebhook/updateWebhook/deleteWebhook
-- [ ] `internal/case/handlenotewebhooks/` — glob-матчинг (doublestar) + enqueue delivery jobs
-- [ ] `cmd/server/case_methods.go` — метод `HandleNoteWebhooks(ctx, changedPathIDs, event)`
-- [ ] `internal/case/backjob/deliverwebhook/` — HTTP POST + JWT + сохранение результата
+- [ ] `internal/shortapitoken/` — JWT sign/parse с depth в claims
+- [ ] Admin mutations: createWebhook/updateWebhook/deleteWebhook (secret автогенерируется)
+- [ ] `internal/case/handlenotewebhooks/` — depth check, glob-матчинг (doublestar), enqueue
+- [ ] `cmd/server/case_methods.go` — метод `HandleNoteWebhooks(ctx, changedPathIDs, event, depth)`
+- [ ] `internal/case/backjob/deliverwebhook/` — HTTP POST + HMAC подпись + shortapitoken + парсинг agent response
+- [ ] Расширить `checkapikey` — поддержка `Authorization: Bearer` для shortapitoken
 - [ ] Интеграция в `HandleLatestNotesAfterSave` (create/update) и `hidenotes.Resolve` (remove)
 - [ ] Admin queries: webhooks, webhookDeliveries
+- [ ] Debug endpoints (`DEV_MODE=true`): `/debug/test_webhook`, `/debug/test_webhook_calls`
 
-**Этап 2: Безопасность**
-- [ ] HMAC-SHA256 подпись payload (если задан secret)
-- [ ] Auth middleware для валидации webhook JWT токенов
-
-**Этап 3: Admin UI**
+**Этап 2: Admin UI**
 - [ ] Фронтенд: CRUD вебхуков в админке
 - [ ] Фронтенд: просмотр истории доставок
 - [ ] Кнопка retry для failed доставок
 
 ### Заметки
 - Батчинг: все совпавшие заметки → один POST на вебхук
-- Matching логика синхронная (просто compute), только HTTP POST уходит в goqite (BackgroundDefaultQueue)
-- Event types: create (version_count == 1), update (version_count > 1), remove (hideNotes)
-- Include/exclude паттерны (comma-separated), матчинг через doublestar.Match
-- `include_content` (default true) — передавать полное содержимое заметок в payload
-- JWT webhook token (30 мин TTL) вместо создания/удаления API-ключей
+- Include/exclude паттерны — JSON arrays, матчинг через doublestar.Match
+- HMAC-SHA256 подпись **всегда** (secret автогенерируется при создании)
+- `instruction` — текстовая инструкция для агента (один endpoint, разные задачи)
+- `include_content` (default true) — содержимое заметок в payload (remove → null)
+- shortapitoken (JWT, 30 мин TTL) — depth+1, read+write доступ к API
+- Depth-based recursion protection: depth в JWT + max_depth в webhook + skip_webhooks в api_keys
+- Agent response: опциональный `changes[]` с `expected_hash` для optimistic concurrency
 
 ## [TODO] Рефакторинг: обработка ошибок doublestar.Match в templateviews
 
@@ -252,6 +252,44 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - [ ] Обработать ошибку `doublestar.Match` в `query.go:82`
 - [ ] Pre-compile glob паттерны (валидация при создании NoteQuery)
 - [ ] make test && make lint
+
+## [TODO] Cron Webhooks — вызов агентов по расписанию
+
+### Контекст
+Cron webhooks вызывают внешние агенты по расписанию (cron expression). Агент получает инструкцию + shortapitoken и может вернуть изменения (новые/обновлённые заметки) синхронно в ответе или async через API.
+
+Подробный дизайн: [docs/cron_webhooks.md](cron_webhooks.md)
+
+### План
+- [ ] Миграция: таблицы `cron_webhooks` + `cron_webhook_deliveries`
+- [ ] SQL-запросы (sqlc) + `make sqlc`
+- [ ] Admin mutations: create/update/delete cron webhook
+- [ ] Cron job registration в `cmd/server/cronjobs.go`
+- [ ] Background job: HTTP POST + парсинг ответа + импорт changes
+- [ ] Admin queries
+
+### Заметки
+- Общая инфраструктура с change_webhooks: shortapitoken, HMAC, delivery log
+- Агент может отвечать sync (changes в body) или async (202 + работа через API)
+- response_schema передаётся агенту как документация, не валидируется сервером
+- timeout настраиваемый (default 60s)
+
+## [TODO] Рефакторинг: expected_hash в pushNotes API
+
+### Контекст
+Optimistic concurrency control для заметок. При pushNotes можно передать `expected_hash` — если `note_paths.latest_content_hash` не совпадает, сервер отклоняет изменение. Защита от перезаписи чужих правок агентами.
+
+### План
+- [ ] Добавить `expectedHash` опциональное поле в PushNotesInput (GraphQL)
+- [ ] Проверка в InsertNote: если expected_hash задан и не совпадает → ошибка
+- [ ] Добавить expected_hash в shortapitoken flow
+- [ ] Тесты
+- [ ] make test && make lint
+
+### Заметки
+- Аналог If-Match / ETag в HTTP, CAS в concurrent programming
+- Используется в ответах change_webhooks и cron_webhooks (agent response)
+- Для новых файлов expected_hash пустой
 
 ## [TODO] UTM-метки для ссылок из заметок
 
