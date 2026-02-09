@@ -46,7 +46,10 @@
       "Bash(go get:*)",
       "Bash(npx tsx:*)",
       "WebFetch(domain:milkdown.dev)",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:gqlgen.com)",
+      "WebFetch(domain:gist.github.com)",
+      "Bash(node esbuild.browser.mjs:*)"
     ],
     "deny": []
   },

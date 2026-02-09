@@ -164,7 +164,7 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - [x] Добавить русские переводы (locale файлы)
 - [x] Milkdown рендерится в content (`$mol_wire_sync` для async create)
 - [x] Переход на Crepe (toolbar, block edit, link tooltip, theme)
-- [ ] Починить загрузку CSS Crepe — браузер пытается загрузить `prosemirror.css` и др. через mol paths ← текущий
+- [x] Починить загрузку CSS Crepe — браузер пытается загрузить `prosemirror.css` и др. через mol paths
 
 **Файловый навигатор (следующий этап)**
 - [ ] GraphQL query для списка файлов
@@ -195,4 +195,16 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - `$remark` wikilink fix: передаём attacher как reference, options через 3-й аргумент `$remark`
 - CSS Crepe темы инлайнятся в JS через esbuild plugin (inline-css)
 - Отключены: Latex, CodeMirror, ImageBlock, Table (для уменьшения бандла)
-- **Проблема CSS**: Crepe theme CSS содержит `@import` на `prosemirror.css` и др. Наш inline-css esbuild plugin инлайнит верхний CSS, но вложенные `@import` остаются как есть — браузер пытается загрузить их через mol пути (`trip2g/admin/-/prosemirror.css`). **Направление**: рекурсивно резолвить `@import` в inline-css plugin, либо собрать весь CSS в один файл через postcss/esbuild перед инлайном
+- **CSS решено**: inline-css esbuild plugin теперь вызывает `esbuild.build()` с `bundle: true` для рекурсивного разрешения всех `@import`. KaTeX CSS пропускается через `skip-katex` sub-plugin (Latex отключён)
+
+## [TODO] UTM-метки для ссылок из заметок
+
+### Контекст
+Заметка — источник трафика (пост в TG канале, рассылка, лендинг). Нужна возможность указать UTM-метки у заметки, чтобы все исходящие ссылки автоматически получали UTM-параметры. Это позволяет видеть в аналитике, из какого конкретно поста/канала пришёл клик.
+
+### План
+- [ ] Frontmatter поля: `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`
+- [ ] При рендере заметки — ко всем внешним ссылкам добавлять UTM-параметры
+- [ ] TG посты: автоматически проставлять `utm_source=telegram`, `utm_medium=post`
+- [ ] Wikilinks (внутренние) — не трогать, только внешние ссылки
+- [ ] Конфиг или шаблон дефолтных UTM для TG канала

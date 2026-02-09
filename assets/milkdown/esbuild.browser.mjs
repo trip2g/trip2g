@@ -17,7 +17,28 @@ const inlineCssPlugin = {
 			return { path: resolved, namespace: 'inline-css' };
 		});
 		build.onLoad({ filter: /.*/, namespace: 'inline-css' }, async (args) => {
-			const css = await fs.promises.readFile(args.path, 'utf8');
+			const result = await esbuild.build({
+				entryPoints: [args.path],
+				bundle: true,
+				write: false,
+				minify: false,
+				loader: { '.css': 'css' },
+				logLevel: 'warning',
+				plugins: [{
+					name: 'skip-katex',
+					setup(b) {
+						b.onResolve({ filter: /katex/ }, () => ({
+							path: 'katex',
+							namespace: 'empty-css',
+						}));
+						b.onLoad({ filter: /.*/, namespace: 'empty-css' }, () => ({
+							contents: '',
+							loader: 'css',
+						}));
+					},
+				}],
+			});
+			const css = result.outputFiles[0].text;
 			return {
 				contents: `(function(){
 					if (typeof document !== 'undefined') {
