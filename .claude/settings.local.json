@@ -13,7 +13,6 @@
       "Bash(find:*)",
       "Bash(go generate:*)",
       "Bash(rg:*)",
-      "Bash(/home/alexes/.nvm/versions/node/v20.16.0/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-linux/rg \"CreateOffer.*func\" /home/alexes/projects2/trip2g/internal/graph/schema.resolvers.go)",
       "Bash(sed:*)",
       "Bash(go run:*)",
       "Bash(touch:*)",
@@ -30,8 +29,6 @@
       "Bash(go list:*)",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "Read(//home/alexes/projects/trip2g_context/**)",
-      "Read(//mnt/hgfs/projects/trip2g_context/**)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(test:*)",
       "Bash(go doc:*)",
@@ -45,15 +42,9 @@
       "Bash(npm run build:all:*)",
       "Bash(go get:*)",
       "Bash(npx tsx:*)",
-      "WebFetch(domain:milkdown.dev)",
-      "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:gqlgen.com)",
       "WebFetch(domain:gist.github.com)",
-      "Bash(node esbuild.browser.mjs:*)",
-      "WebFetch(domain:docs.stripe.com)",
-      "WebFetch(domain:docs.github.com)",
-      "Bash(git -C /home/alexes/projects2/trip2g add docs/current_tasks.md)",
-      "Bash(git -C /home/alexes/projects2/trip2g commit -m \"wip: обновить current_tasks — заметка о data race fix\")"
+      "Bash(git mv:*)"
     ],
     "deny": []
   },
