@@ -1,0 +1,4 @@
+{
+	"$trip2g_admin_webhook_update_IncludePatterns_field_name": "Паттерны включения (через запятую)",
+	"$trip2g_admin_webhook_update_ExcludePatterns_field_name": "Паттерны исключения (через запятую)"
+}

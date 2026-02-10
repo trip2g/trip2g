@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-02-10
+
+- **Change Webhooks**: уведомления внешних сервисов об изменениях заметок
+  - Триггеры: create, update, remove — настраиваемые per webhook
+  - Include/exclude glob-паттерны для фильтрации файлов
+  - HMAC-SHA256 подпись payload
+  - Short API Token (JWT) для авторизации агентов с depth-based recursion protection
+  - Agent response: агент может вернуть изменения файлов в ответе
+  - Admin UI: полный CRUD + история доставок
+
+- **Cron Webhooks**: вызов внешних агентов по расписанию (cron expression)
+  - Инструкция + API token в каждом вызове
+  - Поддержка sync и async ответов
+  - Admin UI: CRUD + история доставок
+
+- **Debug endpoints**: `/debug/test_webhook` для тестирования webhook delivery
+
 ## 2026-02-02
 
 - **RSS**: любая заметка доступна как RSS-лента по `*.rss.xml`

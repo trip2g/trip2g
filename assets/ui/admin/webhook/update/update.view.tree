@@ -1,0 +1,71 @@
+$trip2g_admin_webhook_update $mol_view
+	webhook_id 0
+	sub /
+		<= Form $mol_form
+			submit_allowed => submit_allowed
+			body /
+				<= Url_field $mol_form_field
+					name \URL
+					bid <= url_bid \
+					Content <= url_control $mol_string
+						value? <=> url? \
+				<= IncludePatterns_field $mol_form_field
+					name @ \Include Patterns (comma-separated)
+					bid <= include_patterns_bid \
+					Content <= include_patterns_control $mol_string
+						value? <=> include_patterns_raw? \
+				<= ExcludePatterns_field $mol_form_field
+					name @ \Exclude Patterns (comma-separated)
+					Content <= exclude_patterns_control $mol_string
+						value? <=> exclude_patterns_raw? \
+				<= Description_field $mol_form_field
+					name \Description
+					Content <= description_control $mol_string
+						value? <=> description? \
+				<= Instruction_field $mol_form_field
+					name \Instruction
+					Content <= instruction_control $mol_text
+						text? <=> instruction? \
+				<= Enabled_field $mol_form_field
+					name \Enabled
+					Content <= enabled_control $mol_check_box
+						checked? <=> enabled? true
+				<= OnCreate_field $mol_form_field
+					name \On Create
+					Content <= on_create_control $mol_check_box
+						checked? <=> on_create? true
+				<= OnUpdate_field $mol_form_field
+					name \On Update
+					Content <= on_update_control $mol_check_box
+						checked? <=> on_update? true
+				<= OnRemove_field $mol_form_field
+					name \On Remove
+					Content <= on_remove_control $mol_check_box
+						checked? <=> on_remove? false
+				<= PassApiKey_field $mol_form_field
+					name \Pass API Key
+					Content <= pass_api_key_control $mol_check_box
+						checked? <=> pass_api_key? false
+				<= IncludeContent_field $mol_form_field
+					name \Include Content
+					Content <= include_content_control $mol_check_box
+						checked? <=> include_content? true
+				<= MaxDepth_field $mol_form_field
+					name \Max Depth
+					Content <= max_depth_control $mol_number
+						value? <=> max_depth? 1
+				<= TimeoutSeconds_field $mol_form_field
+					name \Timeout (seconds)
+					Content <= timeout_seconds_control $mol_number
+						value? <=> timeout_seconds? 30
+				<= MaxRetries_field $mol_form_field
+					name \Max Retries
+					Content <= max_retries_control $mol_number
+						value? <=> max_retries? 3
+			buttons /
+				<= Submit $mol_button_major
+					title \Submit
+					click? <=> submit? null
+					enabled <= submit_allowed
+				<= Result $mol_status
+					message <= result? \

@@ -89,6 +89,10 @@ $trip2g_admin_app $trip2g_admin_catalog
 			close_icon <= Spread_close
 		waitlisttgbotrequests <= WaitListTgBotRequests $trip2g_admin_waitlisttgbotrequest_catalog
 			close_icon <= Spread_close
+		webhooks <= ListWebhooks $trip2g_admin_webhook_catalog
+			close_icon <= Spread_close
+		cronwebhooks <= ListCronWebhooks $trip2g_admin_cronwebhook_catalog
+			close_icon <= Spread_close
 
 $trip2g_admin_cell $mol_view
 	content \No Content

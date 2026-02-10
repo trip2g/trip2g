@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"trip2g/internal/appreq"
 	"trip2g/internal/db"
+	"trip2g/internal/shortapitoken"
 )
 
 type Env interface {
@@ -15,10 +17,12 @@ type Env interface {
 	InsertAPIKeyLog(ctx context.Context, arg db.InsertAPIKeyLogParams) error
 	UpsertAPIKeyLogAction(ctx context.Context, name string) error
 	UpsertAPIKeyLogIP(ctx context.Context, ip string) error
+	ShortAPITokenSecret() string
 }
 
 var ErrMissingKey = errors.New("missing X-API-Key in request header")
 var ErrInvalidKey = errors.New("invalid API key")
+var ErrInvalidToken = errors.New("invalid or expired Bearer token")
 
 func Resolve(ctx context.Context, env Env, action string) (*db.ApiKey, error) {
 	req, err := appreq.FromCtx(ctx)
@@ -27,13 +31,26 @@ func Resolve(ctx context.Context, env Env, action string) (*db.ApiKey, error) {
 	}
 
 	apiKeyValue := req.Req.Request.Header.Peek("X-API-Key")
-	if len(apiKeyValue) == 0 {
-		return nil, ErrMissingKey
+	if len(apiKeyValue) > 0 {
+		return resolveAPIKey(ctx, env, string(apiKeyValue), action, req)
 	}
 
-	plainKey := string(apiKeyValue)
+	// Try Authorization: Bearer {shortapitoken}.
+	authHeader := req.Req.Request.Header.Peek("Authorization")
+	if len(authHeader) > 0 {
+		const bearerPrefix = "Bearer "
+		authStr := string(authHeader)
+		if strings.HasPrefix(authStr, bearerPrefix) {
+			tokenStr := authStr[len(bearerPrefix):]
+			return resolveShortAPIToken(ctx, env, tokenStr, req)
+		}
+	}
 
-	// First, try hashed version (new API keys)
+	return nil, ErrMissingKey
+}
+
+func resolveAPIKey(ctx context.Context, env Env, plainKey string, action string, req *appreq.Request) (*db.ApiKey, error) {
+	// First, try hashed version (new API keys).
 	hash := sha256.Sum256([]byte(plainKey))
 	hashedValue := hex.EncodeToString(hash[:])
 
@@ -42,7 +59,7 @@ func Resolve(ctx context.Context, env Env, action string) (*db.ApiKey, error) {
 		return nil, fmt.Errorf("failed to resolve API key: %w", err)
 	}
 
-	// Backward compatibility: try plain text (old API keys) if hashed not found
+	// Backward compatibility: try plain text (old API keys) if hashed not found.
 	if db.IsNoFound(err) {
 		apiKey, err = env.ApiKeyByValue(ctx, plainKey)
 		if err != nil && !db.IsNoFound(err) {
@@ -78,4 +95,26 @@ func Resolve(ctx context.Context, env Env, action string) (*db.ApiKey, error) {
 	}
 
 	return &apiKey, nil
+}
+
+func resolveShortAPIToken(ctx context.Context, env Env, tokenStr string, req *appreq.Request) (*db.ApiKey, error) {
+	data, err := shortapitoken.Parse(tokenStr, env.ShortAPITokenSecret())
+	if err != nil {
+		return nil, ErrInvalidToken
+	}
+
+	// Store auth data in Request for downstream code.
+	req.WebhookDepth = data.Depth
+	req.WebhookReadPatterns = data.ReadPatterns
+	req.WebhookWritePatterns = data.WritePatterns
+
+	// Return a virtual ApiKey for shortapitoken auth.
+	virtualKey := db.ApiKey{
+		ID:           0, // Virtual key, no DB record.
+		Value:        "shortapitoken",
+		Description:  "Short API token (webhook)",
+		SkipWebhooks: false, // shortapitoken should never skip webhooks.
+	}
+
+	return &virtualKey, nil
 }

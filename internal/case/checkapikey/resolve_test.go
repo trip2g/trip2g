@@ -23,6 +23,7 @@ type Env interface {
 	InsertAPIKeyLog(ctx context.Context, arg db.InsertAPIKeyLogParams) error
 	UpsertAPIKeyLogAction(ctx context.Context, name string) error
 	UpsertAPIKeyLogIP(ctx context.Context, ip string) error
+	ShortAPITokenSecret() string
 }
 
 func setupRequestContext(apiKeyInReq string) *fasthttp.RequestCtx {
@@ -75,7 +76,11 @@ func TestResolve(t *testing.T) {
 			apiKeyInReq: "",
 			action:      "test-action",
 			setupEnv: func() *EnvMock {
-				return &EnvMock{}
+				return &EnvMock{
+					ShortAPITokenSecretFunc: func() string {
+						return "test-secret"
+					},
+				}
 			},
 			wantErr: checkapikey.ErrMissingKey,
 		},
@@ -105,6 +110,9 @@ func TestResolve(t *testing.T) {
 					},
 					InsertAPIKeyLogFunc: func(ctx context.Context, arg db.InsertAPIKeyLogParams) error {
 						return nil
+					},
+					ShortAPITokenSecretFunc: func() string {
+						return "test-secret"
 					},
 				}
 			},
@@ -142,6 +150,9 @@ func TestResolve(t *testing.T) {
 					InsertAPIKeyLogFunc: func(ctx context.Context, arg db.InsertAPIKeyLogParams) error {
 						return nil
 					},
+					ShortAPITokenSecretFunc: func() string {
+						return "test-secret"
+					},
 				}
 			},
 			wantKeyID: 2,
@@ -155,6 +166,9 @@ func TestResolve(t *testing.T) {
 					ApiKeyByValueFunc: func(ctx context.Context, value string) (db.ApiKey, error) {
 						return db.ApiKey{}, sql.ErrNoRows
 					},
+					ShortAPITokenSecretFunc: func() string {
+						return "test-secret"
+					},
 				}
 			},
 			wantErr: checkapikey.ErrInvalidKey,
@@ -167,6 +181,9 @@ func TestResolve(t *testing.T) {
 				return &EnvMock{
 					ApiKeyByValueFunc: func(ctx context.Context, value string) (db.ApiKey, error) {
 						return db.ApiKey{}, errors.New("database connection error")
+					},
+					ShortAPITokenSecretFunc: func() string {
+						return "test-secret"
 					},
 				}
 			},
@@ -192,6 +209,9 @@ func TestResolve(t *testing.T) {
 					},
 					UpsertAPIKeyLogActionFunc: func(ctx context.Context, name string) error {
 						return errors.New("failed to upsert action")
+					},
+					ShortAPITokenSecretFunc: func() string {
+						return "test-secret"
 					},
 				}
 			},

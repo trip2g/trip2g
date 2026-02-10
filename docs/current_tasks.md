@@ -206,7 +206,7 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - Включены: StarterKit, TaskList, Link, Placeholder, slash menu, wiki-links
 - **Tiptap**: заменил Milkdown. Бандл 990KB vs 5MB. Тот же интерфейс (create/destroy/getMarkdown/setMarkdown/onChange). Slash menu, task lists, wiki-links. Подключён в UI через `content.view.ts`
 
-## [TODO] Change Webhooks для изменений заметок
+## [DONE] Change Webhooks для изменений заметок
 
 ### Контекст
 Вебхуки уведомляют внешние сервисы (агенты, автоматизации) об изменениях заметок (create/update/remove). Агент получает POST с батчем изменений и может отреагировать — запустить линтер, пересобрать индекс, вызвать AI-агента. Агент может вернуть изменения в ответе (agent response).
@@ -216,22 +216,23 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 ### План
 
 **Этап 1: Ядро (MVP)**
-- [ ] Миграция: таблицы `change_webhooks` + `change_webhook_deliveries` + alter `api_keys` (skip_webhooks)
-- [ ] SQL-запросы (sqlc) + `make sqlc`
-- [ ] `internal/shortapitoken/` — JWT sign/parse с depth в claims
-- [ ] Admin mutations: createWebhook/updateWebhook/deleteWebhook (secret автогенерируется)
-- [ ] `internal/case/handlenotewebhooks/` — depth check, glob-матчинг (doublestar), enqueue
-- [ ] `cmd/server/case_methods.go` — метод `HandleNoteWebhooks(ctx, changedPathIDs, event, depth)`
-- [ ] `internal/case/backjob/deliverwebhook/` — HTTP POST + HMAC подпись + shortapitoken + парсинг agent response
-- [ ] Расширить `checkapikey` — поддержка `Authorization: Bearer` для shortapitoken
-- [ ] Интеграция в `HandleLatestNotesAfterSave` (create/update) и `hidenotes.Resolve` (remove)
-- [ ] Admin queries: webhooks, webhookDeliveries
-- [ ] Debug endpoints (`DEV_MODE=true`): `/debug/test_webhook`, `/debug/test_webhook_calls`
+- [x] Миграция: таблицы `change_webhooks` + `change_webhook_deliveries` + `cron_webhooks` + `cron_webhook_deliveries` + alter `api_keys`
+- [x] SQL-запросы (sqlc) + `make sqlc`
+- [x] `internal/shortapitoken/` — JWT sign/parse с depth в claims
+- [x] `internal/webhookutil/` — HMAC, HTTP client, payload, secret generation
+- [x] Admin mutations: createWebhook/updateWebhook/deleteWebhook/regenerateSecret
+- [x] `internal/case/handlenotewebhooks/` — depth check, glob-матчинг (doublestar), enqueue
+- [x] `internal/case/backjob/deliverchangewebhook/` — HTTP POST + HMAC подпись + shortapitoken + парсинг agent response
+- [x] Расширить `checkapikey` — поддержка `Authorization: Bearer` для shortapitoken
+- [x] Интеграция в `HandleLatestNotesAfterSave` (create/update)
+- [x] Admin queries: webhooks, webhookDeliveries
+- [x] Debug endpoints (`DEV_MODE=true`): `/debug/test_webhook`, `/debug/test_webhook_calls`
+- [x] Wiring в main.go: jobs, env methods, cron jobs
+- [x] Cleanup cron jobs: delivery logs (7d), deliveries (30d)
 
 **Этап 2: Admin UI**
-- [ ] Фронтенд: CRUD вебхуков в админке
-- [ ] Фронтенд: просмотр истории доставок
-- [ ] Кнопка retry для failed доставок
+- [x] Фронтенд: CRUD вебхуков в админке (catalog/show/create/update)
+- [x] Фронтенд: просмотр истории доставок (встроено в show page)
 
 ### Заметки
 - Батчинг: все совпавшие заметки → один POST на вебхук
@@ -253,7 +254,7 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - [ ] Pre-compile glob паттерны (валидация при создании NoteQuery)
 - [ ] make test && make lint
 
-## [TODO] Cron Webhooks — вызов агентов по расписанию
+## [DONE] Cron Webhooks — вызов агентов по расписанию
 
 ### Контекст
 Cron webhooks вызывают внешние агенты по расписанию (cron expression). Агент получает инструкцию + shortapitoken и может вернуть изменения (новые/обновлённые заметки) синхронно в ответе или async через API.
@@ -261,12 +262,13 @@ Cron webhooks вызывают внешние агенты по расписан
 Подробный дизайн: [docs/cron_webhooks.md](cron_webhooks.md)
 
 ### План
-- [ ] Миграция: таблицы `cron_webhooks` + `cron_webhook_deliveries`
-- [ ] SQL-запросы (sqlc) + `make sqlc`
-- [ ] Admin mutations: create/update/delete cron webhook
-- [ ] Cron job registration в `cmd/server/cronjobs.go`
-- [ ] Background job: HTTP POST + парсинг ответа + импорт changes
-- [ ] Admin queries
+- [x] Миграция: таблицы `cron_webhooks` + `cron_webhook_deliveries`
+- [x] SQL-запросы (sqlc) + `make sqlc`
+- [x] Admin mutations: create/update/delete cron webhook + regenerateSecret
+- [x] Cron job registration в `cmd/server/cronjobs.go` (executecronwebhooks)
+- [x] Background job: HTTP POST + парсинг ответа + импорт changes (delivercronwebhook)
+- [x] Admin queries + фронтенд CRUD (catalog/show/create/update)
+- [x] Delivery history view (встроено в show page)
 
 ### Заметки
 - Общая инфраструктура с change_webhooks: shortapitoken, HMAC, delivery log

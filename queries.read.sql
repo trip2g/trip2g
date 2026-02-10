@@ -1143,3 +1143,57 @@ select * from google_oauth_credentials where id = ?;
 
 -- name: GetGitHubOAuthCredentials :one
 select * from github_oauth_credentials where id = ?;
+
+-- ============================================
+-- Change Webhooks
+-- ============================================
+
+-- name: ListWebhooks :many
+select * from change_webhooks where disabled_at is null order by created_at;
+
+-- name: ListEnabledWebhooks :many
+select * from change_webhooks where enabled = true and disabled_at is null;
+
+-- name: WebhookByID :one
+select * from change_webhooks where id = ? and disabled_at is null;
+
+-- name: ListWebhookDeliveries :many
+select * from change_webhook_deliveries
+where webhook_id = ?
+order by created_at desc
+limit ?;
+
+-- ============================================
+-- Cron Webhooks
+-- ============================================
+
+-- name: ListCronWebhooks :many
+select * from cron_webhooks where disabled_at is null order by created_at;
+
+-- name: ListEnabledCronWebhooks :many
+select * from cron_webhooks where enabled = true and disabled_at is null;
+
+-- name: CronWebhookByID :one
+select * from cron_webhooks where id = ? and disabled_at is null;
+
+-- name: ListCronWebhookDeliveries :many
+select * from cron_webhook_deliveries
+where cron_webhook_id = ?
+order by created_at desc
+limit ?;
+
+-- name: ListCronWebhooksDueForExecution :many
+select * from cron_webhooks
+where enabled = true
+  and disabled_at is null
+  and next_run_at <= datetime('now');
+
+-- ============================================
+-- Webhook Delivery Logs
+-- ============================================
+
+-- name: WebhookDeliveryLogByDelivery :one
+select * from webhook_delivery_logs
+where kind = ? and delivery_id = ?
+order by created_at desc
+limit 1;

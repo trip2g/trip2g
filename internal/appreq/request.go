@@ -31,6 +31,11 @@ type Request struct {
 	token *usertoken.Data
 
 	tokenExtracted bool
+
+	// Webhook auth data (for shortapitoken Bearer tokens).
+	WebhookDepth         int
+	WebhookReadPatterns  []string
+	WebhookWritePatterns []string
 }
 
 func (c *Request) Reset() {
@@ -40,6 +45,9 @@ func (c *Request) Reset() {
 	c.token = nil
 	c.Path = ""
 	c.tokenExtracted = false
+	c.WebhookDepth = 0
+	c.WebhookReadPatterns = nil
+	c.WebhookWritePatterns = nil
 }
 
 func (c *Request) StoreInContext() {

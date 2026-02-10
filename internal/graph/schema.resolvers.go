@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -24,6 +25,7 @@ import (
 	"trip2g/internal/case/admin/createadmin"
 	"trip2g/internal/case/admin/createapikey"
 	"trip2g/internal/case/admin/createboostycredentials"
+	"trip2g/internal/case/admin/createcronwebhook"
 	"trip2g/internal/case/admin/creategithuboauthcredentials"
 	"trip2g/internal/case/admin/creategittoken"
 	"trip2g/internal/case/admin/creategoogleoauthcredentials"
@@ -36,20 +38,25 @@ import (
 	"trip2g/internal/case/admin/createtgbot"
 	"trip2g/internal/case/admin/createuser"
 	"trip2g/internal/case/admin/createusersubgraphaccess"
+	"trip2g/internal/case/admin/createwebhook"
 	"trip2g/internal/case/admin/deactivategithuboauth"
 	"trip2g/internal/case/admin/deactivategoogleoauth"
 	"trip2g/internal/case/admin/deleteadmin"
 	"trip2g/internal/case/admin/deleteboostycredentials"
+	"trip2g/internal/case/admin/deletecronwebhook"
 	"trip2g/internal/case/admin/deletegithuboauthcredentials"
 	"trip2g/internal/case/admin/deletegoogleoauthcredentials"
 	"trip2g/internal/case/admin/deletehtmlinjection"
 	"trip2g/internal/case/admin/deletenotfoundignoredpattern"
 	"trip2g/internal/case/admin/deletepatreoncredentials"
 	"trip2g/internal/case/admin/deleteredirect"
+	"trip2g/internal/case/admin/deletewebhook"
 	"trip2g/internal/case/admin/disableapikey"
 	"trip2g/internal/case/admin/disablegittoken"
 	"trip2g/internal/case/admin/importtelegramaccountchannel"
 	"trip2g/internal/case/admin/makereleaselive"
+	"trip2g/internal/case/admin/regeneratecronwebhooksecret"
+	"trip2g/internal/case/admin/regeneratewebhooksecret"
 	"trip2g/internal/case/admin/resetnotfoundpath"
 	"trip2g/internal/case/admin/resettelegrampublishnote"
 	"trip2g/internal/case/admin/restoreboostycredentials"
@@ -75,6 +82,7 @@ import (
 	"trip2g/internal/case/admin/unbanuser"
 	"trip2g/internal/case/admin/updateboostycredentials"
 	"trip2g/internal/case/admin/updatecronjob"
+	"trip2g/internal/case/admin/updatecronwebhook"
 	"trip2g/internal/case/admin/updatehtmlinjection"
 	"trip2g/internal/case/admin/updatenotegraphpositions"
 	"trip2g/internal/case/admin/updatenotfoundignoredpattern"
@@ -85,6 +93,7 @@ import (
 	"trip2g/internal/case/admin/updatetgbot"
 	"trip2g/internal/case/admin/updateuser"
 	"trip2g/internal/case/admin/updateusersubgraphaccess"
+	"trip2g/internal/case/admin/updatewebhook"
 	"trip2g/internal/case/checkapikey"
 	"trip2g/internal/case/commitnotes"
 	"trip2g/internal/case/convertnoteviewtotgpost"
@@ -327,6 +336,67 @@ func (r *adminBoostyTiersConnectionResolver) Nodes(ctx context.Context, obj *mod
 	return r.env(ctx).GetBoostyTiers(ctx)
 }
 
+// IncludePatterns is the resolver for the includePatterns field.
+func (r *adminChangeWebhookResolver) IncludePatterns(ctx context.Context, obj *db.ChangeWebhook) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.IncludePatterns), &patterns)
+	return patterns, err
+}
+
+// ExcludePatterns is the resolver for the excludePatterns field.
+func (r *adminChangeWebhookResolver) ExcludePatterns(ctx context.Context, obj *db.ChangeWebhook) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.ExcludePatterns), &patterns)
+	return patterns, err
+}
+
+// HasSecret is the resolver for the hasSecret field.
+func (r *adminChangeWebhookResolver) HasSecret(ctx context.Context, obj *db.ChangeWebhook) (bool, error) {
+	return obj.Secret != "", nil
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminChangeWebhookResolver) CreatedBy(ctx context.Context, obj *db.ChangeWebhook) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// LastDeliveryAt is the resolver for the lastDeliveryAt field.
+func (r *adminChangeWebhookResolver) LastDeliveryAt(ctx context.Context, obj *db.ChangeWebhook) (*time.Time, error) {
+	return nil, nil
+}
+
+// LastDeliveryStatus is the resolver for the lastDeliveryStatus field.
+func (r *adminChangeWebhookResolver) LastDeliveryStatus(ctx context.Context, obj *db.ChangeWebhook) (*string, error) {
+	return nil, nil
+}
+
+// ReadPatterns is the resolver for the readPatterns field.
+func (r *adminChangeWebhookResolver) ReadPatterns(ctx context.Context, obj *db.ChangeWebhook) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.ReadPatterns), &patterns)
+	return patterns, err
+}
+
+// WritePatterns is the resolver for the writePatterns field.
+func (r *adminChangeWebhookResolver) WritePatterns(ctx context.Context, obj *db.ChangeWebhook) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.WritePatterns), &patterns)
+	return patterns, err
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminChangeWebhookDeliveriesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminChangeWebhookDeliveriesConnection) ([]db.ChangeWebhookDelivery, error) {
+	return r.env(ctx).ListWebhookDeliveries(ctx, db.ListWebhookDeliveriesParams{
+		WebhookID: obj.WebhookID,
+		Limit:     obj.Limit,
+	})
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminChangeWebhooksConnectionResolver) Nodes(ctx context.Context, obj *model.AdminChangeWebhooksConnection) ([]db.ChangeWebhook, error) {
+	return r.env(ctx).ListWebhooks(ctx)
+}
+
 // CreatedBy is the resolver for the createdBy field.
 func (r *adminConfigBoolEntryResolver) CreatedBy(ctx context.Context, obj *model.AdminConfigBoolEntry) (*db.User, error) {
 	if obj.CreatedBy == nil {
@@ -436,6 +506,53 @@ func (r *adminCronJobExecutionResolver) Job(ctx context.Context, obj *db.CronJob
 // Nodes is the resolver for the nodes field.
 func (r *adminCronJobsConnectionResolver) Nodes(ctx context.Context, obj *model.AdminCronJobsConnection) ([]db.CronJob, error) {
 	return r.env(ctx).ListAllCronJobs(ctx)
+}
+
+// HasSecret is the resolver for the hasSecret field.
+func (r *adminCronWebhookResolver) HasSecret(ctx context.Context, obj *db.CronWebhook) (bool, error) {
+	return obj.Secret != "", nil
+}
+
+// ReadPatterns is the resolver for the readPatterns field.
+func (r *adminCronWebhookResolver) ReadPatterns(ctx context.Context, obj *db.CronWebhook) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.ReadPatterns), &patterns)
+	return patterns, err
+}
+
+// WritePatterns is the resolver for the writePatterns field.
+func (r *adminCronWebhookResolver) WritePatterns(ctx context.Context, obj *db.CronWebhook) ([]string, error) {
+	var patterns []string
+	err := json.Unmarshal([]byte(obj.WritePatterns), &patterns)
+	return patterns, err
+}
+
+// CreatedBy is the resolver for the createdBy field.
+func (r *adminCronWebhookResolver) CreatedBy(ctx context.Context, obj *db.CronWebhook) (*db.User, error) {
+	return resolveOne[db.User](ctx, obj.CreatedBy, r.env(ctx).UserByID)
+}
+
+// LastDeliveryAt is the resolver for the lastDeliveryAt field.
+func (r *adminCronWebhookResolver) LastDeliveryAt(ctx context.Context, obj *db.CronWebhook) (*time.Time, error) {
+	return nil, nil
+}
+
+// LastDeliveryStatus is the resolver for the lastDeliveryStatus field.
+func (r *adminCronWebhookResolver) LastDeliveryStatus(ctx context.Context, obj *db.CronWebhook) (*string, error) {
+	return nil, nil
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminCronWebhookDeliveriesConnectionResolver) Nodes(ctx context.Context, obj *model.AdminCronWebhookDeliveriesConnection) ([]db.CronWebhookDelivery, error) {
+	return r.env(ctx).ListCronWebhookDeliveries(ctx, db.ListCronWebhookDeliveriesParams{
+		CronWebhookID: obj.CronWebhookID,
+		Limit:         obj.Limit,
+	})
+}
+
+// Nodes is the resolver for the nodes field.
+func (r *adminCronWebhooksConnectionResolver) Nodes(ctx context.Context, obj *model.AdminCronWebhooksConnection) ([]db.CronWebhook, error) {
+	return r.env(ctx).ListCronWebhooks(ctx)
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -932,6 +1049,56 @@ func (r *adminMutationResolver) ClearBackgroundQueue(ctx context.Context, obj *a
 		Queue:        q,
 		DeletedCount: deletedCount,
 	}, nil
+}
+
+// CreateWebhook is the resolver for the createWebhook field.
+func (r *adminMutationResolver) CreateWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateWebhookInput) (model.CreateWebhookOrErrorPayload, error) {
+	return createwebhook.Resolve(ctx, r.env(ctx), input)
+}
+
+// UpdateWebhook is the resolver for the updateWebhook field.
+func (r *adminMutationResolver) UpdateWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateWebhookInput) (model.UpdateWebhookOrErrorPayload, error) {
+	return updatewebhook.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteWebhook is the resolver for the deleteWebhook field.
+func (r *adminMutationResolver) DeleteWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteWebhookInput) (model.DeleteWebhookOrErrorPayload, error) {
+	return deletewebhook.Resolve(ctx, r.env(ctx), input)
+}
+
+// RegenerateWebhookSecret is the resolver for the regenerateWebhookSecret field.
+func (r *adminMutationResolver) RegenerateWebhookSecret(ctx context.Context, obj *appmodel.AdminMutation, input model.RegenerateWebhookSecretInput) (model.RegenerateWebhookSecretOrErrorPayload, error) {
+	return regeneratewebhooksecret.Resolve(ctx, r.env(ctx), input)
+}
+
+// TriggerChangeWebhook is the resolver for the triggerChangeWebhook field.
+func (r *adminMutationResolver) TriggerChangeWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.TriggerChangeWebhookInput) (model.TriggerChangeWebhookOrErrorPayload, error) {
+	return nil, fmt.Errorf("not implemented: trigger webhooks requires delivery job infrastructure")
+}
+
+// CreateCronWebhook is the resolver for the createCronWebhook field.
+func (r *adminMutationResolver) CreateCronWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.CreateCronWebhookInput) (model.CreateCronWebhookOrErrorPayload, error) {
+	return createcronwebhook.Resolve(ctx, r.env(ctx), input)
+}
+
+// UpdateCronWebhook is the resolver for the updateCronWebhook field.
+func (r *adminMutationResolver) UpdateCronWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.UpdateCronWebhookInput) (model.UpdateCronWebhookOrErrorPayload, error) {
+	return updatecronwebhook.Resolve(ctx, r.env(ctx), input)
+}
+
+// DeleteCronWebhook is the resolver for the deleteCronWebhook field.
+func (r *adminMutationResolver) DeleteCronWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.DeleteCronWebhookInput) (model.DeleteCronWebhookOrErrorPayload, error) {
+	return deletecronwebhook.Resolve(ctx, r.env(ctx), input)
+}
+
+// RegenerateCronWebhookSecret is the resolver for the regenerateCronWebhookSecret field.
+func (r *adminMutationResolver) RegenerateCronWebhookSecret(ctx context.Context, obj *appmodel.AdminMutation, input model.RegenerateCronWebhookSecretInput) (model.RegenerateCronWebhookSecretOrErrorPayload, error) {
+	return regeneratecronwebhooksecret.Resolve(ctx, r.env(ctx), input)
+}
+
+// TriggerCronWebhook is the resolver for the triggerCronWebhook field.
+func (r *adminMutationResolver) TriggerCronWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.TriggerCronWebhookInput) (model.TriggerCronWebhookOrErrorPayload, error) {
+	return nil, fmt.Errorf("not implemented: trigger cron webhooks requires delivery job infrastructure")
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -1435,6 +1602,40 @@ func (r *adminQueryResolver) BackgroundQueue(ctx context.Context, obj *appmodel.
 	}
 
 	return q, nil
+}
+
+// AllChangeWebhooks is the resolver for the allChangeWebhooks field.
+func (r *adminQueryResolver) AllChangeWebhooks(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminChangeWebhooksConnection, error) {
+	return &model.AdminChangeWebhooksConnection{}, nil
+}
+
+// ChangeWebhookDeliveries is the resolver for the changeWebhookDeliveries field.
+func (r *adminQueryResolver) ChangeWebhookDeliveries(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminChangeWebhookDeliveriesFilterInput) (*model.AdminChangeWebhookDeliveriesConnection, error) {
+	limit := int64(50)
+	if filter.Limit != nil {
+		limit = *filter.Limit
+	}
+	return &model.AdminChangeWebhookDeliveriesConnection{
+		WebhookID: filter.WebhookID,
+		Limit:     limit,
+	}, nil
+}
+
+// AllCronWebhooks is the resolver for the allCronWebhooks field.
+func (r *adminQueryResolver) AllCronWebhooks(ctx context.Context, obj *appmodel.AdminQuery) (*model.AdminCronWebhooksConnection, error) {
+	return &model.AdminCronWebhooksConnection{}, nil
+}
+
+// CronWebhookDeliveries is the resolver for the cronWebhookDeliveries field.
+func (r *adminQueryResolver) CronWebhookDeliveries(ctx context.Context, obj *appmodel.AdminQuery, filter model.AdminCronWebhookDeliveriesFilterInput) (*model.AdminCronWebhookDeliveriesConnection, error) {
+	limit := int64(50)
+	if filter.Limit != nil {
+		limit = *filter.Limit
+	}
+	return &model.AdminCronWebhookDeliveriesConnection{
+		CronWebhookID: filter.CronWebhookID,
+		Limit:         limit,
+	}, nil
 }
 
 // HealthChecks is the resolver for the healthChecks field.
@@ -2734,6 +2935,21 @@ func (r *Resolver) AdminBoostyTiersConnection() AdminBoostyTiersConnectionResolv
 	return &adminBoostyTiersConnectionResolver{r}
 }
 
+// AdminChangeWebhook returns AdminChangeWebhookResolver implementation.
+func (r *Resolver) AdminChangeWebhook() AdminChangeWebhookResolver {
+	return &adminChangeWebhookResolver{r}
+}
+
+// AdminChangeWebhookDeliveriesConnection returns AdminChangeWebhookDeliveriesConnectionResolver implementation.
+func (r *Resolver) AdminChangeWebhookDeliveriesConnection() AdminChangeWebhookDeliveriesConnectionResolver {
+	return &adminChangeWebhookDeliveriesConnectionResolver{r}
+}
+
+// AdminChangeWebhooksConnection returns AdminChangeWebhooksConnectionResolver implementation.
+func (r *Resolver) AdminChangeWebhooksConnection() AdminChangeWebhooksConnectionResolver {
+	return &adminChangeWebhooksConnectionResolver{r}
+}
+
 // AdminConfigBoolEntry returns AdminConfigBoolEntryResolver implementation.
 func (r *Resolver) AdminConfigBoolEntry() AdminConfigBoolEntryResolver {
 	return &adminConfigBoolEntryResolver{r}
@@ -2765,6 +2981,19 @@ func (r *Resolver) AdminCronJobExecution() AdminCronJobExecutionResolver {
 // AdminCronJobsConnection returns AdminCronJobsConnectionResolver implementation.
 func (r *Resolver) AdminCronJobsConnection() AdminCronJobsConnectionResolver {
 	return &adminCronJobsConnectionResolver{r}
+}
+
+// AdminCronWebhook returns AdminCronWebhookResolver implementation.
+func (r *Resolver) AdminCronWebhook() AdminCronWebhookResolver { return &adminCronWebhookResolver{r} }
+
+// AdminCronWebhookDeliveriesConnection returns AdminCronWebhookDeliveriesConnectionResolver implementation.
+func (r *Resolver) AdminCronWebhookDeliveriesConnection() AdminCronWebhookDeliveriesConnectionResolver {
+	return &adminCronWebhookDeliveriesConnectionResolver{r}
+}
+
+// AdminCronWebhooksConnection returns AdminCronWebhooksConnectionResolver implementation.
+func (r *Resolver) AdminCronWebhooksConnection() AdminCronWebhooksConnectionResolver {
+	return &adminCronWebhooksConnectionResolver{r}
 }
 
 // AdminGitHubOAuthCredentials returns AdminGitHubOAuthCredentialsResolver implementation.
@@ -3122,6 +3351,9 @@ type adminBoostyMemberResolver struct{ *Resolver }
 type adminBoostyMembersConnectionResolver struct{ *Resolver }
 type adminBoostyTierResolver struct{ *Resolver }
 type adminBoostyTiersConnectionResolver struct{ *Resolver }
+type adminChangeWebhookResolver struct{ *Resolver }
+type adminChangeWebhookDeliveriesConnectionResolver struct{ *Resolver }
+type adminChangeWebhooksConnectionResolver struct{ *Resolver }
 type adminConfigBoolEntryResolver struct{ *Resolver }
 type adminConfigBoolValueResolver struct{ *Resolver }
 type adminConfigStringEntryResolver struct{ *Resolver }
@@ -3129,6 +3361,9 @@ type adminConfigStringValueResolver struct{ *Resolver }
 type adminCronJobResolver struct{ *Resolver }
 type adminCronJobExecutionResolver struct{ *Resolver }
 type adminCronJobsConnectionResolver struct{ *Resolver }
+type adminCronWebhookResolver struct{ *Resolver }
+type adminCronWebhookDeliveriesConnectionResolver struct{ *Resolver }
+type adminCronWebhooksConnectionResolver struct{ *Resolver }
 type adminGitHubOAuthCredentialsResolver struct{ *Resolver }
 type adminGitHubOAuthCredentialsConnectionResolver struct{ *Resolver }
 type adminGitTokenResolver struct{ *Resolver }
