@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 	"trip2g/internal/db"
@@ -16,7 +17,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// ResponseSchema is a server constant included in every cron webhook payload.
+//nolint:gochecknoglobals // ResponseSchema is a server constant.
 var ResponseSchema = json.RawMessage(`{
 	"type": "object",
 	"properties": {
@@ -149,64 +150,16 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	}
 
 	// Handle HTTP error or server error.
+	//nolint:nilerr // error handled via handleCronDeliveryError, not returned.
 	if result.Err != nil || result.StatusCode >= 300 {
-		var errMsg string
-		if result.Err != nil {
-			errMsg = result.Err.Error()
-		} else {
-			errMsg = fmt.Sprintf("HTTP %d", result.StatusCode)
-		}
-
-		if int64(params.Attempt) < wh.MaxRetries {
-			retryErr := env.EnqueueDeliverCronWebhook(ctx, DeliverCronParams{
-				DeliveryID:    params.DeliveryID,
-				CronWebhookID: params.CronWebhookID,
-				Attempt:       params.Attempt + 1,
-				PreviousError: errMsg,
-			})
-			if retryErr != nil {
-				log.Error("failed to enqueue cron webhook retry", "delivery_id", params.DeliveryID, "error", retryErr)
-			}
-			return nil
-		}
-
-		// Mark as failed.
-		updateErr := env.UpdateCronWebhookDeliveryResult(ctx, db.UpdateCronWebhookDeliveryResultParams{
-			Status:         "failed",
-			ResponseStatus: ptr.To(int64(result.StatusCode)),
-			DurationMs:     ptr.To(result.DurationMs),
-			ID:             params.DeliveryID,
-		})
-		if updateErr != nil {
-			log.Error("failed to update cron delivery result", "delivery_id", params.DeliveryID, "error", updateErr)
-		}
+		handleCronDeliveryError(ctx, env, params, result, wh)
 		return nil
 	}
 
 	// Parse agent response for changes.
 	var applyErr error
-	if result.StatusCode >= 200 && result.StatusCode < 300 && result.StatusCode != 202 {
-		agentResp, parseErr := webhookutil.ParseAgentResponse(result.Body)
-		if parseErr != nil {
-			applyErr = parseErr
-		} else if agentResp != nil && len(agentResp.Changes) > 0 {
-			for _, change := range agentResp.Changes {
-				// Validate path against write patterns.
-				if len(writePatterns) > 0 && !webhookutil.MatchesAny(change.Path, writePatterns) {
-					applyErr = fmt.Errorf("path %q not allowed by write_patterns", change.Path)
-					break
-				}
-
-				_, insertErr := env.InsertNote(ctx, model.RawNote{
-					Path:    change.Path,
-					Content: change.Content,
-				})
-				if insertErr != nil {
-					applyErr = fmt.Errorf("failed to apply change for %s: %w", change.Path, insertErr)
-					break
-				}
-			}
-		}
+	if result.StatusCode >= 200 && result.StatusCode < 300 && result.StatusCode != http.StatusAccepted {
+		applyErr = applyCronAgentChanges(ctx, env, result, writePatterns)
 	}
 
 	// Handle agent response errors with retry.
@@ -251,6 +204,67 @@ func Resolve(ctx context.Context, env Env, params DeliverCronParams) error {
 	})
 	if updateErr != nil {
 		log.Error("failed to update cron delivery result", "delivery_id", params.DeliveryID, "error", updateErr)
+	}
+
+	return nil
+}
+
+// handleCronDeliveryError handles HTTP errors and retries.
+func handleCronDeliveryError(ctx context.Context, env Env, params DeliverCronParams, result webhookutil.DeliveryResult, wh db.CronWebhook) {
+	var errMsg string
+	if result.Err != nil {
+		errMsg = result.Err.Error()
+	} else {
+		errMsg = fmt.Sprintf("HTTP %d", result.StatusCode)
+	}
+
+	if int64(params.Attempt) < wh.MaxRetries {
+		retryErr := env.EnqueueDeliverCronWebhook(ctx, DeliverCronParams{
+			DeliveryID:    params.DeliveryID,
+			CronWebhookID: params.CronWebhookID,
+			Attempt:       params.Attempt + 1,
+			PreviousError: errMsg,
+		})
+		if retryErr != nil {
+			env.Logger().Error("failed to enqueue cron webhook retry", "delivery_id", params.DeliveryID, "error", retryErr)
+		}
+		return
+	}
+
+	// Mark as failed.
+	updateErr := env.UpdateCronWebhookDeliveryResult(ctx, db.UpdateCronWebhookDeliveryResultParams{
+		Status:         "failed",
+		ResponseStatus: ptr.To(int64(result.StatusCode)),
+		DurationMs:     ptr.To(result.DurationMs),
+		ID:             params.DeliveryID,
+	})
+	if updateErr != nil {
+		env.Logger().Error("failed to update cron delivery result", "delivery_id", params.DeliveryID, "error", updateErr)
+	}
+}
+
+// applyCronAgentChanges parses and applies agent response changes.
+func applyCronAgentChanges(ctx context.Context, env Env, result webhookutil.DeliveryResult, writePatterns []string) error {
+	agentResp, parseErr := webhookutil.ParseAgentResponse(result.Body)
+	if parseErr != nil {
+		return parseErr
+	}
+	if agentResp == nil || len(agentResp.Changes) == 0 {
+		return nil
+	}
+
+	for _, change := range agentResp.Changes {
+		if len(writePatterns) > 0 && !webhookutil.MatchesAny(change.Path, writePatterns) {
+			return fmt.Errorf("path %q not allowed by write_patterns", change.Path)
+		}
+
+		_, insertErr := env.InsertNote(ctx, model.RawNote{
+			Path:    change.Path,
+			Content: change.Content,
+		})
+		if insertErr != nil {
+			return fmt.Errorf("failed to apply change for %s: %w", change.Path, insertErr)
+		}
 	}
 
 	return nil

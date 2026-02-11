@@ -23,26 +23,25 @@ type Env interface {
 type Input = model.UpdateCronWebhookInput
 type Payload = model.UpdateCronWebhookOrErrorPayload
 
-func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
-	_, err := env.CurrentAdminUserToken(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current user token: %w", err)
+// validateCronSchedule validates a cron expression if provided.
+func validateCronSchedule(schedule *string) *model.ErrorPayload {
+	if schedule == nil {
+		return nil
 	}
-
-	// Validate cron schedule if provided.
-	if input.CronSchedule != nil {
-		parser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-		_, parseErr := parser.Parse(*input.CronSchedule)
-		if parseErr != nil {
-			return &model.ErrorPayload{
-				ByFields: []model.FieldMessage{
-					{Name: "cronSchedule", Value: "invalid cron expression: " + parseErr.Error()},
-				},
-			}, nil
+	parser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+	_, err := parser.Parse(*schedule)
+	if err != nil {
+		return &model.ErrorPayload{
+			ByFields: []model.FieldMessage{
+				{Name: "cronSchedule", Value: "invalid cron expression: " + err.Error()},
+			},
 		}
 	}
+	return nil
+}
 
-	// Validate bounds for optional fields.
+// validateBounds checks optional numeric fields are within allowed ranges.
+func validateBounds(input Input) *model.ErrorPayload {
 	var fieldErrs []model.FieldMessage
 	if input.MaxDepth != nil && (*input.MaxDepth < 0 || *input.MaxDepth > 999) {
 		fieldErrs = append(fieldErrs, model.FieldMessage{Name: "maxDepth", Value: "must be between 0 and 999"})
@@ -54,7 +53,37 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		fieldErrs = append(fieldErrs, model.FieldMessage{Name: "maxRetries", Value: "must be between 0 and 100"})
 	}
 	if len(fieldErrs) > 0 {
-		return &model.ErrorPayload{ByFields: fieldErrs}, nil
+		return &model.ErrorPayload{ByFields: fieldErrs}
+	}
+	return nil
+}
+
+// marshalOptionalJSON marshals a string slice to JSON if non-nil.
+func marshalOptionalJSON(patterns []string) (*string, error) {
+	if patterns == nil {
+		return nil, nil
+	}
+	j, err := json.Marshal(patterns)
+	if err != nil {
+		return nil, err
+	}
+	return ptr.To(string(j)), nil
+}
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	_, err := env.CurrentAdminUserToken(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current user token: %w", err)
+	}
+
+	scheduleErr := validateCronSchedule(input.CronSchedule)
+	if scheduleErr != nil {
+		return scheduleErr, nil
+	}
+
+	boundsErr := validateBounds(input)
+	if boundsErr != nil {
+		return boundsErr, nil
 	}
 
 	params := db.UpdateCronWebhookParams{
@@ -71,19 +100,13 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	// Marshal JSON arrays only if provided.
-	if input.ReadPatterns != nil {
-		j, jsonErr := json.Marshal(input.ReadPatterns)
-		if jsonErr != nil {
-			return nil, fmt.Errorf("failed to marshal read_patterns: %w", jsonErr)
-		}
-		params.ReadPatterns = ptr.To(string(j))
+	params.ReadPatterns, err = marshalOptionalJSON(input.ReadPatterns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal read_patterns: %w", err)
 	}
-	if input.WritePatterns != nil {
-		j, jsonErr := json.Marshal(input.WritePatterns)
-		if jsonErr != nil {
-			return nil, fmt.Errorf("failed to marshal write_patterns: %w", jsonErr)
-		}
-		params.WritePatterns = ptr.To(string(j))
+	params.WritePatterns, err = marshalOptionalJSON(input.WritePatterns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal write_patterns: %w", err)
 	}
 
 	webhook, err := env.UpdateCronWebhook(ctx, params)

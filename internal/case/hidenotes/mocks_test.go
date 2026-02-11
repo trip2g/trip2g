@@ -7,6 +7,8 @@ import (
 	"context"
 	"sync"
 	"trip2g/internal/db"
+	"trip2g/internal/logger"
+	internalmodel "trip2g/internal/model"
 )
 
 // Ensure, that EnvMock does implement Env.
@@ -22,6 +24,12 @@ var _ Env = &EnvMock{}
 //			HideNotePathFunc: func(ctx context.Context, params db.HideNotePathParams) error {
 //				panic("mock out the HideNotePath method")
 //			},
+//			LatestNoteViewsFunc: func() *internalmodel.NoteViews {
+//				panic("mock out the LatestNoteViews method")
+//			},
+//			LoggerFunc: func() logger.Logger {
+//				panic("mock out the Logger method")
+//			},
 //		}
 //
 //		// use mockedEnv in code that requires Env
@@ -32,6 +40,12 @@ type EnvMock struct {
 	// HideNotePathFunc mocks the HideNotePath method.
 	HideNotePathFunc func(ctx context.Context, params db.HideNotePathParams) error
 
+	// LatestNoteViewsFunc mocks the LatestNoteViews method.
+	LatestNoteViewsFunc func() *internalmodel.NoteViews
+
+	// LoggerFunc mocks the Logger method.
+	LoggerFunc func() logger.Logger
+
 	// calls tracks calls to the methods.
 	calls struct {
 		// HideNotePath holds details about calls to the HideNotePath method.
@@ -41,8 +55,16 @@ type EnvMock struct {
 			// Params is the params argument value.
 			Params db.HideNotePathParams
 		}
+		// LatestNoteViews holds details about calls to the LatestNoteViews method.
+		LatestNoteViews []struct {
+		}
+		// Logger holds details about calls to the Logger method.
+		Logger []struct {
+		}
 	}
-	lockHideNotePath sync.RWMutex
+	lockHideNotePath    sync.RWMutex
+	lockLatestNoteViews sync.RWMutex
+	lockLogger          sync.RWMutex
 }
 
 // HideNotePath calls HideNotePathFunc.
@@ -78,5 +100,59 @@ func (mock *EnvMock) HideNotePathCalls() []struct {
 	mock.lockHideNotePath.RLock()
 	calls = mock.calls.HideNotePath
 	mock.lockHideNotePath.RUnlock()
+	return calls
+}
+
+// LatestNoteViews calls LatestNoteViewsFunc.
+func (mock *EnvMock) LatestNoteViews() *internalmodel.NoteViews {
+	if mock.LatestNoteViewsFunc == nil {
+		panic("EnvMock.LatestNoteViewsFunc: method is nil but Env.LatestNoteViews was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLatestNoteViews.Lock()
+	mock.calls.LatestNoteViews = append(mock.calls.LatestNoteViews, callInfo)
+	mock.lockLatestNoteViews.Unlock()
+	return mock.LatestNoteViewsFunc()
+}
+
+// LatestNoteViewsCalls gets all the calls that were made to LatestNoteViews.
+// Check the length with:
+//
+//	len(mockedEnv.LatestNoteViewsCalls())
+func (mock *EnvMock) LatestNoteViewsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLatestNoteViews.RLock()
+	calls = mock.calls.LatestNoteViews
+	mock.lockLatestNoteViews.RUnlock()
+	return calls
+}
+
+// Logger calls LoggerFunc.
+func (mock *EnvMock) Logger() logger.Logger {
+	if mock.LoggerFunc == nil {
+		panic("EnvMock.LoggerFunc: method is nil but Env.Logger was just called")
+	}
+	callInfo := struct {
+	}{}
+	mock.lockLogger.Lock()
+	mock.calls.Logger = append(mock.calls.Logger, callInfo)
+	mock.lockLogger.Unlock()
+	return mock.LoggerFunc()
+}
+
+// LoggerCalls gets all the calls that were made to Logger.
+// Check the length with:
+//
+//	len(mockedEnv.LoggerCalls())
+func (mock *EnvMock) LoggerCalls() []struct {
+} {
+	var calls []struct {
+	}
+	mock.lockLogger.RLock()
+	calls = mock.calls.Logger
+	mock.lockLogger.RUnlock()
 	return calls
 }

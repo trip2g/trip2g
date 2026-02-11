@@ -1,6 +1,7 @@
 package shortapitoken
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -55,7 +56,7 @@ func Parse(tokenStr string, secret string) (Data, error) {
 
 	c, ok := token.Claims.(*claims)
 	if !ok || !token.Valid {
-		return Data{}, fmt.Errorf("invalid short API token claims")
+		return Data{}, errors.New("invalid short API token claims")
 	}
 
 	return c.Data, nil

@@ -60,7 +60,7 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	// Generate secret if not provided.
-	secret := ""
+	var secret string
 	if input.Secret != nil && *input.Secret != "" {
 		secret = *input.Secret
 	} else {

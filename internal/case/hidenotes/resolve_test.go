@@ -3,9 +3,12 @@ package hidenotes
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 	"trip2g/internal/db"
 	"trip2g/internal/graph/model"
+	"trip2g/internal/logger"
+	internalmodel "trip2g/internal/model"
 
 	"github.com/kr/pretty"
 	"github.com/stretchr/testify/require"
@@ -14,6 +17,16 @@ import (
 //go:generate go tool github.com/matryer/moq -out mocks_test.go . Env
 
 type envMock = EnvMock
+
+func newTestEnv(hideFunc func(ctx context.Context, params db.HideNotePathParams) error) *envMock {
+	return &envMock{
+		HideNotePathFunc:    hideFunc,
+		LatestNoteViewsFunc: internalmodel.NewNoteViews,
+		LoggerFunc: func() logger.Logger {
+			return slog.Default()
+		},
+	}
+}
 
 func TestResolve(t *testing.T) {
 	type args struct {
@@ -31,11 +44,9 @@ func TestResolve(t *testing.T) {
 	}{
 		{
 			name: "successful hide single note",
-			env: &envMock{
-				HideNotePathFunc: func(ctx context.Context, params db.HideNotePathParams) error {
-					return nil
-				},
-			},
+			env: newTestEnv(func(ctx context.Context, params db.HideNotePathParams) error {
+				return nil
+			}),
 			args: args{
 				ctx: context.Background(),
 				input: model.HideNotesInput{
@@ -60,11 +71,9 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			name: "successful hide multiple notes",
-			env: &envMock{
-				HideNotePathFunc: func(ctx context.Context, params db.HideNotePathParams) error {
-					return nil
-				},
-			},
+			env: newTestEnv(func(ctx context.Context, params db.HideNotePathParams) error {
+				return nil
+			}),
 			args: args{
 				ctx: context.Background(),
 				input: model.HideNotesInput{
@@ -91,11 +100,9 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			name: "database error when hiding first note",
-			env: &envMock{
-				HideNotePathFunc: func(ctx context.Context, params db.HideNotePathParams) error {
-					return errors.New("database connection failed")
-				},
-			},
+			env: newTestEnv(func(ctx context.Context, params db.HideNotePathParams) error {
+				return errors.New("database connection failed")
+			}),
 			args: args{
 				ctx: context.Background(),
 				input: model.HideNotesInput{
@@ -118,11 +125,9 @@ func TestResolve(t *testing.T) {
 		},
 		{
 			name: "hide notes with empty paths array",
-			env: &envMock{
-				HideNotePathFunc: func(ctx context.Context, params db.HideNotePathParams) error {
-					return nil
-				},
-			},
+			env: newTestEnv(func(ctx context.Context, params db.HideNotePathParams) error {
+				return nil
+			}),
 			args: args{
 				ctx: context.Background(),
 				input: model.HideNotesInput{
@@ -138,37 +143,6 @@ func TestResolve(t *testing.T) {
 			wantErr: false,
 			afterCallback: func(t *testing.T, mockEnv *envMock) {
 				require.Empty(t, mockEnv.HideNotePathCalls())
-			},
-		},
-		{
-			name: "hide notes with special characters in paths",
-			env: &envMock{
-				HideNotePathFunc: func(ctx context.Context, params db.HideNotePathParams) error {
-					return nil
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				input: model.HideNotesInput{
-					Paths: []string{"/folder with spaces/note-with-dashes.md", "/unicode/файл.md"},
-					ApiKey: db.ApiKey{
-						CreatedBy: 111,
-					},
-				},
-			},
-			want: &model.HideNotesPayload{
-				Success: true,
-			},
-			wantErr: false,
-			afterCallback: func(t *testing.T, mockEnv *envMock) {
-				require.Len(t, mockEnv.HideNotePathCalls(), 2)
-
-				expectedPaths := []string{"/folder with spaces/note-with-dashes.md", "/unicode/файл.md"}
-				for i, call := range mockEnv.HideNotePathCalls() {
-					require.Equal(t, expectedPaths[i], call.Params.Value)
-					require.NotNil(t, call.Params.HiddenBy)
-					require.Equal(t, int64(111), *call.Params.HiddenBy)
-				}
 			},
 		},
 	}

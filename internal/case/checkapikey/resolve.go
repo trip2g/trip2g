@@ -99,6 +99,7 @@ func resolveAPIKey(ctx context.Context, env Env, plainKey string, action string,
 	return &apiKey, nil
 }
 
+//nolint:unparam // ctx kept for interface consistency.
 func resolveShortAPIToken(ctx context.Context, env Env, tokenStr string, req *appreq.Request) (*db.ApiKey, error) {
 	data, err := shortapitoken.Parse(tokenStr, env.ShortAPITokenSecret())
 	if err != nil {

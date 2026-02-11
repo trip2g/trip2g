@@ -101,7 +101,6 @@ import (
 	"trip2g/internal/case/createpaymentlink"
 	"trip2g/internal/case/cronjob/removeexpiredtgchatmembers"
 	"trip2g/internal/case/generatetgattachcode"
-	"trip2g/internal/case/handlenotewebhooks"
 	"trip2g/internal/case/hidenotes"
 	"trip2g/internal/case/listactiveusersubgraphs"
 	"trip2g/internal/case/pushnotes"
@@ -1074,7 +1073,7 @@ func (r *adminMutationResolver) RegenerateWebhookSecret(ctx context.Context, obj
 
 // TriggerChangeWebhook is the resolver for the triggerChangeWebhook field.
 func (r *adminMutationResolver) TriggerChangeWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.TriggerChangeWebhookInput) (model.TriggerChangeWebhookOrErrorPayload, error) {
-	return nil, fmt.Errorf("not implemented: trigger webhooks requires delivery job infrastructure")
+	return nil, errors.New("not implemented: trigger webhooks requires delivery job infrastructure")
 }
 
 // CreateCronWebhook is the resolver for the createCronWebhook field.
@@ -1099,7 +1098,7 @@ func (r *adminMutationResolver) RegenerateCronWebhookSecret(ctx context.Context,
 
 // TriggerCronWebhook is the resolver for the triggerCronWebhook field.
 func (r *adminMutationResolver) TriggerCronWebhook(ctx context.Context, obj *appmodel.AdminMutation, input model.TriggerCronWebhookInput) (model.TriggerCronWebhookOrErrorPayload, error) {
-	return nil, fmt.Errorf("not implemented: trigger cron webhooks requires delivery job infrastructure")
+	return nil, errors.New("not implemented: trigger cron webhooks requires delivery job infrastructure")
 }
 
 // CreatedBy is the resolver for the createdBy field.
@@ -2164,54 +2163,7 @@ func (r *mutationResolver) HideNotes(ctx context.Context, input model.HideNotesI
 
 	input.ApiKey = *apiKey
 
-	// Collect note info before hiding (notes may be removed from NoteViews after reload).
-	env := r.env(ctx)
-	nvs := env.LatestNoteViews()
-	var webhookChanges []handlenotewebhooks.NoteChange
-	for _, path := range input.Paths {
-		nv := nvs.GetByPath(path)
-		change := handlenotewebhooks.NoteChange{
-			Path:  path,
-			Event: "remove",
-		}
-		if nv != nil {
-			change.PathID = nv.PathID
-		}
-		webhookChanges = append(webhookChanges, change)
-	}
-
-	result, err := hidenotes.Resolve(ctx, env, input)
-	if err != nil {
-		return nil, err
-	}
-
-	// Trigger remove webhooks after successful hide.
-	if len(webhookChanges) == 0 {
-		return result, nil
-	}
-
-	req, reqErr := appreq.FromCtx(ctx)
-	if reqErr != nil {
-		//nolint:nilerr // webhook triggering is best-effort, no request context means no webhooks.
-		return result, nil
-	}
-	if req.SkipWebhooks {
-		return result, nil
-	}
-
-	webhookEnv, ok := req.Env.(handlenotewebhooks.Env)
-	if !ok {
-		return result, nil
-	}
-
-	webhookDepth := req.WebhookDepth
-
-	webhookErr := handlenotewebhooks.Resolve(ctx, webhookEnv, webhookChanges, webhookDepth)
-	if webhookErr != nil {
-		env.Logger().Error("failed to handle note webhooks for hide", "error", webhookErr)
-	}
-
-	return result, nil
+	return hidenotes.Resolve(ctx, r.env(ctx), input)
 }
 
 // UploadNoteAsset is the resolver for the uploadNoteAsset field.

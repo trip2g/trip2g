@@ -12,12 +12,6 @@ import (
 	"trip2g/internal/model"
 )
 
-type webhookTestCall struct {
-	Timestamp int64             `json:"timestamp"`
-	Headers   map[string]string `json:"headers"`
-	Body      json.RawMessage   `json:"body"`
-}
-
 func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 	if !a.config.DevMode {
 		return false
@@ -26,15 +20,6 @@ func (a *app) handleDebugAPI(ctx *fasthttp.RequestCtx) bool {
 	path := string(ctx.Path())
 
 	switch {
-	case ctx.IsPost() && strings.HasPrefix(path, "/debug/test_webhook"):
-		return a.handleDebugTestWebhook(ctx)
-
-	case ctx.IsGet() && strings.HasPrefix(path, "/debug/test_webhook_calls"):
-		return a.handleDebugTestWebhookCalls(ctx)
-
-	case ctx.IsDelete() && strings.HasPrefix(path, "/debug/test_webhook_calls"):
-		return a.handleDebugTestWebhookCallsClear(ctx)
-
 	case strings.HasPrefix(path, "/debug/layouts/latest"):
 		return a.handleDebugLayoutsLatest(ctx)
 
@@ -245,99 +230,5 @@ func (a *app) handleDebugTelegramImport(ctx *fasthttp.RequestCtx) bool {
 
 	ctx.SetStatusCode(fasthttp.StatusOK)
 	ctx.SetBodyString("ok: telegram channel imported")
-	return true
-}
-
-func (a *app) handleDebugTestWebhook(ctx *fasthttp.RequestCtx) bool {
-	// Parse query params.
-	statusCode := 200
-	if s := string(ctx.QueryArgs().Peek("status")); s != "" {
-		parsed, parseErr := strconv.Atoi(s)
-		if parseErr == nil {
-			statusCode = parsed
-		}
-	}
-
-	delayStr := string(ctx.QueryArgs().Peek("delay"))
-	if delayStr != "" {
-		delay, parseErr := time.ParseDuration(delayStr)
-		if parseErr == nil && delay > 0 {
-			time.Sleep(delay)
-		}
-	}
-
-	// Save the call.
-	headers := make(map[string]string)
-	ctx.Request.Header.VisitAll(func(key, value []byte) {
-		headers[string(key)] = string(value)
-	})
-
-	body := ctx.Request.Body()
-	var rawBody json.RawMessage
-	if json.Valid(body) {
-		rawBody = make(json.RawMessage, len(body))
-		copy(rawBody, body)
-	} else {
-		marshaledStr, _ := json.Marshal(string(body))
-		rawBody = json.RawMessage(marshaledStr)
-	}
-
-	call := webhookTestCall{
-		Timestamp: time.Now().Unix(),
-		Headers:   headers,
-		Body:      rawBody,
-	}
-
-	a.webhookTestMu.Lock()
-	a.webhookTestCalls = append(a.webhookTestCalls, call)
-	a.webhookTestMu.Unlock()
-
-	// Respond.
-	ctx.SetStatusCode(statusCode)
-	ctx.SetContentType("application/json")
-
-	responseBody := string(ctx.QueryArgs().Peek("body"))
-	if responseBody != "" {
-		ctx.SetBodyString(responseBody)
-	} else {
-		// Echo mode: return received body.
-		ctx.SetBody(body)
-	}
-
-	return true
-}
-
-func (a *app) handleDebugTestWebhookCalls(ctx *fasthttp.RequestCtx) bool {
-	a.webhookTestMu.Lock()
-	calls := make([]webhookTestCall, len(a.webhookTestCalls))
-	copy(calls, a.webhookTestCalls)
-	a.webhookTestMu.Unlock()
-
-	// Check if only last call requested.
-	if string(ctx.QueryArgs().Peek("last")) == "1" && len(calls) > 0 {
-		calls = calls[len(calls)-1:]
-	}
-
-	ctx.SetContentType("application/json")
-	ctx.SetStatusCode(fasthttp.StatusOK)
-
-	data, err := json.Marshal(calls)
-	if err != nil {
-		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
-		ctx.SetBodyString("failed to marshal calls: " + err.Error())
-		return true
-	}
-
-	ctx.SetBody(data)
-	return true
-}
-
-func (a *app) handleDebugTestWebhookCallsClear(ctx *fasthttp.RequestCtx) bool {
-	a.webhookTestMu.Lock()
-	a.webhookTestCalls = nil
-	a.webhookTestMu.Unlock()
-
-	ctx.SetStatusCode(fasthttp.StatusOK)
-	ctx.SetBodyString("ok: webhook calls cleared")
 	return true
 }

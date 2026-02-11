@@ -25,7 +25,7 @@ type Result struct {
 	Errors    int
 }
 
-// cronParser parses standard 5-field cron expressions.
+//nolint:gochecknoglobals // cronParser is a package-level constant parser.
 var cronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
 
 // Resolve checks for cron webhooks due for execution, creates deliveries, and enqueues jobs.

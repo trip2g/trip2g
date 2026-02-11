@@ -47,6 +47,67 @@ type Env interface {
 	Logger() logger.Logger
 }
 
+// matchChange checks if a single change matches the webhook's filters and returns a ChangeInfo if it does.
+func matchChange(ch NoteChange, wh db.ChangeWebhook, nvs *model.NoteViews, includePatterns, excludePatterns []string) *ChangeInfo {
+	// Event type filtering.
+	switch ch.Event {
+	case "create":
+		if !wh.OnCreate {
+			return nil
+		}
+	case "update":
+		if !wh.OnUpdate {
+			return nil
+		}
+	case eventRemove:
+		if !wh.OnRemove {
+			return nil
+		}
+	}
+
+	// Get note view for path info.
+	noteView := nvs.GetByPathID(ch.PathID)
+	if noteView == nil {
+		if ch.Event != eventRemove || ch.Path == "" {
+			return nil
+		}
+	}
+
+	// Determine path.
+	var path string
+	if noteView != nil {
+		path = noteView.Path
+	} else {
+		path = ch.Path
+	}
+
+	// Glob matching.
+	if !webhookutil.MatchesAny(path, includePatterns) {
+		return nil
+	}
+	if webhookutil.MatchesAny(path, excludePatterns) {
+		return nil
+	}
+
+	info := ChangeInfo{
+		Path:   path,
+		Event:  ch.Event,
+		PathID: ch.PathID,
+	}
+
+	if noteView != nil {
+		info.Version = noteView.VersionID
+		info.Title = noteView.Title
+	}
+
+	// Include content if enabled and not a remove event.
+	if wh.IncludeContent && ch.Event != eventRemove && noteView != nil {
+		info.Content = string(noteView.Content)
+	}
+
+	return &info
+}
+
 // Resolve processes changed notes against enabled webhooks.
 // It filters by depth, event type, and glob patterns, then creates
 // delivery records and enqueues background jobs for matching webhooks.
@@ -89,69 +150,10 @@ func Resolve(ctx context.Context, env Env, changes []NoteChange, depth int) erro
 		var matched []ChangeInfo
 
 		for _, ch := range changes {
-			// Event type filtering.
-			switch ch.Event {
-			case "create":
-				if !wh.OnCreate {
-					continue
-				}
-			case "update":
-				if !wh.OnUpdate {
-					continue
-				}
-			case eventRemove:
-				if !wh.OnRemove {
-					continue
-				}
+			info := matchChange(ch, wh, nvs, includePatterns, excludePatterns)
+			if info != nil {
+				matched = append(matched, *info)
 			}
-
-			// Get note view for path info.
-			noteView := nvs.GetByPathID(ch.PathID)
-			if noteView == nil {
-				if ch.Event == eventRemove && ch.Path != "" {
-					// For remove events, the note may already be gone from NoteViews.
-					// Use the path provided directly in the change.
-				} else {
-					// Note not found in latest views.
-					continue
-				}
-			}
-
-			// Determine path from noteView or from the change itself (for remove events).
-			var path string
-			if noteView != nil {
-				path = noteView.Path
-			} else {
-				path = ch.Path
-			}
-
-			// Glob matching: include patterns.
-			if !webhookutil.MatchesAny(path, includePatterns) {
-				continue
-			}
-
-			// Glob matching: exclude patterns.
-			if webhookutil.MatchesAny(path, excludePatterns) {
-				continue
-			}
-
-			info := ChangeInfo{
-				Path:   path,
-				Event:  ch.Event,
-				PathID: ch.PathID,
-			}
-
-			if noteView != nil {
-				info.Version = noteView.VersionID
-				info.Title = noteView.Title
-			}
-
-			// Include content if enabled and not a remove event.
-			if wh.IncludeContent && ch.Event != eventRemove && noteView != nil {
-				info.Content = string(noteView.Content)
-			}
-
-			matched = append(matched, info)
 		}
 
 		if len(matched) == 0 {

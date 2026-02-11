@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 	"trip2g/internal/case/handlenotewebhooks"
@@ -132,68 +133,16 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 	}
 
 	// Handle HTTP error or server error.
+	//nolint:nilerr // error handled via handleDeliveryError, not returned.
 	if result.Err != nil || result.StatusCode >= 300 {
-		var errMsg string
-		if result.Err != nil {
-			errMsg = result.Err.Error()
-		} else {
-			errMsg = fmt.Sprintf("HTTP %d", result.StatusCode)
-		}
-
-		if int64(params.Attempt) < wh.MaxRetries {
-			// Enqueue retry.
-			retryErr := env.EnqueueDeliverChangeWebhook(ctx, handlenotewebhooks.DeliverChangeWebhookParams{
-				DeliveryID:    params.DeliveryID,
-				WebhookID:     params.WebhookID,
-				Attempt:       params.Attempt + 1,
-				Depth:         params.Depth,
-				Changes:       params.Changes,
-				PreviousError: errMsg,
-			})
-			if retryErr != nil {
-				log.Error("failed to enqueue webhook retry", "delivery_id", params.DeliveryID, "error", retryErr)
-			}
-			return nil
-		}
-
-		// Mark as failed.
-		updateErr := env.UpdateWebhookDeliveryResult(ctx, db.UpdateWebhookDeliveryResultParams{
-			Status:         "failed",
-			ResponseStatus: ptr.To(int64(result.StatusCode)),
-			DurationMs:     ptr.To(result.DurationMs),
-			ID:             params.DeliveryID,
-		})
-		if updateErr != nil {
-			log.Error("failed to update delivery result", "delivery_id", params.DeliveryID, "error", updateErr)
-		}
+		handleDeliveryError(ctx, env, params, result, wh)
 		return nil
 	}
 
 	// Parse agent response for changes.
 	var applyErr error
-	if result.StatusCode >= 200 && result.StatusCode < 300 && result.StatusCode != 202 {
-		agentResp, parseErr := webhookutil.ParseAgentResponse(result.Body)
-		if parseErr != nil {
-			applyErr = parseErr
-		} else if agentResp != nil && len(agentResp.Changes) > 0 {
-			// Apply agent changes via InsertNote.
-			for _, change := range agentResp.Changes {
-				// Validate path against write patterns.
-				if len(writePatterns) > 0 && !webhookutil.MatchesAny(change.Path, writePatterns) {
-					applyErr = fmt.Errorf("path %q not allowed by write_patterns", change.Path)
-					break
-				}
-
-				_, insertErr := env.InsertNote(ctx, model.RawNote{
-					Path:    change.Path,
-					Content: change.Content,
-				})
-				if insertErr != nil {
-					applyErr = fmt.Errorf("failed to apply change for %s: %w", change.Path, insertErr)
-					break
-				}
-			}
-		}
+	if result.StatusCode >= 200 && result.StatusCode < 300 && result.StatusCode != http.StatusAccepted {
+		applyErr = applyAgentChanges(ctx, env, result, writePatterns)
 	}
 
 	// Handle agent response errors with retry.
@@ -240,6 +189,75 @@ func Resolve(ctx context.Context, env Env, params handlenotewebhooks.DeliverChan
 	})
 	if updateErr != nil {
 		log.Error("failed to update delivery result", "delivery_id", params.DeliveryID, "error", updateErr)
+	}
+
+	return nil
+}
+
+// handleDeliveryError handles HTTP errors and retries.
+func handleDeliveryError(
+	ctx context.Context,
+	env Env,
+	params handlenotewebhooks.DeliverChangeWebhookParams,
+	result webhookutil.DeliveryResult,
+	wh db.ChangeWebhook,
+) {
+	var errMsg string
+	if result.Err != nil {
+		errMsg = result.Err.Error()
+	} else {
+		errMsg = fmt.Sprintf("HTTP %d", result.StatusCode)
+	}
+
+	if int64(params.Attempt) < wh.MaxRetries {
+		retryErr := env.EnqueueDeliverChangeWebhook(ctx, handlenotewebhooks.DeliverChangeWebhookParams{
+			DeliveryID:    params.DeliveryID,
+			WebhookID:     params.WebhookID,
+			Attempt:       params.Attempt + 1,
+			Depth:         params.Depth,
+			Changes:       params.Changes,
+			PreviousError: errMsg,
+		})
+		if retryErr != nil {
+			env.Logger().Error("failed to enqueue webhook retry", "delivery_id", params.DeliveryID, "error", retryErr)
+		}
+		return
+	}
+
+	// Mark as failed.
+	updateErr := env.UpdateWebhookDeliveryResult(ctx, db.UpdateWebhookDeliveryResultParams{
+		Status:         "failed",
+		ResponseStatus: ptr.To(int64(result.StatusCode)),
+		DurationMs:     ptr.To(result.DurationMs),
+		ID:             params.DeliveryID,
+	})
+	if updateErr != nil {
+		env.Logger().Error("failed to update delivery result", "delivery_id", params.DeliveryID, "error", updateErr)
+	}
+}
+
+// applyAgentChanges parses and applies agent response changes.
+func applyAgentChanges(ctx context.Context, env Env, result webhookutil.DeliveryResult, writePatterns []string) error {
+	agentResp, parseErr := webhookutil.ParseAgentResponse(result.Body)
+	if parseErr != nil {
+		return parseErr
+	}
+	if agentResp == nil || len(agentResp.Changes) == 0 {
+		return nil
+	}
+
+	for _, change := range agentResp.Changes {
+		if len(writePatterns) > 0 && !webhookutil.MatchesAny(change.Path, writePatterns) {
+			return fmt.Errorf("path %q not allowed by write_patterns", change.Path)
+		}
+
+		_, insertErr := env.InsertNote(ctx, model.RawNote{
+			Path:    change.Path,
+			Content: change.Content,
+		})
+		if insertErr != nil {
+			return fmt.Errorf("failed to apply change for %s: %w", change.Path, insertErr)
+		}
 	}
 
 	return nil

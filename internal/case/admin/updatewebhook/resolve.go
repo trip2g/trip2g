@@ -19,13 +19,8 @@ type Env interface {
 type Input = model.UpdateWebhookInput
 type Payload = model.UpdateWebhookOrErrorPayload
 
-func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
-	_, err := env.CurrentAdminUserToken(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get current user token: %w", err)
-	}
-
-	// Validate bounds for optional fields.
+// validateBounds checks optional numeric fields are within allowed ranges.
+func validateBounds(input Input) *model.ErrorPayload {
 	var fieldErrs []model.FieldMessage
 	if input.MaxDepth != nil && (*input.MaxDepth < 0 || *input.MaxDepth > 999) {
 		fieldErrs = append(fieldErrs, model.FieldMessage{Name: "maxDepth", Value: "must be between 0 and 999"})
@@ -37,7 +32,32 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 		fieldErrs = append(fieldErrs, model.FieldMessage{Name: "maxRetries", Value: "must be between 0 and 100"})
 	}
 	if len(fieldErrs) > 0 {
-		return &model.ErrorPayload{ByFields: fieldErrs}, nil
+		return &model.ErrorPayload{ByFields: fieldErrs}
+	}
+	return nil
+}
+
+// marshalOptionalJSON marshals a string slice to JSON if non-nil.
+func marshalOptionalJSON(patterns []string) (*string, error) {
+	if patterns == nil {
+		return nil, nil
+	}
+	j, err := json.Marshal(patterns)
+	if err != nil {
+		return nil, err
+	}
+	return ptr.To(string(j)), nil
+}
+
+func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
+	_, err := env.CurrentAdminUserToken(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current user token: %w", err)
+	}
+
+	boundsErr := validateBounds(input)
+	if boundsErr != nil {
+		return boundsErr, nil
 	}
 
 	params := db.UpdateWebhookParams{
@@ -57,33 +77,21 @@ func Resolve(ctx context.Context, env Env, input Input) (Payload, error) {
 	}
 
 	// Marshal JSON arrays only if provided.
-	if input.IncludePatterns != nil {
-		j, jsonErr := json.Marshal(input.IncludePatterns)
-		if jsonErr != nil {
-			return nil, fmt.Errorf("failed to marshal include_patterns: %w", jsonErr)
-		}
-		params.IncludePatterns = ptr.To(string(j))
+	params.IncludePatterns, err = marshalOptionalJSON(input.IncludePatterns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal include_patterns: %w", err)
 	}
-	if input.ExcludePatterns != nil {
-		j, jsonErr := json.Marshal(input.ExcludePatterns)
-		if jsonErr != nil {
-			return nil, fmt.Errorf("failed to marshal exclude_patterns: %w", jsonErr)
-		}
-		params.ExcludePatterns = ptr.To(string(j))
+	params.ExcludePatterns, err = marshalOptionalJSON(input.ExcludePatterns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal exclude_patterns: %w", err)
 	}
-	if input.ReadPatterns != nil {
-		j, jsonErr := json.Marshal(input.ReadPatterns)
-		if jsonErr != nil {
-			return nil, fmt.Errorf("failed to marshal read_patterns: %w", jsonErr)
-		}
-		params.ReadPatterns = ptr.To(string(j))
+	params.ReadPatterns, err = marshalOptionalJSON(input.ReadPatterns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal read_patterns: %w", err)
 	}
-	if input.WritePatterns != nil {
-		j, jsonErr := json.Marshal(input.WritePatterns)
-		if jsonErr != nil {
-			return nil, fmt.Errorf("failed to marshal write_patterns: %w", jsonErr)
-		}
-		params.WritePatterns = ptr.To(string(j))
+	params.WritePatterns, err = marshalOptionalJSON(input.WritePatterns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal write_patterns: %w", err)
 	}
 
 	webhook, err := env.UpdateWebhook(ctx, params)

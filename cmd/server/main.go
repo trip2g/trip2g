@@ -146,9 +146,6 @@ type app struct {
 	*delivercronwebhook.DeliverCronWebhookJob
 	webhookHTTPClient *fasthttp.Client
 
-	webhookTestCalls []webhookTestCall
-	webhookTestMu    sync.Mutex
-
 	openaiClient *openai.Client
 
 	sigChan     chan os.Signal
