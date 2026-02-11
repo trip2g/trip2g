@@ -67,6 +67,13 @@ E2E тесты используют debug endpoints (`/debug/test_webhook`, `/de
 
 Подробности: [shared_webhooks.md](shared_webhooks.md) → раздел "Тестирование".
 
+### Почему свои debug endpoints, а не готовые решения
+
+Рассматривали [request-baskets](https://github.com/darklynx/request-baskets) и [webhook-tester](https://github.com/tarampampam/webhook-tester), но отказались:
+- **Нет ARM-образов** — request-baskets только linux/amd64, а dev-среда на ARM.
+- **Мало звезд на github** — оба в плачевном состоянии, без активной поддержки.
+- **Избыточная зависимость** — свои endpoints это десяток строк кода, полный контроль над поведением (статус-коды, задержки, кастомные ответы), никаких проблем с совместимостью.
+
 ## Документация
 
 Подробные технические спецификации:

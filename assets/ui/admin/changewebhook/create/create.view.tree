@@ -37,40 +37,46 @@ $trip2g_admin_changewebhook_create $mol_page
 						value? <=> description? \
 				<= Instruction_field $mol_form_field
 					name \Instruction
-					Content <= instruction_control $mol_text
+					Content <= instruction_control $mol_textarea
 						text? <=> instruction? \
-				<= OnCreate_field $mol_form_field
-					name \On Create
-					Content <= on_create_control $mol_check_box
-						checked? <=> on_create? true
-				<= OnUpdate_field $mol_form_field
-					name \On Update
-					Content <= on_update_control $mol_check_box
-						checked? <=> on_update? true
-				<= OnRemove_field $mol_form_field
-					name \On Remove
-					Content <= on_remove_control $mol_check_box
-						checked? <=> on_remove? false
-				<= PassApiKey_field $mol_form_field
-					name \Pass API Key
-					Content <= pass_api_key_control $mol_check_box
-						checked? <=> pass_api_key? false
-				<= IncludeContent_field $mol_form_field
-					name \Include Content
-					Content <= include_content_control $mol_check_box
-						checked? <=> include_content? true
-				<= MaxDepth_field $mol_form_field
-					name \Max Depth
-					Content <= max_depth_control $mol_number
-						value? <=> max_depth? 1
-				<= TimeoutSeconds_field $mol_form_field
-					name \Timeout (seconds)
-					Content <= timeout_seconds_control $mol_number
-						value? <=> timeout_seconds? 30
-				<= MaxRetries_field $mol_form_field
-					name \Max Retries
-					Content <= max_retries_control $mol_number
-						value? <=> max_retries? 3
+				<= EvenType_row $mol_row
+					sub /
+						<= OnCreate_field $mol_form_field
+							name \On Create
+							Content <= on_create_control $mol_check_box
+								checked? <=> on_create? true
+						<= OnUpdate_field $mol_form_field
+							name \On Update
+							Content <= on_update_control $mol_check_box
+								checked? <=> on_update? true
+						<= OnRemove_field $mol_form_field
+							name \On Remove
+							Content <= on_remove_control $mol_check_box
+								checked? <=> on_remove? false
+				<= PassApiKeyAndIncludeContent_row $mol_row
+					sub /
+						<= PassApiKey_field $mol_form_field
+							name \Pass API Key
+							Content <= pass_api_key_control $mol_check_box
+								checked? <=> pass_api_key? false
+						<= IncludeContent_field $mol_form_field
+							name \Include Content
+							Content <= include_content_control $mol_check_box
+								checked? <=> include_content? true
+				<= Footer_row $mol_row
+					sub /
+						<= MaxDepth_field $mol_form_field
+							name \Max Depth
+							Content <= max_depth_control $mol_number
+								value? <=> max_depth? 1
+						<= TimeoutSeconds_field $mol_form_field
+							name \Timeout (seconds)
+							Content <= timeout_seconds_control $mol_number
+								value? <=> timeout_seconds? 30
+						<= MaxRetries_field $mol_form_field
+							name \Max Retries
+							Content <= max_retries_control $mol_number
+								value? <=> max_retries? 3
 			buttons /
 				<= Submit $mol_button_major
 					title \Submit

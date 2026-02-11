@@ -266,7 +266,7 @@ SSE подписки работают через fasthttp + fasthttpadaptor + gq
 - [x] Расширить `checkapikey` — поддержка `Authorization: Bearer` для shortapitoken
 - [x] Интеграция в `HandleLatestNotesAfterSave` (create/update)
 - [x] Admin queries: webhooks, webhookDeliveries
-- [x] Debug endpoints (`DEV_MODE=true`): `/debug/test_webhook`, `/debug/test_webhook_calls`
+- [x] Debug endpoints (`DEV_MODE=true`): `/debug/test_webhook`, `/debug/test_webhook_calls`, `/debug/wait_all_jobs`, `/debug/run_cron_job`
 - [x] Wiring в main.go: jobs, env methods, cron jobs
 - [x] Cleanup cron jobs: delivery logs (7d), deliveries (30d)
 
