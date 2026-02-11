@@ -1,6 +1,0 @@
-{
-	"$trip2g_admin_webhook_create_title": "Создать вебхук изменений",
-	"$trip2g_admin_webhook_create_IncludePatterns_field_name": "Паттерны включения (через запятую)",
-	"$trip2g_admin_webhook_create_ExcludePatterns_field_name": "Паттерны исключения (через запятую)",
-	"$trip2g_admin_webhook_create_CreatedSecret_labeler_title": "Секрет (сохраните сейчас!)"
-}

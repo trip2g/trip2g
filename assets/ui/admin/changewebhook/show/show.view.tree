@@ -1,5 +1,5 @@
-$trip2g_admin_webhook_show $mol_page
-	webhook_id? 0
+$trip2g_admin_changewebhook_show $mol_page
+	changewebhook_id? 0
 	title \Change Webhook
 	tools /
 		<= EditLink $mol_link
@@ -11,8 +11,8 @@ $trip2g_admin_webhook_show $mol_page
 		<= DeleteButton $mol_button_minor
 			title \Delete
 			click? <=> delete? null
-	UpdateForm $trip2g_admin_webhook_update
-		webhook_id <= webhook_id
+	UpdateForm $trip2g_admin_changewebhook_update
+		changewebhook_id <= changewebhook_id
 	body /
 		<= WebhookDetails $mol_view
 			sub /

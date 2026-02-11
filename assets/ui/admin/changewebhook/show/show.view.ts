@@ -79,22 +79,22 @@ namespace $.$$ {
 		}
 	`)
 
-	export class $trip2g_admin_webhook_show extends $.$trip2g_admin_webhook_show {
+	export class $trip2g_admin_changewebhook_show extends $.$trip2g_admin_changewebhook_show {
 		action() {
 			return this.$.$mol_state_arg.value('action') || 'view'
 		}
 
 		@$mol_mem
 		data(reset?: null) {
-			const res = webhookQuery({ id: this.webhook_id() })
-			const wh = res.admin.allChangeWebhooks.nodes.find( (n: any) => n.id === this.webhook_id() )
+			const res = webhookQuery({ id: this.changewebhook_id() })
+			const wh = res.admin.allChangeWebhooks.nodes.find( (n: any) => n.id === this.changewebhook_id() )
 			if( !wh ) throw new Error( 'Webhook not found' )
 			return wh
 		}
 
 		@$mol_mem
 		deliveries(reset?: null) {
-			const res = request({ id: this.webhook_id() })
+			const res = request({ id: this.changewebhook_id() })
 			return res.admin.changeWebhookDeliveries.nodes
 		}
 
@@ -161,7 +161,7 @@ namespace $.$$ {
 		}
 
 		delete() {
-			const res = deleteMutate({ input: { id: this.webhook_id() } })
+			const res = deleteMutate({ input: { id: this.changewebhook_id() } })
 
 			if( res.admin.payload.__typename === 'ErrorPayload' ) {
 				this.delete_result( res.admin.payload.message )
@@ -178,7 +178,7 @@ namespace $.$$ {
 		}
 
 		regenerate_secret() {
-			const res = regenerateMutate({ input: { id: this.webhook_id() } })
+			const res = regenerateMutate({ input: { id: this.changewebhook_id() } })
 
 			if( res.admin.payload.__typename === 'ErrorPayload' ) {
 				this.secret_result( res.admin.payload.message )

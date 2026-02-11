@@ -20,7 +20,7 @@ namespace $.$$ {
 		}
 	`)
 
-	export class $trip2g_admin_webhook_catalog extends $.$trip2g_admin_webhook_catalog {
+	export class $trip2g_admin_changewebhook_catalog extends $.$trip2g_admin_changewebhook_catalog {
 		@$mol_mem
 		data( reset?: null ) {
 			const res = request()

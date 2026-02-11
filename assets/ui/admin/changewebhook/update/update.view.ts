@@ -45,11 +45,11 @@ namespace $.$$ {
 		}
 	`)
 
-	export class $trip2g_admin_webhook_update extends $.$trip2g_admin_webhook_update {
+	export class $trip2g_admin_changewebhook_update extends $.$trip2g_admin_changewebhook_update {
 		@$mol_mem
 		data(reset?: null) {
-			const res = request({ id: this.webhook_id() })
-			const wh = res.admin.allChangeWebhooks.nodes.find( (n: any) => n.id === this.webhook_id() )
+			const res = request({ id: this.changewebhook_id() })
+			const wh = res.admin.allChangeWebhooks.nodes.find( (n: any) => n.id === this.changewebhook_id() )
 			if( !wh ) throw new Error( 'Webhook not found' )
 			return wh
 		}
@@ -116,7 +116,7 @@ namespace $.$$ {
 		submit() {
 			const res = mutate({
 				input: {
-					id: this.webhook_id(),
+					id: this.changewebhook_id(),
 					url: this.url(),
 					includePatterns: this.parse_patterns( this.include_patterns_raw() ),
 					excludePatterns: this.parse_patterns( this.exclude_patterns_raw() ),

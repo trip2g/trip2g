@@ -18,7 +18,7 @@ namespace $.$$ {
 		}
 	`)
 
-	export class $trip2g_admin_webhook_create extends $.$trip2g_admin_webhook_create {
+	export class $trip2g_admin_changewebhook_create extends $.$trip2g_admin_changewebhook_create {
 		override body() {
 			if( this.created_id_string() !== '' ) {
 				return [ this.CreatedView() ]

@@ -1,4 +1,4 @@
-$trip2g_admin_webhook_catalog $trip2g_admin_catalog
+$trip2g_admin_changewebhook_catalog $trip2g_admin_catalog
 	menu_title @ \Change Webhooks
 	param \id
 	Empty $mol_status
@@ -6,9 +6,9 @@ $trip2g_admin_webhook_catalog $trip2g_admin_catalog
 		<= AddLink $mol_link
 			arg * id \add
 			title \+ Add
-	ShowPage* $trip2g_admin_webhook_show
-		webhook_id <= row_id* 0
-	CreateForm $trip2g_admin_webhook_create
+	ShowPage* $trip2g_admin_changewebhook_show
+		changewebhook_id <= row_id* 0
+	CreateForm $trip2g_admin_changewebhook_create
 	menu_link_content* / <= WebhookItem* $mol_view
 		sub /
 			<= Rows* $mol_row

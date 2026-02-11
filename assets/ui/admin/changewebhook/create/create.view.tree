@@ -1,6 +1,16 @@
-$trip2g_admin_webhook_update $mol_view
-	webhook_id 0
-	sub /
+$trip2g_admin_changewebhook_create $mol_page
+	title @ \Create Change Webhook
+	CreatedView $mol_view
+		sub /
+			<= CreatedId_labeler $mol_labeler
+				title \ID
+				Content <= CreatedId $trip2g_admin_cell
+					content <= created_id_string? \
+			<= CreatedSecret_labeler $mol_labeler
+				title @ \Secret (save it now!)
+				Content <= CreatedSecret $trip2g_admin_cell
+					content <= created_secret? \
+	body /
 		<= Form $mol_form
 			submit_allowed => submit_allowed
 			body /
@@ -9,15 +19,18 @@ $trip2g_admin_webhook_update $mol_view
 					bid <= url_bid \
 					Content <= url_control $mol_string
 						value? <=> url? \
+						hint \https://example.com/webhook
 				<= IncludePatterns_field $mol_form_field
 					name @ \Include Patterns (comma-separated)
 					bid <= include_patterns_bid \
 					Content <= include_patterns_control $mol_string
 						value? <=> include_patterns_raw? \
+						hint \**/*.md, docs/**
 				<= ExcludePatterns_field $mol_form_field
 					name @ \Exclude Patterns (comma-separated)
 					Content <= exclude_patterns_control $mol_string
 						value? <=> exclude_patterns_raw? \
+						hint \drafts/**
 				<= Description_field $mol_form_field
 					name \Description
 					Content <= description_control $mol_string
@@ -26,10 +39,6 @@ $trip2g_admin_webhook_update $mol_view
 					name \Instruction
 					Content <= instruction_control $mol_text
 						text? <=> instruction? \
-				<= Enabled_field $mol_form_field
-					name \Enabled
-					Content <= enabled_control $mol_check_box
-						checked? <=> enabled? true
 				<= OnCreate_field $mol_form_field
 					name \On Create
 					Content <= on_create_control $mol_check_box
