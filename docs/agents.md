@@ -16,9 +16,7 @@
 go run ./cmd/subot -cmd 'claude -p' -listen :3334
 ```
 
-### [Claude Agent](claude_agent.md)
-
-Конкретная конфигурация subprocess agent для Claude CLI. Получает промпт из instruction вебхука (или из заметки по ссылке), запускает Claude, результат попадает обратно в trip2g.
+Примеры конкретных конфигураций (Claude CLI, Gemini, Python-скрипты) см. в документе [subprocess_agent.md](subprocess_agent.md).
 
 ### [Telegram Inbox Agent](telegram_inbox_agent.md) — `agents/tginbox/`
 

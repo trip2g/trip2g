@@ -396,7 +396,7 @@ testPath := "test/page.md"
 | Синтаксическая ошибка в jsonnet | Ловится при сохранении, патч не создается |
 | `meta.field` на заметке без `field` | Runtime error, warning, патч пропущен |
 | Jsonnet возвращает не объект (массив, строку) | Runtime error при unmarshal, warning, патч пропущен |
-| Jsonnet зацикливается | Timeout VM (настроить, default 1s), warning, патч пропущен |
+| Jsonnet зацикливается | Timeout VM (100ms), warning, патч пропущен |
 | Невалидный glob pattern | Ловится при сохранении через `doublestar.Match` |
 
 ---
@@ -593,6 +593,8 @@ func Load(options Options) (*model.NoteViews, error) {
     if len(ldr.frontmatterPatches) > 0 {
         ldr.jsonnetVM = jsonnet.MakeVM()
         ldr.jsonnetVM.MaxStack = 500 // prevent stack overflow
+        // 100ms timeout prevents infinite loops in jsonnet
+        ldr.jsonnetVM.Timeout = 100 * time.Millisecond
     }
 
     // ... rest of Load() ...

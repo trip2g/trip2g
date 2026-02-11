@@ -149,7 +149,7 @@ Write patterns из shortapitoken проверяются перед запись
 |----------|-----------|
 | `find` не найден в содержимом | Ошибка: `"marker not found: {find}"` |
 | Заметка не существует | Ошибка: `"note not found: {path}"` |
-| Несколько вхождений `find` | Заменяется **первое** вхождение |
+| Несколько вхождений `find` | Ошибка: `"multiple occurrences of find string, use more specific marker or full replace"` |
 | `find` == `replace` | Нет изменений — не создавать новую версию |
 | Пустой `find` | Ошибка валидации |
 | Пустой `replace` | ОК — удаляет маркер (замена на пустую строку) |
@@ -265,6 +265,11 @@ func Resolve(ctx context.Context, env Env, input UpdateNoteInput) (UpdateNoteOrE
         return model.NewError("marker not found: " + input.Find), nil
     }
 
+    // 2.1. Check for multiple occurrences (force precision).
+    if strings.Index(note.Content[idx+len(input.Find):], input.Find) != -1 {
+        return model.NewError("multiple occurrences of find string, use more specific marker or full replace"), nil
+    }
+
     newContent := note.Content[:idx] + input.Replace + note.Content[idx+len(input.Find):]
 
     // 3. Проверка что содержимое изменилось.
@@ -314,6 +319,11 @@ func applyFindReplace(ctx context.Context, env Env, change AgentChange, depth in
     idx := strings.Index(note.Content, change.Find)
     if idx == -1 {
         return fmt.Errorf("marker not found in %s: %q", change.Path, change.Find)
+    }
+
+    // Check for multiple occurrences (force precision).
+    if strings.Index(note.Content[idx+len(change.Find):], change.Find) != -1 {
+        return fmt.Errorf("multiple occurrences of find string in %s, use more specific marker or full replace", change.Path)
     }
 
     newContent := note.Content[:idx] + change.Replace + note.Content[idx+len(change.Find):]
@@ -388,8 +398,8 @@ where np.value = ? and np.hidden_at is null;
 
 2. **Почему не regexp?** — `find` — точная строка, не регулярное выражение. Агент должен точно знать что меняет, а не "что-то похожее". Предсказуемость важнее гибкости.
 
-3. **Почему первое вхождение?** — Предсказуемость. Если нужно заменить конкретное вхождение — используй более уникальный маркер (`<!-- inbox:2026-02-10 -->`).
+3. **Почему ошибка при нескольких вхождениях?** — Предсказуемость и безопасность. Если `find` строка встречается несколько раз, агент должен использовать более уникальный маркер (`<!-- inbox:2026-02-10 -->`) или явно указать что делать с каждым вхождением. Автоматическая замена первого вхождения слишком неявная и может привести к ошибкам.
 
-3. **Автокоммит?** — Да. `updateNote` — атомарная операция на одну заметку. Нет смысла в отдельном commitNotes. Для batch-операций остаётся pushNotes + commitNotes.
+4. **Автокоммит?** — Да. `updateNote` — атомарная операция на одну заметку. Нет смысла в отдельном commitNotes. Для batch-операций остаётся pushNotes + commitNotes.
 
 4. **Совместимость с agent response?** — Обратно совместимо. Старый формат (`content` без `find`) работает как раньше. Новый формат (`find` + `replace`) — дополнение.

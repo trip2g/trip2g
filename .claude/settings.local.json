@@ -44,7 +44,8 @@
       "Bash(npx tsx:*)",
       "WebFetch(domain:gqlgen.com)",
       "WebFetch(domain:gist.github.com)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   },

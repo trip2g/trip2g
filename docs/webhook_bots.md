@@ -150,6 +150,15 @@ subot:
 
 Это позволяет хранить и версионировать промпты как обычные заметки.
 
+Преимущества хранения промптов в заметках:
+- **Версионирование** — история изменений промпта в git
+- **Obsidian** — редактирование промптов в привычном редакторе
+- **Длина** — промпт может быть сколько угодно длинным
+- **Переиспользование** — один промпт для нескольких вебхуков
+- **AI-доступ** — агент может прочитать промпт через `read_note`
+
+Конвенция: промпты живут в `prompts/`.
+
 #### Конфигурация
 
 ```bash
@@ -198,6 +207,23 @@ cmd/subot/
       → change webhook max_depth=1 → НЕ триггерится (1 >= 1)
 ```
 
+### Chain tracing
+
+`X-Webhook-Chain-ID` header передаётся во всех webhook вызовах одной цепочки:
+- Генерируется при первом триггере (depth=0)
+- Передаётся дальше с каждым вызовом вебхука в цепочке
+- Записывается в delivery log
+- Позволяет отследить полную цепочку обработки и найти все связанные deliveries
+
+Пример:
+```
+Человек правит blog/post.md → chain_id: abc123
+  → change webhook → линтер-бот (chain_id: abc123)
+    → линтер пушит исправления → change webhook → SEO-бот (chain_id: abc123)
+```
+
+Все три delivery в логе будут иметь одинаковый `chain_id`, что позволяет увидеть всю цепочку автоматической обработки.
+
 ### Write scope
 
 `write_patterns` ограничивают что бот может менять:
@@ -234,6 +260,19 @@ Instruction: "Review the note for clarity and grammar. Read prompts/reviewer.md 
 Pass API key: true (subot needs API access for MCP)
 Write patterns: ["blog/**"]
 Read patterns: ["prompts/**", "blog/**"]
+Max depth: 1
+```
+
+### AI-тегировщик (change webhook + subot)
+
+```
+URL: http://localhost:3334/webhook
+Include patterns: ["blog/**"]
+On create: true, On update: false, On remove: false
+Instruction: "Read the new note. Suggest 3-5 tags based on content. Add them to frontmatter using update_note: find 'tags: []' replace 'tags: [tag1, tag2, ...]'"
+Pass API key: true
+Read patterns: ["blog/**"]
+Write patterns: ["blog/**"]
 Max depth: 1
 ```
 

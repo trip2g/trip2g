@@ -290,16 +290,23 @@ func verifySignature(body []byte, secret, signature string) bool {
 
 ### Идея
 
-Когда `pass_api_key=true`, webhook payload может включать описание доступных API-инструментов в формате MCP (Model Context Protocol). Это позволяет AI-агентам (Claude, GPT и т.д.) использовать API без знания GraphQL.
+Когда `pass_api_key=true`, webhook payload может включать описание доступных API-инструментов. Два варианта:
+
+**Вариант A: Inline tool definitions** — для простых агентов, описание инструментов прямо в payload (JSON).
+
+**Вариант B: MCP endpoint (рекомендуемый)** — агент подключается к обратному MCP SSE endpoint как MCP-клиент, скачивает спеку инструментов, вызывает их через стандартный MCP протокол.
 
 ### Зачем
 
-- AI-агент получает webhook → видит `mcp_tools` → сразу знает какие операции доступны
+- AI-агент получает webhook → подключается к MCP endpoint → сразу знает какие операции доступны
 - Не нужно хардкодить GraphQL запросы в агенте
-- Самодокументирующийся API — агент читает описание инструментов из payload
+- Самодокументирующийся API — агент читает описание инструментов через MCP
 - Стандартный формат — совместимость с MCP-клиентами
+- Через MCP можно не только читать/писать заметки, но и менять статус задачи (в процессе, завершена)
 
-### Формат в payload
+### Вариант A: Inline tool definitions (для простых агентов)
+
+Формат в payload:
 
 ```json
 {
@@ -383,11 +390,41 @@ func verifySignature(body []byte, secret, signature string) bool {
 }
 ```
 
+### Вариант B: MCP endpoint (рекомендуемый)
+
+Вместо отправки полных tool definitions в payload, trip2g передаёт `agent_mcp_url` — URL обратного MCP SSE endpoint:
+
+```json
+{
+  "version": 1,
+  "id": 42,
+  "instruction": "...",
+  "api_token": "eyJhbGc...",
+  "agent_mcp_url": "https://example.com/mcp/agents/webhook-42"
+}
+```
+
+Агент:
+1. Подключается к `agent_mcp_url` как MCP-клиент (SSE transport)
+2. Скачивает список доступных инструментов через `tools/list`
+3. Вызывает инструменты через `tools/call` (стандартный MCP протокол)
+4. trip2g транслирует вызовы в GraphQL-мутации с `api_token`
+
+Доступные инструменты через MCP:
+- `read_note(path)` — прочитать заметку
+- `update_note(path, find, replace)` — атомарный find/replace
+- `push_notes(updates)` — создать/заменить заметки
+- `list_notes(pattern)` — список заметок по glob-паттерну
+- `commit_notes()` — закоммитить изменения
+- `update_task_status(task_id, status)` — **новое**: изменить статус задачи (pending/in_progress/completed)
+
+Endpoint `agent_mcp_url` живёт только в рамках обработки одного webhook вызова (scoped session). Автоматически закрывается после завершения агента.
+
 ### Как агент использует MCP tools
 
-Два варианта:
+Три варианта:
 
-**Вариант A: Синхронный ответ (рекомендуемый)**
+**Вариант A: Синхронный ответ (самый простой)**
 
 Агент использует описание tools для понимания формата ответа. Вместо вызова API — возвращает `changes` в response body. Сервер применяет изменения сам.
 
@@ -415,18 +452,15 @@ Content-Type: application/json
 
 MCP tools описывают доступные операции, агент транслирует в GraphQL.
 
-**Вариант C: MCP SSE сервер (future)**
+**Вариант C: MCP endpoint (рекомендуемый)**
 
-trip2g выставляет MCP SSE endpoint. Агент подключается как MCP-клиент:
+Агент подключается к `agent_mcp_url` как MCP-клиент (вариант B выше). Это даёт:
+- Стандартный протокол взаимодействия (MCP)
+- Динамическое обнаружение инструментов (tools/list)
+- Доступ к дополнительным операциям (update_task_status)
+- Scoped session — endpoint живёт только в рамках обработки webhook
 
-```json
-{
-  "mcp_server_url": "https://example.com/mcp/sse",
-  "api_token": "eyJhbGc..."
-}
-```
-
-Агент вызывает tools через стандартный MCP протокол. Сервер транслирует в GraphQL-мутации.
+Агент может комбинировать подходы: использовать MCP для чтения/записи заметок и синхронный ответ (changes) для финальных изменений.
 
 ### Настройка
 
